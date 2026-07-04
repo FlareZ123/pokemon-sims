@@ -1,0 +1,43 @@
+{
+  "name": "PTCG Live Expanded Regidrago VSTAR, user-provided list",
+  "total": 60,
+  "pokemon": {
+    "Regidrago V": 4,
+    "Regidrago VSTAR": 3,
+    "Dragapult ex": 2,
+    "Mega Dragonite ex": 2,
+    "Dialga-GX (Dragon)": 1,
+    "Hisuian Goodra VSTAR": 1,
+    "Tapu Lele-GX": 2,
+    "Latias ex (Skyliner)": 1,
+    "Mawile-GX": 1,
+    "Oricorio GRI 55 (Vital Dance)": 1,
+    "Dipplin TWM 127": 1
+  },
+  "trainers": {
+    "Brilliant Blender": 1,
+    "Mysterious Treasure": 4,
+    "Quick Ball": 3,
+    "Earthen Vessel": 2,
+    "Arven": 2,
+    "Crispin": 2,
+    "Professor Burnet": 1,
+    "Serena": 1,
+    "Tate & Liza": 1,
+    "Steven's Resolve": 1,
+    "Guzma": 1,
+    "Channeler": 1,
+    "Gladion": 2,
+    "Lusamine": 1,
+    "Team Yell's Cheer": 1,
+    "Roseanne's Backup": 1,
+    "Professor Turo's Scenario": 1,
+    "Forest Seal Stone": 1,
+    "Powerglass": 1,
+    "Field Blower": 1,
+    "Chaotic Swell": 1,
+    "Path to the Peak": 1,
+    "Hisuian Heavy Ball": 1
+  },
+  "energy": {"Grass Energy": 6, "Fire Energy": 3}
+}

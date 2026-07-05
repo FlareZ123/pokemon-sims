@@ -29,7 +29,8 @@
 
   bool can_play_payload_this_turn() const { return payload_window_open() && need_payload(); }
 
-  std::optional<Card> choose_discard(const bool permit_payload, const bool flex_fodder) const {
+  std::optional<Card> choose_discard(const bool permit_payload, const bool flex_fodder,
+                                     const bool allow_heavy_ball = true) const {
     // P-DCI-STRICT and P-DCI-FLEX, documented in RULES_TRACEABILITY.md.
     if (permit_payload) {
       for (const Card card : {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::DialgaGX}) {
@@ -61,6 +62,10 @@
         if (hand_count(card) > 0) return card;
       }
     }
+
+    // Heavy Ball is a legal generic discard cost. It is listed last because a K0
+    // Prize inspection is normally more valuable than spending it as fodder.
+    if (allow_heavy_ball && hand_count(Card::HisuianHeavyBall) > 0) return Card::HisuianHeavyBall;
     return std::nullopt;
   }
 

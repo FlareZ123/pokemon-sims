@@ -14,7 +14,7 @@
 
   bool play_arven() {
     if (!supporter_allowed() || item_locked() || hand_count(Card::Arven) == 0) return false;
-    const bool needs_item = need_regi() || need_vstar() || need_energy() || can_play_payload_this_turn();
+    const bool needs_item = need_regi() || need_vstar() || need_energy() || need_active_vstar() || can_play_payload_this_turn();
     const bool needs_tool = has_regi_v() && !state_.vstar_power_used &&
                             ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
                              std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) { return p.card == Card::RegidragoV && p.tool == Tool::None; }));
@@ -23,14 +23,26 @@
     state_.discard.push_back(Card::Arven);
     state_.supporter_used = true;
 
-    Card item = Card::MysteriousTreasure;
-    if (need_regi()) item = Card::QuickBall;
-    else if (need_vstar()) item = Card::EvolutionIncense;
-    else if (need_energy()) item = Card::EarthenVessel;
-    else if (can_play_payload_this_turn()) item = Card::BrilliantBlender;
+    // Arven's deck search permits choosing the Item after inspecting the deck.
+    // Prefer the fewest-step route for the current missing axis, then an Item
+    // that still advances that axis if the first choice is not in deck.
+    std::vector<Card> item_candidates;
+    if (need_regi()) {
+      item_candidates = {Card::QuickBall, Card::MysteriousTreasure};
+    } else if (need_vstar()) {
+      item_candidates = {Card::EvolutionIncense, Card::MysteriousTreasure};
+    } else if (need_energy()) {
+      item_candidates = {Card::EarthenVessel};
+    } else if (need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx)) {
+      item_candidates = {Card::QuickBall, Card::MysteriousTreasure};
+    } else if (can_play_payload_this_turn()) {
+      item_candidates = {Card::BrilliantBlender};
+    }
 
     std::vector<Card> found;
-    if (move_deck_to_hand(item)) found.push_back(item);
+    for (const Card item : item_candidates) {
+      if (move_deck_to_hand(item)) { found.push_back(item); break; }
+    }
     if (needs_tool && move_deck_to_hand(Card::ForestSealStone)) found.push_back(Card::ForestSealStone);
     shuffle(state_.deck);
     trace("PLAY SUPPORTER", "R-ARVEN-01; R-GAME-SUPPORTER", "Searched an Item and a Pokémon Tool: " + join_cards(found) + ".");

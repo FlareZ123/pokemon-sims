@@ -3,43 +3,56 @@
   bool play_heavy_ball() {
     if (item_locked() || hand_count(Card::HisuianHeavyBall) == 0) return false;
 
-    const bool need_latias = need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) &&
-                             !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0;
-    const bool need_oricorio = need_energy() && !in_play(Card::Oricorio) && hand_count(Card::Oricorio) == 0 &&
-                               bench_space() > 0 && needs_oricorio_connector();
-    if (!need_regi() && !need_latias && !need_oricorio) return false;
+    const bool known_no_basic_prize = prizes_known() &&
+        std::none_of(state_.prizes.begin(), state_.prizes.end(), is_basic);
+    if (known_no_basic_prize) {
+      trace("HOLD ITEM", "R-HEAVYBALL-01; P-KNOWLEDGE-01",
+            "Known Prize cards contain no Basic Pokémon; retained Heavy Ball as a legal discard cost.");
+      return false;
+    }
 
-    const bool known_prized_target = prizes_known() &&
-        ((need_regi() && prize_count_after_reveal(Card::RegidragoV) > 0) ||
-         (need_latias && prize_count_after_reveal(Card::LatiasEx) > 0) ||
-         (need_oricorio && prize_count_after_reveal(Card::Oricorio) > 0));
-
-    // Before K1, a live ordinary Basic-search route is more flexible than inspecting Prizes.
-    // After K1 has shown that this exact Basic is prized, Heavy Ball is the direct route.
-    if (!known_prized_target && (hand_count(Card::QuickBall) > 0 || hand_count(Card::MysteriousTreasure) > 0 ||
-                                 hand_count(Card::UltraBall) > 0 || hand_count(Card::Arven) > 0)) return false;
-
+    // At K0, Heavy Ball is an information action as well as a possible recovery.
+    // It is played before ordinary search Items. After inspection, any revealed
+    // Basic can be selected for its immediate connector value or as future fodder.
     remove_one(state_.hand, Card::HisuianHeavyBall);
     prizes_revealed_ = true;
-    std::vector<Card> priorities;
-    if (need_regi()) priorities.push_back(Card::RegidragoV);
-    if (need_latias) priorities.push_back(Card::LatiasEx);
-    if (need_oricorio) priorities.push_back(Card::Oricorio);
-    for (const Card desired : priorities) {
-      const auto it = std::find(state_.prizes.begin(), state_.prizes.end(), desired);
-      if (it == state_.prizes.end()) continue;
+
+    const auto prized = [this](const Card card) {
+      return std::find(state_.prizes.begin(), state_.prizes.end(), card) != state_.prizes.end();
+    };
+    Card selected = Card::HisuianHeavyBall;
+
+    // Direct current-turn axes first.
+    if (need_regi() && prized(Card::RegidragoV)) selected = Card::RegidragoV;
+    else if (needs_tapu_connector() && prized(Card::TapuLeleGX)) selected = Card::TapuLeleGX;
+    else if (needs_oricorio_connector() && prized(Card::Oricorio)) selected = Card::Oricorio;
+    else if (need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) && prized(Card::LatiasEx)) selected = Card::LatiasEx;
+
+    // Heavy Ball may take any prized Basic. When no immediate axis is missing,
+    // take the highest future connector / legal discard-fodder value available.
+    if (selected == Card::HisuianHeavyBall) {
+      for (const Card candidate : {Card::TapuLeleGX, Card::Oricorio, Card::LatiasEx,
+                                   Card::RegidragoV, Card::DialgaGX, Card::MawileGX}) {
+        if (prized(candidate)) { selected = candidate; break; }
+      }
+    }
+
+    if (selected != Card::HisuianHeavyBall) {
+      const auto it = std::find(state_.prizes.begin(), state_.prizes.end(), selected);
       const Card revealed = *it;
       *it = Card::HisuianHeavyBall;
       state_.hand.push_back(revealed);
       shuffle(state_.prizes);
       trace("PLAY ITEM", "R-HEAVYBALL-01; R-GAME-ITEM; P-KNOWLEDGE-01",
-            "Looked at Prizes and exchanged Heavy Ball for " + std::string(name(revealed)) + ".");
+            "Looked at Prize cards and exchanged Heavy Ball for " + std::string(name(revealed)) + ".");
       return true;
     }
+
+    // If no Basic was present, Heavy Ball resolves normally and is discarded.
     state_.discard.push_back(Card::HisuianHeavyBall);
     shuffle(state_.prizes);
     trace("PLAY ITEM", "R-HEAVYBALL-01; R-GAME-ITEM; P-KNOWLEDGE-01",
-          "Looked at Prizes; no needed Basic was present, so Heavy Ball was discarded.");
+          "Looked at Prize cards; no Basic Pokémon was present, so Heavy Ball was discarded.");
     return true;
   }
 

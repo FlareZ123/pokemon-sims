@@ -4,7 +4,7 @@ A traceable, rules-mapped goldfish simulator for the supplied Pokémon TCG Live 
 
 ## Audit status
 
-`fix-sims` contains a rules-mapped simulator, deterministic `simulate-this` traces, six scenario trace regressions, and **28 exact-state policy fixtures**. The fixture catalog states each constructed hand, board, deck, Prize, discard, lock, expected action, and expected resulting state in [`docs/OPTIMAL_POLICY_FIXTURES.md`](docs/OPTIMAL_POLICY_FIXTURES.md). The card-text recheck is in [`docs/RULES_REVERIFICATION.md`](docs/RULES_REVERIFICATION.md).
+`fix-sims` contains a rules-mapped simulator, deterministic `simulate-this` traces, six scenario trace regressions, **28 core exact-state policy fixtures**, and a separate Tier Two suite for choice differentiation and fast-compression states. The core fixture catalog states each constructed hand, board, deck, Prize, discard, lock, expected action, and expected resulting state in [`docs/OPTIMAL_POLICY_FIXTURES.md`](docs/OPTIMAL_POLICY_FIXTURES.md). The K0/K1 knowledge model and connector hierarchy are recorded in [`docs/POLICY_DECISIONS.md`](docs/POLICY_DECISIONS.md). The card-text recheck is in [`docs/RULES_REVERIFICATION.md`](docs/RULES_REVERIFICATION.md).
 
 The model is deliberately a single-player setup model. It does not claim to resolve every Expanded card or any opponent-dependent game state.
 
@@ -23,9 +23,10 @@ The command prints the opening player-known state, debug-only prizes, every draw
 ```bash
 ctest --test-dir build --output-on-failure
 ./build/regidrago_policy_tests
+./build/regidrago_tier2_tests
 ```
 
-`regidrago_policy_tests` checks that the simulator chooses the intended legal connector in constructed states, including Gladion prize recovery, Steven lock planning, Forest Seal Stone search behavior, Crispin and Earthen Vessel energy rules, JIT timing, search fallback, lock handling, entry Abilities, Active positioning, first-turn restrictions, and manual-attachment/evolution limits.
+`regidrago_policy_tests` checks core rule and connector legality. `regidrago_tier2_tests` checks comparison states, including direct Crispin versus indirect Energy routes, Steven versus Arven, K0/K1 Gladion and Heavy Ball choices, Forest Seal Stone conservation, Rule Box lock-aware search paths, Tate & Liza switch and draw modes, and Arven fallback selection.
 
 ## Run aggregate smoke test
 
@@ -42,4 +43,4 @@ A ready state means:
 3. A modeled Dragon payload in discard: Dragapult ex, Mega Dragonite ex, Dialga-GX, or Hisuian Goodra VSTAR.
 4. In strict and matchup-flex profiles, that payload entered discard in the current player turn and remains in discard at the ready check.
 
-See `docs/RULES_TRACEABILITY.md`, `docs/RULES_REVERIFICATION.md`, `docs/OPTIMAL_POLICY_FIXTURES.md`, `docs/TRACE_AUDIT.md`, `docs/MODEL_ASSUMPTIONS.md`, and `docs/REPORT.md`.
+See `docs/RULES_TRACEABILITY.md`, `docs/RULES_REVERIFICATION.md`, `docs/POLICY_DECISIONS.md`, `docs/OPTIMAL_POLICY_FIXTURES.md`, `docs/TRACE_AUDIT.md`, `docs/MODEL_ASSUMPTIONS.md`, and `docs/REPORT.md`.

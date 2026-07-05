@@ -28,11 +28,21 @@
     else if (needs_oricorio_connector() && prized(Card::Oricorio)) selected = Card::Oricorio;
     else if (need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) && prized(Card::LatiasEx)) selected = Card::LatiasEx;
 
-    // Heavy Ball may take any prized Basic. When no immediate axis is missing,
-    // take the highest future connector / legal discard-fodder value available.
+    // Prefer future connectors whose abilities can function in this scenario.
     if (selected == Card::HisuianHeavyBall) {
-      for (const Card candidate : {Card::TapuLeleGX, Card::Oricorio, Card::LatiasEx,
-                                   Card::RegidragoV, Card::DialgaGX, Card::MawileGX}) {
+      for (const Card candidate : {Card::RegidragoV, Card::Oricorio, Card::TapuLeleGX,
+                                   Card::LatiasEx, Card::DialgaGX, Card::MawileGX}) {
+        if ((candidate == Card::TapuLeleGX || candidate == Card::LatiasEx) &&
+            !ability_available_for_pokemon(candidate)) continue;
+        if (prized(candidate)) { selected = candidate; break; }
+      }
+    }
+
+    // If all functional connector choices are absent, still take any Basic as
+    // future legal discard fodder rather than leave it prized.
+    if (selected == Card::HisuianHeavyBall) {
+      for (const Card candidate : {Card::RegidragoV, Card::TapuLeleGX, Card::Oricorio,
+                                   Card::LatiasEx, Card::DialgaGX, Card::MawileGX}) {
         if (prized(candidate)) { selected = candidate; break; }
       }
     }

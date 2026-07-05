@@ -61,6 +61,7 @@
     if (hand_count(Card::Arven) > 0 && play_arven()) return;
     if (need_payload() && hand_count(Card::ProfessorBurnet) > 0 && hand_count(Card::BrilliantBlender) == 0 && play_professor_burnet()) return;
     if (hand_count(Card::Serena) > 0 && play_serena()) return;
+    if (hand_count(Card::TateLiza) > 0 && play_tate_draw()) return;
     if (need_active_vstar() && play_tate_switch()) return;
 
     // Lusamine is a delayed recovery line and must not preempt a live direct connector.

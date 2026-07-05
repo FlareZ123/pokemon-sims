@@ -1,9 +1,3 @@
-    if (need_payload() && deck_count_after_search_started(Card::ProfessorBurnet) > 0) return Card::ProfessorBurnet;
-    if (need_active_vstar() && !in_play(Card::LatiasEx) && deck_count_after_search_started(Card::LatiasEx) > 0) return Card::LatiasEx;
-    if (deck_count_after_search_started(Card::Arven) > 0) return Card::Arven;
-    return Card::MysteriousTreasure;
-  }
-
   bool use_fss() {
     if (state_.vstar_power_used) return false;
     Pokemon* holder = nullptr;
@@ -12,7 +6,6 @@
       for (Pokemon& p : state_.bench) if (p.tool == Tool::ForestSealStone) { holder = &p; break; }
     }
     if (holder == nullptr || !is_pokemon_v(holder->card)) return false;
-    // R-FSS-02: activating a Tool's existing VSTAR Power is not playing an Item from hand.
     const bool useful = should_play_steven() || need_regi() || need_vstar() || need_energy() || need_payload() || need_active_vstar();
     if (!useful) return false;
     state_.vstar_power_used = true;
@@ -33,16 +26,16 @@
 
   bool play_crispin() {
     if (!supporter_allowed() || hand_count(Card::Crispin) == 0 || !need_energy() || target_regi() == nullptr) return false;
-    // The play decision knows only that both basic Energy types are not exhausted from known zones.
     if (!might_be_unseen(Card::Grass) || !might_be_unseen(Card::Fire)) return false;
     remove_one(state_.hand, Card::Crispin);
     state_.discard.push_back(Card::Crispin);
     state_.supporter_used = true;
 
+    // Crispin still inspects the whole deck if only one or no type exists.
+    record_deck_search_knowledge("Crispin");
     const bool deck_has_grass = deck_count_after_search_started(Card::Grass) > 0;
     const bool deck_has_fire = deck_count_after_search_started(Card::Fire) > 0;
     if (!deck_has_grass || !deck_has_fire) {
-      // The card may select up to two different types. With one type available, it can put that card in hand but cannot attach "the other".
       if (deck_has_grass) move_deck_to_hand(Card::Grass);
       else if (deck_has_fire) move_deck_to_hand(Card::Fire);
       shuffle(state_.deck);

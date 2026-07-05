@@ -47,6 +47,7 @@ int main() {
     {"heavy_ball_oricorio_compresses_energy", heavy_ball_oricorio_compresses_energy},
     {"ability_lock_blocks_latias_quick_ball_connector", ability_lock_blocks_latias_quick_ball_connector},
     {"fss_fetches_tate_when_latias_is_locked", fss_fetches_tate_when_latias_is_locked},
+    {"k1_heavy_ball_beats_still_live_quick_ball", k1_heavy_ball_beats_still_live_quick_ball},
   };
   int failures = 0;
   for (const auto& [name, run] : tests) {

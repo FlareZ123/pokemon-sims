@@ -49,6 +49,7 @@ int main() {
     {"fss_fetches_tate_when_latias_is_locked", fss_fetches_tate_when_latias_is_locked},
     {"k1_heavy_ball_beats_still_live_quick_ball", k1_heavy_ball_beats_still_live_quick_ball},
     {"tate_draw_recovers_missing_vstar", tate_draw_recovers_missing_vstar},
+    {"arven_uses_available_vstar_item_fallback", arven_uses_available_vstar_item_fallback},
   };
   int failures = 0;
   for (const auto& [name, run] : tests) {

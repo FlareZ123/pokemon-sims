@@ -1,82 +1,21 @@
-      state_.prizes.push_back(state_.deck.back());
-      state_.deck.pop_back();
-    }
-
-    if (trace_ != nullptr && trace_->enabled) {
-      trace_->note("===== SIMULATE THIS =====");
-      trace_->note("Scenario: " + scenario_.label + " | DCI: " + dci_name() + " | Locks: " + lock_name());
-      trace_->note("Mulligans: " + std::to_string(outcome_.mulligans));
-      trace_->note("Opening player-known state: " + state_line());
-      trace_->note("DEBUG ONLY, never used by policy before a legal reveal/search: prizes=" + join_cards(state_.prizes));
-      trace_->note("Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.");
-    }
-  }
-
-  std::string dci_name() const {
-    switch (scenario_.dci) {
-      case DciProfile::StrictJit: return "strict-JIT";
-      case DciProfile::MatchupFlexJit: return "matchup-flex-JIT";
-      case DciProfile::NoDiscardControl: return "no-discard-control";
-    }
-    return "unknown";
-  }
-
-  std::string lock_name() const {
-    switch (scenario_.locks) {
-      case LockMode::None: return "none";
-      case LockMode::TurnTwoItem: return "turn-two Item lock";
-      case LockMode::FullItem: return "full Item lock";
-      case LockMode::FullRuleBoxAbility: return "full Rule Box Ability lock";
-      case LockMode::FullCombined: return "full Item + Rule Box Ability lock";
-    }
-    return "unknown";
-  }
-
-  void choose_opening_active() {
-    // R-GAME-SETUP: only Basics can be chosen; this policy preserves entry-Abilities where possible.
-    for (const Card candidate : {Card::RegidragoV, Card::LatiasEx, Card::Oricorio, Card::MawileGX, Card::DialgaGX, Card::TapuLeleGX}) {
-      if (remove_one(state_.hand, candidate)) {
-        state_.active = Pokemon{candidate, 0};
-        outcome_.started_regi = candidate == Card::RegidragoV;
-        return;
-      }
-    }
-    throw std::runtime_error("opening hand has no Basic after mulligan validation");
-  }
-
-  void choose_opening_bench() {
-    // R-TAPU-01/R-ORICORIO-01: their on-Bench effects require a play from hand during a turn.
-    if (bench_space() > 0 && hand_count(Card::RegidragoV) > 0 && in_play_count(Card::RegidragoV) < 2) {
-      remove_one(state_.hand, Card::RegidragoV);
-      state_.bench.push_back(Pokemon{Card::RegidragoV, 0});
-    }
-    // R-LATIAS-01 is continuous. Setup Bench placement is useful if the Active is not Regidrago V.
-    if (bench_space() > 0 && hand_count(Card::LatiasEx) > 0 && !in_play(Card::LatiasEx) && !active_is_regi_v()) {
-      remove_one(state_.hand, Card::LatiasEx);
-      state_.bench.push_back(Pokemon{Card::LatiasEx, 0});
-    }
-  }
-
-  bool active_is_regi_v() const { return state_.active && state_.active->card == Card::RegidragoV; }
-
-  bool move_deck_to_hand(const Card card) {
-    if (!remove_one(state_.deck, card)) return false;
-    state_.hand.push_back(card);
-    return true;
-  }
-
-  bool move_deck_to_discard(const Card card) {
-    if (!remove_one(state_.deck, card)) return false;
-    state_.discard.push_back(card);
-    state_.discarded_this_turn.push_back(card);
-    return true;
-  }
 
   bool discard_from_hand(const Card card, std::string_view why, std::string_view rules) {
     if (!remove_one(state_.hand, card)) return false;
     state_.discard.push_back(card);
     state_.discarded_this_turn.push_back(card);
     trace("DISCARD", rules, std::string(name(card)) + " (" + std::string(why) + ")");
+    return true;
+  }
+
+  // Tracks a card leaving the discard pile in the same turn, so strict-JIT state
+  // cannot count a payload that was discarded and then recovered before the ready check.
+  bool recover_discard_to_hand(const Card card) {
+    const auto discard_it = std::find(state_.discard.begin(), state_.discard.end(), card);
+    if (discard_it == state_.discard.end()) return false;
+    state_.hand.push_back(*discard_it);
+    state_.discard.erase(discard_it);
+    const auto turn_it = std::find(state_.discarded_this_turn.begin(), state_.discarded_this_turn.end(), card);
+    if (turn_it != state_.discarded_this_turn.end()) state_.discarded_this_turn.erase(turn_it);
     return true;
   }
 
@@ -258,3 +197,104 @@
 
   bool evolve_best_regi() {
     if (state_.turn == 1 || hand_count(Card::RegidragoVstar) == 0) return false;
+    Pokemon* best = nullptr;
+    int best_score = -100000;
+    if (state_.active && state_.active->card == Card::RegidragoV && state_.active->entered_turn < state_.turn) {
+      best = &*state_.active;
+      best_score = score_regi(*best, true);
+    }
+    for (Pokemon& p : state_.bench) {
+      if (p.card != Card::RegidragoV || p.entered_turn >= state_.turn) continue;
+      const int score = score_regi(p, false);
+      if (score > best_score) { best = &p; best_score = score; }
+    }
+    if (best == nullptr) return false;
+    remove_one(state_.hand, Card::RegidragoVstar);
+    best->card = Card::RegidragoVstar;
+    trace("EVOLVE", "R-GAME-EVOLVE", "Evolved " + std::string(name(Card::RegidragoV)) + " into Regidrago VSTAR.");
+    return true;
+  }
+
+  bool retreat_to_benched_vstar_with_latias() {
+    if (!need_active_vstar() || !can_free_retreat_with_latias()) return false;
+    auto it = std::find_if(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) { return p.card == Card::RegidragoVstar; });
+    if (it == state_.bench.end()) return false;
+    std::swap(*state_.active, *it);
+    state_.retreat_used = true;
+    trace("RETREAT", "R-LATIAS-01; R-GAME-RETREAT", "Latias ex gives the Basic Active no Retreat Cost; promoted Benched Regidrago VSTAR.");
+    return true;
+  }
+
+  bool play_tate_switch() {
+    if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 || !need_active_vstar()) return false;
+    auto it = std::find_if(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) { return p.card == Card::RegidragoVstar; });
+    if (it == state_.bench.end()) return false;
+    remove_one(state_.hand, Card::TateLiza);
+    state_.discard.push_back(Card::TateLiza);
+    state_.supporter_used = true;
+    std::swap(*state_.active, *it);
+    trace("PLAY SUPPORTER", "R-TATE-01; R-GAME-SUPPORTER", "Tate & Liza switch mode: promoted Benched Regidrago VSTAR.");
+    return true;
+  }
+
+  bool play_tate_draw() {
+    if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 || state_.hand.size() >= 4U) return false;
+    remove_one(state_.hand, Card::TateLiza);
+    state_.discard.push_back(Card::TateLiza);
+    state_.supporter_used = true;
+    state_.deck.insert(state_.deck.end(), state_.hand.begin(), state_.hand.end());
+    state_.hand.clear();
+    shuffle(state_.deck);
+    for (int draw = 0; draw < 5; ++draw) draw_card("Tate & Liza");
+    trace("PLAY SUPPORTER", "R-TATE-01; R-GAME-SUPPORTER", "Tate & Liza draw mode: shuffled remaining hand and drew 5.");
+    return true;
+  }
+
+  bool play_heavy_ball() {
+    if (item_locked() || hand_count(Card::HisuianHeavyBall) == 0 || has_any_regi()) return false;
+    // Let live normal Basic-search connectors act first. This preserves Heavy Ball for a collapsed Basic prize state.
+    if (hand_count(Card::QuickBall) > 0 || hand_count(Card::MysteriousTreasure) > 0 || hand_count(Card::UltraBall) > 0 || hand_count(Card::Arven) > 0) return false;
+    remove_one(state_.hand, Card::HisuianHeavyBall);
+    const std::array<Card, 6> priorities{Card::RegidragoV, Card::LatiasEx, Card::TapuLeleGX, Card::Oricorio, Card::MawileGX, Card::DialgaGX};
+    for (const Card desired : priorities) {
+      const auto it = std::find(state_.prizes.begin(), state_.prizes.end(), desired);
+      if (it == state_.prizes.end()) continue;
+      const Card revealed = *it;
+      *it = Card::HisuianHeavyBall;
+      state_.hand.push_back(revealed);
+      shuffle(state_.prizes);
+      trace("PLAY ITEM", "R-HEAVYBALL-01; R-GAME-ITEM", "Looked at Prizes and exchanged Heavy Ball for " + std::string(name(revealed)) + ".");
+      return true;
+    }
+    state_.discard.push_back(Card::HisuianHeavyBall);
+    shuffle(state_.prizes);
+    trace("PLAY ITEM", "R-HEAVYBALL-01; R-GAME-ITEM", "Looked at Prizes; did not reveal a useful Basic, so Heavy Ball was discarded.");
+    return true;
+  }
+
+  bool need_regi() const { return !has_any_regi(); }
+  bool need_vstar() const { return has_regi_v() && !has_vstar(); }
+
+  bool has_other_payload_outlet(const Card excluded) const {
+    // Only visible cards are used here. The current search card cannot be counted as its own later discard outlet.
+    const auto present = [this, excluded](const Card card) { return card != excluded && hand_count(card) > 0; };
+    return present(Card::MysteriousTreasure) || present(Card::QuickBall) || present(Card::UltraBall) ||
+           present(Card::EarthenVessel) || present(Card::Serena) || present(Card::BrilliantBlender) ||
+           (supporter_allowed() && present(Card::ProfessorBurnet));
+  }
+
+
+  Card fallback_mysterious_target_after_search_started() const {
+    for (const Card target : {Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio,
+                              Card::TapuLeleGX, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
+                              Card::DialgaGX}) {
+      if (deck_count_after_search_started(target) > 0) return target;
+    }
+    return Card::RegidragoV;
+  }
+
+  Card fallback_quick_ball_target_after_search_started() const {
+    for (const Card target : {Card::RegidragoV, Card::LatiasEx, Card::Oricorio, Card::TapuLeleGX,
+                              Card::MawileGX, Card::DialgaGX}) {
+      if (deck_count_after_search_started(target) > 0) return target;
+    }

@@ -2,45 +2,27 @@
 
 ## Status
 
-This branch corrects material card-rule, hidden-information, policy, and traceability defects found in the simulator merged to `main`. The active executable is `src/regidrago_sim.cpp`; it is assembled from `src/trace_engine_parts/` solely to keep the GitHub contents-API commits reviewable.
+This branch corrects material card-rule, hidden-information, policy, and traceability defects in the simulator merged to `main`. The active executable is `src/regidrago_sim.cpp`; it is split into `src/trace_engine_v2/` only to make GitHub contents-API commits reviewable.
 
-The branch now has a deterministic `--simulate-this` mode, a full rules-to-code register in [`RULES_TRACEABILITY.md`](RULES_TRACEABILITY.md), and six manually reviewed paths in [`TRACE_AUDIT.md`](TRACE_AUDIT.md). `main` remains unchanged.
+`fix-sims` now contains three complementary review surfaces:
 
-## Main corrective themes
+1. `--simulate-this` deterministic hand traces.
+2. `docs/RULES_TRACEABILITY.md` and `docs/RULES_REVERIFICATION.md`, separating card text/core procedure from policy decisions.
+3. `regidrago_policy_tests`, a 28-case exact-state fixture suite documented in `docs/OPTIMAL_POLICY_FIXTURES.md`.
 
-1. **Game procedure.** Corrected going-first draw, Supporter, and attack restrictions; evolution timing; manual attachment limit; retreat limit; and Regidrago V's one-Colorless Celestial Roar cost.
-2. **Entry effects and locks.** Tapu Lele-GX and Oricorio stay in hand at opening setup until they can be played during a turn. Oricorio is not a Rule Box Pokémon, so the modeled Path-style lock does not block Vital Dance.
-3. **Energy rules.** Earthen Vessel can choose two copies of the same Basic Energy. Crispin needs two different Energy types to use its attachment branch and attaches none when only one type can be found.
-4. **Hidden information.** Gladion, Hisuian Heavy Ball, and discard policy decide from known zones and copy counts, then inspect deck or Prize cards only after the card effect begins.
-5. **JIT and discard control.** Strict and matchup-flex profiles require current-turn payload discard. No-discard-control permits early payload banking. Dead Dipplin is an explicit legal DCI discard because the list contains no Applin.
-6. **Connector planning.** The policy avoids dominated searches and Supporter lines, preserves direct connectors, gives normal Basic search priority over Heavy Ball, avoids current Item-lock Arven, and has Steven's Resolve fetch Burnet rather than Blender when the next attack turn is Item-locked.
-7. **Position and VSTAR powers.** Tate & Liza switch mode and Latias's Basic-only free retreat are modeled. Legacy Star and Forest Seal Stone share the single VSTAR-Power state.
-8. **Search resolution.** Mandatory searches resolve with legal fallback targets after the deck is inspected. The energy selector reserves each selected copy so it cannot choose the same last card twice.
+`main` remains unchanged.
 
-## Trace and validation contract
+## Recent fixture-driven repairs
 
-The deterministic command format is:
+- Strict JIT now requires a payload to be both discarded during the ready turn and still in discard at the ready check. A recovered payload no longer counts.
+- Star Alchemy and Steven's Resolve use useful legal fallback targets after a preferred target is absent from deck or prized.
+- The policy now stops spending Supporters after all setup axes are complete, preventing incidental Serena use.
+- Forest Seal Stone, Crispin, Earthen Vessel, Gladion, Heavy Ball, Oricorio, Tapu Lele-GX, Latias ex, Tate & Liza, first-turn restrictions, evolution timing, manual attachment, Item lock, and connector domination each have exact-state coverage.
 
-```text
-regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 --require-ready-by 3
-```
+## Validation
 
-The trace prints every draw, cost, search, bench, attachment, evolution, retreat, VSTAR Power, attack, and ready state. Each state-changing line names the controlling `R-*` rule IDs and any policy IDs.
-
-The final validation matrix is:
-
-```text
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --parallel 2
-ctest --test-dir build --output-on-failure
-```
-
-CTest includes one self-test, six deterministic trace regressions across strict/flex/no-control and lock scenarios, and a fourteen-scenario aggregate smoke run. The same matrix was run after an AddressSanitizer and UndefinedBehaviorSanitizer build.
-
-## Results status
-
-`results/simulation_results.csv` was regenerated from the trace-audited engine at 100,000 trials per scenario with seed `20260705`. The old pre-trace variant artifact was removed and must not be used for deck recommendations until regenerated from this engine.
+The exact staged source was compiled and tested locally in Release and AddressSanitizer/UndefinedBehaviorSanitizer configurations. Each matrix passed nine CTest targets: self-test, exact-state fixture suite, six deterministic traces, and aggregate smoke test. The recorded fixture output is in `results/policy_fixture_test_output.txt`.
 
 ## Scope boundary
 
-This remains a single-player setup policy model, not a complete two-player Pokémon TCG engine. It does not model opponent damage, Knock Outs, Prize taking, hand disruption, gust, Return Label, Lysandre Prism Star, Surprise Box, Mimikyu Copycat, complete Stadium sequencing, or exhaustive Expanded-format legality.
+The simulator remains a single-player setup policy model. It does not model opponent damage, Knock Outs, Prize taking, hand disruption, gust, complete Stadium sequencing, Return Label, Lysandre Prism Star, Surprise Box, Mimikyu Copycat, or exhaustive Expanded legality.

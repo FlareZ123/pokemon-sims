@@ -1,43 +1,3 @@
-  std::uint64_t trials{0};
-  std::uint64_t by2{0};
-  std::uint64_t by3{0};
-  std::uint64_t by4{0};
-  std::uint64_t started_regi{0};
-  std::uint64_t fss{0};
-  std::uint64_t legacy{0};
-  std::uint64_t steven{0};
-  std::uint64_t blender{0};
-  double total_mulligans{0.0};
-};
-
-struct TraceLog {
-  bool enabled{false};
-  std::vector<std::string> lines;
-
-  void add(const int turn, std::string_view action, std::string_view rules, std::string_view detail) {
-    if (!enabled) return;
-    std::ostringstream out;
-    if (turn > 0) out << "T" << turn << " | ";
-    out << action << " | rules: " << rules << " | " << detail;
-    lines.push_back(out.str());
-  }
-
-  void note(std::string_view detail) {
-    if (enabled) lines.emplace_back(detail);
-  }
-};
-
-std::string join_cards(const std::vector<Card>& cards) {
-  if (cards.empty()) return "(none)";
-  std::ostringstream out;
-  for (std::size_t i = 0; i < cards.size(); ++i) {
-    if (i != 0) out << ", ";
-    out << name(cards[i]);
-  }
-  return out.str();
-}
-
-std::string pokemon_summary(const Pokemon& p) {
   std::ostringstream out;
   out << name(p.card) << " [";
   for (int i = 0; i < p.grass; ++i) out << "G";
@@ -51,6 +11,7 @@ std::string pokemon_summary(const Pokemon& p) {
 
 class Engine {
  public:
+  friend struct EngineTestAccess;
   Engine(const Scenario& scenario, const DeckRecipe& recipe, std::mt19937_64& rng, TraceLog* trace = nullptr)
       : scenario_(scenario), recipe_(recipe), rng_(rng), trace_(trace) {}
 
@@ -210,9 +171,15 @@ class Engine {
 
   bool payload_ready() const {
     if (!strict_payload_timing()) return std::any_of(state_.discard.begin(), state_.discard.end(), is_payload);
+    // A strict-JIT payload must both enter discard this turn and still be in discard
+    // at the ready check. recover_discard_to_hand removes a recovered current-turn card.
     return std::any_of(state_.discarded_this_turn.begin(), state_.discarded_this_turn.end(), is_payload);
   }
   bool need_payload() const { return !payload_ready(); }
+
+  bool setup_axis_missing() const {
+    return need_regi() || need_vstar() || need_energy() || need_active_vstar() || need_payload();
+  }
 
   bool can_free_retreat_with_latias() const {
     return state_.active && is_basic(state_.active->card) && in_play(Card::LatiasEx) &&
@@ -258,3 +225,76 @@ class Engine {
     choose_opening_bench();
     shuffle(state_.deck);
     for (int prize = 0; prize < 6; ++prize) {
+      state_.prizes.push_back(state_.deck.back());
+      state_.deck.pop_back();
+    }
+
+    if (trace_ != nullptr && trace_->enabled) {
+      trace_->note("===== SIMULATE THIS =====");
+      trace_->note("Scenario: " + scenario_.label + " | DCI: " + dci_name() + " | Locks: " + lock_name());
+      trace_->note("Mulligans: " + std::to_string(outcome_.mulligans));
+      trace_->note("Opening player-known state: " + state_line());
+      trace_->note("DEBUG ONLY, never used by policy before a legal reveal/search: prizes=" + join_cards(state_.prizes));
+      trace_->note("Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.");
+    }
+  }
+
+  std::string dci_name() const {
+    switch (scenario_.dci) {
+      case DciProfile::StrictJit: return "strict-JIT";
+      case DciProfile::MatchupFlexJit: return "matchup-flex-JIT";
+      case DciProfile::NoDiscardControl: return "no-discard-control";
+    }
+    return "unknown";
+  }
+
+  std::string lock_name() const {
+    switch (scenario_.locks) {
+      case LockMode::None: return "none";
+      case LockMode::TurnTwoItem: return "turn-two Item lock";
+      case LockMode::FullItem: return "full Item lock";
+      case LockMode::FullRuleBoxAbility: return "full Rule Box Ability lock";
+      case LockMode::FullCombined: return "full Item + Rule Box Ability lock";
+    }
+    return "unknown";
+  }
+
+  void choose_opening_active() {
+    // R-GAME-SETUP: only Basics can be chosen; this policy preserves entry-Abilities where possible.
+    for (const Card candidate : {Card::RegidragoV, Card::LatiasEx, Card::Oricorio, Card::MawileGX, Card::DialgaGX, Card::TapuLeleGX}) {
+      if (remove_one(state_.hand, candidate)) {
+        state_.active = Pokemon{candidate, 0};
+        outcome_.started_regi = candidate == Card::RegidragoV;
+        return;
+      }
+    }
+    throw std::runtime_error("opening hand has no Basic after mulligan validation");
+  }
+
+  void choose_opening_bench() {
+    // R-TAPU-01/R-ORICORIO-01: their on-Bench effects require a play from hand during a turn.
+    if (bench_space() > 0 && hand_count(Card::RegidragoV) > 0 && in_play_count(Card::RegidragoV) < 2) {
+      remove_one(state_.hand, Card::RegidragoV);
+      state_.bench.push_back(Pokemon{Card::RegidragoV, 0});
+    }
+    // R-LATIAS-01 is continuous. Setup Bench placement is useful if the Active is not Regidrago V.
+    if (bench_space() > 0 && hand_count(Card::LatiasEx) > 0 && !in_play(Card::LatiasEx) && !active_is_regi_v()) {
+      remove_one(state_.hand, Card::LatiasEx);
+      state_.bench.push_back(Pokemon{Card::LatiasEx, 0});
+    }
+  }
+
+  bool active_is_regi_v() const { return state_.active && state_.active->card == Card::RegidragoV; }
+
+  bool move_deck_to_hand(const Card card) {
+    if (!remove_one(state_.deck, card)) return false;
+    state_.hand.push_back(card);
+    return true;
+  }
+
+  bool move_deck_to_discard(const Card card) {
+    if (!remove_one(state_.deck, card)) return false;
+    state_.discard.push_back(card);
+    state_.discarded_this_turn.push_back(card);
+    return true;
+  }

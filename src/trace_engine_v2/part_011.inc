@@ -6,7 +6,10 @@
       for (Pokemon& p : state_.bench) if (p.tool == Tool::ForestSealStone) { holder = &p; break; }
     }
     if (holder == nullptr || !is_pokemon_v(holder->card)) return false;
-    const bool useful = should_play_steven() || need_regi() || need_vstar() || need_energy() || need_payload() || need_active_vstar();
+    const bool tate_solves_only_missing_axis = need_active_vstar() && !need_energy() && !need_payload() &&
+                                               supporter_allowed() && hand_count(Card::TateLiza) > 0;
+    const bool useful = !tate_solves_only_missing_axis &&
+                        (should_play_steven() || need_regi() || need_vstar() || need_energy() || need_payload() || need_active_vstar());
     if (!useful) return false;
     state_.vstar_power_used = true;
     outcome_.used_fss = true;
@@ -20,7 +23,7 @@
       }
     }
     shuffle(state_.deck);
-    trace("STAR ALCHEMy", "R-FSS-02; R-VSTAR-01", found ? "Searched any card: " + std::string(name(target)) + "." : "No card remained in deck.");
+    trace("STAR ALCHEMY", "R-FSS-02; R-VSTAR-01", found ? "Searched any card: " + std::string(name(target)) + "." : "No card remained in deck.");
     return true;
   }
 

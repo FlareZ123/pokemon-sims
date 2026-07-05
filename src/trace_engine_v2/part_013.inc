@@ -68,7 +68,8 @@
         changed = bench_from_hand(Card::RegidragoV, false);
       } else if (in_play_count(Card::RegidragoV) < 2 && hand_count(Card::RegidragoV) > 0 && !has_vstar()) {
         changed = bench_from_hand(Card::RegidragoV, false);
-      } else if (need_active_vstar() && !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) > 0) {
+      } else if (need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) &&
+                 !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) > 0) {
         changed = bench_from_hand(Card::LatiasEx, false);
       } else if (bench_tapu_if_useful()) {
         changed = true;
@@ -92,7 +93,7 @@
       if (play_mysterious_treasure(permit_payload)) return true;
       if (play_ultra_ball(permit_payload)) return true;
     }
-    if (need_active_vstar() && !in_play(Card::LatiasEx)) {
+    if (need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) && !in_play(Card::LatiasEx)) {
       if (play_quick_ball(permit_payload)) return true;
       if (play_mysterious_treasure(permit_payload)) return true;
       if (play_ultra_ball(permit_payload)) return true;

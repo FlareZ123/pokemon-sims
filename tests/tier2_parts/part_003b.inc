@@ -41,6 +41,7 @@ int main() {
     {"k1_singleton_crispin_supplies_manual_energy", k1_singleton_crispin_supplies_manual_energy},
     {"tapu_avoids_redundant_arven", tapu_avoids_redundant_arven},
     {"tapu_uses_gladion_for_known_prized_vstar", tapu_uses_gladion_for_known_prized_vstar},
+    {"crispin_beats_known_prized_oricorio", crispin_beats_known_prized_oricorio},
   };
   int failures = 0;
   for (const auto& [name, run] : tests) {

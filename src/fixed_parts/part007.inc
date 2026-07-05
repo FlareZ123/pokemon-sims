@@ -1,3 +1,6 @@
+#if defined(_WIN32)
+    handle_ = ::CreateFileW(lock_path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (handle_ == INVALID_HANDLE_VALUE) throw std::runtime_error("cannot lock output");
 #else
     descriptor_ = ::open(lock_path.c_str(), O_CREAT | O_RDWR, 0644);
     if (descriptor_ < 0 || ::flock(descriptor_, LOCK_EX) != 0) {

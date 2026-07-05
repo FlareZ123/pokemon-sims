@@ -45,6 +45,8 @@ int main() {
     {"fss_holds_for_tate_switch", fss_holds_for_tate_switch},
     {"fss_uses_gladion_for_known_prized_vstar", fss_uses_gladion_for_known_prized_vstar},
     {"heavy_ball_oricorio_compresses_energy", heavy_ball_oricorio_compresses_energy},
+    {"ability_lock_blocks_latias_quick_ball_connector", ability_lock_blocks_latias_quick_ball_connector},
+    {"fss_fetches_tate_when_latias_is_locked", fss_fetches_tate_when_latias_is_locked},
   };
   int failures = 0;
   for (const auto& [name, run] : tests) {

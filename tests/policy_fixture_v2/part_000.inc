@@ -1,5 +1,5 @@
 #define REGIDRAGO_SIM_NO_MAIN
-#include "../src/regidrago_sim.cpp"
+#include "../../src/regidrago_sim.cpp"
 
 #include <functional>
 #include <iostream>

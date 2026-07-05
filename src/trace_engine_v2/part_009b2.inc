@@ -18,7 +18,8 @@
     const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0;
     const bool want_latias = need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) &&
                              !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0;
-    const bool want_oricorio = need_energy() && hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0;
+    const bool want_oricorio = need_energy() && hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
+                               bench_space() > 0 && needs_oricorio_connector();
     if (!want_regi && !want_vstar && !want_latias && !want_oricorio) return false;
 
     const auto first = choose_discard(permit_payload && can_play_payload_this_turn(), true);

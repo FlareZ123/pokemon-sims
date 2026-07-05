@@ -3,6 +3,8 @@
   }
 
   void setup() {
+    deck_seen_ = false;
+    prizes_revealed_ = false;
     for (const auto& [card, copies] : recipe_) {
       for (int copy = 0; copy < copies; ++copy) state_.deck.push_back(card);
     }
@@ -34,7 +36,7 @@
       trace_->note("Scenario: " + scenario_.label + " | DCI: " + dci_name() + " | Locks: " + lock_name());
       trace_->note("Mulligans: " + std::to_string(outcome_.mulligans));
       trace_->note("Opening player-known state: " + state_line());
-      trace_->note("DEBUG ONLY, never used by policy before a legal reveal/search: prizes=" + join_cards(state_.prizes));
+      trace_->note("DEBUG ONLY: prizes=" + join_cards(state_.prizes) + ". Policy may use them only after a legal deck or Prize inspection.");
       trace_->note("Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.");
     }
   }
@@ -87,12 +89,14 @@
   bool active_is_regi_v() const { return state_.active && state_.active->card == Card::RegidragoV; }
 
   bool move_deck_to_hand(const Card card) {
+    record_deck_search_knowledge("search effect");
     if (!remove_one(state_.deck, card)) return false;
     state_.hand.push_back(card);
     return true;
   }
 
   bool move_deck_to_discard(const Card card) {
+    record_deck_search_knowledge("search effect");
     if (!remove_one(state_.deck, card)) return false;
     state_.discard.push_back(card);
     state_.discarded_this_turn.push_back(card);

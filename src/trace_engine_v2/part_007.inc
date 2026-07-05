@@ -1,0 +1,100 @@
+    if (card == Card::TapuLeleGX) {
+      if (!ability_available_for_pokemon(Card::TapuLeleGX)) {
+        trace("ABILITY BLOCKED", "R-PATH-01", "Tapu Lele-GX Wonder Tag is suppressed by the Rule Box Ability lock.");
+        return;
+      }
+      // The search permits inspecting the deck to select a Supporter.
+      const Card target = choose_supporter_after_search_started();
+      if (move_deck_to_hand(target)) {
+        shuffle(state_.deck);
+        trace("WONDER TAG", "R-TAPU-01", "Searched and revealed " + std::string(name(target)) + ".");
+      } else {
+        shuffle(state_.deck);
+        trace("WONDER TAG", "R-TAPU-01", "No selected Supporter was in deck after legal search.");
+      }
+      return;
+    }
+    if (card == Card::Oricorio) {
+      // Oricorio has no Rule Box; Path-style rule-box suppression does not stop Vital Dance.
+      search_energy_to_hand(2, "R-ORICORIO-01", "Vital Dance");
+    }
+  }
+
+  Card choose_supporter_after_search_started() const {
+    // This is called inside Wonder Tag after the deck is being legally searched.
+    if (state_.turn == 1 && !scenario_.going_first && has_regi_v() && should_play_steven() &&
+        deck_count_after_search_started(Card::StevensResolve) > 0) return Card::StevensResolve;
+    if (need_energy() && deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin;
+    if (need_payload() && item_locked() && deck_count_after_search_started(Card::ProfessorBurnet) > 0) return Card::ProfessorBurnet;
+    if (has_regi_v() && !has_vstar() && deck_count_after_search_started(Card::Arven) > 0) return Card::Arven;
+    if (deck_count_after_search_started(Card::Serena) > 0) return Card::Serena;
+    if (deck_count_after_search_started(Card::TateLiza) > 0) return Card::TateLiza;
+    return Card::Crispin;
+  }
+
+  std::vector<Card> choose_energy_targets_after_search_started(const int max_cards) const {
+    std::vector<Card> targets;
+    int g_need = grass_needed();
+    int f_need = fire_needed();
+    int g_available = deck_count_after_search_started(Card::Grass);
+    int f_available = deck_count_after_search_started(Card::Fire);
+    while (static_cast<int>(targets.size()) < max_cards) {
+      Card wanted = Card::Grass;
+      if (g_need > 0 && f_need > 0) {
+        wanted = std::find(targets.begin(), targets.end(), Card::Grass) == targets.end() ? Card::Grass : Card::Fire;
+      } else if (g_need > 0) {
+        wanted = Card::Grass;
+      } else if (f_need > 0) {
+        wanted = Card::Fire;
+      } else {
+        break;
+      }
+      if ((wanted == Card::Grass && g_available == 0) || (wanted == Card::Fire && f_available == 0)) {
+        const Card other = wanted == Card::Grass ? Card::Fire : Card::Grass;
+        if ((other == Card::Grass && g_available == 0) || (other == Card::Fire && f_available == 0)) break;
+        wanted = other;
+      }
+      targets.push_back(wanted);
+      if (wanted == Card::Grass) {
+        --g_available;
+        if (g_need > 0) --g_need;
+      } else {
+        --f_available;
+        if (f_need > 0) --f_need;
+      }
+    }
+    return targets;
+  }
+
+  void search_energy_to_hand(const int max_cards, std::string_view rules, std::string_view source) {
+    const std::vector<Card> targets = choose_energy_targets_after_search_started(max_cards);
+    for (const Card target : targets) {
+      if (!move_deck_to_hand(target)) throw std::logic_error("energy search target disappeared");
+    }
+    shuffle(state_.deck);
+    trace(std::string(source), rules, "Searched up to " + std::to_string(max_cards) + " Basic Energy: " + join_cards(targets) + ".");
+  }
+
+  bool attach_manual() {
+    if (state_.manual_energy_used) return false;
+    Pokemon* target = target_regi();
+    if (target == nullptr || !need_energy()) return false;
+    Card wanted = Card::Grass;
+    if (grass_needed() > 0 && hand_count(Card::Grass) > 0) {
+      wanted = Card::Grass;
+    } else if (fire_needed() > 0 && hand_count(Card::Fire) > 0) {
+      wanted = Card::Fire;
+    } else {
+      // Do not use the once-per-turn attachment on an Energy type that does not advance GGF.
+      return false;
+    }
+    remove_one(state_.hand, wanted);
+    if (wanted == Card::Grass) ++target->grass; else ++target->fire;
+    state_.manual_energy_used = true;
+    trace("ATTACH", "R-GAME-ENERGY", std::string(name(wanted)) + " manually to " + std::string(name(target->card)) + ".");
+    return true;
+  }
+
+  bool evolve_best_regi() {
+    if (state_.turn == 1 || hand_count(Card::RegidragoVstar) == 0) return false;
+    Pokemon* best = nullptr;

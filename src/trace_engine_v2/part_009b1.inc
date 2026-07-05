@@ -6,7 +6,8 @@
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
                                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
     const bool want_regi = need_regi();
-    const bool want_latias = need_active_vstar() && !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0;
+    const bool want_latias = need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) &&
+                             !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0;
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 && needs_tapu_connector();
     const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 && needs_oricorio_connector();
     const bool want_payload = need_payload() && !can_jit_discard && has_other_payload_outlet(Card::QuickBall);

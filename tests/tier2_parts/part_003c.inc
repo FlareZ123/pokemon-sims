@@ -49,3 +49,17 @@ void fss_holds_for_tate_switch() {
   expect(!EngineTestAccess::use_fss(f.engine), "FSS should be preserved when Tate and Liza alone fixes Active positioning.");
   expect(!EngineTestAccess::state(f.engine).vstar_power_used, "The VSTAR Power should remain unused.");
 }
+
+void fss_uses_gladion_for_known_prized_vstar() {
+  State s = st(2, Card::RegidragoV, 1, 2, 1);
+  s.active->tool = Tool::ForestSealStone;
+  s.deck = {Card::Gladion, Card::Arven, Card::Crispin};
+  s.prizes = {Card::RegidragoVstar};
+  s.discard = {Card::MegaDragonite};
+  s.discarded_this_turn = {Card::MegaDragonite};
+  Fixture f(sc("fss-known-prized-vstar"), s);
+  expect(EngineTestAccess::use_fss(f.engine), "FSS should resolve as a legal deck inspection.");
+  expect(has(EngineTestAccess::state(f.engine).hand, Card::Gladion), "FSS should select Gladion for the known prized VSTAR.");
+  EngineTestAccess::choose_supporter(f.engine);
+  expect(has(EngineTestAccess::state(f.engine).hand, Card::RegidragoVstar), "Gladion should recover the prized VSTAR after FSS inspection.");
+}

@@ -29,7 +29,8 @@ int main() {
       {"no_control_allows_early_payload_banking", test_no_control_allows_early_payload_banking},
       {"blender_dominates_mysterious_treasure_when_no_search_axis_exists", test_blender_dominates_mysterious_treasure_when_no_search_axis_exists},
       {"searches_use_legal_fallback_targets_after_deck_inspection", test_searches_use_legal_fallback_targets_after_deck_inspection},
-      {"heavy_ball_waits_for_normal_basic_search_and_then_exchanges_prize", test_heavy_ball_waits_for_normal_basic_search_and_then_exchanges_prize},
+      {"heavy_ball_inspects_prizes_and_chains_tapu", test_heavy_ball_inspects_prizes_and_chains_tapu},
+      {"known_no_basic_prize_holds_heavy_ball_for_discard_cost", test_known_no_basic_prize_holds_heavy_ball_for_discard_cost},
       {"oricorio_is_held_when_earthen_vessel_already_solves_energy", test_oricorio_is_held_when_earthen_vessel_already_solves_energy},
       {"oricorio_works_under_rule_box_lock", test_oricorio_works_under_rule_box_lock},
       {"tapu_is_blocked_by_rule_box_lock", test_tapu_is_blocked_by_rule_box_lock},
@@ -48,3 +49,13 @@ int main() {
   for (const auto& [name, run] : tests) {
     try {
       run();
+      std::cout << "PASS " << name << '\n';
+    } catch (const std::exception& error) {
+      ++failures;
+      std::cerr << "FAIL " << name << ": " << error.what() << '\n';
+    }
+  }
+  std::cout << "Policy fixtures: " << (tests.size() - static_cast<std::size_t>(failures))
+            << '/' << tests.size() << " passed\n";
+  return failures == 0 ? 0 : 1;
+}

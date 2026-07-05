@@ -37,10 +37,10 @@ K1 begins only during a legal effect resolution. It does not grant prior knowled
 ## Decision priorities
 
 1. **Immediate exact missing axis.** A known prized Regidrago V or VSTAR retrieved through Gladion outranks slower connector Supporters when it is the missing card axis.
-2. **Current-turn direct completion.** Crispin outranks Arven and prize-based Oricorio/Earthen Vessel lines when it completes the remaining GGF component immediately.
+2. **Current-turn direct completion.** Crispin outranks Arven, Oricorio, Earthen Vessel, and Ultra Ball chains when it completes the remaining GGF component immediately.
 3. **Turn-one compression.** Going second on turn one, Steven's Resolve is selected when it covers at least two unresolved axes. Under a scheduled turn-two Item lock it takes Professor Burnet rather than Brilliant Blender.
-4. **Shortest search chain.** Forest Seal Stone targets Oricorio over one Energy, Earthen Vessel over Arven, and a direct Supporter over a Tapu Lele-GX chain when those actions cover the same immediate axis.
-5. **Preserve resources when another card already solves the axis.** The engine does not Bench Tapu Lele-GX merely to find Arven if VSTAR is already in hand. It preserves Forest Seal Stone when Tate & Liza alone can promote a ready benched VSTAR.
+4. **Shortest search chain.** Forest Seal Stone targets Oricorio over a single Energy and Earthen Vessel over Arven only when no live direct Energy Supporter already solves the turn. It takes a direct Supporter over a Tapu Lele-GX chain when both cover the same immediate axis.
+5. **Preserve resources when another card already solves the axis.** The engine does not Bench Tapu Lele-GX merely to find Arven if VSTAR is already in hand. It preserves Forest Seal Stone when Tate & Liza alone fixes Active position or Crispin alone fixes Energy. It also holds Ultra Ball rather than discarding two cards for Oricorio when Crispin is live.
 6. **Legal post-search fallback.** Arven, Wonder Tag, and other search effects choose an available same-axis fallback after the deck is inspected. A missing Evolution Incense does not make Arven return no Item if Mysterious Treasure is available.
 7. **Delayed routes last.** Lusamine recovery and draw supporters are used only after direct setup connectors fail. Tate & Liza's draw mode is a dead-hand recovery route; switch mode has priority when it immediately fixes Active position.
 
@@ -59,7 +59,7 @@ K1 begins only during a legal effect resolution. It does not grant prior knowled
 ## Test surfaces
 
 - `regidrago_policy_tests`: 28 core exact-state rule and policy fixtures.
-- `regidrago_tier2_tests`: choice-differentiation, fast-compression, K1, and lock-aware fixtures.
+- `regidrago_tier2_tests`: 26 choice-differentiation, fast-compression, K1, and lock-aware fixtures.
 - `--simulate-this`: seeded full-game traces with state changes labeled by rule and policy IDs.
 
 Every policy test is deterministic and starts from an explicit state. The tests constrain the model's choices; they do not constitute a proof of globally optimal play across every hidden deck order or opponent response.

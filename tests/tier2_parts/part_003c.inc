@@ -37,3 +37,15 @@ void crispin_beats_known_prized_oricorio() {
   expect(has(a.hand, Card::Gladion), "Gladion should remain available after the direct Energy line.");
   expect(a.active->fire == 1, "Crispin should attach the missing Fire immediately.");
 }
+
+void fss_holds_for_tate_switch() {
+  State s = st(2, Card::RegidragoV, 1);
+  s.active->tool = Tool::ForestSealStone;
+  s.bench.push_back(Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None});
+  s.hand = {Card::TateLiza};
+  s.discard = {Card::MegaDragonite};
+  s.discarded_this_turn = {Card::MegaDragonite};
+  Fixture f(sc("fss-hold-for-tate"), s);
+  expect(!EngineTestAccess::use_fss(f.engine), "FSS should be preserved when Tate and Liza alone fixes Active positioning.");
+  expect(!EngineTestAccess::state(f.engine).vstar_power_used, "The VSTAR Power should remain unused.");
+}

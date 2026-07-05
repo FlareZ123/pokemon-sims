@@ -1,7 +1,5 @@
       if (move_deck_to_hand(target)) found.push_back(target);
     }
-    // The deck is legally being searched. Fill vacant selections with useful cards
-    // rather than ending a three-card search after a preferred target is prized.
     for (const Card fallback : {Card::RegidragoVstar, Card::Crispin, payload_outlet,
                                 Card::MysteriousTreasure, Card::EarthenVessel, Card::ForestSealStone,
                                 Card::LatiasEx, Card::QuickBall}) {
@@ -44,31 +42,40 @@
     const bool no_regi_route = need_regi() && hand_count(Card::RegidragoV) == 0 && hand_count(Card::QuickBall) == 0 && hand_count(Card::MysteriousTreasure) == 0 && hand_count(Card::UltraBall) == 0 && hand_count(Card::Arven) == 0;
     const bool no_vstar_route = need_vstar() && hand_count(Card::RegidragoVstar) == 0 && hand_count(Card::EvolutionIncense) == 0 && hand_count(Card::MysteriousTreasure) == 0 && hand_count(Card::UltraBall) == 0 && hand_count(Card::Arven) == 0 && hand_count(Card::ForestSealStone) == 0;
     const bool no_locked_payload_route = need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) == 0;
-    if (!no_regi_route && !no_vstar_route && !no_locked_payload_route) return false;
+    const bool blind_critical = no_regi_route || no_vstar_route || no_locked_payload_route;
+
+    std::optional<Card> known_target;
+    if (prizes_known()) {
+      if (need_vstar() && prize_count_after_reveal(Card::RegidragoVstar) > 0) known_target = Card::RegidragoVstar;
+      else if (need_regi() && prize_count_after_reveal(Card::RegidragoV) > 0) known_target = Card::RegidragoV;
+      else if (need_active_vstar() && prize_count_after_reveal(Card::LatiasEx) > 0) known_target = Card::LatiasEx;
+      else if (need_payload() && !item_locked() && payload_window_open() && prize_count_after_reveal(Card::BrilliantBlender) > 0) known_target = Card::BrilliantBlender;
+      else if (need_energy() && prize_count_after_reveal(Card::Oricorio) > 0 && bench_space() > 0 && !in_play(Card::Oricorio)) known_target = Card::Oricorio;
+      else if (need_energy() && !item_locked() && prize_count_after_reveal(Card::EarthenVessel) > 0 && is_legal_cost_available(can_play_payload_this_turn(), true)) known_target = Card::EarthenVessel;
+      const bool direct_supporter = should_play_steven() || (need_energy() && hand_count(Card::Crispin) > 0) || (need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) > 0) || hand_count(Card::Arven) > 0;
+      if (!known_target && !direct_supporter && prize_count_after_reveal(Card::Lusamine) > 0 &&
+          (count_of(state_.discard, Card::Crispin) > 0 || count_of(state_.discard, Card::ProfessorBurnet) > 0 || count_of(state_.discard, Card::Arven) > 0 || count_of(state_.discard, Card::StevensResolve) > 0)) known_target = Card::Lusamine;
+    }
+    if (!known_target && !blind_critical) return false;
 
     remove_one(state_.hand, Card::Gladion);
     state_.supporter_used = true;
-    std::vector<Card> priorities;
-    if (no_regi_route) priorities.push_back(Card::RegidragoV);
-    if (no_vstar_route) priorities.push_back(Card::RegidragoVstar);
-    if (no_locked_payload_route) {
-      priorities.push_back(Card::ProfessorBurnet);
-      priorities.push_back(Card::Crispin);
-      priorities.push_back(Card::MegaDragonite);
-    }
-    for (const Card target : priorities) {
+    prizes_revealed_ = true;
+    const auto exchange = [this](const Card target) {
       const auto it = std::find(state_.prizes.begin(), state_.prizes.end(), target);
-      if (it == state_.prizes.end()) continue;
+      if (it == state_.prizes.end()) return false;
       const Card chosen = *it;
-      *it = Card::Gladion;  // Gladion goes into the prize pool, not the discard pile.
+      *it = Card::Gladion;
       state_.hand.push_back(chosen);
       shuffle(state_.prizes);
-      trace("PLAY SUPPORTER", "R-GLADION-01; R-GAME-SUPPORTER", "Looked at Prize cards and exchanged Gladion for " + std::string(name(chosen)) + ".");
+      trace("PLAY SUPPORTER", "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01", "Looked at Prize cards and exchanged Gladion for " + std::string(name(chosen)) + ".");
       return true;
+    };
+    if (known_target && exchange(*known_target)) return true;
+    for (const Card target : {Card::RegidragoVstar, Card::RegidragoV, Card::ProfessorBurnet, Card::Crispin, Card::MegaDragonite}) {
+      if (exchange(target)) return true;
     }
-    // Gladion must exchange itself with one Prize card even if the targeted collapse did not occur.
-    const std::array<Card, 8> lowest_impact{Card::Dipplin, Card::Grass, Card::Fire, Card::Powerglass,
-                                            Card::FieldBlower, Card::ChaoticSwell, Card::PathToPeak, Card::MawileGX};
+    const std::array<Card, 8> lowest_impact{Card::Dipplin, Card::Grass, Card::Fire, Card::Powerglass, Card::FieldBlower, Card::ChaoticSwell, Card::PathToPeak, Card::MawileGX};
     auto selected = state_.prizes.begin();
     for (const Card low : lowest_impact) {
       const auto it = std::find(state_.prizes.begin(), state_.prizes.end(), low);
@@ -78,7 +85,7 @@
     *selected = Card::Gladion;
     state_.hand.push_back(chosen);
     shuffle(state_.prizes);
-    trace("PLAY SUPPORTER", "R-GLADION-01; R-GAME-SUPPORTER", "Target axis was not prized; completed the mandatory exchange with " + std::string(name(chosen)) + ".");
+    trace("PLAY SUPPORTER", "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01", "Completed mandatory Prize exchange with " + std::string(name(chosen)) + ".");
     return true;
   }
 
@@ -94,7 +101,6 @@
       for (int number = 0; number < 2; ++number) {
         const auto extra = choose_discard(false, true);
         if (!extra || is_payload(*extra)) break;
-        // Only discard extra cards if they are in the explicit flexible DCI set or a dead Dipplin.
         const bool can_cycle = *extra == Card::Dipplin || *extra == Card::MawileGX || *extra == Card::Guzma ||
                                *extra == Card::Channeler || *extra == Card::FieldBlower || *extra == Card::ChaoticSwell || *extra == Card::PathToPeak;
         if (!can_cycle) break;

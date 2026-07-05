@@ -4,6 +4,7 @@
         return;
       }
       // The search permits inspecting the deck to select a Supporter.
+      record_deck_search_knowledge("Wonder Tag");
       const Card target = choose_supporter_after_search_started();
       if (move_deck_to_hand(target)) {
         shuffle(state_.deck);
@@ -67,6 +68,8 @@
   }
 
   void search_energy_to_hand(const int max_cards, std::string_view rules, std::string_view source) {
+    // A legal Energy search reveals the whole deck even when it finds zero cards.
+    record_deck_search_knowledge(source);
     const std::vector<Card> targets = choose_energy_targets_after_search_started(max_cards);
     for (const Card target : targets) {
       if (!move_deck_to_hand(target)) throw std::logic_error("energy search target disappeared");

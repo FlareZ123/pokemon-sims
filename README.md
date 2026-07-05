@@ -4,7 +4,7 @@ A traceable, rules-mapped goldfish simulator for the supplied Pokémon TCG Live 
 
 ## Audit status
 
-`fix-sims` contains a rules-mapped simulator, deterministic `simulate-this` traces, six scenario trace regressions, **28 core exact-state policy fixtures**, and a **26-case Tier Two** suite for choice differentiation and fast-compression states. The core fixture catalog states each constructed hand, board, deck, Prize, discard, lock, expected action, and expected resulting state in [`docs/OPTIMAL_POLICY_FIXTURES.md`](docs/OPTIMAL_POLICY_FIXTURES.md). The Tier Two constructed states are in [`docs/TIER2_POLICY_FIXTURES.md`](docs/TIER2_POLICY_FIXTURES.md). The K0/K1 knowledge model and connector hierarchy are recorded in [`docs/POLICY_DECISIONS.md`](docs/POLICY_DECISIONS.md). The card-text recheck is in [`docs/RULES_REVERIFICATION.md`](docs/RULES_REVERIFICATION.md).
+`fix-sims` contains a rules-mapped simulator, deterministic `simulate-this` traces, six scenario trace regressions, **29 core exact-state policy fixtures**, and a **26-case Tier Two** suite for choice differentiation and fast-compression states. The core fixture catalog states each constructed hand, board, deck, Prize, discard, lock, expected action, and expected resulting state in [`docs/OPTIMAL_POLICY_FIXTURES.md`](docs/OPTIMAL_POLICY_FIXTURES.md). The Tier Two constructed states are in [`docs/TIER2_POLICY_FIXTURES.md`](docs/TIER2_POLICY_FIXTURES.md). The K0/K1 knowledge model and connector hierarchy are recorded in [`docs/POLICY_DECISIONS.md`](docs/POLICY_DECISIONS.md). The card-text recheck is in [`docs/RULES_REVERIFICATION.md`](docs/RULES_REVERIFICATION.md).
 
 The model is deliberately a single-player setup model. It does not claim to resolve every Expanded card or any opponent-dependent game state.
 
@@ -26,7 +26,7 @@ ctest --test-dir build --output-on-failure
 ./build/regidrago_tier2_tests
 ```
 
-`regidrago_policy_tests` checks core rule and connector legality. `regidrago_tier2_tests` checks comparison states, including direct Crispin versus indirect Energy routes, Steven versus Arven, K0/K1 Gladion and Heavy Ball choices, Forest Seal Stone conservation, Rule Box lock-aware search paths, Tate & Liza switch and draw modes, and Arven fallback selection.
+`regidrago_policy_tests` checks core rule and connector legality. `regidrago_tier2_tests` checks comparison states, including direct Crispin versus indirect Energy routes, Steven versus Arven, K0/K1 Gladion and Heavy Ball choices, Heavy Ball into Tapu Lele-GX Supporter chains, Forest Seal Stone conservation, Rule Box lock-aware search paths, Tate & Liza switch and draw modes, and Arven fallback selection.
 
 ## Run aggregate smoke test
 

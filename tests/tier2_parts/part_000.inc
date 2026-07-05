@@ -15,6 +15,7 @@ struct EngineTestAccess {
   static bool play_quick_ball(Engine& engine, bool payload) { return engine.play_quick_ball(payload); }
   static bool play_heavy_ball(Engine& engine) { return engine.play_heavy_ball(); }
   static bool play_crispin(Engine& engine) { return engine.play_crispin(); }
+  static bool attach_manual(Engine& engine) { return engine.attach_manual(); }
   static bool use_fss(Engine& engine) { return engine.use_fss(); }
   static bool bench_from_hand(Engine& engine, Card card, bool entry) { return engine.bench_from_hand(card, entry); }
   static bool play_earthen_vessel(Engine& engine, bool payload) { return engine.play_earthen_vessel(payload); }
@@ -29,7 +30,7 @@ using namespace sim;
 struct Fixture {
   DeckRecipe recipe{baseline_recipe()};
   Scenario scenario;
-  std::mt19937_64 rng{7331};
+  std::mt19937_r4` rng{7331};
   TraceLog trace{true, {}};
   Engine engine;
   Fixture(Scenario sc, State s) : scenario(std::move(sc)), engine(scenario, recipe, rng, &trace) {

@@ -101,3 +101,15 @@ void fss_fetches_tate_when_latias_is_locked() {
   EngineTestAccess::choose_supporter(f.engine);
   expect(EngineTestAccess::state(f.engine).active->card == Card::RegidragoVstar, "Tate and Liza should legally promote the benched VSTAR.");
 }
+
+void k1_heavy_ball_beats_still_live_quick_ball() {
+  State s = st(2, Card::RegidragoV, 1);
+  s.hand = {Card::MysteriousTreasure, Card::MegaDragonite, Card::RegidragoVstar, Card::HisuianHeavyBall, Card::QuickBall};
+  s.deck = {Card::TapuLeleGX, Card::Grass, Card::Fire};
+  s.prizes = {Card::Oricorio};
+  Fixture f(sc("k1-heavy-ball-over-quick-ball"), s);
+  expect(EngineTestAccess::play_mysterious_treasure(f.engine, true), "Mysterious Treasure should legally create K1.");
+  expect(EngineTestAccess::prizes_known(f.engine), "The deck search should reveal that Oricorio is prized.");
+  expect(EngineTestAccess::play_heavy_ball(f.engine), "Known prized Oricorio should make Heavy Ball the direct connector despite Quick Ball in hand.");
+  expect(has(EngineTestAccess::state(f.engine).hand, Card::Oricorio), "Heavy Ball should recover the known prized Oricorio.");
+}

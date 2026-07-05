@@ -76,3 +76,28 @@ void heavy_ball_oricorio_compresses_energy() {
   const State& a = EngineTestAccess::state(f.engine);
   expect(has(a.hand, Card::Grass) && has(a.hand, Card::Fire), "Vital Dance should supply both available needed Energy cards.");
 }
+
+void ability_lock_blocks_latias_quick_ball_connector() {
+  State s = st(2, Card::RegidragoV, 1);
+  s.bench.push_back(Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None});
+  s.hand = {Card::QuickBall, Card::Dipplin};
+  s.discard = {Card::MegaDragonite};
+  s.discarded_this_turn = {Card::MegaDragonite};
+  Fixture f(sc("locked-latias-quick-ball", DciProfile::StrictJit, LockMode::FullRuleBoxAbility), s);
+  expect(!EngineTestAccess::play_quick_ball(f.engine, false), "Quick Ball must not be spent to seek Latias when Skyliner is Ability-locked.");
+  expect(has(EngineTestAccess::state(f.engine).hand, Card::QuickBall), "The unused Quick Ball should remain in hand.");
+}
+
+void fss_fetches_tate_when_latias_is_locked() {
+  State s = st(2, Card::RegidragoV, 1);
+  s.active->tool = Tool::ForestSealStone;
+  s.bench.push_back(Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None});
+  s.deck = {Card::TateLiza};
+  s.discard = {Card::MegaDragonite};
+  s.discarded_this_turn = {Card::MegaDragonite};
+  Fixture f(sc("locked-latias-fss-tate", DciProfile::StrictJit, LockMode::FullRuleBoxAbility), s);
+  expect(EngineTestAccess::use_fss(f.engine), "FSS should resolve while the positional axis remains unsolved.");
+  expect(has(EngineTestAccess::state(f.engine).hand, Card::TateLiza), "FSS should fetch Tate and Liza when Latias is Ability-locked.");
+  EngineTestAccess::choose_supporter(f.engine);
+  expect(EngineTestAccess::state(f.engine).active->card == Card::RegidragoVstar, "Tate and Liza should legally promote the benched VSTAR.");
+}

@@ -258,3 +258,43 @@ struct TrialOutcome {
 };
 
 struct Aggregate {
+  std::uint64_t trials{0};
+  std::uint64_t by2{0};
+  std::uint64_t by3{0};
+  std::uint64_t by4{0};
+  std::uint64_t started_regi{0};
+  std::uint64_t fss{0};
+  std::uint64_t legacy{0};
+  std::uint64_t steven{0};
+  std::uint64_t blender{0};
+  double total_mulligans{0.0};
+};
+
+struct TraceLog {
+  bool enabled{false};
+  std::vector<std::string> lines;
+
+  void add(const int turn, std::string_view action, std::string_view rules, std::string_view detail) {
+    if (!enabled) return;
+    std::ostringstream out;
+    if (turn > 0) out << "T" << turn << " | ";
+    out << action << " | rules: " << rules << " | " << detail;
+    lines.push_back(out.str());
+  }
+
+  void note(std::string_view detail) {
+    if (enabled) lines.emplace_back(detail);
+  }
+};
+
+std::string join_cards(const std::vector<Card>& cards) {
+  if (cards.empty()) return "(none)";
+  std::ostringstream out;
+  for (std::size_t i = 0; i < cards.size(); ++i) {
+    if (i != 0) out << ", ";
+    out << name(cards[i]);
+  }
+  return out.str();
+}
+
+std::string pokemon_summary(const Pokemon& p) {

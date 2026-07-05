@@ -63,3 +63,16 @@ void fss_uses_gladion_for_known_prized_vstar() {
   EngineTestAccess::choose_supporter(f.engine);
   expect(has(EngineTestAccess::state(f.engine).hand, Card::RegidragoVstar), "Gladion should recover the prized VSTAR after FSS inspection.");
 }
+
+void heavy_ball_oricorio_compresses_energy() {
+  State s = st(2, Card::RegidragoV, 1);
+  s.hand = {Card::HisuianHeavyBall};
+  s.prizes = {Card::Oricorio};
+  s.deck = {Card::Grass, Card::Fire};
+  Fixture f(sc("heavy-ball-oricorio"), s);
+  expect(EngineTestAccess::play_heavy_ball(f.engine), "Heavy Ball should retrieve prized Oricorio when it is the direct Energy connector.");
+  expect(has(EngineTestAccess::state(f.engine).hand, Card::Oricorio), "Heavy Ball should put Oricorio into hand.");
+  expect(EngineTestAccess::bench_from_hand(f.engine, Card::Oricorio, true), "Oricorio should be benched and resolve Vital Dance.");
+  const State& a = EngineTestAccess::state(f.engine);
+  expect(has(a.hand, Card::Grass) && has(a.hand, Card::Fire), "Vital Dance should supply both available needed Energy cards.");
+}

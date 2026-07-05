@@ -8,4 +8,5 @@
 #include "tier2_parts/part_003a.inc"
 #include "tier2_parts/part_003c.inc"
 #include "tier2_parts/part_003d.inc"
+#include "tier2_parts/part_003e.inc"
 #include "tier2_parts/part_003b.inc"

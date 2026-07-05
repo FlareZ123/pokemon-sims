@@ -13,6 +13,7 @@ struct EngineTestAccess {
   static void choose_supporter(Engine& engine) { engine.choose_supporter(); }
   static bool play_mysterious_treasure(Engine& engine, bool payload) { return engine.play_mysterious_treasure(payload); }
   static bool play_quick_ball(Engine& engine, bool payload) { return engine.play_quick_ball(payload); }
+  static bool play_ultra_ball(Engine& engine, bool payload) { return engine.play_ultra_ball(payload); }
   static bool play_heavy_ball(Engine& engine) { return engine.play_heavy_ball(); }
   static bool play_crispin(Engine& engine) { return engine.play_crispin(); }
   static bool attach_manual(Engine& engine) { return engine.attach_manual(); }

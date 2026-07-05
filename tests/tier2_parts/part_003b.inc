@@ -44,6 +44,7 @@ int main() {
     {"crispin_beats_known_prized_oricorio", crispin_beats_known_prized_oricorio},
     {"fss_holds_for_tate_switch", fss_holds_for_tate_switch},
     {"fss_uses_gladion_for_known_prized_vstar", fss_uses_gladion_for_known_prized_vstar},
+    {"heavy_ball_oricorio_compresses_energy", heavy_ball_oricorio_compresses_energy},
   };
   int failures = 0;
   for (const auto& [name, run] : tests) {

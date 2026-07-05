@@ -19,4 +19,3 @@
       if (!run_search_items_one_step(permit_payload)) break;
     }
   }
-

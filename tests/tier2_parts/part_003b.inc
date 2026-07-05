@@ -48,6 +48,7 @@ int main() {
     {"ability_lock_blocks_latias_quick_ball_connector", ability_lock_blocks_latias_quick_ball_connector},
     {"fss_fetches_tate_when_latias_is_locked", fss_fetches_tate_when_latias_is_locked},
     {"k1_heavy_ball_beats_still_live_quick_ball", k1_heavy_ball_beats_still_live_quick_ball},
+    {"tate_draw_recovers_missing_vstar", tate_draw_recovers_missing_vstar},
   };
   int failures = 0;
   for (const auto& [name, run] : tests) {

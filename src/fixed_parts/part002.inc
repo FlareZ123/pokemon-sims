@@ -1,5 +1,3 @@
-}
-
 constexpr bool is_dragon_or_psychic(const Card card) {
   switch (card) {
     case Card::RegidragoV:
@@ -158,3 +156,4 @@ class Engine {
   bool ability_active(const Card card) const { return !is_rule_box_pokemon(card) || !rule_box_locked(); }
   bool payload_window_open() const {
     return scenario_.dci == DciProfile::NoDiscardControl || state_.turn >= 2;
+  }

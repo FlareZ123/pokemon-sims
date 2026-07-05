@@ -43,6 +43,7 @@ int main() {
     {"tapu_uses_gladion_for_known_prized_vstar", tapu_uses_gladion_for_known_prized_vstar},
     {"crispin_beats_known_prized_oricorio", crispin_beats_known_prized_oricorio},
     {"fss_holds_for_tate_switch", fss_holds_for_tate_switch},
+    {"fss_uses_gladion_for_known_prized_vstar", fss_uses_gladion_for_known_prized_vstar},
   };
   int failures = 0;
   for (const auto& [name, run] : tests) {

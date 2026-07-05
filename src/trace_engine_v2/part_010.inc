@@ -109,7 +109,10 @@
       if (prize_count_after_reveal(Card::RegidragoVstar) > 0 && deck_count_after_search_started(Card::Gladion) > 0) return Card::Gladion;
     }
 
-    if (need_active_vstar() && !in_play(Card::LatiasEx) && deck_count_after_search_started(Card::LatiasEx) > 0) return Card::LatiasEx;
+    if (need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) &&
+        !in_play(Card::LatiasEx) && deck_count_after_search_started(Card::LatiasEx) > 0) return Card::LatiasEx;
+    if (need_active_vstar() && !need_energy() && !need_payload() &&
+        deck_count_after_search_started(Card::TateLiza) > 0) return Card::TateLiza;
     if (need_payload() && !item_locked() && deck_count_after_search_started(Card::BrilliantBlender) > 0) return Card::BrilliantBlender;
     if (need_payload() && item_locked() && deck_count_after_search_started(Card::ProfessorBurnet) > 0) return Card::ProfessorBurnet;
     if (need_energy() && can_fetch_oricorio_for_compression()) return Card::Oricorio;

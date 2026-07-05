@@ -35,6 +35,9 @@ class Engine {
   TraceLog* trace_{nullptr};
   State state_;
   TrialOutcome outcome_;
+  // K0: no deck/Prize inspection. K1: a legal inspection established Prize knowledge.
+  bool deck_seen_{false};
+  bool prizes_revealed_{false};
 
   static int count_of(const std::vector<Card>& zone, const Card card) {
     return static_cast<int>(std::count(zone.begin(), zone.end(), card));
@@ -43,14 +46,26 @@ class Engine {
   int hand_count(const Card card) const { return count_of(state_.hand, card); }
   int deck_count_after_search_started(const Card card) const { return count_of(state_.deck, card); }
   int prize_count_after_reveal(const Card card) const { return count_of(state_.prizes, card); }
+  bool prizes_known() const { return deck_seen_ || prizes_revealed_; }
+  bool known_prize(const Card card) const { return prizes_known() && prize_count_after_reveal(card) > 0; }
+
+  // Call only while resolving a legal search effect. The deck is physically seen,
+  // so later policy can deduce the Prize multiset from the fixed deck list and zones.
+  void record_deck_search_knowledge(std::string_view source) {
+    if (deck_seen_) return;
+    deck_seen_ = true;
+    trace("DECK KNOWLEDGE", "P-KNOWLEDGE-01", std::string(source) + ": deck inspected; Prize identities are now deducible for later decisions.");
+  }
 
   int total_copies(const Card card) const {
     for (const auto& [candidate, copies] : recipe_) if (candidate == card) return copies;
     return 0;
   }
 
-  // P-HIDDEN-01: decision code may use known zones and the deck list, but not deck or Prize identities.
+  // P-HIDDEN-01: before a search, policy uses only known zones and deck counts.
+  // P-KNOWLEDGE-01: after a deck search, known deck absence distinguishes Prizes.
   bool might_be_unseen(const Card card) const {
+    if (deck_seen_) return deck_count_after_search_started(card) > 0;
     const int known = hand_count(card) + count_of(state_.discard, card) + in_play_count(card);
     return total_copies(card) > known;
   }

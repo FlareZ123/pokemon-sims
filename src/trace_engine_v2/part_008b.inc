@@ -23,7 +23,9 @@
   }
 
   bool need_regi() const { return !has_any_regi(); }
-  bool need_vstar() const { return has_regi_v() && !has_vstar(); }
+  // The VSTAR card axis is complete once the card is in hand; evolve_best_regi
+  // resolves the later game-state transition when its timing condition is legal.
+  bool need_vstar() const { return has_regi_v() && !has_vstar() && hand_count(Card::RegidragoVstar) == 0; }
 
   bool has_other_payload_outlet(const Card excluded) const {
     const auto present = [this, excluded](const Card card) { return card != excluded && hand_count(card) > 0; };

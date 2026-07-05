@@ -9,9 +9,15 @@
                                bench_space() > 0 && needs_oricorio_connector();
     if (!need_regi() && !need_latias && !need_oricorio) return false;
 
-    // A live ordinary Basic-search route is more flexible and should be used before Prize inspection.
-    if (hand_count(Card::QuickBall) > 0 || hand_count(Card::MysteriousTreasure) > 0 ||
-        hand_count(Card::UltraBall) > 0 || hand_count(Card::Arven) > 0) return false;
+    const bool known_prized_target = prizes_known() &&
+        ((need_regi() && prize_count_after_reveal(Card::RegidragoV) > 0) ||
+         (need_latias && prize_count_after_reveal(Card::LatiasEx) > 0) ||
+         (need_oricorio && prize_count_after_reveal(Card::Oricorio) > 0));
+
+    // Before K1, a live ordinary Basic-search route is more flexible than inspecting Prizes.
+    // After K1 has shown that this exact Basic is prized, Heavy Ball is the direct route.
+    if (!known_prized_target && (hand_count(Card::QuickBall) > 0 || hand_count(Card::MysteriousTreasure) > 0 ||
+                                 hand_count(Card::UltraBall) > 0 || hand_count(Card::Arven) > 0)) return false;
 
     remove_one(state_.hand, Card::HisuianHeavyBall);
     prizes_revealed_ = true;

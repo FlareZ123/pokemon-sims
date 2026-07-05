@@ -99,8 +99,16 @@
 
   Card fss_target_after_search_started() const {
     if (state_.turn == 1 && !scenario_.going_first && should_play_steven() && deck_count_after_search_started(Card::StevensResolve) > 0) return Card::StevensResolve;
-    if (need_regi() && deck_count_after_search_started(Card::RegidragoV) > 0) return Card::RegidragoV;
-    if (need_vstar() && deck_count_after_search_started(Card::RegidragoVstar) > 0) return Card::RegidragoVstar;
+
+    if (need_regi()) {
+      if (deck_count_after_search_started(Card::RegidragoV) > 0) return Card::RegidragoV;
+      if (prize_count_after_reveal(Card::RegidragoV) > 0 && deck_count_after_search_started(Card::Gladion) > 0) return Card::Gladion;
+    }
+    if (need_vstar()) {
+      if (deck_count_after_search_started(Card::RegidragoVstar) > 0) return Card::RegidragoVstar;
+      if (prize_count_after_reveal(Card::RegidragoVstar) > 0 && deck_count_after_search_started(Card::Gladion) > 0) return Card::Gladion;
+    }
+
     if (need_active_vstar() && !in_play(Card::LatiasEx) && deck_count_after_search_started(Card::LatiasEx) > 0) return Card::LatiasEx;
     if (need_payload() && !item_locked() && deck_count_after_search_started(Card::BrilliantBlender) > 0) return Card::BrilliantBlender;
     if (need_payload() && item_locked() && deck_count_after_search_started(Card::ProfessorBurnet) > 0) return Card::ProfessorBurnet;

@@ -83,7 +83,7 @@
     const bool needs_t1_steven = state_.turn == 1 && !scenario_.going_first && has_regi_v() && should_play_steven() && hand_count(Card::StevensResolve) == 0;
     const bool needs_crispin = need_energy() && hand_count(Card::Crispin) == 0;
     const bool needs_burnet = need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) == 0;
-    const bool needs_arven = has_regi_v() && !has_vstar() && hand_count(Card::Arven) == 0 && hand_count(Card::EvolutionIncense) == 0 && hand_count(Card::MysteriousTreasure) == 0;
+    const bool needs_arven = need_vstar() && hand_count(Card::Arven) == 0 && hand_count(Card::EvolutionIncense) == 0 && hand_count(Card::MysteriousTreasure) == 0;
     return needs_t1_steven || needs_crispin || needs_burnet || needs_arven;
   }
 

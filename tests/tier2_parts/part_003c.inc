@@ -23,3 +23,17 @@ void tapu_uses_gladion_for_known_prized_vstar() {
   expect(has(a.hand, Card::RegidragoVstar), "Gladion should recover the known prized VSTAR.");
   expect(has(a.hand, Card::Arven) && has(a.hand, Card::Crispin), "The direct Gladion route should preserve slower Supporters.");
 }
+
+void crispin_beats_known_prized_oricorio() {
+  State s = st(2, Card::RegidragoV, 1, 2, 0);
+  s.hand = {Card::MysteriousTreasure, Card::MegaDragonite, Card::Gladion, Card::Crispin, Card::RegidragoVstar};
+  s.deck = {Card::TapuLeleGX, Card::Grass, Card::Fire};
+  s.prizes = {Card::Oricorio};
+  Fixture f(sc("crispin-over-prized-oricorio"), s);
+  expect(EngineTestAccess::play_mysterious_treasure(f.engine, true), "Mysterious Treasure should establish K1 legally.");
+  EngineTestAccess::choose_supporter(f.engine);
+  const State& a = EngineTestAccess::state(f.engine);
+  expect(has(a.discard, Card::Crispin), "Crispin should beat a known prized Oricorio connector.");
+  expect(has(a.hand, Card::Gladion), "Gladion should remain available after the direct Energy line.");
+  expect(a.active->fire == 1, "Crispin should attach the missing Fire immediately.");
+}

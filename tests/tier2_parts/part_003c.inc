@@ -126,3 +126,17 @@ void tate_draw_recovers_missing_vstar() {
   expect(has(a.discard, Card::TateLiza), "Tate and Liza should be used in draw mode when no direct Supporter line exists.");
   expect(has(a.hand, Card::RegidragoVstar), "Tate and Liza should draw the missing VSTAR from the compact deck.");
 }
+
+void arven_uses_available_vstar_item_fallback() {
+  State s = st(2, Card::RegidragoV, 1, 2, 1);
+  s.hand = {Card::Arven, Card::Dipplin};
+  s.deck = {Card::MysteriousTreasure, Card::ForestSealStone, Card::RegidragoVstar};
+  s.discard = {Card::MegaDragonite};
+  s.discarded_this_turn = {Card::MegaDragonite};
+  Fixture f(sc("arven-vstar-item-fallback"), s);
+  EngineTestAccess::choose_supporter(f.engine);
+  const State& a = EngineTestAccess::state(f.engine);
+  expect(has(a.discard, Card::Arven), "Arven should be the selected Supporter.");
+  expect(has(a.hand, Card::MysteriousTreasure), "Arven should take Mysterious Treasure when Evolution Incense is unavailable.");
+  expect(has(a.hand, Card::ForestSealStone), "Arven should still take the available Tool.");
+}

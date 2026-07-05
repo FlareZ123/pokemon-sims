@@ -67,7 +67,8 @@
         const bool live_burnet = need_payload() && hand_count(Card::ProfessorBurnet) > 0 && can_play_payload_this_turn();
         const bool live_tate_switch = need_active_vstar() && !need_energy() && !need_payload() && hand_count(Card::TateLiza) > 0;
 
-        if (need_active_vstar() && !live_tate_switch && prize_count_after_reveal(Card::LatiasEx) > 0) known_target = Card::LatiasEx;
+        if (need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) && !live_tate_switch &&
+            prize_count_after_reveal(Card::LatiasEx) > 0) known_target = Card::LatiasEx;
         else if (need_payload() && !live_burnet && !item_locked() && payload_window_open() &&
                  prize_count_after_reveal(Card::BrilliantBlender) > 0) known_target = Card::BrilliantBlender;
         else if (need_energy() && !live_crispin && prize_count_after_reveal(Card::Oricorio) > 0 &&

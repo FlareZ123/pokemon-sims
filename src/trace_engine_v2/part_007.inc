@@ -22,12 +22,19 @@
   }
 
   Card choose_supporter_after_search_started() const {
-    // This is called inside Wonder Tag after the deck is being legally searched.
+    // Wonder Tag is resolving after legal deck inspection. A known prized
+    // immediate Pokemon axis makes Gladion the fastest supporter line.
+    const bool prized_regi = need_regi() && deck_count_after_search_started(Card::RegidragoV) == 0 &&
+                             prize_count_after_reveal(Card::RegidragoV) > 0;
+    const bool prized_vstar = need_vstar() && deck_count_after_search_started(Card::RegidragoVstar) == 0 &&
+                              prize_count_after_reveal(Card::RegidragoVstar) > 0;
+    if ((prized_regi || prized_vstar) && deck_count_after_search_started(Card::Gladion) > 0) return Card::Gladion;
+
     if (state_.turn == 1 && !scenario_.going_first && has_regi_v() && should_play_steven() &&
         deck_count_after_search_started(Card::StevensResolve) > 0) return Card::StevensResolve;
     if (need_energy() && deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin;
     if (need_payload() && item_locked() && deck_count_after_search_started(Card::ProfessorBurnet) > 0) return Card::ProfessorBurnet;
-    if (has_regi_v() && !has_vstar() && deck_count_after_search_started(Card::Arven) > 0) return Card::Arven;
+    if (need_vstar() && deck_count_after_search_started(Card::Arven) > 0) return Card::Arven;
     if (deck_count_after_search_started(Card::Serena) > 0) return Card::Serena;
     if (deck_count_after_search_started(Card::TateLiza) > 0) return Card::TateLiza;
     return Card::Crispin;

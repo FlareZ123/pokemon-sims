@@ -79,7 +79,7 @@
   }
 
   bool needs_tapu_connector() const {
-    if (!supporter_allowed()) return false;
+    if (!supporter_allowed() || !ability_available_for_pokemon(Card::TapuLeleGX)) return false;
     const bool needs_t1_steven = state_.turn == 1 && !scenario_.going_first && has_regi_v() && should_play_steven() && hand_count(Card::StevensResolve) == 0;
     const bool needs_crispin = need_energy() && hand_count(Card::Crispin) == 0;
     const bool needs_burnet = need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) == 0;

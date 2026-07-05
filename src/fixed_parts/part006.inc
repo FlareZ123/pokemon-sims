@@ -195,6 +195,3 @@ class OutputLock {
  public:
   explicit OutputLock(const std::filesystem::path& output) {
     const std::filesystem::path lock_path = output.string() + ".lock";
-#if defined(_WIN32)
-    handle_ = ::CreateFileW(lock_path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-    if (handle_ == INVALID_HANDLE_VALUE) throw std::runtime_error("cannot lock output");

@@ -51,6 +51,7 @@ int main() {
     {"tate_draw_recovers_missing_vstar", tate_draw_recovers_missing_vstar},
     {"arven_uses_available_vstar_item_fallback", arven_uses_available_vstar_item_fallback},
     {"fss_holds_for_live_crispin", fss_holds_for_live_crispin},
+    {"ultra_ball_holds_for_live_crispin", ultra_ball_holds_for_live_crispin},
   };
   int failures = 0;
   for (const auto& [name, run] : tests) {

@@ -8,7 +8,10 @@
     if (holder == nullptr || !is_pokemon_v(holder->card)) return false;
     const bool tate_solves_only_missing_axis = need_active_vstar() && !need_energy() && !need_payload() &&
                                                supporter_allowed() && hand_count(Card::TateLiza) > 0;
-    const bool useful = !tate_solves_only_missing_axis &&
+    const bool crispin_solves_only_missing_axis = need_energy() && !need_regi() && !need_vstar() &&
+                                                  !need_active_vstar() && !need_payload() && supporter_allowed() &&
+                                                  hand_count(Card::Crispin) > 0;
+    const bool useful = !tate_solves_only_missing_axis && !crispin_solves_only_missing_axis &&
                         (should_play_steven() || need_regi() || need_vstar() || need_energy() || need_payload() || need_active_vstar());
     if (!useful) return false;
     state_.vstar_power_used = true;

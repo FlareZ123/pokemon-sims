@@ -20,21 +20,28 @@
       }
     }
     shuffle(state_.deck);
-    trace("STAR ALCHEMY", "R-FSS-02; R-VSTAR-01", found ? "Searched any card: " + std::string(name(target)) + "." : "No card remained in deck.");
+    trace("STAR ALCHEMy", "R-FSS-02; R-VSTAR-01", found ? "Searched any card: " + std::string(name(target)) + "." : "No card remained in deck.");
     return true;
   }
 
   bool play_crispin() {
     if (!supporter_allowed() || hand_count(Card::Crispin) == 0 || !need_energy() || target_regi() == nullptr) return false;
-    if (!might_be_unseen(Card::Grass) || !might_be_unseen(Card::Fire)) return false;
+
+    // A one-type search still has value: Crispin puts that Energy into hand,
+    // where the unused manual attachment can advance the missing GGF component.
+    const bool deck_has_grass = deck_count_after_search_started(Card::Grass) > 0;
+    const bool deck_has_fire = deck_count_after_search_started(Card::Fire) > 0;
+    const bool known_relevant_energy = (grass_needed() > 0 && deck_has_grass) ||
+                                       (fire_needed() > 0 && deck_has_fire);
+    if (deck_seen_ && !known_relevant_energy) return false;
+    if (!deck_seen_ && !might_be_unseen(Card::Grass) && !might_be_unseen(Card::Fire)) return false;
+
     remove_one(state_.hand, Card::Crispin);
     state_.discard.push_back(Card::Crispin);
     state_.supporter_used = true;
 
     // Crispin still inspects the whole deck if only one or no type exists.
     record_deck_search_knowledge("Crispin");
-    const bool deck_has_grass = deck_count_after_search_started(Card::Grass) > 0;
-    const bool deck_has_fire = deck_count_after_search_started(Card::Fire) > 0;
     if (!deck_has_grass || !deck_has_fire) {
       if (deck_has_grass) move_deck_to_hand(Card::Grass);
       else if (deck_has_fire) move_deck_to_hand(Card::Fire);

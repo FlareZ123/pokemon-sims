@@ -46,15 +46,32 @@
 
     std::optional<Card> known_target;
     if (prizes_known()) {
+      // A known prized Regidrago or VSTAR is an immediate missing-card axis.
+      // These exact targets beat slower Supporter connectors.
       if (need_vstar() && prize_count_after_reveal(Card::RegidragoVstar) > 0) known_target = Card::RegidragoVstar;
       else if (need_regi() && prize_count_after_reveal(Card::RegidragoV) > 0) known_target = Card::RegidragoV;
-      else if (need_active_vstar() && prize_count_after_reveal(Card::LatiasEx) > 0) known_target = Card::LatiasEx;
-      else if (need_payload() && !item_locked() && payload_window_open() && prize_count_after_reveal(Card::BrilliantBlender) > 0) known_target = Card::BrilliantBlender;
-      else if (need_energy() && prize_count_after_reveal(Card::Oricorio) > 0 && bench_space() > 0 && !in_play(Card::Oricorio)) known_target = Card::Oricorio;
-      else if (need_energy() && !item_locked() && prize_count_after_reveal(Card::EarthenVessel) > 0 && is_legal_cost_available(can_play_payload_this_turn(), true)) known_target = Card::EarthenVessel;
-      const bool direct_supporter = should_play_steven() || (need_energy() && hand_count(Card::Crispin) > 0) || (need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) > 0) || hand_count(Card::Arven) > 0;
+      else {
+        const bool live_crispin = need_energy() && hand_count(Card::Crispin) > 0;
+        const bool live_burnet = need_payload() && hand_count(Card::ProfessorBurnet) > 0 && can_play_payload_this_turn();
+        const bool live_tate_switch = need_active_vstar() && !need_energy() && !need_payload() && hand_count(Card::TateLiza) > 0;
+
+        if (need_active_vstar() && !live_tate_switch && prize_count_after_reveal(Card::LatiasEx) > 0) known_target = Card::LatiasEx;
+        else if (need_payload() && !live_burnet && !item_locked() && payload_window_open() &&
+                 prize_count_after_reveal(Card::BrilliantBlender) > 0) known_target = Card::BrilliantBlender;
+        else if (need_energy() && !live_crispin && prize_count_after_reveal(Card::Oricorio) > 0 &&
+                 bench_space() > 0 && !in_play(Card::Oricorio) && needs_oricorio_connector()) known_target = Card::Oricorio;
+        else if (need_energy() && !live_crispin && !item_locked() && prize_count_after_reveal(Card::EarthenVessel) > 0 &&
+                 is_legal_cost_available(can_play_payload_this_turn(), true)) known_target = Card::EarthenVessel;
+      }
+
+      const bool direct_supporter = should_play_steven() || (need_energy() && hand_count(Card::Crispin) > 0) ||
+                                    (need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) > 0) ||
+                                    hand_count(Card::Arven) > 0;
       if (!known_target && !direct_supporter && prize_count_after_reveal(Card::Lusamine) > 0 &&
-          (count_of(state_.discard, Card::Crispin) > 0 || count_of(state_.discard, Card::ProfessorBurnet) > 0 || count_of(state_.discard, Card::Arven) > 0 || count_of(state_.discard, Card::StevensResolve) > 0)) known_target = Card::Lusamine;
+          (count_of(state_.discard, Card::Crispin) > 0 || count_of(state_.discard, Card::ProfessorBurnet) > 0 ||
+           count_of(state_.discard, Card::Arven) > 0 || count_of(state_.discard, Card::StevensResolve) > 0)) {
+        known_target = Card::Lusamine;
+      }
     }
     if (!known_target && !blind_critical) return false;
 

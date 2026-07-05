@@ -113,3 +113,16 @@ void k1_heavy_ball_beats_still_live_quick_ball() {
   expect(EngineTestAccess::play_heavy_ball(f.engine), "Known prized Oricorio should make Heavy Ball the direct connector despite Quick Ball in hand.");
   expect(has(EngineTestAccess::state(f.engine).hand, Card::Oricorio), "Heavy Ball should recover the known prized Oricorio.");
 }
+
+void tate_draw_recovers_missing_vstar() {
+  State s = st(2, Card::RegidragoV, 1, 2, 1);
+  s.hand = {Card::TateLiza};
+  s.deck = {Card::RegidragoVstar};
+  s.discard = {Card::MegaDragonite};
+  s.discarded_this_turn = {Card::MegaDragonite};
+  Fixture f(sc("tate-draw-vstar"), s);
+  EngineTestAccess::choose_supporter(f.engine);
+  const State& a = EngineTestAccess::state(f.engine);
+  expect(has(a.discard, Card::TateLiza), "Tate and Liza should be used in draw mode when no direct Supporter line exists.");
+  expect(has(a.hand, Card::RegidragoVstar), "Tate and Liza should draw the missing VSTAR from the compact deck.");
+}

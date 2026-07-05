@@ -77,7 +77,8 @@
       remove_one(state_.hand, Card::RegidragoV);
       state_.bench.push_back(Pokemon{Card::RegidragoV, 0});
     }
-    if (bench_space() > 0 && hand_count(Card::LatiasEx) > 0 && !in_play(Card::LatiasEx) && !active_is_regi_v()) {
+    if (bench_space() > 0 && hand_count(Card::LatiasEx) > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
+        !in_play(Card::LatiasEx) && !active_is_regi_v()) {
       remove_one(state_.hand, Card::LatiasEx);
       state_.bench.push_back(Pokemon{Card::LatiasEx, 0});
     }

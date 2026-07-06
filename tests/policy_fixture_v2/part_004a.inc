@@ -37,6 +37,7 @@ int main() {
       {"celestial_roar_attached_energy_leaves_discard", test_celestial_roar_attached_energy_leaves_discard},
       {"tate_draws_from_a_four_card_dead_hand", test_tate_draws_from_a_four_card_dead_hand},
       {"fss_fetches_gladion_for_final_prized_energy", test_fss_fetches_gladion_for_final_prized_energy},
+      {"full_bench_blocks_basic_search_connectors", test_full_bench_blocks_basic_search_connectors},
       {"oricorio_is_held_when_earthen_vessel_already_solves_energy", test_oricorio_is_held_when_earthen_vessel_already_solves_energy},
       {"oricorio_works_under_rule_box_lock", test_oricorio_works_under_rule_box_lock},
       {"tapu_is_blocked_by_rule_box_lock", test_tapu_is_blocked_by_rule_box_lock},

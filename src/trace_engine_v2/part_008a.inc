@@ -51,4 +51,3 @@
     for (int draw = 0; draw < 5; ++draw) draw_card("Tate & Liza");
     trace("PLAY SUPPORTER", "R-TATE-01; R-GAME-SUPPORTER", "Tate & Liza draw mode: shuffled remaining hand and drew 5.");
     return true;
-  }

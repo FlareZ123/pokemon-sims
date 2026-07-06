@@ -120,6 +120,22 @@ void test_celestial_roar_attached_energy_leaves_discard() {
          "Only the non-Energy top-three card should remain discarded.");
 }
 
+void test_tate_draws_from_a_four_card_dead_hand() {
+  State s = state(2, Card::RegidragoV, 1, 2, 1);
+  s.hand = {Card::TateLiza, Card::Dipplin, Card::MawileGX, Card::Guzma};
+  s.deck = {Card::RegidragoVstar};
+  s.discard = {Card::MegaDragonite};
+  s.discarded_this_turn = {Card::MegaDragonite};
+  Fixture f(scenario("tate-four-card-draw"), s);
+
+  EngineTestAccess::choose_supporter(f.engine);
+  const State& after = EngineTestAccess::state(f.engine);
+  expect(contains(after.discard, Card::TateLiza),
+         "Tate and Liza should be used from a four-card dead hand because draw-five is net positive.");
+  expect(contains(after.hand, Card::RegidragoVstar),
+         "The draw-five resolution should find the only VSTAR in the compact deck.");
+}
+
 void test_fss_fetches_gladion_for_final_prized_energy() {
   State s = state(2, Card::RegidragoV, 1, 2, 0);
   s.active->tool = Tool::ForestSealStone;

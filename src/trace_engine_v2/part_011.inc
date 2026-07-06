@@ -10,7 +10,7 @@
                                                supporter_allowed() && hand_count(Card::TateLiza) > 0;
     const bool crispin_solves_only_missing_axis = need_energy() && !need_regi() && !need_vstar() &&
                                                   !need_active_vstar() && !need_payload() && supporter_allowed() &&
-                                                  hand_count(Card::Crispin) > 0;
+                                                  hand_count(Card::Crispin) > 0 && crispin_can_advance_energy_axis();
     const bool useful = !tate_solves_only_missing_axis && !crispin_solves_only_missing_axis &&
                         (should_play_steven() || need_regi() || need_vstar() || need_energy() || need_payload() || need_active_vstar());
     if (!useful) return false;
@@ -34,16 +34,13 @@
   }
 
   bool play_crispin() {
-    if (!supporter_allowed() || hand_count(Card::Crispin) == 0 || !need_energy() || target_regi() == nullptr) return false;
+    if (!supporter_allowed() || hand_count(Card::Crispin) == 0 || target_regi() == nullptr ||
+        !crispin_can_advance_energy_axis()) return false;
 
     // A one-type search still has value: Crispin puts that Energy into hand,
     // where the unused manual attachment can advance the missing GGF component.
     const bool deck_has_grass = deck_count_after_search_started(Card::Grass) > 0;
     const bool deck_has_fire = deck_count_after_search_started(Card::Fire) > 0;
-    const bool known_relevant_energy = (grass_needed() > 0 && deck_has_grass) ||
-                                       (fire_needed() > 0 && deck_has_fire);
-    if (deck_seen_ && !known_relevant_energy) return false;
-    if (!deck_seen_ && !might_be_unseen(Card::Grass) && !might_be_unseen(Card::Fire)) return false;
 
     remove_one(state_.hand, Card::Crispin);
     state_.discard.push_back(Card::Crispin);

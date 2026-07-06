@@ -93,7 +93,7 @@
   bool run_search_items_one_step(const bool permit_payload) {
     if (item_locked()) return false;
     play_basics_from_hand();
-    if (need_regi()) {
+    if (need_regi() && bench_space() > 0) {
       if (play_quick_ball(permit_payload)) return true;
       if (play_mysterious_treasure(permit_payload)) return true;
       if (play_ultra_ball(permit_payload)) return true;
@@ -104,7 +104,7 @@
       if (play_mysterious_treasure(permit_payload)) return true;
       if (play_ultra_ball(permit_payload)) return true;
     }
-    if (need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) && !in_play(Card::LatiasEx)) {
+    if (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) && !in_play(Card::LatiasEx)) {
       if (play_quick_ball(permit_payload)) return true;
       if (play_mysterious_treasure(permit_payload)) return true;
       if (play_ultra_ball(permit_payload)) return true;

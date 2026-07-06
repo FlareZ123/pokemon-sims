@@ -16,6 +16,9 @@
     if (!useful) return false;
     state_.vstar_power_used = true;
     outcome_.used_fss = true;
+    // Card text source: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Star Alchemy is a deck search; target policy runs after that legal inspection.
+    record_deck_search_knowledge("Star Alchemy");
     Card target = fss_target_after_search_started();
     bool found = move_deck_to_hand(target);
     if (!found) {
@@ -47,6 +50,7 @@
     state_.supporter_used = true;
 
     // Crispin still inspects the whole deck if only one or no type exists.
+    // Card text source: https://api.pokemontcg.io/v2/cards/sv7-133
     record_deck_search_knowledge("Crispin");
     if (!deck_has_grass || !deck_has_fire) {
       if (deck_has_grass) move_deck_to_hand(Card::Grass);

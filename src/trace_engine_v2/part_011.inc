@@ -29,6 +29,7 @@
       for (const Card fallback : {Card::RegidragoVstar, Card::Crispin, Card::BrilliantBlender,
                                   Card::ProfessorBurnet, Card::Arven, Card::MysteriousTreasure,
                                   Card::QuickBall, Card::EarthenVessel, Card::LatiasEx}) {
+        if (fallback == Card::Crispin && !crispin_can_advance_energy_axis()) continue;
         if (move_deck_to_hand(fallback)) { target = fallback; found = true; break; }
       }
     }
@@ -111,7 +112,9 @@
         wanted.push_back(Card::Gladion);
       }
     }
-    if (need_energy() && hand_count(Card::Crispin) == 0 && deck_count_after_search_started(Card::Crispin) > 0) {
+    // Crispin source: https://api.pokemontcg.io/v2/cards/sv7-133
+    if (need_energy() && hand_count(Card::Crispin) == 0 && crispin_can_advance_energy_axis() &&
+        deck_count_after_search_started(Card::Crispin) > 0) {
       wanted.push_back(Card::Crispin);
     }
     if (need_payload() && hand_count(Card::BrilliantBlender) == 0 && hand_count(Card::ProfessorBurnet) == 0 &&
@@ -121,6 +124,7 @@
     for (const Card fallback : {Card::RegidragoVstar, Card::Gladion, Card::Crispin, payload_outlet,
                                 Card::MysteriousTreasure, Card::EarthenVessel, Card::LatiasEx}) {
       if (wanted.size() >= 3U) break;
+      if (fallback == Card::Crispin && !crispin_can_advance_energy_axis()) continue;
       if (std::find(wanted.begin(), wanted.end(), fallback) == wanted.end()) wanted.push_back(fallback);
     }
     std::vector<Card> found;

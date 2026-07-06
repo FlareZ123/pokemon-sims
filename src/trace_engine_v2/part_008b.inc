@@ -22,11 +22,27 @@
       return std::find(state_.prizes.begin(), state_.prizes.end(), card) != state_.prizes.end();
     };
     const bool can_bench_recovered_basic = bench_space() > 0;
+    const bool exactly_one_energy_missing = grass_needed() + fire_needed() == 1;
+    const bool required_energy_still_in_deck =
+        (grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
+        (fire_needed() == 1 && might_be_unseen(Card::Fire));
+    const bool payload_still_in_deck = might_be_unseen(Card::MegaDragonite) ||
+                                        might_be_unseen(Card::Dragapult) ||
+                                        might_be_unseen(Card::GoodraVstar) ||
+                                        might_be_unseen(Card::DialgaGX);
+    // P-COMPRESS-01: with a single missing Energy and a live Burnet under Item
+    // lock, Oricorio plus manual attachment preserves the Supporter slot for
+    // Burnet. Tapu -> Crispin would consume that same slot.
+    const bool oricorio_preserves_burnet = can_bench_recovered_basic && need_energy() && exactly_one_energy_missing &&
+                                           !state_.manual_energy_used && can_play_payload_this_turn() && item_locked() &&
+                                           hand_count(Card::ProfessorBurnet) > 0 && required_energy_still_in_deck &&
+                                           payload_still_in_deck;
     Card selected = Card::HisuianHeavyBall;
 
     // Direct current-turn axes first. A recovered Basic cannot be an immediate
     // connector when the Bench is full, although it remains valid future fodder.
     if (need_regi() && can_bench_recovered_basic && prized(Card::RegidragoV)) selected = Card::RegidragoV;
+    else if (oricorio_preserves_burnet && prized(Card::Oricorio)) selected = Card::Oricorio;
     else if (can_bench_recovered_basic && needs_tapu_connector() && prized(Card::TapuLeleGX)) selected = Card::TapuLeleGX;
     else if (can_bench_recovered_basic && needs_oricorio_connector() && prized(Card::Oricorio)) selected = Card::Oricorio;
     else if (can_bench_recovered_basic && need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) && prized(Card::LatiasEx)) selected = Card::LatiasEx;
@@ -56,7 +72,7 @@
       *it = Card::HisuianHeavyBall;
       state_.hand.push_back(revealed);
       shuffle(state_.prizes);
-      trace("PLAY ITEM", "R-HEAVYBALL-01; R-GAME-ITEM; P-KNOWLEDGE-01",
+      trace("PLAY ITEM", "R-HEAVYBALL-01; R-GAME-ITEM; P-KNOWLEDGE-01; P-COMPRESS-01",
             "Looked at Prize cards and exchanged Heavy Ball for " + std::string(name(revealed)) + ".");
       return true;
     }

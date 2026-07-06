@@ -82,12 +82,16 @@
            (fire_needed() > 0 && might_be_unseen(Card::Fire));
   }
 
-  // Gladion may take any one Prize card. Once K1 has been established, a
-  // single missing G or F in Prizes is a direct current-turn route if the
-  // manual attachment is still unused.
+  // Gladion may take any one Prize card. This is deliberately narrower than
+  // "any needed Energy": it is a direct route only when one manual attachment
+  // completes every remaining modeled ready axis. Do not let it preempt a
+  // missing VSTAR, active-position, or payload route.
   // Card text source: https://api.pokemontcg.io/v2/cards/sm4-95
   std::optional<Card> final_prized_energy_for_gladion() const {
-    if (!prizes_known() || state_.manual_energy_used || grass_needed() + fire_needed() != 1) return std::nullopt;
+    if (!prizes_known() || state_.manual_energy_used || grass_needed() + fire_needed() != 1 ||
+        need_regi() || need_vstar() || need_active_vstar() || need_payload()) {
+      return std::nullopt;
+    }
     if (grass_needed() == 1 && prize_count_after_reveal(Card::Grass) > 0) return Card::Grass;
     if (fire_needed() == 1 && prize_count_after_reveal(Card::Fire) > 0) return Card::Fire;
     return std::nullopt;

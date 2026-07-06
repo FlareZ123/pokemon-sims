@@ -43,9 +43,9 @@ The API records are card-text sources. They do not replace official tournament r
 | Lusamine | https://api.pokemontcg.io/v2/cards/sm4-96 |
 | Path to the Peak | https://api.pokemontcg.io/v2/cards/swsh6-148 |
 | Dragapult ex payload model | https://api.pokemontcg.io/v2/cards/sv6-130 |
-| Mega Dragonite ex payload model | https://api.pokemontcg.io/v2/cards/me2-159 |
+| Mega Dragonite ex payload model | https://api.pokemontcg.io/v2/cards/me2pt5-152 |
 | Dragon Dialga-GX payload model | https://api.pokemontcg.io/v2/cards/sm5-100 |
-| Hisuian Goodra VSTAR payload model | https://api.pokemontcg.io/v2/cards/swsh7-136 |
+| Hisuian Goodra VSTAR payload model | https://api.pokemontcg.io/v2/cards/swsh11-136 |
 
 ## Verified versus modeled interactions
 

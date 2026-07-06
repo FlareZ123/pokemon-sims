@@ -85,7 +85,7 @@ int main() {
       {"strict_serena_uses_three_safe_discards", test_strict_serena_uses_three_safe_discards},
       {"heavy_ball_oricorio_preserves_burnet_supporter", test_heavy_ball_oricorio_preserves_burnet_supporter},
       {"legacy_star_recovered_blender_is_played_same_turn", test_legacy_star_recovered_blender_is_played_same_turn},
-      {"lusamine_recovers_duplicate_supporters_and_stadiums", test_lusamine_recovers_duplicate_supporters_and_stadiums},
+      {"lusamine_recovers_only_live_axis_connectors", test_lusamine_recovers_only_live_axis_connectors},
       {"wonder_tag_skips_known_dead_crispin", test_wonder_tag_skips_known_dead_crispin},
       {"payload_selectors_fetch_burnet_when_blender_is_unavailable", test_payload_selectors_fetch_burnet_when_blender_is_unavailable},
       {"lusamine_recovers_current_axis_connectors", test_lusamine_recovers_current_axis_connectors},

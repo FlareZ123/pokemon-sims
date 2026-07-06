@@ -4,6 +4,8 @@
                                 Card::MysteriousTreasure, Card::EarthenVessel, Card::ForestSealStone,
                                 Card::LatiasEx, Card::QuickBall}) {
       if (found.size() >= 3U) break;
+      // Crispin needs different Basic Energy types; K1 must not fetch it after the inspected deck proves no needed type remains: https://api.pokemontcg.io/v2/cards/sv7-133
+      if (fallback == Card::Crispin && !crispin_can_advance_energy_axis()) continue;
       if (move_deck_to_hand(fallback)) found.push_back(fallback);
     }
     shuffle(state_.deck);

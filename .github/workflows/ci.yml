@@ -16,7 +16,22 @@ jobs:
       - name: Build
         run: cmake --build build --parallel 2
       - name: Test
-        run: ctest --test-dir build --output-on-failure
+        shell: bash
+        run: |
+          set -o pipefail
+          ctest --test-dir build --output-on-failure || {
+            status=$?
+            echo '===== CTest LastTest.log ====='
+            find build/Testing -name LastTest.log -type f -print -exec cat {} \; || true
+            exit "$status"
+          }
+      - name: Upload CTest diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-ctest-diagnostics
+          path: build/Testing
+          if-no-files-found: warn
 
   sanitizers:
     runs-on: ubuntu-latest
@@ -27,6 +42,21 @@ jobs:
       - name: Build sanitizers
         run: cmake --build build-sanitizers --parallel 2
       - name: Test sanitizers
+        shell: bash
         env:
           ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
-        run: ctest --test-dir build-sanitizers --output-on-failure
+        run: |
+          set -o pipefail
+          ctest --test-dir build-sanitizers --output-on-failure || {
+            status=$?
+            echo '===== Sanitizer CTest LastTest.log ====='
+            find build-sanitizers/Testing -name LastTest.log -type f -print -exec cat {} \; || true
+            exit "$status"
+          }
+      - name: Upload sanitizer diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanitizer-ctest-diagnostics
+          path: build-sanitizers/Testing
+          if-no-files-found: warn

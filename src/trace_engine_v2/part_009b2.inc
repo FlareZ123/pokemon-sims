@@ -14,9 +14,9 @@
 
   bool play_ultra_ball(const bool permit_payload) {
     if (item_locked() || hand_count(Card::UltraBall) == 0) return false;
-    const bool want_regi = need_regi();
+    const bool want_regi = need_regi() && bench_space() > 0;
     const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0;
-    const bool want_latias = need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) &&
+    const bool want_latias = need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
                              !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0;
     const bool want_oricorio = need_energy() && hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
                                bench_space() > 0 && needs_oricorio_connector();

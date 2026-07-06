@@ -49,8 +49,8 @@ void test_known_no_basic_prize_holds_heavy_ball_for_discard_cost() {
 
 void test_k1_gladion_recovers_final_prized_energy() {
   State s = state(2, Card::RegidragoV, 1, 2, 0);
-  s.hand = {Card::MysteriousTreasure, Card::Dipplin, Card::Gladion, Card::RegidragoVstar};
-  s.deck = {Card::TapuLeleGX};
+  s.hand = {Card::MysteriousTreasure, Card::Dipplin, Card::Gladion, Card::Crispin};
+  s.deck = {Card::RegidragoVstar};
   s.prizes = {Card::Fire};
   s.discard = {Card::MegaDragonite};
   s.discarded_this_turn = {Card::MegaDragonite};
@@ -58,9 +58,11 @@ void test_k1_gladion_recovers_final_prized_energy() {
 
   expect(EngineTestAccess::play_mysterious_treasure(f.engine, false),
          "Mysterious Treasure should establish K1 before Gladion is evaluated.");
+  expect(contains(EngineTestAccess::state(f.engine).hand, Card::RegidragoVstar),
+         "The legal Treasure search should take the missing VSTAR and expose the empty Fire deck axis.");
   EngineTestAccess::choose_supporter(f.engine);
   expect(contains(EngineTestAccess::state(f.engine).hand, Card::Fire),
-         "Gladion should take the known prized final Fire Energy.");
+         "Gladion should take the known prized final Fire Energy instead of deferring to dead Crispin.");
   expect(EngineTestAccess::attach_manual(f.engine),
          "The final prized Fire should be manually attachable this turn.");
   expect(EngineTestAccess::state(f.engine).active->fire == 1,

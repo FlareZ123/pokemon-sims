@@ -8,6 +8,20 @@ void test_item_lock_blocks_item_cards() {
   expect(!EngineTestAccess::play_earthen_vessel(f.engine, false), "Item lock must prevent Earthen Vessel.");
 }
 
+void test_ultra_ball_discards_payload_in_jit_window() {
+  State s = state(2, Card::RegidragoVstar, 0, 2, 1);
+  s.hand = {Card::UltraBall, Card::MegaDragonite, Card::Dipplin};
+  s.deck = {Card::MawileGX};
+  Fixture f(scenario("ultra-ball-jit-payload"), s);
+  expect(EngineTestAccess::run_search_items_one_step(f.engine, true),
+         "Ultra Ball should be available as a current-turn payload discard outlet.");
+  const State& after = EngineTestAccess::state(f.engine);
+  expect(contains(after.discard, Card::MegaDragonite) && contains(after.discarded_this_turn, Card::MegaDragonite),
+         "Ultra Ball must place the selected Dragon payload in discard during this turn.");
+  expect(contains(after.hand, Card::MawileGX),
+         "Ultra Ball must complete its required Pokémon search after paying the discard cost.");
+}
+
 using Test = std::pair<const char*, std::function<void()>>;
 
 }  // namespace
@@ -58,6 +72,7 @@ int main() {
       {"first_turn_restrictions_and_celestial_cost", test_first_turn_restrictions_and_celestial_cost},
       {"evolution_timing_and_single_manual_attachment", test_evolution_timing_and_single_manual_attachment},
       {"item_lock_blocks_item_cards", test_item_lock_blocks_item_cards},
+      {"ultra_ball_discards_payload_in_jit_window", test_ultra_ball_discards_payload_in_jit_window},
   };
 
   int failures = 0;

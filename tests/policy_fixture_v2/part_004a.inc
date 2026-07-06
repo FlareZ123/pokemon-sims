@@ -35,6 +35,18 @@ void test_tate_refreshes_a_five_card_dead_hand() {
   expect(after.hand.size() == 5U, "Tate & Liza draw mode must redraw five cards.");
 }
 
+void test_fss_fetches_missing_basic_energy_for_manual_attachment() {
+  State s = state(2, Card::RegidragoV, 0, 1, 0);
+  s.active->tool = Tool::ForestSealStone;
+  s.prizes = {Card::RegidragoVstar};
+  s.deck = {Card::Fire};
+  // Star Alchemy searches the deck for any card: https://api.pokemontcg.io/v2/cards/swsh12-156
+  Fixture f(scenario("fss-direct-fire"), s);
+  expect(EngineTestAccess::use_fss(f.engine), "Forest Seal Stone should remain usable when Fire is the only live missing axis.");
+  expect(contains(EngineTestAccess::state(f.engine).hand, Card::Fire),
+         "Star Alchemy should fetch the missing Basic Fire Energy for this turn's manual attachment.");
+}
+
 using Test = std::pair<const char*, std::function<void()>>;
 
 }  // namespace
@@ -49,6 +61,7 @@ int main() {
       {"steven_skips_known_dead_crispin", test_steven_skips_known_dead_crispin},
       {"fss_finds_steven_on_turn_one_when_three_axes_are_missing", test_fss_finds_steven_on_turn_one_when_three_axes_are_missing},
       {"fss_uses_a_fallback_when_vstar_is_not_in_deck", test_fss_uses_a_fallback_when_vstar_is_not_in_deck},
+      {"fss_fetches_missing_basic_energy_for_manual_attachment", test_fss_fetches_missing_basic_energy_for_manual_attachment},
       {"fss_cannot_be_used_from_a_vstar_holder", test_fss_cannot_be_used_from_a_vstar_holder},
       {"existing_fss_is_usable_under_item_lock", test_existing_fss_is_usable_under_item_lock},
       {"fss_is_blocked_by_rule_box_lock", test_fss_is_blocked_by_rule_box_lock},

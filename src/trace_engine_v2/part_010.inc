@@ -123,6 +123,12 @@
     if (need_energy() && can_fetch_oricorio_for_compression()) return Card::Oricorio;
     if (need_energy() && deck_count_after_search_started(Card::EarthenVessel) > 0 && is_legal_cost_available(can_play_payload_this_turn(), true)) return Card::EarthenVessel;
     if (need_energy() && crispin_can_advance_energy_axis() && deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin;
+    if (need_energy() && !state_.manual_energy_used) {
+      // Star Alchemy may search the deck for any card: https://api.pokemontcg.io/v2/cards/swsh12-156
+      // With no stronger Energy connector, take the missing Basic Energy that can be manually attached this turn.
+      if (grass_needed() > 0 && deck_count_after_search_started(Card::Grass) > 0) return Card::Grass;
+      if (fire_needed() > 0 && deck_count_after_search_started(Card::Fire) > 0) return Card::Fire;
+    }
     if (deck_count_after_search_started(Card::Arven) > 0) return Card::Arven;
     if (deck_count_after_search_started(Card::MysteriousTreasure) > 0) return Card::MysteriousTreasure;
     if (deck_count_after_search_started(Card::QuickBall) > 0) return Card::QuickBall;

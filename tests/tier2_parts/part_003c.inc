@@ -88,7 +88,7 @@ void ability_lock_blocks_latias_quick_ball_connector() {
   expect(has(EngineTestAccess::state(f.engine).hand, Card::QuickBall), "The unused Quick Ball should remain in hand.");
 }
 
-void fss_fetches_tate_when_latias_is_locked() {
+void fss_is_blocked_by_rulebox_lock() {
   State s = st(2, Card::RegidragoV, 1);
   s.active->tool = Tool::ForestSealStone;
   s.bench.push_back(Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None});
@@ -96,10 +96,9 @@ void fss_fetches_tate_when_latias_is_locked() {
   s.discard = {Card::MegaDragonite};
   s.discarded_this_turn = {Card::MegaDragonite};
   Fixture f(sc("locked-latias-fss-tate", DciProfile::StrictJit, LockMode::FullRuleBoxAbility), s);
-  expect(EngineTestAccess::use_fss(f.engine), "FSS should resolve while the positional axis remains unsolved.");
-  expect(has(EngineTestAccess::state(f.engine).hand, Card::TateLiza), "FSS should fetch Tate and Liza when Latias is Ability-locked.");
-  EngineTestAccess::choose_supporter(f.engine);
-  expect(EngineTestAccess::state(f.engine).active->card == Card::RegidragoVstar, "Tate and Liza should legally promote the benched VSTAR.");
+  // This asserts the simulator's documented Rule Box lock model. Forest Seal Stone and Path to the Peak card texts: https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/swsh6-148
+  expect(!EngineTestAccess::use_fss(f.engine), "The FullRuleBoxAbility model suppresses Star Alchemy on the Rule Box holder.");
+  expect(has(EngineTestAccess::state(f.engine).deck, Card::TateLiza), "The blocked VSTAR Power must not move Tate and Liza from deck.");
 }
 
 void k1_heavy_ball_beats_still_live_quick_ball() {

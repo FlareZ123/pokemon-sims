@@ -46,3 +46,42 @@ void test_known_no_basic_prize_holds_heavy_ball_for_discard_cost() {
   expect(contains(after.discard, Card::HisuianHeavyBall) && contains(after.hand, Card::Oricorio),
          "The retained Heavy Ball should become the Quick Ball cost and retrieve Oricorio.");
 }
+
+void test_k1_gladion_recovers_final_prized_energy() {
+  State s = state(2, Card::RegidragoV, 1, 2, 0);
+  s.hand = {Card::MysteriousTreasure, Card::Dipplin, Card::Gladion, Card::RegidragoVstar};
+  s.deck = {Card::TapuLeleGX};
+  s.prizes = {Card::Fire};
+  s.discard = {Card::MegaDragonite};
+  s.discarded_this_turn = {Card::MegaDragonite};
+  Fixture f(scenario("k1-gladion-prized-fire"), s);
+
+  expect(EngineTestAccess::play_mysterious_treasure(f.engine, false),
+         "Mysterious Treasure should establish K1 before Gladion is evaluated.");
+  EngineTestAccess::choose_supporter(f.engine);
+  expect(contains(EngineTestAccess::state(f.engine).hand, Card::Fire),
+         "Gladion should take the known prized final Fire Energy.");
+  expect(EngineTestAccess::attach_manual(f.engine),
+         "The final prized Fire should be manually attachable this turn.");
+  expect(EngineTestAccess::state(f.engine).active->fire == 1,
+         "The manual attachment should complete the Fire part of GGF.");
+}
+
+void test_fss_fetches_gladion_for_final_prized_energy() {
+  State s = state(2, Card::RegidragoV, 1, 2, 0);
+  s.active->tool = Tool::ForestSealStone;
+  s.hand = {Card::RegidragoVstar};
+  s.deck = {Card::Gladion};
+  s.prizes = {Card::Fire};
+  s.discard = {Card::MegaDragonite};
+  s.discarded_this_turn = {Card::MegaDragonite};
+  Fixture f(scenario("fss-gladion-prized-fire"), s);
+
+  expect(EngineTestAccess::use_fss(f.engine),
+         "Star Alchemy should inspect the deck and fetch Gladion for the known Prize Energy route.");
+  expect(contains(EngineTestAccess::state(f.engine).hand, Card::Gladion),
+         "Star Alchemy should fetch Gladion rather than a slower connector.");
+  EngineTestAccess::choose_supporter(f.engine);
+  expect(contains(EngineTestAccess::state(f.engine).hand, Card::Fire),
+         "Gladion should recover the prized Fire after Star Alchemy establishes K1.");
+}

@@ -91,14 +91,31 @@
     state_.supporter_used = true;
     outcome_.used_steven = true;
 
+    // Card text source: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Steven's Resolve is a legal deck inspection. It can therefore reserve
+    // Gladion when that inspection proves a missing VSTAR is prized.
+    record_deck_search_knowledge("Steven's Resolve");
     const bool next_turn_item_locked = scenario_.locks == LockMode::FullItem || scenario_.locks == LockMode::FullCombined ||
                                        (scenario_.locks == LockMode::TurnTwoItem && state_.turn == 1);
     const Card payload_outlet = next_turn_item_locked ? Card::ProfessorBurnet : Card::BrilliantBlender;
     std::vector<Card> wanted;
-    if (need_vstar() && hand_count(Card::RegidragoVstar) == 0) wanted.push_back(Card::RegidragoVstar);
-    if (need_energy() && hand_count(Card::Crispin) == 0) wanted.push_back(Card::Crispin);
-    if (need_payload() && hand_count(Card::BrilliantBlender) == 0 && hand_count(Card::ProfessorBurnet) == 0) wanted.push_back(payload_outlet);
-    for (const Card fallback : {Card::RegidragoVstar, Card::Crispin, payload_outlet, Card::MysteriousTreasure, Card::EarthenVessel, Card::LatiasEx}) {
+    if (need_vstar() && hand_count(Card::RegidragoVstar) == 0) {
+      if (deck_count_after_search_started(Card::RegidragoVstar) > 0) {
+        wanted.push_back(Card::RegidragoVstar);
+      } else if (prize_count_after_reveal(Card::RegidragoVstar) > 0 &&
+                 deck_count_after_search_started(Card::Gladion) > 0) {
+        wanted.push_back(Card::Gladion);
+      }
+    }
+    if (need_energy() && hand_count(Card::Crispin) == 0 && deck_count_after_search_started(Card::Crispin) > 0) {
+      wanted.push_back(Card::Crispin);
+    }
+    if (need_payload() && hand_count(Card::BrilliantBlender) == 0 && hand_count(Card::ProfessorBurnet) == 0 &&
+        deck_count_after_search_started(payload_outlet) > 0) {
+      wanted.push_back(payload_outlet);
+    }
+    for (const Card fallback : {Card::RegidragoVstar, Card::Gladion, Card::Crispin, payload_outlet,
+                                Card::MysteriousTreasure, Card::EarthenVessel, Card::LatiasEx}) {
       if (wanted.size() >= 3U) break;
       if (std::find(wanted.begin(), wanted.end(), fallback) == wanted.end()) wanted.push_back(fallback);
     }

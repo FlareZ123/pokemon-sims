@@ -35,6 +35,18 @@
       discarded.push_back(top);
     }
     std::vector<Card> recovered;
+    // Legacy Star may recover any card. If the discard-7 found Brilliant Blender
+    // while a payload remains in deck, recover Blender first and use the normal
+    // Item window later in this turn. Sources:
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    const bool blender_payload_line = need_payload() && !item_locked() &&
+        std::any_of(state_.deck.begin(), state_.deck.end(), is_payload);
+    if (blender_payload_line && count_of(state_.discard, Card::BrilliantBlender) > 0 && recovered.size() < 2U) {
+      if (!recover_discard_to_hand(Card::BrilliantBlender)) throw std::logic_error("Legacy Star Blender target disappeared");
+      recovered.push_back(Card::BrilliantBlender);
+    }
+
     // Recover energy only if it enables a manual attachment this turn. Do not recover a strict-JIT payload.
     for (const Card desired : {Card::Grass, Card::Fire, Card::Crispin, Card::Arven}) {
       if (recovered.size() >= 2U) break;

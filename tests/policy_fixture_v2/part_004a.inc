@@ -35,6 +35,7 @@ int main() {
       {"heavy_ball_reveal_marks_crispin_dead", test_heavy_ball_reveal_marks_crispin_dead},
       {"prized_energy_does_not_preempt_item_lock_payload_bridge", test_prized_energy_does_not_preempt_item_lock_payload_bridge},
       {"celestial_roar_attached_energy_leaves_discard", test_celestial_roar_attached_energy_leaves_discard},
+      {"tate_draws_from_a_four_card_dead_hand", test_tate_draws_from_a_four_card_dead_hand},
       {"fss_fetches_gladion_for_final_prized_energy", test_fss_fetches_gladion_for_final_prized_energy},
       {"oricorio_is_held_when_earthen_vessel_already_solves_energy", test_oricorio_is_held_when_earthen_vessel_already_solves_energy},
       {"oricorio_works_under_rule_box_lock", test_oricorio_works_under_rule_box_lock},

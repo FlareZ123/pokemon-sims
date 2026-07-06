@@ -2,9 +2,9 @@ void test_lusamine_recovers_current_axis_connectors() {
   // Lusamine may recover up to two Supporter or Stadium cards: https://api.pokemontcg.io/v2/cards/sm4-96
   {
     State s = state(2, Card::RegidragoV, 0, 2, 1);
-    s.hand = {Card::Lusamine};
+    s.hand = {Card::Lusamine, Card::Dipplin};
     s.discard = {Card::Crispin, Card::ProfessorBurnet, Card::Arven};
-    s.deck = {Card::EvolutionIncense};
+    s.deck = {Card::MysteriousTreasure};
     Fixture f(scenario("lusamine-vstar-axis"), s);
     expect(EngineTestAccess::play_lusamine(f.engine), "Lusamine should recover a live VSTAR connector.");
     const State& after = EngineTestAccess::state(f.engine);

@@ -6,6 +6,8 @@
     state_.discard.push_back(Card::UltraBall);
     discard_from_hand(*first, "Ultra Ball cost", "R-UB-01");
     discard_from_hand(*second, "Ultra Ball cost", "R-UB-01");
+    // Comparator card-text source: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    record_deck_search_knowledge("Ultra Ball");
 
     const std::array<Card, 5> targets{Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio, Card::TapuLeleGX};
     for (const Card target : targets) {
@@ -30,6 +32,8 @@
     if (item_locked() || hand_count(Card::EvolutionIncense) == 0 || !need_vstar() || hand_count(Card::RegidragoVstar) > 0) return false;
     remove_one(state_.hand, Card::EvolutionIncense);
     state_.discard.push_back(Card::EvolutionIncense);
+    // Comparator card-text source: https://api.pokemontcg.io/v2/cards/swsh1-163
+    record_deck_search_knowledge("Evolution Incense");
     bool found = move_deck_to_hand(Card::RegidragoVstar);
     Card found_card = Card::RegidragoVstar;
     if (!found && move_deck_to_hand(Card::GoodraVstar)) { found = true; found_card = Card::GoodraVstar; }
@@ -100,7 +104,7 @@
   Card fss_target_after_search_started() const {
     if (state_.turn == 1 && !scenario_.going_first && should_play_steven() && deck_count_after_search_started(Card::StevensResolve) > 0) return Card::StevensResolve;
 
-    if (need_regi()) {
+    if (need_regi() && bench_space() > 0) {
       if (deck_count_after_search_started(Card::RegidragoV) > 0) return Card::RegidragoV;
       if (prize_count_after_reveal(Card::RegidragoV) > 0 && deck_count_after_search_started(Card::Gladion) > 0) return Card::Gladion;
     }
@@ -110,7 +114,7 @@
     }
     if (final_prized_energy_for_gladion().has_value() && deck_count_after_search_started(Card::Gladion) > 0) return Card::Gladion;
 
-    if (need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) &&
+    if (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
         !in_play(Card::LatiasEx) && deck_count_after_search_started(Card::LatiasEx) > 0) return Card::LatiasEx;
     if (need_active_vstar() && !need_energy() && !need_payload() &&
         deck_count_after_search_started(Card::TateLiza) > 0) return Card::TateLiza;
@@ -118,7 +122,7 @@
     if (need_payload() && item_locked() && deck_count_after_search_started(Card::ProfessorBurnet) > 0) return Card::ProfessorBurnet;
     if (need_energy() && can_fetch_oricorio_for_compression()) return Card::Oricorio;
     if (need_energy() && deck_count_after_search_started(Card::EarthenVessel) > 0 && is_legal_cost_available(can_play_payload_this_turn(), true)) return Card::EarthenVessel;
-    if (need_energy() && deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin;
+    if (need_energy() && crispin_can_advance_energy_axis() && deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin;
     if (deck_count_after_search_started(Card::Arven) > 0) return Card::Arven;
     if (deck_count_after_search_started(Card::MysteriousTreasure) > 0) return Card::MysteriousTreasure;
     if (deck_count_after_search_started(Card::QuickBall) > 0) return Card::QuickBall;

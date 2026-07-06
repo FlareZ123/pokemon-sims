@@ -63,9 +63,14 @@
       }
     }
 
-    // Heavy Ball is a legal generic discard cost. It is listed last because a K0
-    // Prize inspection is normally more valuable than spending it as fodder.
-    if (allow_heavy_ball && hand_count(Card::HisuianHeavyBall) > 0) return Card::HisuianHeavyBall;
+    // Hisuian Heavy Ball is a legal generic discard cost, but K0 policy must
+    // resolve its Prize-information effect first. Card text source:
+    // https://api.pokemontcg.io/v2/cards/swsh10-146
+    const bool known_no_basic_prize = prizes_known() &&
+        std::none_of(state_.prizes.begin(), state_.prizes.end(), is_basic);
+    if (allow_heavy_ball && known_no_basic_prize && hand_count(Card::HisuianHeavyBall) > 0) {
+      return Card::HisuianHeavyBall;
+    }
     return std::nullopt;
   }
 
@@ -77,7 +82,7 @@
   // already supplies the needed Energy axis this turn.
   bool needs_oricorio_connector() const {
     if (!need_energy()) return false;
-    if (supporter_allowed() && hand_count(Card::Crispin) > 0) return false;
+    if (supporter_allowed() && hand_count(Card::Crispin) > 0 && crispin_can_advance_energy_axis()) return false;
     if (!item_locked() && hand_count(Card::EarthenVessel) > 0 && is_legal_cost_available(can_play_payload_this_turn(), true)) return false;
     const int accessible_now = hand_count(Card::Grass) + hand_count(Card::Fire);
     return accessible_now < grass_needed() + fire_needed();
@@ -86,7 +91,7 @@
   bool needs_tapu_connector() const {
     if (!supporter_allowed() || !ability_available_for_pokemon(Card::TapuLeleGX)) return false;
     const bool needs_t1_steven = state_.turn == 1 && !scenario_.going_first && has_regi_v() && should_play_steven() && hand_count(Card::StevensResolve) == 0;
-    const bool needs_crispin = need_energy() && hand_count(Card::Crispin) == 0;
+    const bool needs_crispin = need_energy() && (hand_count(Card::Crispin) == 0 || !crispin_can_advance_energy_axis());
     const bool needs_burnet = need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) == 0;
     const bool needs_arven = need_vstar() && hand_count(Card::Arven) == 0 && hand_count(Card::EvolutionIncense) == 0 && hand_count(Card::MysteriousTreasure) == 0;
     return needs_t1_steven || needs_crispin || needs_burnet || needs_arven;

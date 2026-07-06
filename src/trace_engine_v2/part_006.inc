@@ -29,6 +29,11 @@
 
   bool can_play_payload_this_turn() const { return payload_window_open() && need_payload(); }
 
+  bool has_live_blender_payload_line() const {
+    // Brilliant Blender searches and discards cards from deck: https://api.pokemontcg.io/v2/cards/sv8-164
+    return !item_locked() && hand_count(Card::BrilliantBlender) > 0 && can_play_payload_this_turn();
+  }
+
   std::optional<Card> choose_discard(const bool permit_payload, const bool flex_fodder,
                                      const bool allow_heavy_ball = true) const {
     // P-DCI-STRICT and P-DCI-FLEX, documented in RULES_TRACEABILITY.md.
@@ -92,7 +97,10 @@
     if (!supporter_allowed() || !ability_available_for_pokemon(Card::TapuLeleGX)) return false;
     const bool needs_t1_steven = state_.turn == 1 && !scenario_.going_first && has_regi_v() && should_play_steven() && hand_count(Card::StevensResolve) == 0;
     const bool needs_crispin = need_energy() && (hand_count(Card::Crispin) == 0 || !crispin_can_advance_energy_axis());
-    const bool needs_burnet = need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) == 0;
+    // Wonder Tag can inspect the deck for Burnet. It is a live direct payload
+    // bridge whenever Blender is not already playable, not only under Item lock: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    const bool needs_burnet = can_play_payload_this_turn() && hand_count(Card::ProfessorBurnet) == 0 &&
+                              !has_live_blender_payload_line() && might_be_unseen(Card::ProfessorBurnet);
     const bool needs_arven = need_vstar() && hand_count(Card::Arven) == 0 && hand_count(Card::EvolutionIncense) == 0 && hand_count(Card::MysteriousTreasure) == 0;
     return needs_t1_steven || needs_crispin || needs_burnet || needs_arven;
   }
@@ -107,4 +115,4 @@
     return bench_from_hand(Card::TapuLeleGX, true);
   }
 
-  void resolve_entry_ability(const Card card) {
+  void resolve_entry_ability(const Card card)

@@ -87,6 +87,23 @@ void test_heavy_ball_reveal_marks_crispin_dead() {
          "The revealed Prize Fire should make Gladion beat a Crispin known unable to find Fire.");
 }
 
+void test_prized_energy_does_not_preempt_item_lock_payload_bridge() {
+  State s = state(2, Card::RegidragoV, 1, 2, 0);
+  s.hand = {Card::HisuianHeavyBall, Card::Gladion, Card::ProfessorBurnet, Card::RegidragoVstar};
+  s.deck = {Card::MegaDragonite};
+  s.prizes = {Card::Fire};
+  Fixture f(scenario("prized-fire-versus-burnet", DciProfile::StrictJit, LockMode::FullItem), s);
+
+  expect(EngineTestAccess::play_heavy_ball(f.engine),
+         "Heavy Ball should legally reveal the Prize Fire before Supporter selection.");
+  EngineTestAccess::choose_supporter(f.engine);
+  const State& after = EngineTestAccess::state(f.engine);
+  expect(contains(after.discard, Card::ProfessorBurnet) && contains(after.discard, Card::MegaDragonite),
+         "Professor Burnet must beat Gladion when Item lock makes it the only payload bridge.");
+  expect(contains(after.hand, Card::Gladion),
+         "Gladion should be preserved when the final Energy alone cannot finish readiness.");
+}
+
 void test_fss_fetches_gladion_for_final_prized_energy() {
   State s = state(2, Card::RegidragoV, 1, 2, 0);
   s.active->tool = Tool::ForestSealStone;

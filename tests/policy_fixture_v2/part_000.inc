@@ -16,6 +16,7 @@ struct EngineTestAccess {
   static bool play_steven(Engine& engine) { return engine.play_steven(); }
   static bool use_fss(Engine& engine) { return engine.use_fss(); }
   static bool play_crispin(Engine& engine) { return engine.play_crispin(); }
+  static bool play_lusamine(Engine& engine) { return engine.play_lusamine(); }
   static bool play_earthen_vessel(Engine& engine, bool permit_payload) { return engine.play_earthen_vessel(permit_payload); }
   static bool play_mysterious_treasure(Engine& engine, bool permit_payload) { return engine.play_mysterious_treasure(permit_payload); }
   static bool play_quick_ball(Engine& engine, bool permit_payload) { return engine.play_quick_ball(permit_payload); }

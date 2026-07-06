@@ -39,7 +39,13 @@
     // Crispin source: https://api.pokemontcg.io/v2/cards/sv7-133
     // Do not choose it after K1 if the inspected deck contains no needed Energy.
     if (need_energy() && crispin_can_advance_energy_axis() && deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin;
-    if (need_payload() && item_locked() && deck_count_after_search_started(Card::ProfessorBurnet) > 0) return Card::ProfessorBurnet;
+    const bool blender_is_playable = !item_locked() && hand_count(Card::BrilliantBlender) > 0 && can_play_payload_this_turn();
+    if (need_payload() && can_play_payload_this_turn() && !blender_is_playable &&
+        deck_count_after_search_started(Card::ProfessorBurnet) > 0) {
+      // Burnet directly searches and discards up to 2 cards: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+      // Wonder Tag must take it when Blender cannot supply this payload line: https://api.pokemontcg.io/v2/cards/sv6pt5-164
+      return Card::ProfessorBurnet;
+    }
     if (need_vstar() && deck_count_after_search_started(Card::Arven) > 0) return Card::Arven;
     if (deck_count_after_search_started(Card::Serena) > 0) return Card::Serena;
     if (deck_count_after_search_started(Card::TateLiza) > 0) return Card::TateLiza;

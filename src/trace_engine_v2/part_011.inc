@@ -24,6 +24,15 @@
     // Star Alchemy is a deck search; target policy runs after that legal inspection.
     record_deck_search_knowledge("Star Alchemy");
     Card target = fss_target_after_search_started();
+    const bool burnet_overrides_dead_fallback = need_payload() &&
+        (item_locked() || deck_count_after_search_started(Card::BrilliantBlender) == 0) &&
+        deck_count_after_search_started(Card::ProfessorBurnet) > 0 &&
+        (target == Card::Arven || target == Card::MysteriousTreasure || target == Card::QuickBall || target == Card::Serena);
+    if (burnet_overrides_dead_fallback) {
+      // Burnet directly searches and discards up to 2 cards: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+      // It replaces a dead Blender fallback when Star Alchemy can legally take any card: https://api.pokemontcg.io/v2/cards/swsh12-156
+      target = Card::ProfessorBurnet;
+    }
     bool found = move_deck_to_hand(target);
     if (!found) {
       for (const Card fallback : {Card::RegidragoVstar, Card::Crispin, Card::BrilliantBlender,
@@ -102,7 +111,10 @@
     record_deck_search_knowledge("Steven's Resolve");
     const bool next_turn_item_locked = scenario_.locks == LockMode::FullItem || scenario_.locks == LockMode::FullCombined ||
                                        (scenario_.locks == LockMode::TurnTwoItem && state_.turn == 1);
-    const Card payload_outlet = next_turn_item_locked ? Card::ProfessorBurnet : Card::BrilliantBlender;
+    const bool blender_available_next_turn = !next_turn_item_locked && deck_count_after_search_started(Card::BrilliantBlender) > 0;
+    // Burnet directly searches and discards up to 2 cards: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Steven's Resolve must reserve Burnet when Blender is unavailable for the next payload turn: https://api.pokemontcg.io/v2/cards/sv6pt5-164
+    const Card payload_outlet = blender_available_next_turn ? Card::BrilliantBlender : Card::ProfessorBurnet;
     std::vector<Card> wanted;
     if (need_vstar() && hand_count(Card::RegidragoVstar) == 0) {
       if (deck_count_after_search_started(Card::RegidragoVstar) > 0) {

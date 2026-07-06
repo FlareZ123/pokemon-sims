@@ -26,6 +26,7 @@
   }
 
   bool play_tate_switch() {
+    // Card text source: https://api.pokemontcg.io/v2/cards/sm7-148
     if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 || !need_active_vstar()) return false;
     auto it = std::find_if(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) { return p.card == Card::RegidragoVstar; });
     if (it == state_.bench.end()) return false;
@@ -38,7 +39,10 @@
   }
 
   bool play_tate_draw() {
-    if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 || state_.hand.size() >= 4U) return false;
+    // Card text source: https://api.pokemontcg.io/v2/cards/sm7-148
+    // At four cards including Tate, the mode shuffles three and draws five: a
+    // net +1 draw. Direct connector priorities are handled by choose_supporter.
+    if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 || state_.hand.size() > 4U) return false;
     remove_one(state_.hand, Card::TateLiza);
     state_.discard.push_back(Card::TateLiza);
     state_.supporter_used = true;

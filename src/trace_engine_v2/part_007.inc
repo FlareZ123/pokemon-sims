@@ -3,6 +3,7 @@
         trace("ABILITY BLOCKED", "R-PATH-01", "Tapu Lele-GX Wonder Tag is suppressed by the Rule Box Ability lock.");
         return;
       }
+      // Card text source: https://api.pokemontcg.io/v2/cards/cel25c-60_A
       // The search permits inspecting the deck to select a Supporter.
       record_deck_search_knowledge("Wonder Tag");
       const Card target = choose_supporter_after_search_started();
@@ -16,6 +17,7 @@
       return;
     }
     if (card == Card::Oricorio) {
+      // Card text source: https://api.pokemontcg.io/v2/cards/sm2-55
       // Oricorio has no Rule Box; Path-style rule-box suppression does not stop Vital Dance.
       search_energy_to_hand(2, "R-ORICORIO-01", "Vital Dance");
     }
@@ -23,12 +25,14 @@
 
   Card choose_supporter_after_search_started() const {
     // Wonder Tag is resolving after legal deck inspection. A known prized
-    // immediate Pokemon axis makes Gladion the fastest supporter line.
+    // immediate Pokemon axis, or final attachable Basic Energy, makes Gladion
+    // the fastest Supporter line.
     const bool prized_regi = need_regi() && deck_count_after_search_started(Card::RegidragoV) == 0 &&
                              prize_count_after_reveal(Card::RegidragoV) > 0;
     const bool prized_vstar = need_vstar() && deck_count_after_search_started(Card::RegidragoVstar) == 0 &&
                               prize_count_after_reveal(Card::RegidragoVstar) > 0;
-    if ((prized_regi || prized_vstar) && deck_count_after_search_started(Card::Gladion) > 0) return Card::Gladion;
+    if ((prized_regi || prized_vstar || final_prized_energy_for_gladion().has_value()) &&
+        deck_count_after_search_started(Card::Gladion) > 0) return Card::Gladion;
 
     if (state_.turn == 1 && !scenario_.going_first && has_regi_v() && should_play_steven() &&
         deck_count_after_search_started(Card::StevensResolve) > 0) return Card::StevensResolve;

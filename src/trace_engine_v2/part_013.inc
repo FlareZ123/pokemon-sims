@@ -9,6 +9,7 @@
 
   bool use_legacy_star() {
     if (state_.vstar_power_used || !has_vstar() || !ability_available_for_pokemon(Card::RegidragoVstar)) return false;
+    // Card text source: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Use only when no direct payload outlet or direct connector remains and the discard-7 can create a JIT payload line.
     const bool only_random_payload_line = need_payload() && hand_count(Card::BrilliantBlender) == 0 && hand_count(Card::ProfessorBurnet) == 0 &&
                                           hand_count(Card::MysteriousTreasure) == 0 && hand_count(Card::QuickBall) == 0 && hand_count(Card::EarthenVessel) == 0 && hand_count(Card::UltraBall) == 0;
@@ -41,22 +42,32 @@
 
   bool use_celestial_roar() {
     if (first_turn_going_first() || state_.turn_ended || !state_.active || state_.active->card != Card::RegidragoV) return false;
-    // R-RV-01: Celestial Roar costs one Colorless Energy. Any attached Energy pays it.
+    // Card text source: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Celestial Roar costs one Colorless Energy. Any attached Energy pays it.
     if (state_.active->grass + state_.active->fire < 1) return false;
     // Attack policy: turn-one going-second Celestial Roar is used only when Steven's Resolve did not end the turn.
     if (state_.turn != 1 || scenario_.going_first) return false;
+    std::vector<Card> processed;
+    std::vector<Card> attached;
     std::vector<Card> discarded;
     for (int card = 0; card < 3 && !state_.deck.empty(); ++card) {
       const Card top = state_.deck.back();
       state_.deck.pop_back();
-      state_.discard.push_back(top);
-      state_.discarded_this_turn.push_back(top);
-      discarded.push_back(top);
-      if (top == Card::Grass) ++state_.active->grass;
-      if (top == Card::Fire) ++state_.active->fire;
+      processed.push_back(top);
+      if (top == Card::Grass) {
+        ++state_.active->grass;
+        attached.push_back(top);
+      } else if (top == Card::Fire) {
+        ++state_.active->fire;
+        attached.push_back(top);
+      } else {
+        state_.discard.push_back(top);
+        state_.discarded_this_turn.push_back(top);
+        discarded.push_back(top);
+      }
     }
     state_.turn_ended = true;
-    trace("ATTACK", "R-RV-01; R-GAME-ATTACK", "Regidrago V used Celestial Roar; discarded top 3: " + join_cards(discarded) + ". Attached all Basic Energy found to itself.");
+    trace("ATTACK", "R-RV-01; R-GAME-ATTACK", "Regidrago V used Celestial Roar; processed top 3: " + join_cards(processed) + "; attached Energy: " + join_cards(attached) + "; remaining discarded: " + join_cards(discarded) + ".");
     return true;
   }
 

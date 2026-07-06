@@ -69,6 +69,19 @@
   }
   bool need_energy() const { return grass_needed() > 0 || fire_needed() > 0; }
 
+  // Crispin can advance the axis when an actually needed type remains in deck
+  // at K1, or could still be unseen at K0. Card text source:
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  bool crispin_can_advance_energy_axis() const {
+    if (!need_energy()) return false;
+    if (deck_seen_) {
+      return (grass_needed() > 0 && deck_count_after_search_started(Card::Grass) > 0) ||
+             (fire_needed() > 0 && deck_count_after_search_started(Card::Fire) > 0);
+    }
+    return (grass_needed() > 0 && might_be_unseen(Card::Grass)) ||
+           (fire_needed() > 0 && might_be_unseen(Card::Fire));
+  }
+
   // Gladion may take any one Prize card. Once K1 has been established, a
   // single missing G or F in Prizes is a direct current-turn route if the
   // manual attachment is still unused.

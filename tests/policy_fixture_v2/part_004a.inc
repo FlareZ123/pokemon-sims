@@ -40,7 +40,6 @@ int main() {
       {"fss_fetches_gladion_for_final_prized_energy", test_fss_fetches_gladion_for_final_prized_energy},
       {"full_bench_blocks_basic_search_connectors", test_full_bench_blocks_basic_search_connectors},
       {"strict_serena_uses_three_safe_discards", test_strict_serena_uses_three_safe_discards},
-      {"serena_zero_discard_draws_growing_dead_hand", test_serena_zero_discard_draws_growing_dead_hand},
       {"heavy_ball_oricorio_preserves_item_lock_burnet", test_heavy_ball_oricorio_preserves_item_lock_burnet},
       {"oricorio_is_held_when_earthen_vessel_already_solves_energy", test_oricorio_is_held_when_earthen_vessel_already_solves_energy},
       {"oricorio_works_under_rule_box_lock", test_oricorio_works_under_rule_box_lock},

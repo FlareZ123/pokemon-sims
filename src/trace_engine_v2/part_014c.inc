@@ -22,7 +22,12 @@
     evolve_best_regi();
     play_basics_from_hand();
     play_items_until_stable(true);
-    use_legacy_star();
+    if (use_legacy_star()) {
+      // Core procedure source: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Recovered Items may be played later in the same turn.
+      play_basics_from_hand();
+      play_items_until_stable(true);
+    }
     attach_manual();
     retreat_to_benched_vstar_with_latias();
     if (need_active_vstar() && !state_.supporter_used) play_tate_switch();

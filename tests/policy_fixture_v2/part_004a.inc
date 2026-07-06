@@ -22,6 +22,19 @@ void test_ultra_ball_discards_payload_in_jit_window() {
          "Ultra Ball must complete its required Pokémon search after paying the discard cost.");
 }
 
+void test_tate_refreshes_a_five_card_dead_hand() {
+  State s = state(2);
+  s.hand = {Card::TateLiza, Card::Dipplin, Card::MawileGX, Card::Guzma, Card::Channeler};
+  s.deck = {Card::RegidragoVstar, Card::Grass};
+  // Tate & Liza shuffles the whole hand into the deck, then draws 5: https://api.pokemontcg.io/v2/cards/sm7-148
+  Fixture f(scenario("tate-five-card-refresh"), s);
+  EngineTestAccess::choose_supporter(f.engine);
+  const State& after = EngineTestAccess::state(f.engine);
+  expect(after.supporter_used && contains(after.discard, Card::TateLiza),
+         "Tate & Liza must be usable from a five-card dead hand.");
+  expect(after.hand.size() == 5U, "Tate & Liza draw mode must redraw five cards.");
+}
+
 using Test = std::pair<const char*, std::function<void()>>;
 
 }  // namespace
@@ -53,6 +66,7 @@ int main() {
       {"fss_reveal_preserves_burnet_over_prized_energy", test_fss_reveal_preserves_burnet_over_prized_energy},
       {"celestial_roar_attached_energy_leaves_discard", test_celestial_roar_attached_energy_leaves_discard},
       {"tate_draws_from_a_four_card_dead_hand", test_tate_draws_from_a_four_card_dead_hand},
+      {"tate_refreshes_a_five_card_dead_hand", test_tate_refreshes_a_five_card_dead_hand},
       {"fss_fetches_gladion_for_final_prized_energy", test_fss_fetches_gladion_for_final_prized_energy},
       {"full_bench_blocks_basic_search_connectors", test_full_bench_blocks_basic_search_connectors},
       {"strict_serena_uses_three_safe_discards", test_strict_serena_uses_three_safe_discards},

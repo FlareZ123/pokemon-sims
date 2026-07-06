@@ -104,6 +104,22 @@ void test_prized_energy_does_not_preempt_item_lock_payload_bridge() {
          "Gladion should be preserved when the final Energy alone cannot finish readiness.");
 }
 
+void test_celestial_roar_attached_energy_leaves_discard() {
+  State s = state(1, Card::RegidragoV, 0, 1, 0);
+  s.deck = {Card::Dipplin, Card::Fire, Card::Grass};
+  Fixture f(scenario("celestial-roar-zone-transfer"), s);
+
+  expect(EngineTestAccess::use_celestial_roar(f.engine),
+         "A going-second Regidrago V with one attached Energy should be able to use Celestial Roar.");
+  const State& after = EngineTestAccess::state(f.engine);
+  expect(after.active->grass == 2 && after.active->fire == 1,
+         "Grass and Fire found among the top three should be attached to Regidrago V.");
+  expect(!contains(after.discard, Card::Grass) && !contains(after.discard, Card::Fire),
+         "Attached Energy cards must not remain in the discard pile.");
+  expect(contains(after.discard, Card::Dipplin),
+         "Only the non-Energy top-three card should remain discarded.");
+}
+
 void test_fss_fetches_gladion_for_final_prized_energy() {
   State s = state(2, Card::RegidragoV, 1, 2, 0);
   s.active->tool = Tool::ForestSealStone;

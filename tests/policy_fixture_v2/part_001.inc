@@ -54,7 +54,8 @@ void test_fss_uses_a_fallback_when_vstar_is_not_in_deck() {
   s.deck = {Card::Crispin, Card::ProfessorBurnet};
   Fixture f(scenario("fss-fallback"), s);
   expect(EngineTestAccess::use_fss(f.engine), "Forest Seal Stone should be usable when VSTAR is prized.");
-  expect(contains(EngineTestAccess::state(f.engine).hand, Card::Crispin), "Star Alchemy should take a useful legal fallback instead of failing.");
+  // Crispin has no legal Energy target after Star Alchemy inspects this deck; Burnet remains the live payload outlet: https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  expect(contains(EngineTestAccess::state(f.engine).hand, Card::ProfessorBurnet), "Star Alchemy should take the remaining live payload fallback instead of dead Crispin.");
 }
 
 void test_fss_cannot_be_used_from_a_vstar_holder() {

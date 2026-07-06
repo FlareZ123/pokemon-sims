@@ -14,7 +14,9 @@
 
   bool play_arven() {
     if (!supporter_allowed() || item_locked() || hand_count(Card::Arven) == 0) return false;
-    const bool needs_item = need_regi() || need_vstar() || need_energy() || need_active_vstar() || can_play_payload_this_turn();
+    const bool needs_item = (need_regi() && bench_space() > 0) || need_vstar() || need_energy() ||
+                            (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx)) ||
+                            can_play_payload_this_turn();
     const bool needs_tool = has_regi_v() && !state_.vstar_power_used &&
                             ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
                              std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) { return p.card == Card::RegidragoV && p.tool == Tool::None; }));
@@ -25,16 +27,17 @@
 
     // Card text source: https://api.pokemontcg.io/v2/cards/sv1-166
     // Arven's deck search permits choosing the Item after inspecting the deck.
+    record_deck_search_knowledge("Arven");
     // Prefer the fewest-step route for the current missing axis, then an Item
     // that still advances that axis if the first choice is not in deck.
     std::vector<Card> item_candidates;
-    if (need_regi()) {
+    if (need_regi() && bench_space() > 0) {
       item_candidates = {Card::QuickBall, Card::MysteriousTreasure};
     } else if (need_vstar()) {
       item_candidates = {Card::EvolutionIncense, Card::MysteriousTreasure};
     } else if (need_energy()) {
       item_candidates = {Card::EarthenVessel};
-    } else if (need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx)) {
+    } else if (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx)) {
       item_candidates = {Card::QuickBall, Card::MysteriousTreasure};
     } else if (can_play_payload_this_turn()) {
       item_candidates = {Card::BrilliantBlender};
@@ -52,8 +55,8 @@
 
   bool play_gladion() {
     if (!supporter_allowed() || hand_count(Card::Gladion) == 0) return false;
-    const bool no_regi_route = need_regi() && hand_count(Card::RegidragoV) == 0 && hand_count(Card::QuickBall) == 0 && hand_count(Card::MysteriousTreasure) == 0 && hand_count(Card::UltraBall) == 0 && hand_count(Card::Arven) == 0;
-    const bool no_vstar_route = need_vstar() && hand_count(Card::RegidragoVstar) == 0 && hand_count(Card::EvolutionIncense) == 0 && hand_count(Card::MysteriousTreasure) == 0 && hand_count(Card::UltraBall) == 0 && hand_count(Card::Arven) == 0 && hand_count(Card::ForestSealStone) == 0;
+    const bool no_regi_route = need_regi() && hand_count(Card::RegidragoV) == 0 && hand_count(Card::QuickBall) == 0 && hand_count(Card::MysteriousTreasure) == 0 && hand_count(Card::UltraBall) == 0 && (item_locked() || hand_count(Card::Arven) == 0);
+    const bool no_vstar_route = need_vstar() && hand_count(Card::RegidragoVstar) == 0 && hand_count(Card::EvolutionIncense) == 0 && hand_count(Card::MysteriousTreasure) == 0 && hand_count(Card::UltraBall) == 0 && (item_locked() || hand_count(Card::Arven) == 0) && hand_count(Card::ForestSealStone) == 0;
     const bool no_locked_payload_route = need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) == 0;
     const bool blind_critical = no_regi_route || no_vstar_route || no_locked_payload_route;
 
@@ -63,7 +66,7 @@
       // A known prized Regidrago or VSTAR is an immediate missing-card axis.
       // These exact targets beat slower Supporter connectors.
       if (need_vstar() && prize_count_after_reveal(Card::RegidragoVstar) > 0) known_target = Card::RegidragoVstar;
-      else if (need_regi() && prize_count_after_reveal(Card::RegidragoV) > 0) known_target = Card::RegidragoV;
+      else if (need_regi() && bench_space() > 0 && prize_count_after_reveal(Card::RegidragoV) > 0) known_target = Card::RegidragoV;
       else {
         const bool live_crispin = need_energy() && hand_count(Card::Crispin) > 0 && crispin_can_advance_energy_axis();
         const bool live_burnet = need_payload() && hand_count(Card::ProfessorBurnet) > 0 && can_play_payload_this_turn();
@@ -74,7 +77,7 @@
 
         if (prize_energy && same_energy_absent_from_deck && !live_crispin) {
           known_target = *prize_energy;
-        } else if (need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) && !live_tate_switch &&
+        } else if (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) && !live_tate_switch &&
                    prize_count_after_reveal(Card::LatiasEx) > 0) {
           known_target = Card::LatiasEx;
         } else if (need_payload() && !live_burnet && !item_locked() && payload_window_open() &&
@@ -92,7 +95,7 @@
       const bool direct_supporter = should_play_steven() ||
                                     (need_energy() && hand_count(Card::Crispin) > 0 && crispin_can_advance_energy_axis()) ||
                                     (need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) > 0) ||
-                                    hand_count(Card::Arven) > 0;
+                                    (!item_locked() && hand_count(Card::Arven) > 0);
       if (!known_target && !direct_supporter && prize_count_after_reveal(Card::Lusamine) > 0 &&
           (count_of(state_.discard, Card::Crispin) > 0 || count_of(state_.discard, Card::ProfessorBurnet) > 0 ||
            count_of(state_.discard, Card::Arven) > 0 || count_of(state_.discard, Card::StevensResolve) > 0)) {

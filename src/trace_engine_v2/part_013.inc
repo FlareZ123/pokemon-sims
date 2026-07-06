@@ -1,6 +1,16 @@
         discard_from_hand(*extra, "Serena optional discard", "R-SERENA-01");
       }
     }
+    // Serena permits up to three discards in every DCI profile. In strict JIT,
+    // choose_discard(false, true) offers only already-safe non-payload fodder.
+    // Card text source: https://api.pokemontcg.io/v2/cards/swsh12-164
+    if (scenario_.dci == DciProfile::StrictJit) {
+      for (int number = 0; number < 2; ++number) {
+        const auto extra = choose_discard(false, true);
+        if (!extra || is_payload(*extra)) break;
+        discard_from_hand(*extra, "Serena optional discard", "R-SERENA-01");
+      }
+    }
     state_.supporter_used = true;
     while (state_.hand.size() < 5U && !state_.deck.empty()) draw_card("Serena");
     trace("PLAY SUPPORTER", "R-SERENA-01; R-GAME-SUPPORTER", "Used Serena draw mode after discarding at least one card.");

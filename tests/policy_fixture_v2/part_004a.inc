@@ -18,6 +18,7 @@ int main() {
       {"gladion_is_not_burned_when_vstar_is_already_in_hand", test_gladion_is_not_burned_when_vstar_is_already_in_hand},
       {"steven_fetches_burnet_before_turn_two_item_lock", test_steven_fetches_burnet_before_turn_two_item_lock},
       {"steven_uses_legal_fallback_when_preferred_card_is_prized", test_steven_uses_legal_fallback_when_preferred_card_is_prized},
+      {"steven_resolve_reserves_gladion_for_prized_vstar", test_steven_resolve_reserves_gladion_for_prized_vstar},
       {"fss_finds_steven_on_turn_one_when_three_axes_are_missing", test_fss_finds_steven_on_turn_one_when_three_axes_are_missing},
       {"fss_uses_a_fallback_when_vstar_is_not_in_deck", test_fss_uses_a_fallback_when_vstar_is_not_in_deck},
       {"fss_cannot_be_used_from_a_vstar_holder", test_fss_cannot_be_used_from_a_vstar_holder},

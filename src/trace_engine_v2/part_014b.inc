@@ -1,13 +1,16 @@
   std::vector<Card> lusamine_recovery_targets() const {
+    // Card text source: https://api.pokemontcg.io/v2/cards/sm4-96
+    // Lusamine may recover up to two Supporter and/or Stadium cards in any
+    // combination, including two copies of the same Supporter.
     std::vector<Card> targets;
     for (const Card preferred : {Card::Crispin, Card::ProfessorBurnet, Card::Arven,
                                  Card::StevensResolve, Card::Gladion, Card::Serena,
-                                 Card::TateLiza}) {
-      if (targets.size() >= 2U) break;
-      if (count_of(state_.discard, preferred) > 0 &&
-          std::find(targets.begin(), targets.end(), preferred) == targets.end()) {
+                                 Card::TateLiza, Card::PathToPeak, Card::ChaoticSwell}) {
+      while (targets.size() < 2U &&
+             count_of(state_.discard, preferred) > count_of(targets, preferred)) {
         targets.push_back(preferred);
       }
+      if (targets.size() >= 2U) break;
     }
     return targets;
   }

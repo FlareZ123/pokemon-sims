@@ -39,10 +39,9 @@
   }
 
   bool play_tate_draw() {
-    // Card text source: https://api.pokemontcg.io/v2/cards/sm7-148
-    // At four cards including Tate, the mode shuffles three and draws five: a
-    // net +1 draw. Direct connector priorities are handled by choose_supporter.
-    if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 || state_.hand.size() > 4U) return false;
+    // Tate & Liza has no hand-size condition: shuffle the whole hand into the deck, then draw 5 cards: https://api.pokemontcg.io/v2/cards/sm7-148
+    // This preserves legal five-or-more-card dead-hand refreshes after direct connectors fail.
+    if (!supporter_allowed() || hand_count(Card::TateLiza) == 0) return false;
     remove_one(state_.hand, Card::TateLiza);
     state_.discard.push_back(Card::TateLiza);
     state_.supporter_used = true;

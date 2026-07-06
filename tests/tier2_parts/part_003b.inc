@@ -46,7 +46,7 @@ int main() {
     {"fss_uses_gladion_for_known_prized_vstar", fss_uses_gladion_for_known_prized_vstar},
     {"heavy_ball_oricorio_compresses_energy", heavy_ball_oricorio_compresses_energy},
     {"ability_lock_blocks_latias_quick_ball_connector", ability_lock_blocks_latias_quick_ball_connector},
-    {"fss_fetches_tate_when_latias_is_locked", fss_fetches_tate_when_latias_is_locked},
+    {"fss_is_blocked_by_rulebox_lock", fss_is_blocked_by_rulebox_lock},
     {"k1_heavy_ball_beats_still_live_quick_ball", k1_heavy_ball_beats_still_live_quick_ball},
     {"tate_draw_recovers_missing_vstar", tate_draw_recovers_missing_vstar},
     {"arven_uses_available_vstar_item_fallback", arven_uses_available_vstar_item_fallback},

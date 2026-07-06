@@ -11,18 +11,19 @@
       }
     };
 
+    const bool legal_search_cost = is_legal_cost_available(can_play_payload_this_turn(), true);
     const bool known_gladion_axis = prizes_known() &&
         ((need_vstar() && prize_count_after_reveal(Card::RegidragoVstar) > 0) ||
          (need_regi() && bench_space() > 0 && prize_count_after_reveal(Card::RegidragoV) > 0) ||
          final_prized_energy_for_gladion().has_value());
     const bool arven_vstar_axis = need_vstar() && !item_locked() &&
-                                  might_be_unseen(Card::EvolutionIncense);
+                                  (might_be_unseen(Card::EvolutionIncense) ||
+                                   (legal_search_cost && might_be_unseen(Card::MysteriousTreasure)));
     const bool arven_regi_axis = need_regi() && bench_space() > 0 && !item_locked() &&
-                                 is_legal_cost_available(can_play_payload_this_turn(), true) &&
+                                 legal_search_cost &&
                                  (might_be_unseen(Card::QuickBall) || might_be_unseen(Card::MysteriousTreasure));
     const bool arven_energy_axis = need_energy() && !item_locked() &&
-                                   is_legal_cost_available(can_play_payload_this_turn(), true) &&
-                                   might_be_unseen(Card::EarthenVessel);
+                                   legal_search_cost && might_be_unseen(Card::EarthenVessel);
     const bool arven_payload_axis = need_payload() && !item_locked() &&
                                     might_be_unseen(Card::BrilliantBlender);
 

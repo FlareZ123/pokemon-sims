@@ -23,6 +23,7 @@ int main() {
       {"fss_uses_a_fallback_when_vstar_is_not_in_deck", test_fss_uses_a_fallback_when_vstar_is_not_in_deck},
       {"fss_cannot_be_used_from_a_vstar_holder", test_fss_cannot_be_used_from_a_vstar_holder},
       {"existing_fss_is_usable_under_item_lock", test_existing_fss_is_usable_under_item_lock},
+      {"fss_is_blocked_by_rule_box_lock", test_fss_is_blocked_by_rule_box_lock},
       {"crispin_attaches_only_with_two_different_energy_types", test_crispin_attaches_only_with_two_different_energy_types},
       {"crispin_single_type_only_puts_energy_in_hand", test_crispin_single_type_only_puts_energy_in_hand},
       {"earthen_vessel_can_take_two_grass", test_earthen_vessel_can_take_two_grass},

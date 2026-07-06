@@ -108,6 +108,7 @@
       if (deck_count_after_search_started(Card::RegidragoVstar) > 0) return Card::RegidragoVstar;
       if (prize_count_after_reveal(Card::RegidragoVstar) > 0 && deck_count_after_search_started(Card::Gladion) > 0) return Card::Gladion;
     }
+    if (final_prized_energy_for_gladion().has_value() && deck_count_after_search_started(Card::Gladion) > 0) return Card::Gladion;
 
     if (need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) &&
         !in_play(Card::LatiasEx) && deck_count_after_search_started(Card::LatiasEx) > 0) return Card::LatiasEx;

@@ -1,4 +1,22 @@
 
+void test_steven_resolve_reserves_gladion_for_prized_vstar() {
+  State s = state(1, Card::RegidragoV, 0);
+  s.hand = {Card::StevensResolve};
+  s.deck = {Card::Gladion, Card::Crispin, Card::BrilliantBlender};
+  s.prizes = {Card::RegidragoVstar};
+  Fixture f(scenario("steven-prized-vstar-k1"), s);
+
+  expect(EngineTestAccess::play_steven(f.engine),
+         "Steven's Resolve should be playable going second on turn one with three setup axes missing.");
+  const State& after = EngineTestAccess::state(f.engine);
+  expect(contains(after.hand, Card::Gladion) && contains(after.hand, Card::Crispin) &&
+         contains(after.hand, Card::BrilliantBlender),
+         "After legal deck inspection, Steven should take Gladion for prized VSTAR plus the Energy and payload outlets.");
+  expect(!contains(after.hand, Card::RegidragoVstar),
+         "The prized VSTAR should be recognized as absent from deck rather than searched unsuccessfully.");
+  expect(after.turn_ended, "Steven's Resolve must still end the turn after the K1 selection.");
+}
+
 void test_full_bench_blocks_basic_search_connectors() {
   State s = state(2, Card::RegidragoV, 1, 2, 1);
   s.bench = {

@@ -8,18 +8,21 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_executable(regidrago_sim src/regidrago_sim.cpp)
 target_compile_options(regidrago_sim PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
-add_executable(regidrago_sim_tests tests/regidrago_sim_tests.cpp)
-target_compile_options(regidrago_sim_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+add_executable(regidrago_policy_tests tests/regidrago_policy_tests.cpp)
+target_compile_options(regidrago_policy_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
+add_executable(regidrago_tier2_tests tests/regidrago_tier2_tests.cpp)
+target_compile_options(regidrago_tier2_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
 enable_testing()
-add_test(NAME regidrago_sim_tests COMMAND regidrago_sim_tests)
-add_test(
-  NAME regidrago_sim_smoke
-  COMMAND regidrago_sim
-    --trials 100
-    --variant-trials 25
-    --seed 20260704
-    --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv
-    --variants-out ${CMAKE_CURRENT_BINARY_DIR}/smoke_variants.csv
-)
-set_tests_properties(regidrago_sim_smoke PROPERTIES RUN_SERIAL TRUE)
+add_test(NAME regidrago_sim_self_test COMMAND regidrago_sim --self-test)
+add_test(NAME regidrago_policy_fixtures COMMAND regidrago_policy_tests)
+add_test(NAME regidrago_tier2_policy_fixtures COMMAND regidrago_tier2_tests)
+add_test(NAME trace_strict_second_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 --require-ready-by 3)
+add_test(NAME trace_strict_first_t4 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4)
+add_test(NAME trace_flex_second_t2 COMMAND regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 4 --require-ready-by 2)
+add_test(NAME trace_turn2_item_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 9 --require-ready-by 3)
+add_test(NAME trace_rulebox_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 19 --require-ready-by 3)
+add_test(NAME trace_no_control_first_t4 COMMAND regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 6 --require-ready-by 4)
+add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
+set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)

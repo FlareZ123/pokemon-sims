@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel 2
+      - name: Test
+        shell: bash
+        run: |
+          set -o pipefail
+          ctest --test-dir build --output-on-failure || {
+            status=$?
+            echo '===== CTest LastTest.log ====='
+            find build/Testing -name LastTest.log -type f -print -exec cat {} \; || true
+            exit "$status"
+          }
+      - name: Upload CTest diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-ctest-diagnostics
+          path: build/Testing
+          if-no-files-found: warn
+
+  sanitizers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure sanitizers
+        run: cmake -S . -B build-sanitizers -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - name: Build sanitizers
+        run: cmake --build build-sanitizers --parallel 2
+      - name: Test sanitizers
+        shell: bash
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+        run: |
+          set -o pipefail
+          ctest --test-dir build-sanitizers --output-on-failure || {
+            status=$?
+            echo '===== Sanitizer CTest LastTest.log ====='
+            find build-sanitizers/Testing -name LastTest.log -type f -print -exec cat {} \; || true
+            exit "$status"
+          }
+      - name: Upload sanitizer diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanitizer-ctest-diagnostics
+          path: build-sanitizers/Testing
+          if-no-files-found: warn

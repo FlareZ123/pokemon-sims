@@ -1,0 +1,100 @@
+  return std::nullopt;
+}
+
+Aggregate simulate(const Scenario& scenario, const DeckRecipe& recipe, const std::uint64_t trials, const std::uint64_t seed) {
+  std::mt19937_64 rng(seed);
+  Aggregate aggregate{};
+  for (std::uint64_t trial = 0; trial < trials; ++trial) {
+    Engine engine(scenario, recipe, rng);
+    const TrialOutcome outcome = engine.run();
+    ++aggregate.trials;
+    aggregate.by2 += outcome.ready_by_2 ? 1U : 0U;
+    aggregate.by3 += outcome.ready_by_3 ? 1U : 0U;
+    aggregate.by4 += outcome.ready_by_4 ? 1U : 0U;
+    aggregate.started_regi += outcome.started_regi ? 1U : 0U;
+    aggregate.fss += outcome.used_fss ? 1U : 0U;
+    aggregate.legacy += outcome.used_legacy_star ? 1U : 0U;
+    aggregate.steven += outcome.used_steven ? 1U : 0U;
+    aggregate.blender += outcome.used_blender ? 1U : 0U;
+    aggregate.total_mulligans += outcome.mulligans;
+  }
+  return aggregate;
+}
+
+double pct(const std::uint64_t count, const std::uint64_t total) {
+  return total == 0 ? 0.0 : 100.0 * static_cast<double>(count) / static_cast<double>(total);
+}
+
+double standard_error_pp(const std::uint64_t count, const std::uint64_t total) {
+  if (total == 0) return 0.0;
+  const double p = static_cast<double>(count) / static_cast<double>(total);
+  return 100.0 * std::sqrt(p * (1.0 - p) / static_cast<double>(total));
+}
+
+class OutputLock {
+ public:
+  explicit OutputLock(const std::filesystem::path& output) {
+    const std::filesystem::path lock_path = output.string() + ".lock";
+#if defined(_WIN32)
+    handle_ = ::CreateFileW(lock_path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (handle_ == INVALID_HANDLE_VALUE) throw std::runtime_error("could not lock output");
+#else
+    descriptor_ = ::open(lock_path.c_str(), O_CREAT | O_RDWR, 0644);
+    if (descriptor_ < 0 || ::flock(descriptor_, LOCK_EX) != 0) {
+      if (descriptor_ >= 0) ::close(descriptor_);
+      throw std::runtime_error("could not lock output");
+    }
+#endif
+  }
+  ~OutputLock() {
+#if defined(_WIN32)
+    if (handle_ != INVALID_HANDLE_VALUE) ::CloseHandle(handle_);
+#else
+    if (descriptor_ >= 0) { ::flock(descriptor_, LOCK_UN); ::close(descriptor_); }
+#endif
+  }
+  OutputLock(const OutputLock&) = delete;
+  OutputLock& operator=(const OutputLock&) = delete;
+ private:
+#if defined(_WIN32)
+  HANDLE handle_{INVALID_HANDLE_VALUE};
+#else
+  int descriptor_{-1};
+#endif
+};
+
+void write_atomic(const std::filesystem::path& output, const std::string& content) {
+  if (!output.parent_path().empty()) std::filesystem::create_directories(output.parent_path());
+  OutputLock lock(output);
+  const std::filesystem::path temporary = output.string() + ".tmp." + std::to_string(
+#if defined(_WIN32)
+      static_cast<unsigned long long>(::GetCurrentProcessId())
+#else
+      static_cast<unsigned long long>(::getpid())
+#endif
+  );
+  {
+    std::ofstream stream(temporary, std::ios::binary | std::ios::trunc);
+    if (!stream) throw std::runtime_error("could not write temporary output");
+    stream << content;
+    stream.flush();
+    if (!stream) throw std::runtime_error("could not flush temporary output");
+  }
+#if defined(_WIN32)
+  if (!::MoveFileExW(temporary.c_str(), output.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) throw std::runtime_error("could not replace output");
+#else
+  std::error_code error;
+  std::filesystem::rename(temporary, output, error);
+  if (error) { std::filesystem::remove(temporary); throw std::runtime_error("could not replace output"); }
+#endif
+}
+
+bool self_test() {
+  const int total = std::accumulate(kDeckRecipe.begin(), kDeckRecipe.end(), 0, [](const int sum, const auto& entry) { return sum + entry.second; });
+  if (total != 60) return false;
+  if (!is_basic(Card::RegidragoV) || is_basic(Card::RegidragoVstar)) return false;
+  if (!is_dragon_or_psychic(Card::RegidragoVstar) || !is_payload(Card::MegaDragonite) || is_payload(Card::Dipplin)) return false;
+  if (is_rule_box_pokemon(Card::Oricorio)) return false;
+  if (!is_rule_box_pokemon(Card::TapuLeleGX)) return false;
+  if (!is_pokemon_v(Card::RegidragoV) || is_pokemon_v(Card::RegidragoVstar)) return false;
+  // Trace smoke validates a complete single-game setup and rule ID output path.

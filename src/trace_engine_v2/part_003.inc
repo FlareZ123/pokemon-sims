@@ -63,13 +63,13 @@ class Engine {
   }
 
   // P-HIDDEN-01: before a legal inspection, policy uses only public zones and
-  // fixed-list copy counts. After a deck search OR a full Prize reveal, the
-  // remaining deck is deducible from the fixed list and known zones.
-  // Heavy Ball source: https://api.pokemontcg.io/v2/cards/swsh10-146
+  // fixed-list copy counts. A deck search sees the remaining deck directly.
+  // Heavy Ball reveals the full Prize set, so the fixed list plus known zones
+  // also determines the remaining deck count. Source:
+  // https://api.pokemontcg.io/v2/cards/swsh10-146
   bool might_be_unseen(const Card card) const {
-    if (deck_seen_) return deck_count_after_search_started(card) > 0;
-    int known = hand_count(card) + count_of(state_.discard, card) + in_play_count(card);
-    if (prizes_revealed_) known += prize_count_after_reveal(card);
+    if (deck_seen_ || prizes_revealed_) return deck_count_after_search_started(card) > 0;
+    const int known = hand_count(card) + count_of(state_.discard, card) + in_play_count(card);
     return total_copies(card) > known;
   }
 

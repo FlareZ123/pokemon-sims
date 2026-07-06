@@ -37,6 +37,12 @@ Notation: `T` is the player turn; `A` is Active; `B` is Bench; `H` is hand; `D` 
 27. **Enforces first-turn restrictions and Celestial Roar's cost.** Initial A: `T1 going first; A Regidrago V[G]; H Arven`. Pass A: no Supporter and no attack. Initial B: `T1 going second; A Regidrago V[-]; D Grass, Fire, Grass`. Pass B: Celestial Roar fails for no Energy. Initial C: same, except `A Regidrago V[G]`. Pass C: Celestial Roar discards the three cards and attaches both Grass plus Fire.
 28. **Enforces evolution timing and one manual attachment.** Initial A: `T2; A Regidrago V[-] entered T2; H VSTAR, Grass, Fire`. Pass A: evolution fails. Initial B: same but Regidrago entered T1. Pass B: evolution succeeds; one manual attachment succeeds; the second fails.
 29. **Full Item lock prevents Item cards.** Initial: `T2; A Regidrago V[-]; H Earthen Vessel, Dipplin; D Grass, Fire; full Item lock`. Pass: Earthen Vessel cannot be played.
+30. **K1 Gladion retrieves final prized Fire rather than using dead Crispin.** Initial: `T2; A Regidrago V[GG]; H Mysterious Treasure, Dipplin, Gladion, Crispin; D VSTAR; P Fire; X/DTT Mega Dragonite ex`. Pass: Treasure legally takes VSTAR and establishes K1; Gladion takes Fire because no Fire remains in deck; manual attachment completes GGF.
+31. **Heavy Ball prize revelation also marks dead Crispin.** Initial: `T2; A Regidrago V[GG]; H Heavy Ball, Crispin, Gladion; D VSTAR; P Fire; X/DTT Mega Dragonite ex`. Pass: Heavy Ball reveals the non-Basic Prize set and is discarded; fixed-list deduction proves Fire absent from deck; Gladion takes Fire rather than spending Crispin.
+32. **Prized Energy does not preempt the Item-lock payload bridge.** Initial: `T2; A Regidrago V[GG]; H Heavy Ball, Gladion, Professor Burnet, VSTAR; D Mega Dragonite ex; P Fire; full Item lock`. Pass: Heavy Ball reveals Fire; Burnet is selected and discards Mega Dragonite ex; Gladion stays in hand because Fire alone cannot create readiness.
+33. **Celestial Roar transfers Energy out of discard.** Initial: `T1 going second; A Regidrago V[G]; D Dipplin, Fire, Grass`. Pass: the top-three Grass and Fire become attached, neither remains in discard, and only Dipplin remains there.
+34. **Tate & Liza draws from a four-card dead hand.** Initial: `T2; A Regidrago V[GGF]; H Tate & Liza, Dipplin, Mawile-GX, Guzma; D VSTAR; X/DTT Mega Dragonite ex`. Pass: no direct Supporter line exists; Tate shuffles the three remaining cards and draws five, finding VSTAR.
+35. **Star Alchemy establishes K1 before final-Energy Gladion choice.** Initial: `T2; A Regidrago V[GG] with Forest Seal Stone; H VSTAR; D Gladion; P Fire; X/DTT Mega Dragonite ex`. Pass: Star Alchemy records legal deck knowledge, fetches Gladion, and Gladion takes Fire.
 
 ## Test command
 
@@ -46,4 +52,4 @@ cmake --build build --parallel 2
 ctest --test-dir build --output-on-failure
 ```
 
-`regidrago_policy_fixtures` runs all 29 exact-state cases. The existing six seeded trace regressions and the aggregate smoke test remain separate CTest targets.
+`regidrago_policy_fixtures` runs all 35 exact-state cases. The existing six seeded trace regressions and the aggregate smoke test remain separate CTest targets.

@@ -69,6 +69,17 @@
   }
   bool need_energy() const { return grass_needed() > 0 || fire_needed() > 0; }
 
+  // Gladion may take any one Prize card. Once K1 has been established, a
+  // single missing G or F in Prizes is a direct current-turn route if the
+  // manual attachment is still unused.
+  // Card text source: https://api.pokemontcg.io/v2/cards/sm4-95
+  std::optional<Card> final_prized_energy_for_gladion() const {
+    if (!prizes_known() || state_.manual_energy_used || grass_needed() + fire_needed() != 1) return std::nullopt;
+    if (grass_needed() == 1 && prize_count_after_reveal(Card::Grass) > 0) return Card::Grass;
+    if (fire_needed() == 1 && prize_count_after_reveal(Card::Fire) > 0) return Card::Fire;
+    return std::nullopt;
+  }
+
   bool payload_ready() const {
     if (!strict_payload_timing()) return std::any_of(state_.discard.begin(), state_.discard.end(), is_payload);
     // A strict-JIT payload must both enter discard this turn and still be in discard

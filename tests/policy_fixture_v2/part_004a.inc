@@ -32,6 +32,7 @@ int main() {
       {"heavy_ball_inspects_prizes_and_chains_tapu", test_heavy_ball_inspects_prizes_and_chains_tapu},
       {"known_no_basic_prize_holds_heavy_ball_for_discard_cost", test_known_no_basic_prize_holds_heavy_ball_for_discard_cost},
       {"k1_gladion_recovers_final_prized_energy", test_k1_gladion_recovers_final_prized_energy},
+      {"heavy_ball_reveal_marks_crispin_dead", test_heavy_ball_reveal_marks_crispin_dead},
       {"fss_fetches_gladion_for_final_prized_energy", test_fss_fetches_gladion_for_final_prized_energy},
       {"oricorio_is_held_when_earthen_vessel_already_solves_energy", test_oricorio_is_held_when_earthen_vessel_already_solves_energy},
       {"oricorio_works_under_rule_box_lock", test_oricorio_works_under_rule_box_lock},

@@ -7,6 +7,8 @@
       if (play_brilliant_blender()) return true;
       if (play_mysterious_treasure(permit_payload)) return true;
       if (play_quick_ball(permit_payload)) return true;
+      // Ultra Ball's discard cost can put a current-turn Dragon payload in discard: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+      if (play_ultra_ball(permit_payload)) return true;
       if (play_earthen_vessel(permit_payload)) return true;
     }
     return false;

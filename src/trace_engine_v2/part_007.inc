@@ -36,7 +36,9 @@
 
     if (state_.turn == 1 && !scenario_.going_first && has_regi_v() && should_play_steven() &&
         deck_count_after_search_started(Card::StevensResolve) > 0) return Card::StevensResolve;
-    if (need_energy() && deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin;
+    // Crispin source: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Do not choose it after K1 if the inspected deck contains no needed Energy.
+    if (need_energy() && crispin_can_advance_energy_axis() && deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin;
     if (need_payload() && item_locked() && deck_count_after_search_started(Card::ProfessorBurnet) > 0) return Card::ProfessorBurnet;
     if (need_vstar() && deck_count_after_search_started(Card::Arven) > 0) return Card::Arven;
     if (deck_count_after_search_started(Card::Serena) > 0) return Card::Serena;

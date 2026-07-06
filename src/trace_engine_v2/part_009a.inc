@@ -14,9 +14,9 @@
     if (item_locked() || hand_count(Card::MysteriousTreasure) == 0) return false;
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
                                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
-    const bool want_regi = need_regi();
+    const bool want_regi = need_regi() && bench_space() > 0;
     const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0;
-    const bool want_latias = need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) &&
+    const bool want_latias = need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
                              !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0;
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 && needs_tapu_connector();
     const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 && needs_oricorio_connector();
@@ -29,7 +29,9 @@
     state_.discard.push_back(Card::MysteriousTreasure);
     discard_from_hand(*cost, "Mysterious Treasure cost", "R-MT-01");
 
+    // Card text source: https://api.pokemontcg.io/v2/cards/sm6-113
     // The deck is now being legally searched. Select a legal target after inspecting it.
+    record_deck_search_knowledge("Mysterious Treasure");
     const std::array<Card, 9> targets{Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::TapuLeleGX,
                                       Card::Oricorio, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::DialgaGX};
     for (const Card target : targets) {

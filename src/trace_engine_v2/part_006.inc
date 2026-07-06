@@ -115,4 +115,4 @@
     return bench_from_hand(Card::TapuLeleGX, true);
   }
 
-  void resolve_entry_ability(const Card card)
+  void resolve_entry_ability(const Card card) {

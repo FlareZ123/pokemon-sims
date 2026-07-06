@@ -1,0 +1,1 @@
+// Lusamine regression fixture.

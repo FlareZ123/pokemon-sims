@@ -39,6 +39,22 @@ void test_strict_serena_uses_three_safe_discards() {
          "After three legal discards, Serena should draw back to five and find the compact-deck VSTAR.");
 }
 
+void test_serena_zero_discard_draws_growing_dead_hand() {
+  State s = state(2, Card::RegidragoV, 1, 2, 1);
+  s.hand = {Card::Serena};
+  s.deck = {Card::RegidragoVstar};
+  s.discard = {Card::MegaDragonite};
+  s.discarded_this_turn = {Card::MegaDragonite};
+  Fixture f(scenario("serena-zero-discard-dead-hand"), s);
+
+  EngineTestAccess::choose_supporter(f.engine);
+  const State& after = EngineTestAccess::state(f.engine);
+  expect(contains(after.discard, Card::Serena),
+         "Serena should be played with zero discards when no legal policy-safe discard exists.");
+  expect(contains(after.hand, Card::RegidragoVstar),
+         "Zero-discard Serena should grow the dead hand and draw the missing VSTAR.");
+}
+
 void test_heavy_ball_oricorio_preserves_item_lock_burnet() {
   State s = state(2, Card::RegidragoVstar, 1, 2, 0);
   s.hand = {Card::HisuianHeavyBall, Card::ProfessorBurnet};

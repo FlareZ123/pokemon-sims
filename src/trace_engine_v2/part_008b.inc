@@ -7,7 +7,7 @@
         std::none_of(state_.prizes.begin(), state_.prizes.end(), is_basic);
     if (known_no_basic_prize) {
       trace("HOLD ITEM", "R-HEAVYBALL-01; P-KNOWLEDGE-01",
-            "Known Prize cards contain no Basic Pokémon; retained Heavy Ball as a legal discard cost.");
+            "Known Prize cards contain no Basic Pokemon; retained Heavy Ball as a legal discard cost.");
       return false;
     }
 
@@ -30,13 +30,15 @@
                                         might_be_unseen(Card::Dragapult) ||
                                         might_be_unseen(Card::GoodraVstar) ||
                                         might_be_unseen(Card::DialgaGX);
-    // P-COMPRESS-01: with a single missing Energy and a live Burnet under Item
-    // lock, Oricorio plus manual attachment preserves the Supporter slot for
-    // Burnet. Tapu -> Crispin would consume that same slot.
+    // P-COMPRESS-01: with one missing Energy and Professor Burnet as the live
+    // current-turn payload Supporter, Oricorio plus a manual attachment preserves
+    // the Supporter slot. Tapu Lele-GX -> Crispin would consume it instead.
+    // Oricorio source: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Professor Burnet source: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     const bool oricorio_preserves_burnet = can_bench_recovered_basic && need_energy() && exactly_one_energy_missing &&
-                                           !state_.manual_energy_used && can_play_payload_this_turn() && item_locked() &&
-                                           hand_count(Card::ProfessorBurnet) > 0 && required_energy_still_in_deck &&
-                                           payload_still_in_deck;
+                                           !state_.manual_energy_used && can_play_payload_this_turn() &&
+                                           hand_count(Card::ProfessorBurnet) > 0 && hand_count(Card::BrilliantBlender) == 0 &&
+                                           required_energy_still_in_deck && payload_still_in_deck;
     Card selected = Card::HisuianHeavyBall;
 
     // Direct current-turn axes first. A recovered Basic cannot be an immediate
@@ -81,7 +83,7 @@
     state_.discard.push_back(Card::HisuianHeavyBall);
     shuffle(state_.prizes);
     trace("PLAY ITEM", "R-HEAVYBALL-01; R-GAME-ITEM; P-KNOWLEDGE-01",
-          "Looked at Prize cards; no Basic Pokémon was present, so Heavy Ball was discarded.");
+          "Looked at Prize cards; no Basic Pokemon was present, so Heavy Ball was discarded.");
     return true;
   }
 

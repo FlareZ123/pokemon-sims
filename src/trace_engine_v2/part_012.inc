@@ -23,6 +23,7 @@
     state_.discard.push_back(Card::Arven);
     state_.supporter_used = true;
 
+    // Card text source: https://api.pokemontcg.io/v2/cards/sv1-166
     // Arven's deck search permits choosing the Item after inspecting the deck.
     // Prefer the fewest-step route for the current missing axis, then an Item
     // that still advances that axis if the first choice is not in deck.
@@ -58,26 +59,38 @@
 
     std::optional<Card> known_target;
     if (prizes_known()) {
+      // Card text source: https://api.pokemontcg.io/v2/cards/sm4-95
       // A known prized Regidrago or VSTAR is an immediate missing-card axis.
       // These exact targets beat slower Supporter connectors.
       if (need_vstar() && prize_count_after_reveal(Card::RegidragoVstar) > 0) known_target = Card::RegidragoVstar;
       else if (need_regi() && prize_count_after_reveal(Card::RegidragoV) > 0) known_target = Card::RegidragoV;
       else {
-        const bool live_crispin = need_energy() && hand_count(Card::Crispin) > 0;
+        const bool live_crispin = need_energy() && hand_count(Card::Crispin) > 0 && crispin_can_advance_energy_axis();
         const bool live_burnet = need_payload() && hand_count(Card::ProfessorBurnet) > 0 && can_play_payload_this_turn();
         const bool live_tate_switch = need_active_vstar() && !need_energy() && !need_payload() && hand_count(Card::TateLiza) > 0;
+        const auto prize_energy = final_prized_energy_for_gladion();
+        const bool same_energy_absent_from_deck = prize_energy.has_value() &&
+            deck_count_after_search_started(*prize_energy) == 0;
 
-        if (need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) && !live_tate_switch &&
-            prize_count_after_reveal(Card::LatiasEx) > 0) known_target = Card::LatiasEx;
-        else if (need_payload() && !live_burnet && !item_locked() && payload_window_open() &&
-                 prize_count_after_reveal(Card::BrilliantBlender) > 0) known_target = Card::BrilliantBlender;
-        else if (need_energy() && !live_crispin && prize_count_after_reveal(Card::Oricorio) > 0 &&
-                 bench_space() > 0 && !in_play(Card::Oricorio) && needs_oricorio_connector()) known_target = Card::Oricorio;
-        else if (need_energy() && !live_crispin && !item_locked() && prize_count_after_reveal(Card::EarthenVessel) > 0 &&
-                 is_legal_cost_available(can_play_payload_this_turn(), true)) known_target = Card::EarthenVessel;
+        if (prize_energy && same_energy_absent_from_deck && !live_crispin) {
+          known_target = *prize_energy;
+        } else if (need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) && !live_tate_switch &&
+                   prize_count_after_reveal(Card::LatiasEx) > 0) {
+          known_target = Card::LatiasEx;
+        } else if (need_payload() && !live_burnet && !item_locked() && payload_window_open() &&
+                   prize_count_after_reveal(Card::BrilliantBlender) > 0) {
+          known_target = Card::BrilliantBlender;
+        } else if (need_energy() && !live_crispin && prize_count_after_reveal(Card::Oricorio) > 0 &&
+                   bench_space() > 0 && !in_play(Card::Oricorio) && needs_oricorio_connector()) {
+          known_target = Card::Oricorio;
+        } else if (need_energy() && !live_crispin && !item_locked() && prize_count_after_reveal(Card::EarthenVessel) > 0 &&
+                   is_legal_cost_available(can_play_payload_this_turn(), true)) {
+          known_target = Card::EarthenVessel;
+        }
       }
 
-      const bool direct_supporter = should_play_steven() || (need_energy() && hand_count(Card::Crispin) > 0) ||
+      const bool direct_supporter = should_play_steven() ||
+                                    (need_energy() && hand_count(Card::Crispin) > 0 && crispin_can_advance_energy_axis()) ||
                                     (need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) > 0) ||
                                     hand_count(Card::Arven) > 0;
       if (!known_target && !direct_supporter && prize_count_after_reveal(Card::Lusamine) > 0 &&

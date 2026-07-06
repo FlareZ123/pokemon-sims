@@ -15,6 +15,7 @@
   bool play_ultra_ball(const bool permit_payload) {
     if (item_locked() || hand_count(Card::UltraBall) == 0) return false;
     // Ultra Ball discards 2 other cards from hand before searching a Pokémon: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // The current-turn payload condition is simulator policy, which permits the printed discard cost only when it advances strict-JIT readiness.
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
                                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
     const bool want_regi = need_regi() && bench_space() > 0;

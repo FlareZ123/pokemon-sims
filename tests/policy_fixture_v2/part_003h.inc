@@ -69,6 +69,24 @@ void test_k1_gladion_recovers_final_prized_energy() {
          "The manual attachment should complete the Fire part of GGF.");
 }
 
+void test_heavy_ball_reveal_marks_crispin_dead() {
+  State s = state(2, Card::RegidragoV, 1, 2, 0);
+  s.hand = {Card::HisuianHeavyBall, Card::Crispin, Card::Gladion};
+  s.deck = {Card::RegidragoVstar};
+  s.prizes = {Card::Fire};
+  s.discard = {Card::MegaDragonite};
+  s.discarded_this_turn = {Card::MegaDragonite};
+  Fixture f(scenario("heavy-ball-revealed-prized-fire"), s);
+
+  expect(EngineTestAccess::play_heavy_ball(f.engine),
+         "Heavy Ball should be played at K0 to reveal the Prize state.");
+  expect(contains(EngineTestAccess::state(f.engine).discard, Card::HisuianHeavyBall),
+         "With no Prize Basic, Heavy Ball should be discarded by its printed miss clause.");
+  EngineTestAccess::choose_supporter(f.engine);
+  expect(contains(EngineTestAccess::state(f.engine).hand, Card::Fire),
+         "The revealed Prize Fire should make Gladion beat a Crispin known unable to find Fire.");
+}
+
 void test_fss_fetches_gladion_for_final_prized_energy() {
   State s = state(2, Card::RegidragoV, 1, 2, 0);
   s.active->tool = Tool::ForestSealStone;

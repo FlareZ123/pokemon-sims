@@ -11,6 +11,7 @@
       return false;
     }
 
+    // Card text source: https://api.pokemontcg.io/v2/cards/swsh10-146
     // At K0, Heavy Ball is an information action as well as a possible recovery.
     // It is played before ordinary search Items. After inspection, any revealed
     // Basic can be selected for its immediate connector value or as future fodder.
@@ -20,13 +21,15 @@
     const auto prized = [this](const Card card) {
       return std::find(state_.prizes.begin(), state_.prizes.end(), card) != state_.prizes.end();
     };
+    const bool can_bench_recovered_basic = bench_space() > 0;
     Card selected = Card::HisuianHeavyBall;
 
-    // Direct current-turn axes first.
-    if (need_regi() && prized(Card::RegidragoV)) selected = Card::RegidragoV;
-    else if (needs_tapu_connector() && prized(Card::TapuLeleGX)) selected = Card::TapuLeleGX;
-    else if (needs_oricorio_connector() && prized(Card::Oricorio)) selected = Card::Oricorio;
-    else if (need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) && prized(Card::LatiasEx)) selected = Card::LatiasEx;
+    // Direct current-turn axes first. A recovered Basic cannot be an immediate
+    // connector when the Bench is full, although it remains valid future fodder.
+    if (need_regi() && can_bench_recovered_basic && prized(Card::RegidragoV)) selected = Card::RegidragoV;
+    else if (can_bench_recovered_basic && needs_tapu_connector() && prized(Card::TapuLeleGX)) selected = Card::TapuLeleGX;
+    else if (can_bench_recovered_basic && needs_oricorio_connector() && prized(Card::Oricorio)) selected = Card::Oricorio;
+    else if (can_bench_recovered_basic && need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) && prized(Card::LatiasEx)) selected = Card::LatiasEx;
 
     // Prefer future connectors whose abilities can function in this scenario.
     if (selected == Card::HisuianHeavyBall) {

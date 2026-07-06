@@ -5,7 +5,11 @@
     if (holder == nullptr) {
       for (Pokemon& p : state_.bench) if (p.tool == Tool::ForestSealStone) { holder = &p; break; }
     }
-    if (holder == nullptr || !is_pokemon_v(holder->card)) return false;
+    // Forest Seal Stone grants this VSTAR Power to the attached Pokemon V.
+    // A Rule Box Ability lock therefore suppresses it with the holder's other Abilities.
+    // Sources: https://api.pokemontcg.io/v2/cards/swsh12-156
+    //          https://api.pokemontcg.io/v2/cards/swsh6-148
+    if (holder == nullptr || !is_pokemon_v(holder->card) || !ability_available_for_pokemon(holder->card)) return false;
     const bool tate_solves_only_missing_axis = need_active_vstar() && !need_energy() && !need_payload() &&
                                                supporter_allowed() && hand_count(Card::TateLiza) > 0;
     const bool crispin_solves_only_missing_axis = need_energy() && !need_regi() && !need_vstar() &&

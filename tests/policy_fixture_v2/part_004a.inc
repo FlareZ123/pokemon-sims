@@ -41,6 +41,7 @@ int main() {
       {"full_bench_blocks_basic_search_connectors", test_full_bench_blocks_basic_search_connectors},
       {"strict_serena_uses_three_safe_discards", test_strict_serena_uses_three_safe_discards},
       {"heavy_ball_oricorio_preserves_burnet_supporter", test_heavy_ball_oricorio_preserves_burnet_supporter},
+      {"legacy_star_recovered_blender_is_played_same_turn", test_legacy_star_recovered_blender_is_played_same_turn},
       {"oricorio_is_held_when_earthen_vessel_already_solves_energy", test_oricorio_is_held_when_earthen_vessel_already_solves_energy},
       {"oricorio_works_under_rule_box_lock", test_oricorio_works_under_rule_box_lock},
       {"tapu_is_blocked_by_rule_box_lock", test_tapu_is_blocked_by_rule_box_lock},

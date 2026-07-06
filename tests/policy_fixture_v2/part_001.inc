@@ -15,7 +15,8 @@ void test_gladion_is_not_burned_when_vstar_is_already_in_hand() {
 void test_steven_fetches_burnet_before_turn_two_item_lock() {
   State s = state(1);
   s.hand = {Card::StevensResolve};
-  s.deck = {Card::RegidragoVstar, Card::Crispin, Card::ProfessorBurnet, Card::BrilliantBlender};
+  // Crispin's printed search needs Basic Energy of different types: https://api.pokemontcg.io/v2/cards/sv7-133
+  s.deck = {Card::RegidragoVstar, Card::Crispin, Card::ProfessorBurnet, Card::BrilliantBlender, Card::Grass, Card::Fire};
   Fixture f(scenario("steven-lock", DciProfile::StrictJit, LockMode::TurnTwoItem), s);
   expect(EngineTestAccess::play_steven(f.engine), "Steven should bridge three missing axes on going-second turn one.");
   const State& after = EngineTestAccess::state(f.engine);
@@ -29,7 +30,8 @@ void test_steven_uses_legal_fallback_when_preferred_card_is_prized() {
   State s = state(1);
   s.hand = {Card::StevensResolve};
   s.prizes = {Card::RegidragoVstar};
-  s.deck = {Card::Crispin, Card::ProfessorBurnet, Card::EarthenVessel};
+  // Crispin is asserted as a live fallback only when this fixture contains its searchable Grass and Fire pair: https://api.pokemontcg.io/v2/cards/sv7-133
+  s.deck = {Card::Crispin, Card::ProfessorBurnet, Card::EarthenVessel, Card::Grass, Card::Fire};
   Fixture f(scenario("steven-fallback", DciProfile::StrictJit, LockMode::TurnTwoItem), s);
   expect(EngineTestAccess::play_steven(f.engine), "Steven should still be playable with a prized preferred VSTAR.");
   const State& after = EngineTestAccess::state(f.engine);

@@ -44,9 +44,13 @@
     // https://api.pokemontcg.io/v2/cards/swsh1-179
     // https://api.pokemontcg.io/v2/cards/sv4-163
     // https://api.pokemontcg.io/v2/cards/swsh12-164
+    // A held Ultra Ball can discard the fetched Evolution payload plus a distinct
+    // policy-legal second hand card: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    const bool ultra_ball_payload_discard_outlet = hand_count(Card::UltraBall) > 0 &&
+                                                   is_legal_cost_available(false, true);
     const bool hand_payload_discard_outlet = hand_count(Card::MysteriousTreasure) > 0 ||
         hand_count(Card::QuickBall) > 0 || hand_count(Card::EarthenVessel) > 0 ||
-        (supporter_allowed() && hand_count(Card::Serena) > 0);
+        ultra_ball_payload_discard_outlet || (supporter_allowed() && hand_count(Card::Serena) > 0);
     const bool want_payload = permit_payload && can_play_payload_this_turn() && need_payload() &&
                               hand_payload_discard_outlet;
     if (!want_vstar && !want_payload) return false;

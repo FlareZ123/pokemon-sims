@@ -50,7 +50,18 @@
         return true;
       }
     }
-    const Card fallback = fallback_mysterious_target_after_search_started();
-    const bool found_fallback = move_deck_to_hand(fallback);
+    // Once this search proves the needed Regidrago is prized, Tapu Lele-GX can be
+    // searched and Benched to find Gladion with Wonder Tag in the same turn:
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/sm4-95
+    const bool prized_regi_axis = deck_count_after_search_started(Card::Gladion) > 0 &&
+        ((need_regi() && deck_count_after_search_started(Card::RegidragoV) == 0 &&
+          prize_count_after_reveal(Card::RegidragoV) > 0) ||
+         (need_vstar() && deck_count_after_search_started(Card::RegidragoVstar) == 0 &&
+          prize_count_after_reveal(Card::RegidragoVstar) > 0));
+    const bool found_tapu_for_gladion = prized_regi_axis && bench_space() > 0 &&
+        hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
+        move_deck_to_hand(Card::TapuLeleGX);
+    const Card fallback = found_tapu_for_gladion ? Card::TapuLeleGX : fallback_mysterious_target_after_search_started();
+    const bool found_fallback = found_tapu_for_gladion || move_deck_to_hand(fallback);
     shuffle(state_.deck);
     trace("PLAY ITEM", "R-MT-01; R-GAME-ITEM", found_fallback ? "No preferred target remained; legally searched " + std::string(name(fallback)) + "." : "No Psychic or Dragon Pokémon remained after search.");

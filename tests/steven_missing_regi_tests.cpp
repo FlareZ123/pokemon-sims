@@ -55,8 +55,9 @@ void test_direct_steven_fetches_missing_regidrago() {
   // Steven's Resolve searches for up to 3 cards and ends the turn: https://api.pokemontcg.io/v2/cards/sm7-145
   // Regidrago V is a Basic Pokémon that may be selected as one of those cards: https://api.pokemontcg.io/v2/cards/swsh12-135
   const sim::DeckRecipe recipe = sim::baseline_recipe();
+  const sim::Scenario test_scenario = scenario();
   std::mt19937_64 rng{103};
-  sim::Engine engine(scenario(), recipe, rng);
+  sim::Engine engine(test_scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, missing_regi_state({sim::Card::StevensResolve}));
 
   expect(sim::EngineTestAccess::play_steven(engine),
@@ -67,8 +68,9 @@ void test_direct_steven_fetches_missing_regidrago() {
 void test_wonder_tag_fetches_steven_for_missing_regidrago() {
   // Wonder Tag can search the deck for a Supporter when Tapu Lele-GX is Benched from hand: https://api.pokemontcg.io/v2/cards/cel25c-60_A
   const sim::DeckRecipe recipe = sim::baseline_recipe();
+  const sim::Scenario test_scenario = scenario();
   std::mt19937_64 rng{104};
-  sim::Engine engine(scenario(), recipe, rng);
+  sim::Engine engine(test_scenario, recipe, rng);
   sim::State state = missing_regi_state({sim::Card::TapuLeleGX});
   state.deck.push_back(sim::Card::StevensResolve);
   sim::EngineTestAccess::set_state(engine, std::move(state));

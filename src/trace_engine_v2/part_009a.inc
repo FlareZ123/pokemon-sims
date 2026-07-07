@@ -12,6 +12,9 @@
 
   bool play_mysterious_treasure(const bool permit_payload) {
     if (item_locked() || hand_count(Card::MysteriousTreasure) == 0) return false;
+    // is_payload is the A/S readiness set. Dipplin is a legal Dragon search
+    // target, while maintainer policy keeps it out of payload-discard routing:
+    // https://api.pokemontcg.io/v2/cards/sv6-127
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
                                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
     const bool want_regi = need_regi() && bench_space() > 0;

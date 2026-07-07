@@ -93,6 +93,9 @@
   bool need_vstar() const { return has_regi_v() && !has_vstar() && hand_count(Card::RegidragoVstar) == 0; }
 
   bool has_other_payload_outlet(const Card excluded) const {
+    // A search connector can only fetch a future payload when a payload may still
+    // be in deck. K1 derives this from legal deck or Prize inspection.
+    if (!payload_might_be_in_deck()) return false;
     const auto present = [this, excluded](const Card card) { return card != excluded && hand_count(card) > 0; };
     return present(Card::MysteriousTreasure) || present(Card::QuickBall) || present(Card::UltraBall) ||
            present(Card::EarthenVessel) || present(Card::Serena) || present(Card::BrilliantBlender) ||

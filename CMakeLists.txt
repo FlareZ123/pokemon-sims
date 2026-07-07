@@ -20,6 +20,9 @@ target_compile_options(regidrago_fss_rulebox_tests PRIVATE -Wall -Wextra -Wpedan
 add_executable(regidrago_arven_fss_rulebox_tests tests/arven_fss_rulebox_tests.cpp)
 target_compile_options(regidrago_arven_fss_rulebox_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+add_executable(regidrago_arven_item_lock_tests tests/arven_item_lock_tests.cpp)
+target_compile_options(regidrago_arven_item_lock_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 add_executable(regidrago_known_dead_payload_tests tests/known_dead_payload_tests.cpp)
 target_compile_options(regidrago_known_dead_payload_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
@@ -65,6 +68,7 @@ add_test(NAME regidrago_policy_fixtures COMMAND regidrago_policy_tests)
 add_test(NAME regidrago_tier2_policy_fixtures COMMAND regidrago_tier2_tests)
 add_test(NAME regidrago_fss_rulebox COMMAND regidrago_fss_rulebox_tests)
 add_test(NAME regidrago_arven_fss_rulebox COMMAND regidrago_arven_fss_rulebox_tests)
+add_test(NAME regidrago_arven_item_lock COMMAND regidrago_arven_item_lock_tests)
 add_test(NAME regidrago_known_dead_payload COMMAND regidrago_known_dead_payload_tests)
 add_test(NAME regidrago_ultra_ball_tapu COMMAND regidrago_ultra_ball_tapu_tests)
 add_test(NAME regidrago_wonder_tag_dead_burnet COMMAND regidrago_wonder_tag_dead_burnet_tests)
@@ -82,7 +86,7 @@ add_test(NAME trace_strict_second_t3 COMMAND regidrago_sim --simulate-this --sce
 add_test(NAME trace_strict_first_t4 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4)
 add_test(NAME trace_flex_second_t2 COMMAND regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 4 --require-ready-by 2)
 add_test(NAME trace_turn2_item_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 9 --require-ready-by 3)
-add_test(NAME trace_rulebox_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 19 --require-ready-by 3)
+add_test(NAME trace_rulebox_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 19 --require-ready-by 4)
 add_test(NAME trace_no_control_first_t4 COMMAND regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 6 --require-ready-by 4)
 add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
 set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)

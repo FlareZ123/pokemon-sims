@@ -33,6 +33,11 @@
                                        might_be_unseen(Card::Dragapult) ||
                                        might_be_unseen(Card::GoodraVstar) ||
                                        might_be_unseen(Card::DialgaGX);
+      // After a legal K1 inspection proves the missing Basic Regidrago V is prized,
+      // Arven can find Hisuian Heavy Ball and Heavy Ball can exchange itself for that Basic:
+      // https://api.pokemontcg.io/v2/cards/sv1-166 https://api.pokemontcg.io/v2/cards/swsh10-146 https://api.pokemontcg.io/v2/cards/swsh12-135
+      const bool known_prized_regi_target = prizes_known() && need_regi() && bench_space() > 0 &&
+                                             prize_count_after_reveal(Card::RegidragoV) > 0;
       std::vector<Card> candidates;
       const auto add_item_candidate = [this, &candidates](const Card item, const bool advances_now) {
         if (advances_now && might_be_unseen(item) &&
@@ -45,6 +50,7 @@
         add_item_candidate(Card::QuickBall, can_pay_search_cost);
         add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
       }
+      if (known_prized_regi_target) add_item_candidate(Card::HisuianHeavyBall, true);
       if (need_vstar() && live_vstar_target) {
         add_item_candidate(Card::EvolutionIncense, true);
         add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);

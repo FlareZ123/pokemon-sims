@@ -53,6 +53,16 @@
       recovered.push_back(Card::ProfessorBurnet);
     }
 
+    // Legacy Star may return Latias ex from discard, and Skyliner then gives the
+    // Basic Active no Retreat Cost so the powered Benched VSTAR can be promoted:
+    // https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/sv8-76
+    const bool latias_retreat_line = need_active_vstar() && state_.active && is_basic(state_.active->card) &&
+        bench_space() > 0 && !in_play(Card::LatiasEx) && ability_available_for_pokemon(Card::LatiasEx);
+    if (latias_retreat_line && count_of(state_.discard, Card::LatiasEx) > 0 && recovered.size() < 2U) {
+      if (!recover_discard_to_hand(Card::LatiasEx)) throw std::logic_error("Legacy Star Latias target disappeared");
+      recovered.push_back(Card::LatiasEx);
+    }
+
     // Recover energy only if it enables a manual attachment this turn. Do not recover a strict-JIT payload.
     for (const Card desired : {Card::Grass, Card::Fire, Card::Crispin, Card::Arven}) {
       if (recovered.size() >= 2U) break;

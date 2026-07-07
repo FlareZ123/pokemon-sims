@@ -1,4 +1,4 @@
-                           (target == Card::DialgaGX && want_payload);
+                            (target == Card::DialgaGX && want_payload);
       if (desired && move_deck_to_hand(target)) {
         shuffle(state_.deck);
         trace("PLAY ITEM", "R-QB-01; R-GAME-ITEM", "Searched a Basic Pokémon: " + std::string(name(target)) + ".");
@@ -28,7 +28,11 @@
     // through Wonder Tag when it is Benched from hand: https://api.pokemontcg.io/v2/cards/cel25c-60_A
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
                            bench_space() > 0 && needs_tapu_connector();
-    if (!want_regi && !want_vstar && !want_latias && !want_oricorio && !want_tapu && !can_jit_discard) return false;
+    // A separate later discard-search Item can discard the Dragon fetched by this
+    // Ultra Ball. This route still pays both printed Ultra Ball costs independently:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    const bool want_payload = need_payload() && !can_jit_discard && has_other_payload_outlet(Card::UltraBall);
+    if (!want_regi && !want_vstar && !want_latias && !want_oricorio && !want_tapu && !want_payload && !can_jit_discard) return false;
 
     const auto first = choose_discard(can_jit_discard, true);
     if (!first) return false;

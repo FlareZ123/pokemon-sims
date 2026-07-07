@@ -107,6 +107,26 @@ void test_legacy_star_recovered_crispin_is_played_same_turn() {
          "Legacy Star's current-turn Mega Dragonite discard must remain a valid strict-JIT payload.");
 }
 
+void test_legacy_star_recovers_burnet_for_deck_payload() {
+  State s = state(2, Card::RegidragoVstar, 0, 2, 1);
+  s.discard = {Card::ProfessorBurnet};
+  // Legacy Star can recover Professor Burnet after its top-seven discard:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Professor Burnet then searches the remaining deck and discards Mega Dragonite ex:
+  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  s.deck = {Card::MegaDragonite, Card::MawileGX, Card::Guzma, Card::Channeler,
+            Card::FieldBlower, Card::ChaoticSwell, Card::PathToPeak, Card::Powerglass};
+  Fixture f(scenario("legacy-star-recovered-burnet"), s);
+  EngineTestAccess::run_turn(f.engine);
+  const State& after = EngineTestAccess::state(f.engine);
+  expect(after.supporter_used && contains(after.discard, Card::ProfessorBurnet),
+         "Recovered Professor Burnet must use the still-available Supporter play.");
+  expect(contains(after.discard, Card::MegaDragonite) && contains(after.discarded_this_turn, Card::MegaDragonite),
+         "Professor Burnet must discard the remaining Mega Dragonite ex payload.");
+  expect(EngineTestAccess::payload_ready(f.engine),
+         "Professor Burnet's discard must satisfy the strict-JIT payload readiness predicate.");
+}
+
 using Test = std::pair<const char*, std::function<void()>>;
 
 }  // namespace
@@ -146,6 +166,7 @@ int main() {
       {"heavy_ball_oricorio_preserves_burnet_supporter", test_heavy_ball_oricorio_preserves_burnet_supporter},
       {"legacy_star_recovered_blender_is_played_same_turn", test_legacy_star_recovered_blender_is_played_same_turn},
       {"legacy_star_recovered_crispin_is_played_same_turn", test_legacy_star_recovered_crispin_is_played_same_turn},
+      {"legacy_star_recovers_burnet_for_deck_payload", test_legacy_star_recovers_burnet_for_deck_payload},
       {"lusamine_recovers_only_live_axis_connectors", test_lusamine_recovers_only_live_axis_connectors},
       {"wonder_tag_skips_known_dead_crispin", test_wonder_tag_skips_known_dead_crispin},
       {"payload_selectors_fetch_burnet_when_blender_is_unavailable", test_payload_selectors_fetch_burnet_when_blender_is_unavailable},

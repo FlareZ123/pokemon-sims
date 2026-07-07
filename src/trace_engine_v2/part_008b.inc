@@ -103,9 +103,12 @@
   }
 
   Card fallback_mysterious_target_after_search_started() const {
+    // Mysterious Treasure can search a Psychic or Dragon Pokémon: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Dipplin TWM 127 is Dragon and remains a legal fallback: https://api.pokemontcg.io/v2/cards/sv6-127
+    // Its legal-search status is separate from the A/S payload predicate in is_payload.
     for (const Card target : {Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio,
                               Card::TapuLeleGX, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
-                              Card::DialgaGX}) {
+                              Card::DialgaGX, Card::Dipplin}) {
       if (deck_count_after_search_started(target) > 0) return target;
     }
     return Card::RegidragoV;

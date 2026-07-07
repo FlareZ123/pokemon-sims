@@ -107,7 +107,13 @@
     const auto present = [this, excluded](const Card card) {
       return hand_count(card) > (card == excluded ? 1 : 0);
     };
-    return present(Card::MysteriousTreasure) || present(Card::QuickBall) || present(Card::UltraBall) ||
+    // The current Treasure or Quick Ball line spends its search card and one discard,
+    // then adds the fetched payload. Ultra Ball still needs two other cards when played:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // Its post-search hand therefore needs Ultra Ball, the fetched payload, and one
+    // further card, which requires at least four cards in the pre-search hand.
+    const bool payable_ultra_ball = present(Card::UltraBall) && state_.hand.size() >= 4U;
+    return present(Card::MysteriousTreasure) || present(Card::QuickBall) || payable_ultra_ball ||
            present(Card::EarthenVessel) || (supporter_allowed() && present(Card::Serena));
   }
 

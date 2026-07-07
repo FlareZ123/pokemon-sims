@@ -4,7 +4,7 @@
                                 Card::MysteriousTreasure, Card::EarthenVessel, Card::ForestSealStone,
                                 Card::LatiasEx, Card::QuickBall}) {
       if (found.size() >= 3U) break;
-      // Crispin needs different Basic Energy types; K1 must not fetch it after the inspected deck proves no needed type remains: https://api.pokemontcg.io/v2/cards/sv7-133
+      // Crispin needs different Basic Energy types; K1 must not fetch it after the inspected deck proves no needed Energy remains: https://api.pokemontcg.io/v2/cards/sv7-133
       if (fallback == Card::Crispin && !crispin_can_advance_energy_axis()) continue;
       if (move_deck_to_hand(fallback)) found.push_back(fallback);
     }
@@ -16,35 +16,64 @@
 
   bool play_arven() {
     if (!supporter_allowed() || item_locked() || hand_count(Card::Arven) == 0) return false;
-    const bool needs_item = (need_regi() && bench_space() > 0) || need_vstar() || need_energy() ||
-                            (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx)) ||
-                            can_play_payload_this_turn();
+
     const bool needs_tool = has_regi_v() && !state_.vstar_power_used &&
                             ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
                              std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) { return p.card == Card::RegidragoV && p.tool == Tool::None; }));
-    if (!needs_item && !needs_tool) return false;
+    const bool can_pay_search_cost = is_legal_cost_available(can_play_payload_this_turn(), true);
+    const bool live_regi_target = hand_count(Card::RegidragoV) == 0 && might_be_unseen(Card::RegidragoV);
+    const bool live_vstar_target = hand_count(Card::RegidragoVstar) == 0 && might_be_unseen(Card::RegidragoVstar);
+    const bool live_energy_target = (grass_needed() > 0 && might_be_unseen(Card::Grass)) ||
+                                    (fire_needed() > 0 && might_be_unseen(Card::Fire));
+    const bool live_latias_target = hand_count(Card::LatiasEx) == 0 && !in_play(Card::LatiasEx) &&
+                                    might_be_unseen(Card::LatiasEx);
+    const bool live_payload_target = might_be_unseen(Card::MegaDragonite) ||
+                                     might_be_unseen(Card::Dragapult) ||
+                                     might_be_unseen(Card::GoodraVstar) ||
+                                     might_be_unseen(Card::DialgaGX);
+    std::vector<Card> item_candidates;
+    const auto add_item_candidate = [this, &item_candidates](const Card item, const bool advances_now) {
+      if (advances_now && might_be_unseen(item) &&
+          std::find(item_candidates.begin(), item_candidates.end(), item) == item_candidates.end()) {
+        item_candidates.push_back(item);
+      }
+    };
+
+    // Arven searches an Item and a Tool: https://api.pokemontcg.io/v2/cards/sv1-166
+    // A candidate needs both a usable Item and a reachable target. At K0 both
+    // may be plausible; after K1, a missing Item or target cannot spend Arven.
+    if (need_regi() && bench_space() > 0 && live_regi_target) {
+      add_item_candidate(Card::QuickBall, can_pay_search_cost);
+      add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
+    }
+    if (need_vstar() && live_vstar_target) {
+      add_item_candidate(Card::EvolutionIncense, true);
+      add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
+    }
+    if (need_energy() && live_energy_target) add_item_candidate(Card::EarthenVessel, can_pay_search_cost);
+    if (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) && live_latias_target) {
+      add_item_candidate(Card::QuickBall, can_pay_search_cost);
+      add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
+    }
+    if (can_play_payload_this_turn() && live_payload_target) add_item_candidate(Card::BrilliantBlender, true);
+
+    const bool fss_has_live_target = (need_regi() && bench_space() > 0 && live_regi_target) ||
+                                     (need_vstar() && live_vstar_target) ||
+                                     (need_energy() && live_energy_target) ||
+                                     (need_active_vstar() && bench_space() > 0 && live_latias_target) ||
+                                     (can_play_payload_this_turn() && live_payload_target);
+    const bool live_tool = needs_tool && ability_available_for_pokemon(Card::RegidragoV) &&
+                           fss_has_live_target && might_be_unseen(Card::ForestSealStone);
+    // Do not spend the Supporter on an empty Item search. Forest Seal Stone is
+    // independently live only when Star Alchemy can reach a current missing axis.
+    if (item_candidates.empty() && !live_tool) return false;
+
     remove_one(state_.hand, Card::Arven);
     state_.discard.push_back(Card::Arven);
     state_.supporter_used = true;
 
-    // Card text source: https://api.pokemontcg.io/v2/cards/sv1-166
     // Arven's deck search permits choosing the Item after inspecting the deck.
     record_deck_search_knowledge("Arven");
-    // Prefer the fewest-step route for the current missing axis, then an Item
-    // that still advances that axis if the first choice is not in deck.
-    std::vector<Card> item_candidates;
-    if (need_regi() && bench_space() > 0) {
-      item_candidates = {Card::QuickBall, Card::MysteriousTreasure};
-    } else if (need_vstar()) {
-      item_candidates = {Card::EvolutionIncense, Card::MysteriousTreasure};
-    } else if (need_energy()) {
-      item_candidates = {Card::EarthenVessel};
-    } else if (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx)) {
-      item_candidates = {Card::QuickBall, Card::MysteriousTreasure};
-    } else if (can_play_payload_this_turn()) {
-      item_candidates = {Card::BrilliantBlender};
-    }
-
     std::vector<Card> found;
     for (const Card item : item_candidates) {
       if (move_deck_to_hand(item)) { found.push_back(item); break; }

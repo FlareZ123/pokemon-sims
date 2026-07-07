@@ -14,5 +14,6 @@
 #include "policy_fixture_v2/part_003q.inc"
 #include "policy_fixture_v2/part_003r.inc"
 #include "policy_fixture_v2/part_003u.inc"
+#include "policy_fixture_v2/part_003v.inc"
 #include "policy_fixture_v2/part_004a.inc"
 #include "policy_fixture_v2/part_004b.inc"}

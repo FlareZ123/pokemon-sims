@@ -4,7 +4,7 @@
                                 Card::MysteriousTreasure, Card::EarthenVessel, Card::ForestSealStone,
                                 Card::LatiasEx, Card::QuickBall}) {
       if (found.size() >= 3U) break;
-      // Crispin needs different Basic Energy types; K1 must not fetch it after the inspected deck proves no needed type remains: https://api.pokemontcg.io/v2/cards/sv7-133
+      // Crispin needs different Basic Energy types; K1 must not fetch it after the inspected deck proves no needed Energy remains: https://api.pokemontcg.io/v2/cards/sv7-133
       if (fallback == Card::Crispin && !crispin_can_advance_energy_axis()) continue;
       if (move_deck_to_hand(fallback)) found.push_back(fallback);
     }
@@ -16,18 +16,32 @@
 
   bool play_arven() {
     if (!supporter_allowed() || item_locked() || hand_count(Card::Arven) == 0) return false;
-    const bool needs_item = (need_regi() && bench_space() > 0) || need_vstar() || need_energy() ||
-                            (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx)) ||
-                            can_play_payload_this_turn();
+
     const bool needs_tool = has_regi_v() && !state_.vstar_power_used &&
                             ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
                              std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) { return p.card == Card::RegidragoV && p.tool == Tool::None; }));
-    if (!needs_item && !needs_tool) return false;
+    const bool can_pay_search_cost = is_legal_cost_available(can_play_payload_this_turn(), true);
+    const bool live_regi_item = need_regi() && bench_space() > 0 && can_pay_search_cost &&
+                                (might_be_unseen(Card::QuickBall) || might_be_unseen(Card::MysteriousTreasure));
+    const bool live_vstar_item = need_vstar() &&
+                                 (might_be_unseen(Card::EvolutionIncense) ||
+                                  (can_pay_search_cost && might_be_unseen(Card::MysteriousTreasure)));
+    const bool live_energy_item = need_energy() && can_pay_search_cost && might_be_unseen(Card::EarthenVessel);
+    const bool live_active_item = need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
+                                  can_pay_search_cost &&
+                                  (might_be_unseen(Card::QuickBall) || might_be_unseen(Card::MysteriousTreasure));
+    const bool live_payload_item = can_play_payload_this_turn() && might_be_unseen(Card::BrilliantBlender);
+    const bool live_tool = needs_tool && ability_available_for_pokemon(Card::RegidragoV) &&
+                           might_be_unseen(Card::ForestSealStone);
+    // Arven searches an Item and a Tool: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Spend the Supporter only when an Item is plausibly present and playable now,
+    // or when Forest Seal Stone is a live VSTAR-Power route on a Regidrago V.
+    if (!(live_regi_item || live_vstar_item || live_energy_item || live_active_item || live_payload_item || live_tool)) return false;
+
     remove_one(state_.hand, Card::Arven);
     state_.discard.push_back(Card::Arven);
     state_.supporter_used = true;
 
-    // Card text source: https://api.pokemontcg.io/v2/cards/sv1-166
     // Arven's deck search permits choosing the Item after inspecting the deck.
     record_deck_search_knowledge("Arven");
     // Prefer the fewest-step route for the current missing axis, then an Item
@@ -133,7 +147,7 @@
     *selected = Card::Gladion;
     state_.hand.push_back(chosen);
     shuffle(state_.prizes);
-    trace("PLAY SUPPORTER", "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01", "Completed mandatory Prize exchange with " + std::string(name(chosen)) + ".");
+    trace("PLAY SUPPORTER", "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01", "Completed mandatory Prize exchange with " + std::string(name(chosen) + ".");
     return true;
   }
 
@@ -151,4 +165,4 @@
         if (!extra || is_payload(*extra)) break;
         const bool can_cycle = *extra == Card::Dipplin || *extra == Card::MawileGX || *extra == Card::Guzma ||
                                *extra == Card::Channeler || *extra == Card::FieldBlower || *extra == Card::ChaoticSwell || *extra == Card::PathToPeak;
-        if (!can_cycle) break;
+        if (can_cycle) break;

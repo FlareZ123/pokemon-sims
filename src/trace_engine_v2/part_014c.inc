@@ -67,8 +67,7 @@ std::vector<Scenario> all_scenarios() {
     const std::string seat = first ? "go-first" : "go-second";
     result.push_back({"strict-jit/" + seat, DciProfile::StrictJit, LockMode::None, first, 4});
     result.push_back({"matchup-flex-jit/" + seat, DciProfile::MatchupFlexJit, LockMode::None, first, 4});
-    result.push_back({"no-discard-control/" + seat, DciProfile::NoDiscardControl, first ? LockMode::None : LockMode::None, first, 4});
-    result.back().locks = LockMode::None;
+    result.push_back({"no-discard-control/" + seat, DciProfile::NoDiscardControl, LockMode::None, first, 4});
     result.push_back({"strict-jit-turn2-item-lock/" + seat, DciProfile::StrictJit, LockMode::TurnTwoItem, first, 4});
     result.push_back({"strict-jit-full-item-lock/" + seat, DciProfile::StrictJit, LockMode::FullItem, first, 4});
     result.push_back({"strict-jit-rulebox-ability-lock/" + seat, DciProfile::StrictJit, LockMode::FullRuleBoxAbility, first, 4});

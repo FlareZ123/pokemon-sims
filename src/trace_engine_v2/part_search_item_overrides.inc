@@ -1,0 +1,152 @@
+  bool second_ultra_ball_can_discard_fetched_payload() {
+    // Ultra Ball requires two other cards each time it is played. A first Ultra Ball
+    // can only fetch a strict-JIT payload for another Ultra Ball when the second play
+    // can discard that payload plus one further policy-legal hand card:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    if (hand_count(Card::UltraBall) < 2) return false;
+    const std::vector<Card> original_hand = state_.hand;
+    const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
+
+    const auto first_cost = choose_discard(false, true);
+    if (!first_cost || !remove_one(state_.hand, *first_cost)) {
+      restore_hand();
+      return false;
+    }
+    const auto second_cost = choose_discard(false, true);
+    if (!second_cost || !remove_one(state_.hand, *second_cost) || !remove_one(state_.hand, Card::UltraBall)) {
+      restore_hand();
+      return false;
+    }
+
+    // The exact Dragon identity does not affect discard eligibility. Mega Dragonite ex
+    // is a modeled Dragon payload and represents the card fetched by the first search:
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    state_.hand.push_back(Card::MegaDragonite);
+    const auto fetched_payload = choose_discard(true, true);
+    if (!fetched_payload || !is_payload(*fetched_payload) || !remove_one(state_.hand, *fetched_payload)) {
+      restore_hand();
+      return false;
+    }
+    const bool payable = choose_discard(false, true).has_value();
+    restore_hand();
+    return payable;
+  }
+
+  bool play_ultra_ball(const bool permit_payload) {
+    if (item_locked() || hand_count(Card::UltraBall) == 0) return false;
+    // Ultra Ball discards 2 other cards from hand before searching a Pokémon: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // The current-turn payload condition is simulator policy, which permits the printed discard cost only when it advances strict-JIT readiness.
+    const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
+                                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    const bool want_regi = need_regi() && bench_space() > 0;
+    const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0;
+    const bool want_latias = need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
+                              !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0;
+    const bool want_oricorio = need_energy() && hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
+                                bench_space() > 0 && needs_oricorio_connector();
+    // Tapu Lele-GX may turn this Pokémon search into a live Supporter connector
+    // through Wonder Tag when it is Benched from hand: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
+                            bench_space() > 0 && needs_tapu_connector();
+    // A fetched Dragon payload can immediately become a strict-JIT payload when a
+    // distinct live hand-discard effect remains. Mysterious Treasure, Quick Ball,
+    // and Earthen Vessel each discard from hand; Serena may discard from hand before
+    // drawing, but must discard at least 1 card. Here the fetched payload becomes
+    // Serena's mandatory discard, so Serena is not a zero-discard outlet.
+    // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sv4-163 https://api.pokemontcg.io/v2/cards/swsh12-164 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    const bool has_live_hand_payload_outlet = hand_count(Card::MysteriousTreasure) > 0 ||
+                                               hand_count(Card::QuickBall) > 0 ||
+                                               hand_count(Card::EarthenVessel) > 0 ||
+                                               second_ultra_ball_can_discard_fetched_payload() ||
+                                               (supporter_allowed() && hand_count(Card::Serena) > 0);
+    const bool want_payload = need_payload() && !can_jit_discard && has_live_hand_payload_outlet;
+    if (!want_regi && !want_vstar && !want_latias && !want_oricorio && !want_tapu && !want_payload && !can_jit_discard) return false;
+
+    const auto first = choose_discard(can_jit_discard, true);
+    if (!first) return false;
+    if (!remove_one(state_.hand, *first)) throw std::logic_error("Ultra Ball first discard cost disappeared");
+    const auto second = choose_discard(permit_payload && can_play_payload_this_turn() && !is_payload(*first), true);
+    state_.hand.push_back(*first);
+    if (!second) return false;
+
+    remove_one(state_.hand, Card::UltraBall);
+    state_.discard.push_back(Card::UltraBall);
+    discard_from_hand(*first, "Ultra Ball cost", "R-UB-01");
+    discard_from_hand(*second, "Ultra Ball cost", "R-UB-01");
+    // Ultra Ball searches for any Pokémon after its two-card cost: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    record_deck_search_knowledge("Ultra Ball");
+
+    // A fetched Dragon can become this turn's strict-JIT payload through the separate
+    // hand-discard outlet selected in play_ultra_ball: https://api.pokemontcg.io/v2/cards/swsh12-136
+    const std::array<Card, 9> targets{Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio,
+                                      Card::TapuLeleGX, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
+                                      Card::DialgaGX};
+    for (const Card target : targets) {
+      const bool desired = (target == Card::RegidragoV && want_regi) ||
+                           (target == Card::RegidragoVstar && want_vstar) ||
+                           (target == Card::LatiasEx && want_latias) ||
+                           (target == Card::Oricorio && want_oricorio) ||
+                           (target == Card::TapuLeleGX && want_tapu) ||
+                           (want_payload && is_payload(target));
+      if (desired && move_deck_to_hand(target)) {
+        shuffle(state_.deck);
+        trace("PLAY ITEM", "R-UB-01; R-GAME-ITEM", "Searched a Pokémon: " + std::string(name(target)) + ".");
+        return true;
+      }
+    }
+    const Card fallback = fallback_ultra_ball_target_after_search_started();
+    const bool found_fallback = move_deck_to_hand(fallback);
+    shuffle(state_.deck);
+    trace("PLAY ITEM", "R-UB-01; R-GAME-ITEM", found_fallback ? "No preferred target remained; legally searched " + std::string(name(fallback)) + "." : "No Pokémon remained after search.");
+    return true;
+  }
+
+  bool play_evolution_incense(const bool permit_payload = false) {
+    if (item_locked() || hand_count(Card::EvolutionIncense) == 0) return false;
+    const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0;
+    // Evolution Incense can search any Evolution Pokémon. A JIT payload search is
+    // live only when a separate card already in hand can discard that payload:
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12-164
+    // A held Ultra Ball can discard the fetched Evolution payload plus a distinct
+    // policy-legal second hand card: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    const bool ultra_ball_payload_discard_outlet = hand_count(Card::UltraBall) > 0 &&
+                                                   is_legal_cost_available(false, true);
+    const bool hand_payload_discard_outlet = hand_count(Card::MysteriousTreasure) > 0 ||
+        hand_count(Card::QuickBall) > 0 || hand_count(Card::EarthenVessel) > 0 ||
+        ultra_ball_payload_discard_outlet || (supporter_allowed() && hand_count(Card::Serena) > 0);
+    const bool want_payload = permit_payload && can_play_payload_this_turn() && need_payload() &&
+                              hand_payload_discard_outlet;
+    if (!want_vstar && !want_payload) return false;
+
+    remove_one(state_.hand, Card::EvolutionIncense);
+    state_.discard.push_back(Card::EvolutionIncense);
+    record_deck_search_knowledge("Evolution Incense");
+    bool found = false;
+    Card found_card = Card::RegidragoVstar;
+    if (want_vstar && move_deck_to_hand(Card::RegidragoVstar)) {
+      found = true;
+      found_card = Card::RegidragoVstar;
+    }
+    // The modeled Evolution payloads are legal Evolution Incense targets:
+    // Mega Dragonite ex https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Dragapult ex https://api.pokemontcg.io/v2/cards/sv6-130
+    // Hisuian Goodra VSTAR https://api.pokemontcg.io/v2/cards/swsh11-136
+    if (!found && want_payload) {
+      for (const Card payload : {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar}) {
+        if (move_deck_to_hand(payload)) {
+          found = true;
+          found_card = payload;
+          break;
+        }
+      }
+    }
+    if (!found && move_deck_to_hand(Card::GoodraVstar)) { found = true; found_card = Card::GoodraVstar; }
+    if (!found && move_deck_to_hand(Card::Dipplin)) { found = true; found_card = Card::Dipplin; }
+    shuffle(state_.deck);
+    trace("PLAY ITEM", "R-EVOINCENSE-01; R-GAME-ITEM", found ? "Searched an Evolution Pokémon: " + std::string(name(found_card)) + "." : "No Evolution Pokémon remained in deck.");
+    return true;
+  }

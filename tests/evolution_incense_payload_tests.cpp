@@ -81,6 +81,7 @@ void test_evolution_incense_fetches_jit_payload_for_ultra_ball() {
   // Evolution Incense can find the Evolution payload, then Ultra Ball can discard it
   // with a distinct second hand card: https://api.pokemontcg.io/v2/cards/swsh1-163 https://api.pokemontcg.io/v2/cards/me2pt5-152 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
   // Dipplin is the independent second cost; Ultra Ball itself remains the played card.
+  // Tapu Lele-GX remains in deck so Ultra Ball also completes its required Pokémon search.
   if (!sim::EngineTestAccess::play_evolution_incense(fixture.engine, true) ||
       !contains(sim::EngineTestAccess::state(fixture.engine).hand, sim::Card::MegaDragonite)) {
     throw std::runtime_error("Evolution Incense should fetch Mega Dragonite ex for the Ultra Ball strict-JIT route.");

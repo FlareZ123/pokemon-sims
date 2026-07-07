@@ -47,6 +47,27 @@ void test_fss_fetches_missing_basic_energy_for_manual_attachment() {
          "Star Alchemy should fetch the missing Basic Fire Energy for this turn's manual attachment.");
 }
 
+void test_dipplin_is_legal_treasure_fallback_but_not_payload_ready() {
+  State search = state(2, Card::RegidragoV, 1);
+  search.bench = {Pokemon{Card::RegidragoV, 1, 0, 0, Tool::None}};
+  search.hand = {Card::MysteriousTreasure, Card::RegidragoV};
+  search.deck = {Card::Dipplin};
+  // Mysterious Treasure searches for a Psychic or Dragon Pokémon: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Dipplin TWM 127 is a Dragon Pokémon: https://api.pokemontcg.io/v2/cards/sv6-127
+  Fixture legal_search(scenario("mysterious-treasure-dipplin-fallback"), search);
+  expect(EngineTestAccess::play_mysterious_treasure(legal_search.engine, false),
+         "Mysterious Treasure should resolve after its legal Regidrago V discard cost.");
+  expect(contains(EngineTestAccess::state(legal_search.engine).hand, Card::Dipplin),
+         "Mysterious Treasure must take Dipplin when it is the only eligible Dragon fallback.");
+
+  State ready = state(2, Card::RegidragoVstar, 1, 2, 1);
+  ready.discard = {Card::Dipplin};
+  ready.discarded_this_turn = {Card::Dipplin};
+  Fixture excluded_payload(scenario("dipplin-not-as-payload"), ready);
+  expect(!EngineTestAccess::payload_ready(excluded_payload.engine),
+         "Maintainer policy excludes Dipplin from the A/S payload ready-state predicate.");
+}
+
 using Test = std::pair<const char*, std::function<void()>>;
 
 }  // namespace
@@ -105,6 +126,7 @@ int main() {
       {"evolution_timing_and_single_manual_attachment", test_evolution_timing_and_single_manual_attachment},
       {"item_lock_blocks_item_cards", test_item_lock_blocks_item_cards},
       {"ultra_ball_discards_payload_in_jit_window", test_ultra_ball_discards_payload_in_jit_window},
+      {"dipplin_is_legal_treasure_fallback_but_not_payload_ready", test_dipplin_is_legal_treasure_fallback_but_not_payload_ready},
   };
 
   int failures = 0;

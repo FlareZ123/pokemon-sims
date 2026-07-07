@@ -39,8 +39,13 @@
     // Crispin source: https://api.pokemontcg.io/v2/cards/sv7-133
     // Do not choose it after K1 if the inspected deck contains no needed Energy.
     if (need_energy() && crispin_can_advance_energy_axis() && deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin;
-    const bool blender_is_playable = !item_locked() && hand_count(Card::BrilliantBlender) > 0 && can_play_payload_this_turn();
-    if (need_payload() && can_play_payload_this_turn() && !blender_is_playable &&
+    // Wonder Tag has now inspected the deck. Burnet can only discard cards it
+    // selects from that deck, so it is not a payload connector after K1 proves
+    // no modeled payload remains: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    const bool deck_payload_available = payload_might_be_in_deck();
+    const bool blender_is_playable = deck_payload_available && !item_locked() &&
+                                     hand_count(Card::BrilliantBlender) > 0 && can_play_payload_this_turn();
+    if (need_payload() && can_play_payload_this_turn() && deck_payload_available && !blender_is_playable &&
         deck_count_after_search_started(Card::ProfessorBurnet) > 0) {
       // Burnet directly searches and discards up to 2 cards: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
       // Wonder Tag must take it when Blender cannot supply this payload line: https://api.pokemontcg.io/v2/cards/sv8-164

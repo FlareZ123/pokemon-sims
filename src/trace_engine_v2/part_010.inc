@@ -1,3 +1,6 @@
+    // Ultra Ball must discard 2 other cards; temporarily remove the first chosen
+    // card so the second selection consumes a distinct physical copy: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    if (!remove_one(state_.hand, *first)) throw std::logic_error("Ultra Ball first cost disappeared");
     const auto second = choose_discard(permit_payload && can_play_payload_this_turn() && !is_payload(*first), true);
     state_.hand.push_back(*first);
     if (!second) return false;

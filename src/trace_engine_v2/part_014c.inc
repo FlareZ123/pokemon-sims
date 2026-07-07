@@ -38,6 +38,11 @@
       // Recovered Items may be played later in the same turn.
       play_basics_from_hand();
       play_items_until_stable(true);
+      // Legacy Star can return a Supporter from discard, including Crispin:
+      // https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/sv7-133
+      // A player may use one available Supporter during the turn before attacking:
+      // https://www.pokemon.com/us/pokemon-tcg/rules
+      if (!state_.supporter_used && setup_axis_missing()) choose_supporter();
     }
     attach_manual();
     retreat_to_benched_vstar_with_latias();

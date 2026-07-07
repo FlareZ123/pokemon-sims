@@ -6,7 +6,6 @@
       if (found.size() >= 3U) break;
       // Crispin needs different Basic Energy types; K1 must not fetch it after the inspected deck proves no needed Energy remains: https://api.pokemontcg.io/v2/cards/sv7-133
       if (fallback == Card::Crispin && !crispin_can_advance_energy_axis()) continue;
-      if (fallback == payload_outlet && !payload_might_be_in_deck()) continue;
       if (move_deck_to_hand(fallback)) found.push_back(fallback);
     }
     shuffle(state_.deck);

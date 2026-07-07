@@ -120,7 +120,7 @@
       if (play_heavy_ball()) return true;
     }
     if (need_vstar()) {
-      if (play_evolution_incense()) return true;
+      if (play_evolution_incense(permit_payload)) return true;
       if (play_mysterious_treasure(permit_payload)) return true;
       if (play_ultra_ball(permit_payload)) return true;
     }

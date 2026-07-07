@@ -1,5 +1,5 @@
 void test_lusamine_recovers_current_axis_connectors() {
-  // Lusamine may recover up to two Supporter or Stadium cards: https://api.pokemontcg.io/v2/cards/sm4-96
+  // Lusamine puts 2 Supporter and/or Stadium cards from discard into hand: https://api.pokemontcg.io/v2/cards/sm4-96
   {
     State s = state(2, Card::RegidragoV, 0, 2, 1);
     s.hand = {Card::Lusamine, Card::Dipplin};
@@ -10,8 +10,10 @@ void test_lusamine_recovers_current_axis_connectors() {
     const State& after = EngineTestAccess::state(f.engine);
     expect(contains(after.hand, Card::Arven),
            "A missing VSTAR must recover Arven before unrelated Crispin.");
-    expect(!contains(after.hand, Card::Crispin),
-           "Crispin must not be recovered when the Energy axis is already complete.");
+    expect(contains(after.hand, Card::ProfessorBurnet),
+           "Lusamine must recover a second eligible Supporter when Professor Burnet is available.");
+    expect(count(after.hand, Card::Arven) + count(after.hand, Card::ProfessorBurnet) == 2,
+           "Lusamine should return exactly two selected eligible cards when two are available.");
   }
   {
     State s = state(2, Card::TapuLeleGX);
@@ -23,8 +25,8 @@ void test_lusamine_recovers_current_axis_connectors() {
     const State& after = EngineTestAccess::state(f.engine);
     expect(contains(after.hand, Card::TateLiza),
            "A benched ready VSTAR must recover Tate & Liza for the Active axis.");
-    expect(!contains(after.hand, Card::Crispin),
-           "Crispin must not outrank Tate & Liza when no Energy is missing.");
+    expect(contains(after.hand, Card::Crispin),
+           "Lusamine must also recover the remaining eligible Crispin as its mandatory second card.");
   }
   {
     State s = state(2, Card::RegidragoVstar, 0, 1, 1);
@@ -36,7 +38,18 @@ void test_lusamine_recovers_current_axis_connectors() {
     const State& after = EngineTestAccess::state(f.engine);
     expect(contains(after.hand, Card::Crispin),
            "A missing Energy component must recover Crispin.");
-    expect(!contains(after.hand, Card::ProfessorBurnet),
-           "Burnet must not be recovered when a payload is already in discard.");
+    expect(contains(after.hand, Card::ProfessorBurnet),
+           "Lusamine must recover Professor Burnet as the second eligible Supporter.");
+  }
+  {
+    State s = state(2, Card::RegidragoVstar, 0, 1, 1);
+    s.hand = {Card::Lusamine};
+    s.discard = {Card::Crispin, Card::Crispin, Card::MegaDragonite};
+    s.deck = {Card::Grass, Card::Fire};
+    Fixture f(scenario("lusamine-duplicate-crispin", DciProfile::NoDiscardControl), s);
+    expect(EngineTestAccess::play_lusamine(f.engine), "Lusamine should resolve with two discarded Crispin copies.");
+    const State& after = EngineTestAccess::state(f.engine);
+    expect(count(after.hand, Card::Crispin) == 2,
+           "Lusamine must recover two copies of the same eligible Supporter when those are the two available targets.");
   }
 }

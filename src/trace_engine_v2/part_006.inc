@@ -132,7 +132,10 @@
 
   bool needs_tapu_connector() const {
     if (!supporter_allowed() || !ability_available_for_pokemon(Card::TapuLeleGX)) return false;
-    const bool needs_t1_steven = state_.turn == 1 && !scenario_.going_first && has_regi_v() && should_play_steven() && hand_count(Card::StevensResolve) == 0;
+    // Steven's Resolve may fetch the absent Basic setup card on turn one going second:
+    // https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/swsh12-135
+    const bool needs_t1_steven = state_.turn == 1 && !scenario_.going_first && should_play_steven() &&
+                                 hand_count(Card::StevensResolve) == 0;
     const bool needs_crispin = need_energy() && (hand_count(Card::Crispin) == 0 || !crispin_can_advance_energy_axis());
     // Wonder Tag can inspect the deck for Burnet. It is a live direct payload
     // bridge only while a payload may remain in deck: https://api.pokemontcg.io/v2/cards/cel25c-60_A

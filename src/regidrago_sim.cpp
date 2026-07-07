@@ -35,14 +35,22 @@
 #include "trace_engine_v2/part_008b.inc"
 #include "trace_engine_v2/part_009a.inc"
 #include "trace_engine_v2/part_009b1.inc"
+#define play_ultra_ball play_ultra_ball_original
 #include "trace_engine_v2/part_009b2.inc"
+#define play_evolution_incense play_evolution_incense_original
 #include "trace_engine_v2/part_010.inc"
+#undef play_evolution_incense
+#undef play_ultra_ball
+#include "trace_engine_v2/part_search_item_overrides.inc"
 #include "trace_engine_v2/part_011.inc"
 #define play_arven play_arven_original
+#define play_gladion play_gladion_original
 #include "trace_engine_v2/part_012.inc"
+#undef play_gladion
 #undef play_arven
 #include "trace_engine_v2/part_013.inc"
 #include "trace_engine_v2/part_014a.inc"
+#include "trace_engine_v2/part_012_gladion_override.inc"
 #include "trace_engine_v2/part_012_override.inc"
 #include "trace_engine_v2/part_014b.inc"
 #include "trace_engine_v2/part_014c.inc"

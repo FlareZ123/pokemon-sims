@@ -41,4 +41,15 @@ void test_lusamine_recovers_current_axis_connectors() {
     expect(contains(after.hand, Card::ProfessorBurnet),
            "Lusamine must recover Professor Burnet as the second eligible Supporter.");
   }
+  {
+    State s = state(2, Card::RegidragoVstar, 0, 1, 1);
+    s.hand = {Card::Lusamine};
+    s.discard = {Card::Crispin, Card::Crispin, Card::MegaDragonite};
+    s.deck = {Card::Grass, Card::Fire};
+    Fixture f(scenario("lusamine-duplicate-crispin", DciProfile::NoDiscardControl), s);
+    expect(EngineTestAccess::play_lusamine(f.engine), "Lusamine should resolve with two discarded Crispin copies.");
+    const State& after = EngineTestAccess::state(f.engine);
+    expect(count(after.hand, Card::Crispin) == 2,
+           "Lusamine must recover two copies of the same eligible Supporter when those are the two available targets.");
+  }
 }

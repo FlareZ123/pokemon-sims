@@ -101,7 +101,7 @@ int main() {
       {"legacy_star_recovered_blender_is_played_same_turn", test_legacy_star_recovered_blender_is_played_same_turn},
       {"lusamine_recovers_only_live_axis_connectors", test_lusamine_recovers_only_live_axis_connectors},
       {"wonder_tag_skips_known_dead_crispin", test_wonder_tag_skips_known_dead_crispin},
-      {"payload_selectors_fetch_burnet_when_blender_is_unavailable", test_payload_selectors_fetch_burnet_when_blender_is-unavailable},
+      {"payload_selectors_fetch_burnet_when_blender_is_unavailable", test_payload_selectors_fetch_burnet_when_blender_is_unavailable},
       {"live_burnet_preempts_arven_when_blender_is_absent", test_live_burnet_preempts_arven_when_blender_is_absent},
       {"tapu_fetches_burnet_without_item_lock_when_blender_is_not_live", test_tapu_fetches_burnet_without_item_lock_when_blender_is_not_live},
       {"lusamine_recovers_current_axis_connectors", test_lusamine_recovers_current_axis_connectors},

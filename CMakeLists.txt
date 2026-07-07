@@ -44,6 +44,9 @@ target_compile_options(regidrago_tapu_gladion_prize_tests PRIVATE -Wall -Wextra 
 add_executable(regidrago_evolution_incense_payload_tests tests/evolution_incense_payload_tests.cpp)
 target_compile_options(regidrago_evolution_incense_payload_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+add_executable(regidrago_duplicate_quick_ball_tests tests/duplicate_quick_ball_cost_tests.cpp)
+target_compile_options(regidrago_duplicate_quick_ball_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 enable_testing()
 add_test(NAME regidrago_sim_self_test COMMAND regidrago_sim --self-test)
 add_test(NAME regidrago_policy_fixtures COMMAND regidrago_policy_tests)
@@ -58,6 +61,7 @@ add_test(NAME regidrago_late_item_supporter COMMAND regidrago_late_item_supporte
 add_test(NAME regidrago_serena_mandatory_discard COMMAND regidrago_serena_mandatory_discard_tests)
 add_test(NAME regidrago_tapu_gladion_prize COMMAND regidrago_tapu_gladion_prize_tests)
 add_test(NAME regidrago_evolution_incense_payload COMMAND regidrago_evolution_incense_payload_tests)
+add_test(NAME regidrago_duplicate_quick_ball COMMAND regidrago_duplicate_quick_ball_tests)
 add_test(NAME trace_strict_second_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 --require-ready-by 3)
 add_test(NAME trace_strict_first_t4 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4)
 add_test(NAME trace_flex_second_t2 COMMAND regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 4 --require-ready-by 2)

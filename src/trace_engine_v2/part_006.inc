@@ -86,6 +86,11 @@
     if (allow_heavy_ball && known_no_basic_prize && hand_count(Card::HisuianHeavyBall) > 0) {
       return Card::HisuianHeavyBall;
     }
+
+    // A second Quick Ball is "another card" for the first Quick Ball's discard
+    // cost, so it remains legal low-DCI fodder when no higher-priority cost exists:
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    if (hand_count(Card::QuickBall) >= 2) return Card::QuickBall;
     return std::nullopt;
   }
 

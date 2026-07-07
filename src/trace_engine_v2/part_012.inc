@@ -97,8 +97,30 @@
 
   bool play_gladion() {
     if (!supporter_allowed() || hand_count(Card::Gladion) == 0) return false;
-    const bool no_regi_route = need_regi() && hand_count(Card::RegidragoV) == 0 && hand_count(Card::QuickBall) == 0 && hand_count(Card::MysteriousTreasure) == 0 && hand_count(Card::UltraBall) == 0 && (item_locked() || hand_count(Card::Arven) == 0);
-    const bool no_vstar_route = need_vstar() && hand_count(Card::RegidragoVstar) == 0 && hand_count(Card::EvolutionIncense) == 0 && hand_count(Card::MysteriousTreasure) == 0 && hand_count(Card::UltraBall) == 0 && (item_locked() || hand_count(Card::Arven) == 0) && hand_count(Card::ForestSealStone) == 0;
+    // Quick Ball and Mysterious Treasure require their hand-discard costs before their
+    // Regidrago V search routes exist: https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sm6-113
+    // This DCI-aware availability check preserves a pending Gladion connector when
+    // its cost selector cannot admit it: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+    const bool playable_one_discard_regi_search = !item_locked() &&
+        is_legal_cost_available(can_play_payload_this_turn(), true) &&
+        (hand_count(Card::QuickBall) > 0 || hand_count(Card::MysteriousTreasure) > 0);
+    // Pokémon Tool cards are separate from Item cards under the official Tool erratum.
+    // Do not gate this Forest Seal Stone route predicate on item_locked(); FSS remains
+    // playable through Item lock: https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
+    // It still needs an open Tool slot on Regidrago V before it can grant Star Alchemy:
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    const bool playable_fss_vstar_route = hand_count(Card::ForestSealStone) > 0 &&
+        ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
+         std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) {
+           return p.card == Card::RegidragoV && p.tool == Tool::None;
+         }));
+    const bool no_regi_route = need_regi() && hand_count(Card::RegidragoV) == 0 &&
+        !playable_one_discard_regi_search && hand_count(Card::UltraBall) == 0 &&
+        (item_locked() || hand_count(Card::Arven) == 0);
+    const bool no_vstar_route = need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
+        hand_count(Card::EvolutionIncense) == 0 && hand_count(Card::MysteriousTreasure) == 0 &&
+        hand_count(Card::UltraBall) == 0 && (item_locked() || hand_count(Card::Arven) == 0) &&
+        !playable_fss_vstar_route;
     const bool no_locked_payload_route = need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) == 0;
     const bool blind_critical = no_regi_route || no_vstar_route || no_locked_payload_route;
 
@@ -173,7 +195,7 @@
     *selected = Card::Gladion;
     state_.hand.push_back(chosen);
     shuffle(state_.prizes);
-    trace("PLAY SUPPORTER", "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01", "Completed mandatory Prize exchange with " + std::string(name(chosen)) + ".");
+    trace("PLAY SUPPORTER", "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01", "Completed mandatory Prize exchange with " + std::string(name(chosen) + ".");
     return true;
   }
 
@@ -191,4 +213,4 @@
         if (!extra || is_payload(*extra)) break;
         const bool can_cycle = *extra == Card::Dipplin || *extra == Card::MawileGX || *extra == Card::Guzma ||
                                *extra == Card::Channeler || *extra == Card::FieldBlower || *extra == Card::ChaoticSwell || *extra == Card::PathToPeak;
-        if (!can_cycle) break;
+        if (can_cycle) break;

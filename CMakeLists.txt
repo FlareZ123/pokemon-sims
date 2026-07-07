@@ -32,6 +32,9 @@ target_compile_options(regidrago_wonder_tag_dead_burnet_tests PRIVATE -Wall -Wex
 add_executable(regidrago_oricorio_burnet_tests tests/oricorio_burnet_compression_tests.cpp)
 target_compile_options(regidrago_oricorio_burnet_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+add_executable(regidrago_late_item_supporter_tests tests/late_item_supporter_tests.cpp)
+target_compile_options(regidrago_late_item_supporter_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 enable_testing()
 add_test(NAME regidrago_sim_self_test COMMAND regidrago_sim --self-test)
 add_test(NAME regidrago_policy_fixtures COMMAND regidrago_policy_tests)
@@ -42,9 +45,11 @@ add_test(NAME regidrago_known_dead_payload COMMAND regidrago_known_dead_payload_
 add_test(NAME regidrago_ultra_ball_tapu COMMAND regidrago_ultra_ball_tapu_tests)
 add_test(NAME regidrago_wonder_tag_dead_burnet COMMAND regidrago_wonder_tag_dead_burnet_tests)
 add_test(NAME regidrago_oricorio_burnet COMMAND regidrago_oricorio_burnet_tests)
+add_test(NAME regidrago_late_item_supporter COMMAND regidrago_late_item_supporter_tests)
 add_test(NAME trace_strict_second_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 --require-ready-by 3)
 add_test(NAME trace_strict_first_t4 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4)
 add_test(NAME trace_flex_second_t2 COMMAND regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 4 --require-ready-by 2)
+add_test(NAME trace_turn2_item_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 9 --require-by 2)
 add_test(NAME trace_turn2_item_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 9 --require-ready-by 3)
 add_test(NAME trace_rulebox_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 19 --require-ready-by 3)
 add_test(NAME trace_no_control_first_t4 COMMAND regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 6 --require-ready-by 4)

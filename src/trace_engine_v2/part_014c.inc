@@ -22,6 +22,11 @@
     evolve_best_regi();
     play_basics_from_hand();
     play_items_until_stable(true);
+    // A strict-JIT Item route may now discard an in-hand Dragon payload and search
+    // Regidrago VSTAR through Mysterious Treasure (https://api.pokemontcg.io/v2/cards/sm6-113).
+    // Retry evolution so a Regidrago V that entered play on a prior turn can evolve
+    // before this turn's ready check under the core evolution procedure (https://www.pokemon.com/us/pokemon-tcg/rules).
+    evolve_best_regi();
     if (use_legacy_star()) {
       // Core procedure source: https://www.pokemon.com/us/pokemon-tcg/rules
       // Recovered Items may be played later in the same turn.

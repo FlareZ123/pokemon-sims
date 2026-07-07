@@ -68,6 +68,25 @@ void test_dipplin_is_legal_treasure_fallback_but_not_payload_ready() {
          "Maintainer policy excludes Dipplin from the A/S payload ready-state predicate.");
 }
 
+void test_late_jit_item_search_evolves_in_the_same_turn() {
+  State s = state(2, Card::RegidragoV, 1, 2, 1);
+  s.hand = {Card::MysteriousTreasure, Card::MegaDragonite};
+  s.deck = {Card::RegidragoVstar};
+  // Mysterious Treasure may discard Mega Dragonite ex, then search the deck for the Dragon Regidrago VSTAR:
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // The active Regidrago V entered play on turn 1, so it can evolve on turn 2 under the core evolution procedure:
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  Fixture f(scenario("late-jit-item-search-evolution"), s);
+  EngineTestAccess::run_turn(f.engine);
+  const State& after = EngineTestAccess::state(f.engine);
+  expect(after.active && after.active->card == Card::RegidragoVstar,
+         "A final strict-JIT Item pass that finds VSTAR must be followed by a legal same-turn evolution.");
+  expect(contains(after.discard, Card::MegaDragonite) && contains(after.discarded_this_turn, Card::MegaDragonite),
+         "The Item route must still produce the current-turn Dragon payload discard.");
+  expect(EngineTestAccess::payload_ready(f.engine),
+         "The resulting VSTAR state must retain the strict current-turn payload requirement.");
+}
+
 using Test = std::pair<const char*, std::function<void()>>;
 
 }  // namespace
@@ -127,6 +146,7 @@ int main() {
       {"item_lock_blocks_item_cards", test_item_lock_blocks_item_cards},
       {"ultra_ball_discards_payload_in_jit_window", test_ultra_ball_discards_payload_in_jit_window},
       {"dipplin_is_legal_treasure_fallback_but_not_payload_ready", test_dipplin_is_legal_treasure_fallback_but_not_payload_ready},
+      {"late_jit_item_search_evolves_in_the_same_turn", test_late_jit_item_search_evolves_in_the_same_turn},
   };
 
   int failures = 0;

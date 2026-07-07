@@ -21,18 +21,15 @@ bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
   return std::find(cards.begin(), cards.end(), card) != cards.end();
 }
 
-sim::Engine make_engine(const sim::Scenario& scenario, std::mt19937_64& rng) {
-  return sim::Engine(scenario, sim::baseline_recipe(), rng);
-}
-
 }  // namespace
 
 int main() {
   {
     sim::Scenario scenario{"arven-tool-during-item-lock", sim::DciProfile::StrictJit,
                            sim::LockMode::FullItem, false, 4};
+    sim::DeckRecipe recipe{sim::baseline_recipe()};
     std::mt19937_64 rng{321};
-    sim::Engine engine = make_engine(scenario, rng);
+    sim::Engine engine{scenario, recipe, rng};
     sim::State state;
     state.turn = 2;
     state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0, sim::Tool::None};
@@ -56,8 +53,9 @@ int main() {
   {
     sim::Scenario scenario{"arven-dead-item-during-item-lock", sim::DciProfile::StrictJit,
                            sim::LockMode::FullItem, false, 4};
+    sim::DeckRecipe recipe{sim::baseline_recipe()};
     std::mt19937_64 rng{322};
-    sim::Engine engine = make_engine(scenario, rng);
+    sim::Engine engine{scenario, recipe, rng};
     sim::State state;
     state.turn = 2;
     state.active = sim::Pokemon{sim::Card::LatiasEx, 1, 0, 0, sim::Tool::None};

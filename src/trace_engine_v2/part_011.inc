@@ -113,7 +113,7 @@
                                        (scenario_.locks == LockMode::TurnTwoItem && state_.turn == 1);
     const bool blender_available_next_turn = !next_turn_item_locked && deck_count_after_search_started(Card::BrilliantBlender) > 0;
     // Burnet directly searches and discards up to 2 cards: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-    // Steven's Resolve must reserve Burnet when Blender is unavailable for the next payload turn: https://api.pokemontcg.io/v2/cards/sv6pt5-164
+    // Steven's Resolve must reserve Burnet when Blender is unavailable for the next payload turn: https://api.pokemontcg.io/v2/cards/sv8-164
     const Card payload_outlet = blender_available_next_turn ? Card::BrilliantBlender : Card::ProfessorBurnet;
     std::vector<Card> wanted;
     if (need_vstar() && hand_count(Card::RegidragoVstar) == 0) {

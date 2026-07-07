@@ -5,6 +5,9 @@
     }
     if (permit_payload && need_payload()) {
       if (play_brilliant_blender()) return true;
+      // Evolution Incense can fetch a modeled Evolution Dragon for a separately
+      // held discard Item in this same ready turn: https://api.pokemontcg.io/v2/cards/swsh1-163
+      if (play_evolution_incense(permit_payload)) return true;
       if (play_mysterious_treasure(permit_payload)) return true;
       if (play_quick_ball(permit_payload)) return true;
       // Ultra Ball's discard cost can put a current-turn Dragon payload in discard: https://api.pokemontcg.io/v2/cards/swsh12pt5-146

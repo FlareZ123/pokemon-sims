@@ -29,9 +29,20 @@
 
   bool can_play_payload_this_turn() const { return payload_window_open() && need_payload(); }
 
+  // At K1, a legal deck search or full Prize reveal lets this fixed-list model
+  // determine whether a modeled payload remains in the deck. Brilliant Blender
+  // and Professor Burnet can discard only cards selected from that deck, so a
+  // known-empty payload set cannot advance the payload axis. Card text sources:
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  bool deck_payload_might_remain() const {
+    return !prizes_known() || std::any_of(state_.deck.begin(), state_.deck.end(), is_payload);
+  }
+
   bool has_live_blender_payload_line() const {
     // Brilliant Blender searches and discards cards from deck: https://api.pokemontcg.io/v2/cards/sv8-164
-    return !item_locked() && hand_count(Card::BrilliantBlender) > 0 && can_play_payload_this_turn();
+    return !item_locked() && hand_count(Card::BrilliantBlender) > 0 && can_play_payload_this_turn() &&
+           deck_payload_might_remain();
   }
 
   std::optional<Card> choose_discard(const bool permit_payload, const bool flex_fodder,
@@ -99,7 +110,7 @@
     const bool needs_crispin = need_energy() && (hand_count(Card::Crispin) == 0 || !crispin_can_advance_energy_axis());
     // Wonder Tag can inspect the deck for Burnet. It is a live direct payload
     // bridge whenever Blender is not already playable, not only under Item lock: https://api.pokemontcg.io/v2/cards/cel25c-60_A
-    const bool needs_burnet = can_play_payload_this_turn() && hand_count(Card::ProfessorBurnet) == 0 &&
+    const bool needs_burnet = can_play_payload_this_turn() && deck_payload_might_remain() && hand_count(Card::ProfessorBurnet) == 0 &&
                               !has_live_blender_payload_line() && might_be_unseen(Card::ProfessorBurnet);
     const bool needs_arven = need_vstar() && hand_count(Card::Arven) == 0 && hand_count(Card::EvolutionIncense) == 0 && hand_count(Card::MysteriousTreasure) == 0;
     return needs_t1_steven || needs_crispin || needs_burnet || needs_arven;

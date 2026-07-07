@@ -87,6 +87,26 @@ void test_late_jit_item_search_evolves_in_the_same_turn() {
          "The resulting VSTAR state must retain the strict current-turn payload requirement.");
 }
 
+void test_legacy_star_recovered_crispin_is_played_same_turn() {
+  State s = state(2, Card::RegidragoVstar, 0, 1, 0);
+  s.discard = {Card::Crispin};
+  // Legacy Star discards the top 7 cards, then may recover Crispin from discard:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // The two Basic Energy cards remain below that segment for Crispin's different-type search:
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  s.deck = {Card::Grass, Card::Fire, Card::MegaDragonite, Card::MawileGX, Card::Guzma,
+            Card::Channeler, Card::FieldBlower, Card::ChaoticSwell, Card::PathToPeak};
+  Fixture f(scenario("legacy-star-recovered-crispin"), s);
+  EngineTestAccess::run_turn(f.engine);
+  const State& after = EngineTestAccess::state(f.engine);
+  expect(after.supporter_used && contains(after.discard, Card::Crispin),
+         "Recovered Crispin must use the still-available Supporter play.");
+  expect(after.active->grass == 2 && after.active->fire == 1,
+         "Recovered Crispin plus the manual attachment must complete GGF.");
+  expect(EngineTestAccess::payload_ready(f.engine),
+         "Legacy Star's current-turn Mega Dragonite discard must remain a valid strict-JIT payload.");
+}
+
 using Test = std::pair<const char*, std::function<void()>>;
 
 }  // namespace
@@ -125,6 +145,7 @@ int main() {
       {"strict_serena_uses_three_safe_discards", test_strict_serena_uses_three_safe_discards},
       {"heavy_ball_oricorio_preserves_burnet_supporter", test_heavy_ball_oricorio_preserves_burnet_supporter},
       {"legacy_star_recovered_blender_is_played_same_turn", test_legacy_star_recovered_blender_is_played_same_turn},
+      {"legacy_star_recovered_crispin_is_played_same_turn", test_legacy_star_recovered_crispin_is_played_same_turn},
       {"lusamine_recovers_only_live_axis_connectors", test_lusamine_recovers_only_live_axis_connectors},
       {"wonder_tag_skips_known_dead_crispin", test_wonder_tag_skips_known_dead_crispin},
       {"payload_selectors_fetch_burnet_when_blender_is_unavailable", test_payload_selectors_fetch_burnet_when_blender_is_unavailable},

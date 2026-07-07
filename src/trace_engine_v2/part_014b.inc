@@ -1,9 +1,9 @@
   std::vector<Card> lusamine_recovery_targets() const {
     // Lusamine says to put 2 Supporter and/or Stadium cards from discard into hand:
     // https://api.pokemontcg.io/v2/cards/sm4-96
-    // First recover cards that advance an unresolved setup axis. If fewer than two
-    // are selected, its mandatory second selection takes a deterministic low-impact
-    // eligible card that remains in the public discard pile.
+    // A policy-first recovery requires one card that advances an unresolved setup
+    // axis. Once that card makes Lusamine worth playing, the second selection is
+    // mandatory and uses a deterministic low-impact eligible card.
     std::vector<Card> targets;
     const auto recover_once = [this, &targets](const Card card) {
       if (targets.size() < 2U && count_of(state_.discard, card) > count_of(targets, card)) {
@@ -33,6 +33,8 @@
     if (need_energy() && crispin_can_advance_energy_axis()) recover_once(Card::Crispin);
     if (need_payload()) recover_once(Card::ProfessorBurnet);
     if (arven_energy_axis || arven_payload_axis) recover_once(Card::Arven);
+
+    if (targets.empty()) return targets;
 
     // These are the remaining modeled Supporter and Stadium cards, ordered from
     // least direct setup value to the connectors retained above. The list contains

@@ -97,6 +97,20 @@
   // already supplies the needed Energy axis this turn.
   bool needs_oricorio_connector() const {
     if (!need_energy()) return false;
+    const bool exactly_one_energy_missing = grass_needed() + fire_needed() == 1;
+    const bool needed_energy_might_be_in_deck =
+        (grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
+        (fire_needed() == 1 && might_be_unseen(Card::Fire));
+    const bool no_payload_in_hand = std::none_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    // Vital Dance can search the final Basic Energy for a manual attachment (https://api.pokemontcg.io/v2/cards/sm2-55),
+    // preserving the Supporter play for Professor Burnet's deck-to-discard payload line (https://api.pokemontcg.io/v2/cards/swsh12tg-TG26).
+    const bool oricorio_preserves_burnet = supporter_allowed() && !state_.manual_energy_used &&
+        exactly_one_energy_missing && needed_energy_might_be_in_deck && no_payload_in_hand &&
+        can_play_payload_this_turn() && hand_count(Card::ProfessorBurnet) > 0 &&
+        !has_live_blender_payload_line() && payload_might_be_in_deck();
+    if (oricorio_preserves_burnet) return true;
+    // Crispin can only be the preferred connector when its Supporter slot is not
+    // needed by the direct Burnet payload route: https://api.pokemontcg.io/v2/cards/sv7-133
     if (supporter_allowed() && hand_count(Card::Crispin) > 0 && crispin_can_advance_energy_axis()) return false;
     if (!item_locked() && hand_count(Card::EarthenVessel) > 0 && is_legal_cost_available(can_play_payload_this_turn(), true)) return false;
     const int accessible_now = hand_count(Card::Grass) + hand_count(Card::Fire);

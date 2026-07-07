@@ -91,6 +91,7 @@ int main() {
       {"live_burnet_preempts_arven_when_blender_is_absent", test_live_burnet_preempts_arven_when_blender_is_absent},
       {"tapu_fetches_burnet_without_item_lock_when_blender_is_not_live", test_tapu_fetches_burnet_without_item_lock_when_blender_is_not_live},
       {"lusamine_recovers_current_axis_connectors", test_lusamine_recovers_current_axis_connectors},
+      {"arven_requires_a_live_item_or_tool_route", test_arven_requires_a_live_item_or_tool_route},
       {"oricorio_is_held_when_earthen_vessel_already_solves_energy", test_oricorio_is_held_when_earthen_vessel_already_solves_energy},
       {"oricorio_works_under_rule_box_lock", test_oricorio_works_under_rule_box_lock},
       {"tapu_is_blocked_by_rule_box_lock", test_tapu_is_blocked_by_rule_box_lock},

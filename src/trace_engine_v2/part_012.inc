@@ -36,7 +36,7 @@
       std::vector<Card> candidates;
       const auto add_item_candidate = [this, &candidates](const Card item, const bool advances_now) {
         if (advances_now && might_be_unseen(item) &&
-            std::find(candidates.begin(), candidates.end(), item) == candidates.end()) {
+            std::find(candidates.begin(), candidates.end(), item) != candidates.end()) {
           candidates.push_back(item);
         }
       };
@@ -195,7 +195,7 @@
     *selected = Card::Gladion;
     state_.hand.push_back(chosen);
     shuffle(state_.prizes);
-    trace("PLAY SUPPORTER", "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01", "Completed mandatory Prize exchange with " + std::string(name(chosen) + ".");
+    trace("PLAY SUPPORTER", "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01", "Completed mandatory Prize exchange with " + std::string(name(chosen)) + ".");
     return true;
   }
 
@@ -213,4 +213,4 @@
         if (!extra || is_payload(*extra)) break;
         const bool can_cycle = *extra == Card::Dipplin || *extra == Card::MawileGX || *extra == Card::Guzma ||
                                *extra == Card::Channeler || *extra == Card::FieldBlower || *extra == Card::ChaoticSwell || *extra == Card::PathToPeak;
-        if (can_cycle) break;
+        if (!can_cycle) break;

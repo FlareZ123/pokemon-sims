@@ -10,6 +10,12 @@ This simulator is a single-player, imperfect-information setup model. Its object
 
 It does not model opponent turns, damage, prizes taken, or a global two-player game-tree solution. "Optimal" in this document means the best legal action among the engine's modeled connector routes and visible state.
 
+### A/S payload classification
+
+`is_payload` is the single readiness and payload-routing predicate. It contains Dragapult ex, Mega Dragonite ex, Dialga-GX, and Hisuian Goodra VSTAR. Dipplin TWM 127 remains a legal Dragon target for Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sv6-127.
+
+Maintainer policy excludes Dipplin's Syrup Catcher from the A/S win-condition set. The attack can create a gust-like target, yet it may take no Prize and allows an opponent to switch after the effect. That line is insufficient for this deck's modeled ready-state definition. Dipplin therefore never completes the payload axis, never makes `payload_ready()` true, and never becomes a payload-discard target.
+
 ## Knowledge states
 
 ### K0: before a legal inspection
@@ -44,7 +50,7 @@ K1 begins only during a legal effect resolution. It does not grant prior knowled
 4. **Heavy Ball information and connector ordering.** At K0, Heavy Ball is played before ordinary search Items. It takes the best revealed Basic for the live state: missing Regidrago V, then a live Tapu Lele-GX Supporter chain, Oricorio Energy compression, Latias active-position recovery, then the best remaining future connector or discard-fodder Basic.
 5. **Shortest search chain.** Forest Seal Stone targets Oricorio over a single Energy and Earthen Vessel over Arven only when no live direct Energy Supporter already solves the turn. It takes a direct Supporter over a Tapu Lele-GX chain when both cover the same immediate axis.
 6. **Preserve resources when another card already solves the axis.** The engine does not Bench Tapu Lele-GX merely to find Arven if VSTAR is already in hand. It preserves Forest Seal Stone when Tate & Liza alone fixes Active position or productive Crispin alone fixes Energy. It also holds Ultra Ball rather than discarding two cards for Oricorio when Crispin is live.
-7. **Legal post-search fallback.** Arven, Wonder Tag, and other search effects choose an available same-axis fallback after the deck is inspected. A missing Evolution Incense does not make Arven return no Item if Mysterious Treasure is available.
+7. **Legal post-search fallback.** Arven, Wonder Tag, and other search effects choose an available same-axis fallback after the deck is inspected. Mysterious Treasure includes Dipplin as a legal Dragon fallback when preferred targets are unavailable. Its separate A/S policy classification still keeps it outside readiness and payload-routing decisions.
 8. **Dead-hand draw.** Tate & Liza draw mode is selected after direct connectors fail when hand size is at most four including Tate, because it shuffles at most three remaining cards and draws five. Switch mode still has priority when it immediately fixes Active position.
 9. **Zone integrity.** Celestial Roar Energy is attached to Regidrago V and removed from its temporary discard path; only non-Energy cards remain in discard after the attack resolves.
 

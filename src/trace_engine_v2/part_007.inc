@@ -72,7 +72,10 @@
       } else if (f_need > 0) {
         wanted = Card::Fire;
       } else {
-        break;
+        // Vital Dance and Earthen Vessel each allow up to 2 Basic Energy cards.
+        // After GGF is covered, select another legal Basic Energy for deck thinning
+        // and potential duplicate-Energy discard capacity: https://api.pokemontcg.io/v2/cards/sm2-55 https://api.pokemontcg.io/v2/cards/sv4-163
+        wanted = g_available > 0 ? Card::Grass : Card::Fire;
       }
       if ((wanted == Card::Grass && g_available == 0) || (wanted == Card::Fire && f_available == 0)) {
         const Card other = wanted == Card::Grass ? Card::Fire : Card::Grass;

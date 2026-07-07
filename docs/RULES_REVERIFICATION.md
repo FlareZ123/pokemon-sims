@@ -18,7 +18,7 @@ This pass rechecked the modeled card text against the supplied `pokemon-tcg-data
 | Earthen Vessel | `sv4-163` | Can find up to two Basic Energy, including two of the same type. |
 | Crispin | `sv7-133` | Needs a two-type Energy selection to attach one and put one in hand. A one-type resolution attaches none. Once K1 proves no required type remains in deck, Crispin is not treated as a live connector. |
 | Professor Burnet | `swsh12tg-TG26` | Searches and discards payloads, including the Item-lock bridge line. |
-| Serena | `swsh12-164` | Draw mode legally discards zero to three cards before drawing to five. The policy spends Serena only with at least one safe discard, and may use all three safe discards in strict JIT. |
+| Serena | `swsh12-164` | Draw mode may discard up to three cards, but requires at least one discard before drawing to five. The policy spends Serena only with a legal safe discard and may use all three in strict JIT. https://api.pokemontcg.io/v2/cards/swsh12-164 |
 | Tate & Liza | `sm7-148` | Models both draw and switch modes. The draw mode is used from a four-card dead hand because it shuffles three remaining cards and draws five. |
 | Steven's Resolve | `sm7-145` | Searches up to three and ends the turn; planned around next-turn Item lock. |
 | Arven | `sv1-166` | Is held during active Item lock; otherwise it inspects the deck before choosing a same-axis Item fallback. |

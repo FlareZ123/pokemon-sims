@@ -113,7 +113,10 @@
   }
 
   bool attach_fss() {
-    if (item_locked() || hand_count(Card::ForestSealStone) == 0) return false;
+    // Pokémon Tool cards are a category separate from Item cards, so Item lock does not
+    // prohibit attaching Forest Seal Stone: https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
+    // Forest Seal Stone may be attached only to a Pokémon V: https://api.pokemontcg.io/v2/cards/swsh12-156
+    if (hand_count(Card::ForestSealStone) == 0) return false;
     Pokemon* target = nullptr;
     if (state_.active && is_pokemon_v(state_.active->card) && state_.active->tool == Tool::None) target = &*state_.active;
     if (target == nullptr) {
@@ -124,7 +127,7 @@
     if (target == nullptr) return false;
     remove_one(state_.hand, Card::ForestSealStone);
     target->tool = Tool::ForestSealStone;
-    trace("ATTACH TOOL", "R-FSS-01; R-GAME-TOOL; R-GAME-ITEM", "Attached Forest Seal Stone to Regidrago V.");
+    trace("ATTACH TOOL", "R-FSS-01; R-GAME-TOOL", "Attached Forest Seal Stone to Regidrago V.");
     return true;
   }
 

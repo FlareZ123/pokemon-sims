@@ -58,11 +58,15 @@ void test_finished_setup_does_not_burn_serena() {
 }
 
 void test_arven_is_not_played_during_item_lock() {
-  State s = state(2);
+  State s = state(2, Card::RegidragoV, 1, 2, 1);
   s.hand = {Card::Arven};
-  s.deck = {Card::EvolutionIncense, Card::ForestSealStone};
+  s.deck = {Card::EvolutionIncense, Card::ForestSealStone, Card::RegidragoVstar};
+  // Arven is a Supporter, so Item lock does not prevent its play: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Pokémon Tools are separate from Item cards after the Tool erratum, which leaves Forest Seal Stone available here: https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
   Fixture f(scenario("arven-item-lock", DciProfile::StrictJit, LockMode::FullItem), s);
-  expect(!EngineTestAccess::play_arven(f.engine), "Arven should not be spent while fetched Items cannot be played.");
+  expect(EngineTestAccess::play_arven(f.engine), "Arven should be spent when it can retrieve the live Forest Seal Stone Tool route.");
+  expect(contains(EngineTestAccess::state(f.engine).hand, Card::ForestSealStone),
+         "Arven must retrieve Forest Seal Stone rather than an Item that remains unplayable under Item lock.");
 }
 
 void test_first_turn_restrictions_and_celestial_cost() {

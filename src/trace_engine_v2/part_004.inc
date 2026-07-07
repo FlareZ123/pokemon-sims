@@ -98,6 +98,9 @@
   }
 
   bool payload_ready() const {
+    // Readiness is defined exclusively by is_payload. Dipplin TWM 127 is a
+    // legal Dragon search target, while maintainer policy excludes Syrup Catcher
+    // from the A/S ready-state set: https://api.pokemontcg.io/v2/cards/sv6-127
     if (!strict_payload_timing()) return std::any_of(state_.discard.begin(), state_.discard.end(), is_payload);
     // A strict-JIT payload must both enter discard this turn and still be in discard
     // at the ready check. recover_discard_to_hand removes a recovered current-turn card.

@@ -75,8 +75,16 @@
   bool crispin_can_advance_energy_axis() const {
     if (!need_energy()) return false;
     if (deck_seen_) {
-      return (grass_needed() > 0 && deck_count_after_search_started(Card::Grass) > 0) ||
-             (fire_needed() > 0 && deck_count_after_search_started(Card::Fire) > 0);
+      const bool grass_available = deck_count_after_search_started(Card::Grass) > 0;
+      const bool fire_available = deck_count_after_search_started(Card::Fire) > 0;
+      const bool needed_type_available = (grass_needed() > 0 && grass_available) ||
+                                         (fire_needed() > 0 && fire_available);
+      if (!needed_type_available) return false;
+      // With one searchable Energy type, Crispin puts it into hand and attaches
+      // none. It advances this model only while manual attachment remains open:
+      // https://api.pokemontcg.io/v2/cards/sv7-133
+      if (grass_available != fire_available) return !state_.manual_energy_used;
+      return true;
     }
     return (grass_needed() > 0 && might_be_unseen(Card::Grass)) ||
            (fire_needed() > 0 && might_be_unseen(Card::Fire));

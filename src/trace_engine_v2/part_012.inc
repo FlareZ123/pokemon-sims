@@ -15,7 +15,9 @@
   }
 
   bool play_arven() {
-    if (!supporter_allowed() || item_locked() || hand_count(Card::Arven) == 0) return false;
+    // Arven is a Supporter, so Item lock does not prohibit playing it: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Pokémon Tools are separate from Item cards after the Tool erratum, which leaves Forest Seal Stone independently playable through Item lock: https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
+    if (!supporter_allowed() || hand_count(Card::Arven) == 0) return false;
 
     const bool needs_tool = has_regi_v() && !state_.vstar_power_used &&
                             ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
@@ -34,6 +36,8 @@
                                        might_be_unseen(Card::GoodraVstar) ||
                                        might_be_unseen(Card::DialgaGX);
       std::vector<Card> candidates;
+      // Arven may search an Item, but that branch cannot advance the setup state while Item lock remains active: https://www.pokemon.com/us/pokemon-tcg/rules
+      if (item_locked()) return candidates;
       const auto add_item_candidate = [this, &candidates](const Card item, const bool advances_now) {
         if (advances_now && might_be_unseen(item) &&
             std::find(candidates.begin(), candidates.end(), item) == candidates.end()) {

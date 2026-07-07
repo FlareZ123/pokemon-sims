@@ -62,8 +62,10 @@
                                      (need_energy() && live_energy_target) ||
                                      (need_active_vstar() && bench_space() > 0 && live_latias_target) ||
                                      (can_play_payload_this_turn() && live_payload_target);
-    const bool live_tool = needs_tool && ability_available_for_pokemon(Card::RegidragoV) &&
-                           fss_has_live_target && might_be_unseen(Card::ForestSealStone);
+    // Forest Seal Stone grants Star Alchemy from the attached Tool, so Path to
+    // the Peak cannot suppress this route through Regidrago V's Rule Box:
+    // https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/swsh6-148
+    const bool live_tool = needs_tool && fss_has_live_target && might_be_unseen(Card::ForestSealStone);
     // Do not spend the Supporter on an empty Item search. Forest Seal Stone is
     // independently live only when Star Alchemy can reach a current missing axis.
     if (item_candidates.empty() && !live_tool) return false;

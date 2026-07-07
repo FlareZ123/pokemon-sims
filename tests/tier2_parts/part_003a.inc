@@ -13,8 +13,10 @@ void known_lusamine_is_delayed_not_direct() {
   a.supporter_used = false;
   a.turn_ended = false;
   EngineTestAccess::choose_supporter(f.engine);
-  expect(has(a.hand, Card::ProfessorBurnet) && !has(a.hand, Card::Crispin),
-         "After K1 proves no needed Energy remains, Lusamine should recover only the live payload Supporter.");
+  // Lusamine puts 2 eligible Supporter and/or Stadium cards into hand after the
+  // live payload Supporter makes the delayed recovery line worthwhile: https://api.pokemontcg.io/v2/cards/sm4-96
+  expect(has(a.hand, Card::ProfessorBurnet) && has(a.hand, Card::Crispin),
+         "Lusamine must recover the live payload Supporter plus the required second eligible Supporter.");
 }
 
 void search_effects_persist_knowledge() {

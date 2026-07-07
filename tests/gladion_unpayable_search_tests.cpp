@@ -14,7 +14,13 @@ struct EngineTestAccess {
 
 }  // namespace sim
 
-int main() {
+namespace {
+
+bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
+  return std::find(cards.begin(), cards.end(), card) != cards.end();
+}
+
+void test_unpayable_quick_ball() {
   // Quick Ball requires discarding another card before its Basic-Pokémon search:
   // https://api.pokemontcg.io/v2/cards/swsh1-179
   // Gladion may exchange itself with a card from the Prize cards:
@@ -36,13 +42,44 @@ int main() {
   if (!sim::EngineTestAccess::play_gladion(engine)) {
     throw std::runtime_error("Gladion must be played when Quick Ball has no legal discard cost");
   }
-
   const sim::State& after = sim::EngineTestAccess::state(engine);
-  if (std::find(after.hand.begin(), after.hand.end(), sim::Card::RegidragoV) == after.hand.end()) {
-    throw std::runtime_error("Gladion must recover the prized Regidrago V");
+  if (!contains(after.hand, sim::Card::RegidragoV) || !contains(after.prizes, sim::Card::Gladion)) {
+    throw std::runtime_error("Gladion must exchange with the prized Regidrago V");
   }
-  if (std::find(after.prizes.begin(), after.prizes.end(), sim::Card::Gladion) == after.prizes.end()) {
-    throw std::runtime_error("Gladion must replace the selected Prize card");
+}
+
+void test_item_locked_forest_seal_stone() {
+  // Forest Seal Stone is a Pokémon Tool and must be attached before its VSTAR Power can be used:
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Gladion may exchange itself with a card from the Prize cards:
+  // https://api.pokemontcg.io/v2/cards/sm4-95
+  const sim::Scenario scenario{"gladion-item-locked-fss", sim::DciProfile::StrictJit,
+                               sim::LockMode::FullItem, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng(58);
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1};
+  state.hand = {sim::Card::Gladion, sim::Card::ForestSealStone};
+  state.prizes = {sim::Card::RegidragoVstar, sim::Card::Grass, sim::Card::Fire,
+                  sim::Card::Dipplin, sim::Card::MawileGX, sim::Card::Guzma};
+  sim::EngineTestAccess::set_state(engine, state);
+
+  if (!sim::EngineTestAccess::play_gladion(engine)) {
+    throw std::runtime_error("Gladion must not be held for a Forest Seal Stone blocked by Item lock");
   }
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!contains(after.hand, sim::Card::RegidragoVstar) || !contains(after.prizes, sim::Card::Gladion)) {
+    throw std::runtime_error("Gladion must exchange with the prized Regidrago VSTAR");
+  }
+}
+
+}  // namespace
+
+int main() {
+  test_unpayable_quick_ball();
+  test_item_locked_forest_seal_stone();
   return 0;
 }

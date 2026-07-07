@@ -81,6 +81,8 @@ int main() {
     state.turn = 2;
     state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1, sim::Tool::None};
     state.hand = {sim::Card::Gladion, sim::Card::Arven};
+    state.discard = {sim::Card::MegaDragonite};
+    state.discarded_this_turn = {sim::Card::MegaDragonite};
     state.deck = {sim::Card::ForestSealStone, sim::Card::RegidragoVstar};
     state.prizes = {sim::Card::MegaDragonite, sim::Card::MegaDragonite, sim::Card::Dragapult,
                     sim::Card::Dragapult, sim::Card::GoodraVstar, sim::Card::GoodraVstar};

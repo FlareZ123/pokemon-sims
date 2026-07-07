@@ -27,6 +27,12 @@
     // Retry evolution so a Regidrago V that entered play on a prior turn can evolve
     // before this turn's ready check under the core evolution procedure (https://www.pokemon.com/us/pokemon-tcg/rules).
     evolve_best_regi();
+    // A late Item search can put Tapu Lele-GX into hand, and Bench play can then
+    // fetch a new Supporter with Wonder Tag. Reconsider that unused Supporter slot
+    // before the ready check: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Professor Burnet can discard a current-turn deck payload after this chain:
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    if (!state_.supporter_used && setup_axis_missing()) choose_supporter();
     if (use_legacy_star()) {
       // Core procedure source: https://www.pokemon.com/us/pokemon-tcg/rules
       // Recovered Items may be played later in the same turn.
@@ -61,7 +67,8 @@ std::vector<Scenario> all_scenarios() {
     const std::string seat = first ? "go-first" : "go-second";
     result.push_back({"strict-jit/" + seat, DciProfile::StrictJit, LockMode::None, first, 4});
     result.push_back({"matchup-flex-jit/" + seat, DciProfile::MatchupFlexJit, LockMode::None, first, 4});
-    result.push_back({"no-discard-control/" + seat, DciProfile::NoDiscardControl, LockMode::None, first, 4});
+    result.push_back({"no-discard-control/" + seat, DciProfile::NoDiscardControl, first ? LockMode::None : LockMode::None, first, 4});
+    result.back().locks = LockMode::None;
     result.push_back({"strict-jit-turn2-item-lock/" + seat, DciProfile::StrictJit, LockMode::TurnTwoItem, first, 4});
     result.push_back({"strict-jit-full-item-lock/" + seat, DciProfile::StrictJit, LockMode::FullItem, first, 4});
     result.push_back({"strict-jit-rulebox-ability-lock/" + seat, DciProfile::StrictJit, LockMode::FullRuleBoxAbility, first, 4});

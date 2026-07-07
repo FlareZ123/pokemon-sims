@@ -21,6 +21,16 @@
                             ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
                              std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) { return p.card == Card::RegidragoV && p.tool == Tool::None; }));
     const bool can_pay_search_cost = is_legal_cost_available(can_play_payload_this_turn(), true);
+    const bool live_regi_target = hand_count(Card::RegidragoV) == 0 && might_be_unseen(Card::RegidragoV);
+    const bool live_vstar_target = hand_count(Card::RegidragoVstar) == 0 && might_be_unseen(Card::RegidragoVstar);
+    const bool live_energy_target = (grass_needed() > 0 && might_be_unseen(Card::Grass)) ||
+                                    (fire_needed() > 0 && might_be_unseen(Card::Fire));
+    const bool live_latias_target = hand_count(Card::LatiasEx) == 0 && !in_play(Card::LatiasEx) &&
+                                    might_be_unseen(Card::LatiasEx);
+    const bool live_payload_target = might_be_unseen(Card::MegaDragonite) ||
+                                     might_be_unseen(Card::Dragapult) ||
+                                     might_be_unseen(Card::GoodraVstar) ||
+                                     might_be_unseen(Card::DialgaGX);
     std::vector<Card> item_candidates;
     const auto add_item_candidate = [this, &item_candidates](const Card item, const bool advances_now) {
       if (advances_now && might_be_unseen(item) &&
@@ -30,27 +40,32 @@
     };
 
     // Arven searches an Item and a Tool: https://api.pokemontcg.io/v2/cards/sv1-166
-    // Add only routes that are currently usable. A plausible route may be tried
-    // before K1; after deck knowledge, zero remaining copies cannot consume Arven.
-    if (need_regi() && bench_space() > 0) {
+    // A candidate needs both a usable Item and a reachable target. At K0 both
+    // may be plausible; after K1, a missing Item or target cannot spend Arven.
+    if (need_regi() && bench_space() > 0 && live_regi_target) {
       add_item_candidate(Card::QuickBall, can_pay_search_cost);
       add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
     }
-    if (need_vstar()) {
+    if (need_vstar() && live_vstar_target) {
       add_item_candidate(Card::EvolutionIncense, true);
       add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
     }
-    if (need_energy()) add_item_candidate(Card::EarthenVessel, can_pay_search_cost);
-    if (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx)) {
+    if (need_energy() && live_energy_target) add_item_candidate(Card::EarthenVessel, can_pay_search_cost);
+    if (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) && live_latias_target) {
       add_item_candidate(Card::QuickBall, can_pay_search_cost);
       add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
     }
-    if (can_play_payload_this_turn()) add_item_candidate(Card::BrilliantBlender, true);
+    if (can_play_payload_this_turn() && live_payload_target) add_item_candidate(Card::BrilliantBlender, true);
 
+    const bool fss_has_live_target = (need_regi() && bench_space() > 0 && live_regi_target) ||
+                                     (need_vstar() && live_vstar_target) ||
+                                     (need_energy() && live_energy_target) ||
+                                     (need_active_vstar() && bench_space() > 0 && live_latias_target) ||
+                                     (can_play_payload_this_turn() && live_payload_target);
     const bool live_tool = needs_tool && ability_available_for_pokemon(Card::RegidragoV) &&
-                           might_be_unseen(Card::ForestSealStone);
+                           fss_has_live_target && might_be_unseen(Card::ForestSealStone);
     // Do not spend the Supporter on an empty Item search. Forest Seal Stone is
-    // independently live when it can grant Star Alchemy to a Regidrago V.
+    // independently live only when Star Alchemy can reach a current missing axis.
     if (item_candidates.empty() && !live_tool) return false;
 
     remove_one(state_.hand, Card::Arven);
@@ -165,4 +180,4 @@
         if (!extra || is_payload(*extra)) break;
         const bool can_cycle = *extra == Card::Dipplin || *extra == Card::MawileGX || *extra == Card::Guzma ||
                                *extra == Card::Channeler || *extra == Card::FieldBlower || *extra == Card::ChaoticSwell || *extra == Card::PathToPeak;
-        if (can_cycle) break;
+        if (!can_cycle) break;

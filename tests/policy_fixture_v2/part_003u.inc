@@ -52,4 +52,20 @@ void test_lusamine_recovers_current_axis_connectors() {
     expect(count(after.hand, Card::Crispin) == 2,
            "Lusamine must recover two copies of the same eligible Supporter when those are the two available targets.");
   }
+  {
+    State s = state(2, Card::RegidragoVstar, 0, 2, 0);
+    s.bench = {Pokemon{Card::RegidragoV, 0, 0, 1, Tool::None}};
+    s.hand = {Card::Crispin};
+    s.discard = {Card::Fire, Card::Fire};
+    s.deck = {Card::Grass};
+    // All three Fire copies are public: two in discard and one attached to the Bench.
+    // Crispin only advances the missing Fire axis if a Fire could still be searched:
+    // https://api.pokemontcg.io/v2/cards/sv7-133
+    Fixture f(scenario("k0-public-attached-fire", DciProfile::NoDiscardControl), s);
+    expect(!EngineTestAccess::play_crispin(f.engine),
+           "Crispin must be held when public attached and discarded Fire cards exhaust the recipe.");
+    const State& after = EngineTestAccess::state(f.engine);
+    expect(contains(after.hand, Card::Crispin) && !after.supporter_used,
+           "A known dead Crispin route must preserve the Supporter turn.");
+  }
 }

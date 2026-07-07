@@ -35,6 +35,9 @@ target_compile_options(regidrago_oricorio_burnet_tests PRIVATE -Wall -Wextra -Wp
 add_executable(regidrago_late_item_supporter_tests tests/late_item_supporter_tests.cpp)
 target_compile_options(regidrago_late_item_supporter_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+add_executable(regidrago_blender_burnet_priority_tests tests/blender_burnet_priority_tests.cpp)
+target_compile_options(regidrago_blender_burnet_priority_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 add_executable(regidrago_serena_mandatory_discard_tests tests/serena_mandatory_discard_tests.cpp)
 target_compile_options(regidrago_serena_mandatory_discard_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
@@ -55,6 +58,7 @@ add_test(NAME regidrago_ultra_ball_tapu COMMAND regidrago_ultra_ball_tapu_tests)
 add_test(NAME regidrago_wonder_tag_dead_burnet COMMAND regidrago_wonder_tag_dead_burnet_tests)
 add_test(NAME regidrago_oricorio_burnet COMMAND regidrago_oricorio_burnet_tests)
 add_test(NAME regidrago_late_item_supporter COMMAND regidrago_late_item_supporter_tests)
+add_test(NAME regidrago_blender_burnet_priority COMMAND regidrago_blender_burnet_priority_tests)
 add_test(NAME regidrago_serena_mandatory_discard COMMAND regidrago_serena_mandatory_discard_tests)
 add_test(NAME regidrago_tapu_gladion_prize COMMAND regidrago_tapu_gladion_prize_tests)
 add_test(NAME regidrago_evolution_incense_payload COMMAND regidrago_evolution_incense_payload_tests)

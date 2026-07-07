@@ -1,6 +1,13 @@
     state_.retreat_used = false;
     state_.turn_ended = false;
     state_.discarded_this_turn.clear();
+    // A player who has no cards left in their deck at the beginning of their turn
+    // loses the game before taking turn actions: https://www.pokemon.com/us/pokemon-tcg/rules
+    if (state_.deck.empty()) {
+      state_.turn_ended = true;
+      trace("GAME LOST", "R-GAME-DECK-OUT", "No cards remained in deck at the start of turn.");
+      return;
+    }
     if (first_turn_going_first()) {
       trace("TURN START", "R-GAME-FIRST-TURN", "Going first: no opening-turn draw and no Supporter or attack.");
     } else {

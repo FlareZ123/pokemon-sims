@@ -19,7 +19,9 @@ class Engine {
     setup();
     for (int next_turn = 1; next_turn <= scenario_.max_turn; ++next_turn) {
       begin_turn(next_turn);
-      if (!state_.turn_ended) run_turn();
+      // A turn cannot proceed after the start-of-turn draw loss.
+      if (state_.turn_ended) break;
+      run_turn();
       record_ready();
       if (outcome_.first_ready_turn != 0) break;
     }

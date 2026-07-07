@@ -3,7 +3,8 @@ void test_steven_resolve_reserves_gladion_for_prized_vstar() {
   State s = state(1, Card::RegidragoV, 0);
   s.hand = {Card::StevensResolve};
   // Crispin's live Energy route needs both Basic Energy types in the deck: https://api.pokemontcg.io/v2/cards/sv7-133
-  s.deck = {Card::Gladion, Card::Crispin, Card::BrilliantBlender, Card::Grass, Card::Fire};
+  // Brilliant Blender can discard this deck's Mega Dragonite payload: https://api.pokemontcg.io/v2/cards/sv8-164
+  s.deck = {Card::Gladion, Card::Crispin, Card::BrilliantBlender, Card::MegaDragonite, Card::Grass, Card::Fire};
   s.prizes = {Card::RegidragoVstar};
   Fixture f(scenario("steven-prized-vstar-k1"), s);
 

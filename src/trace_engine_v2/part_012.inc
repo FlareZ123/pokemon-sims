@@ -104,6 +104,26 @@
     const bool playable_one_discard_regi_search = !item_locked() &&
         is_legal_cost_available(can_play_payload_this_turn(), true) &&
         (hand_count(Card::QuickBall) > 0 || hand_count(Card::MysteriousTreasure) > 0);
+    // Mysterious Treasure needs one hand-discard cost, while Ultra Ball needs two
+    // distinct hand-discard costs before either can search Regidrago VSTAR:
+    // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    const bool playable_mysterious_vstar_search = !item_locked() && hand_count(Card::MysteriousTreasure) > 0 &&
+        is_legal_cost_available(can_play_payload_this_turn(), true);
+    const auto playable_ultra_vstar_search = [this]() {
+      if (item_locked() || hand_count(Card::UltraBall) == 0) return false;
+      const std::vector<Card> original_hand = state_.hand;
+      const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
+      const bool permit_payload = can_play_payload_this_turn();
+      const auto first = choose_discard(permit_payload, true);
+      if (!first || !remove_one(state_.hand, *first)) {
+        restore_hand();
+        return false;
+      }
+      const auto second = choose_discard(permit_payload && can_play_payload_this_turn() && !is_payload(*first), true);
+      restore_hand();
+      return second.has_value();
+    };
+    const bool playable_vstar_item_search = playable_mysterious_vstar_search || playable_ultra_vstar_search();
     // Pokémon Tool cards are separate from Item cards under the official Tool erratum.
     // Do not gate this Forest Seal Stone route predicate on item_locked(); FSS remains
     // playable through Item lock: https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
@@ -118,9 +138,8 @@
         !playable_one_discard_regi_search && hand_count(Card::UltraBall) == 0 &&
         (item_locked() || hand_count(Card::Arven) == 0);
     const bool no_vstar_route = need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
-        hand_count(Card::EvolutionIncense) == 0 && hand_count(Card::MysteriousTreasure) == 0 &&
-        hand_count(Card::UltraBall) == 0 && (item_locked() || hand_count(Card::Arven) == 0) &&
-        !playable_fss_vstar_route;
+        hand_count(Card::EvolutionIncense) == 0 && !playable_vstar_item_search &&
+        (item_locked() || hand_count(Card::Arven) == 0) && !playable_fss_vstar_route;
     // Star Alchemy can find Professor Burnet, then Burnet can discard the deck payload;
     // a live Forest Seal Stone route therefore also escapes Item-lock payload pressure:
     // https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
@@ -199,7 +218,7 @@
     *selected = Card::Gladion;
     state_.hand.push_back(chosen);
     shuffle(state_.prizes);
-    trace("PLAY SUPPORTER", "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01", "Completed mandatory Prize exchange with " + std::string(name(chosen)) + ".");
+    trace("PLAY SUPPORTER", "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01", "Completed mandatory Prize exchange with " + std::string(name(chosen) + ".");
     return true;
   }
 

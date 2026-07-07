@@ -129,8 +129,12 @@
   }
 
   bool should_play_steven() const {
-    if (state_.turn != 1 || scenario_.going_first || !has_regi_v()) return false;
-    const int axes = static_cast<int>(need_vstar() && hand_count(Card::RegidragoVstar) == 0) +
+    if (state_.turn != 1 || scenario_.going_first) return false;
+    // Steven's Resolve can establish a missing Basic Regidrago V before the turn ends;
+    // Regidrago V is a Basic Pokémon: https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/swsh12-135
+    const bool missing_regi_axis = need_regi() && bench_space() > 0 && hand_count(Card::RegidragoV) == 0;
+    const int axes = static_cast<int>(missing_regi_axis) +
+                     static_cast<int>(need_vstar() && hand_count(Card::RegidragoVstar) == 0) +
                      static_cast<int>(need_energy() && hand_count(Card::Crispin) == 0) +
                      static_cast<int>(need_payload() && payload_might_be_in_deck() &&
                                       hand_count(Card::BrilliantBlender) == 0 && hand_count(Card::ProfessorBurnet) == 0);

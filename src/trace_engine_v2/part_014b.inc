@@ -68,6 +68,15 @@
     if (!supporter_allowed() || !setup_axis_missing()) return;
     if (need_active_vstar() && !need_energy() && !need_payload() && play_tate_switch()) return;
 
+    // Serena must discard at least 1 card before drawing to five:
+    // https://api.pokemontcg.io/v2/cards/swsh12-164
+    // When the current-turn payload is the only missing axis and it supplies that
+    // mandatory discard, resolve Serena before Prize recovery consumes Supporter.
+    const bool serena_completes_only_missing_axis = need_payload() && !need_regi() && !need_vstar() &&
+        !need_energy() && !need_active_vstar() && can_play_payload_this_turn() &&
+        hand_count(Card::Serena) > 0 && std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    if (serena_completes_only_missing_axis && play_serena()) return;
+
     if (prizes_known() && play_gladion()) return;
     if (play_steven()) return;
     if (need_energy() && hand_count(Card::Crispin) > 0 && play_crispin()) return;

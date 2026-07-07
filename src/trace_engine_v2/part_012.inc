@@ -113,9 +113,9 @@
     // Pokémon Tool cards are separate from Item cards under the official Tool erratum.
     // Do not gate this Forest Seal Stone route predicate on item_locked(); FSS remains
     // playable through Item lock: https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
-    // It still needs an open Tool slot on Regidrago V before it can grant Star Alchemy:
+    // Forest Seal Stone attaches to a Pokémon V and its one-per-game VSTAR Power searches the deck:
     // https://api.pokemontcg.io/v2/cards/swsh12-156
-    const bool playable_fss_vstar_route = hand_count(Card::ForestSealStone) > 0 &&
+    const bool playable_fss_vstar_route = !state_.vstar_power_used && hand_count(Card::ForestSealStone) > 0 &&
         ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
          std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) {
            return p.card == Card::RegidragoV && p.tool == Tool::None;
@@ -127,7 +127,11 @@
         hand_count(Card::EvolutionIncense) == 0 && hand_count(Card::MysteriousTreasure) == 0 &&
         hand_count(Card::UltraBall) == 0 && (item_locked() || hand_count(Card::Arven) == 0) &&
         !playable_fss_vstar_route;
-    const bool no_locked_payload_route = need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) == 0;
+    // Star Alchemy can find Professor Burnet, then Burnet can discard the deck payload;
+    // a live Forest Seal Stone route therefore also escapes Item-lock payload pressure:
+    // https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    const bool no_locked_payload_route = need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) == 0 &&
+        !playable_fss_vstar_route;
     const bool blind_critical = no_regi_route || no_vstar_route || no_locked_payload_route;
 
     std::optional<Card> known_target;

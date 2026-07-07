@@ -44,6 +44,14 @@
       if (!recover_discard_to_hand(Card::BrilliantBlender)) throw std::logic_error("Legacy Star Blender target disappeared");
       recovered.push_back(Card::BrilliantBlender);
     }
+    // Professor Burnet can search the deck for up to 2 cards and discard them, so a
+    // recovered copy is the live payload bridge when the Supporter slot is unused:
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    const bool burnet_payload_line = need_payload() && supporter_allowed() && payload_might_be_in_deck();
+    if (burnet_payload_line && count_of(state_.discard, Card::ProfessorBurnet) > 0 && recovered.size() < 2U) {
+      if (!recover_discard_to_hand(Card::ProfessorBurnet)) throw std::logic_error("Legacy Star Burnet target disappeared");
+      recovered.push_back(Card::ProfessorBurnet);
+    }
 
     // Recover energy only if it enables a manual attachment this turn. Do not recover a strict-JIT payload.
     for (const Card desired : {Card::Grass, Card::Fire, Card::Crispin, Card::Arven}) {

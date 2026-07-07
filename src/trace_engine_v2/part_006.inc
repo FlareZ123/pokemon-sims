@@ -29,9 +29,19 @@
 
   bool can_play_payload_this_turn() const { return payload_window_open() && need_payload(); }
 
+  // This is a policy knowledge check. Before a legal deck or Prize inspection it
+  // relies only on public copies; after K1 it respects the inspected deck state.
+  // Brilliant Blender and Professor Burnet can only place deck cards in discard:
+  // https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  bool payload_might_be_in_deck() const {
+    return might_be_unseen(Card::MegaDragonite) || might_be_unseen(Card::Dragapult) ||
+           might_be_unseen(Card::GoodraVstar) || might_be_unseen(Card::DialgaGX);
+  }
+
   bool has_live_blender_payload_line() const {
     // Brilliant Blender searches and discards cards from deck: https://api.pokemontcg.io/v2/cards/sv8-164
-    return !item_locked() && hand_count(Card::BrilliantBlender) > 0 && can_play_payload_this_turn();
+    return !item_locked() && hand_count(Card::BrilliantBlender) > 0 && can_play_payload_this_turn() &&
+           payload_might_be_in_deck();
   }
 
   std::optional<Card> choose_discard(const bool permit_payload, const bool flex_fodder,
@@ -98,9 +108,10 @@
     const bool needs_t1_steven = state_.turn == 1 && !scenario_.going_first && has_regi_v() && should_play_steven() && hand_count(Card::StevensResolve) == 0;
     const bool needs_crispin = need_energy() && (hand_count(Card::Crispin) == 0 || !crispin_can_advance_energy_axis());
     // Wonder Tag can inspect the deck for Burnet. It is a live direct payload
-    // bridge whenever Blender is not already playable, not only under Item lock: https://api.pokemontcg.io/v2/cards/cel25c-60_A
-    const bool needs_burnet = can_play_payload_this_turn() && hand_count(Card::ProfessorBurnet) == 0 &&
-                              !has_live_blender_payload_line() && might_be_unseen(Card::ProfessorBurnet);
+    // bridge only while a payload may remain in deck: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    const bool needs_burnet = can_play_payload_this_turn() && payload_might_be_in_deck() &&
+                               hand_count(Card::ProfessorBurnet) == 0 && !has_live_blender_payload_line() &&
+                               might_be_unseen(Card::ProfessorBurnet);
     const bool needs_arven = need_vstar() && hand_count(Card::Arven) == 0 && hand_count(Card::EvolutionIncense) == 0 && hand_count(Card::MysteriousTreasure) == 0;
     return needs_t1_steven || needs_crispin || needs_burnet || needs_arven;
   }

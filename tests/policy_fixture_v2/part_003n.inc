@@ -18,7 +18,8 @@ void test_wonder_tag_skips_known_dead_crispin() {
 void test_steven_skips_known_dead_crispin() {
   State s = state(1, Card::RegidragoV, 0);
   s.hand = {Card::StevensResolve};
-  s.deck = {Card::RegidragoVstar, Card::Crispin, Card::BrilliantBlender, Card::MysteriousTreasure};
+  // Brilliant Blender can discard this deck's Mega Dragonite payload after Steven's Resolve: https://api.pokemontcg.io/v2/cards/sv8-164
+  s.deck = {Card::RegidragoVstar, Card::Crispin, Card::BrilliantBlender, Card::MysteriousTreasure, Card::MegaDragonite};
   s.prizes = {Card::Grass, Card::Fire};
   Fixture f(scenario("steven-dead-crispin"), s);
 

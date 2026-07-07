@@ -16,7 +16,8 @@ void test_steven_fetches_burnet_before_turn_two_item_lock() {
   State s = state(1);
   s.hand = {Card::StevensResolve};
   // Crispin's printed search needs Basic Energy of different types: https://api.pokemontcg.io/v2/cards/sv7-133
-  s.deck = {Card::RegidragoVstar, Card::Crispin, Card::ProfessorBurnet, Card::BrilliantBlender, Card::Grass, Card::Fire};
+  // Burnet must have a Dragon payload it can discard from deck: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  s.deck = {Card::RegidragoVstar, Card::Crispin, Card::ProfessorBurnet, Card::BrilliantBlender, Card::MegaDragonite, Card::Grass, Card::Fire};
   Fixture f(scenario("steven-lock", DciProfile::StrictJit, LockMode::TurnTwoItem), s);
   expect(EngineTestAccess::play_steven(f.engine), "Steven should bridge three missing axes on going-second turn one.");
   const State& after = EngineTestAccess::state(f.engine);
@@ -31,7 +32,8 @@ void test_steven_uses_legal_fallback_when_preferred_card_is_prized() {
   s.hand = {Card::StevensResolve};
   s.prizes = {Card::RegidragoVstar};
   // Crispin is asserted as a live fallback only when this fixture contains its searchable Grass and Fire pair: https://api.pokemontcg.io/v2/cards/sv7-133
-  s.deck = {Card::Crispin, Card::ProfessorBurnet, Card::EarthenVessel, Card::Grass, Card::Fire};
+  // Burnet is a live fallback only with a payload it can search and discard: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  s.deck = {Card::Crispin, Card::ProfessorBurnet, Card::EarthenVessel, Card::MegaDragonite, Card::Grass, Card::Fire};
   Fixture f(scenario("steven-fallback", DciProfile::StrictJit, LockMode::TurnTwoItem), s);
   expect(EngineTestAccess::play_steven(f.engine), "Steven should still be playable with a prized preferred VSTAR.");
   const State& after = EngineTestAccess::state(f.engine);
@@ -53,7 +55,8 @@ void test_fss_uses_a_fallback_when_vstar_is_not_in_deck() {
   State s = state(2, Card::RegidragoV, 0, 1, 0);
   s.active->tool = Tool::ForestSealStone;
   s.prizes = {Card::RegidragoVstar};
-  s.deck = {Card::Crispin, Card::ProfessorBurnet};
+  // Professor Burnet can search and discard this Mega Dragonite payload: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  s.deck = {Card::Crispin, Card::ProfessorBurnet, Card::MegaDragonite};
   Fixture f(scenario("fss-fallback"), s);
   expect(EngineTestAccess::use_fss(f.engine), "Forest Seal Stone should be usable when VSTAR is prized.");
   // Crispin has no legal Energy target after Star Alchemy inspects this deck; Burnet remains the live payload outlet: https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26

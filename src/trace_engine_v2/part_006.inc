@@ -126,8 +126,9 @@
     // needed by the direct Burnet payload route: https://api.pokemontcg.io/v2/cards/sv7-133
     if (supporter_allowed() && hand_count(Card::Crispin) > 0 && crispin_can_advance_energy_axis()) return false;
     if (!item_locked() && hand_count(Card::EarthenVessel) > 0 && is_legal_cost_available(can_play_payload_this_turn(), true)) return false;
-    const int accessible_now = hand_count(Card::Grass) + hand_count(Card::Fire);
-    return accessible_now < grass_needed() + fire_needed();
+    // Regidrago V requires two Grass and one Fire. An off-type Energy cannot pay a
+    // missing component, while Vital Dance may search the exact Basic type: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/sm2-55
+    return hand_count(Card::Grass) < grass_needed() || hand_count(Card::Fire) < fire_needed();
   }
 
   bool needs_tapu_connector() const {

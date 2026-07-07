@@ -38,6 +38,9 @@ target_compile_options(regidrago_late_item_supporter_tests PRIVATE -Wall -Wextra
 add_executable(regidrago_serena_mandatory_discard_tests tests/serena_mandatory_discard_tests.cpp)
 target_compile_options(regidrago_serena_mandatory_discard_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+add_executable(regidrago_gladion_unpayable_search_tests tests/gladion_unpayable_search_tests.cpp)
+target_compile_options(regidrago_gladion_unpayable_search_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 add_executable(regidrago_gladion_serena_item_lock_tests tests/gladion_serena_item_lock_tests.cpp)
 target_compile_options(regidrago_gladion_serena_item_lock_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
@@ -59,6 +62,7 @@ add_test(NAME regidrago_wonder_tag_dead_burnet COMMAND regidrago_wonder_tag_dead
 add_test(NAME regidrago_oricorio_burnet COMMAND regidrago_oricorio_burnet_tests)
 add_test(NAME regidrago_late_item_supporter COMMAND regidrago_late_item_supporter_tests)
 add_test(NAME regidrago_serena_mandatory_discard COMMAND regidrago_serena_mandatory_discard_tests)
+add_test(NAME regidrago_gladion_unpayable_search COMMAND regidrago_gladion_unpayable_search_tests)
 add_test(NAME regidrago_gladion_serena_item_lock COMMAND regidrago_gladion_serena_item_lock_tests)
 add_test(NAME regidrago_crispin_one_type_manual_attachment COMMAND regidrago_crispin_one_type_manual_attachment_tests)
 add_test(NAME regidrago_tapu_gladion_prize COMMAND regidrago_tapu_gladion_prize_tests)
@@ -69,6 +73,6 @@ add_test(NAME trace_strict_first_t4 COMMAND regidrago_sim --simulate-this --scen
 add_test(NAME trace_flex_second_t2 COMMAND regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 4 --require-ready-by 2)
 add_test(NAME trace_turn2_item_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 9 --require-ready-by 3)
 add_test(NAME trace_rulebox_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 19 --require-ready-by 3)
-add_test(NAME trace_no_control_first_t4 COMMAND regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 6 --require-ready-by 4)
+add_test(NAME trace_no_control_first_t4 COMMAND regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 6 --require-ready-by 3)
 add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
 set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)

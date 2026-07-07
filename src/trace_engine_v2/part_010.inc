@@ -29,17 +29,17 @@
   }
 
   bool play_evolution_incense() {
-    // Evolution Incense searches the deck for an Evolution Pokémon: https://api.pokemontcg.io/v2/cards/swsh1-163
-    // At K1, do not spend this Item after a legal inspection proves that Regidrago VSTAR is absent; another Evolution cannot fill the missing VSTAR axis.
-    if (item_locked() || hand_count(Card::EvolutionIncense) == 0 || !need_vstar() ||
-        hand_count(Card::RegidragoVstar) > 0 || !might_be_unseen(Card::RegidragoVstar)) return false;
+    if (item_locked() || hand_count(Card::EvolutionIncense) == 0 || !need_vstar() || hand_count(Card::RegidragoVstar) > 0) return false;
     remove_one(state_.hand, Card::EvolutionIncense);
     state_.discard.push_back(Card::EvolutionIncense);
+    // Comparator card-text source: https://api.pokemontcg.io/v2/cards/swsh1-163
     record_deck_search_knowledge("Evolution Incense");
-    const bool found = move_deck_to_hand(Card::RegidragoVstar);
+    bool found = move_deck_to_hand(Card::RegidragoVstar);
+    Card found_card = Card::RegidragoVstar;
+    if (!found && move_deck_to_hand(Card::GoodraVstar)) { found = true; found_card = Card::GoodraVstar; }
+    if (!found && move_deck_to_hand(Card::Dipplin)) { found = true; found_card = Card::Dipplin; }
     shuffle(state_.deck);
-    trace("PLAY ITEM", "R-EVOINCENSE-01; R-GAME-ITEM",
-          found ? "Searched an Evolution Pokémon: Regidrago VSTAR." : "Regidrago VSTAR was absent after legal search.");
+    trace("PLAY ITEM", "R-EVOINCENSE-01; R-GAME-ITEM", found ? "Searched an Evolution Pokémon: " + std::string(name(found_card)) + "." : "No Evolution Pokémon remained in deck.");
     return true;
   }
 

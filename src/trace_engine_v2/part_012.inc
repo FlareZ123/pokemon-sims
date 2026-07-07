@@ -102,10 +102,20 @@
     const bool playable_one_discard_regi_search = !item_locked() &&
         is_legal_cost_available(can_play_payload_this_turn(), true) &&
         (hand_count(Card::QuickBall) > 0 || hand_count(Card::MysteriousTreasure) > 0);
+    // Forest Seal Stone is a Pokémon Tool and needs an open Tool slot on Regidrago V
+    // before it can grant Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+    const bool playable_fss_vstar_route = !item_locked() && hand_count(Card::ForestSealStone) > 0 &&
+        ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
+         std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) {
+           return p.card == Card::RegidragoV && p.tool == Tool::None;
+         }));
     const bool no_regi_route = need_regi() && hand_count(Card::RegidragoV) == 0 &&
         !playable_one_discard_regi_search && hand_count(Card::UltraBall) == 0 &&
         (item_locked() || hand_count(Card::Arven) == 0);
-    const bool no_vstar_route = need_vstar() && hand_count(Card::RegidragoVstar) == 0 && hand_count(Card::EvolutionIncense) == 0 && hand_count(Card::MysteriousTreasure) == 0 && hand_count(Card::UltraBall) == 0 && (item_locked() || hand_count(Card::Arven) == 0) && hand_count(Card::ForestSealStone) == 0;
+    const bool no_vstar_route = need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
+        hand_count(Card::EvolutionIncense) == 0 && hand_count(Card::MysteriousTreasure) == 0 &&
+        hand_count(Card::UltraBall) == 0 && (item_locked() || hand_count(Card::Arven) == 0) &&
+        !playable_fss_vstar_route;
     const bool no_locked_payload_route = need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) == 0;
     const bool blind_critical = no_regi_route || no_vstar_route || no_locked_payload_route;
 

@@ -96,7 +96,14 @@
     // A search connector can only fetch a future payload when a payload may still
     // be in deck. K1 derives this from legal deck or Prize inspection.
     if (!payload_might_be_in_deck()) return false;
-    const auto present = [this, excluded](const Card card) { return card != excluded && hand_count(card) > 0; };
+    // A second copy remains a separate Item action: the first can search an eligible
+    // payload and the second can pay its own discard cost with it. Card text sources:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    const auto present = [this, excluded](const Card card) {
+      return hand_count(card) > (card == excluded ? 1 : 0);
+    };
     return present(Card::MysteriousTreasure) || present(Card::QuickBall) || present(Card::UltraBall) ||
            present(Card::EarthenVessel) || present(Card::Serena) || present(Card::BrilliantBlender) ||
            (supporter_allowed() && present(Card::ProfessorBurnet));

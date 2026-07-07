@@ -20,12 +20,14 @@ bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
   return std::find(cards.begin(), cards.end(), card) != cards.end();
 }
 
-void test_unpayable_quick_ball() {
+void test_policy_unavailable_quick_ball() {
   // Quick Ball requires discarding another card before its Basic-Pokémon search:
   // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Strict-JIT policy preserves the pending Gladion Prize-recovery connector:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
   // Gladion may exchange itself with a card from the Prize cards:
   // https://api.pokemontcg.io/v2/cards/sm4-95
-  const sim::Scenario scenario{"gladion-unpayable-quick-ball", sim::DciProfile::StrictJit,
+  const sim::Scenario scenario{"gladion-policy-unavailable-quick-ball", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
   const sim::DeckRecipe recipe = sim::baseline_recipe();
   std::mt19937_64 rng(49);
@@ -40,7 +42,7 @@ void test_unpayable_quick_ball() {
   sim::EngineTestAccess::set_state(engine, state);
 
   if (!sim::EngineTestAccess::play_gladion(engine)) {
-    throw std::runtime_error("Gladion must be played when Quick Ball has no legal discard cost");
+    throw std::runtime_error("Gladion must be played when Quick Ball has no policy-admissible discard cost");
   }
   const sim::State& after = sim::EngineTestAccess::state(engine);
   if (!contains(after.hand, sim::Card::RegidragoV) || !contains(after.prizes, sim::Card::Gladion)) {
@@ -79,7 +81,7 @@ void test_item_locked_forest_seal_stone() {
 }  // namespace
 
 int main() {
-  test_unpayable_quick_ball();
+  test_policy_unavailable_quick_ball();
   test_item_locked_forest_seal_stone();
   return 0;
 }

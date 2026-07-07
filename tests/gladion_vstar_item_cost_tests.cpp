@@ -19,13 +19,6 @@ bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
   return std::find(cards.begin(), cards.end(), card) != cards.end();
 }
 
-sim::Engine make_engine(const char* name, const int seed) {
-  const sim::Scenario scenario{name, sim::DciProfile::StrictJit, sim::LockMode::None, false, 4};
-  const sim::DeckRecipe recipe = sim::baseline_recipe();
-  static std::mt19937_64 rng(seed);
-  return sim::Engine(scenario, recipe, rng);
-}
-
 sim::State prized_vstar_state(std::vector<sim::Card> hand) {
   sim::State state;
   state.turn = 2;
@@ -40,7 +33,11 @@ void test_unpayable_mysterious_treasure_recovers_vstar() {
   // Mysterious Treasure needs a hand discard before its Dragon search:
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // Gladion exchanges itself with a Prize card: https://api.pokemontcg.io/v2/cards/sm4-95
-  sim::Engine engine = make_engine("gladion-unpayable-mysterious-vstar", 116);
+  const sim::Scenario scenario{"gladion-unpayable-mysterious-vstar", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng(116);
+  sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, prized_vstar_state({sim::Card::Gladion, sim::Card::MysteriousTreasure}));
 
   if (!sim::EngineTestAccess::play_gladion(engine) ||
@@ -53,7 +50,11 @@ void test_unpayable_ultra_ball_recovers_vstar() {
   // Ultra Ball needs 2 other hand cards before its Pokémon search:
   // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
   // Gladion exchanges itself with a Prize card: https://api.pokemontcg.io/v2/cards/sm4-95
-  sim::Engine engine = make_engine("gladion-unpayable-ultra-vstar", 117);
+  const sim::Scenario scenario{"gladion-unpayable-ultra-vstar", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng(117);
+  sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, prized_vstar_state({sim::Card::Gladion, sim::Card::UltraBall, sim::Card::Dipplin}));
 
   if (!sim::EngineTestAccess::play_gladion(engine) ||
@@ -65,7 +66,11 @@ void test_unpayable_ultra_ball_recovers_vstar() {
 void test_payable_mysterious_treasure_preserves_gladion() {
   // Mysterious Treasure may search a Dragon Pokémon once its discard cost is paid:
   // https://api.pokemontcg.io/v2/cards/sm6-113
-  sim::Engine engine = make_engine("gladion-payable-mysterious-vstar", 118);
+  const sim::Scenario scenario{"gladion-payable-mysterious-vstar", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng(118);
+  sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, prized_vstar_state({sim::Card::Gladion, sim::Card::MysteriousTreasure, sim::Card::Dipplin}));
 
   if (sim::EngineTestAccess::play_gladion(engine) ||

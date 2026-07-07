@@ -32,4 +32,35 @@
 
     const auto first = choose_discard(can_jit_discard, true);
     if (!first) return false;
-    remove_one(state_.hand, *first);
+    // Temporarily remove the first cost before selecting the second, so a singleton cannot satisfy Ultra Ball's two-card discard cost: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    if (!remove_one(state_.hand, *first)) throw std::logic_error("Ultra Ball first discard cost disappeared");
+    const auto second = choose_discard(permit_payload && can_play_payload_this_turn() && !is_payload(*first), true);
+    state_.hand.push_back(*first);
+    if (!second) return false;
+
+    remove_one(state_.hand, Card::UltraBall);
+    state_.discard.push_back(Card::UltraBall);
+    discard_from_hand(*first, "Ultra Ball cost", "R-UB-01");
+    discard_from_hand(*second, "Ultra Ball cost", "R-UB-01");
+    // Comparator card-text source: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    record_deck_search_knowledge("Ultra Ball");
+
+    const std::array<Card, 5> targets{Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio, Card::TapuLeleGX};
+    for (const Card target : targets) {
+      const bool desired = (target == Card::RegidragoV && want_regi) ||
+                           (target == Card::RegidragoVstar && want_vstar) ||
+                           (target == Card::LatiasEx && want_latias) ||
+                           (target == Card::Oricorio && want_oricorio) ||
+                           (target == Card::TapuLeleGX && want_tapu);
+      if (desired && move_deck_to_hand(target)) {
+        shuffle(state_.deck);
+        trace("PLAY ITEM", "R-UB-01; R-GAME-ITEM", "Searched a Pokémon: " + std::string(name(target)) + ".");
+        return true;
+      }
+    }
+    const Card fallback = fallback_ultra_ball_target_after_search_started();
+    const bool found_fallback = move_deck_to_hand(fallback);
+    shuffle(state_.deck);
+    trace("PLAY ITEM", "R-UB-01; R-GAME-ITEM", found_fallback ? "No preferred target remained; legally searched " + std::string(name(fallback)) + "." : "No Pokémon remained after search.");
+    return true;
+  }

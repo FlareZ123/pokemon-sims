@@ -64,6 +64,26 @@ void test_evolution_incense_is_not_a_hand_payload_discard_route() {
   assert(std::count(state.deck.begin(), state.deck.end(), Card::MegaDragonite) == 1);
 }
 
+void test_single_ultra_ball_without_two_follow_up_cards_is_not_a_payload_outlet() {
+  using namespace sim;
+  const Scenario scenario{"single-ultra-not-payable-after-payload-search", DciProfile::StrictJit, LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(203);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+  state.bench = full_bench();
+  state.hand = {Card::MysteriousTreasure, Card::Dipplin, Card::UltraBall};
+  state.deck = {Card::MegaDragonite};
+
+  // Mysterious Treasure spends itself and one hand card before fetching the payload: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Ultra Ball still needs two other cards from hand, so payload plus one Ultra Ball is not a playable continuation: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  assert(!EngineTestAccess::play_mysterious_treasure(engine, true));
+  assert(std::count(state.hand.begin(), state.hand.end(), Card::MysteriousTreasure) == 1);
+  assert(std::count(state.deck.begin(), state.deck.end(), Card::MegaDragonite) == 1);
+}
+
 void test_spent_supporter_slot_disables_serena_payload_continuation() {
   using namespace sim;
   const Scenario scenario{"spent-serena-payload-outlet", DciProfile::StrictJit, LockMode::None, false, 4};
@@ -90,6 +110,7 @@ void test_spent_supporter_slot_disables_serena_payload_continuation() {
 int main() {
   test_serena_requires_a_discard();
   test_evolution_incense_is_not_a_hand_payload_discard_route();
+  test_single_ultra_ball_without_two_follow_up_cards_is_not_a_payload_outlet();
   test_spent_supporter_slot_disables_serena_payload_continuation();
   return 0;
 }

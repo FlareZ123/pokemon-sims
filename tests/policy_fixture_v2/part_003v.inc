@@ -20,6 +20,15 @@ void test_arven_requires_a_live_item_or_tool_route() {
            "Arven must not take a known Mysterious Treasure when no discard cost is payable.");
   }
   {
+    State s = state(2, Card::RegidragoV, 0, 2, 1);
+    s.hand = {Card::Arven, Card::HisuianHeavyBall};
+    s.deck = {Card::EvolutionIncense};
+    Fixture f(scenario("arven-dead-incense-target"), s);
+    expect(EngineTestAccess::play_heavy_ball(f.engine), "Heavy Ball should establish deck knowledge.");
+    expect(!EngineTestAccess::play_arven(f.engine),
+           "Arven must not take a known Evolution Incense when Regidrago VSTAR is absent.");
+  }
+  {
     State s = state(2, Card::RegidragoVstar, 0, 1, 0);
     s.hand = {Card::Arven, Card::HisuianHeavyBall, Card::Dipplin};
     s.discard = {Card::MegaDragonite};

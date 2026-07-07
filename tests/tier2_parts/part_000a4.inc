@@ -16,7 +16,8 @@ void steven_beats_arven() {
   State s = st(1, Card::RegidragoV, 0);
   s.hand = {Card::StevensResolve, Card::Arven};
   // The Steven route uses Crispin only with a searchable Grass/Fire pair: https://api.pokemontcg.io/v2/cards/sv7-133
-  s.deck = {Card::RegidragoVstar, Card::Crispin, Card::BrilliantBlender, Card::ForestSealStone, Card::Grass, Card::Fire};
+  // Brilliant Blender can discard this deck's Mega Dragonite payload: https://api.pokemontcg.io/v2/cards/sv8-164
+  s.deck = {Card::RegidragoVstar, Card::Crispin, Card::BrilliantBlender, Card::MegaDragonite, Card::ForestSealStone, Card::Grass, Card::Fire};
   Fixture f(sc("tier2-steven-over-arven", DciProfile::StrictJit, LockMode::None, false), s);
   EngineTestAccess::choose_supporter(f.engine);
   const State& a = EngineTestAccess::state(f.engine);

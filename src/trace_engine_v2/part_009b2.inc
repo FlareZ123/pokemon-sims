@@ -90,6 +90,3 @@
     const auto first = choose_discard(can_jit_discard, true);
     if (!first) return false;
     remove_one(state_.hand, *first);
-    const auto second = choose_discard(permit_payload && can_play_payload_this_turn() && !is_payload(*first), true);
-    state_.hand.push_back(*first);
-    if (!second) return false;

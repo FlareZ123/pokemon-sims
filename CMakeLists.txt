@@ -71,6 +71,9 @@ target_compile_options(regidrago_oricorio_full_energy_search_tests PRIVATE -Wall
 add_executable(regidrago_steven_missing_regi_tests tests/steven_missing_regi_tests.cpp)
 target_compile_options(regidrago_steven_missing_regi_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+add_executable(regidrago_oricorio_type_sensitive_energy_tests tests/oricorio_type_sensitive_energy_tests.cpp)
+target_compile_options(regidrago_oricorio_type_sensitive_energy_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 enable_testing()
 add_test(NAME regidrago_sim_self_test COMMAND regidrago_sim --self-test)
 add_test(NAME regidrago_policy_fixtures COMMAND regidrago_policy_tests)
@@ -94,6 +97,7 @@ add_test(NAME regidrago_duplicate_mysterious_treasure COMMAND regidrago_duplicat
 add_test(NAME regidrago_duplicate_earthen_vessel COMMAND regidrago_duplicate_earthen_vessel_tests)
 add_test(NAME regidrago_oricorio_full_energy_search COMMAND regidrago_oricorio_full_energy_search_tests)
 add_test(NAME regidrago_steven_missing_regi COMMAND regidrago_steven_missing_regi_tests)
+add_test(NAME regidrago_oricorio_type_sensitive_energy COMMAND regidrago_oricorio_type_sensitive_energy_tests)
 add_test(NAME trace_strict_second_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 --require-ready-by 3)
 add_test(NAME trace_strict_first_t4 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4)
 add_test(NAME trace_flex_second_t2 COMMAND regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 4 --require-ready-by 2)

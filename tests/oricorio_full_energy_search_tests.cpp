@@ -10,7 +10,9 @@ namespace sim {
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
   static State& state(Engine& engine) { return engine.state_; }
-  static bool bench_oricorio_if_useful(Engine& engine) { return engine.bench_oricorio_if_useful(); }
+  static bool bench_from_hand(Engine& engine, Card card, bool resolve_entry) {
+    return engine.bench_from_hand(card, resolve_entry);
+  }
   static bool play_mysterious_treasure(Engine& engine, bool permit_payload) {
     return engine.play_mysterious_treasure(permit_payload);
   }
@@ -47,7 +49,8 @@ void test_oricorio_selects_a_second_legal_energy_for_follow_up_search() {
   sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, std::move(state));
 
-  expect(sim::EngineTestAccess::bench_oricorio_if_useful(engine), "Vital Dance should be a live Energy connector.");
+  expect(sim::EngineTestAccess::bench_from_hand(engine, sim::Card::Oricorio, true),
+         "Vital Dance should resolve when Oricorio is legally Benched from hand.");
   const sim::State& after_vital_dance = sim::EngineTestAccess::state(engine);
   expect(count(after_vital_dance.hand, sim::Card::Fire) == 2,
          "Vital Dance should keep the second legal Fire Energy after finding the needed Grass Energy.");

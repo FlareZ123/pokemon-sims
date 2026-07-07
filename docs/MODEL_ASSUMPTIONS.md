@@ -71,7 +71,9 @@ The requested success predicate treats the following as valid:
 - S tier: Dragapult ex, Mega Dragonite ex.
 - A tier: Dialga-GX, Hisuian Goodra VSTAR.
 
-The model does not attempt matchup-dependent damage mathematics when choosing between those targets. It only verifies availability for an Apex attack.
+Dipplin TWM 127 is a Dragon Pokémon and therefore remains a legal Mysterious Treasure target: https://api.pokemontcg.io/v2/cards/sv6-127. Maintainer policy excludes Syrup Catcher from the A/S game-win-condition set. The attack can create a gust-like target, yet it may take no Prize and leaves an opponent able to switch after the effect. The engine therefore excludes Dipplin from `is_payload`, from the readiness predicate, and from all payload-discard routing.
+
+The model does not attempt matchup-dependent damage mathematics when choosing between accepted A/S targets. It only verifies availability for an Apex attack.
 
 ## DCI implementation
 

@@ -20,6 +20,11 @@ struct EngineTestAccess {
 
 namespace {
 
+std::vector<sim::Pokemon> full_bench() {
+  return {{sim::Card::MawileGX, 2}, {sim::Card::MawileGX, 2}, {sim::Card::MawileGX, 2},
+          {sim::Card::MawileGX, 2}, {sim::Card::MawileGX, 2}};
+}
+
 void test_serena_requires_a_discard() {
   using namespace sim;
   const Scenario scenario{"serena-mandatory-discard", DciProfile::StrictJit, LockMode::None, false, 4};
@@ -48,9 +53,11 @@ void test_evolution_incense_is_not_a_hand_payload_discard_route() {
   State& state = EngineTestAccess::state(engine);
   state.turn = 2;
   state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+  state.bench = full_bench();
   state.hand = {Card::MysteriousTreasure, Card::Dipplin, Card::EvolutionIncense};
   state.deck = {Card::MegaDragonite};
 
+  // A Bench has at most five Pokémon, so this state removes unrelated Basic-Pokémon connector routes: https://www.pokemon.com/us/pokemon-tcg/rules
   // Mysterious Treasure can fetch a Dragon after a hand discard, while Evolution Incense has no discard effect: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-163
   assert(!EngineTestAccess::play_mysterious_treasure(engine, true));
   assert(std::count(state.hand.begin(), state.hand.end(), Card::MysteriousTreasure) == 1);
@@ -67,9 +74,11 @@ void test_spent_supporter_slot_disables_serena_payload_continuation() {
   state.turn = 2;
   state.supporter_used = true;
   state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+  state.bench = full_bench();
   state.hand = {Card::MysteriousTreasure, Card::Dipplin, Card::Serena};
   state.deck = {Card::MegaDragonite};
 
+  // A full Bench removes unrelated Basic-Pokémon connector routes: https://www.pokemon.com/us/pokemon-tcg/rules
   // Serena cannot be used after the turn's Supporter play: https://api.pokemontcg.io/v2/cards/swsh12-164 https://www.pokemon.com/us/pokemon-tcg/rules
   assert(!EngineTestAccess::play_mysterious_treasure(engine, true));
   assert(std::count(state.hand.begin(), state.hand.end(), Card::MysteriousTreasure) == 1);

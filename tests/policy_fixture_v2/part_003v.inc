@@ -40,4 +40,19 @@ void test_arven_requires_a_live_item_or_tool_route() {
     expect(contains(EngineTestAccess::state(f.engine).hand, Card::EarthenVessel),
            "Arven should retrieve the live Earthen Vessel route.");
   }
+  {
+    State s = state(2, Card::RegidragoV, 0, 2, 0);
+    s.hand = {Card::Arven, Card::Dipplin};
+    s.prizes = {Card::RegidragoVstar};
+    s.deck = {Card::EvolutionIncense, Card::EarthenVessel, Card::Fire};
+    // Arven searches the deck before choosing its Item target: https://api.pokemontcg.io/v2/cards/sv1-166
+    Fixture f(scenario("arven-rechecks-inspected-target"), s);
+    expect(EngineTestAccess::play_arven(f.engine),
+           "Arven should resolve when Earthen Vessel is a live post-search Energy route.");
+    const State& after = EngineTestAccess::state(f.engine);
+    expect(contains(after.hand, Card::EarthenVessel),
+           "After seeing prized VSTAR, Arven must take Earthen Vessel instead of dead Evolution Incense.");
+    expect(!contains(after.hand, Card::EvolutionIncense),
+           "Arven must not retain a stale K0 Evolution Incense target after legal deck inspection.");
+  }
 }

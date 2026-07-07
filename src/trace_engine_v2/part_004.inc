@@ -77,11 +77,14 @@
   bool need_energy() const { return grass_needed() > 0 || fire_needed() > 0; }
 
   // Crispin can advance the axis when an actually needed type remains in deck
-  // at K1, or could still be unseen at K0. Card text source:
-  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // at K1, or could still be unseen at K0. A resolved Heavy Ball or Gladion
+  // Prize inspection establishes K1 in this fixed-list model; with one Basic
+  // Energy type left, Crispin puts it into hand and attaches none, so the
+  // manual attachment must still be available: https://api.pokemontcg.io/v2/cards/swsh10-146
+  // https://api.pokemontcg.io/v2/cards/sm4-95 https://api.pokemontcg.io/v2/cards/sv7-133
   bool crispin_can_advance_energy_axis() const {
     if (!need_energy()) return false;
-    if (deck_seen_) {
+    if (prizes_known()) {
       const bool grass_available = deck_count_after_search_started(Card::Grass) > 0;
       const bool fire_available = deck_count_after_search_started(Card::Fire) > 0;
       const bool needed_type_available = (grass_needed() > 0 && grass_available) ||

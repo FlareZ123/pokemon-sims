@@ -92,10 +92,10 @@
       return Card::HisuianHeavyBall;
     }
 
-    // The card currently being played cannot pay its own discard cost. Once it is
-    // excluded, a distinct Ultra Ball is another card in hand that may pay Quick
-    // Ball's discard cost: https://api.pokemontcg.io/v2/cards/swsh1-179
-    if (has_discardable_copy(Card::UltraBall)) return Card::UltraBall;
+    // The card currently being played cannot pay its own discard cost. When an
+    // effect identifies that card, a distinct Ultra Ball is another card in hand
+    // that may pay Quick Ball's discard cost: https://api.pokemontcg.io/v2/cards/swsh1-179
+    if (excluded_from_cost && has_discardable_copy(Card::UltraBall)) return Card::UltraBall;
 
     // Mysterious Treasure says to discard a card from hand, so a distinct second
     // copy remains a legal cost for the first copy: https://api.pokemontcg.io/v2/cards/sm6-113

@@ -149,15 +149,6 @@
         hand_count(Card::ProfessorBurnet) == 0 && deck_count_after_search_started(payload_outlet) > 0) {
       wanted.push_back(payload_outlet);
     }
-    for (const Card fallback : {Card::RegidragoV, Card::RegidragoVstar, Card::Gladion, Card::Crispin, payload_outlet,
-                                Card::MysteriousTreasure, Card::EarthenVessel, Card::LatiasEx}) {
-      if (wanted.size() >= 3U) break;
-      if (fallback == Card::Crispin && !crispin_can_advance_energy_axis()) continue;
-      if (fallback == payload_outlet && !payload_might_be_in_deck()) continue;
-      if (std::find(wanted.begin(), wanted.end(), fallback) == wanted.end()) wanted.push_back(fallback);
-    }
     std::vector<Card> found;
     for (const Card target : wanted) {
       if (found.size() >= 3U) break;
-      if (move_deck_to_hand(target)) found.push_back(target);
-    }

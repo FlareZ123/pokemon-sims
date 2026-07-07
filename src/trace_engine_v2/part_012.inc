@@ -118,13 +118,20 @@
          std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) {
            return p.card == Card::RegidragoV && p.tool == Tool::None;
          }));
+    // Arven can fetch the same live Tool route while Item lock prevents only the Item branch of its search: https://api.pokemontcg.io/v2/cards/sv1-166
+    const bool playable_arven_fss_vstar_route = hand_count(Card::Arven) > 0 &&
+        might_be_unseen(Card::ForestSealStone) &&
+        ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
+         std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) {
+           return p.card == Card::RegidragoV && p.tool == Tool::None;
+         }));
     const bool no_regi_route = need_regi() && hand_count(Card::RegidragoV) == 0 &&
         !playable_one_discard_regi_search && hand_count(Card::UltraBall) == 0 &&
         (item_locked() || hand_count(Card::Arven) == 0);
     const bool no_vstar_route = need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
         hand_count(Card::EvolutionIncense) == 0 && hand_count(Card::MysteriousTreasure) == 0 &&
         hand_count(Card::UltraBall) == 0 && (item_locked() || hand_count(Card::Arven) == 0) &&
-        !playable_fss_vstar_route;
+        !playable_fss_vstar_route && !playable_arven_fss_vstar_route;
     const bool no_locked_payload_route = need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) == 0;
     const bool blind_critical = no_regi_route || no_vstar_route || no_locked_payload_route;
 
@@ -163,7 +170,8 @@
       const bool direct_supporter = should_play_steven() ||
                                     (need_energy() && hand_count(Card::Crispin) > 0 && crispin_can_advance_energy_axis()) ||
                                     (need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) > 0) ||
-                                    (!item_locked() && hand_count(Card::Arven) > 0);
+                                    (!item_locked() && hand_count(Card::Arven) > 0) ||
+                                    playable_arven_fss_vstar_route;
       if (!known_target && !direct_supporter && prize_count_after_reveal(Card::Lusamine) > 0 &&
           (count_of(state_.discard, Card::Crispin) > 0 || count_of(state_.discard, Card::ProfessorBurnet) > 0 ||
            count_of(state_.discard, Card::Arven) > 0 || count_of(state_.discard, Card::StevensResolve) > 0)) {

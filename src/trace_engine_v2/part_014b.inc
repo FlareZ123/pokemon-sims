@@ -68,10 +68,10 @@
     if (!supporter_allowed() || !setup_axis_missing()) return;
     if (need_active_vstar() && !need_energy() && !need_payload() && play_tate_switch()) return;
 
-    // Serena must discard at least 1 card before drawing to five:
-    // https://api.pokemontcg.io/v2/cards/swsh12-164
-    // When the current-turn payload is the only missing axis and it supplies that
-    // mandatory discard, resolve Serena before Prize recovery consumes Supporter.
+    // Exact Serena text: discard up to 3 cards, but "You must discard at least 1 card."
+    // A zero-discard draw is illegal: https://api.pokemontcg.io/v2/cards/swsh12-164
+    // This route requires an in-hand payload as that mandatory discard, then resolves
+    // Serena before Prize recovery spends the only Supporter play.
     const bool serena_completes_only_missing_axis = need_payload() && !need_regi() && !need_vstar() &&
         !need_energy() && !need_active_vstar() && can_play_payload_this_turn() &&
         hand_count(Card::Serena) > 0 && std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);

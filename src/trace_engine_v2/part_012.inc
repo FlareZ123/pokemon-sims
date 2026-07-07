@@ -21,22 +21,37 @@
                             ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
                              std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) { return p.card == Card::RegidragoV && p.tool == Tool::None; }));
     const bool can_pay_search_cost = is_legal_cost_available(can_play_payload_this_turn(), true);
-    const bool live_regi_item = need_regi() && bench_space() > 0 && can_pay_search_cost &&
-                                (might_be_unseen(Card::QuickBall) || might_be_unseen(Card::MysteriousTreasure));
-    const bool live_vstar_item = need_vstar() &&
-                                 (might_be_unseen(Card::EvolutionIncense) ||
-                                  (can_pay_search_cost && might_be_unseen(Card::MysteriousTreasure)));
-    const bool live_energy_item = need_energy() && can_pay_search_cost && might_be_unseen(Card::EarthenVessel);
-    const bool live_active_item = need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
-                                  can_pay_search_cost &&
-                                  (might_be_unseen(Card::QuickBall) || might_be_unseen(Card::MysteriousTreasure));
-    const bool live_payload_item = can_play_payload_this_turn() && might_be_unseen(Card::BrilliantBlender);
+    std::vector<Card> item_candidates;
+    const auto add_item_candidate = [this, &item_candidates](const Card item, const bool advances_now) {
+      if (advances_now && might_be_unseen(item) &&
+          std::find(item_candidates.begin(), item_candidates.end(), item) == item_candidates.end()) {
+        item_candidates.push_back(item);
+      }
+    };
+
+    // Arven searches an Item and a Tool: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Add only routes that are currently usable. A plausible route may be tried
+    // before K1; after deck knowledge, zero remaining copies cannot consume Arven.
+    if (need_regi() && bench_space() > 0) {
+      add_item_candidate(Card::QuickBall, can_pay_search_cost);
+      add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
+    }
+    if (need_vstar()) {
+      add_item_candidate(Card::EvolutionIncense, true);
+      add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
+    }
+    if (need_energy()) add_item_candidate(Card::EarthenVessel, can_pay_search_cost);
+    if (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx)) {
+      add_item_candidate(Card::QuickBall, can_pay_search_cost);
+      add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
+    }
+    if (can_play_payload_this_turn()) add_item_candidate(Card::BrilliantBlender, true);
+
     const bool live_tool = needs_tool && ability_available_for_pokemon(Card::RegidragoV) &&
                            might_be_unseen(Card::ForestSealStone);
-    // Arven searches an Item and a Tool: https://api.pokemontcg.io/v2/cards/sv1-166
-    // Spend the Supporter only when an Item is plausibly present and playable now,
-    // or when Forest Seal Stone is a live VSTAR-Power route on a Regidrago V.
-    if (!(live_regi_item || live_vstar_item || live_energy_item || live_active_item || live_payload_item || live_tool)) return false;
+    // Do not spend the Supporter on an empty Item search. Forest Seal Stone is
+    // independently live when it can grant Star Alchemy to a Regidrago V.
+    if (item_candidates.empty() && !live_tool) return false;
 
     remove_one(state_.hand, Card::Arven);
     state_.discard.push_back(Card::Arven);
@@ -44,21 +59,6 @@
 
     // Arven's deck search permits choosing the Item after inspecting the deck.
     record_deck_search_knowledge("Arven");
-    // Prefer the fewest-step route for the current missing axis, then an Item
-    // that still advances that axis if the first choice is not in deck.
-    std::vector<Card> item_candidates;
-    if (need_regi() && bench_space() > 0) {
-      item_candidates = {Card::QuickBall, Card::MysteriousTreasure};
-    } else if (need_vstar()) {
-      item_candidates = {Card::EvolutionIncense, Card::MysteriousTreasure};
-    } else if (need_energy()) {
-      item_candidates = {Card::EarthenVessel};
-    } else if (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx)) {
-      item_candidates = {Card::QuickBall, Card::MysteriousTreasure};
-    } else if (can_play_payload_this_turn()) {
-      item_candidates = {Card::BrilliantBlender};
-    }
-
     std::vector<Card> found;
     for (const Card item : item_candidates) {
       if (move_deck_to_hand(item)) { found.push_back(item); break; }

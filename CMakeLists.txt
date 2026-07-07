@@ -53,6 +53,9 @@ target_compile_options(regidrago_tapu_gladion_prize_tests PRIVATE -Wall -Wextra 
 add_executable(regidrago_evolution_incense_payload_tests tests/evolution_incense_payload_tests.cpp)
 target_compile_options(regidrago_evolution_incense_payload_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+add_executable(regidrago_arven_heavy_ball_prize_tests tests/arven_heavy_ball_prize_tests.cpp)
+target_compile_options(regidrago_arven_heavy_ball_prize_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 add_executable(regidrago_duplicate_quick_ball_tests tests/duplicate_quick_ball_cost_tests.cpp)
 target_compile_options(regidrago_duplicate_quick_ball_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
@@ -79,6 +82,7 @@ add_test(NAME regidrago_gladion_serena_item_lock COMMAND regidrago_gladion_seren
 add_test(NAME regidrago_crispin_one_type_manual_attachment COMMAND regidrago_crispin_one_type_manual_attachment_tests)
 add_test(NAME regidrago_tapu_gladion_prize COMMAND regidrago_tapu_gladion_prize_tests)
 add_test(NAME regidrago_evolution_incense_payload COMMAND regidrago_evolution_incense_payload_tests)
+add_test(NAME regidrago_arven_heavy_ball_prize COMMAND regidrago_arven_heavy_ball_prize_tests)
 add_test(NAME regidrago_duplicate_quick_ball COMMAND regidrago_duplicate_quick_ball_tests)
 add_test(NAME regidrago_duplicate_mysterious_treasure COMMAND regidrago_duplicate_mysterious_treasure_tests)
 add_test(NAME regidrago_duplicate_earthen_vessel COMMAND regidrago_duplicate_earthen_vessel_tests)

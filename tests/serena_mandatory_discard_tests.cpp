@@ -21,8 +21,8 @@ struct EngineTestAccess {
 namespace {
 
 std::vector<sim::Pokemon> full_bench() {
-  return {{sim::Card::MawileGX, 2}, {sim::Card::MawileGX, 2}, {sim::Card::MawileGX, 2},
-          {sim::Card::MawileGX, 2}, {sim::Card::MawileGX, 2}};
+  return {{sim::Card::MawileGX, 2}, {sim::Card::DialgaGX, 2}, {sim::Card::LatiasEx, 2},
+          {sim::Card::Oricorio, 2}, {sim::Card::TapuLeleGX, 2}};
 }
 
 void test_serena_requires_a_discard() {

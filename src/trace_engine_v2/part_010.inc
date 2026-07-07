@@ -14,7 +14,8 @@
       const bool desired = (target == Card::RegidragoV && want_regi) ||
                            (target == Card::RegidragoVstar && want_vstar) ||
                            (target == Card::LatiasEx && want_latias) ||
-                           (target == Card::Oricorio && want_oricorio);
+                           (target == Card::Oricorio && want_oricorio) ||
+                           (target == Card::TapuLeleGX && want_tapu);
       if (desired && move_deck_to_hand(target)) {
         shuffle(state_.deck);
         trace("PLAY ITEM", "R-UB-01; R-GAME-ITEM", "Searched a Pokémon: " + std::string(name(target)) + ".");

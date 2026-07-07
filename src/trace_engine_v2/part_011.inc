@@ -122,6 +122,16 @@
     // Steven's Resolve reserves an outlet only where it can still find a payload.
     const Card payload_outlet = blender_available_next_turn ? Card::BrilliantBlender : Card::ProfessorBurnet;
     std::vector<Card> wanted;
+    // Regidrago V is a Basic Pokémon, so Steven's Resolve may take it before the
+    // ending turn establishes the future Bench line: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/sm7-145
+    if (need_regi() && bench_space() > 0 && hand_count(Card::RegidragoV) == 0) {
+      if (deck_count_after_search_started(Card::RegidragoV) > 0) {
+        wanted.push_back(Card::RegidragoV);
+      } else if (prize_count_after_reveal(Card::RegidragoV) > 0 &&
+                 deck_count_after_search_started(Card::Gladion) > 0) {
+        wanted.push_back(Card::Gladion);
+      }
+    }
     if (need_vstar() && hand_count(Card::RegidragoVstar) == 0) {
       if (deck_count_after_search_started(Card::RegidragoVstar) > 0) {
         wanted.push_back(Card::RegidragoVstar);
@@ -139,7 +149,7 @@
         hand_count(Card::ProfessorBurnet) == 0 && deck_count_after_search_started(payload_outlet) > 0) {
       wanted.push_back(payload_outlet);
     }
-    for (const Card fallback : {Card::RegidragoVstar, Card::Gladion, Card::Crispin, payload_outlet,
+    for (const Card fallback : {Card::RegidragoV, Card::RegidragoVstar, Card::Gladion, Card::Crispin, payload_outlet,
                                 Card::MysteriousTreasure, Card::EarthenVessel, Card::LatiasEx}) {
       if (wanted.size() >= 3U) break;
       if (fallback == Card::Crispin && !crispin_can_advance_energy_axis()) continue;
@@ -149,3 +159,5 @@
     std::vector<Card> found;
     for (const Card target : wanted) {
       if (found.size() >= 3U) break;
+      if (move_deck_to_hand(target)) found.push_back(target);
+    }

@@ -13,7 +13,8 @@ void known_lusamine_is_delayed_not_direct() {
   a.supporter_used = false;
   a.turn_ended = false;
   EngineTestAccess::choose_supporter(f.engine);
-  expect(has(a.hand, Card::Crispin) && has(a.hand, Card::ProfessorBurnet), "Lusamine should recover the delayed Supporter package.");
+  expect(has(a.hand, Card::ProfessorBurnet) && !has(a.hand, Card::Crispin),
+         "After K1 proves no needed Energy remains, Lusamine should recover only the live payload Supporter.");
 }
 
 void search_effects_persist_knowledge() {

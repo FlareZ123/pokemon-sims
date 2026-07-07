@@ -57,12 +57,18 @@ void test_finished_setup_does_not_burn_serena() {
   expect(contains(after.hand, Card::Serena) && !after.supporter_used, "A ready state must not burn Serena for incidental draw.");
 }
 
-void test_arven_is_not_played_during_item_lock() {
+void test_arven_fetches_forest_seal_stone_during_item_lock() {
   State s = state(2);
   s.hand = {Card::Arven};
   s.deck = {Card::EvolutionIncense, Card::ForestSealStone};
   Fixture f(scenario("arven-item-lock", DciProfile::StrictJit, LockMode::FullItem), s);
-  expect(!EngineTestAccess::play_arven(f.engine), "Arven should not be spent while fetched Items cannot be played.");
+
+  // Arven is a Supporter, so Item lock does not prohibit playing it; Pokémon Tools
+  // remain separate from Items after the Tool erratum: https://api.pokemontcg.io/v2/cards/sv1-166 https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
+  expect(EngineTestAccess::play_arven(f.engine), "Arven should use the live Forest Seal Stone Tool route during Item lock.");
+  const State& after = EngineTestAccess::state(f.engine);
+  expect(contains(after.hand, Card::ForestSealStone) && after.supporter_used,
+         "Arven should fetch Forest Seal Stone and consume the Supporter play.");
 }
 
 void test_first_turn_restrictions_and_celestial_cost() {

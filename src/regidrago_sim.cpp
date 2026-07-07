@@ -17,7 +17,7 @@
 // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
 // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
 // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-// Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+// Serena draw mode requires discarding at least 1 card before drawing to 5: https://api.pokemontcg.io/v2/cards/swsh12-164
 // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
 // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
 // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95

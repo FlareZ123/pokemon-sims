@@ -202,6 +202,39 @@ void test_duplicate_search_items_form_current_turn_payload_chain() {
   }
 }
 
+void test_duplicate_ultra_ball_holds_an_unpayable_payload_route() {
+  const sim::Scenario scenario{"duplicate-ultra-ball-unpayable-continuation", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{534};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.bench = {{sim::Card::RegidragoV, 1}, {sim::Card::RegidragoV, 1},
+                 {sim::Card::MawileGX, 1}, {sim::Card::LatiasEx, 1},
+                 {sim::Card::Oricorio, 1}};
+  state.hand = {sim::Card::UltraBall, sim::Card::UltraBall, sim::Card::Dipplin,
+                sim::Card::RegidragoV};
+  state.deck = {sim::Card::TapuLeleGX, sim::Card::MegaDragonite};
+  state.discard = {sim::Card::ProfessorBurnet};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // The first Ultra Ball can discard Dipplin and surplus Regidrago V, but its search
+  // would leave only the second Ultra Ball and the fetched payload. The later Ultra
+  // Ball still needs a second "other card" discard: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  if (sim::EngineTestAccess::play_ultra_ball(engine, true)) {
+    throw std::runtime_error("Ultra Ball must not spend a strict-JIT payload route that leaves its second Ultra Ball unpayable.");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (std::count(after.hand.begin(), after.hand.end(), sim::Card::UltraBall) != 2 ||
+      !contains(after.hand, sim::Card::Dipplin) || !contains(after.hand, sim::Card::RegidragoV) ||
+      !contains(after.deck, sim::Card::MegaDragonite)) {
+    throw std::runtime_error("Rejecting the unpayable two-Ultra-Ball route must preserve the exact state.");
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -209,6 +242,7 @@ int main() {
     test_ultra_ball_prefers_tapu_over_irrelevant_fallback();
     test_ultra_ball_hands_a_payload_to_earthen_vessel();
     test_duplicate_search_items_form_current_turn_payload_chain();
+    test_duplicate_ultra_ball_holds_an_unpayable_payload_route();
     std::cout << "ultra ball connector tests passed\n";
     return 0;
   } catch (const std::exception& error) {

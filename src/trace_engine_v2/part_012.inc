@@ -36,7 +36,7 @@
       std::vector<Card> candidates;
       const auto add_item_candidate = [this, &candidates](const Card item, const bool advances_now) {
         if (advances_now && might_be_unseen(item) &&
-            std::find(candidates.begin(), candidates.end(), item) != candidates.end()) {
+            std::find(candidates.begin(), candidates.end(), item) == candidates.end()) {
           candidates.push_back(item);
         }
       };

@@ -34,7 +34,9 @@
     if ((prized_regi || prized_vstar || final_prized_energy_for_gladion().has_value()) &&
         deck_count_after_search_started(Card::Gladion) > 0) return Card::Gladion;
 
-    if (state_.turn == 1 && !scenario_.going_first && has_regi_v() && should_play_steven() &&
+    // Steven's Resolve may take Regidrago V before it enters play, making Wonder Tag
+    // a legal turn-one setup connector: https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/swsh12-135
+    if (state_.turn == 1 && !scenario_.going_first && should_play_steven() &&
         deck_count_after_search_started(Card::StevensResolve) > 0) return Card::StevensResolve;
     // Crispin source: https://api.pokemontcg.io/v2/cards/sv7-133
     // Do not choose it after K1 if the inspected deck contains no needed Energy.

@@ -29,7 +29,9 @@ int main() {
   state.hand = {Card::Serena};
   state.deck = {Card::RegidragoVstar, Card::Grass, Card::Fire, Card::Dipplin, Card::QuickBall};
 
-  // Serena's draw mode says “Discard up to 3 cards” and then requires at least one discard before drawing: https://api.pokemontcg.io/v2/cards/swsh12-164
+  // Exact Serena draw text says "You must discard at least 1 card"; zero is illegal:
+  // https://api.pokemontcg.io/v2/cards/swsh12-164
+  // Keep play_serena() returning false when choose_discard() has no legal first cost.
   assert(!EngineTestAccess::play_serena(engine));
   assert(!state.supporter_used);
   assert(std::count(state.hand.begin(), state.hand.end(), Card::Serena) == 1);

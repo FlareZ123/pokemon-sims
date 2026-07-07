@@ -1,0 +1,27 @@
+name: Simulation Report
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  active-by-turn-matrix:
+    if: github.event.pull_request.head.ref == 'report/active-by-turn-matrix'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure release build
+        run: cmake -S . -B build-report -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build-report --parallel 2
+      - name: Simulate scenario matrix
+        run: |
+          mkdir -p report
+          ./build-report/regidrago_sim --trials 1000000 --seed 20260707 --out report/active_by_turn_matrix.csv
+          cat report/active_by_turn_matrix.csv
+      - name: Upload active-by-turn matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: active-by-turn-matrix-1000000
+          path: report/active_by_turn_matrix.csv
+          if-no-files-found: error

@@ -1,5 +1,5 @@
 
-void test_fss_remains_usable_under_rule_box_lock() {
+void test_fss_is_blocked_by_rule_box_lock() {
   State s = state(2, Card::RegidragoV, 1, 1, 0);
   s.active->tool = Tool::ForestSealStone;
   s.deck = {Card::RegidragoVstar};

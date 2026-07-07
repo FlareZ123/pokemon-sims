@@ -38,8 +38,11 @@
 #include "trace_engine_v2/part_009b2.inc"
 #include "trace_engine_v2/part_010.inc"
 #include "trace_engine_v2/part_011.inc"
+#define play_arven play_arven_original
 #include "trace_engine_v2/part_012.inc"
+#undef play_arven
 #include "trace_engine_v2/part_013.inc"
+#include "trace_engine_v2/part_012_override.inc"
 #include "trace_engine_v2/part_014a.inc"
 #include "trace_engine_v2/part_014b.inc"
 #include "trace_engine_v2/part_014c.inc"

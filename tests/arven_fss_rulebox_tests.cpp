@@ -6,61 +6,52 @@
 #include <stdexcept>
 
 namespace sim {
-
 struct EngineTestAccess {
-  static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
-  static const State& state(const Engine& engine) { return engine.state_; }
-  static bool play_heavy_ball(Engine& engine) { return engine.play_heavy_ball(); }
-  static bool play_arven(Engine& engine) { return engine.play_arven(); }
+  static void set_state(Engine& e, State s) { e.state_ = std::move(s); }
+  static State& state(Engine& e) { return e.state_; }
+  static bool arven(Engine& e) { return e.play_arven(); }
+  static bool attach(Engine& e) { return e.attach_fss(); }
+  static bool star(Engine& e) { return e.use_fss(); }
+  static bool gladion(Engine& e) { return e.play_gladion(); }
 };
-
 }  // namespace sim
 
-namespace {
-
-bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
+bool has(const std::vector<sim::Card>& cards, sim::Card card) {
   return std::find(cards.begin(), cards.end(), card) != cards.end();
 }
 
-struct Fixture {
-  sim::Scenario scenario{"arven-fss-rulebox", sim::DciProfile::StrictJit,
-                         sim::LockMode::FullRuleBoxAbility, false, 4};
-  sim::DeckRecipe recipe{sim::baseline_recipe()};
-  std::mt19937_64 rng{211};
-  sim::Engine engine{scenario, recipe, rng};
-};
-
-}  // namespace
-
 int main() {
-  Fixture fixture;
+  const sim::Scenario scenario{"arven-fss-k1", sim::DciProfile::StrictJit,
+                               sim::LockMode::FullItem, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng(211);
+  sim::Engine engine(scenario, recipe, rng);
   sim::State state;
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1, sim::Tool::None};
-  state.hand = {sim::Card::HisuianHeavyBall, sim::Card::Arven};
-  state.deck = {sim::Card::ForestSealStone, sim::Card::RegidragoVstar};
-  state.prizes = {sim::Card::MegaDragonite, sim::Card::Dragapult, sim::Card::GoodraVstar,
-                  sim::Card::DialgaGX, sim::Card::Dipplin, sim::Card::Grass};
-  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+  state.hand = {sim::Card::Arven};
+  state.deck = {sim::Card::ForestSealStone, sim::Card::Gladion};
+  state.prizes = {sim::Card::RegidragoVstar, sim::Card::MegaDragonite, sim::Card::Dragapult,
+                  sim::Card::GoodraVstar, sim::Card::DialgaGX, sim::Card::Dipplin};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
 
-  // Heavy Ball legally establishes the K1 state used to prove that the Tool is
-  // the only live Arven target: https://api.pokemontcg.io/v2/cards/swsh10-146
-  if (!sim::EngineTestAccess::play_heavy_ball(fixture.engine)) {
-    throw std::runtime_error("Heavy Ball should establish K1 before Arven is evaluated.");
+  // Arven is a Supporter and Forest Seal Stone is a Tool after the erratum:
+  // https://api.pokemontcg.io/v2/cards/sv1-166 https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
+  if (!sim::EngineTestAccess::arven(engine) ||
+      !has(sim::EngineTestAccess::state(engine).hand, sim::Card::ForestSealStone)) {
+    throw std::runtime_error("Arven must retain the K1 Forest Seal Stone route through Item lock.");
+  }
+  // Star Alchemy finds Gladion for the known Prize route: https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/sm4-95
+  if (!sim::EngineTestAccess::attach(engine) || !sim::EngineTestAccess::star(engine) ||
+      !has(sim::EngineTestAccess::state(engine).hand, sim::Card::Gladion)) {
+    throw std::runtime_error("Forest Seal Stone must find Gladion after the K1 search.");
   }
 
-  // Forest Seal Stone gives Star Alchemy from the attached Tool, while Path to
-  // the Peak removes Abilities only from Rule Box Pokémon:
-  // https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/swsh6-148
-  if (!sim::EngineTestAccess::play_arven(fixture.engine)) {
-    throw std::runtime_error("Arven should fetch the live Forest Seal Stone route through Rule Box lock.");
+  sim::State& next = sim::EngineTestAccess::state(engine);
+  next.turn = 3;
+  next.supporter_used = false;
+  if (!sim::EngineTestAccess::gladion(engine) ||
+      !has(sim::EngineTestAccess::state(engine).hand, sim::Card::RegidragoVstar)) {
+    throw std::runtime_error("Gladion must recover the known prized VSTAR on the following turn.");
   }
-
-  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
-  if (!contains(after.hand, sim::Card::ForestSealStone) ||
-      !contains(after.discard, sim::Card::Arven)) {
-    throw std::runtime_error("Arven should take Forest Seal Stone and consume the Supporter slot.");
-  }
-
-  return 0;
 }

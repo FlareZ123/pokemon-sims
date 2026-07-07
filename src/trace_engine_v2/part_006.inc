@@ -91,6 +91,10 @@
     // copy remains a legal cost for the first copy: https://api.pokemontcg.io/v2/cards/sm6-113
     if (hand_count(Card::MysteriousTreasure) >= 2) return Card::MysteriousTreasure;
 
+    // Earthen Vessel requires discarding another card from hand, so a distinct
+    // second copy remains a legal cost for the first copy: https://api.pokemontcg.io/v2/cards/sv4-163
+    if (hand_count(Card::EarthenVessel) >= 2) return Card::EarthenVessel;
+
     // A second Quick Ball is "another card" for the first Quick Ball's discard
     // cost, so it remains legal low-DCI fodder when no higher-priority cost exists:
     // https://api.pokemontcg.io/v2/cards/swsh1-179

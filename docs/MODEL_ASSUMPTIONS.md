@@ -21,6 +21,7 @@ The fixed seed makes each report reproducible. The Monte Carlo standard error sh
 - Regidrago VSTAR evolution timing.
 - Basic Bench limit.
 - Regidrago V, Regidrago VSTAR, Tapu Lele-GX, Latias ex, Oricorio, and core search-card state transitions.
+- Regidrago V’s Celestial Roar top-three discard and Basic Energy attachment in its modeled going-second turn-one use: https://api.pokemontcg.io/v2/cards/swsh12-135
 - Mysterious Treasure, Quick Ball, Earthen Vessel, Brilliant Blender, Arven, Crispin, Professor Burnet, Serena draw, Tate & Liza draw, Steven’s Resolve, Gladion, Hisuian Heavy Ball, and Forest Seal Stone routes relevant to setup.
 - Path-style Rule Box Ability suppression.
 - Item-lock restrictions.
@@ -39,7 +40,6 @@ This means the no-lock baseline is a setup goldfish. It is useful for comparing 
 
 Many card effects have correct text recorded in `RULES_AND_INTERACTIONS.md`, though the current engine stops at first attack readiness. It does not resolve:
 
-- Regidrago V’s Celestial Roar mill.
 - Phantom Dive damage allocation.
 - Ryuno Glide damage and the later Powerglass loop.
 - Timeless-GX extra-turn game state.
@@ -97,7 +97,7 @@ Items are unavailable for all modeled turns. Forest Seal Stone is also unavailab
 
 ### Rule Box Ability lock
 
-The model applies Path-to-the-Peak-style suppression to Rule Box Pokémon Abilities. Tapu Lele-GX, Latias ex, Oricorio, Mawile-GX, and VSTAR Abilities are suppressed. Apex Dragon remains an attack. Forest Seal Stone’s Tool VSTAR Power remains available where Item lock is absent.
+The model applies Path-to-the-Peak-style suppression to Rule Box Pokémon Abilities. Tapu Lele-GX, Latias ex, Mawile-GX, and Pokémon VSTAR Abilities are suppressed. Oricorio `sm2-55` has no Rule Box, so Vital Dance remains available: https://api.pokemontcg.io/v2/cards/sm2-55. Apex Dragon remains an attack. Forest Seal Stone’s Tool VSTAR Power remains available where Item lock is absent because its grant is printed on the Tool: https://api.pokemontcg.io/v2/cards/swsh12-156. Path to the Peak removes Abilities from Pokémon with Rule Boxes: https://api.pokemontcg.io/v2/cards/swsh6-148.
 
 ### Combined lock
 

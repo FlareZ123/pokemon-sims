@@ -62,14 +62,32 @@ class Engine {
     return 0;
   }
 
+  int attached_public_count(const Card card) const {
+    const auto count_on_pokemon = [card](const Pokemon& pokemon) {
+      switch (card) {
+        case Card::Grass: return pokemon.grass;
+        case Card::Fire: return pokemon.fire;
+        case Card::ForestSealStone: return pokemon.tool == Tool::ForestSealStone ? 1 : 0;
+        case Card::Powerglass: return pokemon.tool == Tool::Powerglass ? 1 : 0;
+        default: return 0;
+      }
+    };
+    int count = state_.active ? count_on_pokemon(*state_.active) : 0;
+    for (const Pokemon& pokemon : state_.bench) count += count_on_pokemon(pokemon);
+    return count;
+  }
+
   // P-HIDDEN-01: before a legal inspection, policy uses only public zones and
   // fixed-list copy counts. A deck search sees the remaining deck directly.
+  // Attached Energy and Tools are public board information and cannot remain in
+  // the deck. Core procedure source: https://www.pokemon.com/us/pokemon-tcg/rules
   // Heavy Ball reveals the full Prize set, so the fixed list plus known zones
   // also determines the remaining deck count. Source:
   // https://api.pokemontcg.io/v2/cards/swsh10-146
   bool might_be_unseen(const Card card) const {
     if (deck_seen_ || prizes_revealed_) return deck_count_after_search_started(card) > 0;
-    const int known = hand_count(card) + count_of(state_.discard, card) + in_play_count(card);
+    const int known = hand_count(card) + count_of(state_.discard, card) + in_play_count(card) +
+                      attached_public_count(card);
     return total_copies(card) > known;
   }
 

@@ -80,9 +80,9 @@
     if (prizes_known() && play_gladion()) return;
     if (play_steven()) return;
     if (need_energy() && hand_count(Card::Crispin) > 0 && play_crispin()) return;
-    // Burnet directly completes the current payload axis, so it must beat an
-    // Arven line that can only continue through a live Blender: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-    if (need_payload() && hand_count(Card::ProfessorBurnet) > 0 && play_professor_burnet()) return;
+    // Brilliant Blender can search the deck and discard the current-turn payload: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Preserve the one Supporter play for Burnet when Blender covers the same route: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 https://www.pokemon.com/us/pokemon-tcg/rules
+    if (need_payload() && hand_count(Card::ProfessorBurnet) > 0 && !has_live_blender_payload_line() && play_professor_burnet()) return;
     if (hand_count(Card::Arven) > 0 && play_arven()) return;
     if (hand_count(Card::Serena) > 0 && play_serena()) return;
     if (hand_count(Card::TateLiza) > 0 && play_tate_draw()) return;

@@ -47,6 +47,20 @@ void test_fss_fetches_missing_basic_energy_for_manual_attachment() {
          "Star Alchemy should fetch the missing Basic Fire Energy for this turn's manual attachment.");
 }
 
+void test_mysterious_treasure_fallback_includes_dragon_dipplin() {
+  State s = state(2, Card::RegidragoV, 1);
+  s.bench = {Pokemon{Card::RegidragoV, 1, 0, 0, Tool::None}};
+  s.hand = {Card::MysteriousTreasure, Card::RegidragoV};
+  s.deck = {Card::Dipplin};
+  // Mysterious Treasure searches for a Psychic or Dragon Pokémon: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Dipplin TWM 127 is a Dragon Pokémon: https://api.pokemontcg.io/v2/cards/sv6-127
+  Fixture f(scenario("mysterious-treasure-dipplin-fallback"), s);
+  expect(EngineTestAccess::play_mysterious_treasure(f.engine, false),
+         "Mysterious Treasure should resolve after its legal Regidrago V discard cost.");
+  expect(contains(EngineTestAccess::state(f.engine).hand, Card::Dipplin),
+         "Mysterious Treasure must take Dipplin when it is the only eligible Dragon fallback.");
+}
+
 using Test = std::pair<const char*, std::function<void()>>;
 
 }  // namespace
@@ -87,7 +101,7 @@ int main() {
       {"legacy_star_recovered_blender_is_played_same_turn", test_legacy_star_recovered_blender_is_played_same_turn},
       {"lusamine_recovers_only_live_axis_connectors", test_lusamine_recovers_only_live_axis_connectors},
       {"wonder_tag_skips_known_dead_crispin", test_wonder_tag_skips_known_dead_crispin},
-      {"payload_selectors_fetch_burnet_when_blender_is_unavailable", test_payload_selectors_fetch_burnet_when_blender_is_unavailable},
+      {"payload_selectors_fetch_burnet_when_blender_is_unavailable", test_payload_selectors_fetch_burnet_when_blender_is-unavailable},
       {"live_burnet_preempts_arven_when_blender_is_absent", test_live_burnet_preempts_arven_when_blender_is_absent},
       {"tapu_fetches_burnet_without_item_lock_when_blender_is_not_live", test_tapu_fetches_burnet_without_item_lock_when_blender_is_not_live},
       {"lusamine_recovers_current_axis_connectors", test_lusamine_recovers_current_axis_connectors},
@@ -105,6 +119,7 @@ int main() {
       {"evolution_timing_and_single_manual_attachment", test_evolution_timing_and_single_manual_attachment},
       {"item_lock_blocks_item_cards", test_item_lock_blocks_item_cards},
       {"ultra_ball_discards_payload_in_jit_window", test_ultra_ball_discards_payload_in_jit_window},
+      {"mysterious_treasure_fallback_includes_dragon_dipplin", test_mysterious_treasure_fallback_includes_dragon_dipplin},
   };
 
   int failures = 0;

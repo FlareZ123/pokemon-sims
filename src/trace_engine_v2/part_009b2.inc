@@ -17,18 +17,27 @@
     // Ultra Ball discards 2 other cards from hand before searching a Pokémon: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     // The current-turn payload condition is simulator policy, which permits the printed discard cost only when it advances strict-JIT readiness.
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
-                                 std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+                                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
     const bool want_regi = need_regi() && bench_space() > 0;
     const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0;
     const bool want_latias = need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
-                             !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0;
+                              !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0;
     const bool want_oricorio = need_energy() && hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
-                               bench_space() > 0 && needs_oricorio_connector();
+                                bench_space() > 0 && needs_oricorio_connector();
     // Tapu Lele-GX may turn this Pokémon search into a live Supporter connector
     // through Wonder Tag when it is Benched from hand: https://api.pokemontcg.io/v2/cards/cel25c-60_A
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
-                           bench_space() > 0 && needs_tapu_connector();
-    if (!want_regi && !want_vstar && !want_latias && !want_oricorio && !want_tapu && !can_jit_discard) return false;
+                            bench_space() > 0 && needs_tapu_connector();
+    // A fetched Dragon payload can immediately become a strict-JIT payload when a
+    // distinct live hand-discard effect remains. Mysterious Treasure, Quick Ball,
+    // and Earthen Vessel each discard from hand; Serena may discard from hand before
+    // drawing. https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sv4-163 https://api.pokemontcg.io/v2/cards/swsh12-164
+    const bool has_live_hand_payload_outlet = hand_count(Card::MysteriousTreasure) > 0 ||
+                                               hand_count(Card::QuickBall) > 0 ||
+                                               hand_count(Card::EarthenVessel) > 0 ||
+                                               (supporter_allowed() && hand_count(Card::Serena) > 0);
+    const bool want_payload = need_payload() && !can_jit_discard && has_live_hand_payload_outlet;
+    if (!want_regi && !want_vstar && !want_latias && !want_oricorio && !want_tapu && !want_payload && !can_jit_discard) return false;
 
     const auto first = choose_discard(can_jit_discard, true);
     if (!first) return false;

@@ -9,10 +9,10 @@ namespace sim {
 
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
+  static void set_prizes_revealed(Engine& engine, const bool revealed) { engine.prizes_revealed_ = revealed; }
   static const State& state(const Engine& engine) { return engine.state_; }
   static bool play_arven(Engine& engine) { return engine.play_arven(); }
   static bool play_gladion(Engine& engine) { return engine.play_gladion(); }
-  static bool play_heavy_ball(Engine& engine) { return engine.play_heavy_ball(); }
 };
 
 }  // namespace sim
@@ -79,17 +79,15 @@ int main() {
     sim::Engine engine{scenario, recipe, rng};
     sim::State state;
     state.turn = 2;
-    state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0, sim::Tool::None};
-    state.hand = {sim::Card::HisuianHeavyBall, sim::Card::Gladion, sim::Card::Arven};
+    state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1, sim::Tool::None};
+    state.hand = {sim::Card::Gladion, sim::Card::Arven};
     state.deck = {sim::Card::ForestSealStone, sim::Card::RegidragoVstar};
     state.prizes = {sim::Card::MegaDragonite, sim::Card::MegaDragonite, sim::Card::Dragapult,
                     sim::Card::Dragapult, sim::Card::GoodraVstar, sim::Card::GoodraVstar};
     sim::EngineTestAccess::set_state(engine, std::move(state));
 
-    // Heavy Ball legally reveals the Prize cards, so the policy can distinguish a deck-resident VSTAR from a prized one: https://api.pokemontcg.io/v2/cards/swsh10-146
-    if (!sim::EngineTestAccess::play_heavy_ball(engine)) {
-      throw std::runtime_error("Heavy Ball should reveal the non-Basic Prize set before Gladion is evaluated.");
-    }
+    // This fixture begins after a legal prior Prize inspection. Hisuian Heavy Ball lets the player look at the Prize cards: https://api.pokemontcg.io/v2/cards/swsh10-146
+    sim::EngineTestAccess::set_prizes_revealed(engine, true);
 
     // Gladion should not consume the Supporter slot when Arven can retrieve the live Forest Seal Stone route through Item lock: https://api.pokemontcg.io/v2/cards/sm4-95
     if (sim::EngineTestAccess::play_gladion(engine)) {

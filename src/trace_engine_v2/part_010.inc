@@ -9,13 +9,16 @@
     // Comparator card-text source: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     record_deck_search_knowledge("Ultra Ball");
 
-    const std::array<Card, 5> targets{Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio, Card::TapuLeleGX};
+    const std::array<Card, 9> targets{Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx,
+                                      Card::Oricorio, Card::TapuLeleGX, Card::MegaDragonite,
+                                      Card::Dragapult, Card::GoodraVstar, Card::DialgaGX};
     for (const Card target : targets) {
       const bool desired = (target == Card::RegidragoV && want_regi) ||
                            (target == Card::RegidragoVstar && want_vstar) ||
                            (target == Card::LatiasEx && want_latias) ||
                            (target == Card::Oricorio && want_oricorio) ||
-                           (target == Card::TapuLeleGX && want_tapu);
+                           (target == Card::TapuLeleGX && want_tapu) ||
+                           (want_payload && is_payload(target));
       if (desired && move_deck_to_hand(target)) {
         shuffle(state_.deck);
         trace("PLAY ITEM", "R-UB-01; R-GAME-ITEM", "Searched a Pokémon: " + std::string(name(target)) + ".");

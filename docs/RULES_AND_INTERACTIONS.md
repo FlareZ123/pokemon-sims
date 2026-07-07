@@ -65,6 +65,7 @@ The modeled Path lock removes Abilities on Rule Box Pokémon. It does not remove
 | Regidrago VSTAR | Apex Dragon needs GGF and uses an attack from a Dragon Pokémon in discard. Legacy Star shares the game-wide VSTAR Power limit. | https://api.pokemontcg.io/v2/cards/swsh12-136 |
 | Forest Seal Stone | Attached Pokémon V can use Tool-printed Star Alchemy. It cannot be attached during Item lock. | https://api.pokemontcg.io/v2/cards/swsh12-156 |
 | Mysterious Treasure | Discard one card from hand to search for a Psychic or Dragon Pokémon. | https://api.pokemontcg.io/v2/cards/sm6-113 |
+| Dipplin | A Dragon Pokémon, therefore a legal Mysterious Treasure target and fallback. Maintainer policy excludes Syrup Catcher from the A/S payload set, readiness predicate, and payload-discard routes. | https://api.pokemontcg.io/v2/cards/sv6-127 |
 | Quick Ball | Discard another card from hand to search for a Basic Pokémon. | https://api.pokemontcg.io/v2/cards/swsh1-179 |
 | Earthen Vessel | Discard another card from hand to search for up to two Basic Energy. Same-type selections are legal. | https://api.pokemontcg.io/v2/cards/sv4-163 |
 | Brilliant Blender | Search the deck for up to five cards and discard them. It discards from deck rather than hand. | https://api.pokemontcg.io/v2/cards/sv8-164 |
@@ -82,6 +83,8 @@ The modeled Path lock removes Abilities on Rule Box Pokémon. It does not remove
 ## Strict JIT policy
 
 Strict and matchup-flex JIT profiles require an A- or S-tier Dragon payload to enter discard during the same turn as the ready-state check. The current model accepts Dragapult ex and Mega Dragonite ex as S-tier payloads, plus Dialga-GX and Hisuian Goodra VSTAR as A-tier payloads.
+
+Dipplin TWM 127 is deliberately outside that A/S set. This maintainer policy treats Syrup Catcher as an unreliable game-winning line: it may take no Prize, and the opponent can switch after the effect. Dipplin can remain a legal Dragon search target and a discard-cost card without satisfying the ready-state predicate. https://api.pokemontcg.io/v2/cards/sv6-127
 
 The payload may enter discard through a legal hand-discard or deck-discard effect. The model distinguishes those routes because Mysterious Treasure, Quick Ball, Earthen Vessel, and Serena can discard from hand, while Brilliant Blender and Professor Burnet can only discard cards they search from deck.
 

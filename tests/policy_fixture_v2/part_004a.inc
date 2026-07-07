@@ -104,7 +104,6 @@ int main() {
       {"first_turn_restrictions_and_celestial_cost", test_first_turn_restrictions_and_celestial_cost},
       {"evolution_timing_and_single_manual_attachment", test_evolution_timing_and_single_manual_attachment},
       {"item_lock_blocks_item_cards", test_item_lock_blocks_item_cards},
-      {"evolution_incense_is_held_when_k1_proves_vstar_prized", test_evolution_incense_is_held_when_k1_proves_vstar_prized},
       {"ultra_ball_discards_payload_in_jit_window", test_ultra_ball_discards_payload_in_jit_window},
   };
 

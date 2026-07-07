@@ -74,7 +74,7 @@ The modeled Path lock removes Abilities on Rule Box Pokémon. It does not remove
 | Arven | Search for an Item and a Pokémon Tool. The policy treats a Tool-only Forest Seal Stone route as live when it can repair a current axis. | https://api.pokemontcg.io/v2/cards/sv1-166 |
 | Steven’s Resolve | Search for up to three cards, then end the turn. The selection re-evaluates after that legal deck inspection. | https://api.pokemontcg.io/v2/cards/sm7-145 |
 | Gladion | Inspect Prize cards, take one, then shuffle Gladion into the remaining Prizes. | https://api.pokemontcg.io/v2/cards/sm4-95 |
-| Serena | In draw mode, discard up to three cards and draw until five cards are in hand. | https://api.pokemontcg.io/v2/cards/swsh12-164 |
+| Serena | In draw mode, discard up to three cards, but the print requires at least one discard; then draw until five cards are in hand. | https://api.pokemontcg.io/v2/cards/swsh12-164 |
 | Tate & Liza | Choose shuffle-and-draw-five or switch Active with a Benched Pokémon. | https://api.pokemontcg.io/v2/cards/sm7-148 |
 | Tapu Lele-GX | Wonder Tag triggers only when played from hand to Bench during a turn and is blocked by the Rule Box lock. | https://api.pokemontcg.io/v2/cards/cel25c-60_A |
 | Latias ex | Skyliner gives Basic Pokémon in play no Retreat Cost. It does not make a Regidrago VSTAR itself free to retreat. | https://api.pokemontcg.io/v2/cards/sv8-76 |
@@ -92,7 +92,7 @@ After K1 proves that no payload remains in deck, the policy preserves a dead Ble
 
 ## DCI, AMR, and connector policy
 
-The simulator uses discard-capable categories instead of treating every hand card as equivalent discard fuel. Strict JIT protects key singletons, recovery, matchup cards, and payloads before the payload turn. Matchup-flex admits selected low-value matchup cards. No-discard-control permits earlier payload banking.
+The simulator uses discard-capable categories instead of treating every card in hand as equal fuel. Strict JIT protects key singletons, recovery, matchup cards, and payloads before the payload turn. Matchup-flex admits selected low-value matchup cards. No-discard-control permits earlier payload banking.
 
 Connector policy weighs directness, cost, Supporter contention, Item lock, Ability lock, Bench capacity, prize information, and whether a card can satisfy a missing Regidrago, VSTAR, Energy, Active-position, or current-turn payload axis.
 

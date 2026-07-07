@@ -96,17 +96,25 @@
     // A search connector can only fetch a future payload when a payload may still
     // be in deck. K1 derives this from legal deck or Prize inspection.
     if (!payload_might_be_in_deck()) return false;
-    // A second copy remains a separate Item action: the first can search an eligible
-    // payload and the second can pay its own discard cost with it. Card text sources:
-    // https://api.pokemontcg.io/v2/cards/sm6-113
-    // https://api.pokemontcg.io/v2/cards/swsh1-179
-    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // The fetched payload is in hand, so the continuation must discard from hand.
+    // Mysterious Treasure, Quick Ball, Ultra Ball, and Earthen Vessel have hand-discard
+    // costs: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/swsh12pt5-146 https://api.pokemontcg.io/v2/cards/sv4-163
+    // Serena can discard from hand only while the turn's Supporter play remains available:
+    // https://api.pokemontcg.io/v2/cards/swsh12-164 https://www.pokemon.com/us/pokemon-tcg/rules
+    // Evolution Incense has no discard effect, while Brilliant Blender and Professor Burnet
+    // discard cards selected from deck, so none can dispose of this fetched hand payload:
+    // https://api.pokemontcg.io/v2/cards/swsh1-163 https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     const auto present = [this, excluded](const Card card) {
       return hand_count(card) > (card == excluded ? 1 : 0);
     };
-    return present(Card::MysteriousTreasure) || present(Card::QuickBall) || present(Card::UltraBall) ||
-           present(Card::EarthenVessel) || present(Card::Serena) || present(Card::BrilliantBlender) ||
-           (supporter_allowed() && present(Card::ProfessorBurnet));
+    // The current Treasure or Quick Ball line spends its search card and one discard,
+    // then adds the fetched payload. Ultra Ball still needs two other cards when played:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // Its post-search hand therefore needs Ultra Ball, the fetched payload, and one
+    // further card, which requires at least four cards in the pre-search hand.
+    const bool payable_ultra_ball = present(Card::UltraBall) && state_.hand.size() >= 4U;
+    return present(Card::MysteriousTreasure) || present(Card::QuickBall) || payable_ultra_ball ||
+           present(Card::EarthenVessel) || (supporter_allowed() && present(Card::Serena));
   }
 
   Card fallback_mysterious_target_after_search_started() const {

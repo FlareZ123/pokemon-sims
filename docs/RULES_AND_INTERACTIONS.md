@@ -55,7 +55,7 @@ Oricorio GRI 55 has no Rule Box. Its Vital Dance remains usable through this Pat
 
 Forest Seal Stone is a Pokémon Tool. Its text allows the attached Pokémon V to use the VSTAR Power printed on the Tool: https://api.pokemontcg.io/v2/cards/swsh12-156
 
-The modeled Path lock removes Abilities on Rule Box Pokémon. It does not remove text printed on an attached Pokémon Tool. An already attached Forest Seal Stone may therefore use Star Alchemy through the modeled Rule Box lock. Item lock still prevents playing Forest Seal Stone from hand, and the game-wide one-VSTAR-Power limit remains shared with Legacy Star.
+The modeled Path lock removes Abilities on Rule Box Pokémon. It does not remove text printed on an attached Pokémon Tool. An already attached Forest Seal Stone may therefore use Star Alchemy through the modeled Rule Box lock. Pokémon Tools are separate from Item cards after the Tool errata, so the model also allows Forest Seal Stone to be attached from hand during Item lock; the game-wide one-VSTAR-Power limit remains shared with Legacy Star: https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
 
 ## Modeled cards and interactions
 
@@ -63,7 +63,7 @@ The modeled Path lock removes Abilities on Rule Box Pokémon. It does not remove
 |---|---|---|
 | Regidrago V | Celestial Roar is modeled only on going-second turn one, after other legal setup actions. It discards the top three cards and attaches any Energy among them to itself. | https://api.pokemontcg.io/v2/cards/swsh12-135 |
 | Regidrago VSTAR | Apex Dragon needs GGF and uses an attack from a Dragon Pokémon in discard. Legacy Star shares the game-wide VSTAR Power limit. | https://api.pokemontcg.io/v2/cards/swsh12-136 |
-| Forest Seal Stone | Attached Pokémon V can use Tool-printed Star Alchemy. It cannot be attached during Item lock. | https://api.pokemontcg.io/v2/cards/swsh12-156 |
+| Forest Seal Stone | Attached Pokémon V can use Tool-printed Star Alchemy. The model allows it to be attached during Item lock because Pokémon Tools are separate from Item cards after the Tool errata. | https://api.pokemontcg.io/v2/cards/swsh12-156 https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata |
 | Mysterious Treasure | Discard one card from hand to search for a Psychic or Dragon Pokémon. | https://api.pokemontcg.io/v2/cards/sm6-113 |
 | Dipplin | A Dragon Pokémon, therefore a legal Mysterious Treasure target and fallback. Maintainer policy excludes Syrup Catcher from the A/S payload set, readiness predicate, and payload-discard routes. | https://api.pokemontcg.io/v2/cards/sv6-127 |
 | Quick Ball | Discard another card from hand to search for a Basic Pokémon. | https://api.pokemontcg.io/v2/cards/swsh1-179 |
@@ -71,7 +71,7 @@ The modeled Path lock removes Abilities on Rule Box Pokémon. It does not remove
 | Brilliant Blender | Search the deck for up to five cards and discard them. It discards from deck rather than hand. | https://api.pokemontcg.io/v2/cards/sv8-164 |
 | Professor Burnet | Search the deck for up to two cards and discard them. It is the modeled Item-lock payload bridge only while a payload may remain in deck. | https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 |
 | Crispin | Search for up to two different-type Basic Energy, put one into hand, and attach the other. A one-type resolution puts the found Energy into hand and attaches none. | https://api.pokemontcg.io/v2/cards/sv7-133 |
-| Arven | Search for an Item and a Pokémon Tool. The policy treats a Tool-only Forest Seal Stone route as live when it can repair a current axis. | https://api.pokemontcg.io/v2/cards/sv1-166 |
+| Arven | Search for an Item and a Pokémon Tool. The policy treats a Tool-only Forest Seal Stone route as live when it can repair a current axis, including while Item lock blocks Arven’s Item target. | https://api.pokemontcg.io/v2/cards/sv1-166 https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata |
 | Steven’s Resolve | Search for up to three cards, then end the turn. The selection re-evaluates after that legal deck inspection. | https://api.pokemontcg.io/v2/cards/sm7-145 |
 | Gladion | Inspect Prize cards, take one, then shuffle Gladion into the remaining Prizes. | https://api.pokemontcg.io/v2/cards/sm4-95 |
 | Serena | In draw mode, discard up to three cards, but the print requires at least one discard; then draw until five cards are in hand. | https://api.pokemontcg.io/v2/cards/swsh12-164 |

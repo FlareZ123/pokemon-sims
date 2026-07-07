@@ -57,7 +57,10 @@
   }
 
   bool play_brilliant_blender() {
-    if (item_locked() || hand_count(Card::BrilliantBlender) == 0 || !can_play_payload_this_turn()) return false;
+    // Brilliant Blender searches the deck before discarding selected cards, so K1
+    // must preserve it when no modeled payload remains there: https://api.pokemontcg.io/v2/cards/sv8-164
+    if (item_locked() || hand_count(Card::BrilliantBlender) == 0 || !can_play_payload_this_turn() ||
+        !deck_payload_might_remain()) return false;
     remove_one(state_.hand, Card::BrilliantBlender);
     state_.discard.push_back(Card::BrilliantBlender);
     std::vector<Card> discarded;
@@ -118,8 +121,10 @@
         !in_play(Card::LatiasEx) && deck_count_after_search_started(Card::LatiasEx) > 0) return Card::LatiasEx;
     if (need_active_vstar() && !need_energy() && !need_payload() &&
         deck_count_after_search_started(Card::TateLiza) > 0) return Card::TateLiza;
-    if (need_payload() && !item_locked() && deck_count_after_search_started(Card::BrilliantBlender) > 0) return Card::BrilliantBlender;
-    if (need_payload() && item_locked() && deck_count_after_search_started(Card::ProfessorBurnet) > 0) return Card::ProfessorBurnet;
+    if (need_payload() && !item_locked() && deck_payload_might_remain() &&
+        deck_count_after_search_started(Card::BrilliantBlender) > 0) return Card::BrilliantBlender;
+    if (need_payload() && item_locked() && deck_payload_might_remain() &&
+        deck_count_after_search_started(Card::ProfessorBurnet) > 0) return Card::ProfessorBurnet;
     if (need_energy() && can_fetch_oricorio_for_compression()) return Card::Oricorio;
     if (need_energy() && deck_count_after_search_started(Card::EarthenVessel) > 0 && is_legal_cost_available(can_play_payload_this_turn(), true)) return Card::EarthenVessel;
     if (need_energy() && crispin_can_advance_energy_axis() && deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin;

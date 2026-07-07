@@ -26,6 +26,7 @@ bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
 void test_wonder_tag_yields_known_dead_burnet_to_arven() {
   const sim::Scenario scenario{"wonder-tag-k1", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
+  // Engine stores the recipe by reference, so this fixture keeps it alive.
   const sim::DeckRecipe recipe{sim::baseline_recipe()};
   std::mt19937_64 rng{31415};
   sim::Engine engine(scenario, recipe, rng);

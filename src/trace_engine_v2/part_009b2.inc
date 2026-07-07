@@ -24,7 +24,11 @@
                              !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0;
     const bool want_oricorio = need_energy() && hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
                                bench_space() > 0 && needs_oricorio_connector();
-    if (!want_regi && !want_vstar && !want_latias && !want_oricorio && !can_jit_discard) return false;
+    // Tapu Lele-GX may turn this Pokémon search into a live Supporter connector
+    // through Wonder Tag when it is Benched from hand: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
+                           bench_space() > 0 && needs_tapu_connector();
+    if (!want_regi && !want_vstar && !want_latias && !want_oricorio && !want_tapu && !can_jit_discard) return false;
 
     const auto first = choose_discard(can_jit_discard, true);
     if (!first) return false;

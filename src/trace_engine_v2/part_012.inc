@@ -21,66 +21,75 @@
                             ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
                              std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) { return p.card == Card::RegidragoV && p.tool == Tool::None; }));
     const bool can_pay_search_cost = is_legal_cost_available(can_play_payload_this_turn(), true);
-    const bool live_regi_target = hand_count(Card::RegidragoV) == 0 && might_be_unseen(Card::RegidragoV);
-    const bool live_vstar_target = hand_count(Card::RegidragoVstar) == 0 && might_be_unseen(Card::RegidragoVstar);
-    const bool live_energy_target = (grass_needed() > 0 && might_be_unseen(Card::Grass)) ||
-                                    (fire_needed() > 0 && might_be_unseen(Card::Fire));
-    const bool live_latias_target = hand_count(Card::LatiasEx) == 0 && !in_play(Card::LatiasEx) &&
-                                    might_be_unseen(Card::LatiasEx);
-    const bool live_payload_target = might_be_unseen(Card::MegaDragonite) ||
-                                     might_be_unseen(Card::Dragapult) ||
-                                     might_be_unseen(Card::GoodraVstar) ||
-                                     might_be_unseen(Card::DialgaGX);
-    std::vector<Card> item_candidates;
-    const auto add_item_candidate = [this, &item_candidates](const Card item, const bool advances_now) {
-      if (advances_now && might_be_unseen(item) &&
-          std::find(item_candidates.begin(), item_candidates.end(), item) == item_candidates.end()) {
-        item_candidates.push_back(item);
+
+    const auto item_candidates_for_current_knowledge = [this, can_pay_search_cost]() {
+      const bool live_regi_target = hand_count(Card::RegidragoV) == 0 && might_be_unseen(Card::RegidragoV);
+      const bool live_vstar_target = hand_count(Card::RegidragoVstar) == 0 && might_be_unseen(Card::RegidragoVstar);
+      const bool live_energy_target = (grass_needed() > 0 && might_be_unseen(Card::Grass)) ||
+                                      (fire_needed() > 0 && might_be_unseen(Card::Fire));
+      const bool live_latias_target = hand_count(Card::LatiasEx) == 0 && !in_play(Card::LatiasEx) &&
+                                      might_be_unseen(Card::LatiasEx);
+      const bool live_payload_target = might_be_unseen(Card::MegaDragonite) ||
+                                       might_be_unseen(Card::Dragapult) ||
+                                       might_be_unseen(Card::GoodraVstar) ||
+                                       might_be_unseen(Card::DialgaGX);
+      std::vector<Card> candidates;
+      const auto add_item_candidate = [this, &candidates](const Card item, const bool advances_now) {
+        if (advances_now && might_be_unseen(item) &&
+            std::find(candidates.begin(), candidates.end(), item) == candidates.end()) {
+          candidates.push_back(item);
+        }
+      };
+
+      if (need_regi() && bench_space() > 0 && live_regi_target) {
+        add_item_candidate(Card::QuickBall, can_pay_search_cost);
+        add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
       }
+      if (need_vstar() && live_vstar_target) {
+        add_item_candidate(Card::EvolutionIncense, true);
+        add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
+      }
+      if (need_energy() && live_energy_target) add_item_candidate(Card::EarthenVessel, can_pay_search_cost);
+      if (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) && live_latias_target) {
+        add_item_candidate(Card::QuickBall, can_pay_search_cost);
+        add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
+      }
+      if (can_play_payload_this_turn() && live_payload_target) add_item_candidate(Card::BrilliantBlender, true);
+      return candidates;
+    };
+
+    const auto fss_has_live_target = [this]() {
+      return (need_regi() && bench_space() > 0 && might_be_unseen(Card::RegidragoV)) ||
+             (need_vstar() && might_be_unseen(Card::RegidragoVstar)) ||
+             (need_energy() && ((grass_needed() > 0 && might_be_unseen(Card::Grass)) ||
+                                (fire_needed() > 0 && might_be_unseen(Card::Fire)))) ||
+             (need_active_vstar() && bench_space() > 0 && !in_play(Card::LatiasEx) &&
+              might_be_unseen(Card::LatiasEx)) ||
+             (can_play_payload_this_turn() && (might_be_unseen(Card::MegaDragonite) ||
+                                               might_be_unseen(Card::Dragapult) ||
+                                               might_be_unseen(Card::GoodraVstar) ||
+                                               might_be_unseen(Card::DialgaGX)));
     };
 
     // Arven searches an Item and a Tool: https://api.pokemontcg.io/v2/cards/sv1-166
-    // A candidate needs both a usable Item and a reachable target. At K0 both
-    // may be plausible; after K1, a missing Item or target cannot spend Arven.
-    if (need_regi() && bench_space() > 0 && live_regi_target) {
-      add_item_candidate(Card::QuickBall, can_pay_search_cost);
-      add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
-    }
-    if (need_vstar() && live_vstar_target) {
-      add_item_candidate(Card::EvolutionIncense, true);
-      add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
-    }
-    if (need_energy() && live_energy_target) add_item_candidate(Card::EarthenVessel, can_pay_search_cost);
-    if (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) && live_latias_target) {
-      add_item_candidate(Card::QuickBall, can_pay_search_cost);
-      add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
-    }
-    if (can_play_payload_this_turn() && live_payload_target) add_item_candidate(Card::BrilliantBlender, true);
-
-    const bool fss_has_live_target = (need_regi() && bench_space() > 0 && live_regi_target) ||
-                                     (need_vstar() && live_vstar_target) ||
-                                     (need_energy() && live_energy_target) ||
-                                     (need_active_vstar() && bench_space() > 0 && live_latias_target) ||
-                                     (can_play_payload_this_turn() && live_payload_target);
-    // Forest Seal Stone grants Star Alchemy from the attached Tool, so Path to
-    // the Peak cannot suppress this route through Regidrago V's Rule Box:
-    // https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/swsh6-148
-    const bool live_tool = needs_tool && fss_has_live_target && might_be_unseen(Card::ForestSealStone);
-    // Do not spend the Supporter on an empty Item search. Forest Seal Stone is
-    // independently live only when Star Alchemy can reach a current missing axis.
-    if (item_candidates.empty() && !live_tool) return false;
+    // At K0, play is justified by a plausible current-axis route. Once the deck
+    // is legally visible, targets must be selected from the K1 candidate list.
+    const std::vector<Card> pre_search_candidates = item_candidates_for_current_knowledge();
+    const bool pre_search_live_tool = needs_tool && fss_has_live_target() && might_be_unseen(Card::ForestSealStone);
+    if (pre_search_candidates.empty() && !pre_search_live_tool) return false;
 
     remove_one(state_.hand, Card::Arven);
     state_.discard.push_back(Card::Arven);
     state_.supporter_used = true;
 
-    // Arven's deck search permits choosing the Item after inspecting the deck.
     record_deck_search_knowledge("Arven");
+    const std::vector<Card> item_candidates = item_candidates_for_current_knowledge();
+    const bool live_tool = needs_tool && fss_has_live_target() && might_be_unseen(Card::ForestSealStone);
     std::vector<Card> found;
     for (const Card item : item_candidates) {
       if (move_deck_to_hand(item)) { found.push_back(item); break; }
     }
-    if (needs_tool && move_deck_to_hand(Card::ForestSealStone)) found.push_back(Card::ForestSealStone);
+    if (live_tool && move_deck_to_hand(Card::ForestSealStone)) found.push_back(Card::ForestSealStone);
     shuffle(state_.deck);
     trace("PLAY SUPPORTER", "R-ARVEN-01; R-GAME-SUPPORTER", "Searched an Item and a Pokémon Tool: " + join_cards(found) + ".");
     return true;

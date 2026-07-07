@@ -81,6 +81,10 @@ constexpr bool is_dragon_or_psychic(const Card card) {
   }
 }
 
+// This is the model's A/S-tier Apex payload and readiness set. Dipplin TWM 127
+// is a Dragon Pokémon for legal search effects: https://api.pokemontcg.io/v2/cards/sv6-127
+// Maintainer policy excludes Syrup Catcher from the A/S win-condition set, so
+// Dipplin never satisfies readiness or opens a payload-discard route.
 constexpr bool is_payload(const Card card) {
   return card == Card::Dragapult || card == Card::MegaDragonite || card == Card::DialgaGX ||
          card == Card::GoodraVstar;

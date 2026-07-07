@@ -29,14 +29,45 @@
     return true;
   }
 
-  bool play_evolution_incense() {
-    if (item_locked() || hand_count(Card::EvolutionIncense) == 0 || !need_vstar() || hand_count(Card::RegidragoVstar) > 0) return false;
+  bool play_evolution_incense(const bool permit_payload) {
+    if (item_locked() || hand_count(Card::EvolutionIncense) == 0) return false;
+    const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0;
+    // Evolution Incense can search any Evolution Pokémon. A JIT payload search is
+    // live only when a separate card already in hand can discard that payload:
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12-164
+    const bool hand_payload_discard_outlet = hand_count(Card::MysteriousTreasure) > 0 ||
+        hand_count(Card::QuickBall) > 0 || hand_count(Card::EarthenVessel) > 0 ||
+        (supporter_allowed() && hand_count(Card::Serena) > 0);
+    const bool want_payload = permit_payload && can_play_payload_this_turn() && need_payload() &&
+                              hand_payload_discard_outlet;
+    if (!want_vstar && !want_payload) return false;
+
     remove_one(state_.hand, Card::EvolutionIncense);
     state_.discard.push_back(Card::EvolutionIncense);
-    // Comparator card-text source: https://api.pokemontcg.io/v2/cards/swsh1-163
     record_deck_search_knowledge("Evolution Incense");
-    bool found = move_deck_to_hand(Card::RegidragoVstar);
+    bool found = false;
     Card found_card = Card::RegidragoVstar;
+    if (want_vstar && move_deck_to_hand(Card::RegidragoVstar)) {
+      found = true;
+      found_card = Card::RegidragoVstar;
+    }
+    // The modeled Evolution payloads are legal Evolution Incense targets:
+    // Mega Dragonite ex https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Dragapult ex https://api.pokemontcg.io/v2/cards/sv6-130
+    // Hisuian Goodra VSTAR https://api.pokemontcg.io/v2/cards/swsh11-136
+    if (!found && want_payload) {
+      for (const Card payload : {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar}) {
+        if (move_deck_to_hand(payload)) {
+          found = true;
+          found_card = payload;
+          break;
+        }
+      }
+    }
     if (!found && move_deck_to_hand(Card::GoodraVstar)) { found = true; found_card = Card::GoodraVstar; }
     if (!found && move_deck_to_hand(Card::Dipplin)) { found = true; found_card = Card::Dipplin; }
     shuffle(state_.deck);

@@ -36,15 +36,16 @@
 
     if (targets.empty()) return targets;
 
-    // These are the remaining modeled Supporter and Stadium cards, ordered from
-    // least direct setup value to the connectors retained above. The list contains
-    // only legal Lusamine targets and may select a second copy where available.
+    // Lusamine requires exactly 2 eligible cards. Its printed effect has no "up to"
+    // permission, so one-target recovery is not a legal resolution: https://api.pokemontcg.io/v2/cards/sm4-96
+    // A failed exact-count check makes play_lusamine retain the Supporter in hand.
     for (const Card fallback : {Card::ChaoticSwell, Card::PathToPeak, Card::TeamYellsCheer,
                                 Card::RoseannesBackup, Card::ProfessorTuro, Card::Channeler,
                                 Card::Guzma, Card::Serena, Card::TateLiza, Card::StevensResolve,
                                 Card::Arven, Card::Crispin, Card::ProfessorBurnet, Card::Gladion}) {
       recover_once(fallback);
     }
+    if (targets.size() != 2U) return {};
     return targets;
   }
 

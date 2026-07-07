@@ -26,6 +26,9 @@ target_compile_options(regidrago_known_dead_payload_tests PRIVATE -Wall -Wextra 
 add_executable(regidrago_ultra_ball_tapu_tests tests/ultra_ball_tapu_connector_tests.cpp)
 target_compile_options(regidrago_ultra_ball_tapu_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+add_executable(regidrago_ultra_ball_cost_tests tests/ultra_ball_cost_tests.cpp)
+target_compile_options(regidrago_ultra_ball_cost_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 add_executable(regidrago_wonder_tag_dead_burnet_tests tests/wonder_tag_known_dead_burnet_tests.cpp)
 target_compile_options(regidrago_wonder_tag_dead_burnet_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
@@ -43,6 +46,7 @@ add_test(NAME regidrago_fss_rulebox COMMAND regidrago_fss_rulebox_tests)
 add_test(NAME regidrago_arven_fss_rulebox COMMAND regidrago_arven_fss_rulebox_tests)
 add_test(NAME regidrago_known_dead_payload COMMAND regidrago_known_dead_payload_tests)
 add_test(NAME regidrago_ultra_ball_tapu COMMAND regidrago_ultra_ball_tapu_tests)
+add_test(NAME regidrago_ultra_ball_cost COMMAND regidrago_ultra_ball_cost_tests)
 add_test(NAME regidrago_wonder_tag_dead_burnet COMMAND regidrago_wonder_tag_dead_burnet_tests)
 add_test(NAME regidrago_oricorio_burnet COMMAND regidrago_oricorio_burnet_tests)
 add_test(NAME regidrago_late_item_supporter COMMAND regidrago_late_item_supporter_tests)

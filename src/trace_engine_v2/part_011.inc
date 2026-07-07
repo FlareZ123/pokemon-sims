@@ -24,7 +24,7 @@
     // Star Alchemy is a deck search; target policy runs after that legal inspection.
     record_deck_search_knowledge("Star Alchemy");
     Card target = fss_target_after_search_started();
-    const bool burnet_overrides_dead_fallback = need_payload() &&
+    const bool burnet_overrides_dead_fallback = need_payload() && deck_payload_might_remain() &&
         (item_locked() || deck_count_after_search_started(Card::BrilliantBlender) == 0) &&
         deck_count_after_search_started(Card::ProfessorBurnet) > 0 &&
         (target == Card::Arven || target == Card::MysteriousTreasure || target == Card::QuickBall || target == Card::Serena);
@@ -39,6 +39,8 @@
                                   Card::ProfessorBurnet, Card::Arven, Card::MysteriousTreasure,
                                   Card::QuickBall, Card::EarthenVessel, Card::LatiasEx}) {
         if (fallback == Card::Crispin && !crispin_can_advance_energy_axis()) continue;
+        if ((fallback == Card::BrilliantBlender || fallback == Card::ProfessorBurnet) &&
+            !deck_payload_might_remain()) continue;
         if (move_deck_to_hand(fallback)) { target = fallback; found = true; break; }
       }
     }
@@ -84,7 +86,10 @@
   }
 
   bool play_professor_burnet() {
-    if (!supporter_allowed() || hand_count(Card::ProfessorBurnet) == 0 || !can_play_payload_this_turn()) return false;
+    // Professor Burnet searches the deck before discarding chosen cards, so K1
+    // must preserve it when no modeled payload remains there: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    if (!supporter_allowed() || hand_count(Card::ProfessorBurnet) == 0 || !can_play_payload_this_turn() ||
+        !deck_payload_might_remain()) return false;
     remove_one(state_.hand, Card::ProfessorBurnet);
     state_.discard.push_back(Card::ProfessorBurnet);
     state_.supporter_used = true;
@@ -111,7 +116,9 @@
     record_deck_search_knowledge("Steven's Resolve");
     const bool next_turn_item_locked = scenario_.locks == LockMode::FullItem || scenario_.locks == LockMode::FullCombined ||
                                        (scenario_.locks == LockMode::TurnTwoItem && state_.turn == 1);
-    const bool blender_available_next_turn = !next_turn_item_locked && deck_count_after_search_started(Card::BrilliantBlender) > 0;
+    const bool deck_payload_available = deck_payload_might_remain();
+    const bool blender_available_next_turn = deck_payload_available && !next_turn_item_locked &&
+                                             deck_count_after_search_started(Card::BrilliantBlender) > 0;
     // Burnet directly searches and discards up to 2 cards: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Steven's Resolve must reserve Burnet when Blender is unavailable for the next payload turn: https://api.pokemontcg.io/v2/cards/sv8-164
     const Card payload_outlet = blender_available_next_turn ? Card::BrilliantBlender : Card::ProfessorBurnet;
@@ -129,14 +136,15 @@
         deck_count_after_search_started(Card::Crispin) > 0) {
       wanted.push_back(Card::Crispin);
     }
-    if (need_payload() && hand_count(Card::BrilliantBlender) == 0 && hand_count(Card::ProfessorBurnet) == 0 &&
-        deck_count_after_search_started(payload_outlet) > 0) {
+    if (need_payload() && deck_payload_available && hand_count(Card::BrilliantBlender) == 0 &&
+        hand_count(Card::ProfessorBurnet) == 0 && deck_count_after_search_started(payload_outlet) > 0) {
       wanted.push_back(payload_outlet);
     }
     for (const Card fallback : {Card::RegidragoVstar, Card::Gladion, Card::Crispin, payload_outlet,
                                 Card::MysteriousTreasure, Card::EarthenVessel, Card::LatiasEx}) {
       if (wanted.size() >= 3U) break;
       if (fallback == Card::Crispin && !crispin_can_advance_energy_axis()) continue;
+      if (fallback == payload_outlet && !deck_payload_available) continue;
       if (std::find(wanted.begin(), wanted.end(), fallback) == wanted.end()) wanted.push_back(fallback);
     }
     std::vector<Card> found;

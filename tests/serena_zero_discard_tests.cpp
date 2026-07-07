@@ -1,6 +1,7 @@
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
+#include <algorithm>
 #include <cassert>
 #include <random>
 #include <vector>
@@ -31,8 +32,8 @@ int main() {
   // Serena permits discarding up to 3 cards, so zero is legal before drawing to five: https://api.pokemontcg.io/v2/cards/swsh12-164
   assert(EngineTestAccess::play_serena(engine));
   assert(state.supporter_used);
-  assert(count_of(state.discard, Card::Serena) == 1);
-  assert(count_of(state.hand, Card::RegidragoVstar) == 1);
+  assert(std::count(state.discard.begin(), state.discard.end(), Card::Serena) == 1);
+  assert(std::count(state.hand.begin(), state.hand.end(), Card::RegidragoVstar) == 1);
   assert(state.hand.size() == 5U);
 
   return 0;

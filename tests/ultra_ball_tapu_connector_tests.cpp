@@ -135,6 +135,40 @@ void test_duplicate_search_items_form_current_turn_payload_chain() {
       throw std::runtime_error("Dialga-GX must remain in this turn's discard after the second Quick Ball.");
     }
   }
+
+  {
+    std::mt19937_64 rng{533};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::State state;
+    state.turn = 2;
+    state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+    state.bench.push_back(sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0, sim::Tool::None});
+    state.bench.push_back(sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0, sim::Tool::None});
+    state.hand = {sim::Card::UltraBall, sim::Card::UltraBall, sim::Card::RegidragoV,
+                  sim::Card::Grass, sim::Card::Grass, sim::Card::Grass};
+    state.deck = {sim::Card::TapuLeleGX, sim::Card::MegaDragonite};
+    state.discard = {sim::Card::ProfessorBurnet};
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+
+    // Ultra Ball discards two other hand cards before searching any Pokémon:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    if (!sim::EngineTestAccess::play_ultra_ball(engine, true) ||
+        !contains(sim::EngineTestAccess::state(engine).hand, sim::Card::MegaDragonite)) {
+      throw std::runtime_error("The first Ultra Ball should find Mega Dragonite ex after paying two legal costs.");
+    }
+
+    // A distinct second Ultra Ball pays two more costs, one of which is the fetched
+    // Dragon payload. Apex Dragon can use a Dragon attack from discard:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146 https://api.pokemontcg.io/v2/cards/swsh12-136
+    if (!sim::EngineTestAccess::play_ultra_ball(engine, true)) {
+      throw std::runtime_error("The second Ultra Ball should discard the fetched current-turn payload.");
+    }
+    const sim::State& after = sim::EngineTestAccess::state(engine);
+    if (!contains(after.discard, sim::Card::MegaDragonite) ||
+        !contains(after.discarded_this_turn, sim::Card::MegaDragonite)) {
+      throw std::runtime_error("Mega Dragonite ex must remain in this turn's discard after the second Ultra Ball.");
+    }
+  }
 }
 
 }  // namespace

@@ -29,8 +29,9 @@ bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
 void test_ultra_ball_prefers_tapu_over_irrelevant_fallback() {
   const sim::Scenario scenario{"ultra-ball-tapu", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
   std::mt19937_64 rng{2718};
-  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  sim::Engine engine(scenario, recipe, rng);
 
   sim::State state;
   state.turn = 2;

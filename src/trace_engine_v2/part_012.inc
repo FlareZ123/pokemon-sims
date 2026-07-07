@@ -164,7 +164,7 @@
     *selected = Card::Gladion;
     state_.hand.push_back(chosen);
     shuffle(state_.prizes);
-    trace("PLAY SUPPORTER", "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01", "Completed mandatory Prize exchange with " + std::string(name(chosen)) + ".");
+    trace("PLAY SUPPORTER", "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01", "Completed mandatory Prize exchange with " + std::string(name(chosen) + ".");
     return true;
   }
 
@@ -172,10 +172,11 @@
     if (!supporter_allowed() || hand_count(Card::Serena) == 0) return false;
     const bool permit_payload = can_play_payload_this_turn() && std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
     const auto first = choose_discard(permit_payload, true);
-    if (!first) return false;
+    // Serena permits discarding up to 3 cards before drawing to five, so zero is legal. A zero-discard play is useful only when it will draw at least one card: https://api.pokemontcg.io/v2/cards/swsh12-164
+    if (!first && state_.hand.size() > 5U) return false;
     remove_one(state_.hand, Card::Serena);
     state_.discard.push_back(Card::Serena);
-    discard_from_hand(*first, "Serena chosen discard", "R-SERENA-01");
+    if (first) discard_from_hand(*first, "Serena chosen discard", "R-SERENA-01");
     if (scenario_.dci != DciProfile::StrictJit) {
       for (int number = 0; number < 2; ++number) {
         const auto extra = choose_discard(false, true);

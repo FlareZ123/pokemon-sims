@@ -95,10 +95,15 @@ void fss_is_blocked_by_rulebox_lock() {
   s.deck = {Card::TateLiza};
   s.discard = {Card::MegaDragonite};
   s.discarded_this_turn = {Card::MegaDragonite};
+  // Forest Seal Stone lets the attached Pokémon V use the VSTAR Power printed
+  // on the Tool: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Path to the Peak suppresses Abilities on Rule Box Pokémon, not the Tool's
+  // printed VSTAR Power: https://api.pokemontcg.io/v2/cards/swsh6-148
   Fixture f(sc("locked-latias-fss-tate", DciProfile::StrictJit, LockMode::FullRuleBoxAbility), s);
-  // This asserts the simulator's documented Rule Box lock model. Forest Seal Stone and Path to the Peak card texts: https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/swsh6-148
-  expect(!EngineTestAccess::use_fss(f.engine), "The FullRuleBoxAbility model suppresses Star Alchemy on the Rule Box holder.");
-  expect(has(EngineTestAccess::state(f.engine).deck, Card::TateLiza), "The blocked VSTAR Power must not move Tate and Liza from deck.");
+  expect(EngineTestAccess::use_fss(f.engine),
+         "An already attached Forest Seal Stone should remain usable under Rule Box lock.");
+  expect(has(EngineTestAccess::state(f.engine).hand, Card::TateLiza),
+         "Star Alchemy should search Tate and Liza to repair the Active-position axis.");
 }
 
 void k1_heavy_ball_beats_still_live_quick_ball() {

@@ -179,12 +179,12 @@
 
   bool play_serena() {
     if (!supporter_allowed() || hand_count(Card::Serena) == 0) return false;
+    // Serena permits zero through three discards before drawing until five cards: https://api.pokemontcg.io/v2/cards/swsh12-164
     const bool permit_payload = can_play_payload_this_turn() && std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
     const auto first = choose_discard(permit_payload, true);
-    if (!first) return false;
     remove_one(state_.hand, Card::Serena);
     state_.discard.push_back(Card::Serena);
-    discard_from_hand(*first, "Serena chosen discard", "R-SERENA-01");
+    if (first) discard_from_hand(*first, "Serena chosen discard", "R-SERENA-01");
     if (scenario_.dci != DciProfile::StrictJit) {
       for (int number = 0; number < 2; ++number) {
         const auto extra = choose_discard(false, true);

@@ -23,6 +23,40 @@
     return true;
   }
 
+  bool second_ultra_ball_can_discard_fetched_payload() {
+    // Ultra Ball requires two other cards each time it is played. A first Ultra Ball
+    // can only fetch a strict-JIT payload for another Ultra Ball when the second play
+    // can discard that payload plus one further policy-legal hand card:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    if (hand_count(Card::UltraBall) < 2) return false;
+    const std::vector<Card> original_hand = state_.hand;
+    const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
+
+    const auto first_cost = choose_discard(false, true);
+    if (!first_cost || !remove_one(state_.hand, *first_cost)) {
+      restore_hand();
+      return false;
+    }
+    const auto second_cost = choose_discard(false, true);
+    if (!second_cost || !remove_one(state_.hand, *second_cost) || !remove_one(state_.hand, Card::UltraBall)) {
+      restore_hand();
+      return false;
+    }
+
+    // The exact Dragon identity does not affect discard eligibility. Mega Dragonite ex
+    // is a modeled Dragon payload and represents the card fetched by the first search:
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    state_.hand.push_back(Card::MegaDragonite);
+    const auto fetched_payload = choose_discard(true, true);
+    if (!fetched_payload || !is_payload(*fetched_payload) || !remove_one(state_.hand, *fetched_payload)) {
+      restore_hand();
+      return false;
+    }
+    const bool payable = choose_discard(false, true).has_value();
+    restore_hand();
+    return payable;
+  }
+
   bool play_ultra_ball(const bool permit_payload) {
     if (item_locked() || hand_count(Card::UltraBall) == 0) return false;
     // Ultra Ball discards 2 other cards from hand before searching a Pokémon: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
@@ -48,7 +82,7 @@
     const bool has_live_hand_payload_outlet = hand_count(Card::MysteriousTreasure) > 0 ||
                                                hand_count(Card::QuickBall) > 0 ||
                                                hand_count(Card::EarthenVessel) > 0 ||
-                                               hand_count(Card::UltraBall) > 1 ||
+                                               second_ultra_ball_can_discard_fetched_payload() ||
                                                (supporter_allowed() && hand_count(Card::Serena) > 0);
     const bool want_payload = need_payload() && !can_jit_discard && has_live_hand_payload_outlet;
     if (!want_regi && !want_vstar && !want_latias && !want_oricorio && !want_tapu && !want_payload && !can_jit_discard) return false;
@@ -56,3 +90,6 @@
     const auto first = choose_discard(can_jit_discard, true);
     if (!first) return false;
     remove_one(state_.hand, *first);
+    const auto second = choose_discard(permit_payload && can_play_payload_this_turn() && !is_payload(*first), true);
+    state_.hand.push_back(*first);
+    if (!second) return false;

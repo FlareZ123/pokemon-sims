@@ -44,6 +44,12 @@ target_compile_options(regidrago_gladion_serena_item_lock_tests PRIVATE -Wall -W
 add_executable(regidrago_crispin_one_type_manual_attachment_tests tests/crispin_one_type_manual_attachment_tests.cpp)
 target_compile_options(regidrago_crispin_one_type_manual_attachment_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+add_executable(regidrago_tapu_gladion_prize_tests tests/tapu_gladion_prize_fallback_tests.cpp)
+target_compile_options(regidrago_tapu_gladion_prize_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
+add_executable(regidrago_evolution_incense_payload_tests tests/evolution_incense_payload_tests.cpp)
+target_compile_options(regidrago_evolution_incense_payload_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 add_executable(regidrago_duplicate_quick_ball_tests tests/duplicate_quick_ball_cost_tests.cpp)
 target_compile_options(regidrago_duplicate_quick_ball_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 

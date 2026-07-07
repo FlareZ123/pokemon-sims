@@ -6,8 +6,7 @@
     // eligible card that remains in the public discard pile.
     std::vector<Card> targets;
     const auto recover_once = [this, &targets](const Card card) {
-      if (targets.size() < 2U && count_of(state_.discard, card) > 0 &&
-          std::find(targets.begin(), targets.end(), card) == targets.end()) {
+      if (targets.size() < 2U && count_of(state_.discard, card) > count_of(targets, card)) {
         targets.push_back(card);
       }
     };
@@ -37,7 +36,7 @@
 
     // These are the remaining modeled Supporter and Stadium cards, ordered from
     // least direct setup value to the connectors retained above. The list contains
-    // only legal Lusamine targets.
+    // only legal Lusamine targets and may select a second copy where available.
     for (const Card fallback : {Card::ChaoticSwell, Card::PathToPeak, Card::TeamYellsCheer,
                                 Card::RoseannesBackup, Card::ProfessorTuro, Card::Channeler,
                                 Card::Guzma, Card::Serena, Card::TateLiza, Card::StevensResolve,

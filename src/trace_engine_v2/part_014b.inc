@@ -76,7 +76,17 @@
 
   void choose_supporter() {
     if (!supporter_allowed() || !setup_axis_missing()) return;
-    if (need_active_vstar() && !need_energy() && !need_payload() && play_tate_switch()) return;
+
+    // Tate & Liza switch mode can repair the Active axis before a remaining Item
+    // payload route resolves later in the same turn. Pick switch mode over draw
+    // mode when Brilliant Blender already supplies the current-turn payload:
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    const bool tate_switch_only_active_axis = need_active_vstar() && !need_energy() && !need_payload();
+    const bool tate_switch_then_blender_payload = need_active_vstar() && !can_free_retreat_with_latias() &&
+        !need_energy() && need_payload() && has_live_blender_payload_line();
+    if ((tate_switch_only_active_axis || tate_switch_then_blender_payload) && play_tate_switch()) return;
 
     // Exact Serena text: discard up to 3 cards, but "You must discard at least 1 card."
     // A zero-discard draw is illegal: https://api.pokemontcg.io/v2/cards/swsh12-164

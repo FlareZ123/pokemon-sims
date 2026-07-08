@@ -203,6 +203,40 @@ void test_known_prized_vstar_makes_evolution_incense_dead() {
   }
 }
 
+void test_known_prized_vstar_prefers_immediate_gladion_over_arven_fss() {
+  // Gladion exchanges itself for a selected Prize card:
+  // https://api.pokemontcg.io/v2/cards/sm4-95
+  // Arven consumes the turn's Supporter play before Forest Seal Stone can search;
+  // Star Alchemy searches the deck and cannot retrieve this known Prize card:
+  // https://api.pokemontcg.io/v2/cards/sv1-166 https://api.pokemontcg.io/v2/cards/swsh12-156
+  // A player may play only one Supporter card during their turn:
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  const sim::Scenario scenario{"gladion-known-prized-vstar-arven-fss", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{163};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::Gladion, sim::Card::Arven};
+  state.deck = {sim::Card::ForestSealStone, sim::Card::Grass};
+  state.prizes = {sim::Card::RegidragoVstar, sim::Card::Fire, sim::Card::Dipplin,
+                  sim::Card::MawileGX, sim::Card::Guzma, sim::Card::Grass};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  if (!sim::EngineTestAccess::play_gladion(engine)) {
+    throw std::runtime_error("Gladion must immediately recover a known prized VSTAR instead of taking the delayed Arven route");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.supporter_used || !contains(after.hand, sim::Card::RegidragoVstar) ||
+      !contains(after.hand, sim::Card::Arven) || !contains(after.prizes, sim::Card::Gladion)) {
+    throw std::runtime_error("Gladion must recover the VSTAR now and preserve the unused Arven connector");
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -212,5 +246,6 @@ int main() {
   test_forest_seal_stone_without_an_open_tool_slot();
   test_item_locked_evolution_incense_is_not_a_vstar_route();
   test_known_prized_vstar_makes_evolution_incense_dead();
+  test_known_prized_vstar_prefers_immediate_gladion_over_arven_fss();
   return 0;
 }

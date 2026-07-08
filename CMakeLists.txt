@@ -83,6 +83,9 @@ target_compile_options(regidrago_start_turn_deck_exhaustion_tests PRIVATE -Wall 
 add_executable(regidrago_legacy_star_latias_recovery_tests tests/legacy_star_latias_recovery_tests.cpp)
 target_compile_options(regidrago_legacy_star_latias_recovery_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+add_executable(regidrago_mysterious_treasure_payload_continuation_tests tests/mysterious_treasure_payload_continuation_tests.cpp)
+target_compile_options(regidrago_mysterious_treasure_payload_continuation_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 add_executable(regidrago_route_reconciliation_tests tests/route_reconciliation_tests.cpp)
 target_compile_options(regidrago_route_reconciliation_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
@@ -113,6 +116,7 @@ add_test(NAME regidrago_steven_missing_regi COMMAND regidrago_steven_missing_reg
 add_test(NAME regidrago_oricorio_type_sensitive_energy COMMAND regidrago_oricorio_type_sensitive_energy_tests)
 add_test(NAME regidrago_start_turn_deck_exhaustion COMMAND regidrago_start_turn_deck_exhaustion_tests)
 add_test(NAME regidrago_legacy_star_latias_recovery COMMAND regidrago_legacy_star_latias_recovery_tests)
+add_test(NAME regidrago_mysterious_treasure_payload_continuation COMMAND regidrago_mysterious_treasure_payload_continuation_tests)
 add_test(NAME regidrago_route_reconciliation COMMAND regidrago_route_reconciliation_tests)
 add_test(NAME trace_strict_second_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 --require-ready-by 3)
 add_test(NAME trace_strict_first_t4 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4)

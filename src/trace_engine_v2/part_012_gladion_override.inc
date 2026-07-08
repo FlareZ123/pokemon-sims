@@ -35,6 +35,8 @@
       // https://api.pokemontcg.io/v2/cards/me2pt5-16
       const bool playable_evolution_incense_vstar_route = !item_locked() &&
           hand_count(Card::EvolutionIncense) > 0 && might_be_unseen(Card::RegidragoVstar);
+      // Policy prioritizes immediate known-prize recovery over slower connectors:
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
       // Gladion can immediately exchange itself for a known prized VSTAR:
       // https://api.pokemontcg.io/v2/cards/sm4-95
       // Star Alchemy searches the deck, so Arven into Forest Seal Stone cannot

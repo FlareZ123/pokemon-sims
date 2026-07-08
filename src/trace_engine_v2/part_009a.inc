@@ -69,5 +69,3 @@
     const bool found_fallback = found_tapu_for_gladion || move_deck_to_hand(fallback);
     shuffle(state_.deck);
     trace("PLAY ITEM", "R-MT-01; R-GAME-ITEM", found_fallback ? "No preferred target remained; legally searched " + std::string(name(fallback)) + "." : "No Psychic or Dragon Pokémon remained after search.");
-    return true;
-  }

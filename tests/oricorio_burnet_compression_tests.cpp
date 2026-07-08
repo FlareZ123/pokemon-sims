@@ -68,9 +68,54 @@ void test_oricorio_preserves_burnet_for_same_turn_readiness() {
   }
 }
 
+void test_oricorio_takes_last_bench_slot_over_tapu_for_burnet() {
+  const sim::Scenario scenario{"oricorio-last-bench-slot", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{180};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0, sim::Tool::None},
+                 sim::Pokemon{sim::Card::LatiasEx, 1, 0, 0, sim::Tool::None},
+                 sim::Pokemon{sim::Card::MawileGX, 1, 0, 0, sim::Tool::None},
+                 sim::Pokemon{sim::Card::DialgaGX, 1, 0, 0, sim::Tool::None}};
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::Oricorio, sim::Card::ProfessorBurnet};
+  state.deck = {sim::Card::Crispin, sim::Card::MegaDragonite, sim::Card::Fire, sim::Card::Grass};
+
+  // With one Bench slot left, Wonder Tag into Crispin would consume both that slot
+  // and the single Supporter play: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sv7-133 https://www.pokemon.com/us/pokemon-tcg/rules
+  // Oricorio's Vital Dance can find the final Fire, leaving Professor Burnet to
+  // discard the Dragon payload in the same turn: https://api.pokemontcg.io/v2/cards/sm2-55
+  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  sim::EngineTestAccess::run_turn(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!benched(after, sim::Card::Oricorio)) {
+    throw std::runtime_error("Oricorio should take the last Bench slot for the Burnet-preserving line.");
+  }
+  if (benched(after, sim::Card::TapuLeleGX)) {
+    throw std::runtime_error("Tapu Lele-GX should not consume the last Bench slot when Oricorio preserves Burnet.");
+  }
+  if (!after.active || after.active->card != sim::Card::RegidragoVstar || after.active->grass != 2 || after.active->fire != 1) {
+    throw std::runtime_error("Oricorio plus manual attachment should complete GGF.");
+  }
+  if (!contains(after.discard, sim::Card::ProfessorBurnet) || !contains(after.discard, sim::Card::MegaDragonite)) {
+    throw std::runtime_error("Professor Burnet should remain playable and discard Mega Dragonite ex.");
+  }
+  if (!sim::EngineTestAccess::payload_ready(engine)) {
+    throw std::runtime_error("The preserved Burnet line must satisfy strict current-turn payload timing.");
+  }
+}
+
 }  // namespace
 
 int main() {
   test_oricorio_preserves_burnet_for_same_turn_readiness();
+  test_oricorio_takes_last_bench_slot_over_tapu_for_burnet();
   return 0;
 }

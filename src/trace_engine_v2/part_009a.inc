@@ -29,7 +29,11 @@
     const bool want_payload = need_payload() && !can_jit_discard &&
                               has_payable_payload_outlet_after_costed_search(Card::MysteriousTreasure);
     if (!can_jit_discard && !want_regi && !want_vstar && !want_latias && !want_tapu && !want_oricorio && !want_payload) return false;
-    const auto cost = choose_discard(can_jit_discard, true);
+    // The Mysterious Treasure being played cannot discard itself. A distinct held
+    // Ultra Ball remains a legal card from hand for Treasure's discard cost, even
+    // when that Ultra Ball is not itself payable because it needs two other cards:
+    // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    const auto cost = choose_discard(can_jit_discard, true, true, Card::MysteriousTreasure);
     if (!cost) return false;
 
     remove_one(state_.hand, Card::MysteriousTreasure);

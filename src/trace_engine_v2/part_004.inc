@@ -34,9 +34,27 @@
   bool active_is_vstar() const { return state_.active && state_.active->card == Card::RegidragoVstar; }
   int bench_space() const { return 5 - static_cast<int>(state_.bench.size()); }
 
+  bool active_regi_can_evolve_from_hand_this_turn() const {
+    return state_.active && state_.active->card == Card::RegidragoV &&
+           state_.active->entered_turn < state_.turn && hand_count(Card::RegidragoVstar) > 0;
+  }
+
+  bool should_prioritize_existing_vstar_target() const {
+    if (active_is_vstar() || !has_vstar()) return false;
+    // Apex Dragon is printed on Regidrago VSTAR, so an already evolved Benched VSTAR
+    // is the legal attack body once Latias ex retreat or Tate & Liza switch can move it
+    // Active. Keep powering the Active Regidrago V only when it can legally evolve from
+    // hand this turn. Sources: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/sv8-76 https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    return !active_regi_can_evolve_from_hand_this_turn();
+  }
+
   int score_regi(const Pokemon& p, const bool active) const {
     if (p.card != Card::RegidragoV && p.card != Card::RegidragoVstar) return -100000;
-    return 100 * std::min(2, p.grass) + 100 * std::min(1, p.fire) +
+    const int existing_vstar_route_bonus = should_prioritize_existing_vstar_target() &&
+                                           p.card == Card::RegidragoVstar ? 1000 : 0;
+    return existing_vstar_route_bonus + 100 * std::min(2, p.grass) + 100 * std::min(1, p.fire) +
            (p.card == Card::RegidragoVstar ? 15 : 0) + (active ? 3 : 0);
   }
 

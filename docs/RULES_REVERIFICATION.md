@@ -21,9 +21,9 @@ This pass rechecked the modeled card text against the supplied `pokemon-tcg-data
 | Serena | `swsh12-164` | Draw mode may discard up to three cards, but requires at least one discard before drawing to five. The policy spends Serena only with a legal safe discard and may use all three in strict JIT. https://api.pokemontcg.io/v2/cards/swsh12-164 |
 | Tate & Liza | `sm7-148` | Models both draw and switch modes. The draw mode is used from a four-card dead hand because it shuffles three remaining cards and draws five. |
 | Steven's Resolve | `sm7-145` | Searches up to three and ends the turn; planned around next-turn Item lock. |
-| Arven | `sv1-166` | Is held during active Item lock; otherwise it inspects the deck before choosing a same-axis Item fallback. |
+| Arven | `sv1-166` | May be played during active Item lock. The model uses a Tool-only Forest Seal Stone target when that route advances an axis, while Item targets remain unavailable: https://api.pokemontcg.io/v2/cards/sv1-166 https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata |
 | Gladion / Heavy Ball | `sm4-95` / `swsh10-146` | Do not inspect Prize identities before the effect. A resolved Heavy Ball reveals the full Prize set, enabling K1 complement deduction; a resolved Gladion or Heavy Ball performs its required exchange/miss clause. |
-| Forest Seal Stone | `swsh12-156` | Attaches only to the modeled Pokémon V holder, shares the VSTAR Power state, and remains an existing Tool rather than an Item-from-hand play after attachment. Its Rule Box-lock treatment remains a documented model assumption pending a direct published ruling. |
+| Forest Seal Stone | `swsh12-156` | Attaches only to the modeled Pokémon V holder, shares the VSTAR Power state, and may be attached from hand during Item lock because Pokémon Tools are separate from Item cards after the Tool errata: https://api.pokemontcg.io/v2/cards/swsh12-156 https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata |
 
 ## Explicit policy checks
 

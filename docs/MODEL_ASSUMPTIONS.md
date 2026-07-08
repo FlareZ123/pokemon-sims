@@ -91,11 +91,11 @@ This is a principled approximation. DCI in a real match depends on opponent deck
 
 ### Turn-2 Item lock
 
-The player gets a normal first turn. Items are locked from their second turn onward. This models a lock that arrives after an initial setup opportunity and makes turn-2 Blender, Mysterious Treasure, Quick Ball, Earthen Vessel, Forest Seal Stone, and Hisuian Heavy Ball unavailable.
+The player gets a normal first turn. Item cards are locked from their second turn onward. This models a lock that arrives after an initial setup opportunity and makes turn-2 Blender, Mysterious Treasure, Quick Ball, Earthen Vessel, and Hisuian Heavy Ball unavailable. Forest Seal Stone remains a Pokémon Tool rather than an Item after the Tool errata, so the model allows it to be attached and used through this Item lock when its own conditions are satisfied: https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata https://api.pokemontcg.io/v2/cards/swsh12-156
 
 ### Full Item lock
 
-Items are unavailable for all modeled turns. Forest Seal Stone is also unavailable because playing the Tool is an Item action. Professor Burnet and Steven’s Resolve remain legal Supporter routes.
+Item cards are unavailable for all modeled turns. Forest Seal Stone remains a Pokémon Tool rather than an Item after the Tool errata, so the model allows it to be attached and used through this Item lock when its own conditions are satisfied: https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata https://api.pokemontcg.io/v2/cards/swsh12-156. Professor Burnet and Steven’s Resolve remain legal Supporter routes.
 
 ### Rule Box Ability lock
 

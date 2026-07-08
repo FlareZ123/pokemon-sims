@@ -26,9 +26,19 @@
                                    legal_search_cost && might_be_unseen(Card::EarthenVessel);
     const bool arven_payload_axis = need_payload() && !item_locked() &&
                                     might_be_unseen(Card::BrilliantBlender);
+    // Arven remains a playable Supporter during Item lock and may choose Forest Seal
+    // Stone as its Pokémon Tool target while selecting no Item: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Pokémon Tools are separate from Item cards after the Tool erratum, so that Tool
+    // route remains legal during Item lock: https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
+    const bool arven_fss_vstar_axis = need_vstar() && !state_.vstar_power_used &&
+        might_be_unseen(Card::ForestSealStone) &&
+        ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
+         std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) {
+           return p.card == Card::RegidragoV && p.tool == Tool::None;
+         }));
 
     if (known_gladion_axis) recover_once(Card::Gladion);
-    if (arven_vstar_axis || arven_regi_axis) recover_once(Card::Arven);
+    if (arven_vstar_axis || arven_regi_axis || arven_fss_vstar_axis) recover_once(Card::Arven);
     if (need_active_vstar()) recover_once(Card::TateLiza);
     if (need_energy() && crispin_can_advance_energy_axis()) recover_once(Card::Crispin);
     if (need_payload()) recover_once(Card::ProfessorBurnet);

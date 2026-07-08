@@ -32,34 +32,69 @@ void expect(const bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);
 }
 
+void test_duplicate_mysterious_treasure_is_legal_cost() {
+  const sim::Scenario scenario{"duplicate-mysterious-treasure-cost", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{83};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::LatiasEx, 1};
+  state.hand = {sim::Card::MysteriousTreasure, sim::Card::MysteriousTreasure};
+  state.deck = {sim::Card::RegidragoV};
+  // Mysterious Treasure discards a card from hand before searching a Psychic or
+  // Dragon Pokemon, so the other copy is a legal cost: https://api.pokemontcg.io/v2/cards/sm6-113
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  expect(sim::EngineTestAccess::play_mysterious_treasure(engine, false),
+         "Mysterious Treasure should use the other copy as its discard cost");
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(contains(after.hand, sim::Card::RegidragoV),
+         "Mysterious Treasure should search the missing Dragon Pokemon");
+  expect(count(after.discard, sim::Card::MysteriousTreasure) == 2,
+         "the played Mysterious Treasure and its duplicate cost should both be discarded");
+  expect(after.deck.empty(), "the searched Regidrago V should leave the deck");
+}
+
+void test_mysterious_treasure_can_discard_unpayable_ultra_ball() {
+  const sim::Scenario scenario{"mysterious-treasure-ultra-ball-cost", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{84};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::LatiasEx, 1};
+  state.hand = {sim::Card::MysteriousTreasure, sim::Card::UltraBall};
+  state.deck = {sim::Card::RegidragoV};
+  // Mysterious Treasure needs one hand discard, while Ultra Ball needs two other
+  // cards and is not payable from this two-card hand:
+  // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  expect(sim::EngineTestAccess::play_mysterious_treasure(engine, false),
+         "Mysterious Treasure should use held Ultra Ball as its discard cost");
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(contains(after.hand, sim::Card::RegidragoV),
+         "Mysterious Treasure should search Regidrago V after discarding Ultra Ball");
+  expect(count(after.discard, sim::Card::MysteriousTreasure) == 1,
+         "the played Mysterious Treasure should be discarded");
+  expect(count(after.discard, sim::Card::UltraBall) == 1,
+         "the held Ultra Ball should be discarded as the cost");
+  expect(after.deck.empty(), "the searched Regidrago V should leave the deck");
+}
+
 }  // namespace
 
 int main() {
   try {
-    const sim::Scenario scenario{"duplicate-mysterious-treasure-cost", sim::DciProfile::StrictJit,
-                                 sim::LockMode::None, false, 4};
-    const sim::DeckRecipe recipe = sim::baseline_recipe();
-    std::mt19937_64 rng{83};
-    sim::Engine engine(scenario, recipe, rng);
-
-    sim::State state;
-    state.turn = 2;
-    state.active = sim::Pokemon{sim::Card::LatiasEx, 1};
-    state.hand = {sim::Card::MysteriousTreasure, sim::Card::MysteriousTreasure};
-    state.deck = {sim::Card::RegidragoV};
-    // Mysterious Treasure discards a card from hand before searching a Psychic or
-    // Dragon Pokemon, so the other copy is a legal cost: https://api.pokemontcg.io/v2/cards/sm6-113
-    sim::EngineTestAccess::set_state(engine, std::move(state));
-
-    expect(sim::EngineTestAccess::play_mysterious_treasure(engine, false),
-           "Mysterious Treasure should use the other copy as its discard cost");
-
-    const sim::State& after = sim::EngineTestAccess::state(engine);
-    expect(contains(after.hand, sim::Card::RegidragoV),
-           "Mysterious Treasure should search the missing Dragon Pokemon");
-    expect(count(after.discard, sim::Card::MysteriousTreasure) == 2,
-           "the played Mysterious Treasure and its duplicate cost should both be discarded");
-    expect(after.deck.empty(), "the searched Regidrago V should leave the deck");
+    test_duplicate_mysterious_treasure_is_legal_cost();
+    test_mysterious_treasure_can_discard_unpayable_ultra_ball();
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

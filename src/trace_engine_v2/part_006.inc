@@ -116,6 +116,21 @@
     return choose_discard(permit_payload, flex_fodder).has_value();
   }
 
+  bool oricorio_preserves_burnet_supporter_slot() const {
+    const bool exactly_one_energy_missing = grass_needed() + fire_needed() == 1;
+    const bool needed_energy_might_be_in_deck =
+        (grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
+        (fire_needed() == 1 && might_be_unseen(Card::Fire));
+    const bool no_payload_in_hand = std::none_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    // Vital Dance can search the final Basic Energy for a manual attachment,
+    // preserving the one Supporter play for Professor Burnet's deck-to-discard
+    // payload line: https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 https://www.pokemon.com/us/pokemon-tcg/rules
+    return supporter_allowed() && !state_.manual_energy_used && exactly_one_energy_missing &&
+           needed_energy_might_be_in_deck && no_payload_in_hand && can_play_payload_this_turn() &&
+           hand_count(Card::ProfessorBurnet) > 0 && !has_live_blender_payload_line() && payload_might_be_in_deck();
+  }
+
   // P-CONNECTOR-01: do not spend a search connector for Oricorio while a present Supporter or Item
   // already supplies the needed Energy axis this turn.
   bool needs_oricorio_connector() const {
@@ -124,13 +139,9 @@
     const bool needed_energy_might_be_in_deck =
         (grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
         (fire_needed() == 1 && might_be_unseen(Card::Fire));
-    const bool no_payload_in_hand = std::none_of(state_.hand.begin(), state_.hand.end(), is_payload);
     // Vital Dance can search the final Basic Energy for a manual attachment (https://api.pokemontcg.io/v2/cards/sm2-55),
     // preserving the Supporter play for Professor Burnet's deck-to-discard payload line (https://api.pokemontcg.io/v2/cards/swsh12tg-TG26).
-    const bool oricorio_preserves_burnet = supporter_allowed() && !state_.manual_energy_used &&
-        exactly_one_energy_missing && needed_energy_might_be_in_deck && no_payload_in_hand &&
-        can_play_payload_this_turn() && hand_count(Card::ProfessorBurnet) > 0 &&
-        !has_live_blender_payload_line() && payload_might_be_in_deck();
+    const bool oricorio_preserves_burnet = oricorio_preserves_burnet_supporter_slot();
     if (oricorio_preserves_burnet) return true;
     // Crispin can only be the preferred connector when its Supporter slot is not
     // needed by the direct Burnet payload route: https://api.pokemontcg.io/v2/cards/sv7-133
@@ -138,11 +149,22 @@
     if (!item_locked() && hand_count(Card::EarthenVessel) > 0 && is_legal_cost_available(can_play_payload_this_turn(), true)) return false;
     // Regidrago V requires two Grass and one Fire. An off-type Energy cannot pay a
     // missing component, while Vital Dance may search the exact Basic type: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/sm2-55
-    return hand_count(Card::Grass) < grass_needed() || hand_count(Card::Fire) < fire_needed();
+    return exactly_one_energy_missing ? needed_energy_might_be_in_deck :
+        (hand_count(Card::Grass) < grass_needed() || hand_count(Card::Fire) < fire_needed());
   }
 
   bool needs_tapu_connector() const {
     if (!supporter_allowed() || !ability_available_for_pokemon(Card::TapuLeleGX)) return false;
+    // With only one Bench slot left, Tapu Lele-GX into Crispin consumes both the
+    // Bench slot and the single Supporter play. Oricorio can instead find the final
+    // Energy and leave Professor Burnet playable for the current-turn payload:
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    if (bench_space() == 1 && hand_count(Card::Oricorio) > 0 && !in_play(Card::Oricorio) &&
+        oricorio_preserves_burnet_supporter_slot()) {
+      return false;
+    }
     // Steven's Resolve may fetch the absent Basic setup card on turn one going second:
     // https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/swsh12-135
     const bool needs_t1_steven = state_.turn == 1 && !scenario_.going_first && should_play_steven() &&

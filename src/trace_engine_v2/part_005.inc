@@ -25,7 +25,8 @@
 
     choose_opening_active();
     choose_opening_bench();
-    shuffle(state_.deck);
+    // Prize cards are placed from the already-shuffled deck after opening Active
+    // and Bench choices, with no second setup shuffle: https://www.pokemon.com/us/pokemon-tcg/rules
     for (int prize = 0; prize < 6; ++prize) {
       state_.prizes.push_back(state_.deck.back());
       state_.deck.pop_back();

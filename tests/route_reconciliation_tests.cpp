@@ -11,6 +11,9 @@ namespace sim {
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
   static const State& state(const Engine& engine) { return engine.state_; }
+  static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
+  static bool play_mysterious_treasure(Engine& engine, const bool permit_payload) { return engine.play_mysterious_treasure(permit_payload); }
+  static bool play_quick_ball(Engine& engine, const bool permit_payload) { return engine.play_quick_ball(permit_payload); }
   static bool play_ultra_ball(Engine& engine, const bool permit_payload) { return engine.play_ultra_ball(permit_payload); }
   static bool play_evolution_incense(Engine& engine, const bool permit_payload) { return engine.play_evolution_incense(permit_payload); }
   static bool play_gladion(Engine& engine) { return engine.play_gladion(); }
@@ -27,14 +30,6 @@ bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
 
 void expect(const bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);
-}
-
-sim::Engine make_engine(const sim::Scenario& scenario, const std::uint64_t seed) {
-  static const sim::DeckRecipe recipe = sim::baseline_recipe();
-  static std::mt19937_64 unused_rng{1};
-  (void)unused_rng;
-  std::mt19937_64 rng{seed};
-  return sim::Engine(scenario, recipe, rng);
 }
 
 void test_ultra_ball_requires_two_distinct_costs() {
@@ -164,6 +159,58 @@ void test_gladion_is_held_for_arven_forest_seal_stone_under_item_lock() {
          "Arven should retrieve Forest Seal Stone through Item lock.");
 }
 
+void test_mysterious_treasure_holds_false_single_ultra_ball_payload_line() {
+  // Mysterious Treasure pays its discard before it searches, and Ultra Ball must
+  // later discard the fetched payload plus another card from hand:
+  // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  const sim::Scenario scenario{"mysterious-treasure-single-ultra-false-route", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{164};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::MysteriousTreasure, sim::Card::UltraBall, sim::Card::Dipplin, sim::Card::Gladion};
+  state.deck = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  expect(!sim::EngineTestAccess::play_mysterious_treasure(engine, true),
+         "Mysterious Treasure must be held when its only prospective Ultra Ball continuation lacks a second cost.");
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(contains(after.hand, sim::Card::MysteriousTreasure) && contains(after.hand, sim::Card::UltraBall) &&
+             contains(after.hand, sim::Card::Dipplin) && contains(after.hand, sim::Card::Gladion) &&
+             after.discard.empty() && contains(after.deck, sim::Card::MegaDragonite),
+         "Rejecting the false Mysterious Treasure continuation must preserve the exact state.");
+}
+
+void test_quick_ball_holds_false_single_ultra_ball_payload_line() {
+  // Quick Ball pays its discard before it searches, and Ultra Ball must later
+  // discard the fetched payload plus another card from hand:
+  // https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  const sim::Scenario scenario{"quick-ball-single-ultra-false-route", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{165};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::QuickBall, sim::Card::UltraBall, sim::Card::Dipplin, sim::Card::Gladion};
+  state.deck = {sim::Card::DialgaGX};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  expect(!sim::EngineTestAccess::play_quick_ball(engine, true),
+         "Quick Ball must be held when its only prospective Ultra Ball continuation lacks a second cost.");
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(contains(after.hand, sim::Card::QuickBall) && contains(after.hand, sim::Card::UltraBall) &&
+             contains(after.hand, sim::Card::Dipplin) && contains(after.hand, sim::Card::Gladion) &&
+             after.discard.empty() && contains(after.deck, sim::Card::DialgaGX),
+         "Rejecting the false Quick Ball continuation must preserve the exact state.");
+}
+
 }  // namespace
 
 int main() {
@@ -173,6 +220,8 @@ int main() {
     test_two_ultra_ball_payload_line_requires_second_cost();
     test_gladion_uses_prized_vstar_only_when_item_cost_is_unpayable();
     test_gladion_is_held_for_arven_forest_seal_stone_under_item_lock();
+    test_mysterious_treasure_holds_false_single_ultra_ball_payload_line();
+    test_quick_ball_holds_false_single_ultra_ball_payload_line();
     std::cout << "route reconciliation tests passed\n";
     return 0;
   } catch (const std::exception& error) {

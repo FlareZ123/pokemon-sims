@@ -1,3 +1,53 @@
+  bool has_payable_payload_outlet_after_costed_search(const Card excluded) {
+    // Mysterious Treasure and Quick Ball discard from hand before searching, while
+    // Ultra Ball must later discard the fetched payload plus one other hand card:
+    // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // Strict DCI protects recovery and singleton cards until a route can actually
+    // complete the current-turn payload axis:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    if (!payload_might_be_in_deck()) return false;
+    const auto current_cost = excluded == Card::QuickBall
+        ? choose_discard(false, true, true, Card::QuickBall)
+        : choose_discard(false, true);
+    if (!current_cost) return false;
+
+    const auto outlet_survives_current_search = [this, excluded, current_cost](const Card outlet) {
+      const int played_copy = outlet == excluded ? 1 : 0;
+      const int cost_copy = *current_cost == outlet ? 1 : 0;
+      return hand_count(outlet) > played_copy + cost_copy;
+    };
+
+    const auto ultra_ball_can_pay_after_current_search = [this, excluded, current_cost]() {
+      if (hand_count(Card::UltraBall) == 0) return false;
+      const std::vector<Card> original_hand = state_.hand;
+      const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
+      if (!remove_one(state_.hand, excluded) || !remove_one(state_.hand, *current_cost)) {
+        restore_hand();
+        return false;
+      }
+
+      // A fetched Dragon represents the searched payload. Ultra Ball may use it as
+      // one cost only if a distinct policy-legal second cost still remains:
+      // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+      state_.hand.push_back(Card::MegaDragonite);
+      const auto payload_cost = choose_discard(true, true);
+      if (!payload_cost || !is_payload(*payload_cost) || !remove_one(state_.hand, *payload_cost)) {
+        restore_hand();
+        return false;
+      }
+      const bool payable = choose_discard(false, true).has_value();
+      restore_hand();
+      return payable;
+    };
+
+    return outlet_survives_current_search(Card::MysteriousTreasure) ||
+           outlet_survives_current_search(Card::QuickBall) ||
+           outlet_survives_current_search(Card::EarthenVessel) ||
+           ultra_ball_can_pay_after_current_search() ||
+           (supporter_allowed() && outlet_survives_current_search(Card::Serena));
+  }
+
   bool play_arven() {
     // Arven is a Supporter, so Item lock does not prohibit playing it: https://www.pokemon.com/us/pokemon-tcg/rules
     // Pokémon Tools are separate from Item cards after the Tool erratum, leaving Forest Seal Stone playable through Item lock: https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata

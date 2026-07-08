@@ -10,7 +10,11 @@
                              !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0;
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 && needs_tapu_connector();
     const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 && needs_oricorio_connector();
-    const bool want_payload = need_payload() && !can_jit_discard && has_other_payload_outlet(Card::QuickBall);
+    // Quick Ball pays its discard before the fetched Basic reaches hand. A later
+    // Ultra Ball route is live only when its own two-card cost remains payable:
+    // https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    const bool want_payload = need_payload() && !can_jit_discard &&
+                              has_payable_payload_outlet_after_costed_search(Card::QuickBall);
     if (!can_jit_discard && !want_regi && !want_latias && !want_tapu && !want_oricorio && !want_payload) return false;
     const auto cost = choose_discard(can_jit_discard, true, true, Card::QuickBall);
     if (!cost) return false;

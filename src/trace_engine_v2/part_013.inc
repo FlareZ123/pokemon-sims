@@ -63,6 +63,27 @@
       recovered.push_back(Card::LatiasEx);
     }
 
+    // Legacy Star can recover a two-card Item bridge when Evolution Incense and a
+    // one-discard Item were just discarded. Evolution Incense fetches an Evolution
+    // Dragon payload, and the recovered Item can discard that fetched payload from hand:
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    const bool evolution_incense_payload_line = need_payload() && !item_locked() && payload_might_be_in_deck() &&
+        count_of(state_.discard, Card::EvolutionIncense) > 0 && recovered.empty();
+    if (evolution_incense_payload_line) {
+      for (const Card outlet : {Card::MysteriousTreasure, Card::QuickBall, Card::EarthenVessel}) {
+        if (count_of(state_.discard, outlet) == 0) continue;
+        if (!recover_discard_to_hand(Card::EvolutionIncense)) throw std::logic_error("Legacy Star Evolution Incense target disappeared");
+        if (!recover_discard_to_hand(outlet)) throw std::logic_error("Legacy Star hand-discard outlet disappeared");
+        recovered.push_back(Card::EvolutionIncense);
+        recovered.push_back(outlet);
+        break;
+      }
+    }
+
     // Recover energy only if it enables a manual attachment this turn. Do not recover a strict-JIT payload.
     for (const Card desired : {Card::Grass, Card::Fire, Card::Crispin, Card::Arven}) {
       if (recovered.size() >= 2U) break;

@@ -44,6 +44,7 @@
       // https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/sv1-166
       // A player may play only one Supporter each turn, so that delayed route cannot
       // use Gladion until the next turn: https://www.pokemon.com/us/pokemon-tcg/rules
+      // K1 certainty makes this a direct recovery choice, not a speculative route.
       const bool known_prized_vstar_absent_from_deck = prizes_known() &&
           prize_count_after_reveal(Card::RegidragoVstar) > 0 &&
           deck_count_after_search_started(Card::RegidragoVstar) == 0;

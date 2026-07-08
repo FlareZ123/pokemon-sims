@@ -107,14 +107,27 @@
     const auto present = [this, excluded](const Card card) {
       return hand_count(card) > (card == excluded ? 1 : 0);
     };
+    // The current search Item and its mandatory discard resolve before the fetched
+    // payload reaches hand. A claimed continuation must survive both operations;
+    // Mysterious Treasure and Quick Ball both require that upfront discard:
+    // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179
+    const auto preserves_hand_discard_outlet = [this, excluded](const Card outlet) {
+      const auto cost = choose_discard(false, true);
+      if (!cost) return false;
+      const int played_copy = outlet == excluded ? 1 : 0;
+      const int cost_copy = *cost == outlet ? 1 : 0;
+      return hand_count(outlet) > played_copy + cost_copy;
+    };
     // The current Treasure or Quick Ball line spends its search card and one discard,
     // then adds the fetched payload. Ultra Ball still needs two other cards when played:
     // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     // Its post-search hand therefore needs Ultra Ball, the fetched payload, and one
     // further card, which requires at least four cards in the pre-search hand.
     const bool payable_ultra_ball = present(Card::UltraBall) && state_.hand.size() >= 4U;
-    return present(Card::MysteriousTreasure) || present(Card::QuickBall) || payable_ultra_ball ||
-           present(Card::EarthenVessel) || (supporter_allowed() && present(Card::Serena));
+    return preserves_hand_discard_outlet(Card::MysteriousTreasure) ||
+           preserves_hand_discard_outlet(Card::QuickBall) || payable_ultra_ball ||
+           preserves_hand_discard_outlet(Card::EarthenVessel) ||
+           (supporter_allowed() && present(Card::Serena));
   }
 
   Card fallback_mysterious_target_after_search_started() const {

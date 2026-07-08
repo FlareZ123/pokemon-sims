@@ -28,10 +28,11 @@
     // Item-lock effects prevent Item cards from being played from hand, so locked
     // hand Items cannot suppress Legacy Star as the only random payload line:
     // https://api.pokemontcg.io/v2/cards/me2pt5-16
-    // Professor Burnet remains a live non-Item hand outlet because it is a Supporter
-    // that searches the deck and discards selected cards:
+    // Professor Burnet is a live non-Item hand outlet only while the Supporter play
+    // is available; after one Supporter is used, it cannot be played this turn:
     // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-    const bool supporter_payload_outlet_in_hand = hand_count(Card::ProfessorBurnet) > 0;
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    const bool supporter_payload_outlet_in_hand = supporter_allowed() && hand_count(Card::ProfessorBurnet) > 0;
     const bool only_random_payload_line = need_payload() && !item_payload_outlet_in_hand && !supporter_payload_outlet_in_hand;
     if (!only_random_payload_line) return false;
     state_.vstar_power_used = true;

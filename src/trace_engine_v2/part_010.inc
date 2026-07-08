@@ -171,6 +171,23 @@
         deck_count_after_search_started(Card::BrilliantBlender) > 0) return Card::BrilliantBlender;
     if (need_payload() && payload_might_be_in_deck() && item_locked() &&
         deck_count_after_search_started(Card::ProfessorBurnet) > 0) return Card::ProfessorBurnet;
+
+    // Crispin attaches one selected Energy and puts the other into hand. Promote it
+    // over draw-only Energy search only when that exact resolution plus the one manual
+    // attachment completes every remaining GGF component this turn: https://api.pokemontcg.io/v2/cards/sv7-133
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    const auto crispin_completes_energy_axis_this_turn = [this]() {
+      if (!crispin_can_advance_energy_axis()) return false;
+      const int grass = grass_needed();
+      const int fire = fire_needed();
+      const bool grass_available = deck_count_after_search_started(Card::Grass) > 0;
+      const bool fire_available = deck_count_after_search_started(Card::Fire) > 0;
+      if (grass == 1 && fire == 0) return grass_available && (fire_available || !state_.manual_energy_used);
+      if (grass == 0 && fire == 1) return fire_available && (grass_available || !state_.manual_energy_used);
+      return grass == 1 && fire == 1 && !state_.manual_energy_used && grass_available && fire_available;
+    };
+    if (need_energy() && crispin_completes_energy_axis_this_turn() &&
+        deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin;
     if (need_energy() && can_fetch_oricorio_for_compression()) return Card::Oricorio;
     if (need_energy() && deck_count_after_search_started(Card::EarthenVessel) > 0 && is_legal_cost_available(can_play_payload_this_turn(), true)) return Card::EarthenVessel;
     if (need_energy() && crispin_can_advance_energy_axis() && deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin;

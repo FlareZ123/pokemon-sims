@@ -17,6 +17,9 @@ target_compile_options(regidrago_tier2_tests PRIVATE -Wall -Wextra -Wpedantic -W
 add_executable(regidrago_fss_rulebox_tests tests/forest_seal_stone_rulebox_tests.cpp)
 target_compile_options(regidrago_fss_rulebox_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+add_executable(regidrago_fss_crispin_priority_tests tests/fss_crispin_priority_tests.cpp)
+target_compile_options(regidrago_fss_crispin_priority_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 add_executable(regidrago_arven_fss_rulebox_tests tests/arven_fss_rulebox_tests.cpp)
 target_compile_options(regidrago_arven_fss_rulebox_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
@@ -97,6 +100,7 @@ add_test(NAME regidrago_sim_self_test COMMAND regidrago_sim --self-test)
 add_test(NAME regidrago_policy_fixtures COMMAND regidrago_policy_tests)
 add_test(NAME regidrago_tier2_policy_fixtures COMMAND regidrago_tier2_tests)
 add_test(NAME regidrago_fss_rulebox COMMAND regidrago_fss_rulebox_tests)
+add_test(NAME regidrago_fss_crispin_priority COMMAND regidrago_fss_crispin_priority_tests)
 add_test(NAME regidrago_arven_fss_rulebox COMMAND regidrago_arven_fss_rulebox_tests)
 add_test(NAME regidrago_known_dead_payload COMMAND regidrago_known_dead_payload_tests)
 add_test(NAME regidrago_ultra_ball_tapu COMMAND regidrago_ultra_ball_tapu_tests)

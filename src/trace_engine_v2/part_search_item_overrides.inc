@@ -37,7 +37,7 @@
     // Ultra Ball discards 2 other cards from hand before searching a Pokémon: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     // The current-turn payload condition is simulator policy, which permits the printed discard cost only when it advances strict-JIT readiness.
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
-                                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+                                   std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
     const bool want_regi = need_regi() && bench_space() > 0;
     const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0;
     const bool want_latias = need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
@@ -65,7 +65,11 @@
     const auto first = choose_discard(can_jit_discard, true);
     if (!first) return false;
     if (!remove_one(state_.hand, *first)) throw std::logic_error("Ultra Ball first discard cost disappeared");
-    const auto second = choose_discard(permit_payload && can_play_payload_this_turn() && !is_payload(*first), true);
+    // The Ultra Ball currently being played cannot pay its own two-card cost, while
+    // a distinct remaining Ultra Ball can. Preserve that distinction in the second
+    // selection: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    const auto second = choose_discard(permit_payload && can_play_payload_this_turn() && !is_payload(*first),
+                                       true, true, Card::UltraBall);
     state_.hand.push_back(*first);
     if (!second) return false;
 

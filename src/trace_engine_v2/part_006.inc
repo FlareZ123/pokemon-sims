@@ -135,10 +135,6 @@
   // already supplies the needed Energy axis this turn.
   bool needs_oricorio_connector() const {
     if (!need_energy()) return false;
-    const bool exactly_one_energy_missing = grass_needed() + fire_needed() == 1;
-    const bool needed_energy_might_be_in_deck =
-        (grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
-        (fire_needed() == 1 && might_be_unseen(Card::Fire));
     // Vital Dance can search the final Basic Energy for a manual attachment (https://api.pokemontcg.io/v2/cards/sm2-55),
     // preserving the Supporter play for Professor Burnet's deck-to-discard payload line (https://api.pokemontcg.io/v2/cards/swsh12tg-TG26).
     const bool oricorio_preserves_burnet = oricorio_preserves_burnet_supporter_slot();
@@ -149,8 +145,7 @@
     if (!item_locked() && hand_count(Card::EarthenVessel) > 0 && is_legal_cost_available(can_play_payload_this_turn(), true)) return false;
     // Regidrago V requires two Grass and one Fire. An off-type Energy cannot pay a
     // missing component, while Vital Dance may search the exact Basic type: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/sm2-55
-    return exactly_one_energy_missing ? needed_energy_might_be_in_deck :
-        (hand_count(Card::Grass) < grass_needed() || hand_count(Card::Fire) < fire_needed());
+    return hand_count(Card::Grass) < grass_needed() || hand_count(Card::Fire) < fire_needed();
   }
 
   bool needs_tapu_connector() const {

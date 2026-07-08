@@ -165,6 +165,14 @@
 
     if (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
         !in_play(Card::LatiasEx) && deck_count_after_search_started(Card::LatiasEx) > 0) return Card::LatiasEx;
+    // Star Alchemy can fetch Tate & Liza when its switch mode fixes Active position
+    // while a held Brilliant Blender remains the legal same-turn payload outlet:
+    // https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://api.pokemontcg.io/v2/cards/sv8-164 https://www.pokemon.com/us/pokemon-tcg/rules
+    if (need_active_vstar() && !can_free_retreat_with_latias() && supporter_allowed() && !need_energy() &&
+        need_payload() && has_live_blender_payload_line() && deck_count_after_search_started(Card::TateLiza) > 0) {
+      return Card::TateLiza;
+    }
     if (need_active_vstar() && !need_energy() && !need_payload() &&
         deck_count_after_search_started(Card::TateLiza) > 0) return Card::TateLiza;
     if (need_payload() && payload_might_be_in_deck() && !item_locked() &&

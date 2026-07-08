@@ -29,6 +29,12 @@
            std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) {
              return p.card == Card::RegidragoV && p.tool == Tool::None;
            }));
+      // Evolution Incense is an Item that searches the deck for an Evolution Pokémon:
+      // https://api.pokemontcg.io/v2/cards/swsh1-163
+      // Item-lock effects prevent Item cards from being played from hand:
+      // https://api.pokemontcg.io/v2/cards/me2pt5-16
+      const bool playable_evolution_incense_vstar_route = !item_locked() &&
+          hand_count(Card::EvolutionIncense) > 0 && might_be_unseen(Card::RegidragoVstar);
       // Arven remains a Supporter under Item lock and may fetch the independently
       // playable Forest Seal Stone Tool route: https://api.pokemontcg.io/v2/cards/sv1-166
       // https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
@@ -38,18 +44,21 @@
            std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) {
              return p.card == Card::RegidragoV && p.tool == Tool::None;
            }));
-      const bool live_vstar_route = hand_count(Card::EvolutionIncense) > 0 ||
+      const bool live_vstar_route = playable_evolution_incense_vstar_route ||
           playable_mysterious_vstar_search || playable_ultra_vstar_search() ||
           playable_fss_vstar_route || playable_arven_fss_vstar_route;
       if (live_vstar_route) return false;
 
-      // The original route classifier predates the payable-cost distinction and
-      // treats a held Mysterious Treasure or Ultra Ball as live by identity alone.
-      // Hide only those proven-unpayable cards while it determines whether Gladion
-      // is critical, then restore the exact card multiset after the policy decision.
+      // The original route classifier predates the playable-route distinction and
+      // treats a held Mysterious Treasure, Ultra Ball, or Evolution Incense as live
+      // by identity alone. Hide only proven-unpayable or unavailable cards while it
+      // determines whether Gladion is critical, then restore the exact card multiset.
       std::vector<Card> held_unpayable_routes;
       while (remove_one(state_.hand, Card::MysteriousTreasure)) held_unpayable_routes.push_back(Card::MysteriousTreasure);
       while (remove_one(state_.hand, Card::UltraBall)) held_unpayable_routes.push_back(Card::UltraBall);
+      if (!playable_evolution_incense_vstar_route) {
+        while (remove_one(state_.hand, Card::EvolutionIncense)) held_unpayable_routes.push_back(Card::EvolutionIncense);
+      }
       const bool played = play_gladion_original();
       state_.hand.insert(state_.hand.end(), held_unpayable_routes.begin(), held_unpayable_routes.end());
       return played;

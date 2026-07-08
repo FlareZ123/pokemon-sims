@@ -1,11 +1,13 @@
     state_.retreat_used = false;
     state_.turn_ended = false;
     state_.discarded_this_turn.clear();
-    // A player who has no cards left in their deck at the beginning of their turn
-    // loses the game before taking turn actions: https://www.pokemon.com/us/pokemon-tcg/rules
-    if (state_.deck.empty()) {
+    // The player going first does not draw at the beginning of their first turn:
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // A deck-out loss occurs only when a required start-of-turn draw cannot be made:
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    if (!first_turn_going_first() && state_.deck.empty()) {
       state_.turn_ended = true;
-      trace("GAME LOST", "R-GAME-DECK-OUT", "No cards remained in deck at the start of turn.");
+      trace("GAME LOST", "R-GAME-DECK-OUT", "No cards remained in deck for the required start-of-turn draw.");
       return;
     }
     if (first_turn_going_first()) {
@@ -88,7 +90,7 @@
       const bool grass_available = deck_count_after_search_started(Card::Grass) > 0;
       const bool fire_available = deck_count_after_search_started(Card::Fire) > 0;
       const bool needed_type_available = (grass_needed() > 0 && grass_available) ||
-                                         (fire_needed() > 0 && fire_available);
+                                          (fire_needed() > 0 && fire_available);
       if (!needed_type_available) return false;
       // With one searchable Energy type, Crispin puts it into hand and attaches
       // none. It advances this model only while manual attachment remains open:

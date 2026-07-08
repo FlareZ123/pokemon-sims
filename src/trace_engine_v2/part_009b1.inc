@@ -30,27 +30,3 @@
                            (target == Card::LatiasEx && want_latias) ||
                            (target == Card::TapuLeleGX && want_tapu) ||
                            (target == Card::Oricorio && want_oricorio) ||
-                           (target == Card::DialgaGX && want_payload);
-      if (desired && move_deck_to_hand(target)) {
-        shuffle(state_.deck);
-        trace("PLAY ITEM", "R-QB-01; R-GAME-ITEM", "Searched a Basic Pokémon: " + std::string(name(target)) + ".");
-        return true;
-      }
-    }
-    // A completed Quick Ball search reveals whether the missing Regidrago remains
-    // in deck. A proved Prize target makes Tapu Lele-GX -> Gladion a live fallback:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/sm4-95
-    const bool prized_regi_axis = deck_count_after_search_started(Card::Gladion) > 0 &&
-        ((need_regi() && deck_count_after_search_started(Card::RegidragoV) == 0 &&
-          prize_count_after_reveal(Card::RegidragoV) > 0) ||
-         (need_vstar() && deck_count_after_search_started(Card::RegidragoVstar) == 0 &&
-          prize_count_after_reveal(Card::RegidragoVstar) > 0));
-    const bool found_tapu_for_gladion = prized_regi_axis && bench_space() > 0 &&
-        hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
-        move_deck_to_hand(Card::TapuLeleGX);
-    const Card fallback = found_tapu_for_gladion ? Card::TapuLeleGX : fallback_quick_ball_target_after_search_started();
-    const bool found_fallback = found_tapu_for_gladion || move_deck_to_hand(fallback);
-    shuffle(state_.deck);
-    trace("PLAY ITEM", "R-QB-01; R-GAME-ITEM", found_fallback ? "No preferred target remained; legally searched " + std::string(name(fallback)) + "." : "No Basic Pokémon remained after search.");
-    return true;
-  }

@@ -35,11 +35,21 @@
       // https://api.pokemontcg.io/v2/cards/me2pt5-16
       const bool playable_evolution_incense_vstar_route = !item_locked() &&
           hand_count(Card::EvolutionIncense) > 0 && might_be_unseen(Card::RegidragoVstar);
-      // Arven remains a Supporter under Item lock and may fetch the independently
-      // playable Forest Seal Stone Tool route: https://api.pokemontcg.io/v2/cards/sv1-166
-      // https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
-      const bool playable_arven_fss_vstar_route = !state_.vstar_power_used &&
-          hand_count(Card::Arven) > 0 && might_be_unseen(Card::ForestSealStone) &&
+      // Policy prioritizes immediate known-prize recovery over slower connectors:
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Gladion can immediately exchange itself for a known prized VSTAR:
+      // https://api.pokemontcg.io/v2/cards/sm4-95
+      // Star Alchemy searches the deck, so Arven into Forest Seal Stone cannot
+      // recover that VSTAR this turn after K1 proves it is absent from deck:
+      // https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/sv1-166
+      // A player may play only one Supporter each turn, so that delayed route cannot
+      // use Gladion until the next turn: https://www.pokemon.com/us/pokemon-tcg/rules
+      // K1 certainty makes this a direct recovery choice, not a speculative route.
+      const bool known_prized_vstar_absent_from_deck = prizes_known() &&
+          prize_count_after_reveal(Card::RegidragoVstar) > 0 &&
+          deck_count_after_search_started(Card::RegidragoVstar) == 0;
+      const bool playable_arven_fss_vstar_route = !known_prized_vstar_absent_from_deck &&
+          !state_.vstar_power_used && hand_count(Card::Arven) > 0 && might_be_unseen(Card::ForestSealStone) &&
           ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
            std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) {
              return p.card == Card::RegidragoV && p.tool == Tool::None;
@@ -58,6 +68,9 @@
       while (remove_one(state_.hand, Card::UltraBall)) held_unpayable_routes.push_back(Card::UltraBall);
       if (!playable_evolution_incense_vstar_route) {
         while (remove_one(state_.hand, Card::EvolutionIncense)) held_unpayable_routes.push_back(Card::EvolutionIncense);
+      }
+      if (known_prized_vstar_absent_from_deck) {
+        while (remove_one(state_.hand, Card::Arven)) held_unpayable_routes.push_back(Card::Arven);
       }
       const bool played = play_gladion_original();
       state_.hand.insert(state_.hand.end(), held_unpayable_routes.begin(), held_unpayable_routes.end());

@@ -9,6 +9,7 @@ namespace sim {
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
   static const State& state(const Engine& engine) { return engine.state_; }
+  static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
   static bool play_gladion(Engine& engine) { return engine.play_gladion(); }
   static bool attach_fss(Engine& engine) { return engine.attach_fss(); }
   static bool use_fss(Engine& engine) { return engine.use_fss(); }
@@ -143,6 +144,65 @@ void test_forest_seal_stone_without_an_open_tool_slot() {
   }
 }
 
+void test_item_locked_evolution_incense_is_not_a_vstar_route() {
+  // Evolution Incense is an Item, so Item lock makes it unavailable from hand:
+  // https://api.pokemontcg.io/v2/cards/swsh1-163 https://api.pokemontcg.io/v2/cards/me2pt5-16
+  // Gladion may exchange itself with a card from the Prize cards:
+  // https://api.pokemontcg.io/v2/cards/sm4-95
+  const sim::Scenario scenario{"gladion-item-locked-evolution-incense", sim::DciProfile::StrictJit,
+                               sim::LockMode::FullItem, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng(61);
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::Gladion, sim::Card::EvolutionIncense};
+  state.prizes = {sim::Card::RegidragoVstar, sim::Card::Grass, sim::Card::Fire,
+                  sim::Card::Dipplin, sim::Card::MawileGX, sim::Card::Guzma};
+  sim::EngineTestAccess::set_state(engine, state);
+
+  if (!sim::EngineTestAccess::play_gladion(engine)) {
+    throw std::runtime_error("Gladion must be played when Item lock makes Evolution Incense unavailable");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!contains(after.hand, sim::Card::RegidragoVstar) || !contains(after.prizes, sim::Card::Gladion)) {
+    throw std::runtime_error("Gladion must exchange with the prized Regidrago VSTAR under Item lock");
+  }
+}
+
+void test_known_prized_vstar_makes_evolution_incense_dead() {
+  // Evolution Incense can search only the deck, so it cannot recover a VSTAR that
+  // a legal K1 inspection has proven is in the Prize cards:
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
+  // Gladion may exchange itself with that known Prize card:
+  // https://api.pokemontcg.io/v2/cards/sm4-95
+  const sim::Scenario scenario{"gladion-known-prized-vstar-evolution-incense", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng(62);
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::Gladion, sim::Card::EvolutionIncense};
+  state.deck = {sim::Card::Grass};
+  state.prizes = {sim::Card::RegidragoVstar, sim::Card::Grass, sim::Card::Fire,
+                  sim::Card::Dipplin, sim::Card::MawileGX, sim::Card::Guzma};
+  sim::EngineTestAccess::set_state(engine, state);
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  if (!sim::EngineTestAccess::play_gladion(engine)) {
+    throw std::runtime_error("Gladion must be played when K1 proves Evolution Incense cannot find the VSTAR");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!contains(after.hand, sim::Card::RegidragoVstar) || !contains(after.prizes, sim::Card::Gladion)) {
+    throw std::runtime_error("Gladion must exchange with the known prized Regidrago VSTAR");
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -150,5 +210,7 @@ int main() {
   test_item_locked_forest_seal_stone_is_still_a_vstar_route();
   test_item_locked_forest_seal_stone_finds_burnet_for_payload();
   test_forest_seal_stone_without_an_open_tool_slot();
+  test_item_locked_evolution_incense_is_not_a_vstar_route();
+  test_known_prized_vstar_makes_evolution_incense_dead();
   return 0;
 }

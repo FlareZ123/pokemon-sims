@@ -45,8 +45,13 @@
   }
 
   std::optional<Card> choose_discard(const bool permit_payload, const bool flex_fodder,
-                                     const bool allow_heavy_ball = true) const {
+                                     const bool allow_heavy_ball = true,
+                                     const std::optional<Card> excluded_from_cost = std::nullopt) const {
     // P-DCI-STRICT and P-DCI-FLEX, documented in RULES_TRACEABILITY.md.
+    const auto has_discardable_copy = [this, excluded_from_cost](const Card card) {
+      const int excluded = excluded_from_cost && *excluded_from_cost == card ? 1 : 0;
+      return hand_count(card) > excluded;
+    };
     if (permit_payload) {
       for (const Card card : {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::DialgaGX}) {
         if (hand_count(card) > 0) return card;
@@ -86,6 +91,11 @@
     if (allow_heavy_ball && known_no_basic_prize && hand_count(Card::HisuianHeavyBall) > 0) {
       return Card::HisuianHeavyBall;
     }
+
+    // The card currently being played cannot pay its own discard cost. When an
+    // effect identifies that card, a distinct Ultra Ball is another card in hand
+    // that may pay Quick Ball's discard cost: https://api.pokemontcg.io/v2/cards/swsh1-179
+    if (excluded_from_cost && has_discardable_copy(Card::UltraBall)) return Card::UltraBall;
 
     // Mysterious Treasure says to discard a card from hand, so a distinct second
     // copy remains a legal cost for the first copy: https://api.pokemontcg.io/v2/cards/sm6-113

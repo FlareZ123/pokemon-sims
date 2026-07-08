@@ -12,7 +12,7 @@
     const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 && needs_oricorio_connector();
     const bool want_payload = need_payload() && !can_jit_discard && has_other_payload_outlet(Card::QuickBall);
     if (!can_jit_discard && !want_regi && !want_latias && !want_tapu && !want_oricorio && !want_payload) return false;
-    const auto cost = choose_discard(can_jit_discard, true);
+    const auto cost = choose_discard(can_jit_discard, true, true, Card::QuickBall);
     if (!cost) return false;
 
     remove_one(state_.hand, Card::QuickBall);

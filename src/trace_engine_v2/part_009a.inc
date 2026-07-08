@@ -23,7 +23,11 @@
                              !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0;
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 && needs_tapu_connector();
     const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 && needs_oricorio_connector();
-    const bool want_payload = need_payload() && !can_jit_discard && has_other_payload_outlet(Card::MysteriousTreasure);
+    // Treasure must pay its discard before the fetched payload reaches hand. A later
+    // Ultra Ball route is live only when its own two-card cost remains payable:
+    // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    const bool want_payload = need_payload() && !can_jit_discard &&
+                              has_payable_payload_outlet_after_costed_search(Card::MysteriousTreasure);
     if (!can_jit_discard && !want_regi && !want_vstar && !want_latias && !want_tapu && !want_oricorio && !want_payload) return false;
     const auto cost = choose_discard(can_jit_discard, true);
     if (!cost) return false;
@@ -65,3 +69,5 @@
     const bool found_fallback = found_tapu_for_gladion || move_deck_to_hand(fallback);
     shuffle(state_.deck);
     trace("PLAY ITEM", "R-MT-01; R-GAME-ITEM", found_fallback ? "No preferred target remained; legally searched " + std::string(name(fallback)) + "." : "No Psychic or Dragon Pokémon remained after search.");
+    return true;
+  }

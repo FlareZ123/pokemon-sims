@@ -20,6 +20,9 @@
   void play_items_until_stable(const bool permit_payload) {
     if (item_locked() || state_.turn_ended) return;
     for (int guard = 0; guard < 28; ++guard) {
+      // Hisuian Heavy Ball is optional, so the policy must retain it once no setup
+      // axis remains instead of spending a non-advancing Prize-information action: https://api.pokemontcg.io/v2/cards/swsh10-146
+      if (!setup_axis_missing()) break;
       if (play_heavy_ball()) continue;
       if (!run_search_items_one_step(permit_payload)) break;
     }

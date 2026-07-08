@@ -11,6 +11,7 @@ namespace sim {
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
   static const State& state(const Engine& engine) { return engine.state_; }
+  static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
   static bool play_mysterious_treasure(Engine& engine, const bool permit_payload) { return engine.play_mysterious_treasure(permit_payload); }
   static bool play_quick_ball(Engine& engine, const bool permit_payload) { return engine.play_quick_ball(permit_payload); }
   static bool play_ultra_ball(Engine& engine, const bool permit_payload) { return engine.play_ultra_ball(permit_payload); }
@@ -29,14 +30,6 @@ bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
 
 void expect(const bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);
-}
-
-sim::Engine make_engine(const sim::Scenario& scenario, const std::uint64_t seed) {
-  static const sim::DeckRecipe recipe = sim::baseline_recipe();
-  static std::mt19937_64 unused_rng{1};
-  (void)unused_rng;
-  std::mt19937_64 rng{seed};
-  return sim::Engine(scenario, recipe, rng);
 }
 
 void test_ultra_ball_requires_two_distinct_costs() {
@@ -181,6 +174,7 @@ void test_mysterious_treasure_holds_false_single_ultra_ball_payload_line() {
   state.hand = {sim::Card::MysteriousTreasure, sim::Card::UltraBall, sim::Card::Dipplin, sim::Card::Gladion};
   state.deck = {sim::Card::MegaDragonite};
   sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
 
   expect(!sim::EngineTestAccess::play_mysterious_treasure(engine, true),
          "Mysterious Treasure must be held when its only prospective Ultra Ball continuation lacks a second cost.");
@@ -206,6 +200,7 @@ void test_quick_ball_holds_false_single_ultra_ball_payload_line() {
   state.hand = {sim::Card::QuickBall, sim::Card::UltraBall, sim::Card::Dipplin, sim::Card::Gladion};
   state.deck = {sim::Card::DialgaGX};
   sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
 
   expect(!sim::EngineTestAccess::play_quick_ball(engine, true),
          "Quick Ball must be held when its only prospective Ultra Ball continuation lacks a second cost.");

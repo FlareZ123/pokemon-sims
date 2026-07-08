@@ -92,12 +92,12 @@ void test_star_alchemy_fetches_oricorio_when_crispin_blocks_burnet() {
   state.active = Pokemon{Card::RegidragoVstar, 1, 2, 0, Tool::None};
   state.bench = {Pokemon{Card::RegidragoV, 1, 0, 0, Tool::ForestSealStone}};
   state.hand = {Card::ProfessorBurnet};
-  state.deck = {Card::Crispin, Card::Oricorio, Card::Grass, Card::Fire, Card::MegaDragonite};
+  state.deck = {Card::Crispin, Card::Oricorio, Card::Fire, Card::MegaDragonite};
 
   // Star Alchemy may search any card and should take Oricorio when Crispin would
   // consume the Supporter play needed by Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12-156
-  // Oricorio's Vital Dance searches the final Fire for manual attachment:
-  // https://api.pokemontcg.io/v2/cards/sm2-55
+  // Oricorio's Vital Dance can search up to 2 Basic Energy, so one final Fire is
+  // enough for the manual attachment: https://api.pokemontcg.io/v2/cards/sm2-55
   // Burnet then searches and discards the Dragon payload in the same turn:
   // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   // Only one Supporter and one manual attachment are available each turn:

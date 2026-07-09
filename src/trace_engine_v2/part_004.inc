@@ -84,22 +84,22 @@
   // Energy type left, Crispin puts it into hand and attaches none, so the
   // manual attachment must still be available: https://api.pokemontcg.io/v2/cards/swsh10-146
   // https://api.pokemontcg.io/v2/cards/sm4-95 https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://www.pokemon.com/us/pokemon-tcg/rules
   bool crispin_can_advance_energy_axis() const {
     if (!need_energy()) return false;
-    if (prizes_known()) {
-      const bool grass_available = deck_count_after_search_started(Card::Grass) > 0;
-      const bool fire_available = deck_count_after_search_started(Card::Fire) > 0;
-      const bool needed_type_available = (grass_needed() > 0 && grass_available) ||
-                                          (fire_needed() > 0 && fire_available);
-      if (!needed_type_available) return false;
-      // With one searchable Energy type, Crispin puts it into hand and attaches
-      // none. It advances this model only while manual attachment remains open:
-      // https://api.pokemontcg.io/v2/cards/sv7-133
-      if (grass_available != fire_available) return !state_.manual_energy_used;
-      return true;
-    }
-    return (grass_needed() > 0 && might_be_unseen(Card::Grass)) ||
-           (fire_needed() > 0 && might_be_unseen(Card::Fire));
+    const bool grass_available = prizes_known() ? deck_count_after_search_started(Card::Grass) > 0
+                                                : might_be_unseen(Card::Grass);
+    const bool fire_available = prizes_known() ? deck_count_after_search_started(Card::Fire) > 0
+                                               : might_be_unseen(Card::Fire);
+    const bool needed_type_available = (grass_needed() > 0 && grass_available) ||
+                                      (fire_needed() > 0 && fire_available);
+    if (!needed_type_available) return false;
+    // The K0 branch uses only public fixed-list counts through might_be_unseen().
+    // If only one Basic Energy type can be searched, Crispin puts it into hand and
+    // attaches none, so the route advances only while the manual attachment remains:
+    // https://api.pokemontcg.io/v2/cards/sv7-133 https://www.pokemon.com/us/pokemon-tcg/rules
+    if (grass_available != fire_available) return !state_.manual_energy_used;
+    return true;
   }
 
   // Gladion may take any one Prize card. This is deliberately narrower than

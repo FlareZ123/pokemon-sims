@@ -194,6 +194,23 @@
       if (grass == 0 && fire == 1) return fire_available && (grass_available || !state_.manual_energy_used);
       return grass == 1 && fire == 1 && !state_.manual_energy_used && grass_available && fire_available;
     };
+    const auto oricorio_preserves_burnet_payload_line = [this]() {
+      const bool exactly_one_energy_missing = grass_needed() + fire_needed() == 1;
+      const bool needed_energy_in_deck = (grass_needed() == 1 && deck_count_after_search_started(Card::Grass) > 0) ||
+                                         (fire_needed() == 1 && deck_count_after_search_started(Card::Fire) > 0);
+      const bool oricorio_in_deck = bench_space() > 0 && !in_play(Card::Oricorio) &&
+                                    hand_count(Card::Oricorio) == 0 && deck_count_after_search_started(Card::Oricorio) > 0;
+      const bool no_payload_in_hand = std::none_of(state_.hand.begin(), state_.hand.end(), is_payload);
+      // Star Alchemy may search any card, so it can take Oricorio instead of Crispin.
+      // Oricorio then finds the final Basic Energy for the manual attachment, leaving
+      // Professor Burnet's Supporter play available for the current-turn payload:
+      // https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/sm2-55
+      // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 https://www.pokemon.com/us/pokemon-tcg/rules
+      return supporter_allowed() && !state_.manual_energy_used && exactly_one_energy_missing &&
+             needed_energy_in_deck && oricorio_in_deck && no_payload_in_hand && hand_count(Card::ProfessorBurnet) > 0 &&
+             can_play_payload_this_turn() && payload_might_be_in_deck() && !has_live_blender_payload_line();
+    };
+    if (need_energy() && oricorio_preserves_burnet_payload_line()) return Card::Oricorio;
     if (need_energy() && crispin_completes_energy_axis_this_turn() &&
         deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin;
     if (need_energy() && can_fetch_oricorio_for_compression()) return Card::Oricorio;

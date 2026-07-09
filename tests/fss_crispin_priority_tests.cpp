@@ -23,6 +23,12 @@ int count(const std::vector<sim::Card>& cards, const sim::Card card) {
   return static_cast<int>(std::count(cards.begin(), cards.end(), card));
 }
 
+bool benched(const sim::State& state, const sim::Card card) {
+  return std::any_of(state.bench.begin(), state.bench.end(), [card](const sim::Pokemon& pokemon) {
+    return pokemon.card == card;
+  });
+}
+
 void test_star_alchemy_uses_crispin_for_same_turn_ggf() {
   using namespace sim;
   const Scenario scenario{"fss-crispin-completion", DciProfile::StrictJit, LockMode::None, false, 4};
@@ -75,10 +81,45 @@ void test_star_alchemy_keeps_vessel_priority_without_same_turn_crispin_completio
   assert(EngineTestAccess::outcome(engine).first_ready_turn == 0);
 }
 
+void test_star_alchemy_fetches_oricorio_when_crispin_blocks_burnet() {
+  using namespace sim;
+  const Scenario scenario{"fss-oricorio-preserves-burnet", DciProfile::StrictJit, LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(187);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 0, Tool::None};
+  state.bench = {Pokemon{Card::RegidragoV, 1, 0, 0, Tool::ForestSealStone}};
+  state.hand = {Card::ProfessorBurnet};
+  state.deck = {Card::Crispin, Card::Oricorio, Card::Fire, Card::MegaDragonite};
+
+  // Star Alchemy may search any card and should take Oricorio when Crispin would
+  // consume the Supporter play needed by Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Oricorio's Vital Dance can search up to 2 Basic Energy, so one final Fire is
+  // enough for the manual attachment: https://api.pokemontcg.io/v2/cards/sm2-55
+  // Burnet then searches and discards the Dragon payload in the same turn:
+  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Only one Supporter and one manual attachment are available each turn:
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  EngineTestAccess::run_turn(engine);
+  EngineTestAccess::record_ready(engine);
+
+  assert(state.vstar_power_used);
+  assert(benched(state, Card::Oricorio));
+  assert(count(state.discard, Card::Crispin) == 0);
+  assert(state.active && state.active->card == Card::RegidragoVstar);
+  assert(state.active->grass == 2 && state.active->fire == 1);
+  assert(count(state.discard, Card::ProfessorBurnet) == 1);
+  assert(count(state.discard, Card::MegaDragonite) == 1);
+  assert(EngineTestAccess::outcome(engine).first_ready_turn == 2);
+}
+
 }  // namespace
 
 int main() {
   test_star_alchemy_uses_crispin_for_same_turn_ggf();
   test_star_alchemy_keeps_vessel_priority_without_same_turn_crispin_completion();
+  test_star_alchemy_fetches_oricorio_when_crispin_blocks_burnet();
   return 0;
 }

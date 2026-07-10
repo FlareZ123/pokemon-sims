@@ -13,6 +13,12 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run: bash .github/scripts/capture-build.sh build build.log
+      - name: Discover replacement trace seeds
+        shell: bash
+        run: |
+          build/regidrago_sim --find-ready 1 --start-seed 1 --scenario strict-jit/go-first --require-ready-by 4
+          build/regidrago_sim --find-ready 1 --start-seed 1 --scenario matchup-flex-jit/go-second --require-ready-by 2
+          build/regidrago_sim --find-ready 1 --start-seed 1 --scenario strict-jit-rulebox-ability-lock/go-second --require-ready-by 3
       - name: Test
         shell: bash
         run: |

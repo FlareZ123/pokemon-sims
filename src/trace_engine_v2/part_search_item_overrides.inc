@@ -7,12 +7,15 @@
     const std::vector<Card> original_hand = state_.hand;
     const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
 
-    const auto first_cost = choose_discard(false, true);
+    // The first Ultra Ball being simulated cannot pay its own cost, while either of
+    // two other held copies may be selected as a legal cost card:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    const auto first_cost = choose_discard(false, true, true, Card::UltraBall);
     if (!first_cost || !remove_one(state_.hand, *first_cost)) {
       restore_hand();
       return false;
     }
-    const auto second_cost = choose_discard(false, true);
+    const auto second_cost = choose_discard(false, true, true, Card::UltraBall);
     if (!second_cost || !remove_one(state_.hand, *second_cost) || !remove_one(state_.hand, Card::UltraBall)) {
       restore_hand();
       return false;
@@ -38,16 +41,25 @@
     // The current-turn payload condition is simulator policy, which permits the printed discard cost only when it advances strict-JIT readiness.
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
                                    std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
-    const bool want_regi = need_regi() && bench_space() > 0;
-    const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0;
+    // Ultra Ball searches only the deck after paying its two-card discard cost. K0
+    // keeps fixed-list Pokémon plausible; K1 requires the inspected deck to contain
+    // each desired target before spending all three hand cards:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    const bool want_regi = need_regi() && bench_space() > 0 && might_be_unseen(Card::RegidragoV);
+    const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
+                            might_be_unseen(Card::RegidragoVstar);
     const bool want_latias = need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
-                              !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0;
+                             !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
+                             might_be_unseen(Card::LatiasEx);
     const bool want_oricorio = need_energy() && hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
-                                bench_space() > 0 && needs_oricorio_connector();
+                                bench_space() > 0 && needs_oricorio_connector() &&
+                                might_be_unseen(Card::Oricorio);
     // Tapu Lele-GX may turn this Pokémon search into a live Supporter connector
     // through Wonder Tag when it is Benched from hand: https://api.pokemontcg.io/v2/cards/cel25c-60_A
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
-                            bench_space() > 0 && needs_tapu_connector();
+                           bench_space() > 0 && needs_tapu_connector() &&
+                           might_be_unseen(Card::TapuLeleGX);
     // A fetched Dragon payload can immediately become a strict-JIT payload when a
     // distinct live hand-discard effect remains. Mysterious Treasure, Quick Ball,
     // and Earthen Vessel each discard from hand; Serena may discard from hand before
@@ -59,10 +71,18 @@
                                                hand_count(Card::EarthenVessel) > 0 ||
                                                second_ultra_ball_can_discard_fetched_payload() ||
                                                (supporter_allowed() && hand_count(Card::Serena) > 0);
-    const bool want_payload = need_payload() && !can_jit_discard && has_live_hand_payload_outlet;
+    const bool payload_might_be_searchable = might_be_unseen(Card::MegaDragonite) ||
+                                               might_be_unseen(Card::Dragapult) ||
+                                               might_be_unseen(Card::GoodraVstar) ||
+                                               might_be_unseen(Card::DialgaGX);
+    const bool want_payload = need_payload() && payload_might_be_searchable &&
+                              !can_jit_discard && has_live_hand_payload_outlet;
     if (!want_regi && !want_vstar && !want_latias && !want_oricorio && !want_tapu && !want_payload && !can_jit_discard) return false;
 
-    const auto first = choose_discard(can_jit_discard, true);
+    // The Ultra Ball being played cannot pay its own cost. Two other Ultra Ball
+    // copies are legal first and second cost cards when all three copies are held:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    const auto first = choose_discard(can_jit_discard, true, true, Card::UltraBall);
     if (!first) return false;
     if (!remove_one(state_.hand, *first)) throw std::logic_error("Ultra Ball first discard cost disappeared");
     // The Ultra Ball currently being played cannot pay its own two-card cost, while
@@ -157,6 +177,6 @@
     if (!found && move_deck_to_hand(Card::GoodraVstar)) { found = true; found_card = Card::GoodraVstar; }
     if (!found && move_deck_to_hand(Card::Dipplin)) { found = true; found_card = Card::Dipplin; }
     shuffle(state_.deck);
-    trace("PLAY ITEM", "R-EVOINCENSE-01; R-GAME-ITEM", found ? "Searched an Evolution Pokémon: " + std::string(name(found_card)) + "." : "No Evolution Pokémon remained in deck.");
+    trace("PLAY ITEM", "R-EVOINCENSE-01; R-GAME-ITEM", found ? "Searched an Evolution Pokémon: " + std::string(name(found_card)) + "." : "No Evolution Pokémon remained after search.");
     return true;
   }

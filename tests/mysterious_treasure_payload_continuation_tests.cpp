@@ -15,6 +15,9 @@ struct EngineTestAccess {
   static bool play_mysterious_treasure(Engine& engine) { return engine.play_mysterious_treasure(true); }
   static bool play_quick_ball(Engine& engine) { return engine.play_quick_ball(true); }
   static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
+  static bool can_play_payload_this_turn(const Engine& engine) {
+    return engine.can_play_payload_this_turn();
+  }
 };
 
 }  // namespace sim
@@ -105,12 +108,93 @@ void test_mysterious_treasure_uses_ultra_ball_cost_and_preserves_quick_ball_payl
          "The Mysterious Treasure into Quick Ball route should satisfy strict-JIT payload timing.");
 }
 
+void test_strict_jit_holds_sole_known_payload_when_no_vstar_can_exist_this_turn() {
+  const sim::Scenario scenario{"strict-jit-sole-known-payload", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{229};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::LatiasEx, 1};
+  state.hand = {sim::Card::QuickBall, sim::Card::MegaDragonite};
+  state.deck = {sim::Card::RegidragoV};
+  state.prizes = {sim::Card::Dragapult, sim::Card::GoodraVstar, sim::Card::DialgaGX,
+                  sim::Card::Grass, sim::Card::Fire, sim::Card::Dipplin};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // K1 proves Mega Dragonite ex is the sole remaining modeled payload. Quick Ball
+  // could Bench Regidrago V, but that new Basic cannot evolve in the same turn, so
+  // strict JIT preserves the only future Apex Dragon payload:
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  expect(!sim::EngineTestAccess::can_play_payload_this_turn(engine),
+         "Strict JIT should protect the sole known payload when no VSTAR can exist this turn.");
+  expect(!sim::EngineTestAccess::play_quick_ball(engine),
+         "Quick Ball should not spend the sole known payload for a newly played Regidrago V.");
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(contains(after.hand, sim::Card::MegaDragonite) && contains(after.deck, sim::Card::RegidragoV),
+         "The sole payload and Basic target should remain in their original zones.");
+}
+
+void test_no_control_still_allows_early_payload_banking() {
+  const sim::Scenario scenario{"no-control-new-regidrago", sim::DciProfile::NoDiscardControl,
+                               sim::LockMode::None, false, 4};
+  sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{230};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::LatiasEx, 1};
+  state.hand = {sim::Card::QuickBall, sim::Card::MegaDragonite};
+  state.deck = {sim::Card::RegidragoV};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // The no-discard-control profile intentionally permits prior-turn payload
+  // banking through Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  expect(sim::EngineTestAccess::can_play_payload_this_turn(engine),
+         "No-control should keep its early payload-banking policy.");
+  expect(sim::EngineTestAccess::play_quick_ball(engine),
+         "Quick Ball should discard the payload and find Regidrago V in no-control.");
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(contains(after.discard, sim::Card::MegaDragonite) &&
+             contains(after.hand, sim::Card::RegidragoV),
+         "No-control should preserve the documented early payload line.");
+}
+
+void test_prior_turn_regidrago_opens_strict_jit_window() {
+  const sim::Scenario scenario{"strict-jit-evolvable-regidrago", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{231};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::RegidragoVstar, sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // A Regidrago V that entered play on turn 1 may evolve on turn 2, so the same-turn
+  // strict-JIT payload window is live: https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  expect(sim::EngineTestAccess::can_play_payload_this_turn(engine),
+         "A prior-turn Regidrago V should keep the strict-JIT payload window open.");
+}
+
 }  // namespace
 
 int main() {
   try {
     test_two_mysterious_treasures_do_not_strand_a_fetched_payload();
     test_mysterious_treasure_uses_ultra_ball_cost_and_preserves_quick_ball_payload_outlet();
+    test_strict_jit_holds_sole_known_payload_when_no_vstar_can_exist_this_turn();
+    test_no_control_still_allows_early_payload_banking();
+    test_prior_turn_regidrago_opens_strict_jit_window();
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';
     return 1;

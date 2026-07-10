@@ -50,9 +50,69 @@ void test_legacy_star_recovers_evolution_incense_payload_bridge() {
   assert(EngineTestAccess::payload_ready(engine));
 }
 
+void test_legacy_star_ignores_item_lock_dead_hand_item() {
+  using namespace sim;
+  const Scenario scenario{"legacy-star-item-lock-dead-hand-item", DciProfile::StrictJit, LockMode::FullItem, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(177);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+  state.hand = {Card::MysteriousTreasure};
+  state.deck = {Card::Grass, Card::Fire, Card::Crispin, Card::Arven,
+                Card::Dipplin, Card::MawileGX, Card::MegaDragonite};
+
+  // Budew's Item-lock shape prevents playing Item cards from hand, so the held
+  // Mysterious Treasure is not a live payload outlet. Legacy Star can still use
+  // Regidrago VSTAR's Ability to discard the top 7 cards, and a same-turn Mega
+  // Dragonite ex discard satisfies the strict-JIT Apex Dragon payload axis:
+  // https://api.pokemontcg.io/v2/cards/me2pt5-16
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  EngineTestAccess::run_turn(engine);
+
+  assert(contains(state.hand, Card::MysteriousTreasure));
+  assert(contains(state.discard, Card::MegaDragonite));
+  assert(contains(state.discarded_this_turn, Card::MegaDragonite));
+  assert(EngineTestAccess::payload_ready(engine));
+}
+
+void test_legacy_star_ignores_spent_supporter_burnet() {
+  using namespace sim;
+  const Scenario scenario{"legacy-star-spent-supporter-burnet", DciProfile::StrictJit, LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(178);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+  state.hand = {Card::ProfessorBurnet};
+  state.supporter_used = true;
+  state.deck = {Card::Grass, Card::Fire, Card::Crispin, Card::Arven,
+                Card::Dipplin, Card::MawileGX, Card::MegaDragonite};
+
+  // Professor Burnet is a Supporter, and the player may play only one Supporter
+  // during the turn. After that slot is spent, Burnet is not a live payload outlet;
+  // Legacy Star can still discard Mega Dragonite ex from the top 7 cards:
+  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  EngineTestAccess::run_turn(engine);
+
+  assert(contains(state.hand, Card::ProfessorBurnet));
+  assert(contains(state.discard, Card::MegaDragonite));
+  assert(contains(state.discarded_this_turn, Card::MegaDragonite));
+  assert(EngineTestAccess::payload_ready(engine));
+}
+
 }  // namespace
 
 int main() {
   test_legacy_star_recovers_evolution_incense_payload_bridge();
+  test_legacy_star_ignores_item_lock_dead_hand_item();
+  test_legacy_star_ignores_spent_supporter_burnet();
   return 0;
 }

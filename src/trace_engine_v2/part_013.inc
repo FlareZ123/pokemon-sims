@@ -21,8 +21,19 @@
     if (state_.vstar_power_used || !has_vstar() || !ability_available_for_pokemon(Card::RegidragoVstar)) return false;
     // Card text source: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Use only when no direct payload outlet or direct connector remains and the discard-7 can create a JIT payload line.
-    const bool only_random_payload_line = need_payload() && hand_count(Card::BrilliantBlender) == 0 && hand_count(Card::ProfessorBurnet) == 0 &&
-                                          hand_count(Card::MysteriousTreasure) == 0 && hand_count(Card::QuickBall) == 0 && hand_count(Card::EarthenVessel) == 0 && hand_count(Card::UltraBall) == 0;
+    const bool item_payload_outlet_in_hand = !item_locked() &&
+        (hand_count(Card::BrilliantBlender) > 0 || hand_count(Card::MysteriousTreasure) > 0 ||
+         hand_count(Card::QuickBall) > 0 || hand_count(Card::EarthenVessel) > 0 ||
+         hand_count(Card::UltraBall) > 0);
+    // Item-lock effects prevent Item cards from being played from hand, so locked
+    // hand Items cannot suppress Legacy Star as the only random payload line:
+    // https://api.pokemontcg.io/v2/cards/me2pt5-16
+    // Professor Burnet is a live non-Item hand outlet only while the Supporter play
+    // is available; after one Supporter is used, it cannot be played this turn:
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    const bool supporter_payload_outlet_in_hand = supporter_allowed() && hand_count(Card::ProfessorBurnet) > 0;
+    const bool only_random_payload_line = need_payload() && !item_payload_outlet_in_hand && !supporter_payload_outlet_in_hand;
     if (!only_random_payload_line) return false;
     state_.vstar_power_used = true;
     outcome_.used_legacy_star = true;

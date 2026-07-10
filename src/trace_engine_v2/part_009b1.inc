@@ -10,10 +10,18 @@
                              !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0;
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 && needs_tapu_connector();
     const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 && needs_oricorio_connector();
+    // Quick Ball searches only a Basic Pokémon. Dialga-GX is the only modeled
+    // Dragon payload that is Basic; Mega Dragonite ex and Dragapult ex are Stage 2,
+    // and Hisuian Goodra VSTAR is a VSTAR Evolution Pokémon:
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sm5-100
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // https://api.pokemontcg.io/v2/cards/sv6-130
+    // https://api.pokemontcg.io/v2/cards/swsh11-136
     // Quick Ball pays its discard before the fetched Basic reaches hand. A later
     // Ultra Ball route is live only when its own two-card cost remains payable:
-    // https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-    const bool want_payload = need_payload() && !can_jit_discard &&
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    const bool want_payload = need_payload() && might_be_unseen(Card::DialgaGX) && !can_jit_discard &&
                               has_payable_payload_outlet_after_costed_search(Card::QuickBall);
     if (!can_jit_discard && !want_regi && !want_latias && !want_tapu && !want_oricorio && !want_payload) return false;
     const auto cost = choose_discard(can_jit_discard, true, true, Card::QuickBall);

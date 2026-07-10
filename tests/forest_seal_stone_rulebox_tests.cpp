@@ -17,6 +17,9 @@ struct EngineTestAccess {
   static bool ability_available(const Engine& engine, const Card card) {
     return engine.ability_available_for_pokemon(card);
   }
+  static bool retreat_with_latias(Engine& engine) {
+    return engine.retreat_to_benched_vstar_with_latias();
+  }
 };
 
 }  // namespace sim
@@ -98,6 +101,41 @@ void test_use_forest_seal_stone_after_evolution_to_vstar() {
   if (!after.vstar_power_used ||
       std::find(after.hand.begin(), after.hand.end(), sim::Card::Fire) == after.hand.end()) {
     throw std::runtime_error("Star Alchemy should search the missing Fire Energy after evolution.");
+  }
+}
+
+void test_latias_route_preserves_star_alchemy() {
+  const sim::Scenario scenario{"fss-preserved-by-latias-retreat", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  std::mt19937_64 rng{83};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::Oricorio, 1};
+  state.bench = {
+      sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::ForestSealStone},
+      sim::Pokemon{sim::Card::LatiasEx, 1}};
+  state.discard = {sim::Card::MegaDragonite};
+  state.deck = {sim::Card::TateLiza};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Skyliner gives the Basic Active no Retreat Cost, retreat may be used once during
+  // the turn, and Star Alchemy is the player's one-per-game VSTAR Power. Since every
+  // other setup axis is complete, the legal Latias route should preserve Star Alchemy:
+  // https://api.pokemontcg.io/v2/cards/sv8-76
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  if (sim::EngineTestAccess::use_fss(engine)) {
+    throw std::runtime_error("Star Alchemy should be preserved when Latias solves the sole Active axis.");
+  }
+  if (sim::EngineTestAccess::state(engine).vstar_power_used) {
+    throw std::runtime_error("The game-wide VSTAR Power must remain unused.");
+  }
+  if (!sim::EngineTestAccess::retreat_with_latias(engine) ||
+      sim::EngineTestAccess::state(engine).active->card != sim::Card::RegidragoVstar) {
+    throw std::runtime_error("Latias should complete the legal free-retreat route to Regidrago VSTAR.");
   }
 }
 
@@ -194,6 +232,7 @@ int main() {
   test_star_alchemy_through_rule_box_lock();
   test_attach_forest_seal_stone_to_regidrago_vstar();
   test_use_forest_seal_stone_after_evolution_to_vstar();
+  test_latias_route_preserves_star_alchemy();
   test_arven_finds_forest_seal_stone_for_regidrago_vstar();
   test_field_blower_removes_path_style_rule_box_lock();
   test_combined_item_lock_prevents_field_blower();

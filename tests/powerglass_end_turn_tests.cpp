@@ -144,6 +144,33 @@ void test_spent_vstar_power_preserves_tool_slot_for_powerglass() {
          "The Active Regidrago VSTAR should hold the live Powerglass");
 }
 
+void test_powerglass_uses_its_active_holder_instead_of_a_benched_regidrago() {
+  const sim::Scenario scenario{"powerglass-active-holder-energy", sim::DciProfile::NoDiscardControl,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{221};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None}};
+  state.hand = {sim::Card::Powerglass};
+  state.discard = {sim::Card::Fire};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Powerglass can attach only to the Pokémon holding it in the Active Spot:
+  // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+  expect(sim::EngineTestAccess::attach_powerglass(engine),
+         "The complete Benched VSTAR must not hide the Active holder's missing Fire Energy");
+  expect(sim::EngineTestAccess::resolve_powerglass_end_turn(engine),
+         "Powerglass should resolve from the Active holder's own Energy deficit");
+  expect(sim::EngineTestAccess::state(engine).active->fire == 1,
+         "The Active Powerglass holder should receive the missing Fire Energy");
+  expect(sim::EngineTestAccess::state(engine).bench.front().fire == 1,
+         "The already complete Benched Regidrago VSTAR must remain unchanged");
+}
+
 }  // namespace
 
 int main() {
@@ -152,6 +179,7 @@ int main() {
     test_powerglass_is_attachable_through_item_lock();
     test_powerglass_does_not_resolve_from_the_bench();
     test_spent_vstar_power_preserves_tool_slot_for_powerglass();
+    test_powerglass_uses_its_active_holder_instead_of_a_benched_regidrago();
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

@@ -60,6 +60,24 @@
     return true;
   }
 
+  bool play_chaotic_swell() {
+    // Chaotic Swell is a Stadium, so Item lock does not prevent it from being played.
+    // A different Stadium coming into play discards the Stadium already in play:
+    // https://api.pokemontcg.io/v2/cards/sm12-187
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // Path to the Peak suppresses Rule Box Pokémon Abilities only while it remains
+    // in play: https://api.pokemontcg.io/v2/cards/swsh6-148
+    if (!rule_box_abilities_locked() || hand_count(Card::ChaoticSwell) == 0 ||
+        state_.stadium == Stadium::ChaoticSwell) return false;
+
+    remove_one(state_.hand, Card::ChaoticSwell);
+    state_.stadium = Stadium::ChaoticSwell;
+    state_.path_lock_removed = true;
+    trace("PLAY STADIUM", "R-CHAOTIC-SWELL-01; R-PATH-01",
+          "Played Chaotic Swell, replacing the modeled Path to the Peak and restoring Rule Box Pokémon Abilities.");
+    return true;
+  }
+
   bool play_field_blower() {
     if (item_locked() || hand_count(Card::FieldBlower) == 0 || !rule_box_abilities_locked()) return false;
 
@@ -77,11 +95,13 @@
 
   void run_turn() {
     trace("POLICY", "P-AXIS-01", "Start: " + state_line());
+    play_chaotic_swell();
     play_field_blower();
     play_basics_from_hand();
     play_items_until_stable(!strict_payload_timing());
     attach_live_fss();
     use_fss();
+    play_chaotic_swell();
     play_field_blower();
     play_basics_from_hand();
     play_items_until_stable(!strict_payload_timing());
@@ -96,10 +116,12 @@
       return;
     }
 
+    play_chaotic_swell();
     play_field_blower();
     play_basics_from_hand();
     attach_live_fss();
     use_fss();
+    play_chaotic_swell();
     play_field_blower();
     play_items_until_stable(!strict_payload_timing());
     attach_manual();
@@ -120,6 +142,7 @@
     if (use_legacy_star()) {
       // Core procedure source: https://www.pokemon.com/us/pokemon-tcg/rules
       // Recovered Items may be played later in the same turn.
+      play_chaotic_swell();
       play_field_blower();
       play_basics_from_hand();
       play_items_until_stable(true);

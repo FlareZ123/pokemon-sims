@@ -46,8 +46,8 @@ void test_empty_deck_at_turn_start_ends_a_turn_with_a_required_draw() {
   }
 }
 
-void test_empty_deck_does_not_lose_when_going_first_skips_the_draw() {
-  const sim::Scenario scenario{"first-turn-no-draw-deck-exhaustion", sim::DciProfile::StrictJit,
+void test_going_first_draws_on_the_opening_turn() {
+  const sim::Scenario scenario{"first-turn-required-draw", sim::DciProfile::StrictJit,
                                sim::LockMode::None, true, 4};
   const sim::DeckRecipe recipe{sim::baseline_recipe()};
   std::mt19937_64 rng{119};
@@ -55,24 +55,54 @@ void test_empty_deck_does_not_lose_when_going_first_skips_the_draw() {
   sim::Engine engine(scenario, recipe, rng, &trace);
 
   sim::State state;
-  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0, sim::Tool::None};
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 0, 0, 0, sim::Tool::None};
   state.hand = {sim::Card::Crispin};
+  state.deck = {sim::Card::Fire};
   sim::EngineTestAccess::set_state(engine, std::move(state));
 
-  // The player going first does not draw at the beginning of their first turn:
-  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // Every turn begins by drawing a card, including the first player's opening turn:
+  // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Start_Your_Turn
+  // Going first restricts Supporters and attacks rather than the turn draw:
+  // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#First_Turn
   sim::EngineTestAccess::begin_turn(engine, 1);
 
   const sim::State& after = sim::EngineTestAccess::state(engine);
-  if (after.turn_ended) {
-    throw std::runtime_error("The skipped opening-turn draw must not cause a deck-out loss.");
+  if (after.turn_ended || !after.deck.empty() || after.hand.size() != 2U ||
+      after.hand.back() != sim::Card::Fire) {
+    throw std::runtime_error("The first player must draw the top card on the opening turn.");
   }
-  if (after.supporter_used || after.manual_energy_used || after.hand.size() != 1U) {
-    throw std::runtime_error("Skipping the opening draw must not consume a turn action or change the hand.");
+  if (after.supporter_used || after.manual_energy_used) {
+    throw std::runtime_error("The required opening draw must not consume a turn action.");
   }
-  if (trace.lines.empty() || trace.lines.back().find("TURN START") == std::string::npos ||
-      trace.lines.back().find("GAME LOST") != std::string::npos) {
-    throw std::runtime_error("The skipped opening draw must be visible without a deck-loss trace.");
+  if (trace.lines.size() < 2U || trace.lines[trace.lines.size() - 2U].find("DRAW") == std::string::npos ||
+      trace.lines.back().find("no Supporter or attack") == std::string::npos) {
+    throw std::runtime_error("The opening draw and remaining first-turn restrictions must be visible in the trace.");
+  }
+}
+
+void test_empty_deck_loses_on_the_first_players_opening_turn() {
+  const sim::Scenario scenario{"first-turn-deck-exhaustion", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, true, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{120};
+  sim::TraceLog trace{true, {}};
+  sim::Engine engine(scenario, recipe, rng, &trace);
+
+  sim::State state;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 0, 0, 0, sim::Tool::None};
+  state.hand = {sim::Card::Crispin};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // The first player's first turn still requires a draw, so an empty deck loses here:
+  // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Start_Your_Turn
+  sim::EngineTestAccess::begin_turn(engine, 1);
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.turn_ended || after.hand.size() != 1U) {
+    throw std::runtime_error("An empty deck must lose before the first player's opening-turn actions.");
+  }
+  if (trace.lines.empty() || trace.lines.back().find("GAME LOST") == std::string::npos) {
+    throw std::runtime_error("Opening-turn deck exhaustion must be visible in the trace.");
   }
 }
 
@@ -80,7 +110,7 @@ void test_celestial_roar_accelerates_on_turn_two() {
   const sim::Scenario scenario{"turn-two-celestial-roar", sim::DciProfile::StrictJit,
                                sim::LockMode::None, true, 4};
   const sim::DeckRecipe recipe{sim::baseline_recipe()};
-  std::mt19937_64 rng{120};
+  std::mt19937_64 rng{121};
   sim::TraceLog trace{true, {}};
   sim::Engine engine(scenario, recipe, rng, &trace);
 
@@ -110,7 +140,7 @@ void test_celestial_roar_is_held_after_ggf_is_complete() {
   const sim::Scenario scenario{"complete-energy-celestial-roar", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
   const sim::DeckRecipe recipe{sim::baseline_recipe()};
-  std::mt19937_64 rng{121};
+  std::mt19937_64 rng{122};
   sim::Engine engine(scenario, recipe, rng);
 
   sim::State state;
@@ -137,7 +167,8 @@ void test_celestial_roar_is_held_after_ggf_is_complete() {
 int main() {
   try {
     test_empty_deck_at_turn_start_ends_a_turn_with_a_required_draw();
-    test_empty_deck_does_not_lose_when_going_first_skips_the_draw();
+    test_going_first_draws_on_the_opening_turn();
+    test_empty_deck_loses_on_the_first_players_opening_turn();
     test_celestial_roar_accelerates_on_turn_two();
     test_celestial_roar_is_held_after_ggf_is_complete();
     std::cout << "turn timing tests passed\n";

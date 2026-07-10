@@ -64,7 +64,13 @@
   }
 
   void choose_opening_active() {
-    for (const Card candidate : {Card::RegidragoV, Card::LatiasEx, Card::Oricorio, Card::MawileGX, Card::DialgaGX, Card::TapuLeleGX}) {
+    // Oricorio's Vital Dance triggers only when it is played from hand onto the
+    // Bench during the turn. When Mawile-GX is the other available opening Basic,
+    // start Mawile-GX so Oricorio remains in hand for that legal setup trigger:
+    // https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://api.pokemontcg.io/v2/cards/sm11-141
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULES_AND_INTERACTIONS.md#deliberate-bounds
+    for (const Card candidate : {Card::RegidragoV, Card::LatiasEx, Card::MawileGX, Card::Oricorio, Card::DialgaGX, Card::TapuLeleGX}) {
       if (remove_one(state_.hand, candidate)) {
         state_.active = Pokemon{candidate, 0};
         outcome_.started_regi = candidate == Card::RegidragoV;

@@ -13,14 +13,6 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run: bash .github/scripts/capture-build.sh build build.log
-      - name: Regenerate corrected setup baselines
-        run: python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir build/regenerated-baselines
-      - name: Upload corrected setup baselines
-        uses: actions/upload-artifact@v4
-        with:
-          name: regenerated-setup-baselines
-          path: build/regenerated-baselines
-          if-no-files-found: error
       - name: Test
         shell: bash
         run: |

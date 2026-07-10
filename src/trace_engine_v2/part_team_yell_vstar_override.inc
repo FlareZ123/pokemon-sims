@@ -48,9 +48,8 @@
         });
     const bool active_will_evolve = state_.active && state_.active->card == Card::RegidragoV &&
                                     state_.active->entered_turn < state_.turn;
-    if (!need_active_vstar() || active_will_evolve || !state_.active ||
-        !is_basic(state_.active->card) || !powered_benched_regi || !payload_ready() ||
-        state_.retreat_used || bench_space() == 0 ||
+    if (active_will_evolve || !state_.active || !is_basic(state_.active->card) ||
+        !powered_benched_regi || !payload_ready() || state_.retreat_used || bench_space() == 0 ||
         !ability_available_for_pokemon(Card::LatiasEx) || in_play(Card::LatiasEx) ||
         count_of(state_.discard, Card::LatiasEx) == 0 || might_be_unseen(Card::LatiasEx)) {
       return false;
@@ -62,6 +61,8 @@
     // https://api.pokemontcg.io/v2/cards/swsh9-149
     // https://api.pokemontcg.io/v2/cards/swsh1-163
     // https://api.pokemontcg.io/v2/cards/sv8-76
+    // The route is evaluated before Regidrago VSTAR exists in play, so it derives the
+    // future Active-position need from the powered Benched Regidrago V and Basic Active.
     return hand_count(Card::EvolutionIncense) > 0 && has_payable_team_yell_latias_search();
   }
 

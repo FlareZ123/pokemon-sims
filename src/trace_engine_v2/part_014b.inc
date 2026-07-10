@@ -129,6 +129,29 @@
     return false;
   }
 
+  std::optional<Card> roseanne_vstar_companion_energy() {
+    if (state_.manual_energy_used || !need_energy() || grass_needed() + fire_needed() != 1 ||
+        !has_payable_roseanne_energy_vessel()) {
+      return std::nullopt;
+    }
+
+    // Roseanne's Backup says "Choose 1 or more", so its Pokémon and Energy modes may
+    // resolve together. Add only the exact final Basic Energy that a payable Earthen
+    // Vessel can search for this turn:
+    // https://api.pokemontcg.io/v2/cards/swsh9-148
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    if (grass_needed() == 1 && count_of(state_.discard, Card::Grass) > 0 &&
+        !might_be_unseen(Card::Grass)) {
+      return Card::Grass;
+    }
+    if (fire_needed() == 1 && count_of(state_.discard, Card::Fire) > 0 &&
+        !might_be_unseen(Card::Fire)) {
+      return Card::Fire;
+    }
+    return std::nullopt;
+  }
+
   bool play_roseanne_vstar_recovery() {
     if (!supporter_allowed() || hand_count(Card::RoseannesBackup) == 0 || !need_vstar() ||
         !has_regidrago_v_that_can_evolve_this_turn() ||
@@ -139,24 +162,44 @@
     // Use the recovery only after legal knowledge proves no VSTAR remains in deck and
     // a currently payable Item can search the restored Evolution this turn.
     if (might_be_unseen(Card::RegidragoVstar) || !has_payable_roseanne_vstar_search()) return false;
+    const std::optional<Card> companion_energy = roseanne_vstar_companion_energy();
 
     remove_one(state_.hand, Card::RoseannesBackup);
     state_.discard.push_back(Card::RoseannesBackup);
     state_.supporter_used = true;
 
-    // Roseanne's Backup may choose its Pokémon mode and shuffle one Pokémon from
-    // discard into the deck: https://api.pokemontcg.io/v2/cards/swsh9-148
+    // Roseanne's Backup may choose one or more modes. Recover Regidrago VSTAR and,
+    // when the companion route is live, the exact final Basic Energy in the same
+    // Supporter resolution:
+    // https://api.pokemontcg.io/v2/cards/swsh9-148
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
     if (!remove_one(state_.discard, Card::RegidragoVstar)) {
       throw std::logic_error("Roseanne's Backup VSTAR target disappeared");
     }
-    const auto turn_it = std::find(state_.discarded_this_turn.begin(),
-                                   state_.discarded_this_turn.end(),
-                                   Card::RegidragoVstar);
-    if (turn_it != state_.discarded_this_turn.end()) state_.discarded_this_turn.erase(turn_it);
+    const auto vstar_turn_it = std::find(state_.discarded_this_turn.begin(),
+                                         state_.discarded_this_turn.end(),
+                                         Card::RegidragoVstar);
+    if (vstar_turn_it != state_.discarded_this_turn.end()) state_.discarded_this_turn.erase(vstar_turn_it);
     state_.deck.push_back(Card::RegidragoVstar);
+
+    if (companion_energy) {
+      if (!remove_one(state_.discard, *companion_energy)) {
+        throw std::logic_error("Roseanne's Backup companion Energy target disappeared");
+      }
+      const auto energy_turn_it = std::find(state_.discarded_this_turn.begin(),
+                                             state_.discarded_this_turn.end(),
+                                             *companion_energy);
+      if (energy_turn_it != state_.discarded_this_turn.end()) {
+        state_.discarded_this_turn.erase(energy_turn_it);
+      }
+      state_.deck.push_back(*companion_energy);
+    }
+
     shuffle(state_.deck);
     trace("PLAY SUPPORTER", "R-GAME-SUPPORTER",
-          "Roseanne's Backup shuffled Regidrago VSTAR from discard into the deck for a payable same-turn search.");
+          companion_energy
+              ? "Roseanne's Backup shuffled Regidrago VSTAR and the final Basic Energy into the deck for payable same-turn searches."
+              : "Roseanne's Backup shuffled Regidrago VSTAR from discard into the deck for a payable same-turn search.");
     return true;
   }
 

@@ -25,12 +25,18 @@
     // is a modeled Dragon payload and represents the card fetched by the first search:
     // https://api.pokemontcg.io/v2/cards/me2pt5-152
     state_.hand.push_back(Card::MegaDragonite);
-    const auto fetched_payload = choose_discard(true, true);
+    // A second Ultra Ball must still be in hand after the first Ultra Ball and both of
+    // its discard costs have left the hand: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    if (hand_count(Card::UltraBall) == 0) {
+      restore_hand();
+      return false;
+    }
+    const auto fetched_payload = choose_discard(true, true, true, Card::UltraBall);
     if (!fetched_payload || !is_payload(*fetched_payload) || !remove_one(state_.hand, *fetched_payload)) {
       restore_hand();
       return false;
     }
-    const bool payable = choose_discard(false, true).has_value();
+    const bool payable = choose_discard(false, true, true, Card::UltraBall).has_value();
     restore_hand();
     return payable;
   }

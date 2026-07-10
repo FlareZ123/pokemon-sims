@@ -15,7 +15,7 @@ struct EngineTestAccess {
   static bool play_quick_ball(Engine& engine) { return engine.play_quick_ball(false); }
   static bool bench_from_hand(Engine& engine, const Card card) { return engine.bench_from_hand(card, true); }
   static bool play_gladion(Engine& engine) { return engine.play_gladion(); }
-  static bool needs_tapu_connector(const Engine& engine) { return engine.needs_tapu_connector(); }
+  static bool needs_tapu_connector(Engine& engine) { return engine.needs_tapu_connector(); }
   static bool bench_tapu_if_useful(Engine& engine) { return engine.bench_tapu_if_useful(); }
   static bool play_tate_switch(Engine& engine) { return engine.play_tate_switch(); }
 };

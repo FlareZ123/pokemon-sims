@@ -50,12 +50,29 @@
     return true;
   }
 
+  bool play_field_blower() {
+    if (item_locked() || hand_count(Card::FieldBlower) == 0 || !rule_box_abilities_locked()) return false;
+
+    // Field Blower may choose a Stadium in play and discard it. The Rule Box lock
+    // scenario represents Path to the Peak, whose suppression ends when it leaves play:
+    // https://api.pokemontcg.io/v2/cards/sm2-125
+    // https://api.pokemontcg.io/v2/cards/swsh6-148
+    remove_one(state_.hand, Card::FieldBlower);
+    state_.discard.push_back(Card::FieldBlower);
+    state_.path_lock_removed = true;
+    trace("PLAY ITEM", "R-GAME-ITEM",
+          "Field Blower discarded the modeled Path to the Peak; Rule Box Pokémon Abilities are available again.");
+    return true;
+  }
+
   void run_turn() {
     trace("POLICY", "P-AXIS-01", "Start: " + state_line());
+    play_field_blower();
     play_basics_from_hand();
     play_items_until_stable(!strict_payload_timing());
     attach_live_fss();
     use_fss();
+    play_field_blower();
     play_basics_from_hand();
     play_items_until_stable(!strict_payload_timing());
 
@@ -69,9 +86,11 @@
       return;
     }
 
+    play_field_blower();
     play_basics_from_hand();
     attach_live_fss();
     use_fss();
+    play_field_blower();
     play_items_until_stable(!strict_payload_timing());
     attach_manual();
     evolve_best_regi();
@@ -91,6 +110,7 @@
     if (use_legacy_star()) {
       // Core procedure source: https://www.pokemon.com/us/pokemon-tcg/rules
       // Recovered Items may be played later in the same turn.
+      play_field_blower();
       play_basics_from_hand();
       play_items_until_stable(true);
       // Legacy Star can return a Supporter from discard, including Crispin:

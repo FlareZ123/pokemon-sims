@@ -72,6 +72,25 @@
     trace("VITAL DANCE", "R-ORICORIO-01",
           found ? "Searched the exact Basic Energy required by the Active Regidrago VSTAR."
                 : "The required Basic Energy was not in the deck after legal search.");
+
+    // A player may attach one Energy from hand during the turn. Complete that
+    // attachment here so a separately preferred Benched Regidrago cannot redirect
+    // the generic attachment helper away from the Active attacker:
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    if (found) {
+      if (!remove_one(state_.hand, needed_energy)) {
+        throw std::logic_error("Vital Dance Energy disappeared before manual attachment");
+      }
+      if (needed_energy == Card::Grass) {
+        ++state_.active->grass;
+      } else {
+        ++state_.active->fire;
+      }
+      state_.manual_energy_used = true;
+      trace("ATTACH", "R-GAME-ENERGY",
+            "Manually attached the Vital Dance Energy to the Active Regidrago VSTAR.");
+    }
+
     trace("PLAY SUPPORTER", "R-GAME-SUPPORTER; R-ORICORIO-01",
           "Professor Turo returned and replayed Oricorio for the Active-specific final Energy route.");
     return true;

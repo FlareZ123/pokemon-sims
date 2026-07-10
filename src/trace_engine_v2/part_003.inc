@@ -83,7 +83,7 @@ class Engine {
     return count;
   }
 
-  // P-HIDDEN-01: before a legal inspection, policy uses only public zones and
+  // P-HIDDEN-01: before a legal deck or Prize inspection, policy uses only public zones and
   // fixed-list copy counts. A deck search sees the remaining deck directly.
   // Attached Energy and Tools are public board information and cannot remain in
   // the deck. Core procedure source: https://www.pokemon.com/us/pokemon-tcg/rules
@@ -123,7 +123,11 @@ class Engine {
            (scenario_.locks == LockMode::TurnTwoItem && state_.turn >= 2);
   }
   bool rule_box_abilities_locked() const {
-    return scenario_.locks == LockMode::FullRuleBoxAbility || scenario_.locks == LockMode::FullCombined;
+    const bool path_style_lock = scenario_.locks == LockMode::FullRuleBoxAbility ||
+                                 scenario_.locks == LockMode::FullCombined;
+    // Path to the Peak suppresses Rule Box Pokémon Abilities only while that Stadium
+    // remains in play: https://api.pokemontcg.io/v2/cards/swsh6-148
+    return path_style_lock && !state_.path_lock_removed;
   }
   bool ability_available_for_pokemon(const Card card) const {
     return !is_rule_box_pokemon(card) || !rule_box_abilities_locked();

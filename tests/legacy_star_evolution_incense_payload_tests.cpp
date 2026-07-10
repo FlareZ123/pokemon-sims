@@ -113,6 +113,80 @@ void test_legacy_star_ignores_spent_supporter_burnet() {
   assert(EngineTestAccess::payload_ready(engine));
 }
 
+void test_legacy_star_ignores_unpayable_one_discard_item() {
+  using namespace sim;
+  const Scenario scenario{"legacy-star-unpayable-mysterious-treasure", DciProfile::StrictJit, LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(222);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+  state.hand = {Card::MysteriousTreasure};
+  state.deck = {Card::Grass, Card::Fire, Card::Crispin, Card::Arven,
+                Card::Dipplin, Card::MawileGX, Card::MegaDragonite};
+
+  // Mysterious Treasure requires a card to discard. With no other hand card it is
+  // not playable, so Legacy Star remains the only current-turn payload line:
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  EngineTestAccess::run_turn(engine);
+
+  assert(contains(state.hand, Card::MysteriousTreasure));
+  assert(state.vstar_power_used);
+  assert(contains(state.discard, Card::MegaDragonite));
+  assert(EngineTestAccess::payload_ready(engine));
+}
+
+void test_legacy_star_ignores_unpayable_ultra_ball() {
+  using namespace sim;
+  const Scenario scenario{"legacy-star-unpayable-ultra-ball", DciProfile::StrictJit, LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(223);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+  state.hand = {Card::UltraBall, Card::Dipplin};
+  state.deck = {Card::Grass, Card::Fire, Card::Crispin, Card::Arven,
+                Card::FieldBlower, Card::MawileGX, Card::MegaDragonite};
+
+  // Ultra Ball requires two other cards. A single Dipplin cannot pay both costs,
+  // so the held Ultra Ball must not suppress Legacy Star:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  EngineTestAccess::run_turn(engine);
+
+  assert(contains(state.hand, Card::UltraBall));
+  assert(contains(state.hand, Card::Dipplin));
+  assert(state.vstar_power_used);
+  assert(contains(state.discard, Card::MegaDragonite));
+  assert(EngineTestAccess::payload_ready(engine));
+}
+
+void test_payable_item_resolves_before_legacy_star() {
+  using namespace sim;
+  const Scenario scenario{"legacy-star-payable-mysterious-treasure", DciProfile::StrictJit, LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(224);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+  state.hand = {Card::MysteriousTreasure, Card::MegaDragonite};
+  state.deck = {Card::Dipplin};
+
+  // A payable Mysterious Treasure can directly discard the in-hand Dragon payload,
+  // so the game-wide VSTAR Power should be preserved:
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  EngineTestAccess::run_turn(engine);
+
+  assert(!state.vstar_power_used);
+  assert(contains(state.discard, Card::MegaDragonite));
+  assert(EngineTestAccess::payload_ready(engine));
+}
+
 void test_legacy_star_recovers_vessel_bridge_after_supporter_use() {
   using namespace sim;
   const Scenario scenario{"legacy-star-vessel-after-supporter", DciProfile::StrictJit, LockMode::None, false, 4};
@@ -175,6 +249,9 @@ int main() {
   test_legacy_star_recovers_evolution_incense_payload_bridge();
   test_legacy_star_ignores_item_lock_dead_hand_item();
   test_legacy_star_ignores_spent_supporter_burnet();
+  test_legacy_star_ignores_unpayable_one_discard_item();
+  test_legacy_star_ignores_unpayable_ultra_ball();
+  test_payable_item_resolves_before_legacy_star();
   test_legacy_star_recovers_vessel_bridge_after_supporter_use();
   test_legacy_star_still_recovers_crispin_with_supporter_available();
   return 0;

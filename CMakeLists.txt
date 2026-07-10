@@ -116,6 +116,9 @@ target_compile_options(regidrago_fss_tate_blender_tests PRIVATE -Wall -Wextra -W
 add_executable(regidrago_powerglass_end_turn_tests tests/powerglass_end_turn_tests.cpp)
 target_compile_options(regidrago_powerglass_end_turn_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+add_executable(regidrago_celestial_roar_live_route_tests tests/celestial_roar_live_route_tests.cpp)
+target_compile_options(regidrago_celestial_roar_live_route_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 enable_testing()
 add_test(NAME regidrago_sim_self_test COMMAND regidrago_sim --self-test)
 add_test(NAME regidrago_policy_fixtures COMMAND regidrago_policy_tests)
@@ -154,6 +157,7 @@ add_test(NAME regidrago_no_redundant_items COMMAND regidrago_no_redundant_item_t
 add_test(NAME regidrago_tate_switch_blender COMMAND regidrago_tate_switch_blender_tests)
 add_test(NAME regidrago_fss_tate_blender COMMAND regidrago_fss_tate_blender_tests)
 add_test(NAME regidrago_powerglass_end_turn COMMAND regidrago_powerglass_end_turn_tests)
+add_test(NAME regidrago_celestial_roar_live_route COMMAND regidrago_celestial_roar_live_route_tests)
 add_test(NAME trace_strict_second_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 --require-ready-by 3)
 add_test(NAME trace_strict_first_t4 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 --require-ready-by 4)
 add_test(NAME trace_flex_second_t2 COMMAND regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2)

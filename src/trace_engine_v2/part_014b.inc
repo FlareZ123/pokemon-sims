@@ -74,6 +74,19 @@
     return true;
   }
 
+  bool has_regidrago_v_that_can_evolve_this_turn() const {
+    // An Evolution card may be played on any matching Pokémon that was already in
+    // play before this turn, whether that Pokémon is Active or Benched:
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // Regidrago VSTAR evolves from Regidrago V:
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    const auto can_evolve = [this](const Pokemon& pokemon) {
+      return pokemon.card == Card::RegidragoV && pokemon.entered_turn < state_.turn;
+    };
+    return (state_.active && can_evolve(*state_.active)) ||
+           std::any_of(state_.bench.begin(), state_.bench.end(), can_evolve);
+  }
+
   bool has_payable_roseanne_vstar_search() {
     if (item_locked()) return false;
 
@@ -118,8 +131,7 @@
 
   bool play_roseanne_vstar_recovery() {
     if (!supporter_allowed() || hand_count(Card::RoseannesBackup) == 0 || !need_vstar() ||
-        !state_.active || state_.active->card != Card::RegidragoV ||
-        state_.active->entered_turn >= state_.turn ||
+        !has_regidrago_v_that_can_evolve_this_turn() ||
         count_of(state_.discard, Card::RegidragoVstar) == 0) {
       return false;
     }

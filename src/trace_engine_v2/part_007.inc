@@ -74,6 +74,18 @@
     if (need_vstar() && deck_count_after_search_started(Card::Arven) > 0) return Card::Arven;
     if (deck_count_after_search_started(Card::Serena) > 0) return Card::Serena;
     if (deck_count_after_search_started(Card::TateLiza) > 0) return Card::TateLiza;
+
+    // Wonder Tag may search any Supporter. A completed deck inspection must not
+    // nominate an absent hard-coded card while another legal Supporter remains:
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    for (const Card fallback : {Card::Crispin, Card::Arven, Card::ProfessorBurnet,
+                                Card::StevensResolve, Card::Gladion, Card::Lusamine,
+                                Card::Guzma, Card::Channeler, Card::TeamYellsCheer,
+                                Card::RoseannesBackup, Card::ProfessorTuro}) {
+      if (deck_count_after_search_started(fallback) > 0) return fallback;
+    }
+    // Wonder Tag is optional. Returning an absent sentinel makes the caller
+    // resolve the legal no-card case when the deck contains no Supporter.
     return Card::Crispin;
   }
 

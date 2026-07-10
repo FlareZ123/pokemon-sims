@@ -41,6 +41,24 @@
     // Crispin source: https://api.pokemontcg.io/v2/cards/sv7-133
     // Do not choose it after K1 if the inspected deck contains no needed Energy.
     if (need_energy() && crispin_can_advance_energy_axis() && deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin;
+
+    // Wonder Tag may search Arven, Arven may search Earthen Vessel, and Vessel may
+    // search the final Basic Energy for this turn's unused manual attachment:
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    const bool exactly_one_energy_missing = grass_needed() + fire_needed() == 1;
+    const bool needed_energy_in_deck =
+        (grass_needed() == 1 && deck_count_after_search_started(Card::Grass) > 0) ||
+        (fire_needed() == 1 && deck_count_after_search_started(Card::Fire) > 0);
+    const bool arven_vessel_energy_route = need_energy() && exactly_one_energy_missing &&
+        !state_.manual_energy_used && !item_locked() && needed_energy_in_deck &&
+        deck_count_after_search_started(Card::Arven) > 0 &&
+        deck_count_after_search_started(Card::EarthenVessel) > 0 &&
+        is_legal_cost_available(can_play_payload_this_turn(), true);
+    if (arven_vessel_energy_route) return Card::Arven;
+
     // Wonder Tag has now inspected the deck. Burnet can only discard cards it
     // selects from that deck, so it is not a payload connector after K1 proves
     // no modeled payload remains: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26

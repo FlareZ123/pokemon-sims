@@ -80,6 +80,11 @@ void test_roseanne_restores_vstar_and_energy_in_one_supporter_play() {
   state.deck = {sim::Card::Fire};
   state.discard = {sim::Card::RegidragoVstar, sim::Card::Grass, sim::Card::MegaDragonite};
   state.discarded_this_turn = {sim::Card::MegaDragonite};
+  // Forest Seal Stone or another VSTAR Power may already have been used. A player
+  // may use only one VSTAR Power during a game, so Legacy Star cannot rescue this route:
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  state.vstar_power_used = true;
   sim::EngineTestAccess::set_state(engine, std::move(state));
   sim::EngineTestAccess::set_deck_seen(engine);
 
@@ -125,6 +130,9 @@ void test_roseanne_does_not_reuse_incense_as_vessel_cost() {
   state.deck = {sim::Card::Fire};
   state.discard = {sim::Card::RegidragoVstar, sim::Card::Grass, sim::Card::MegaDragonite};
   state.discarded_this_turn = {sim::Card::MegaDragonite};
+  // Keep Legacy Star unavailable so the test isolates the two future Item costs:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  state.vstar_power_used = true;
   sim::EngineTestAccess::set_state(engine, std::move(state));
   sim::EngineTestAccess::set_deck_seen(engine);
 

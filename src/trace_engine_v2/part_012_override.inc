@@ -53,9 +53,15 @@
     // Pokémon Tools are separate from Item cards after the Tool erratum, leaving Forest Seal Stone playable through Item lock: https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
     if (!supporter_allowed() || hand_count(Card::Arven) == 0) return false;
 
-    const bool needs_tool = has_regi_v() && !state_.vstar_power_used &&
-                            ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
-                             std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) { return p.card == Card::RegidragoV && p.tool == Tool::None; }));
+    // Pokémon V includes Pokémon VSTAR, so Arven may find Forest Seal Stone for an
+    // open Regidrago V or Regidrago VSTAR Tool slot:
+    // https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
+    // https://api.pokemontcg.io/v2/cards/sv1-166 https://api.pokemontcg.io/v2/cards/swsh12-156
+    const bool needs_tool = !state_.vstar_power_used &&
+                            ((state_.active && is_pokemon_v(state_.active->card) && state_.active->tool == Tool::None) ||
+                             std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) {
+                               return is_pokemon_v(p.card) && p.tool == Tool::None;
+                             }));
     const bool can_pay_search_cost = is_legal_cost_available(can_play_payload_this_turn(), true);
 
     const auto item_candidates_for_current_knowledge = [this, can_pay_search_cost]() {

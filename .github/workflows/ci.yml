@@ -62,3 +62,23 @@ jobs:
             build-sanitizers/Testing
             sanitizer-build.log
           if-no-files-found: warn
+
+  audit-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure simulator
+        run: cmake -S . -B build-matrix -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build-matrix --target regidrago_sim --parallel 2
+      - name: Run 100000-trial matrix
+        run: |
+          build-matrix/regidrago_sim --trials 100000 --seed 20260710 --out audit_matrix.csv
+          echo '===== AUDIT MATRIX CSV ====='
+          cat audit_matrix.csv
+      - name: Upload audit matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-matrix-100000
+          path: audit_matrix.csv
+          if-no-files-found: error

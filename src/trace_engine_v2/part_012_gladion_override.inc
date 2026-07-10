@@ -14,12 +14,16 @@
         const std::vector<Card> original_hand = state_.hand;
         const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
         const bool permit_payload = can_play_payload_this_turn();
-        const auto first = choose_discard(permit_payload, true);
+        // The simulated Ultra Ball cannot pay either cost with itself. Separate held
+        // Ultra Ball copies remain legal cost cards under the printed "2 other cards"
+        // requirement: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+        const auto first = choose_discard(permit_payload, true, true, Card::UltraBall);
         if (!first || !remove_one(state_.hand, *first)) {
           restore_hand();
           return false;
         }
-        const auto second = choose_discard(permit_payload && can_play_payload_this_turn() && !is_payload(*first), true);
+        const auto second = choose_discard(permit_payload && can_play_payload_this_turn() && !is_payload(*first),
+                                           true, true, Card::UltraBall);
         restore_hand();
         return second.has_value();
       };

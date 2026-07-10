@@ -10,6 +10,7 @@ namespace sim {
 
 struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
+  static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
   static void run_turn(Engine& engine) { engine.run_turn(); }
 };
 
@@ -95,10 +96,59 @@ void test_team_yell_holds_when_latias_search_cost_is_unpayable() {
   assert(contains(state.discard, Card::LatiasEx));
 }
 
+void test_team_yell_restores_vstar_and_latias_in_one_resolution() {
+  using namespace sim;
+  const Scenario scenario{"team-yell-vstar-latias", DciProfile::StrictJit, LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(331);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::TapuLeleGX, 1, 0, 0, Tool::None};
+  state.bench.push_back(Pokemon{Card::RegidragoV, 1, 2, 1, Tool::None});
+  state.hand = {Card::TeamYellsCheer, Card::EvolutionIncense, Card::QuickBall, Card::Dipplin};
+  state.deck = {Card::Grass};
+  state.discard = {Card::RegidragoVstar, Card::LatiasEx, Card::MegaDragonite};
+  state.discarded_this_turn = {Card::MegaDragonite};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Team Yell's Cheer may shuffle up to 3 Pokémon and/or Supporter cards, so it can
+  // restore Regidrago VSTAR and Latias ex together. Evolution Incense finds VSTAR,
+  // Quick Ball independently pays its cost and finds Latias, Skyliner removes the
+  // Basic Active's Retreat Cost, and the powered VSTAR can be promoted:
+  // https://api.pokemontcg.io/v2/cards/swsh9-149
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/sv8-76
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  EngineTestAccess::run_turn(engine);
+
+  assert(state.supporter_used);
+  assert(state.active.has_value());
+  assert(state.active->card == Card::RegidragoVstar);
+  assert(state.active->grass == 2 && state.active->fire == 1);
+  assert(state.retreat_used);
+  assert(contains(state.discard, Card::TeamYellsCheer));
+  assert(contains(state.discard, Card::EvolutionIncense));
+  assert(contains(state.discard, Card::QuickBall));
+  assert(contains(state.discard, Card::Dipplin));
+  assert(contains(state.discard, Card::MegaDragonite));
+  assert(contains(state.discarded_this_turn, Card::MegaDragonite));
+  assert(!contains(state.deck, Card::RegidragoVstar));
+  assert(!contains(state.deck, Card::LatiasEx));
+  assert(!contains(state.hand, Card::RegidragoVstar));
+  assert(!contains(state.hand, Card::LatiasEx));
+  assert(std::any_of(state.bench.begin(), state.bench.end(), [](const Pokemon& pokemon) {
+    return pokemon.card == Card::LatiasEx;
+  }));
+}
+
 }  // namespace
 
 int main() {
   test_team_yell_restores_payable_latias_promotion_route();
   test_team_yell_holds_when_latias_search_cost_is_unpayable();
+  test_team_yell_restores_vstar_and_latias_in_one_resolution();
   return 0;
 }

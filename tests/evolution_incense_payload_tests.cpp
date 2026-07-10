@@ -101,12 +101,38 @@ void test_evolution_incense_holds_when_k1_vstar_target_is_absent() {
   }
 }
 
+void test_evolution_incense_uses_legal_post_search_fallbacks() {
+  for (const sim::Card fallback : {sim::Card::MegaDragonite, sim::Card::Dragapult}) {
+    Fixture fixture;
+    sim::State state;
+    state.turn = 2;
+    state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1, sim::Tool::None};
+    state.hand = {sim::Card::EvolutionIncense};
+    state.deck = {fallback};
+    sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+    // Evolution Incense may search any Evolution Pokémon. Once the K0 search proves
+    // Regidrago VSTAR absent, Stage 2 Mega Dragonite ex and Dragapult ex remain legal
+    // fallback targets: https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // https://api.pokemontcg.io/v2/cards/sv6-130
+    if (!sim::EngineTestAccess::play_evolution_incense(fixture.engine, false)) {
+      throw std::runtime_error("Evolution Incense should resolve the K0 VSTAR search.");
+    }
+    const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+    if (!contains(after.hand, fallback) || !after.deck.empty()) {
+      throw std::runtime_error("Evolution Incense should take the available legal Evolution fallback.");
+    }
+  }
+}
+
 }  // namespace
 
 int main() {
   try {
     test_evolution_incense_fetches_jit_payload_for_mysterious_treasure();
     test_evolution_incense_holds_when_k1_vstar_target_is_absent();
+    test_evolution_incense_uses_legal_post_search_fallbacks();
     std::cout << "Evolution Incense payload tests passed\n";
     return 0;
   } catch (const std::exception& error) {

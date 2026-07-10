@@ -7,14 +7,20 @@ void test_fss_reveal_preserves_burnet_over_prized_energy() {
   s.prizes = {Card::Fire};
   Fixture f(scenario("prized-fire-versus-burnet", DciProfile::StrictJit, LockMode::FullItem), s);
 
-  expect(EngineTestAccess::use_fss(f.engine),
-         "Already-attached Forest Seal Stone should legally inspect the deck during Item lock in this model.");
+  // Star Alchemy must search for a card because its text gives no choice. With the
+  // sole deck card as Burnet's payload, using FSS would remove that target:
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://compendium.pokegym.net/category/2-meta-rulings/
+  // Professor Burnet directly searches and discards the payload through Item lock:
+  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  expect(!EngineTestAccess::use_fss(f.engine),
+         "Forest Seal Stone must be held when its mandatory search would empty Burnet's only payload zone.");
   EngineTestAccess::choose_supporter(f.engine);
   const State& after = EngineTestAccess::state(f.engine);
   expect(contains(after.discard, Card::ProfessorBurnet) && contains(after.discard, Card::MegaDragonite),
          "Professor Burnet must beat Gladion when Item lock makes it the only payload bridge.");
-  expect(contains(after.hand, Card::Gladion),
-         "Gladion should be preserved when final Energy alone cannot finish readiness.");
+  expect(contains(after.hand, Card::Gladion) && !after.vstar_power_used,
+         "Gladion and the VSTAR Power should be preserved when final Energy alone cannot finish readiness.");
 }
 
 void test_heavy_ball_oricorio_preserves_burnet_supporter() {

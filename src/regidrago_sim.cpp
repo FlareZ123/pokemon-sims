@@ -26,12 +26,12 @@
 #include "trace_engine_v2/part_000.inc"
 #include "trace_engine_v2/part_001.inc"
 #include "trace_engine_v2/part_002.inc"
-#include "trace_engine_v2/part_003.inc"
 #define begin_turn begin_turn_original
+#include "trace_engine_v2/part_003.inc"
 #include "trace_engine_v2/part_004.inc"
+#include "trace_engine_v2/part_005.inc"
 #undef begin_turn
 #include "trace_engine_v2/part_begin_turn_override.inc"
-#include "trace_engine_v2/part_005.inc"
 #define needs_tapu_connector needs_tapu_connector_original
 #define bench_tapu_if_useful bench_tapu_if_useful_original
 #include "trace_engine_v2/part_006.inc"
@@ -75,4 +75,4 @@
 #include "trace_engine_v2/part_team_yell_vstar_override.inc"
 #include "trace_engine_v2/part_014c.inc"
 #include "trace_engine_v2/part_015.inc"
-#include "trace_engine_v2/part_016.inc"}
+#include "trace_engine_v2/part_016.inc"

@@ -11,6 +11,7 @@
 enum class DciProfile : std::uint8_t { StrictJit, MatchupFlexJit, NoDiscardControl };
 enum class LockMode : std::uint8_t { None, TurnTwoItem, FullItem, FullRuleBoxAbility, FullCombined };
 enum class Tool : std::uint8_t { None, ForestSealStone, Powerglass };
+enum class Stadium : std::uint8_t { None, ChaoticSwell };
 
 struct Scenario {
   std::string label;
@@ -43,6 +44,7 @@ struct State {
   bool vstar_power_used{false};
   bool turn_ended{false};
   bool path_lock_removed{false};
+  Stadium stadium{Stadium::None};
 };
 
 struct TrialOutcome {

@@ -14,6 +14,7 @@ struct EngineTestAccess {
   static bool use_fss(Engine& engine) { return engine.use_fss(); }
   static bool play_arven(Engine& engine) { return engine.play_arven(); }
   static bool play_field_blower(Engine& engine) { return engine.play_field_blower(); }
+  static bool play_chaotic_swell(Engine& engine) { return engine.play_chaotic_swell(); }
   static bool ability_available(const Engine& engine, const Card card) {
     return engine.ability_available_for_pokemon(card);
   }
@@ -227,6 +228,62 @@ void test_combined_item_lock_prevents_field_blower() {
   }
 }
 
+void test_chaotic_swell_replaces_path_style_rule_box_lock() {
+  const sim::Scenario scenario{"chaotic-swell-path", sim::DciProfile::StrictJit,
+                               sim::LockMode::FullRuleBoxAbility, false, 4};
+  std::mt19937_64 rng{2901};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0, sim::Tool::None};
+  state.hand = {sim::Card::ChaoticSwell};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Chaotic Swell is a Stadium. Playing a different Stadium replaces the Stadium
+  // already in play: https://api.pokemontcg.io/v2/cards/sm12-187
+  // Path suppresses Rule Box Pokémon Abilities only while it remains in play:
+  // https://api.pokemontcg.io/v2/cards/swsh6-148
+  if (!sim::EngineTestAccess::play_chaotic_swell(engine) ||
+      !sim::EngineTestAccess::ability_available(engine, sim::Card::TapuLeleGX)) {
+    throw std::runtime_error("Chaotic Swell should replace Path and restore Rule Box Pokémon Abilities.");
+  }
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.path_lock_removed || after.stadium != sim::Stadium::ChaoticSwell ||
+      std::find(after.hand.begin(), after.hand.end(), sim::Card::ChaoticSwell) != after.hand.end()) {
+    throw std::runtime_error("Played Chaotic Swell must leave hand and remain in the Stadium zone.");
+  }
+}
+
+void test_combined_item_lock_does_not_block_chaotic_swell() {
+  const sim::Scenario scenario{"chaotic-swell-combined-lock", sim::DciProfile::StrictJit,
+                               sim::LockMode::FullCombined, false, 4};
+  std::mt19937_64 rng{2902};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0, sim::Tool::None};
+  state.hand = {sim::Card::ChaoticSwell};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Chaotic Swell is a Stadium rather than an Item, so Item lock does not prevent
+  // the Path replacement: https://api.pokemontcg.io/v2/cards/sm12-187
+  // Trainer-category rules: https://www.pokemon.com/us/pokemon-tcg/rules
+  if (!sim::EngineTestAccess::play_chaotic_swell(engine) ||
+      !sim::EngineTestAccess::ability_available(engine, sim::Card::RegidragoVstar)) {
+    throw std::runtime_error("Combined Item lock must still allow Chaotic Swell to remove Path.");
+  }
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (after.stadium != sim::Stadium::ChaoticSwell || !after.path_lock_removed) {
+    throw std::runtime_error("The Chaotic Swell Stadium state must persist through combined lock.");
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -237,5 +294,7 @@ int main() {
   test_arven_finds_forest_seal_stone_for_regidrago_vstar();
   test_field_blower_removes_path_style_rule_box_lock();
   test_combined_item_lock_prevents_field_blower();
+  test_chaotic_swell_replaces_path_style_rule_box_lock();
+  test_combined_item_lock_does_not_block_chaotic_swell();
   return 0;
 }

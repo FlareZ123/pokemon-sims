@@ -1,0 +1,142 @@
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import subprocess
+import tempfile
+from contextlib import contextmanager
+from pathlib import Path
+
+TRACE_SPECS = (
+    ("strict-jit/go-second", 3, "strict_jit_go_second"),
+    ("strict-jit/go-first", 4, "strict_jit_go_first"),
+    ("matchup-flex-jit/go-second", 2, "matchup_flex_go_second"),
+    ("strict-jit-turn2-item-lock/go-second", 3, "strict_turn2_item_lock_go_second"),
+    ("strict-jit-rulebox-ability-lock/go-second", 3, "strict_rulebox_lock_go_second"),
+    ("no-discard-control/go-first", 4, "no_discard_control_go_first"),
+)
+
+
+@contextmanager
+def exclusive_lock(path: Path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    try:
+        os.write(descriptor, str(os.getpid()).encode("ascii"))
+        yield
+    finally:
+        os.close(descriptor)
+        path.unlink(missing_ok=True)
+
+
+def atomic_write_text(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        mode="w", encoding="utf-8", newline="\n", dir=path.parent, delete=False
+    ) as handle:
+        handle.write(text)
+        temporary_path = Path(handle.name)
+    os.replace(temporary_path, path)
+
+
+def run(command: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        command,
+        check=check,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+
+
+def find_trace_seed(executable: Path, scenario: str, deadline: int, max_seed: int) -> tuple[int, str]:
+    for seed in range(1, max_seed + 1):
+        completed = run(
+            [
+                str(executable),
+                "--simulate-this",
+                "--scenario",
+                scenario,
+                "--seed",
+                str(seed),
+                "--require-ready-by",
+                str(deadline),
+            ],
+            check=False,
+        )
+        if completed.returncode == 0:
+            return seed, completed.stdout
+    raise RuntimeError(
+        f"No passing seed found for {scenario} by turn {deadline} in 1..{max_seed}."
+    )
+
+
+def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, matrix_seed: int) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    trace_dir = output_dir / "traces"
+    trace_dir.mkdir(parents=True, exist_ok=True)
+
+    manifest: dict[str, object] = {
+        "matrix_seed": matrix_seed,
+        "trials": trials,
+        "traces": [],
+    }
+
+    for scenario, deadline, stem in TRACE_SPECS:
+        seed, trace = find_trace_seed(executable, scenario, deadline, max_seed)
+        file_name = f"{stem}_seed_{seed}.txt"
+        atomic_write_text(trace_dir / file_name, trace)
+        manifest["traces"].append(
+            {
+                "scenario": scenario,
+                "deadline": deadline,
+                "seed": seed,
+                "file": file_name,
+            }
+        )
+
+    matrix_path = output_dir / "simulation_results.csv"
+    run(
+        [
+            str(executable),
+            "--trials",
+            str(trials),
+            "--seed",
+            str(matrix_seed),
+            "--out",
+            str(matrix_path),
+        ]
+    )
+
+    atomic_write_text(
+        output_dir / "baseline_manifest.json",
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+    )
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Regenerate deterministic trace seeds and the aggregate setup matrix."
+    )
+    parser.add_argument("--exe", required=True, type=Path)
+    parser.add_argument("--out-dir", required=True, type=Path)
+    parser.add_argument("--max-seed", type=int, default=5000)
+    parser.add_argument("--trials", type=int, default=100000)
+    parser.add_argument("--matrix-seed", type=int, default=20260705)
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+    executable = args.exe.resolve()
+    output_dir = args.out_dir.resolve()
+    if not executable.is_file():
+        raise FileNotFoundError(executable)
+    with exclusive_lock(output_dir.parent / f".{output_dir.name}.lock"):
+        regenerate(executable, output_dir, args.max_seed, args.trials, args.matrix_seed)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -51,8 +51,11 @@
 #include "trace_engine_v2/part_012.inc"
 #undef play_gladion
 #undef play_arven
+#define use_legacy_star use_legacy_star_original
 #include "trace_engine_v2/part_013.inc"
+#undef use_legacy_star
 #include "trace_engine_v2/part_014a.inc"
+#include "trace_engine_v2/part_013_legacy_star_override.inc"
 #include "trace_engine_v2/part_012_gladion_override.inc"
 #include "trace_engine_v2/part_012_override.inc"
 #include "trace_engine_v2/part_014b.inc"

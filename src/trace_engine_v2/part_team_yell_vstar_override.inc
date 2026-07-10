@@ -42,8 +42,7 @@
 
   bool play_team_yell_vstar_recovery() {
     if (!supporter_allowed() || hand_count(Card::TeamYellsCheer) == 0 || !need_vstar() ||
-        !state_.active || state_.active->card != Card::RegidragoV ||
-        state_.active->entered_turn >= state_.turn ||
+        !has_regidrago_v_that_can_evolve_this_turn() ||
         count_of(state_.discard, Card::RegidragoVstar) == 0) {
       return false;
     }
@@ -58,8 +57,10 @@
     state_.supporter_used = true;
 
     // Team Yell's Cheer may shuffle up to 3 Pokémon and/or Supporter cards other than
-    // itself from discard into the deck. Recover only the VSTAR required by this route:
+    // itself from discard into the deck. The restored VSTAR may evolve any legal
+    // prior-turn Regidrago V in play, including one on the Bench:
     // https://api.pokemontcg.io/v2/cards/swsh9-149
+    // https://www.pokemon.com/us/pokemon-tcg/rules
     if (!remove_one(state_.discard, Card::RegidragoVstar)) {
       throw std::logic_error("Team Yell's Cheer VSTAR target disappeared");
     }

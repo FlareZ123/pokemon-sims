@@ -45,7 +45,13 @@ constexpr bool is_basic(const Card card) {
   }
 }
 
-constexpr bool is_pokemon_v(const Card card) { return card == Card::RegidragoV; }
+// TPCi defines Pokémon V to include Pokémon VSTAR. Forest Seal Stone can remain
+// usable after its Pokémon V evolves into a Pokémon VSTAR:
+// https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
+// https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
+constexpr bool is_pokemon_v(const Card card) {
+  return card == Card::RegidragoV || card == Card::RegidragoVstar;
+}
 constexpr bool is_rule_box_pokemon(const Card card) {
   switch (card) {
     case Card::RegidragoV:

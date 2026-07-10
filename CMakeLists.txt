@@ -125,6 +125,9 @@ target_compile_options(regidrago_celestial_roar_live_route_tests PRIVATE -Wall -
 add_executable(regidrago_roseanne_energy_recovery_tests tests/roseanne_energy_recovery_tests.cpp)
 target_compile_options(regidrago_roseanne_energy_recovery_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+add_executable(regidrago_empty_deck_search_tests tests/empty_deck_search_tests.cpp)
+target_compile_options(regidrago_empty_deck_search_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 enable_testing()
 add_test(NAME regidrago_sim_self_test COMMAND regidrago_sim --self-test)
 add_test(NAME regidrago_policy_fixtures COMMAND regidrago_policy_tests)
@@ -166,6 +169,7 @@ add_test(NAME regidrago_fss_tate_blender COMMAND regidrago_fss_tate_blender_test
 add_test(NAME regidrago_powerglass_end_turn COMMAND regidrago_powerglass_end_turn_tests)
 add_test(NAME regidrago_celestial_roar_live_route COMMAND regidrago_celestial_roar_live_route_tests)
 add_test(NAME regidrago_roseanne_energy_recovery COMMAND regidrago_roseanne_energy_recovery_tests)
+add_test(NAME regidrago_empty_deck_search COMMAND regidrago_empty_deck_search_tests)
 add_test(NAME trace_strict_second_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 --require-ready-by 3)
 add_test(NAME trace_strict_first_t4 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 --require-ready-by 4)
 add_test(NAME trace_flex_second_t2 COMMAND regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2)

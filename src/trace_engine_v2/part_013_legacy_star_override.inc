@@ -42,7 +42,26 @@
     // https://www.pokemon.com/us/pokemon-tcg/rules
     const bool supporter_payload_outlet_in_hand = supporter_allowed() && hand_count(Card::ProfessorBurnet) > 0;
     const bool only_random_payload_line = need_payload() && !item_payload_outlet_in_hand && !supporter_payload_outlet_in_hand;
-    if (!only_random_payload_line) return false;
+
+    // Legacy Star may recover any two cards from discard, so an already-ready payload
+    // does not make the VSTAR Power dead when a known recovery immediately completes a
+    // different setup axis: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // A recovered Basic Energy can be manually attached once during the turn:
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    const bool known_energy_completion = payload_ready() && active_is_vstar() && need_energy() &&
+        !state_.manual_energy_used &&
+        ((grass_needed() > 0 && count_of(state_.discard, Card::Grass) > 0) ||
+         (fire_needed() > 0 && count_of(state_.discard, Card::Fire) > 0));
+    // A recovered Latias ex can be Benched, and Skyliner then gives the Basic Active no
+    // Retreat Cost so a fully powered Benched VSTAR can be promoted this turn:
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    const bool known_latias_completion = payload_ready() && need_active_vstar() && !need_energy() &&
+        state_.active && is_basic(state_.active->card) && bench_space() > 0 &&
+        !in_play(Card::LatiasEx) && ability_available_for_pokemon(Card::LatiasEx) &&
+        count_of(state_.discard, Card::LatiasEx) > 0;
+    if (!only_random_payload_line && !known_energy_completion && !known_latias_completion) return false;
+
     state_.vstar_power_used = true;
     outcome_.used_legacy_star = true;
     std::vector<Card> discarded;

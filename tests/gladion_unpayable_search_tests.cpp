@@ -54,6 +54,66 @@ void test_policy_unavailable_quick_ball() {
   }
 }
 
+void test_blind_gladion_ignores_unpayable_ultra_ball() {
+  const sim::Scenario scenario{"gladion-unpayable-ultra-basic", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{227};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::LatiasEx, 0};
+  state.hand = {sim::Card::Gladion, sim::Card::UltraBall};
+  state.prizes = {sim::Card::RegidragoV, sim::Card::Grass, sim::Card::Fire,
+                  sim::Card::Dipplin, sim::Card::MawileGX, sim::Card::Guzma};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Ultra Ball requires two other cards, so the held copy is not a live Basic
+  // search route. Gladion may exchange itself for the prized Regidrago V:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://api.pokemontcg.io/v2/cards/sm4-95
+  if (!sim::EngineTestAccess::play_gladion(engine)) {
+    throw std::runtime_error("Gladion should recover Regidrago V when Ultra Ball has no two-card cost.");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!contains(after.hand, sim::Card::RegidragoV) ||
+      !contains(after.hand, sim::Card::UltraBall) ||
+      !contains(after.prizes, sim::Card::Gladion)) {
+    throw std::runtime_error("Gladion should exchange for Regidrago V and preserve the unpayable Ultra Ball.");
+  }
+}
+
+void test_blind_gladion_holds_for_payable_ultra_ball() {
+  const sim::Scenario scenario{"gladion-payable-ultra-basic", sim::DciProfile::MatchupFlexJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{228};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::LatiasEx, 0};
+  state.hand = {sim::Card::Gladion, sim::Card::UltraBall,
+                sim::Card::MawileGX, sim::Card::Guzma};
+  state.deck = {sim::Card::RegidragoV};
+  state.prizes = {sim::Card::Grass, sim::Card::Fire, sim::Card::Dipplin};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Matchup-flex policy permits the two visible matchup cards as legal costs, so
+  // Ultra Ball can directly search Regidrago V and Gladion should be preserved:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://api.pokemontcg.io/v2/cards/sm4-95
+  if (sim::EngineTestAccess::play_gladion(engine)) {
+    throw std::runtime_error("Gladion should be held while a payable Ultra Ball can find Regidrago V.");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!contains(after.hand, sim::Card::Gladion) ||
+      !contains(after.hand, sim::Card::UltraBall)) {
+    throw std::runtime_error("The live Ultra Ball route should leave both connectors in hand before Item play.");
+  }
+}
+
 void test_item_locked_forest_seal_stone_is_still_a_vstar_route() {
   // Pokémon Tool cards received an erratum that makes them a category separate from Item cards:
   // https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
@@ -241,6 +301,8 @@ void test_known_prized_vstar_prefers_immediate_gladion_over_arven_fss() {
 
 int main() {
   test_policy_unavailable_quick_ball();
+  test_blind_gladion_ignores_unpayable_ultra_ball();
+  test_blind_gladion_holds_for_payable_ultra_ball();
   test_item_locked_forest_seal_stone_is_still_a_vstar_route();
   test_item_locked_forest_seal_stone_finds_burnet_for_payload();
   test_forest_seal_stone_without_an_open_tool_slot();

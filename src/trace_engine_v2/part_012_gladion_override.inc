@@ -1,6 +1,38 @@
   bool play_gladion() {
     if (!supporter_allowed() || hand_count(Card::Gladion) == 0) return false;
 
+    const auto playable_ultra_search = [this]() {
+      if (item_locked() || hand_count(Card::UltraBall) == 0) return false;
+      const std::vector<Card> original_hand = state_.hand;
+      const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
+      const bool permit_payload = can_play_payload_this_turn();
+      // Ultra Ball requires two other cards. Keep the played copy in hand but
+      // exclude it from both cost selections, allowing a distinct second copy:
+      // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+      const auto first = choose_discard(permit_payload, true, true, Card::UltraBall);
+      if (!first || !remove_one(state_.hand, *first)) {
+        restore_hand();
+        return false;
+      }
+      const auto second = choose_discard(permit_payload && !is_payload(*first),
+                                         true, true, Card::UltraBall);
+      restore_hand();
+      return second.has_value();
+    };
+
+    if (need_regi() && hand_count(Card::RegidragoV) == 0 && hand_count(Card::UltraBall) > 0 &&
+        !playable_ultra_search()) {
+      // Gladion can recover the missing Basic from Prizes. An Ultra Ball that
+      // cannot pay its two-card cost is not a competing route:
+      // https://api.pokemontcg.io/v2/cards/sm4-95
+      // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+      std::vector<Card> held_unpayable_ultra_balls;
+      while (remove_one(state_.hand, Card::UltraBall)) held_unpayable_ultra_balls.push_back(Card::UltraBall);
+      const bool played = play_gladion_original();
+      state_.hand.insert(state_.hand.end(), held_unpayable_ultra_balls.begin(), held_unpayable_ultra_balls.end());
+      return played;
+    }
+
     if (need_vstar() && hand_count(Card::RegidragoVstar) == 0) {
       // Mysterious Treasure needs one other card from hand. Ultra Ball needs two
       // other cards. Only a payable search route may preserve Gladion instead of
@@ -9,24 +41,6 @@
       const bool playable_mysterious_vstar_search = !item_locked() &&
           hand_count(Card::MysteriousTreasure) > 0 &&
           is_legal_cost_available(can_play_payload_this_turn(), true);
-      const auto playable_ultra_vstar_search = [this]() {
-        if (item_locked() || hand_count(Card::UltraBall) == 0) return false;
-        const std::vector<Card> original_hand = state_.hand;
-        const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
-        const bool permit_payload = can_play_payload_this_turn();
-        // The simulated Ultra Ball cannot pay either cost with itself. Separate held
-        // Ultra Ball copies remain legal cost cards under the printed "2 other cards"
-        // requirement: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-        const auto first = choose_discard(permit_payload, true, true, Card::UltraBall);
-        if (!first || !remove_one(state_.hand, *first)) {
-          restore_hand();
-          return false;
-        }
-        const auto second = choose_discard(permit_payload && can_play_payload_this_turn() && !is_payload(*first),
-                                           true, true, Card::UltraBall);
-        restore_hand();
-        return second.has_value();
-      };
       const bool playable_fss_vstar_route = !state_.vstar_power_used &&
           hand_count(Card::ForestSealStone) > 0 &&
           ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
@@ -59,7 +73,7 @@
              return p.card == Card::RegidragoV && p.tool == Tool::None;
            }));
       const bool live_vstar_route = playable_evolution_incense_vstar_route ||
-          playable_mysterious_vstar_search || playable_ultra_vstar_search() ||
+          playable_mysterious_vstar_search || playable_ultra_search() ||
           playable_fss_vstar_route || playable_arven_fss_vstar_route;
       if (live_vstar_route) return false;
 

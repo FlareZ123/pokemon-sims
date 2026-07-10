@@ -65,11 +65,58 @@ void test_roseanne_restores_missing_fire_for_same_turn_vessel_attachment() {
          "The restored Fire Energy should finish attached rather than remain in deck or hand");
 }
 
+void test_roseanne_restores_vstar_and_energy_in_one_supporter_play() {
+  const sim::Scenario scenario{"roseanne-vstar-energy-multimode", sim::DciProfile::NoDiscardControl,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{321};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 1, 1, sim::Tool::None};
+  state.hand = {sim::Card::RoseannesBackup, sim::Card::EvolutionIncense,
+                sim::Card::EarthenVessel, sim::Card::Dipplin};
+  state.deck = {sim::Card::Fire};
+  state.discard = {sim::Card::RegidragoVstar, sim::Card::Grass, sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Roseanne's Backup says "Choose 1 or more," so the Pokémon and Energy modes
+  // may restore Regidrago VSTAR and Grass together:
+  // https://api.pokemontcg.io/v2/cards/swsh9-148
+  // Evolution Incense then finds the restored Evolution Pokémon, Earthen Vessel
+  // finds the restored Basic Energy, and the unused manual attachment completes GGF:
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Play_Basic_Energy_Cards
+  sim::EngineTestAccess::run_turn(engine);
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(after.active && after.active->card == sim::Card::RegidragoVstar &&
+             after.active->grass == 2 && after.active->fire == 1,
+         "Roseanne's combined Pokémon and Energy modes should complete the Active Regidrago VSTAR");
+  expect(after.supporter_used && after.manual_energy_used,
+         "The combined Roseanne route should consume the Supporter and manual attachment");
+  expect(contains(after.discard, sim::Card::RoseannesBackup) &&
+             contains(after.discard, sim::Card::EvolutionIncense) &&
+             contains(after.discard, sim::Card::EarthenVessel) &&
+             contains(after.discard, sim::Card::Dipplin),
+         "The full same-turn search chain should resolve into discard");
+  expect(!contains(after.deck, sim::Card::RegidragoVstar) &&
+             !contains(after.deck, sim::Card::Grass) &&
+             !contains(after.hand, sim::Card::RegidragoVstar) &&
+             !contains(after.hand, sim::Card::Grass),
+         "The restored VSTAR and Grass should finish evolved and attached");
+}
+
 }  // namespace
 
 int main() {
   try {
     test_roseanne_restores_missing_fire_for_same_turn_vessel_attachment();
+    test_roseanne_restores_vstar_and_energy_in_one_supporter_play();
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

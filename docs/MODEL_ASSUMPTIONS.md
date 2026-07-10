@@ -23,7 +23,7 @@ The fixed seed makes each report reproducible. The Monte Carlo standard error sh
 - Regidrago V, Regidrago VSTAR, Tapu Lele-GX, Latias ex, Oricorio, and core search-card state transitions.
 - Regidrago V’s Celestial Roar top-three discard and Basic Energy attachment in its modeled going-second turn-one use: https://api.pokemontcg.io/v2/cards/swsh12-135
 - Mysterious Treasure, Quick Ball, Earthen Vessel, Brilliant Blender, Arven, Crispin, Professor Burnet, Serena draw, Tate & Liza draw, Steven’s Resolve, Gladion, Hisuian Heavy Ball, and Forest Seal Stone routes relevant to setup.
-- Path-style Rule Box Ability suppression.
+- Path-style Rule Box Ability suppression and Field Blower removal while Items are legal.
 - Item-lock restrictions.
 - Strict same-turn payload tracking.
 - Matched-seed deck swap comparisons.
@@ -46,7 +46,7 @@ Many card effects have correct text recorded in `RULES_AND_INTERACTIONS.md`, tho
 - Rolling Iron damage reduction against a modeled attack.
 - Mawile-GX opponent-hand and Bench effects.
 - Guzma’s board state after the setup phase.
-- Channeler, recovery loops, Field Blower targets, Chaotic Swell replacement, or Professor Turo after setup.
+- Channeler, recovery loops, Chaotic Swell replacement, or Professor Turo after setup.
 
 Their discrete value is still preserved in the DCI profiles and swap discussion. This prevents a speed-only model from calling a strong matchup card “worthless.”
 
@@ -99,11 +99,11 @@ Item cards are unavailable for all modeled turns. Forest Seal Stone remains a Po
 
 ### Rule Box Ability lock
 
-The model applies Path-to-the-Peak-style suppression to Rule Box Pokémon Abilities. Tapu Lele-GX, Latias ex, Mawile-GX, and Pokémon VSTAR Abilities are suppressed. Oricorio `sm2-55` has no Rule Box, so Vital Dance remains available: https://api.pokemontcg.io/v2/cards/sm2-55. Apex Dragon remains an attack. Forest Seal Stone’s Tool VSTAR Power remains available where Item lock is absent because its grant is printed on the Tool: https://api.pokemontcg.io/v2/cards/swsh12-156. Path to the Peak removes Abilities from Pokémon with Rule Boxes: https://api.pokemontcg.io/v2/cards/swsh6-148.
+The model applies Path-to-the-Peak-style suppression to Rule Box Pokémon Abilities. Tapu Lele-GX, Latias ex, Mawile-GX, and Pokémon VSTAR Abilities are suppressed while the modeled Path remains in play. Oricorio `sm2-55` has no Rule Box, so Vital Dance remains available: https://api.pokemontcg.io/v2/cards/sm2-55. Apex Dragon remains an attack. Forest Seal Stone’s Tool VSTAR Power remains available because its grant is printed on the Tool: https://api.pokemontcg.io/v2/cards/swsh12-156. Path to the Peak removes Abilities from Pokémon with Rule Boxes: https://api.pokemontcg.io/v2/cards/swsh6-148. When Items are legal, Field Blower may discard the modeled Path and restore those Pokémon Abilities for subsequent actions and turns: https://api.pokemontcg.io/v2/cards/sm2-125.
 
 ### Combined lock
 
-This stacks full Item lock and Rule Box Ability lock. It is a deliberately severe stress test. It should be read as a measure of the deck’s natural raw draws and Supporter-only recovery rather than as a common board state.
+This stacks full Item lock and Rule Box Ability lock. Field Blower remains blocked as an Item, so the Path-style suppression persists. It is a deliberately severe stress test. It should be read as a measure of the deck’s natural raw draws and Supporter-only recovery rather than as a common board state.
 
 ## Prizing implementation
 

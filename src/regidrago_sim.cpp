@@ -51,8 +51,11 @@
 #include "trace_engine_v2/part_012.inc"
 #undef play_gladion
 #undef play_arven
+#define use_celestial_roar use_celestial_roar_original
 #include "trace_engine_v2/part_013.inc"
 #include "trace_engine_v2/part_014a.inc"
+#undef use_celestial_roar
+#include "trace_engine_v2/part_celestial_roar_override.inc"
 #include "trace_engine_v2/part_012_gladion_override.inc"
 #include "trace_engine_v2/part_012_override.inc"
 #include "trace_engine_v2/part_014b.inc"

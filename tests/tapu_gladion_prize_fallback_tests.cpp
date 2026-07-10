@@ -15,6 +15,9 @@ struct EngineTestAccess {
   static bool play_quick_ball(Engine& engine) { return engine.play_quick_ball(false); }
   static bool bench_from_hand(Engine& engine, const Card card) { return engine.bench_from_hand(card, true); }
   static bool play_gladion(Engine& engine) { return engine.play_gladion(); }
+  static bool needs_tapu_connector(const Engine& engine) { return engine.needs_tapu_connector(); }
+  static bool bench_tapu_if_useful(Engine& engine) { return engine.bench_tapu_if_useful(); }
+  static bool play_tate_switch(Engine& engine) { return engine.play_tate_switch(); }
 };
 
 }  // namespace sim
@@ -93,13 +96,48 @@ void test_mysterious_treasure_fallback_uses_tapu_for_prized_vstar() {
   }
 }
 
+void test_wonder_tag_fetches_tate_for_the_only_missing_active_axis() {
+  Fixture fixture{"wonder-tag-tate-switch", 6203};
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0, sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None}};
+  state.hand = {sim::Card::TapuLeleGX};
+  state.deck = {sim::Card::Serena, sim::Card::TateLiza};
+  state.discard = {sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // Wonder Tag can search Tate & Liza, then its switch mode can promote the powered
+  // Benched Regidrago VSTAR using the still-open Supporter play:
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm7-148
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  if (!sim::EngineTestAccess::needs_tapu_connector(fixture.engine) ||
+      !sim::EngineTestAccess::bench_tapu_if_useful(fixture.engine)) {
+    throw std::runtime_error("Tapu Lele-GX should be a live connector for the only missing Active-position axis.");
+  }
+
+  const sim::State& after_wonder_tag = sim::EngineTestAccess::state(fixture.engine);
+  if (!contains(after_wonder_tag.hand, sim::Card::TateLiza) ||
+      contains(after_wonder_tag.hand, sim::Card::Serena)) {
+    throw std::runtime_error("Wonder Tag should prefer Tate & Liza over draw-only Serena when switching completes readiness.");
+  }
+  if (!sim::EngineTestAccess::play_tate_switch(fixture.engine) ||
+      !sim::EngineTestAccess::state(fixture.engine).active ||
+      sim::EngineTestAccess::state(fixture.engine).active->card != sim::Card::RegidragoVstar) {
+    throw std::runtime_error("Tate & Liza should promote the powered Benched Regidrago VSTAR.");
+  }
+}
+
 }  // namespace
 
 int main() {
   try {
     test_quick_ball_fallback_uses_tapu_for_prized_regidrago_v();
     test_mysterious_treasure_fallback_uses_tapu_for_prized_vstar();
-    std::cout << "K1 Tapu Gladion fallback tests passed\n";
+    test_wonder_tag_fetches_tate_for_the_only_missing_active_axis();
+    std::cout << "K1 Tapu connector tests passed\n";
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

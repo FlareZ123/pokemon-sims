@@ -29,7 +29,11 @@
 #include "trace_engine_v2/part_003.inc"
 #include "trace_engine_v2/part_004.inc"
 #include "trace_engine_v2/part_005.inc"
+#define needs_tapu_connector needs_tapu_connector_original
+#define bench_tapu_if_useful bench_tapu_if_useful_original
 #include "trace_engine_v2/part_006.inc"
+#undef bench_tapu_if_useful
+#undef needs_tapu_connector
 #include "trace_engine_v2/part_007.inc"
 #include "trace_engine_v2/part_008a.inc"
 #include "trace_engine_v2/part_008b.inc"
@@ -41,6 +45,7 @@
 #include "trace_engine_v2/part_010.inc"
 #undef play_evolution_incense
 #undef play_ultra_ball
+#include "trace_engine_v2/part_tapu_tate_switch_override.inc"
 #include "trace_engine_v2/part_search_item_overrides.inc"
 #include "trace_engine_v2/part_011.inc"
 #define play_arven play_arven_original
@@ -48,11 +53,17 @@
 #include "trace_engine_v2/part_012.inc"
 #undef play_gladion
 #undef play_arven
+#define use_celestial_roar use_celestial_roar_original
 #include "trace_engine_v2/part_013.inc"
 #include "trace_engine_v2/part_014a.inc"
+#undef use_celestial_roar
+#include "trace_engine_v2/part_celestial_roar_override.inc"
 #include "trace_engine_v2/part_012_gladion_override.inc"
 #include "trace_engine_v2/part_012_override.inc"
+#define choose_supporter choose_supporter_original
 #include "trace_engine_v2/part_014b.inc"
+#undef choose_supporter
+#include "trace_engine_v2/part_team_yell_vstar_override.inc"
 #include "trace_engine_v2/part_014c.inc"
 #include "trace_engine_v2/part_015.inc"
 #include "trace_engine_v2/part_016.inc"

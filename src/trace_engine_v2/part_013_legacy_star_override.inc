@@ -1,0 +1,130 @@
+  bool use_legacy_star() {
+    if (state_.vstar_power_used || !has_vstar() || !ability_available_for_pokemon(Card::RegidragoVstar)) return false;
+    // Card text source: https://api.pokemontcg.io/v2/cards/swsh12-136
+    const bool item_payload_outlet_in_hand = !item_locked() &&
+        (hand_count(Card::BrilliantBlender) > 0 || hand_count(Card::MysteriousTreasure) > 0 ||
+         hand_count(Card::QuickBall) > 0 || hand_count(Card::EarthenVessel) > 0 ||
+         hand_count(Card::UltraBall) > 0);
+    // Item-lock effects prevent Item cards from being played from hand:
+    // https://api.pokemontcg.io/v2/cards/me2pt5-16
+    // A Supporter outlet is live only while the one Supporter play remains available:
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    const bool supporter_payload_outlet_in_hand = supporter_allowed() && hand_count(Card::ProfessorBurnet) > 0;
+    const bool only_random_payload_line = need_payload() && !item_payload_outlet_in_hand && !supporter_payload_outlet_in_hand;
+    if (!only_random_payload_line) return false;
+    state_.vstar_power_used = true;
+    outcome_.used_legacy_star = true;
+    std::vector<Card> discarded;
+    for (int card = 0; card < 7 && !state_.deck.empty(); ++card) {
+      const Card top = state_.deck.back();
+      state_.deck.pop_back();
+      state_.discard.push_back(top);
+      state_.discarded_this_turn.push_back(top);
+      discarded.push_back(top);
+    }
+    std::vector<Card> recovered;
+    // Legacy Star may recover any card after discarding the top 7 cards:
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    const bool blender_payload_line = need_payload() && !item_locked() && payload_might_be_in_deck();
+    if (blender_payload_line && count_of(state_.discard, Card::BrilliantBlender) > 0 && recovered.size() < 2U) {
+      if (!recover_discard_to_hand(Card::BrilliantBlender)) throw std::logic_error("Legacy Star Blender target disappeared");
+      recovered.push_back(Card::BrilliantBlender);
+    }
+    const bool burnet_payload_line = need_payload() && supporter_allowed() && payload_might_be_in_deck();
+    if (burnet_payload_line && count_of(state_.discard, Card::ProfessorBurnet) > 0 && recovered.size() < 2U) {
+      if (!recover_discard_to_hand(Card::ProfessorBurnet)) throw std::logic_error("Legacy Star Burnet target disappeared");
+      recovered.push_back(Card::ProfessorBurnet);
+    }
+
+    // Legacy Star may return Latias ex from discard, and Skyliner then gives the
+    // Basic Active no Retreat Cost: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    const bool latias_retreat_line = need_active_vstar() && state_.active && is_basic(state_.active->card) &&
+        bench_space() > 0 && !in_play(Card::LatiasEx) && ability_available_for_pokemon(Card::LatiasEx);
+    if (latias_retreat_line && count_of(state_.discard, Card::LatiasEx) > 0 && recovered.size() < 2U) {
+      if (!recover_discard_to_hand(Card::LatiasEx)) throw std::logic_error("Legacy Star Latias target disappeared");
+      recovered.push_back(Card::LatiasEx);
+    }
+
+    // Evolution Incense plus a one-discard Item can form a two-card payload bridge:
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    const bool evolution_incense_payload_line = need_payload() && !item_locked() && payload_might_be_in_deck() &&
+        count_of(state_.discard, Card::EvolutionIncense) > 0 && recovered.empty();
+    if (evolution_incense_payload_line) {
+      for (const Card outlet : {Card::MysteriousTreasure, Card::QuickBall, Card::EarthenVessel}) {
+        if (count_of(state_.discard, outlet) == 0) continue;
+        if (!recover_discard_to_hand(Card::EvolutionIncense)) throw std::logic_error("Legacy Star Evolution Incense target disappeared");
+        if (!recover_discard_to_hand(outlet)) throw std::logic_error("Legacy Star hand-discard outlet disappeared");
+        recovered.push_back(Card::EvolutionIncense);
+        recovered.push_back(outlet);
+        break;
+      }
+    }
+
+    // Earthen Vessel can turn one or two Legacy Star recoveries into the exact Basic
+    // Energy needed for the unused manual attachment. Recover Vessel alone when the
+    // hand already supplies its discard cost, or recover a second policy-admissible
+    // cost card from the newly discarded cards: https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    const bool needed_energy_might_remain =
+        (grass_needed() > 0 && might_be_unseen(Card::Grass)) ||
+        (fire_needed() > 0 && might_be_unseen(Card::Fire));
+    if (recovered.size() < 2U && need_energy() && !item_locked() && !state_.manual_energy_used &&
+        needed_energy_might_remain && count_of(state_.discard, Card::EarthenVessel) > 0) {
+      const std::vector<Card> base_hand = state_.hand;
+      const std::vector<Card> base_discard = state_.discard;
+      const std::vector<Card> base_discarded_this_turn = state_.discarded_this_turn;
+      const auto restore = [this, &base_hand, &base_discard, &base_discarded_this_turn]() {
+        state_.hand = base_hand;
+        state_.discard = base_discard;
+        state_.discarded_this_turn = base_discarded_this_turn;
+      };
+
+      bool found_vessel_bridge = false;
+      if (recover_discard_to_hand(Card::EarthenVessel) &&
+          choose_discard(false, true, true, Card::EarthenVessel).has_value()) {
+        recovered.push_back(Card::EarthenVessel);
+        found_vessel_bridge = true;
+      } else {
+        restore();
+      }
+
+      if (!found_vessel_bridge && recovered.empty()) {
+        for (const Card candidate : base_discard) {
+          restore();
+          if (!recover_discard_to_hand(Card::EarthenVessel) || !recover_discard_to_hand(candidate)) continue;
+          if (!choose_discard(false, true, true, Card::EarthenVessel).has_value()) continue;
+          recovered.push_back(Card::EarthenVessel);
+          recovered.push_back(candidate);
+          found_vessel_bridge = true;
+          break;
+        }
+      }
+      if (!found_vessel_bridge) restore();
+    }
+
+    // Recover Basic Energy for a live manual attachment. Crispin and Arven cannot
+    // resolve after a spent Supporter slot, though either remains a valid future-turn
+    // fallback when no payable same-turn recovery bridge above exists:
+    // https://api.pokemontcg.io/v2/cards/sv7-133
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    for (const Card desired : {Card::Grass, Card::Fire, Card::Crispin, Card::Arven}) {
+      if (recovered.size() >= 2U) break;
+      if (is_payload(desired) && strict_payload_timing()) continue;
+      if ((desired == Card::Grass || desired == Card::Fire) && state_.manual_energy_used) continue;
+      const auto it = std::find(state_.discard.begin(), state_.discard.end(), desired);
+      if (it == state_.discard.end()) continue;
+      if (desired == Card::Grass && grass_needed() == 0) continue;
+      if (desired == Card::Fire && fire_needed() == 0) continue;
+      if (!recover_discard_to_hand(desired)) throw std::logic_error("Legacy Star recovery target disappeared");
+      recovered.push_back(desired);
+    }
+    trace("LEGACY STAR", "R-RVS-01; R-VSTAR-01", "Discarded top 7: " + join_cards(discarded) + "; recovered: " + join_cards(recovered) + ".");
+    return true;
+  }

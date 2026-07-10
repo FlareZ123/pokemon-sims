@@ -10,6 +10,7 @@ namespace sim {
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
   static State& state(Engine& engine) { return engine.state_; }
+  static void choose_opening_active(Engine& engine) { engine.choose_opening_active(); }
   static bool bench_from_hand(Engine& engine, Card card, bool resolve_entry) {
     return engine.bench_from_hand(card, resolve_entry);
   }
@@ -32,6 +33,31 @@ int count(const std::vector<sim::Card>& cards, const sim::Card card) {
 
 void expect(const bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);
+}
+
+void test_mawile_starts_active_so_oricorio_keeps_vital_dance() {
+  // Vital Dance triggers only when Oricorio is played from hand onto the Bench
+  // during the turn. Mawile-GX is a Basic Pokémon and can legally take the opening
+  // Active Spot while Oricorio remains in hand:
+  // https://api.pokemontcg.io/v2/cards/sm2-55
+  // https://api.pokemontcg.io/v2/cards/sm11-141
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  sim::Scenario scenario{"oricorio-opening-preservation", sim::DciProfile::StrictJit,
+                         sim::LockMode::None, false, 4};
+  sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{306};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.hand = {sim::Card::Oricorio, sim::Card::MawileGX};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::choose_opening_active(engine);
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(after.active && after.active->card == sim::Card::MawileGX,
+         "Mawile-GX should take the opening Active Spot when it is paired with Oricorio");
+  expect(contains(after.hand, sim::Card::Oricorio),
+         "Oricorio should remain in hand so Vital Dance can trigger when it is Benched during the turn");
 }
 
 void test_oricorio_selects_a_second_legal_energy_for_follow_up_search() {
@@ -68,6 +94,7 @@ void test_oricorio_selects_a_second_legal_energy_for_follow_up_search() {
 
 int main() {
   try {
+    test_mawile_starts_active_so_oricorio_keeps_vital_dance();
     test_oricorio_selects_a_second_legal_energy_for_follow_up_search();
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

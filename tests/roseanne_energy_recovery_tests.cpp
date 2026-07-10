@@ -111,12 +111,48 @@ void test_roseanne_restores_vstar_and_energy_in_one_supporter_play() {
          "The restored VSTAR and Grass should finish evolved and attached");
 }
 
+void test_roseanne_does_not_reuse_incense_as_vessel_cost() {
+  const sim::Scenario scenario{"roseanne-no-shared-search-cost", sim::DciProfile::NoDiscardControl,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{322};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 1, 1, sim::Tool::None};
+  state.hand = {sim::Card::RoseannesBackup, sim::Card::EvolutionIncense, sim::Card::EarthenVessel};
+  state.deck = {sim::Card::Fire};
+  state.discard = {sim::Card::RegidragoVstar, sim::Card::Grass, sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Evolution Incense leaves hand before Earthen Vessel must discard another card.
+  // The same Incense cannot also pay Vessel's later cost:
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  sim::EngineTestAccess::run_turn(engine);
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(after.active && after.active->card == sim::Card::RegidragoVstar &&
+             after.active->grass == 1 && after.active->fire == 1,
+         "The VSTAR-only recovery may resolve, while the unpayable Energy continuation must remain incomplete");
+  expect(after.supporter_used && !after.manual_energy_used,
+         "The unpayable Vessel line must not consume the manual attachment");
+  expect(contains(after.discard, sim::Card::Grass),
+         "Grass must remain in discard when the combined route lacks a distinct Vessel cost");
+  expect(contains(after.hand, sim::Card::EarthenVessel),
+         "Earthen Vessel must remain held when no other card can pay its cost");
+}
+
 }  // namespace
 
 int main() {
   try {
     test_roseanne_restores_missing_fire_for_same_turn_vessel_attachment();
     test_roseanne_restores_vstar_and_energy_in_one_supporter_play();
+    test_roseanne_does_not_reuse_incense_as_vessel_cost();
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

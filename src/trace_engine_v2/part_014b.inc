@@ -160,6 +160,63 @@
     return true;
   }
 
+  bool has_payable_roseanne_energy_vessel() {
+    if (item_locked() || hand_count(Card::EarthenVessel) == 0) return false;
+
+    const std::vector<Card> original_hand = state_.hand;
+    const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
+    if (!remove_one(state_.hand, Card::RoseannesBackup)) return false;
+
+    // Roseanne's Backup leaves hand before Earthen Vessel pays its required discard
+    // cost. The Vessel itself cannot be that other discarded card:
+    // https://api.pokemontcg.io/v2/cards/swsh9-148
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    const bool payable = choose_discard(false, true, true, Card::EarthenVessel).has_value();
+    restore_hand();
+    return payable;
+  }
+
+  bool play_roseanne_energy_recovery() {
+    if (!supporter_allowed() || hand_count(Card::RoseannesBackup) == 0 ||
+        state_.manual_energy_used || !state_.active ||
+        state_.active->card != Card::RegidragoVstar || need_regi() || need_vstar() ||
+        need_active_vstar() || need_payload()) {
+      return false;
+    }
+
+    const int active_grass_needed = std::max(0, 2 - state_.active->grass);
+    const int active_fire_needed = std::max(0, 1 - state_.active->fire);
+    if (active_grass_needed + active_fire_needed != 1) return false;
+    const Card needed_energy = active_grass_needed == 1 ? Card::Grass : Card::Fire;
+
+    // Roseanne's Backup may choose its Energy mode and shuffle one Energy from the
+    // discard pile into the deck. Earthen Vessel can then search that restored Basic
+    // Energy for the still-unused manual attachment in the same turn:
+    // https://api.pokemontcg.io/v2/cards/swsh9-148
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    if (count_of(state_.discard, needed_energy) == 0 || might_be_unseen(needed_energy) ||
+        !has_payable_roseanne_energy_vessel()) {
+      return false;
+    }
+
+    remove_one(state_.hand, Card::RoseannesBackup);
+    state_.discard.push_back(Card::RoseannesBackup);
+    state_.supporter_used = true;
+    if (!remove_one(state_.discard, needed_energy)) {
+      throw std::logic_error("Roseanne's Backup Energy target disappeared");
+    }
+    const auto turn_it = std::find(state_.discarded_this_turn.begin(),
+                                   state_.discarded_this_turn.end(), needed_energy);
+    if (turn_it != state_.discarded_this_turn.end()) state_.discarded_this_turn.erase(turn_it);
+    state_.deck.push_back(needed_energy);
+    shuffle(state_.deck);
+    trace("PLAY SUPPORTER", "R-GAME-SUPPORTER",
+          "Roseanne's Backup shuffled the missing Basic Energy into the deck for a payable same-turn Earthen Vessel search.");
+    return true;
+  }
+
   void choose_supporter() {
     if (!supporter_allowed() || !setup_axis_missing()) return;
 
@@ -189,6 +246,7 @@
     // https://api.pokemontcg.io/v2/cards/swsh1-163
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     if (play_roseanne_vstar_recovery()) return;
+    if (play_roseanne_energy_recovery()) return;
 
     if (prizes_known() && play_gladion()) return;
     if (play_steven()) return;

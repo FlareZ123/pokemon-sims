@@ -17,12 +17,21 @@
     // https://api.pokemontcg.io/v2/cards/sv6-127
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
                                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
-    const bool want_regi = need_regi() && bench_space() > 0;
-    const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0;
+    // Mysterious Treasure searches only the deck after paying its discard cost.
+    // K0 keeps fixed-list targets plausible; K1 requires the inspected deck to
+    // contain the desired Psychic or Dragon Pokémon before spending both cards:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    const bool want_regi = need_regi() && bench_space() > 0 && might_be_unseen(Card::RegidragoV);
+    const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
+                            might_be_unseen(Card::RegidragoVstar);
     const bool want_latias = need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
-                             !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0;
-    const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 && needs_tapu_connector();
-    const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 && needs_oricorio_connector();
+                             !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
+                             might_be_unseen(Card::LatiasEx);
+    const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 &&
+                           needs_tapu_connector() && might_be_unseen(Card::TapuLeleGX);
+    const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 &&
+                                needs_oricorio_connector() && might_be_unseen(Card::Oricorio);
     // Treasure must pay its discard before the fetched payload reaches hand. A later
     // Ultra Ball route is live only when its own two-card cost remains payable:
     // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh12pt5-146

@@ -5,11 +5,19 @@
     if (item_locked() || hand_count(Card::QuickBall) == 0) return false;
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
                                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
-    const bool want_regi = need_regi() && bench_space() > 0;
+    // Quick Ball searches only the deck after paying its discard cost. K0 keeps
+    // fixed-list Basic targets plausible; K1 requires the inspected deck to contain
+    // the desired Basic before spending both cards:
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    const bool want_regi = need_regi() && bench_space() > 0 && might_be_unseen(Card::RegidragoV);
     const bool want_latias = need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
-                             !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0;
-    const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 && needs_tapu_connector();
-    const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 && needs_oricorio_connector();
+                             !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
+                             might_be_unseen(Card::LatiasEx);
+    const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 &&
+                           needs_tapu_connector() && might_be_unseen(Card::TapuLeleGX);
+    const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 &&
+                                needs_oricorio_connector() && might_be_unseen(Card::Oricorio);
     // Quick Ball searches only a Basic Pokémon. Dialga-GX is the only modeled
     // Dragon payload that is Basic; Mega Dragonite ex and Dragapult ex are Stage 2,
     // and Hisuian Goodra VSTAR is a VSTAR Evolution Pokémon:

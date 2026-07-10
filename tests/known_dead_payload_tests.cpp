@@ -10,9 +10,16 @@ namespace sim {
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
   static const State& state(const Engine& engine) { return engine.state_; }
+  static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
   static bool play_heavy_ball(Engine& engine) { return engine.play_heavy_ball(); }
   static bool play_mysterious_treasure(Engine& engine, bool permit_payload) {
     return engine.play_mysterious_treasure(permit_payload);
+  }
+  static bool play_quick_ball(Engine& engine, bool permit_payload) {
+    return engine.play_quick_ball(permit_payload);
+  }
+  static bool play_ultra_ball(Engine& engine, bool permit_payload) {
+    return engine.play_ultra_ball(permit_payload);
   }
   static bool run_search_items_one_step(Engine& engine, bool permit_payload) {
     return engine.run_search_items_one_step(permit_payload);
@@ -116,11 +123,102 @@ void test_burnet_yields_supporter_slot_after_k1() {
   }
 }
 
+void test_mysterious_treasure_holds_when_vstar_is_known_absent() {
+  Fixture fixture{202};
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1};
+  state.hand = {sim::Card::MysteriousTreasure, sim::Card::Dipplin};
+  state.deck = {sim::Card::LatiasEx};
+  state.prizes = {sim::Card::RegidragoVstar, sim::Card::Grass, sim::Card::Fire,
+                  sim::Card::MawileGX, sim::Card::Guzma, sim::Card::Channeler};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(fixture.engine);
+
+  // Mysterious Treasure searches the deck only after discarding a card:
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  if (sim::EngineTestAccess::play_mysterious_treasure(fixture.engine, false)) {
+    throw std::runtime_error("K1 must not spend Treasure and its cost when VSTAR is absent from deck.");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  if (!contains(after.hand, sim::Card::MysteriousTreasure) || !contains(after.hand, sim::Card::Dipplin)) {
+    throw std::runtime_error("Known-dead Treasure route must preserve both hand cards.");
+  }
+}
+
+void test_quick_ball_holds_when_regidrago_is_known_absent() {
+  Fixture fixture{203};
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::LatiasEx, 0};
+  state.hand = {sim::Card::QuickBall, sim::Card::Dipplin};
+  state.deck = {sim::Card::MawileGX};
+  state.prizes = {sim::Card::RegidragoV, sim::Card::Grass, sim::Card::Fire,
+                  sim::Card::RegidragoVstar, sim::Card::Guzma, sim::Card::Channeler};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(fixture.engine);
+
+  // Quick Ball searches the deck for a Basic only after discarding another card:
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  if (sim::EngineTestAccess::play_quick_ball(fixture.engine, false)) {
+    throw std::runtime_error("K1 must not spend Quick Ball and its cost when Regidrago V is absent from deck.");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  if (!contains(after.hand, sim::Card::QuickBall) || !contains(after.hand, sim::Card::Dipplin)) {
+    throw std::runtime_error("Known-dead Quick Ball route must preserve both hand cards.");
+  }
+}
+
+void test_ultra_ball_holds_when_vstar_is_known_absent() {
+  Fixture fixture{204};
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1};
+  state.hand = {sim::Card::UltraBall, sim::Card::Dipplin, sim::Card::MawileGX};
+  state.deck = {sim::Card::LatiasEx};
+  state.prizes = {sim::Card::RegidragoVstar, sim::Card::Grass, sim::Card::Fire,
+                  sim::Card::QuickBall, sim::Card::Guzma, sim::Card::Channeler};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(fixture.engine);
+
+  // Ultra Ball searches the deck only after discarding 2 other cards:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  if (sim::EngineTestAccess::play_ultra_ball(fixture.engine, false)) {
+    throw std::runtime_error("K1 must not spend Ultra Ball and two costs when VSTAR is absent from deck.");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  if (after.hand.size() != 3U || !contains(after.hand, sim::Card::UltraBall)) {
+    throw std::runtime_error("Known-dead Ultra Ball route must preserve all three hand cards.");
+  }
+}
+
+void test_k0_mysterious_treasure_keeps_plausible_vstar_route() {
+  Fixture fixture{205};
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1};
+  state.hand = {sim::Card::MysteriousTreasure, sim::Card::Dipplin};
+  state.deck = {sim::Card::LatiasEx};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // Before legal inspection, fixed-list K0 policy may still treat VSTAR as unseen.
+  // Playing Treasure then establishes deck knowledge under its printed search:
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+  if (!sim::EngineTestAccess::play_mysterious_treasure(fixture.engine, false)) {
+    throw std::runtime_error("K0 must retain the plausible fixed-list Treasure route.");
+  }
+}
+
 }  // namespace
 
 int main() {
   test_blender_yields_to_live_hand_discard_after_k1();
   test_dead_outlet_does_not_make_payload_search_live_after_k1();
   test_burnet_yields_supporter_slot_after_k1();
+  test_mysterious_treasure_holds_when_vstar_is_known_absent();
+  test_quick_ball_holds_when_regidrago_is_known_absent();
+  test_ultra_ball_holds_when_vstar_is_known_absent();
+  test_k0_mysterious_treasure_keeps_plausible_vstar_route();
   return 0;
 }

@@ -82,7 +82,7 @@ The state intentionally excludes opponent hand, damage, knockouts, prize-taking,
 3. Mulligan until at least one Basic is present.
 4. Select a legal Active Basic with a Regidrago V-first priority.
 5. Bench selected legal opening Basics up to the five-slot limit. Opening placements do not trigger “when you play from your hand onto your Bench” Abilities.
-6. Shuffle the remaining deck and place six Prize cards.
+6. Place six Prize cards from the remaining shuffled deck after opening placements; do not shuffle again: https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
 7. On each own turn, draw one card.
 8. Going first blocks Supporters and attacks on turn 1.
 9. A manual Energy attachment is limited to one each turn.

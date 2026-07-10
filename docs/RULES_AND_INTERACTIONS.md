@@ -20,13 +20,13 @@ The simulator models the setup path through the first legal `Apex Dragon` attack
 4. Put six Prize cards face down from the remaining deck.
 5. Determine turn order and begin the game.
 
-The opening hand is therefore selected before Prize cards are placed. The simulator takes six exact Prizes after Active and opening-Bench selection.
+The opening hand is therefore selected before Prize cards are placed. The simulator takes six exact Prizes after Active and opening-Bench selection, without an additional shuffle: https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
 
-At the start of a turn, the player draws one card, except the player who goes first does not draw on that player’s first turn: https://www.pokemon.com/us/pokemon-tcg/rules/
+At the start of every turn, including the first player’s first turn, the player draws one card. The first-player restriction applies to Supporters and attacks: https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Start_Your_Turn https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#First_Turn
 
 ### First-turn and turn limits
 
-- The player going first cannot play a Supporter or attack on that player’s first turn: https://www.pokemon.com/us/pokemon-tcg/rules/
+- The player going first cannot play a Supporter or attack on that player’s first turn: https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#First_Turn
 - A player may attach one Energy from hand each turn. Effects can attach additional Energy.
 - A player may play one Supporter each turn and any number of Items when no effect prevents them.
 - A Pokémon cannot evolve during the player’s first turn or during the turn that Pokémon entered play.
@@ -61,9 +61,11 @@ The modeled Path lock removes Abilities on Rule Box Pokémon. It does not remove
 
 | Card | Modeled consequence | Source |
 |---|---|---|
-| Regidrago V | Celestial Roar is modeled only on going-second turn one, after other legal setup actions. It discards the top three cards and attaches any Energy among them to itself. | https://api.pokemontcg.io/v2/cards/swsh12-135 |
+| Regidrago V | Celestial Roar is modeled on any legal attack turn after other setup actions. It requires one attached Energy, processes the top three cards, and attaches any Energy among them to itself. | https://api.pokemontcg.io/v2/cards/swsh12-135 |
 | Regidrago VSTAR | Apex Dragon needs GGF and uses an attack from a Dragon Pokémon in discard. Legacy Star shares the game-wide VSTAR Power limit. | https://api.pokemontcg.io/v2/cards/swsh12-136 |
 | Forest Seal Stone | Attached Pokémon V can use Tool-printed Star Alchemy. The model allows it to be attached during Item lock because Pokémon Tools are separate from Item cards after the Tool errata. | https://api.pokemontcg.io/v2/cards/swsh12-156 https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata |
+| Chaotic Swell | Replaces the modeled Path to the Peak and restores Rule Box Pokémon Abilities. Its replacement-triggered discard of the incoming Stadium is outside the one-Path removal route modeled here. | https://api.pokemontcg.io/v2/cards/sm12-187 |
+| Powerglass | Attaches one Basic Energy from discard to its own Active holder at the end of the turn, after the attack timing point. That Energy can contribute to readiness on a later turn. | https://api.pokemontcg.io/v2/cards/sv6pt5-63 |
 | Mysterious Treasure | Discard one card from hand to search for a Psychic or Dragon Pokémon. | https://api.pokemontcg.io/v2/cards/sm6-113 |
 | Dipplin | A Dragon Pokémon, therefore a legal Mysterious Treasure target and fallback. Maintainer policy excludes Syrup Catcher from the A/S payload set, readiness predicate, and payload-discard routes. | https://api.pokemontcg.io/v2/cards/sv6-127 |
 | Quick Ball | Discard another card from hand to search for a Basic Pokémon. | https://api.pokemontcg.io/v2/cards/swsh1-179 |
@@ -98,6 +100,6 @@ Connector policy weighs directness, cost, Supporter contention, Item lock, Abili
 
 ## Deliberate bounds
 
-The model does not simulate an opposing deck, damage race, Knock Outs, prize-taking, hand disruption, gust resolution, Bench pressure, post-setup recovery loops, Field Blower target selection, Chaotic Swell replacement, Powerglass end-of-turn handling, or full copied-attack combat effects. Lock scenarios are injected constraints.
+The model does not simulate an opposing deck, damage race, Knock Outs, prize-taking, hand disruption, gust resolution, Bench pressure, post-setup recovery loops, general Field Blower target selection, arbitrary Stadium sequencing beyond the modeled Path-to-Chaotic-Swell removal, or full copied-attack combat effects. Lock scenarios are injected constraints.
 
 The reported percentages are setup-readiness policy estimates under those stated limits. They are neither match-win predictions nor exhaustive proofs of optimal play.

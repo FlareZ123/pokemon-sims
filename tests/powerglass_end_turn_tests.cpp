@@ -12,6 +12,7 @@ struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
   static State& state(Engine& engine) { return engine.state_; }
   static const TrialOutcome& outcome(const Engine& engine) { return engine.outcome_; }
+  static bool play_arven(Engine& engine) { return engine.play_arven(); }
   static bool attach_live_fss(Engine& engine) { return engine.attach_live_fss(); }
   static bool attach_powerglass(Engine& engine) { return engine.attach_powerglass(); }
   static bool resolve_powerglass_end_turn(Engine& engine) { return engine.resolve_powerglass_end_turn(); }
@@ -88,6 +89,41 @@ void test_powerglass_is_attachable_through_item_lock() {
   // prohibit this attachment: https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
   expect(sim::EngineTestAccess::attach_powerglass(engine),
          "Powerglass should remain attachable through Item lock");
+}
+
+void test_arven_falls_back_to_powerglass_after_fss_search_miss() {
+  const sim::Scenario scenario{"arven-powerglass-search-fallback", sim::DciProfile::NoDiscardControl,
+                               sim::LockMode::FullItem, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{304};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+  state.hand = {sim::Card::Arven};
+  state.deck = {sim::Card::Powerglass, sim::Card::Fire};
+  state.prizes = {sim::Card::ForestSealStone};
+  state.discard = {sim::Card::Fire, sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Arven may select a Pokémon Tool. After legal deck inspection proves the
+  // higher-priority Forest Seal Stone absent, Powerglass remains a legal live Tool
+  // target and is attachable through Item lock:
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+  // https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
+  expect(sim::EngineTestAccess::play_arven(engine),
+         "Arven should be played for the plausible Forest Seal Stone or Powerglass Tool route");
+  expect(contains(sim::EngineTestAccess::state(engine).hand, sim::Card::Powerglass),
+         "Arven should take Powerglass after the search proves Forest Seal Stone absent");
+  expect(!contains(sim::EngineTestAccess::state(engine).deck, sim::Card::Powerglass),
+         "The selected Powerglass should leave the deck");
+  expect(contains(sim::EngineTestAccess::state(engine).prizes, sim::Card::ForestSealStone),
+         "The face-down Forest Seal Stone should remain in Prizes");
+  expect(sim::EngineTestAccess::attach_powerglass(engine),
+         "The searched Powerglass should attach to the Active Regidrago VSTAR");
 }
 
 void test_powerglass_does_not_resolve_from_the_bench() {
@@ -210,6 +246,7 @@ int main() {
   try {
     test_powerglass_energy_counts_on_the_following_turn();
     test_powerglass_is_attachable_through_item_lock();
+    test_arven_falls_back_to_powerglass_after_fss_search_miss();
     test_powerglass_does_not_resolve_from_the_bench();
     test_spent_vstar_power_preserves_tool_slot_for_powerglass();
     test_fss_uses_bench_when_powerglass_needs_active_tool_slot();

@@ -174,8 +174,22 @@
         }
       }
     }
-    if (!found && move_deck_to_hand(Card::GoodraVstar)) { found = true; found_card = Card::GoodraVstar; }
-    if (!found && move_deck_to_hand(Card::Dipplin)) { found = true; found_card = Card::Dipplin; }
+    // Once the legal deck search has begun, any present Evolution Pokémon is a
+    // valid fallback. Do not falsely fail while a Stage 2, VSTAR, or Stage 1 remains:
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // https://api.pokemontcg.io/v2/cards/sv6-130
+    // https://api.pokemontcg.io/v2/cards/swsh11-136
+    // https://api.pokemontcg.io/v2/cards/sv6-127
+    if (!found) {
+      for (const Card fallback : {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::Dipplin}) {
+        if (move_deck_to_hand(fallback)) {
+          found = true;
+          found_card = fallback;
+          break;
+        }
+      }
+    }
     shuffle(state_.deck);
     trace("PLAY ITEM", "R-EVOINCENSE-01; R-GAME-ITEM", found ? "Searched an Evolution Pokémon: " + std::string(name(found_card)) + "." : "No Evolution Pokémon remained in deck.");
     return true;

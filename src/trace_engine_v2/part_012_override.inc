@@ -166,6 +166,9 @@
       found.push_back(Card::Powerglass);
     }
     shuffle(state_.deck);
-    trace("PLAY SUPPORTER", "R-ARVEN-01; R-GAME-SUPPORTER; R-POWERGLASS-01", "Searched an Item and a Pokémon Tool: " + join_cards(found) + ".");
+    const bool selected_powerglass = std::find(found.begin(), found.end(), Card::Powerglass) != found.end();
+    trace("PLAY SUPPORTER", selected_powerglass ? "R-ARVEN-01; R-GAME-SUPPORTER; R-POWERGLASS-01"
+                                                : "R-ARVEN-01; R-GAME-SUPPORTER",
+          "Searched an Item and a Pokémon Tool: " + join_cards(found) + ".");
     return true;
   }

@@ -11,6 +11,29 @@
     if (missing_grass + missing_fire != 1) return false;
     const Card needed_energy = missing_grass == 1 ? Card::Grass : Card::Fire;
 
+    const auto evolution_incense_then_vessel_is_payable = [this]() {
+      if (item_locked() || hand_count(Card::EvolutionIncense) == 0 ||
+          hand_count(Card::EarthenVessel) == 0) {
+        return false;
+      }
+      const std::vector<Card> original_hand = state_.hand;
+      const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
+      // Roseanne's Backup and Evolution Incense both leave the hand before Earthen
+      // Vessel pays its required discard cost. Test the exact remaining hand so one
+      // card cannot be counted as the cost of both searches:
+      // https://api.pokemontcg.io/v2/cards/swsh9-148
+      // https://api.pokemontcg.io/v2/cards/swsh1-163
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      if (!remove_one(state_.hand, Card::RoseannesBackup) ||
+          !remove_one(state_.hand, Card::EvolutionIncense)) {
+        restore_hand();
+        return false;
+      }
+      const bool payable = choose_discard(false, true, true, Card::EarthenVessel).has_value();
+      restore_hand();
+      return payable;
+    };
+
     // Roseanne's Backup says "Choose 1 or more," so its Pokémon and Energy
     // modes may resolve together in the same Supporter play:
     // https://api.pokemontcg.io/v2/cards/swsh9-148
@@ -22,7 +45,7 @@
     // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Play_Basic_Energy_Cards
     if (count_of(state_.discard, needed_energy) == 0 ||
         might_be_unseen(Card::RegidragoVstar) || might_be_unseen(needed_energy) ||
-        !has_payable_roseanne_vstar_search() || !has_payable_roseanne_energy_vessel()) {
+        !evolution_incense_then_vessel_is_payable()) {
       return false;
     }
 
@@ -47,6 +70,6 @@
     shuffle(state_.deck);
     trace("PLAY SUPPORTER", "R-GAME-SUPPORTER",
           "Roseanne's Backup chose both Pokémon and Energy modes, restoring Regidrago VSTAR and " +
-              std::string(name(needed_energy)) + " for payable same-turn searches.");
+              std::string(name(needed_energy)) + " for Evolution Incense and Earthen Vessel.");
     return true;
   }

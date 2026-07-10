@@ -23,6 +23,12 @@ jobs:
             find build/Testing -name LastTest.log -type f -print -exec cat {} \; || true
             exit "$status"
           }
+      - name: T2 T3 probability matrix
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260710 --out build/ci_t2_t3_matrix.csv
+          echo '===== T2 T3 MATRIX BEGIN ====='
+          cat build/ci_t2_t3_matrix.csv
+          echo '===== T2 T3 MATRIX END ====='
       - name: Upload CTest diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -31,6 +37,7 @@ jobs:
           path: |
             build/Testing
             build.log
+            build/ci_t2_t3_matrix.csv
           if-no-files-found: warn
 
   sanitizers:

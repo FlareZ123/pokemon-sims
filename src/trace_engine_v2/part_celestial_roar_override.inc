@@ -17,6 +17,28 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-135
     if (state_.active->grass + state_.active->fire < 1) return false;
 
+    // Celestial Roar can advance GGF only when a currently needed Energy type may
+    // remain in the deck. After K1, might_be_unseen() uses the inspected deck exactly;
+    // before K1, it uses only public fixed-list counts:
+    // https://api.pokemontcg.io/v2/cards/swsh12-135
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+    const bool needed_energy_might_be_in_deck =
+        (state_.active->grass < 2 && might_be_unseen(Card::Grass)) ||
+        (state_.active->fire < 1 && might_be_unseen(Card::Fire));
+    // No-discard-control may still use the random top-three effect to bank a missing
+    // Dragon payload. Strict and matchup-flex JIT require the payload to enter discard
+    // during the later ready turn, so an attack by unevolved Regidrago V cannot advance
+    // that axis for them:
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+    const bool payload_banking_might_advance = !strict_payload_timing() && need_payload() &&
+                                               payload_might_be_in_deck();
+    if (!needed_energy_might_be_in_deck && !payload_banking_might_advance) {
+      trace("HOLD ATTACK", "R-RV-01; P-KNOWLEDGE-01; P-JIT-01",
+            "Celestial Roar cannot attach a needed Energy or bank a permitted payload from the known remaining deck.");
+      return false;
+    }
+
     std::vector<Card> processed;
     std::vector<Card> attached;
     std::vector<Card> discarded;

@@ -107,7 +107,13 @@
 
   bool play_evolution_incense(const bool permit_payload = false) {
     if (item_locked() || hand_count(Card::EvolutionIncense) == 0) return false;
-    const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0;
+    // Before K1, the fixed-list copy may still be in deck. After legal inspection,
+    // do not spend Incense for the VSTAR axis when Regidrago VSTAR is known absent:
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
+                            might_be_unseen(Card::RegidragoVstar);
     // Evolution Incense can search any Evolution Pokémon. A JIT payload search is
     // live only when a separate card already in hand can discard that payload:
     // https://api.pokemontcg.io/v2/cards/swsh1-163

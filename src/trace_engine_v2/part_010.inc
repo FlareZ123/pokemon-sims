@@ -83,8 +83,20 @@
   bool play_earthen_vessel(const bool permit_payload) {
     if (item_locked() || hand_count(Card::EarthenVessel) == 0) return false;
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() && std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
-    if (!need_energy() && !can_jit_discard) return false;
-    const auto cost = choose_discard(can_jit_discard, true);
+    // Earthen Vessel searches Basic Energy only after discarding another card. Once
+    // K1 proves no needed modeled Basic Energy remains, preserve both hand cards
+    // unless Vessel is still the current-turn outlet for an in-hand Dragon payload:
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    const bool needed_energy_might_be_in_deck =
+        (grass_needed() > 0 && might_be_unseen(Card::Grass)) ||
+        (fire_needed() > 0 && might_be_unseen(Card::Fire));
+    if ((!need_energy() || !needed_energy_might_be_in_deck) && !can_jit_discard) return false;
+    // The Earthen Vessel being played cannot discard itself. A held Ultra Ball is
+    // a distinct card in hand and remains a legal cost even when Ultra Ball cannot
+    // pay its own two-card play cost: https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    const auto cost = choose_discard(can_jit_discard, true, true, Card::EarthenVessel);
     if (!cost) return false;
     remove_one(state_.hand, Card::EarthenVessel);
     state_.discard.push_back(Card::EarthenVessel);

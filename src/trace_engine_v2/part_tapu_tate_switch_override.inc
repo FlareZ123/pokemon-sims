@@ -1,4 +1,4 @@
-  bool needs_tapu_connector() const {
+  bool needs_tapu_connector() {
     if (needs_tapu_connector_original()) return true;
 
     // Wonder Tag can search Tate & Liza, whose switch mode immediately promotes a

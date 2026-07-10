@@ -63,12 +63,19 @@ void test_fss_uses_a_fallback_when_vstar_is_not_in_deck() {
   expect(contains(EngineTestAccess::state(f.engine).hand, Card::ProfessorBurnet), "Star Alchemy should take the remaining live payload fallback instead of dead Crispin.");
 }
 
+// Historical fixture identifier retained because the runner list is split across include files.
 void test_fss_cannot_be_used_from_a_vstar_holder() {
-  State s = state(2, Card::RegidragoVstar, 0, 2, 1);
+  State s = state(2, Card::RegidragoVstar, 0, 2, 0);
   s.active->tool = Tool::ForestSealStone;
-  s.deck = {Card::Arven};
+  s.deck = {Card::Fire};
   Fixture f(scenario("fss-vstar"), s);
-  expect(!EngineTestAccess::use_fss(f.engine), "Forest Seal Stone must not grant Star Alchemy to the evolved VSTAR holder.");
+  // Pokémon V includes Pokémon VSTAR, so the evolved holder retains Star Alchemy:
+  // https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
+  // https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
+  expect(EngineTestAccess::use_fss(f.engine),
+         "Forest Seal Stone must grant Star Alchemy to the evolved Pokémon VSTAR holder.");
+  expect(contains(EngineTestAccess::state(f.engine).hand, Card::Fire),
+         "Star Alchemy should search the missing Fire Energy from the VSTAR holder.");
 }
 
 void test_existing_fss_is_usable_under_item_lock() {

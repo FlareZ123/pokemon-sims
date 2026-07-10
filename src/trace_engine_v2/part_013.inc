@@ -21,10 +21,38 @@
     if (state_.vstar_power_used || !has_vstar() || !ability_available_for_pokemon(Card::RegidragoVstar)) return false;
     // Card text source: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Use only when no direct payload outlet or direct connector remains and the discard-7 can create a JIT payload line.
+    const bool permit_payload_cost = can_play_payload_this_turn() &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    const auto one_discard_item_payable = [this, permit_payload_cost](const Card item) {
+      if (hand_count(item) == 0) return false;
+      // These Items require a card other than the played Item to pay their cost:
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://api.pokemontcg.io/v2/cards/swsh1-179
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      return choose_discard(permit_payload_cost, true, true, item).has_value();
+    };
+    const auto ultra_ball_payable = [this, permit_payload_cost]() {
+      if (hand_count(Card::UltraBall) == 0) return false;
+      const std::vector<Card> original_hand = state_.hand;
+      const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
+      const auto first = choose_discard(permit_payload_cost, true, true, Card::UltraBall);
+      if (!first || !remove_one(state_.hand, *first)) {
+        restore_hand();
+        return false;
+      }
+      const auto second = choose_discard(can_play_payload_this_turn() && !is_payload(*first),
+                                         true, true, Card::UltraBall);
+      restore_hand();
+      // Ultra Ball requires two other cards, so both selections must exist:
+      // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+      return second.has_value();
+    };
     const bool item_payload_outlet_in_hand = !item_locked() &&
-        (hand_count(Card::BrilliantBlender) > 0 || hand_count(Card::MysteriousTreasure) > 0 ||
-         hand_count(Card::QuickBall) > 0 || hand_count(Card::EarthenVessel) > 0 ||
-         hand_count(Card::UltraBall) > 0);
+        (hand_count(Card::BrilliantBlender) > 0 ||
+         one_discard_item_payable(Card::MysteriousTreasure) ||
+         one_discard_item_payable(Card::QuickBall) ||
+         one_discard_item_payable(Card::EarthenVessel) ||
+         ultra_ball_payable());
     // Item-lock effects prevent Item cards from being played from hand, so locked
     // hand Items cannot suppress Legacy Star as the only random payload line:
     // https://api.pokemontcg.io/v2/cards/me2pt5-16

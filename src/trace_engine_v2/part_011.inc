@@ -53,6 +53,15 @@
         if (move_deck_to_hand(fallback)) { target = fallback; found = true; break; }
       }
     }
+    // Star Alchemy searches for any card. Once its VSTAR Power has been used and
+    // the deck is legally inspected, take an actually present card rather than
+    // falsely resolving for nothing from a nonempty deck:
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://compendium.pokegym.net/category/2-meta-rulings/
+    if (!found && !state_.deck.empty()) {
+      target = state_.deck.back();
+      found = move_deck_to_hand(target);
+    }
     shuffle(state_.deck);
     trace("STAR ALCHEMY", "R-FSS-02; R-VSTAR-01", found ? "Searched any card: " + std::string(name(target)) + "." : "No card remained in deck.");
     return true;

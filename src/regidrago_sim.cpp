@@ -42,11 +42,14 @@
 #define play_ultra_ball play_ultra_ball_original
 #include "trace_engine_v2/part_009b2.inc"
 #define play_evolution_incense play_evolution_incense_original
+#define fss_target_after_search_started fss_target_after_search_started_original
 #include "trace_engine_v2/part_010.inc"
+#undef fss_target_after_search_started
 #undef play_evolution_incense
 #undef play_ultra_ball
 #include "trace_engine_v2/part_tapu_tate_switch_override.inc"
 #include "trace_engine_v2/part_search_item_overrides.inc"
+#include "trace_engine_v2/part_010_fss_override.inc"
 #include "trace_engine_v2/part_011.inc"
 #define play_arven play_arven_original
 #define play_gladion play_gladion_original

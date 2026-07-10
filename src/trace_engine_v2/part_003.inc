@@ -92,8 +92,14 @@ class Engine {
   // https://api.pokemontcg.io/v2/cards/swsh10-146
   bool might_be_unseen(const Card card) const {
     if (deck_seen_ || prizes_revealed_) return deck_count_after_search_started(card) > 0;
+    // An evolved Regidrago VSTAR remains a public Evolution stack containing the
+    // Regidrago V it evolved from. Count that underlying Basic for fixed-list K0
+    // copy accounting without changing strategic counts of unevolved Pokémon:
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    const int evolved_regidrago_bases = card == Card::RegidragoV ? in_play_count(Card::RegidragoVstar) : 0;
     const int known = hand_count(card) + count_of(state_.discard, card) + in_play_count(card) +
-                      attached_public_count(card);
+                      evolved_regidrago_bases + attached_public_count(card);
     return total_copies(card) > known;
   }
 

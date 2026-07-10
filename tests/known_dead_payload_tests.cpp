@@ -25,6 +25,9 @@ struct EngineTestAccess {
     return engine.run_search_items_one_step(permit_payload);
   }
   static void choose_supporter(Engine& engine) { engine.choose_supporter(); }
+  static bool might_be_unseen(const Engine& engine, const Card card) {
+    return engine.might_be_unseen(card);
+  }
 };
 
 }  // namespace sim
@@ -210,6 +213,25 @@ void test_k0_mysterious_treasure_keeps_plausible_vstar_route() {
   }
 }
 
+void test_k0_counts_the_regidrago_v_under_an_evolved_vstar() {
+  Fixture fixture{226};
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoV, 1}};
+  state.hand = {sim::Card::RegidragoV};
+  state.discard = {sim::Card::RegidragoV};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // The Regidrago V beneath an evolved Regidrago VSTAR remains in the public
+  // Evolution stack, so all four fixed-list Basic copies are accounted for:
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  if (sim::EngineTestAccess::might_be_unseen(fixture.engine, sim::Card::RegidragoV)) {
+    throw std::runtime_error("K0 must not invent a fifth Regidrago V after one copy evolved into VSTAR.");
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -220,5 +242,6 @@ int main() {
   test_quick_ball_holds_when_regidrago_is_known_absent();
   test_ultra_ball_holds_when_vstar_is_known_absent();
   test_k0_mysterious_treasure_keeps_plausible_vstar_route();
+  test_k0_counts_the_regidrago_v_under_an_evolved_vstar();
   return 0;
 }

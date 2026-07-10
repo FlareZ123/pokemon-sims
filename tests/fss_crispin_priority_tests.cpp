@@ -115,11 +115,46 @@ void test_star_alchemy_fetches_oricorio_when_crispin_blocks_burnet() {
   assert(EngineTestAccess::outcome(engine).first_ready_turn == 2);
 }
 
+void test_arven_fss_fetches_raw_energy_after_supporter_use() {
+  using namespace sim;
+  const Scenario scenario{"arven-fss-raw-energy", DciProfile::StrictJit, LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(206);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 0, Tool::None};
+  state.hand = {Card::Arven};
+  state.deck = {Card::ForestSealStone, Card::Crispin, Card::Fire};
+  state.discard = {Card::MegaDragonite};
+  state.discarded_this_turn = {Card::MegaDragonite};
+
+  // Arven uses the turn's Supporter play before Forest Seal Stone resolves:
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // Star Alchemy may search the missing Fire Energy directly, and the unused manual
+  // attachment completes GGF while Crispin remains unplayable this turn:
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  EngineTestAccess::run_turn(engine);
+  EngineTestAccess::record_ready(engine);
+
+  assert(state.supporter_used);
+  assert(state.vstar_power_used);
+  assert(state.active && state.active->card == Card::RegidragoVstar);
+  assert(state.active->grass == 2 && state.active->fire == 1);
+  assert(count(state.discard, Card::Arven) == 1);
+  assert(count(state.hand, Card::Crispin) == 0);
+  assert(count(state.deck, Card::Crispin) == 1);
+  assert(EngineTestAccess::outcome(engine).first_ready_turn == 2);
+}
+
 }  // namespace
 
 int main() {
   test_star_alchemy_uses_crispin_for_same_turn_ggf();
   test_star_alchemy_keeps_vessel_priority_without_same_turn_crispin_completion();
   test_star_alchemy_fetches_oricorio_when_crispin_blocks_burnet();
+  test_arven_fss_fetches_raw_energy_after_supporter_use();
   return 0;
 }

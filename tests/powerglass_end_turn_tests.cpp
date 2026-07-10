@@ -144,6 +144,39 @@ void test_spent_vstar_power_preserves_tool_slot_for_powerglass() {
          "The Active Regidrago VSTAR should hold the live Powerglass");
 }
 
+void test_fss_uses_bench_when_powerglass_needs_active_tool_slot() {
+  const sim::Scenario scenario{"fss-bench-powerglass-active", sim::DciProfile::NoDiscardControl,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{205};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0, sim::Tool::None}};
+  state.hand = {sim::Card::ForestSealStone, sim::Card::Powerglass};
+  state.discard = {sim::Card::Fire};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Forest Seal Stone has no Active requirement, Powerglass checks its Active holder,
+  // and each Pokémon has one Tool slot. The legal combined line puts the Stone on the
+  // Benched Pokémon V and reserves the Active slot for Powerglass:
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  expect(sim::EngineTestAccess::attach_live_fss(engine),
+         "Forest Seal Stone should attach to the eligible Benched Pokémon V");
+  expect(sim::EngineTestAccess::state(engine).active->tool == sim::Tool::None,
+         "The Active Tool slot should remain open for Powerglass");
+  expect(sim::EngineTestAccess::state(engine).bench.front().tool == sim::Tool::ForestSealStone,
+         "The Benched Pokémon V should hold Forest Seal Stone");
+  expect(sim::EngineTestAccess::attach_powerglass(engine),
+         "Powerglass should attach to the reserved Active Tool slot");
+  expect(sim::EngineTestAccess::state(engine).active->tool == sim::Tool::Powerglass,
+         "The Active Regidrago VSTAR should hold Powerglass");
+}
+
 void test_powerglass_uses_its_active_holder_instead_of_a_benched_regidrago() {
   const sim::Scenario scenario{"powerglass-active-holder-energy", sim::DciProfile::NoDiscardControl,
                                sim::LockMode::None, false, 4};
@@ -179,6 +212,7 @@ int main() {
     test_powerglass_is_attachable_through_item_lock();
     test_powerglass_does_not_resolve_from_the_bench();
     test_spent_vstar_power_preserves_tool_slot_for_powerglass();
+    test_fss_uses_bench_when_powerglass_needs_active_tool_slot();
     test_powerglass_uses_its_active_holder_instead_of_a_benched_regidrago();
     return 0;
   } catch (const std::exception& error) {

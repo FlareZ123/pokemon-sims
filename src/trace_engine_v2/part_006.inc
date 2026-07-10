@@ -27,7 +27,38 @@
     return true;
   }
 
-  bool can_play_payload_this_turn() const { return payload_window_open() && need_payload(); }
+  bool vstar_can_exist_this_turn() const {
+    if (has_vstar()) return true;
+    if (state_.turn <= 1) return false;
+    const auto can_evolve_now = [this](const Pokemon& pokemon) {
+      // A Pokémon cannot evolve during the turn it entered play:
+      // https://www.pokemon.com/us/pokemon-tcg/rules
+      return pokemon.card == Card::RegidragoV && pokemon.entered_turn < state_.turn;
+    };
+    if (state_.active && can_evolve_now(*state_.active)) return true;
+    return std::any_of(state_.bench.begin(), state_.bench.end(), can_evolve_now);
+  }
+
+  bool sole_known_payload_is_in_hand() const {
+    if (!prizes_known()) return false;
+    const int payloads_in_hand = static_cast<int>(std::count_if(
+        state_.hand.begin(), state_.hand.end(), is_payload));
+    // K1 fixed-list knowledge proves whether another modeled payload remains in
+    // deck. Preserve the sole in-hand payload when no replacement is searchable:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    return payloads_in_hand == 1 && !payload_might_be_in_deck();
+  }
+
+  bool can_play_payload_this_turn() const {
+    if (!payload_window_open() || !need_payload()) return false;
+    if (!strict_payload_timing()) return true;
+    // A prior-turn Regidrago V may evolve this turn. If none exists, only the
+    // K1-proven sole remaining payload is protected; K0 may still spend one of
+    // several possible payloads to establish the future Regidrago line:
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    return vstar_can_exist_this_turn() || !sole_known_payload_is_in_hand();
+  }
 
   // This is a policy knowledge check. Before a legal deck or Prize inspection it
   // relies only on public copies; after K1 it respects the inspected deck state.
@@ -189,8 +220,8 @@
     // Wonder Tag can inspect the deck for Burnet. It is a live direct payload
     // bridge only while a payload may remain in deck: https://api.pokemontcg.io/v2/cards/cel25c-60_A
     const bool needs_burnet = can_play_payload_this_turn() && payload_might_be_in_deck() &&
-                               hand_count(Card::ProfessorBurnet) == 0 && !has_live_blender_payload_line() &&
-                               might_be_unseen(Card::ProfessorBurnet);
+                              hand_count(Card::ProfessorBurnet) == 0 && !has_live_blender_payload_line() &&
+                              might_be_unseen(Card::ProfessorBurnet);
     // A payable Ultra Ball already searches Regidrago VSTAR directly, so Wonder Tag
     // must not spend a Bench slot and Supporter route on indirect Arven:
     // https://api.pokemontcg.io/v2/cards/swsh12pt5-146

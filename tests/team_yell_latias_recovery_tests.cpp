@@ -139,11 +139,47 @@ void test_team_yell_restores_vstar_and_latias_in_one_resolution() {
   assert(contains(state.discarded_this_turn, Card::MegaDragonite));
 }
 
+void test_team_yell_does_not_reuse_incense_as_quick_ball_cost() {
+  using namespace sim;
+  const Scenario scenario{"team-yell-no-shared-search-cost", DciProfile::StrictJit, LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(325);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::TapuLeleGX, 1, 0, 0, Tool::None};
+  state.bench.push_back(Pokemon{Card::RegidragoV, 1, 2, 1, Tool::None});
+  state.hand = {Card::TeamYellsCheer, Card::EvolutionIncense, Card::QuickBall};
+  state.deck = {Card::Grass};
+  state.discard = {Card::RegidragoVstar, Card::LatiasEx, Card::MegaDragonite};
+  state.discarded_this_turn = {Card::MegaDragonite};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Evolution Incense is consumed while searching Regidrago VSTAR, so it cannot
+  // later become Quick Ball's required discard cost:
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  EngineTestAccess::run_turn(engine);
+
+  assert(state.supporter_used);
+  assert(state.active.has_value());
+  assert(state.active->card == Card::TapuLeleGX);
+  assert(!state.retreat_used);
+  assert(contains(state.discard, Card::TeamYellsCheer));
+  assert(contains(state.discard, Card::EvolutionIncense));
+  assert(contains(state.hand, Card::QuickBall));
+  assert(contains(state.discard, Card::LatiasEx));
+  assert(std::any_of(state.bench.begin(), state.bench.end(), [](const Pokemon& pokemon) {
+    return pokemon.card == Card::RegidragoVstar && pokemon.grass == 2 && pokemon.fire == 1;
+  }));
+}
+
 }  // namespace
 
 int main() {
   test_team_yell_restores_payable_latias_promotion_route();
   test_team_yell_holds_when_latias_search_cost_is_unpayable();
   test_team_yell_restores_vstar_and_latias_in_one_resolution();
+  test_team_yell_does_not_reuse_incense_as_quick_ball_cost();
   return 0;
 }

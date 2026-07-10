@@ -10,6 +10,7 @@ namespace sim {
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
   static const State& state(const Engine& engine) { return engine.state_; }
+  static State& state(Engine& engine) { return engine.state_; }
   static bool play_mysterious_treasure(Engine& engine, const bool permit_payload) {
     return engine.play_mysterious_treasure(permit_payload);
   }
@@ -25,6 +26,7 @@ struct EngineTestAccess {
   static bool bench_from_hand(Engine& engine, const Card card, const bool resolve_entry) {
     return engine.bench_from_hand(card, resolve_entry);
   }
+  static void play_basics_from_hand(Engine& engine) { engine.play_basics_from_hand(); }
 };
 
 }  // namespace sim
@@ -33,6 +35,12 @@ namespace {
 
 bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
   return std::find(cards.begin(), cards.end(), card) != cards.end();
+}
+
+bool benched(const sim::State& state, const sim::Card card) {
+  return std::any_of(state.bench.begin(), state.bench.end(), [card](const sim::Pokemon& pokemon) {
+    return pokemon.card == card;
+  });
 }
 
 void test_ultra_ball_prefers_tapu_over_irrelevant_fallback() {
@@ -202,6 +210,67 @@ void test_duplicate_search_items_form_current_turn_payload_chain() {
   }
 }
 
+void test_tapu_is_preserved_when_ultra_ball_directly_finds_vstar() {
+  const sim::Scenario scenario{"tapulelegx-redundant-arven", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{220};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1, sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoV, 1}};
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::UltraBall,
+                sim::Card::Dipplin, sim::Card::RegidragoV};
+  state.deck = {sim::Card::RegidragoVstar, sim::Card::Arven};
+  state.discard = {sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Ultra Ball directly finds Regidrago VSTAR after two legal costs. Wonder Tag
+  // into Arven would spend a Bench slot and the Supporter route for the same axis:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  sim::EngineTestAccess::play_basics_from_hand(engine);
+  if (!contains(sim::EngineTestAccess::state(engine).hand, sim::Card::TapuLeleGX) ||
+      benched(sim::EngineTestAccess::state(engine), sim::Card::TapuLeleGX)) {
+    throw std::runtime_error("Tapu Lele-GX should be preserved while payable Ultra Ball directly covers VSTAR.");
+  }
+  if (!sim::EngineTestAccess::play_ultra_ball(engine, false) ||
+      !contains(sim::EngineTestAccess::state(engine).hand, sim::Card::RegidragoVstar)) {
+    throw std::runtime_error("The preserved direct Ultra Ball route should fetch Regidrago VSTAR.");
+  }
+}
+
+void test_tapu_remains_live_when_ultra_ball_is_unpayable() {
+  const sim::Scenario scenario{"tapulelegx-unpayable-ultra", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{221};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::UltraBall};
+  state.deck = {sim::Card::RegidragoVstar, sim::Card::Arven};
+  state.discard = {sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Ultra Ball needs two other cards, so this copy is not a direct VSTAR route:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // Wonder Tag may therefore remain the live Arven connector:
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  sim::EngineTestAccess::play_basics_from_hand(engine);
+  if (!benched(sim::EngineTestAccess::state(engine), sim::Card::TapuLeleGX) ||
+      !contains(sim::EngineTestAccess::state(engine).hand, sim::Card::Arven)) {
+    throw std::runtime_error("An unpayable Ultra Ball must not suppress the live Tapu Lele-GX connector.");
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -209,6 +278,8 @@ int main() {
     test_ultra_ball_prefers_tapu_over_irrelevant_fallback();
     test_ultra_ball_hands_a_payload_to_earthen_vessel();
     test_duplicate_search_items_form_current_turn_payload_chain();
+    test_tapu_is_preserved_when_ultra_ball_directly_finds_vstar();
+    test_tapu_remains_live_when_ultra_ball_is_unpayable();
     std::cout << "ultra ball connector tests passed\n";
     return 0;
   } catch (const std::exception& error) {

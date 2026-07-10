@@ -42,6 +42,7 @@ struct State {
   bool retreat_used{false};
   bool vstar_power_used{false};
   bool turn_ended{false};
+  bool path_lock_removed{false};
 };
 
 struct TrialOutcome {

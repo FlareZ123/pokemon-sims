@@ -18,6 +18,7 @@ struct EngineTestAccess {
   static bool play_evolution_incense(Engine& engine, const bool permit_payload) { return engine.play_evolution_incense(permit_payload); }
   static bool play_gladion(Engine& engine) { return engine.play_gladion(); }
   static bool play_arven(Engine& engine) { return engine.play_arven(); }
+  static bool attach_manual(Engine& engine) { return engine.attach_manual(); }
 };
 
 }  // namespace sim
@@ -211,6 +212,95 @@ void test_quick_ball_holds_false_single_ultra_ball_payload_line() {
          "Rejecting the false Quick Ball continuation must preserve the exact state.");
 }
 
+sim::State energy_target_state(const bool active_can_evolve, const bool with_latias,
+                               const bool with_tate, const bool payload_is_ready) {
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, active_can_evolve ? 1 : 2,
+                              1, 0, sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 1, 0, 0, sim::Tool::None}};
+  if (with_latias) state.bench.push_back(sim::Pokemon{sim::Card::LatiasEx, 1});
+  state.hand = {sim::Card::Grass};
+  if (active_can_evolve) state.hand.push_back(sim::Card::RegidragoVstar);
+  if (with_tate) state.hand.push_back(sim::Card::TateLiza);
+  if (payload_is_ready) {
+    state.discard = {sim::Card::MegaDragonite};
+    state.discarded_this_turn = {sim::Card::MegaDragonite};
+  }
+  return state;
+}
+
+void test_latias_route_powers_existing_benched_vstar() {
+  const sim::Scenario scenario{"latias-benched-vstar-energy", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{215};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(engine, energy_target_state(false, true, false, true));
+
+  // Latias ex gives the Basic Active no Retreat Cost, so the Benched Regidrago
+  // VSTAR is the reachable attacker and should receive the manual Energy:
+  // https://api.pokemontcg.io/v2/cards/sv8-76
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  expect(sim::EngineTestAccess::attach_manual(engine),
+         "The Latias route should permit a manual attachment to the Benched VSTAR.");
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(after.active->grass == 1 && after.bench.front().grass == 1,
+         "The Energy should move to the reachable Benched VSTAR instead of the stranded Active Basic.");
+}
+
+void test_tate_route_powers_existing_benched_vstar_when_payload_ready() {
+  const sim::Scenario scenario{"tate-benched-vstar-energy", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{216};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(engine, energy_target_state(false, false, true, true));
+
+  // Tate & Liza can switch the powered Benched VSTAR Active. The payload is already
+  // ready, so using the Supporter does not displace Professor Burnet:
+  // https://api.pokemontcg.io/v2/cards/sm7-148
+  expect(sim::EngineTestAccess::attach_manual(engine),
+         "The Tate switch route should permit a manual attachment to the Benched VSTAR.");
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(after.active->grass == 1 && after.bench.front().grass == 1,
+         "The Energy should target the Benched VSTAR reachable through Tate & Liza.");
+}
+
+void test_stranded_benched_vstar_does_not_steal_energy() {
+  const sim::Scenario scenario{"stranded-benched-vstar-energy", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{217};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(engine, energy_target_state(false, false, false, true));
+
+  expect(sim::EngineTestAccess::attach_manual(engine),
+         "The Active Regidrago line should remain the best reachable target.");
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(after.active->grass == 2 && after.bench.front().grass == 0,
+         "A stranded Benched VSTAR must not receive the route bonus.");
+}
+
+void test_active_evolution_route_keeps_energy_on_active_regidrago() {
+  const sim::Scenario scenario{"active-evolution-energy", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{218};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(engine, energy_target_state(true, true, false, true));
+
+  // A prior-turn Active Regidrago V with Regidrago VSTAR in hand can legally evolve
+  // this turn, so its direct evolution route remains preferred:
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  expect(sim::EngineTestAccess::attach_manual(engine),
+         "The legal Active evolution route should receive the manual Energy.");
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(after.active->grass == 2 && after.bench.front().grass == 0,
+         "Latias must not redirect Energy away from an immediately evolvable Active Regidrago V.");
+}
+
 }  // namespace
 
 int main() {
@@ -222,6 +312,10 @@ int main() {
     test_gladion_is_held_for_arven_forest_seal_stone_under_item_lock();
     test_mysterious_treasure_holds_false_single_ultra_ball_payload_line();
     test_quick_ball_holds_false_single_ultra_ball_payload_line();
+    test_latias_route_powers_existing_benched_vstar();
+    test_tate_route_powers_existing_benched_vstar_when_payload_ready();
+    test_stranded_benched_vstar_does_not_steal_energy();
+    test_active_evolution_route_keeps_energy_on_active_regidrago();
     std::cout << "route reconciliation tests passed\n";
     return 0;
   } catch (const std::exception& error) {

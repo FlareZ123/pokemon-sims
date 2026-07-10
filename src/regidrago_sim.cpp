@@ -29,7 +29,11 @@
 #include "trace_engine_v2/part_003.inc"
 #include "trace_engine_v2/part_004.inc"
 #include "trace_engine_v2/part_005.inc"
+#define needs_tapu_connector needs_tapu_connector_original
+#define bench_tapu_if_useful bench_tapu_if_useful_original
 #include "trace_engine_v2/part_006.inc"
+#undef bench_tapu_if_useful
+#undef needs_tapu_connector
 #include "trace_engine_v2/part_007.inc"
 #include "trace_engine_v2/part_008a.inc"
 #include "trace_engine_v2/part_008b.inc"
@@ -43,6 +47,7 @@
 #undef fss_target_after_search_started
 #undef play_evolution_incense
 #undef play_ultra_ball
+#include "trace_engine_v2/part_tapu_tate_switch_override.inc"
 #include "trace_engine_v2/part_search_item_overrides.inc"
 #include "trace_engine_v2/part_010_fss_override.inc"
 #include "trace_engine_v2/part_011.inc"

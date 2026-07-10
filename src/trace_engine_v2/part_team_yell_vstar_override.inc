@@ -74,8 +74,88 @@
     return true;
   }
 
+  bool has_payable_team_yell_latias_search() {
+    if (item_locked()) return false;
+
+    const std::vector<Card> original_hand = state_.hand;
+    const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
+    if (!remove_one(state_.hand, Card::TeamYellsCheer)) return false;
+    const bool permit_payload = can_play_payload_this_turn();
+
+    // Quick Ball and Mysterious Treasure each require one other hand card as their
+    // discard cost before searching Latias ex:
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    for (const Card item : {Card::QuickBall, Card::MysteriousTreasure}) {
+      if (hand_count(item) > 0 && choose_discard(permit_payload, true, true, item).has_value()) {
+        restore_hand();
+        return true;
+      }
+    }
+
+    // Ultra Ball requires two other cards after Team Yell's Cheer leaves hand:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    if (hand_count(Card::UltraBall) > 0) {
+      remove_one(state_.hand, Card::UltraBall);
+      const auto first = choose_discard(permit_payload, true);
+      if (first && remove_one(state_.hand, *first)) {
+        const auto second = choose_discard(permit_payload && !is_payload(*first), true);
+        if (second) {
+          restore_hand();
+          return true;
+        }
+      }
+    }
+
+    restore_hand();
+    return false;
+  }
+
+  bool play_team_yell_latias_recovery() {
+    const bool powered_benched_vstar = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoVstar && pokemon.grass >= 2 && pokemon.fire >= 1;
+        });
+    const bool active_can_evolve_from_hand = state_.active && state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn && hand_count(Card::RegidragoVstar) > 0;
+    if (!supporter_allowed() || hand_count(Card::TeamYellsCheer) == 0 || !need_active_vstar() ||
+        !state_.active || !is_basic(state_.active->card) || active_can_evolve_from_hand ||
+        !powered_benched_vstar || !payload_ready() || state_.retreat_used || bench_space() == 0 ||
+        !ability_available_for_pokemon(Card::LatiasEx) || in_play(Card::LatiasEx) ||
+        count_of(state_.discard, Card::LatiasEx) == 0) {
+      return false;
+    }
+
+    // If Latias ex may already remain in the deck, preserve Team Yell's Cheer and use
+    // the direct search. The recovery route is for the known discarded singleton only.
+    if (might_be_unseen(Card::LatiasEx) || !has_payable_team_yell_latias_search()) return false;
+
+    remove_one(state_.hand, Card::TeamYellsCheer);
+    state_.discard.push_back(Card::TeamYellsCheer);
+    state_.supporter_used = true;
+
+    // Team Yell's Cheer may return Latias ex to the deck. A payable Basic or Psychic
+    // search can then find it, and Skyliner gives the Basic Active no Retreat Cost:
+    // https://api.pokemontcg.io/v2/cards/swsh9-149
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    if (!remove_one(state_.discard, Card::LatiasEx)) {
+      throw std::logic_error("Team Yell's Cheer Latias target disappeared");
+    }
+    const auto turn_it = std::find(state_.discarded_this_turn.begin(),
+                                   state_.discarded_this_turn.end(),
+                                   Card::LatiasEx);
+    if (turn_it != state_.discarded_this_turn.end()) state_.discarded_this_turn.erase(turn_it);
+    state_.deck.push_back(Card::LatiasEx);
+    shuffle(state_.deck);
+    trace("PLAY SUPPORTER", "R-GAME-SUPPORTER",
+          "Team Yell's Cheer shuffled Latias ex from discard into the deck for a payable same-turn search and free-retreat promotion.");
+    return true;
+  }
+
   void choose_supporter() {
     if (!supporter_allowed() || !setup_axis_missing()) return;
     if (play_team_yell_vstar_recovery()) return;
+    if (play_team_yell_latias_recovery()) return;
     choose_supporter_original();
   }

@@ -57,10 +57,13 @@
 #undef play_gladion
 #undef play_arven
 #define use_celestial_roar use_celestial_roar_original
+#define use_legacy_star use_legacy_star_original
 #include "trace_engine_v2/part_013.inc"
+#undef use_legacy_star
 #include "trace_engine_v2/part_014a.inc"
 #undef use_celestial_roar
 #include "trace_engine_v2/part_celestial_roar_override.inc"
+#include "trace_engine_v2/part_013_legacy_star_override.inc"
 #include "trace_engine_v2/part_012_gladion_override.inc"
 #include "trace_engine_v2/part_012_override.inc"
 #define choose_supporter choose_supporter_original

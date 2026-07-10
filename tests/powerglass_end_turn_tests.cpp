@@ -12,6 +12,7 @@ struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
   static State& state(Engine& engine) { return engine.state_; }
   static const TrialOutcome& outcome(const Engine& engine) { return engine.outcome_; }
+  static bool attach_live_fss(Engine& engine) { return engine.attach_live_fss(); }
   static bool attach_powerglass(Engine& engine) { return engine.attach_powerglass(); }
   static bool resolve_powerglass_end_turn(Engine& engine) { return engine.resolve_powerglass_end_turn(); }
   static void record_ready(Engine& engine) { engine.record_ready(); }
@@ -111,6 +112,38 @@ void test_powerglass_does_not_resolve_from_the_bench() {
          "The Fire Energy should remain in discard while the holder is Benched");
 }
 
+void test_spent_vstar_power_preserves_tool_slot_for_powerglass() {
+  const sim::Scenario scenario{"spent-vstar-power-tool-slot", sim::DciProfile::NoDiscardControl,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{204};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+  state.hand = {sim::Card::ForestSealStone, sim::Card::Powerglass};
+  state.discard = {sim::Card::Fire};
+  state.vstar_power_used = true;
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Forest Seal Stone grants a VSTAR Power, but a player may use only one VSTAR
+  // Power per game. Powerglass is the live Tool when that resource is spent:
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+  expect(!sim::EngineTestAccess::attach_live_fss(engine),
+         "Forest Seal Stone should be held after the VSTAR Power is spent");
+  expect(sim::EngineTestAccess::state(engine).active->tool == sim::Tool::None,
+         "The spent Stone must leave the one Tool slot open");
+  expect(contains(sim::EngineTestAccess::state(engine).hand, sim::Card::ForestSealStone),
+         "The dead Forest Seal Stone should remain in hand");
+  expect(sim::EngineTestAccess::attach_powerglass(engine),
+         "Powerglass should use the preserved Tool slot for the live Energy route");
+  expect(sim::EngineTestAccess::state(engine).active->tool == sim::Tool::Powerglass,
+         "The Active Regidrago VSTAR should hold the live Powerglass");
+}
+
 }  // namespace
 
 int main() {
@@ -118,6 +151,7 @@ int main() {
     test_powerglass_energy_counts_on_the_following_turn();
     test_powerglass_is_attachable_through_item_lock();
     test_powerglass_does_not_resolve_from_the_bench();
+    test_spent_vstar_power_preserves_tool_slot_for_powerglass();
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

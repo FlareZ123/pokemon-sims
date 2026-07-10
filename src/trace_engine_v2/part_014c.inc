@@ -15,11 +15,15 @@
     // https://api.pokemontcg.io/v2/cards/sv6pt5-63
     // https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
     if (hand_count(Card::Powerglass) == 0 || !state_.active || state_.active->tool != Tool::None ||
-        (state_.active->card != Card::RegidragoV && state_.active->card != Card::RegidragoVstar) ||
-        !need_energy()) return false;
+        (state_.active->card != Card::RegidragoV && state_.active->card != Card::RegidragoVstar)) return false;
 
-    const bool needed_grass_in_discard = grass_needed() > 0 && count_of(state_.discard, Card::Grass) > 0;
-    const bool needed_fire_in_discard = fire_needed() > 0 && count_of(state_.discard, Card::Fire) > 0;
+    // Powerglass attaches Energy to its own Active holder, not to the policy's
+    // separately selected Regidrago line: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    const int active_grass_needed = std::max(0, 2 - state_.active->grass);
+    const int active_fire_needed = std::max(0, 1 - state_.active->fire);
+    if (active_grass_needed == 0 && active_fire_needed == 0) return false;
+    const bool needed_grass_in_discard = active_grass_needed > 0 && count_of(state_.discard, Card::Grass) > 0;
+    const bool needed_fire_in_discard = active_fire_needed > 0 && count_of(state_.discard, Card::Fire) > 0;
     if (!needed_grass_in_discard && !needed_fire_in_discard) return false;
 
     remove_one(state_.hand, Card::Powerglass);
@@ -32,12 +36,18 @@
   bool resolve_powerglass_end_turn() {
     // Powerglass resolves at the end of the turn after the attack timing point and
     // only while its holder is Active: https://api.pokemontcg.io/v2/cards/sv6pt5-63
-    if (!state_.active || state_.active->tool != Tool::Powerglass || !need_energy()) return false;
+    if (!state_.active || state_.active->tool != Tool::Powerglass) return false;
+
+    // The effect can attach only to the attached Active Pokémon. Determine the
+    // Energy type from that holder's own GGF deficit: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    const int active_grass_needed = std::max(0, 2 - state_.active->grass);
+    const int active_fire_needed = std::max(0, 1 - state_.active->fire);
+    if (active_grass_needed == 0 && active_fire_needed == 0) return false;
 
     Card energy = Card::Grass;
-    if (grass_needed() > 0 && count_of(state_.discard, Card::Grass) > 0) {
+    if (active_grass_needed > 0 && count_of(state_.discard, Card::Grass) > 0) {
       energy = Card::Grass;
-    } else if (fire_needed() > 0 && count_of(state_.discard, Card::Fire) > 0) {
+    } else if (active_fire_needed > 0 && count_of(state_.discard, Card::Fire) > 0) {
       energy = Card::Fire;
     } else {
       return false;

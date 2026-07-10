@@ -12,6 +12,7 @@ struct EngineTestAccess {
   static const State& state(const Engine& engine) { return engine.state_; }
   static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
   static void run_turn(Engine& engine) { engine.run_turn(); }
+  static void play_basics_from_hand(Engine& engine) { engine.play_basics_from_hand(); }
 };
 
 }  // namespace sim
@@ -112,10 +113,88 @@ void test_oricorio_takes_last_bench_slot_over_tapu_for_burnet() {
   }
 }
 
+sim::State four_card_bench_with_active_regi(const sim::Card fourth_filler) {
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 0, sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::LatiasEx, 1},
+                 sim::Pokemon{sim::Card::MawileGX, 1},
+                 sim::Pokemon{sim::Card::DialgaGX, 1},
+                 sim::Pokemon{fourth_filler, 1}};
+  return state;
+}
+
+void test_oricorio_takes_final_slot_over_redundant_regidrago() {
+  const sim::Scenario scenario{"oricorio-before-redundant-regi", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{228};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state = four_card_bench_with_active_regi(sim::Card::TapuLeleGX);
+  state.hand = {sim::Card::RegidragoV, sim::Card::Oricorio,
+                sim::Card::RegidragoVstar, sim::Card::ProfessorBurnet};
+  state.deck = {sim::Card::Fire, sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // The Bench limit is five, and Vital Dance requires Oricorio to be played from
+  // hand to the Bench: https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/sm2-55
+  sim::EngineTestAccess::play_basics_from_hand(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!benched(after, sim::Card::Oricorio) || !contains(after.hand, sim::Card::RegidragoV)) {
+    throw std::runtime_error("Oricorio should take the final slot before a redundant Regidrago V.");
+  }
+}
+
+void test_tapu_takes_final_slot_over_redundant_regidrago() {
+  const sim::Scenario scenario{"tapu-before-redundant-regi", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{229};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state = four_card_bench_with_active_regi(sim::Card::Oricorio);
+  state.hand = {sim::Card::RegidragoV, sim::Card::TapuLeleGX};
+  state.deck = {sim::Card::Arven, sim::Card::EvolutionIncense, sim::Card::RegidragoVstar};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Wonder Tag requires Tapu Lele-GX to be played from hand to Bench and may find
+  // Arven for the missing VSTAR axis: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  sim::EngineTestAccess::play_basics_from_hand(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!benched(after, sim::Card::TapuLeleGX) || !contains(after.hand, sim::Card::Arven) ||
+      !contains(after.hand, sim::Card::RegidragoV)) {
+    throw std::runtime_error("Tapu Lele-GX should take the final slot before a redundant Regidrago V.");
+  }
+}
+
+void test_redundant_regidrago_uses_final_slot_without_live_connector() {
+  const sim::Scenario scenario{"redundant-regi-control", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{230};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state = four_card_bench_with_active_regi(sim::Card::TapuLeleGX);
+  state.hand = {sim::Card::RegidragoV};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  sim::EngineTestAccess::play_basics_from_hand(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (after.bench.size() != 5U || !benched(after, sim::Card::RegidragoV)) {
+    throw std::runtime_error("The redundant Regidrago V should use the final slot when no live connector exists.");
+  }
+}
+
 }  // namespace
 
 int main() {
   test_oricorio_preserves_burnet_for_same_turn_readiness();
   test_oricorio_takes_last_bench_slot_over_tapu_for_burnet();
+  test_oricorio_takes_final_slot_over_redundant_regidrago();
+  test_tapu_takes_final_slot_over_redundant_regidrago();
+  test_redundant_regidrago_uses_final_slot_without_live_connector();
   return 0;
 }

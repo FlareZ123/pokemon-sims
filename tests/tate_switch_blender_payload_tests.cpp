@@ -12,6 +12,9 @@ struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
   static void run_turn(Engine& engine) { engine.run_turn(); }
   static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
+  static bool play_turo_active_promotion_route(Engine& engine) {
+    return engine.play_turo_active_promotion_route();
+  }
 };
 
 }  // namespace sim
@@ -50,9 +53,44 @@ void test_tate_switch_preserves_blender_payload_line() {
   assert(EngineTestAccess::payload_ready(engine));
 }
 
+void test_professor_turo_returns_basic_active_and_promotes_complete_vstar() {
+  using namespace sim;
+  const Scenario scenario{"turo-active-promotion", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(307);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::TapuLeleGX, 0, 1, 0, Tool::Powerglass};
+  state.bench = {Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None}};
+  state.hand = {Card::ProfessorTuro};
+  state.discard = {Card::MegaDragonite};
+  state.discarded_this_turn = {Card::MegaDragonite};
+
+  // Professor Turo's Scenario returns the selected Pokémon to hand and discards
+  // its attached cards. Removing the Active Pokémon requires a Benched replacement,
+  // so the complete Regidrago VSTAR can become Active without using the retreat:
+  // https://api.pokemontcg.io/v2/cards/sv4-171
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  assert(EngineTestAccess::play_turo_active_promotion_route(engine));
+
+  assert(state.active && state.active->card == Card::RegidragoVstar);
+  assert(state.active->grass == 2 && state.active->fire == 1);
+  assert(state.bench.empty());
+  assert(contains(state.hand, Card::TapuLeleGX));
+  assert(contains(state.discard, Card::ProfessorTuro));
+  assert(contains(state.discard, Card::Grass));
+  assert(contains(state.discard, Card::Powerglass));
+  assert(state.supporter_used);
+  assert(!state.retreat_used);
+}
+
 }  // namespace
 
 int main() {
   test_tate_switch_preserves_blender_payload_line();
+  test_professor_turo_returns_basic_active_and_promotes_complete_vstar();
   return 0;
 }

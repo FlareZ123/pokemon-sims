@@ -34,6 +34,43 @@
     state_.discarded_this_turn.push_back(card);
   }
 
+  bool play_turo_active_promotion_route() {
+    if (!supporter_allowed() || hand_count(Card::ProfessorTuro) == 0 || !state_.active ||
+        !is_basic(state_.active->card) || state_.active->card == Card::RegidragoV ||
+        !need_active_vstar() || need_regi() || need_vstar() || need_energy() || need_payload() ||
+        can_free_retreat_with_latias() || hand_count(Card::TateLiza) > 0) {
+      return false;
+    }
+
+    const auto promoted = std::find_if(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
+      return pokemon.card == Card::RegidragoVstar && pokemon.grass >= 2 && pokemon.fire >= 1;
+    });
+    if (promoted == state_.bench.end()) return false;
+
+    const Pokemon returned = *state_.active;
+    remove_one(state_.hand, Card::ProfessorTuro);
+    state_.discard.push_back(Card::ProfessorTuro);
+    state_.supporter_used = true;
+
+    // Professor Turo's Scenario returns one Pokémon in play to hand and discards
+    // every attached card. With the Active Pokémon gone, a Benched Pokémon becomes
+    // the replacement Active Pokémon under the core game procedure:
+    // https://api.pokemontcg.io/v2/cards/sv4-171
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    for (int energy = 0; energy < returned.grass; ++energy) discard_turo_attachment(Card::Grass);
+    for (int energy = 0; energy < returned.fire; ++energy) discard_turo_attachment(Card::Fire);
+    if (returned.tool == Tool::ForestSealStone) discard_turo_attachment(Card::ForestSealStone);
+    if (returned.tool == Tool::Powerglass) discard_turo_attachment(Card::Powerglass);
+
+    state_.hand.push_back(returned.card);
+    state_.active = *promoted;
+    state_.bench.erase(promoted);
+    trace("PLAY SUPPORTER", "R-GAME-SUPPORTER",
+          "Professor Turo returned the Basic Active Pokémon and promoted the complete Benched Regidrago VSTAR.");
+    return true;
+  }
+
   bool play_turo_oricorio_energy_route() {
     if (!turo_oricorio_energy_route_live()) return false;
 
@@ -98,9 +135,10 @@
 
   void choose_supporter() {
     if (!supporter_allowed()) return;
-    // Evaluate the Active-specific route before the generic preferred-Regidrago axis
+    // Evaluate Active-specific routes before the generic preferred-Regidrago axis
     // gate, which may consider a different Benched Regidrago already complete.
     if (play_turo_oricorio_energy_route()) return;
+    if (play_turo_active_promotion_route()) return;
     if (!setup_axis_missing()) return;
     choose_supporter_turo_original();
   }

@@ -127,9 +127,26 @@
                                                might_be_unseen(Card::DialgaGX)));
     };
 
+    const auto powerglass_has_live_target = [this]() {
+      if (!state_.active || state_.active->tool != Tool::None ||
+          (state_.active->card != Card::RegidragoV && state_.active->card != Card::RegidragoVstar)) {
+        return false;
+      }
+      // Powerglass is a Pokémon Tool that may attach a Basic Energy from discard to
+      // its Active holder at end of turn. Arven may select it after legal inspection
+      // proves the higher-priority Forest Seal Stone absent:
+      // https://api.pokemontcg.io/v2/cards/sv1-166
+      // https://api.pokemontcg.io/v2/cards/swsh12-156
+      // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+      const bool needed_grass_in_discard = state_.active->grass < 2 && count_of(state_.discard, Card::Grass) > 0;
+      const bool needed_fire_in_discard = state_.active->fire < 1 && count_of(state_.discard, Card::Fire) > 0;
+      return (needed_grass_in_discard || needed_fire_in_discard) && might_be_unseen(Card::Powerglass);
+    };
+
     const std::vector<Card> pre_search_candidates = item_candidates_for_current_knowledge();
-    const bool pre_search_live_tool = needs_tool && fss_has_live_target() && might_be_unseen(Card::ForestSealStone);
-    if (pre_search_candidates.empty() && !pre_search_live_tool) return false;
+    const bool pre_search_live_fss = needs_tool && fss_has_live_target() && might_be_unseen(Card::ForestSealStone);
+    const bool pre_search_live_powerglass = powerglass_has_live_target();
+    if (pre_search_candidates.empty() && !pre_search_live_fss && !pre_search_live_powerglass) return false;
 
     remove_one(state_.hand, Card::Arven);
     state_.discard.push_back(Card::Arven);
@@ -137,13 +154,18 @@
 
     record_deck_search_knowledge("Arven");
     const std::vector<Card> item_candidates = item_candidates_for_current_knowledge();
-    const bool live_tool = needs_tool && fss_has_live_target() && might_be_unseen(Card::ForestSealStone);
+    const bool live_fss = needs_tool && fss_has_live_target() && might_be_unseen(Card::ForestSealStone);
+    const bool live_powerglass = powerglass_has_live_target();
     std::vector<Card> found;
     for (const Card item : item_candidates) {
       if (move_deck_to_hand(item)) { found.push_back(item); break; }
     }
-    if (live_tool && move_deck_to_hand(Card::ForestSealStone)) found.push_back(Card::ForestSealStone);
+    if (live_fss && move_deck_to_hand(Card::ForestSealStone)) {
+      found.push_back(Card::ForestSealStone);
+    } else if (live_powerglass && move_deck_to_hand(Card::Powerglass)) {
+      found.push_back(Card::Powerglass);
+    }
     shuffle(state_.deck);
-    trace("PLAY SUPPORTER", "R-ARVEN-01; R-GAME-SUPPORTER", "Searched an Item and a Pokémon Tool: " + join_cards(found) + ".");
+    trace("PLAY SUPPORTER", "R-ARVEN-01; R-GAME-SUPPORTER; R-POWERGLASS-01", "Searched an Item and a Pokémon Tool: " + join_cards(found) + ".");
     return true;
   }

@@ -31,6 +31,39 @@ double standard_error_pp(const std::uint64_t count, const std::uint64_t total) {
   return 100.0 * std::sqrt(p * (1.0 - p) / static_cast<double>(total));
 }
 
+bool probability_regression_self_test() {
+  struct BaselineFloor {
+    std::string_view scenario;
+    std::size_t scenario_index;
+    double minimum_ready_by_t3_pct;
+  };
+
+  // These are deliberately conservative floors beneath the generated cumulative
+  // T3 baseline, so the guard catches an order-of-magnitude collapse without
+  // treating normal policy improvements as a failure:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/REPORT.md#100000-trial-baseline
+  constexpr std::array<BaselineFloor, 3> floors{{
+      {"strict-jit/go-second", 7U, 20.0},
+      {"matchup-flex-jit/go-second", 8U, 30.0},
+      {"no-discard-control/go-second", 9U, 40.0},
+  }};
+  constexpr std::uint64_t trials = 2000;
+  constexpr std::uint64_t base_seed = 20260710;
+  constexpr std::uint64_t seed_stride = 104729;
+  const DeckRecipe deck = baseline_recipe();
+
+  for (const BaselineFloor& floor : floors) {
+    const auto scenario = scenario_by_label(std::string(floor.scenario));
+    if (!scenario) return false;
+    const Aggregate aggregate = simulate(*scenario, deck, trials,
+                                         base_seed + seed_stride * floor.scenario_index);
+    // ready_by_t3 is cumulative and must include every ready_by_t2 trial.
+    if (aggregate.by3 < aggregate.by2) return false;
+    if (pct(aggregate.by3, aggregate.trials) < floor.minimum_ready_by_t3_pct) return false;
+  }
+  return true;
+}
+
 class OutputLock {
  public:
   explicit OutputLock(const std::filesystem::path& output) {
@@ -90,6 +123,7 @@ void write_atomic(const std::filesystem::path& output, const std::string& conten
 }
 
 bool self_test() {
+  if (!probability_regression_self_test()) return false;
   const int total = std::accumulate(kDeckRecipe.begin(), kDeckRecipe.end(), 0, [](const int sum, const auto& entry) { return sum + entry.second; });
   if (total != 60) return false;
   if (!is_basic(Card::RegidragoV) || is_basic(Card::RegidragoVstar)) return false;

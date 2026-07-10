@@ -111,12 +111,13 @@
   }
 
   bool use_celestial_roar() {
+    // The player going first cannot attack on that player's first turn. Celestial
+    // Roar has no printed restriction on later turns: https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://api.pokemontcg.io/v2/cards/swsh12-135
     if (first_turn_going_first() || state_.turn_ended || !state_.active || state_.active->card != Card::RegidragoV) return false;
-    // Card text source: https://api.pokemontcg.io/v2/cards/swsh12-135
-    // Celestial Roar costs one Colorless Energy. Any attached Energy pays it.
+    // Celestial Roar costs one Colorless Energy. Any attached Energy pays it:
+    // https://api.pokemontcg.io/v2/cards/swsh12-135
     if (state_.active->grass + state_.active->fire < 1) return false;
-    // Attack policy: turn-one going-second Celestial Roar is used only when Steven's Resolve did not end the turn.
-    if (state_.turn != 1 || scenario_.going_first) return false;
     std::vector<Card> processed;
     std::vector<Card> attached;
     std::vector<Card> discarded;

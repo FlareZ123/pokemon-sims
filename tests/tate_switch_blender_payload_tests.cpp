@@ -12,6 +12,7 @@ struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
   static void run_turn(Engine& engine) { engine.run_turn(); }
   static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
+  static bool play_tate_draw(Engine& engine) { return engine.play_tate_draw(); }
   static bool play_turo_active_promotion_route(Engine& engine) {
     return engine.play_turo_active_promotion_route();
   }
@@ -53,6 +54,52 @@ void test_tate_switch_preserves_blender_payload_line() {
   assert(EngineTestAccess::payload_ready(engine));
 }
 
+void test_tate_draw_holds_when_no_card_can_enter_the_deck() {
+  using namespace sim;
+  const Scenario scenario{"tate-empty-refresh", DciProfile::StrictJit, LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(333);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 0, 0, Tool::None};
+  state.hand = {Card::TateLiza};
+  state.deck.clear();
+
+  // The draw mode would shuffle no cards and draw no cards, so the Trainer is known
+  // to have no effect and must remain unplayed:
+  // https://api.pokemontcg.io/v2/cards/sm7-148
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+  assert(!EngineTestAccess::play_tate_draw(engine));
+  assert(!state.supporter_used);
+  assert(state.hand.size() == 1U && state.hand.front() == Card::TateLiza);
+  assert(state.deck.empty());
+  assert(state.discard.empty());
+}
+
+void test_tate_draw_uses_a_remaining_hand_card_with_empty_deck() {
+  using namespace sim;
+  const Scenario scenario{"tate-empty-deck-live-refresh", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(334);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 0, 0, Tool::None};
+  state.hand = {Card::TateLiza, Card::Dipplin};
+  state.deck.clear();
+
+  // Tate & Liza remains legal because the other hand card is shuffled into the deck
+  // before the draw instruction resolves:
+  // https://api.pokemontcg.io/v2/cards/sm7-148
+  assert(EngineTestAccess::play_tate_draw(engine));
+  assert(state.supporter_used);
+  assert(state.hand.size() == 1U && state.hand.front() == Card::Dipplin);
+  assert(state.deck.empty());
+  assert(std::count(state.discard.begin(), state.discard.end(), Card::TateLiza) == 1);
+}
+
 void test_professor_turo_returns_basic_active_and_promotes_complete_vstar() {
   using namespace sim;
   const Scenario scenario{"turo-active-promotion", DciProfile::StrictJit,
@@ -91,6 +138,8 @@ void test_professor_turo_returns_basic_active_and_promotes_complete_vstar() {
 
 int main() {
   test_tate_switch_preserves_blender_payload_line();
+  test_tate_draw_holds_when_no_card_can_enter_the_deck();
+  test_tate_draw_uses_a_remaining_hand_card_with_empty_deck();
   test_professor_turo_returns_basic_active_and_promotes_complete_vstar();
   return 0;
 }

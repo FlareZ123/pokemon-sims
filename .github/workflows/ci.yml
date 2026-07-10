@@ -23,6 +23,14 @@ jobs:
             find build/Testing -name LastTest.log -type f -print -exec cat {} \; || true
             exit "$status"
           }
+      - name: Run 100000-trial audit matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260710 --out build/four_fix_audit_matrix.csv
+      - name: Upload audit matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: four-fix-audit-matrix-100000
+          path: build/four_fix_audit_matrix.csv
+          if-no-files-found: error
       - name: Upload CTest diagnostics
         if: always()
         uses: actions/upload-artifact@v4

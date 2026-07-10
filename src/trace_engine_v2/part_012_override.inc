@@ -7,9 +7,13 @@
     // complete the current-turn payload axis:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     if (!payload_might_be_in_deck()) return false;
-    const auto current_cost = excluded == Card::QuickBall
-        ? choose_discard(false, true, true, Card::QuickBall)
-        : choose_discard(false, true);
+    // The Item being modeled cannot pay its own cost. A distinct held Ultra Ball
+    // remains a legal cost for either Mysterious Treasure or Quick Ball even when
+    // Ultra Ball cannot satisfy its own two-card play cost:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    const auto current_cost = choose_discard(false, true, true, excluded);
     if (!current_cost) return false;
 
     const auto outlet_survives_current_search = [this, excluded, current_cost](const Card outlet) {

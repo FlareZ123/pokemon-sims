@@ -96,5 +96,6 @@ bool self_test() {
   if (!is_dragon_or_psychic(Card::RegidragoVstar) || !is_payload(Card::MegaDragonite) || is_payload(Card::Dipplin)) return false;
   if (is_rule_box_pokemon(Card::Oricorio)) return false;
   if (!is_rule_box_pokemon(Card::TapuLeleGX)) return false;
-  if (!is_pokemon_v(Card::RegidragoV) || is_pokemon_v(Card::RegidragoVstar)) return false;
+  // Pokémon V includes Pokémon VSTAR: https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
+  if (!is_pokemon_v(Card::RegidragoV) || !is_pokemon_v(Card::RegidragoVstar)) return false;
   // Trace smoke validates a complete single-game setup and rule ID output path.

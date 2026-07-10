@@ -1,0 +1,32 @@
+
+Seed: 3 | first-ready turn: 3
+===== SIMULATE THIS =====
+Scenario: strict-jit/go-second | DCI: strict-JIT | Locks: none
+Mulligans: 1
+Opening player-known state: Active=Latias ex [-] | Bench=(none) | Hand=Steven's Resolve, Roseanne's Backup, Mysterious Treasure, Serena, Fire Energy, Mawile-GX | Discard=(none)
+DEBUG ONLY: prizes=Mega Dragonite ex, Team Yell's Cheer, Mysterious Treasure, Regidrago VSTAR, Chaotic Swell, Oricorio GRI 55. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Grass Energy
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=(none) | Hand=Steven's Resolve, Roseanne's Backup, Mysterious Treasure, Serena, Fire Energy, Mawile-GX, Grass Energy | Discard=(none)
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Steven's Resolve: deck inspected; Prize identities are now deducible for later decisions.
+T1 | PLAY SUPPORTER | rules: R-STEVEN-01; R-GAME-SUPPORTER | Searched up to 3 cards: Regidrago V, Crispin, Brilliant Blender. Turn ended.
+T1 | TURN END | rules: R-STEVEN-01 or R-RV-01 | Active=Latias ex [-] | Bench=(none) | Hand=Roseanne's Backup, Mysterious Treasure, Serena, Fire Energy, Mawile-GX, Grass Energy, Regidrago V, Crispin, Brilliant Blender | Discard=Steven's Resolve
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Fire Energy
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=(none) | Hand=Roseanne's Backup, Mysterious Treasure, Serena, Fire Energy, Mawile-GX, Grass Energy, Regidrago V, Crispin, Brilliant Blender, Fire Energy | Discard=Steven's Resolve
+T2 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T2 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T2 | DISCARD | rules: R-MT-01 | Fire Energy (Mysterious Treasure cost)
+T2 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM | Searched a Psychic or Dragon Pokémon: Regidrago VSTAR.
+T2 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dipplin TWM 127.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Latias ex [-] | Bench=Regidrago V [GG] | Hand=Roseanne's Backup, Serena, Mawile-GX, Fire Energy, Fire Energy, Regidrago VSTAR | Discard=Steven's Resolve, Crispin, Mysterious Treasure, Fire Energy, Brilliant Blender, Mega Dragonite ex, Dipplin TWM 127
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Regidrago V
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=Regidrago V [GG] | Hand=Roseanne's Backup, Serena, Mawile-GX, Fire Energy, Fire Energy, Regidrago VSTAR, Regidrago V | Discard=Steven's Resolve, Crispin, Mysterious Treasure, Fire Energy, Brilliant Blender, Mega Dragonite ex, Dipplin TWM 127
+T3 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T3 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T3 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T3 | LEGACY STAR | rules: R-RVS-01; R-VSTAR-01 | Discarded top 7: Crispin, Regidrago V, Tapu Lele-GX, Quick Ball, Field Blower, Gladion, Arven; recovered: Brilliant Blender, Crispin.
+T3 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Dragapult ex.
+T3 | RETREAT | rules: R-LATIAS-01; R-GAME-RETREAT | Latias ex gives the Basic Active no Retreat Cost; promoted Benched Regidrago VSTAR.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Latias ex [-]; Regidrago V [-] | Hand=Roseanne's Backup, Serena, Mawile-GX, Fire Energy, Crispin | Discard=Steven's Resolve, Mysterious Treasure, Fire Energy, Mega Dragonite ex, Dipplin TWM 127, Crispin, Regidrago V, Tapu Lele-GX, Quick Ball, Field Blower, Gladion, Arven, Brilliant Blender, Dragapult ex
+T3 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

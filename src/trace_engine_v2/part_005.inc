@@ -25,7 +25,9 @@
 
     choose_opening_active();
     choose_opening_bench();
-    shuffle(state_.deck);
+    // Place six Prize cards from the already-shuffled remaining deck after the
+    // opening Active and optional Bench are selected. The setup procedure does
+    // not add another shuffle at this point: https://www.pokemon.com/us/pokemon-tcg/rules
     for (int prize = 0; prize < 6; ++prize) {
       state_.prizes.push_back(state_.deck.back());
       state_.deck.pop_back();

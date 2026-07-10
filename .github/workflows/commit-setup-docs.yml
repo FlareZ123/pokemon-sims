@@ -1,0 +1,30 @@
+name: Commit corrected setup documentation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  update-and-commit:
+    if: github.head_ref == 'fix/setup-order-regenerate-baselines-v2'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Update report and trace audit
+        run: python scripts/update_setup_docs.py --repo-root .
+      - name: Commit generated documentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/commit-setup-docs.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add README.md docs/REPORT.md docs/TRACE_AUDIT.md scripts/update_setup_docs.py .github/workflows
+          git commit -m "Update corrected setup report and trace audit"
+          git push origin HEAD:${{ github.head_ref }}

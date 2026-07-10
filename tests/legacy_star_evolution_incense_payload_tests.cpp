@@ -12,6 +12,11 @@ struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
   static void run_turn(Engine& engine) { engine.run_turn(); }
   static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
+  static bool use_legacy_star(Engine& engine) { return engine.use_legacy_star(); }
+  static bool play_earthen_vessel(Engine& engine) { return engine.play_earthen_vessel(false); }
+  static bool attach_manual(Engine& engine) { return engine.attach_manual(); }
+  static void record_ready(Engine& engine) { engine.record_ready(); }
+  static const TrialOutcome& outcome(const Engine& engine) { return engine.outcome_; }
 };
 
 }  // namespace sim
@@ -108,11 +113,69 @@ void test_legacy_star_ignores_spent_supporter_burnet() {
   assert(EngineTestAccess::payload_ready(engine));
 }
 
+void test_legacy_star_recovers_vessel_bridge_after_supporter_use() {
+  using namespace sim;
+  const Scenario scenario{"legacy-star-vessel-after-supporter", DciProfile::StrictJit, LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(207);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 0, Tool::None};
+  state.supporter_used = true;
+  state.deck = {Card::Fire, Card::MawileGX, Card::Channeler, Card::Arven,
+                Card::Crispin, Card::Dipplin, Card::EarthenVessel, Card::MegaDragonite};
+
+  // Legacy Star may recover any two cards discarded by its top-seven effect:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // With the Supporter slot spent, Crispin and Arven cannot be played. Earthen
+  // Vessel plus Dipplin is live because Vessel discards another card and searches
+  // the remaining Fire Energy for the unused manual attachment:
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  assert(EngineTestAccess::use_legacy_star(engine));
+  assert(contains(state.hand, Card::EarthenVessel));
+  assert(contains(state.hand, Card::Dipplin));
+  assert(!contains(state.hand, Card::Crispin));
+  assert(!contains(state.hand, Card::Arven));
+  assert(EngineTestAccess::play_earthen_vessel(engine));
+  assert(contains(state.hand, Card::Fire));
+  assert(EngineTestAccess::attach_manual(engine));
+  EngineTestAccess::record_ready(engine);
+
+  assert(state.active && state.active->grass == 2 && state.active->fire == 1);
+  assert(EngineTestAccess::outcome(engine).first_ready_turn == 2);
+}
+
+void test_legacy_star_still_recovers_crispin_with_supporter_available() {
+  using namespace sim;
+  const Scenario scenario{"legacy-star-live-crispin", DciProfile::StrictJit, LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(208);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 0, Tool::None};
+  state.deck = {Card::Fire, Card::MawileGX, Card::Channeler, Card::Guzma,
+                Card::Crispin, Card::ProfessorTuro, Card::TeamYellsCheer, Card::MegaDragonite};
+
+  // Crispin remains a legal Legacy Star recovery while the Supporter play is still
+  // available: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  assert(EngineTestAccess::use_legacy_star(engine));
+  assert(contains(state.hand, Card::Crispin));
+}
+
 }  // namespace
 
 int main() {
   test_legacy_star_recovers_evolution_incense_payload_bridge();
   test_legacy_star_ignores_item_lock_dead_hand_item();
   test_legacy_star_ignores_spent_supporter_burnet();
+  test_legacy_star_recovers_vessel_bridge_after_supporter_use();
+  test_legacy_star_still_recovers_crispin_with_supporter_available();
   return 0;
 }

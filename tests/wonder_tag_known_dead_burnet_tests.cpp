@@ -98,12 +98,40 @@ void test_wonder_tag_uses_arven_vessel_for_final_energy() {
   }
 }
 
+void test_wonder_tag_uses_an_available_supporter_fallback() {
+  const sim::Scenario scenario{"wonder-tag-legal-fallback", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{219};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::TapuLeleGX};
+  state.deck = {sim::Card::Guzma};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Wonder Tag may search for any Supporter, so an available Guzma is a legal
+  // fallback when no preferred setup Supporter remains:
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm3-115
+  if (!sim::EngineTestAccess::bench_from_hand(engine, sim::Card::TapuLeleGX, true)) {
+    throw std::runtime_error("Tapu Lele-GX should resolve Wonder Tag for the fallback test.");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!contains(after.hand, sim::Card::Guzma) || !after.deck.empty()) {
+    throw std::runtime_error("Wonder Tag should take the actually available legal Supporter fallback.");
+  }
+}
+
 }  // namespace
 
 int main() {
   try {
     test_wonder_tag_yields_known_dead_burnet_to_arven();
     test_wonder_tag_uses_arven_vessel_for_final_energy();
+    test_wonder_tag_uses_an_available_supporter_fallback();
     std::cout << "Wonder Tag known-dead Burnet tests passed\n";
     return 0;
   } catch (const std::exception& error) {

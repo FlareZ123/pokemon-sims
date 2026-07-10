@@ -52,11 +52,51 @@
     // absent and a discarded copy can restore a payable same-turn route.
     if (might_be_unseen(Card::RegidragoVstar) || !has_payable_team_yell_vstar_search()) return false;
 
+    const auto evolution_incense_then_latias_search_is_payable = [this]() {
+      if (item_locked() || hand_count(Card::EvolutionIncense) == 0) return false;
+      const std::vector<Card> original_hand = state_.hand;
+      const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
+      // The Supporter and Evolution Incense both leave hand before the later Basic or
+      // Psychic search pays its cost. Test that exact remaining hand so one card cannot
+      // satisfy both future actions:
+      // https://api.pokemontcg.io/v2/cards/swsh9-149
+      // https://api.pokemontcg.io/v2/cards/swsh1-163
+      // https://api.pokemontcg.io/v2/cards/swsh1-179
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      if (!remove_one(state_.hand, Card::TeamYellsCheer) ||
+          !remove_one(state_.hand, Card::EvolutionIncense)) {
+        restore_hand();
+        return false;
+      }
+      const bool permit_payload = can_play_payload_this_turn();
+      for (const Card item : {Card::QuickBall, Card::MysteriousTreasure}) {
+        if (hand_count(item) > 0 && choose_discard(permit_payload, true, true, item).has_value()) {
+          restore_hand();
+          return true;
+        }
+      }
+      if (hand_count(Card::UltraBall) > 0) {
+        remove_one(state_.hand, Card::UltraBall);
+        const auto first = choose_discard(permit_payload, true);
+        if (first && remove_one(state_.hand, *first)) {
+          const auto second = choose_discard(permit_payload && !is_payload(*first), true);
+          if (second) {
+            restore_hand();
+            return true;
+          }
+        }
+      }
+      restore_hand();
+      return false;
+    };
+
     // Team Yell's Cheer may return up to 3 eligible cards in one resolution. When a
     // powered prior-turn Benched Regidrago V will evolve behind a Basic Active, restore
-    // Latias ex together with Regidrago VSTAR if a separate Basic search remains payable:
+    // Latias ex together with Regidrago VSTAR if Evolution Incense and a separate
+    // Basic or Psychic search remain payable:
     // https://api.pokemontcg.io/v2/cards/swsh9-149
     // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
     // https://api.pokemontcg.io/v2/cards/swsh1-179
     // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Retreat_Your_Active_Pokemon
     const bool powered_benched_regi_can_evolve = std::any_of(
@@ -68,7 +108,7 @@
         state_.active->card != Card::RegidragoV && powered_benched_regi_can_evolve && payload_ready() &&
         !state_.retreat_used && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
         !in_play(Card::LatiasEx) && count_of(state_.discard, Card::LatiasEx) > 0 &&
-        !might_be_unseen(Card::LatiasEx) && has_payable_team_yell_latias_search();
+        !might_be_unseen(Card::LatiasEx) && evolution_incense_then_latias_search_is_payable();
 
     remove_one(state_.hand, Card::TeamYellsCheer);
     state_.discard.push_back(Card::TeamYellsCheer);
@@ -94,7 +134,7 @@
     shuffle(state_.deck);
     trace("PLAY SUPPORTER", "R-GAME-SUPPORTER",
           restore_latias_for_promotion
-              ? "Team Yell's Cheer restored Regidrago VSTAR and Latias ex for separate same-turn searches and promotion."
+              ? "Team Yell's Cheer restored Regidrago VSTAR and Latias ex for Evolution Incense, a separate Latias search, and promotion."
               : "Team Yell's Cheer shuffled Regidrago VSTAR from discard into the deck for a payable same-turn search.");
     return true;
   }

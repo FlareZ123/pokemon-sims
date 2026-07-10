@@ -173,9 +173,21 @@
     bool changed = true;
     while (changed && bench_space() > 0) {
       changed = false;
+      // A redundant second Regidrago V must not take the final Bench slot before a
+      // currently needed on-play connector. The Bench limit is five:
+      // https://www.pokemon.com/us/pokemon-tcg/rules
+      // Wonder Tag and Vital Dance require playing their Basic from hand to Bench:
+      // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // https://api.pokemontcg.io/v2/cards/sm2-55
+      const bool preserve_final_slot_for_tapu = bench_space() == 1 &&
+          hand_count(Card::TapuLeleGX) > 0 && !in_play(Card::TapuLeleGX) && needs_tapu_connector();
+      const bool preserve_final_slot_for_oricorio = bench_space() == 1 &&
+          hand_count(Card::Oricorio) > 0 && !in_play(Card::Oricorio) && needs_oricorio_connector();
+      const bool preserve_final_connector_slot = preserve_final_slot_for_tapu || preserve_final_slot_for_oricorio;
       if (need_regi() && hand_count(Card::RegidragoV) > 0) {
         changed = bench_from_hand(Card::RegidragoV, false);
-      } else if (in_play_count(Card::RegidragoV) < 2 && hand_count(Card::RegidragoV) > 0 && !has_vstar()) {
+      } else if (!preserve_final_connector_slot && in_play_count(Card::RegidragoV) < 2 &&
+                 hand_count(Card::RegidragoV) > 0 && !has_vstar()) {
         changed = bench_from_hand(Card::RegidragoV, false);
       } else if (need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) &&
                  !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) > 0) {

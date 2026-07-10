@@ -82,11 +82,37 @@ void test_gladion_preserves_a_payable_three_copy_ultra_ball_route() {
   assert(std::count(state.hand.begin(), state.hand.end(), Card::Gladion) == 1);
 }
 
+void test_payload_probe_requires_a_second_ultra_ball_after_the_first_play() {
+  using namespace sim;
+  const Scenario scenario{"ultra-ball-second-copy-required", DciProfile::StrictJit, LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(318);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1};
+  state.hand = {Card::UltraBall, Card::UltraBall, Card::UltraBall, Card::HisuianHeavyBall};
+  state.deck = {Card::MegaDragonite};
+  state.prizes = {Card::Grass, Card::Fire, Card::Dipplin, Card::Guzma, Card::Channeler, Card::Lusamine};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Ultra Ball must itself remain in hand for the claimed second play and then
+  // discard two other cards: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // Hisuian Heavy Ball cannot independently discard the fetched payload: https://api.pokemontcg.io/v2/cards/swsh10-146
+  assert(!EngineTestAccess::play_ultra_ball(engine));
+  assert(std::count(state.hand.begin(), state.hand.end(), Card::UltraBall) == 3);
+  assert(std::count(state.hand.begin(), state.hand.end(), Card::HisuianHeavyBall) == 1);
+  assert(std::count(state.deck.begin(), state.deck.end(), Card::MegaDragonite) == 1);
+  assert(state.discard.empty());
+}
+
 }  // namespace
 
 int main() {
   test_ultra_ball_and_dipplin_pay_the_cost();
   test_two_other_ultra_balls_pay_the_cost();
   test_gladion_preserves_a_payable_three_copy_ultra_ball_route();
+  test_payload_probe_requires_a_second_ultra_ball_after_the_first_play();
   return 0;
 }

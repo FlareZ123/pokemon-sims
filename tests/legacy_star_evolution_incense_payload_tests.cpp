@@ -10,6 +10,7 @@ namespace sim {
 
 struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
+  static void set_deck_seen(Engine& engine, const bool seen) { engine.deck_seen_ = seen; }
   static void run_turn(Engine& engine) { engine.run_turn(); }
   static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
   static bool use_legacy_star(Engine& engine) { return engine.use_legacy_star(); }
@@ -243,6 +244,68 @@ void test_legacy_star_still_recovers_crispin_with_supporter_available() {
   assert(contains(state.hand, Card::Crispin));
 }
 
+void test_team_yell_recovers_vstar_into_evolution_incense_route() {
+  using namespace sim;
+  const Scenario scenario{"team-yell-vstar-incense", DciProfile::StrictJit, LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(209);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoV, 1, 2, 1, Tool::None};
+  state.hand = {Card::TeamYellsCheer, Card::EvolutionIncense};
+  state.deck = {Card::Grass};
+  state.prizes = {Card::RegidragoVstar, Card::RegidragoVstar};
+  state.discard = {Card::RegidragoVstar, Card::MegaDragonite};
+  state.discarded_this_turn = {Card::MegaDragonite};
+  EngineTestAccess::set_deck_seen(engine, true);
+
+  // Team Yell's Cheer restores the known discarded VSTAR, Evolution Incense finds
+  // that Evolution Pokémon, and the Regidrago V from the prior turn may evolve:
+  // https://api.pokemontcg.io/v2/cards/swsh9-149
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  EngineTestAccess::run_turn(engine);
+
+  assert(state.active.has_value());
+  assert(state.active->card == Card::RegidragoVstar);
+  assert(state.supporter_used);
+  assert(contains(state.discard, Card::TeamYellsCheer));
+  assert(contains(state.discard, Card::EvolutionIncense));
+  assert(!contains(state.discard, Card::RegidragoVstar));
+}
+
+void test_team_yell_holds_without_a_payable_post_recovery_search() {
+  using namespace sim;
+  const Scenario scenario{"team-yell-unpayable-search", DciProfile::StrictJit, LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(210);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoV, 1, 2, 1, Tool::None};
+  state.hand = {Card::TeamYellsCheer, Card::MysteriousTreasure};
+  state.deck = {Card::Grass};
+  state.prizes = {Card::RegidragoVstar, Card::RegidragoVstar};
+  state.discard = {Card::RegidragoVstar, Card::MegaDragonite};
+  state.discarded_this_turn = {Card::MegaDragonite};
+  EngineTestAccess::set_deck_seen(engine, true);
+
+  // Mysterious Treasure requires another hand card as its discard cost. After Team
+  // Yell's Cheer is played, no such card remains, so the recovery route must be held:
+  // https://api.pokemontcg.io/v2/cards/swsh9-149
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  EngineTestAccess::run_turn(engine);
+
+  assert(state.active.has_value());
+  assert(state.active->card == Card::RegidragoV);
+  assert(!state.supporter_used);
+  assert(contains(state.hand, Card::TeamYellsCheer));
+  assert(contains(state.hand, Card::MysteriousTreasure));
+  assert(contains(state.discard, Card::RegidragoVstar));
+}
+
 }  // namespace
 
 int main() {
@@ -254,5 +317,7 @@ int main() {
   test_payable_item_resolves_before_legacy_star();
   test_legacy_star_recovers_vessel_bridge_after_supporter_use();
   test_legacy_star_still_recovers_crispin_with_supporter_available();
+  test_team_yell_recovers_vstar_into_evolution_incense_route();
+  test_team_yell_holds_without_a_payable_post_recovery_search();
   return 0;
 }

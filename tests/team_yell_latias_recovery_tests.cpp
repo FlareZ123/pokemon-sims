@@ -73,6 +73,12 @@ void test_team_yell_holds_when_latias_search_cost_is_unpayable() {
   state.deck = {Card::Grass};
   state.discard = {Card::LatiasEx, Card::MegaDragonite};
   state.discarded_this_turn = {Card::MegaDragonite};
+  // Isolate Team Yell's Cheer cost validation from Legacy Star. A player may use
+  // only one VSTAR Power during a game, so a previously spent power makes Legacy
+  // Star unavailable without changing the Supporter and Item route under test:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  state.vstar_power_used = true;
 
   // Quick Ball must discard another card. After Team Yell's Cheer leaves hand, no
   // card remains to pay that cost, so the Supporter route must be preserved:

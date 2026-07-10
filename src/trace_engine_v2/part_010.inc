@@ -84,7 +84,11 @@
     if (item_locked() || hand_count(Card::EarthenVessel) == 0) return false;
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() && std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
     if (!need_energy() && !can_jit_discard) return false;
-    const auto cost = choose_discard(can_jit_discard, true);
+    // The Earthen Vessel being played cannot discard itself. A held Ultra Ball is
+    // a distinct card in hand and remains a legal cost even when Ultra Ball cannot
+    // pay its own two-card play cost: https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    const auto cost = choose_discard(can_jit_discard, true, true, Card::EarthenVessel);
     if (!cost) return false;
     remove_one(state_.hand, Card::EarthenVessel);
     state_.discard.push_back(Card::EarthenVessel);

@@ -41,16 +41,25 @@
     // The current-turn payload condition is simulator policy, which permits the printed discard cost only when it advances strict-JIT readiness.
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
                                    std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
-    const bool want_regi = need_regi() && bench_space() > 0;
-    const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0;
+    // Ultra Ball searches only the deck after paying its two-card discard cost. K0
+    // keeps fixed-list Pokémon plausible; K1 requires the inspected deck to contain
+    // each desired target before spending all three hand cards:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    const bool want_regi = need_regi() && bench_space() > 0 && might_be_unseen(Card::RegidragoV);
+    const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
+                            might_be_unseen(Card::RegidragoVstar);
     const bool want_latias = need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
-                              !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0;
+                             !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
+                             might_be_unseen(Card::LatiasEx);
     const bool want_oricorio = need_energy() && hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
-                                bench_space() > 0 && needs_oricorio_connector();
+                                bench_space() > 0 && needs_oricorio_connector() &&
+                                might_be_unseen(Card::Oricorio);
     // Tapu Lele-GX may turn this Pokémon search into a live Supporter connector
     // through Wonder Tag when it is Benched from hand: https://api.pokemontcg.io/v2/cards/cel25c-60_A
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
-                            bench_space() > 0 && needs_tapu_connector();
+                           bench_space() > 0 && needs_tapu_connector() &&
+                           might_be_unseen(Card::TapuLeleGX);
     // A fetched Dragon payload can immediately become a strict-JIT payload when a
     // distinct live hand-discard effect remains. Mysterious Treasure, Quick Ball,
     // and Earthen Vessel each discard from hand; Serena may discard from hand before
@@ -62,7 +71,12 @@
                                                hand_count(Card::EarthenVessel) > 0 ||
                                                second_ultra_ball_can_discard_fetched_payload() ||
                                                (supporter_allowed() && hand_count(Card::Serena) > 0);
-    const bool want_payload = need_payload() && !can_jit_discard && has_live_hand_payload_outlet;
+    const bool payload_might_be_searchable = might_be_unseen(Card::MegaDragonite) ||
+                                               might_be_unseen(Card::Dragapult) ||
+                                               might_be_unseen(Card::GoodraVstar) ||
+                                               might_be_unseen(Card::DialgaGX);
+    const bool want_payload = need_payload() && payload_might_be_searchable &&
+                              !can_jit_discard && has_live_hand_payload_outlet;
     if (!want_regi && !want_vstar && !want_latias && !want_oricorio && !want_tapu && !want_payload && !can_jit_discard) return false;
 
     // The Ultra Ball being played cannot pay its own cost. Two other Ultra Ball

@@ -36,7 +36,26 @@
 
   int score_regi(const Pokemon& p, const bool active) const {
     if (p.card != Card::RegidragoV && p.card != Card::RegidragoVstar) return -100000;
-    return 100 * std::min(2, p.grass) + 100 * std::min(1, p.fire) +
+    const bool active_regi_can_evolve_from_hand = state_.turn > 1 && state_.active &&
+        state_.active->card == Card::RegidragoV && state_.active->entered_turn < state_.turn &&
+        hand_count(Card::RegidragoVstar) > 0;
+    // Prefer an existing Benched VSTAR only when it has a legal same-turn path to
+    // the Active Spot. Latias ex gives a Basic Active no Retreat Cost, and Tate &
+    // Liza can switch a Benched Pokemon Active:
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    const bool latias_promotion_route = !active && p.card == Card::RegidragoVstar &&
+        !active_regi_can_evolve_from_hand && can_free_retreat_with_latias();
+    // Tate & Liza consumes the Supporter play. Require the payload axis to be
+    // complete so this preference does not displace Professor Burnet:
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    const bool tate_promotion_route = !active && p.card == Card::RegidragoVstar &&
+        !active_regi_can_evolve_from_hand && supporter_allowed() &&
+        hand_count(Card::TateLiza) > 0 && payload_ready();
+    const int route_bonus = latias_promotion_route || tate_promotion_route ? 1000 : 0;
+    return route_bonus + 100 * std::min(2, p.grass) + 100 * std::min(1, p.fire) +
            (p.card == Card::RegidragoVstar ? 15 : 0) + (active ? 3 : 0);
   }
 

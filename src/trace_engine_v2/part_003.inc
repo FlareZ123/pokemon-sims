@@ -22,8 +22,12 @@ class Engine {
       // A turn cannot proceed after the start-of-turn draw loss.
       if (state_.turn_ended) break;
       run_turn();
+      // Powerglass resolves at the end of the turn after the attack timing point, so
+      // its Energy cannot make that already-passed attack ready this turn:
+      // https://api.pokemontcg.io/v2/cards/sv6pt5-63
       record_ready();
       if (outcome_.first_ready_turn != 0) break;
+      resolve_powerglass_end_turn();
     }
     return outcome_;
   }

@@ -1,3 +1,44 @@
+  bool attach_powerglass() {
+    // Powerglass is a Pokémon Tool, so it can be attached during the turn even
+    // through Item lock. Its delayed effect matters only on the Active holder:
+    // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    // https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
+    if (hand_count(Card::Powerglass) == 0 || !state_.active || state_.active->tool != Tool::None ||
+        (state_.active->card != Card::RegidragoV && state_.active->card != Card::RegidragoVstar) ||
+        !need_energy()) return false;
+
+    const bool needed_grass_in_discard = grass_needed() > 0 && count_of(state_.discard, Card::Grass) > 0;
+    const bool needed_fire_in_discard = fire_needed() > 0 && count_of(state_.discard, Card::Fire) > 0;
+    if (!needed_grass_in_discard && !needed_fire_in_discard) return false;
+
+    remove_one(state_.hand, Card::Powerglass);
+    state_.active->tool = Tool::Powerglass;
+    trace("ATTACH TOOL", "R-POWERGLASS-01; R-GAME-TOOL",
+          "Attached Powerglass to the Active " + std::string(name(state_.active->card)) + ".");
+    return true;
+  }
+
+  bool resolve_powerglass_end_turn() {
+    // Powerglass resolves at the end of the turn after the attack timing point and
+    // only while its holder is Active: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    if (!state_.active || state_.active->tool != Tool::Powerglass || !need_energy()) return false;
+
+    Card energy = Card::Grass;
+    if (grass_needed() > 0 && count_of(state_.discard, Card::Grass) > 0) {
+      energy = Card::Grass;
+    } else if (fire_needed() > 0 && count_of(state_.discard, Card::Fire) > 0) {
+      energy = Card::Fire;
+    } else {
+      return false;
+    }
+
+    if (!remove_one(state_.discard, energy)) throw std::logic_error("Powerglass Energy target disappeared");
+    if (energy == Card::Grass) ++state_.active->grass; else ++state_.active->fire;
+    trace("POWERGLASS", "R-POWERGLASS-01",
+          "Attached " + std::string(name(energy)) + " from discard at end of turn.");
+    return true;
+  }
+
   void run_turn() {
     trace("POLICY", "P-AXIS-01", "Start: " + state_line());
     play_basics_from_hand();
@@ -8,6 +49,9 @@
     play_items_until_stable(!strict_payload_timing());
 
     attach_manual();
+    // Steven's Resolve ends the turn, so attach a live Powerglass before choosing
+    // that Supporter: https://api.pokemontcg.io/v2/cards/sm7-145
+    if (should_play_steven()) attach_powerglass();
     choose_supporter();
     if (state_.turn_ended) {
       trace("TURN END", "R-STEVEN-01 or R-RV-01", state_line());
@@ -47,6 +91,10 @@
     attach_manual();
     retreat_to_benched_vstar_with_latias();
     if (need_active_vstar() && !state_.supporter_used) play_tate_switch();
+    // Attach only after the final modeled switch decision, while the intended holder
+    // is known to remain Active for Powerglass's end-of-turn condition:
+    // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    attach_powerglass();
     use_celestial_roar();
     trace("POLICY", "P-AXIS-01", "End: " + state_line());
   }

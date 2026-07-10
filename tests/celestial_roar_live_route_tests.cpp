@@ -22,14 +22,12 @@ bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
   return std::find(cards.begin(), cards.end(), card) != cards.end();
 }
 
-sim::Engine make_engine(const sim::DciProfile dci, std::mt19937_64& rng) {
-  const sim::Scenario scenario{"celestial-roar-live-route", dci, sim::LockMode::None, false, 4};
-  return sim::Engine(scenario, sim::baseline_recipe(), rng);
-}
-
 void test_strict_jit_holds_when_known_deck_has_no_needed_energy() {
+  const sim::Scenario scenario{"celestial-roar-dead-strict", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
   std::mt19937_64 rng{3101};
-  sim::Engine engine = make_engine(sim::DciProfile::StrictJit, rng);
+  sim::Engine engine(scenario, recipe, rng);
   sim::State& state = sim::EngineTestAccess::state(engine);
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 0, sim::Tool::None};
@@ -50,8 +48,11 @@ void test_strict_jit_holds_when_known_deck_has_no_needed_energy() {
 }
 
 void test_no_control_keeps_live_payload_banking_attack() {
+  const sim::Scenario scenario{"celestial-roar-payload-bank", sim::DciProfile::NoDiscardControl,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
   std::mt19937_64 rng{3102};
-  sim::Engine engine = make_engine(sim::DciProfile::NoDiscardControl, rng);
+  sim::Engine engine(scenario, recipe, rng);
   sim::State& state = sim::EngineTestAccess::state(engine);
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 0, sim::Tool::None};
@@ -69,8 +70,11 @@ void test_no_control_keeps_live_payload_banking_attack() {
 }
 
 void test_strict_jit_attacks_when_needed_fire_may_remain() {
+  const sim::Scenario scenario{"celestial-roar-live-fire", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
   std::mt19937_64 rng{3103};
-  sim::Engine engine = make_engine(sim::DciProfile::StrictJit, rng);
+  sim::Engine engine(scenario, recipe, rng);
   sim::State& state = sim::EngineTestAccess::state(engine);
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 0, sim::Tool::None};

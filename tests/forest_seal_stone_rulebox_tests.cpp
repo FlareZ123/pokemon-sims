@@ -13,6 +13,10 @@ struct EngineTestAccess {
   static bool attach_fss(Engine& engine) { return engine.attach_fss(); }
   static bool use_fss(Engine& engine) { return engine.use_fss(); }
   static bool play_arven(Engine& engine) { return engine.play_arven(); }
+  static bool play_field_blower(Engine& engine) { return engine.play_field_blower(); }
+  static bool ability_available(const Engine& engine, const Card card) {
+    return engine.ability_available_for_pokemon(card);
+  }
 };
 
 }  // namespace sim
@@ -127,6 +131,63 @@ void test_arven_finds_forest_seal_stone_for_regidrago_vstar() {
   }
 }
 
+void test_field_blower_removes_path_style_rule_box_lock() {
+  const sim::Scenario scenario{"field-blower-path", sim::DciProfile::StrictJit,
+                               sim::LockMode::FullRuleBoxAbility, false, 4};
+  std::mt19937_64 rng{81};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0, sim::Tool::None};
+  state.hand = {sim::Card::FieldBlower};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Field Blower may discard a Stadium in play. Once Path to the Peak leaves play,
+  // its Rule Box Ability suppression no longer applies:
+  // https://api.pokemontcg.io/v2/cards/sm2-125
+  // https://api.pokemontcg.io/v2/cards/swsh6-148
+  if (sim::EngineTestAccess::ability_available(engine, sim::Card::TapuLeleGX)) {
+    throw std::runtime_error("Wonder Tag should begin suppressed by the modeled Path lock.");
+  }
+  if (!sim::EngineTestAccess::play_field_blower(engine) ||
+      !sim::EngineTestAccess::ability_available(engine, sim::Card::TapuLeleGX)) {
+    throw std::runtime_error("Field Blower should remove Path and restore Rule Box Pokémon Abilities.");
+  }
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.path_lock_removed ||
+      std::find(after.discard.begin(), after.discard.end(), sim::Card::FieldBlower) == after.discard.end()) {
+    throw std::runtime_error("The removed Path state and played Field Blower must persist.");
+  }
+}
+
+void test_combined_item_lock_prevents_field_blower() {
+  const sim::Scenario scenario{"field-blower-combined-lock", sim::DciProfile::StrictJit,
+                               sim::LockMode::FullCombined, false, 4};
+  std::mt19937_64 rng{82};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0, sim::Tool::None};
+  state.hand = {sim::Card::FieldBlower};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Field Blower is an Item, so the combined Item lock prevents playing it even
+  // though it could otherwise discard Path to the Peak:
+  // https://api.pokemontcg.io/v2/cards/sm2-125
+  if (sim::EngineTestAccess::play_field_blower(engine) ||
+      sim::EngineTestAccess::ability_available(engine, sim::Card::TapuLeleGX)) {
+    throw std::runtime_error("Combined Item lock must preserve the Path-style Ability lock.");
+  }
+  if (sim::EngineTestAccess::state(engine).path_lock_removed) {
+    throw std::runtime_error("A blocked Field Blower cannot remove the modeled Path.");
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -134,5 +195,7 @@ int main() {
   test_attach_forest_seal_stone_to_regidrago_vstar();
   test_use_forest_seal_stone_after_evolution_to_vstar();
   test_arven_finds_forest_seal_stone_for_regidrago_vstar();
+  test_field_blower_removes_path_style_rule_box_lock();
+  test_combined_item_lock_prevents_field_blower();
   return 0;
 }

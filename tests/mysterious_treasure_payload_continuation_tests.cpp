@@ -11,7 +11,10 @@ namespace sim {
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
   static const State& state(const Engine& engine) { return engine.state_; }
+  static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
   static bool play_mysterious_treasure(Engine& engine) { return engine.play_mysterious_treasure(true); }
+  static bool play_quick_ball(Engine& engine) { return engine.play_quick_ball(true); }
+  static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
 };
 
 }  // namespace sim
@@ -57,11 +60,57 @@ void test_two_mysterious_treasures_do_not_strand_a_fetched_payload() {
          "The Dragon payload should remain in deck until a live discard continuation exists.");
 }
 
+void test_mysterious_treasure_uses_ultra_ball_cost_and_preserves_quick_ball_payload_outlet() {
+  const sim::Scenario scenario{"treasure-ultra-cost-quick-payload", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::MysteriousTreasure, sim::Card::UltraBall, sim::Card::QuickBall};
+  state.deck = {sim::Card::MegaDragonite, sim::Card::RegidragoV};
+  state.supporter_used = true;
+
+  // Mysterious Treasure may discard the distinct held Ultra Ball, search the
+  // Dragon payload, and leave Quick Ball to discard that fetched payload before
+  // searching the Basic Regidrago V:
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/swsh12-135
+  sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{193};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  expect(sim::EngineTestAccess::play_mysterious_treasure(engine),
+         "Mysterious Treasure should discard held Ultra Ball and fetch the Dragon payload.");
+  expect(contains(sim::EngineTestAccess::state(engine).discard, sim::Card::UltraBall),
+         "The held Ultra Ball should pay Mysterious Treasure's one-card cost.");
+  expect(contains(sim::EngineTestAccess::state(engine).hand, sim::Card::MegaDragonite),
+         "Mysterious Treasure should search Mega Dragonite ex into hand.");
+
+  expect(sim::EngineTestAccess::play_quick_ball(engine),
+         "Quick Ball should remain available to discard the fetched Dragon payload.");
+  const sim::State& result = sim::EngineTestAccess::state(engine);
+  expect(contains(result.discard, sim::Card::MegaDragonite) &&
+             contains(result.discarded_this_turn, sim::Card::MegaDragonite),
+         "Quick Ball should place Mega Dragonite ex in discard during the current turn.");
+  expect(contains(result.hand, sim::Card::RegidragoV),
+         "Quick Ball should complete its required Basic Pokémon search.");
+  // Apex Dragon uses an attack from a Dragon Pokémon in discard:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  expect(sim::EngineTestAccess::payload_ready(engine),
+         "The Mysterious Treasure into Quick Ball route should satisfy strict-JIT payload timing.");
+}
+
 }  // namespace
 
 int main() {
   try {
     test_two_mysterious_treasures_do_not_strand_a_fetched_payload();
+    test_mysterious_treasure_uses_ultra_ball_cost_and_preserves_quick_ball_payload_outlet();
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';
     return 1;

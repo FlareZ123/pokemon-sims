@@ -65,7 +65,10 @@
 #include "trace_engine_v2/part_celestial_roar_override.inc"
 #include "trace_engine_v2/part_013_legacy_star_override.inc"
 #include "trace_engine_v2/part_012_gladion_override.inc"
+#define play_arven play_arven_powerglass_original
 #include "trace_engine_v2/part_012_override.inc"
+#undef play_arven
+#include "trace_engine_v2/part_012_powerglass_override.inc"
 #define choose_supporter choose_supporter_original
 #include "trace_engine_v2/part_014b.inc"
 #undef choose_supporter

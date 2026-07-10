@@ -12,6 +12,7 @@ struct EngineTestAccess {
   static const State& state(const Engine& engine) { return engine.state_; }
   static bool attach_fss(Engine& engine) { return engine.attach_fss(); }
   static bool use_fss(Engine& engine) { return engine.use_fss(); }
+  static bool play_arven(Engine& engine) { return engine.play_arven(); }
 };
 
 }  // namespace sim
@@ -96,11 +97,42 @@ void test_use_forest_seal_stone_after_evolution_to_vstar() {
   }
 }
 
+void test_arven_finds_forest_seal_stone_for_regidrago_vstar() {
+  // Arven may search a Pokémon Tool, Forest Seal Stone attaches to Pokémon V, and
+  // Pokémon V includes Pokémon VSTAR:
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
+  const sim::Scenario scenario{"arven-fss-for-vstar", sim::DciProfile::NoDiscardControl,
+                               sim::LockMode::None, false, 4};
+  std::mt19937_64 rng{80};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+  state.hand = {sim::Card::Arven};
+  state.discard = {sim::Card::MegaDragonite};
+  state.deck = {sim::Card::ForestSealStone, sim::Card::Fire};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  if (!sim::EngineTestAccess::play_arven(engine)) {
+    throw std::runtime_error("Arven should recognize the open Regidrago VSTAR Tool slot.");
+  }
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (std::find(after.hand.begin(), after.hand.end(), sim::Card::ForestSealStone) == after.hand.end()) {
+    throw std::runtime_error("Arven should search Forest Seal Stone for Regidrago VSTAR.");
+  }
+}
+
 }  // namespace
 
 int main() {
   test_star_alchemy_through_rule_box_lock();
   test_attach_forest_seal_stone_to_regidrago_vstar();
   test_use_forest_seal_stone_after_evolution_to_vstar();
+  test_arven_finds_forest_seal_stone_for_regidrago_vstar();
   return 0;
 }

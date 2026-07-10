@@ -148,7 +148,28 @@
     return hand_count(Card::Grass) < grass_needed() || hand_count(Card::Fire) < fire_needed();
   }
 
-  bool needs_tapu_connector() const {
+  bool payable_ultra_ball_vstar_route() {
+    // Ultra Ball directly searches Regidrago VSTAR only when its two other-card
+    // discard costs are actually payable: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    if (item_locked() || hand_count(Card::UltraBall) == 0 || !need_vstar() ||
+        !might_be_unseen(Card::RegidragoVstar)) return false;
+
+    const std::vector<Card> original_hand = state_.hand;
+    const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
+    const bool permit_payload = can_play_payload_this_turn() &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    const auto first = choose_discard(permit_payload, true);
+    if (!first || !remove_one(state_.hand, *first)) {
+      restore_hand();
+      return false;
+    }
+    const auto second = choose_discard(can_play_payload_this_turn() && !is_payload(*first),
+                                       true, true, Card::UltraBall);
+    restore_hand();
+    return second.has_value();
+  }
+
+  bool needs_tapu_connector() {
     if (!supporter_allowed() || !ability_available_for_pokemon(Card::TapuLeleGX)) return false;
     // With only one Bench slot left, Tapu Lele-GX into Crispin consumes both the
     // Bench slot and the single Supporter play. Oricorio can instead find the final
@@ -170,7 +191,16 @@
     const bool needs_burnet = can_play_payload_this_turn() && payload_might_be_in_deck() &&
                                hand_count(Card::ProfessorBurnet) == 0 && !has_live_blender_payload_line() &&
                                might_be_unseen(Card::ProfessorBurnet);
-    const bool needs_arven = need_vstar() && hand_count(Card::Arven) == 0 && hand_count(Card::EvolutionIncense) == 0 && hand_count(Card::MysteriousTreasure) == 0;
+    // A payable Ultra Ball already searches Regidrago VSTAR directly, so Wonder Tag
+    // must not spend a Bench slot and Supporter route on indirect Arven:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    const bool direct_ultra_vstar_route = payable_ultra_ball_vstar_route();
+    const bool needs_arven = need_vstar() && hand_count(Card::Arven) == 0 &&
+                             hand_count(Card::EvolutionIncense) == 0 &&
+                             hand_count(Card::MysteriousTreasure) == 0 &&
+                             !direct_ultra_vstar_route;
     return needs_t1_steven || needs_crispin || needs_burnet || needs_arven;
   }
 

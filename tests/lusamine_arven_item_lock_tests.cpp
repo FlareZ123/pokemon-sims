@@ -12,6 +12,7 @@ struct EngineTestAccess {
   static const TrialOutcome& outcome(const Engine& engine) { return engine.outcome_; }
   static void set_deck_seen(Engine& engine, const bool seen) { engine.deck_seen_ = seen; }
   static void run_turn(Engine& engine) { engine.run_turn(); }
+  static bool play_lusamine(Engine& engine) { return engine.play_lusamine(); }
 };
 
 }  // namespace sim
@@ -56,6 +57,52 @@ void test_lusamine_recovers_arven_for_item_lock_fss_route() {
   assert(state.active && state.active->card == Card::RegidragoVstar);
   assert(EngineTestAccess::outcome(engine).used_fss);
   assert(std::count(state.discard.begin(), state.discard.end(), Card::Arven) == 1);
+}
+
+void test_lusamine_holds_with_only_one_eligible_target() {
+  using namespace sim;
+  const Scenario scenario{"lusamine-one-target", DciProfile::StrictJit, LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(149);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+  state.hand = {Card::Lusamine};
+  state.discard = {Card::ProfessorBurnet, Card::Grass};
+
+  // Lusamine requires exactly 2 Supporter and/or Stadium cards from the public
+  // discard pile. One eligible target does not satisfy the printed effect:
+  // https://api.pokemontcg.io/v2/cards/sm4-96
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+  assert(!EngineTestAccess::play_lusamine(engine));
+  assert(!state.supporter_used);
+  assert(state.hand.size() == 1U && state.hand.front() == Card::Lusamine);
+  assert(state.discard.size() == 2U && contains(state.discard, Card::ProfessorBurnet) &&
+         contains(state.discard, Card::Grass));
+}
+
+void test_lusamine_accepts_two_copies_of_one_eligible_card() {
+  using namespace sim;
+  const Scenario scenario{"lusamine-duplicate-target", DciProfile::StrictJit, LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(150);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+  state.hand = {Card::Lusamine};
+  state.discard = {Card::ProfessorBurnet, Card::ProfessorBurnet};
+
+  // The effect requires two cards, while allowing any combination of Supporter and
+  // Stadium cards. Two copies of the same eligible Supporter are therefore legal:
+  // https://api.pokemontcg.io/v2/cards/sm4-96
+  assert(EngineTestAccess::play_lusamine(engine));
+  assert(state.supporter_used);
+  assert(std::count(state.hand.begin(), state.hand.end(), Card::ProfessorBurnet) == 2);
+  assert(std::count(state.discard.begin(), state.discard.end(), Card::Lusamine) == 1);
 }
 
 void test_roseanne_recovers_vstar_into_evolution_incense_route() {
@@ -126,6 +173,8 @@ void test_roseanne_holds_without_a_payable_post_recovery_search() {
 
 int main() {
   test_lusamine_recovers_arven_for_item_lock_fss_route();
+  test_lusamine_holds_with_only_one_eligible_target();
+  test_lusamine_accepts_two_copies_of_one_eligible_card();
   test_roseanne_recovers_vstar_into_evolution_incense_route();
   test_roseanne_holds_without_a_payable_post_recovery_search();
   return 0;

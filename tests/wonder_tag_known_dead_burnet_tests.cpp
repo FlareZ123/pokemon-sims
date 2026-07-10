@@ -69,6 +69,9 @@ void test_wonder_tag_uses_arven_vessel_for_final_energy() {
   state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
   state.hand = {sim::Card::TapuLeleGX, sim::Card::Dipplin};
   state.deck = {sim::Card::Arven, sim::Card::EarthenVessel, sim::Card::Fire, sim::Card::Grass};
+  // Keep the fixture focused on the Wonder Tag route. Otherwise Legacy Star may
+  // legally recover paid costs after the chain and obscure the cost assertions.
+  state.vstar_power_used = true;
   sim::EngineTestAccess::set_state(engine, std::move(state));
 
   // Wonder Tag may find Arven, Arven may find Earthen Vessel, and Vessel may

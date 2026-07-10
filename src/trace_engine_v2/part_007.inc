@@ -72,6 +72,14 @@
       return Card::ProfessorBurnet;
     }
     if (need_vstar() && deck_count_after_search_started(Card::Arven) > 0) return Card::Arven;
+    // Wonder Tag can search Tate & Liza, whose switch mode immediately promotes a
+    // powered Benched Regidrago VSTAR when Active position is the only missing axis:
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    if (need_active_vstar() && !need_energy() && !need_payload() &&
+        !can_free_retreat_with_latias() && deck_count_after_search_started(Card::TateLiza) > 0) {
+      return Card::TateLiza;
+    }
     if (deck_count_after_search_started(Card::Serena) > 0) return Card::Serena;
     if (deck_count_after_search_started(Card::TateLiza) > 0) return Card::TateLiza;
 

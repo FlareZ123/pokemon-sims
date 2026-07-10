@@ -110,6 +110,11 @@ void test_team_yell_restores_vstar_and_latias_in_one_resolution() {
   state.deck = {Card::Grass};
   state.discard = {Card::RegidragoVstar, Card::LatiasEx, Card::MegaDragonite};
   state.discarded_this_turn = {Card::MegaDragonite};
+  // Forest Seal Stone or another VSTAR Power may already have been used. A player
+  // may use only one VSTAR Power during a game, so Legacy Star cannot recover Latias:
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  state.vstar_power_used = true;
   EngineTestAccess::set_deck_seen(engine);
 
   // Team Yell's Cheer may restore both Pokémon in one "up to 3" selection.
@@ -153,6 +158,9 @@ void test_team_yell_does_not_reuse_incense_as_quick_ball_cost() {
   state.deck = {Card::Grass};
   state.discard = {Card::RegidragoVstar, Card::LatiasEx, Card::MegaDragonite};
   state.discarded_this_turn = {Card::MegaDragonite};
+  // Keep Legacy Star unavailable so the test isolates the two future Item actions:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  state.vstar_power_used = true;
   EngineTestAccess::set_deck_seen(engine);
 
   // Evolution Incense is consumed while searching Regidrago VSTAR, so it cannot

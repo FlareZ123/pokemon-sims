@@ -1,3 +1,14 @@
+  bool attach_live_fss() {
+    // Forest Seal Stone grants a VSTAR Power, and a player may use only one VSTAR
+    // Power during a game. Once that resource is spent, attaching the Stone cannot
+    // advance setup and would consume the holder's one Tool slot:
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    if (state_.vstar_power_used) return false;
+    return attach_fss();
+  }
+
   bool attach_powerglass() {
     // Powerglass is a Pokémon Tool, so it can be attached during the turn even
     // through Item lock. Its delayed effect matters only on the Active holder:
@@ -43,7 +54,7 @@
     trace("POLICY", "P-AXIS-01", "Start: " + state_line());
     play_basics_from_hand();
     play_items_until_stable(!strict_payload_timing());
-    attach_fss();
+    attach_live_fss();
     use_fss();
     play_basics_from_hand();
     play_items_until_stable(!strict_payload_timing());
@@ -59,7 +70,7 @@
     }
 
     play_basics_from_hand();
-    attach_fss();
+    attach_live_fss();
     use_fss();
     play_items_until_stable(!strict_payload_timing());
     attach_manual();

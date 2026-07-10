@@ -13,6 +13,7 @@ struct EngineTestAccess {
   static const TrialOutcome& outcome(const Engine& engine) { return engine.outcome_; }
   static void run_turn(Engine& engine) { engine.run_turn(); }
   static void record_ready(Engine& engine) { engine.record_ready(); }
+  static bool use_fss(Engine& engine) { return engine.use_fss(); }
 };
 
 }  // namespace sim
@@ -115,6 +116,26 @@ void test_star_alchemy_fetches_oricorio_when_crispin_blocks_burnet() {
   assert(EngineTestAccess::outcome(engine).first_ready_turn == 2);
 }
 
+void test_star_alchemy_takes_an_available_any_card_fallback() {
+  using namespace sim;
+  const Scenario scenario{"fss-any-card-fallback", DciProfile::StrictJit, LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(225);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::ForestSealStone};
+  state.deck = {Card::TeamYellsCheer};
+
+  // Star Alchemy searches for any card. After its legal inspection proves all
+  // preferred setup targets absent, the remaining Team Yell's Cheer is still a
+  // valid card to put into hand: https://api.pokemontcg.io/v2/cards/swsh12-156
+  assert(EngineTestAccess::use_fss(engine));
+  assert(state.vstar_power_used);
+  assert(count(state.hand, Card::TeamYellsCheer) == 1);
+  assert(state.deck.empty());
+}
+
 void test_arven_fss_fetches_raw_energy_after_supporter_use() {
   using namespace sim;
   const Scenario scenario{"arven-fss-raw-energy", DciProfile::StrictJit, LockMode::None, false, 4};
@@ -155,6 +176,7 @@ int main() {
   test_star_alchemy_uses_crispin_for_same_turn_ggf();
   test_star_alchemy_keeps_vessel_priority_without_same_turn_crispin_completion();
   test_star_alchemy_fetches_oricorio_when_crispin_blocks_burnet();
+  test_star_alchemy_takes_an_available_any_card_fallback();
   test_arven_fss_fetches_raw_energy_after_supporter_use();
   return 0;
 }

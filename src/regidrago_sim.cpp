@@ -78,7 +78,10 @@
 #define choose_supporter choose_supporter_original
 #include "trace_engine_v2/part_014b.inc"
 #undef choose_supporter
+#define choose_supporter choose_supporter_turo_original
 #include "trace_engine_v2/part_team_yell_vstar_override.inc"
+#undef choose_supporter
+#include "trace_engine_v2/part_turo_oricorio_override.inc"
 #include "trace_engine_v2/part_014c.inc"
 #include "trace_engine_v2/part_015.inc"
 #include "trace_engine_v2/part_016.inc"

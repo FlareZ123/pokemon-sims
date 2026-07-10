@@ -17,7 +17,16 @@
                                                   hand_count(Card::Crispin) > 0 && crispin_can_advance_energy_axis();
     const bool useful = !tate_solves_only_missing_axis && !crispin_solves_only_missing_axis &&
                         (should_play_steven() || need_regi() || need_vstar() || need_energy() || need_payload() || need_active_vstar());
-    if (!useful) return false;
+    // Star Alchemy's unrestricted search is mandatory because its text gives no
+    // choice: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://compendium.pokegym.net/category/2-meta-rulings/
+    // With one card left in deck, using it necessarily empties Professor Burnet's
+    // only payload zone. Preserve Burnet through Item lock instead:
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    const bool mandatory_search_breaks_only_burnet_line = need_payload() && item_locked() &&
+        supporter_allowed() && hand_count(Card::ProfessorBurnet) > 0 && state_.deck.size() == 1U &&
+        payload_might_be_in_deck();
+    if (!useful || mandatory_search_breaks_only_burnet_line) return false;
     state_.vstar_power_used = true;
     outcome_.used_fss = true;
     // Card text source: https://api.pokemontcg.io/v2/cards/swsh12-156

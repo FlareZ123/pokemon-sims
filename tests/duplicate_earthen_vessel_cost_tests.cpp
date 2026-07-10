@@ -11,9 +11,11 @@ namespace sim {
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
   static const State& state(const Engine& engine) { return engine.state_; }
+  static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
   static bool play_earthen_vessel(Engine& engine, const bool permit_payload) {
     return engine.play_earthen_vessel(permit_payload);
   }
+  static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
 };
 
 }  // namespace sim
@@ -89,12 +91,70 @@ void test_earthen_vessel_can_discard_unpayable_ultra_ball() {
   expect(after.deck.empty(), "the searched Basic Energy cards should leave the deck");
 }
 
+void test_earthen_vessel_holds_when_k1_proves_no_needed_energy() {
+  const sim::Scenario scenario{"earthen-vessel-known-empty-energy", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{199};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+  state.hand = {sim::Card::EarthenVessel, sim::Card::Dipplin};
+  state.deck = {sim::Card::Arven};
+  // Earthen Vessel pays its discard before searching up to two Basic Energy. K1
+  // may use the inspected deck contents to avoid a search known to have no target:
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  expect(!sim::EngineTestAccess::play_earthen_vessel(engine, true),
+         "Earthen Vessel should be held when K1 proves no needed Basic Energy remains");
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(contains(after.hand, sim::Card::EarthenVessel) && contains(after.hand, sim::Card::Dipplin),
+         "The dead search must preserve Earthen Vessel and its would-be discard cost");
+  expect(after.discard.empty(), "The dead search must not spend either hand card");
+}
+
+void test_earthen_vessel_still_discards_payload_with_no_energy_in_deck() {
+  const sim::Scenario scenario{"earthen-vessel-payload-empty-energy", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{200};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::EarthenVessel, sim::Card::MegaDragonite};
+  // Earthen Vessel may still discard the in-hand Dragon payload as its other-card
+  // cost even when its optional Basic Energy search finds zero cards:
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // Apex Dragon may use a Dragon Pokémon attack from discard:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  expect(sim::EngineTestAccess::play_earthen_vessel(engine, true),
+         "Earthen Vessel should remain a strict-JIT payload discard outlet");
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(contains(after.discard, sim::Card::MegaDragonite) &&
+             contains(after.discarded_this_turn, sim::Card::MegaDragonite),
+         "The in-hand Dragon payload should enter discard during the current turn");
+  expect(sim::EngineTestAccess::payload_ready(engine),
+         "The payload-discard exception should satisfy strict-JIT readiness");
+}
+
 }  // namespace
 
 int main() {
   try {
     test_duplicate_earthen_vessel_is_legal_cost();
     test_earthen_vessel_can_discard_unpayable_ultra_ball();
+    test_earthen_vessel_holds_when_k1_proves_no_needed_energy();
+    test_earthen_vessel_still_discards_payload_with_no_energy_in_deck();
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

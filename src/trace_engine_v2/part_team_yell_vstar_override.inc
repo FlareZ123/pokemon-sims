@@ -40,6 +40,31 @@
     return false;
   }
 
+  bool team_yell_vstar_latias_companion_live() {
+    const bool powered_benched_regi = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV && pokemon.entered_turn < state_.turn &&
+                 pokemon.grass >= 2 && pokemon.fire >= 1;
+        });
+    const bool active_will_evolve = state_.active && state_.active->card == Card::RegidragoV &&
+                                    state_.active->entered_turn < state_.turn;
+    if (!need_active_vstar() || active_will_evolve || !state_.active ||
+        !is_basic(state_.active->card) || !powered_benched_regi || !payload_ready() ||
+        state_.retreat_used || bench_space() == 0 ||
+        !ability_available_for_pokemon(Card::LatiasEx) || in_play(Card::LatiasEx) ||
+        count_of(state_.discard, Card::LatiasEx) == 0 || might_be_unseen(Card::LatiasEx)) {
+      return false;
+    }
+
+    // Team Yell's Cheer may recover both Pokémon in one up-to-3 resolution. Require
+    // Evolution Incense for the costless VSTAR search so the separate Latias search
+    // retains its own payable discard resources after the Supporter leaves hand:
+    // https://api.pokemontcg.io/v2/cards/swsh9-149
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    return hand_count(Card::EvolutionIncense) > 0 && has_payable_team_yell_latias_search();
+  }
+
   bool play_team_yell_vstar_recovery() {
     if (!supporter_allowed() || hand_count(Card::TeamYellsCheer) == 0 || !need_vstar() ||
         !has_regidrago_v_that_can_evolve_this_turn() ||
@@ -51,27 +76,47 @@
     // deck. This recovery is selected after legal knowledge proves the search target
     // absent and a discarded copy can restore a payable same-turn route.
     if (might_be_unseen(Card::RegidragoVstar) || !has_payable_team_yell_vstar_search()) return false;
+    const bool recover_latias = team_yell_vstar_latias_companion_live();
 
     remove_one(state_.hand, Card::TeamYellsCheer);
     state_.discard.push_back(Card::TeamYellsCheer);
     state_.supporter_used = true;
 
     // Team Yell's Cheer may shuffle up to 3 Pokémon and/or Supporter cards other than
-    // itself from discard into the deck. The restored VSTAR may evolve any legal
-    // prior-turn Regidrago V in play, including one on the Bench:
+    // itself from discard into the deck. Restore VSTAR and the separately searchable
+    // Latias ex together when Skyliner is needed for the Basic Active's free retreat:
     // https://api.pokemontcg.io/v2/cards/swsh9-149
+    // https://api.pokemontcg.io/v2/cards/sv8-76
     // https://www.pokemon.com/us/pokemon-tcg/rules
     if (!remove_one(state_.discard, Card::RegidragoVstar)) {
       throw std::logic_error("Team Yell's Cheer VSTAR target disappeared");
     }
-    const auto turn_it = std::find(state_.discarded_this_turn.begin(),
-                                   state_.discarded_this_turn.end(),
-                                   Card::RegidragoVstar);
-    if (turn_it != state_.discarded_this_turn.end()) state_.discarded_this_turn.erase(turn_it);
+    const auto vstar_turn_it = std::find(state_.discarded_this_turn.begin(),
+                                         state_.discarded_this_turn.end(),
+                                         Card::RegidragoVstar);
+    if (vstar_turn_it != state_.discarded_this_turn.end()) {
+      state_.discarded_this_turn.erase(vstar_turn_it);
+    }
     state_.deck.push_back(Card::RegidragoVstar);
+
+    if (recover_latias) {
+      if (!remove_one(state_.discard, Card::LatiasEx)) {
+        throw std::logic_error("Team Yell's Cheer companion Latias target disappeared");
+      }
+      const auto latias_turn_it = std::find(state_.discarded_this_turn.begin(),
+                                            state_.discarded_this_turn.end(),
+                                            Card::LatiasEx);
+      if (latias_turn_it != state_.discarded_this_turn.end()) {
+        state_.discarded_this_turn.erase(latias_turn_it);
+      }
+      state_.deck.push_back(Card::LatiasEx);
+    }
+
     shuffle(state_.deck);
     trace("PLAY SUPPORTER", "R-GAME-SUPPORTER",
-          "Team Yell's Cheer shuffled Regidrago VSTAR from discard into the deck for a payable same-turn search.");
+          recover_latias
+              ? "Team Yell's Cheer shuffled Regidrago VSTAR and Latias ex into the deck for separate payable same-turn searches."
+              : "Team Yell's Cheer shuffled Regidrago VSTAR from discard into the deck for a payable same-turn search.");
     return true;
   }
 

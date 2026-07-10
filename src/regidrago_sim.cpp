@@ -53,6 +53,7 @@
 #include "trace_engine_v2/part_search_item_overrides.inc"
 #include "trace_engine_v2/part_010_fss_override.inc"
 #include "trace_engine_v2/part_010_attach_fss_override.inc"
+#define use_fss use_fss_latias_original
 #include "trace_engine_v2/part_011.inc"
 #define play_arven play_arven_original
 #define play_gladion play_gladion_original
@@ -64,6 +65,8 @@
 #include "trace_engine_v2/part_013.inc"
 #undef use_legacy_star
 #include "trace_engine_v2/part_014a.inc"
+#undef use_fss
+#include "trace_engine_v2/part_011_fss_latias_override.inc"
 #undef use_celestial_roar
 #include "trace_engine_v2/part_celestial_roar_override.inc"
 #include "trace_engine_v2/part_013_legacy_star_override.inc"

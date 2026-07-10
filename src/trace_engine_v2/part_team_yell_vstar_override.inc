@@ -52,26 +52,50 @@
     // absent and a discarded copy can restore a payable same-turn route.
     if (might_be_unseen(Card::RegidragoVstar) || !has_payable_team_yell_vstar_search()) return false;
 
+    // Team Yell's Cheer may return up to 3 eligible cards in one resolution. When a
+    // powered prior-turn Benched Regidrago V will evolve behind a Basic Active, restore
+    // Latias ex together with Regidrago VSTAR if a separate Basic search remains payable:
+    // https://api.pokemontcg.io/v2/cards/swsh9-149
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Retreat_Your_Active_Pokemon
+    const bool powered_benched_regi_can_evolve = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV && pokemon.entered_turn < state_.turn &&
+                 pokemon.grass >= 2 && pokemon.fire >= 1;
+        });
+    const bool restore_latias_for_promotion = state_.active && is_basic(state_.active->card) &&
+        state_.active->card != Card::RegidragoV && powered_benched_regi_can_evolve && payload_ready() &&
+        !state_.retreat_used && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
+        !in_play(Card::LatiasEx) && count_of(state_.discard, Card::LatiasEx) > 0 &&
+        !might_be_unseen(Card::LatiasEx) && has_payable_team_yell_latias_search();
+
     remove_one(state_.hand, Card::TeamYellsCheer);
     state_.discard.push_back(Card::TeamYellsCheer);
     state_.supporter_used = true;
+
+    const auto restore_to_deck = [this](const Card card) {
+      if (!remove_one(state_.discard, card)) {
+        throw std::logic_error("Team Yell's Cheer recovery target disappeared");
+      }
+      const auto turn_it = std::find(state_.discarded_this_turn.begin(),
+                                     state_.discarded_this_turn.end(), card);
+      if (turn_it != state_.discarded_this_turn.end()) state_.discarded_this_turn.erase(turn_it);
+      state_.deck.push_back(card);
+    };
 
     // Team Yell's Cheer may shuffle up to 3 Pokémon and/or Supporter cards other than
     // itself from discard into the deck. The restored VSTAR may evolve any legal
     // prior-turn Regidrago V in play, including one on the Bench:
     // https://api.pokemontcg.io/v2/cards/swsh9-149
     // https://www.pokemon.com/us/pokemon-tcg/rules
-    if (!remove_one(state_.discard, Card::RegidragoVstar)) {
-      throw std::logic_error("Team Yell's Cheer VSTAR target disappeared");
-    }
-    const auto turn_it = std::find(state_.discarded_this_turn.begin(),
-                                   state_.discarded_this_turn.end(),
-                                   Card::RegidragoVstar);
-    if (turn_it != state_.discarded_this_turn.end()) state_.discarded_this_turn.erase(turn_it);
-    state_.deck.push_back(Card::RegidragoVstar);
+    restore_to_deck(Card::RegidragoVstar);
+    if (restore_latias_for_promotion) restore_to_deck(Card::LatiasEx);
     shuffle(state_.deck);
     trace("PLAY SUPPORTER", "R-GAME-SUPPORTER",
-          "Team Yell's Cheer shuffled Regidrago VSTAR from discard into the deck for a payable same-turn search.");
+          restore_latias_for_promotion
+              ? "Team Yell's Cheer restored Regidrago VSTAR and Latias ex for separate same-turn searches and promotion."
+              : "Team Yell's Cheer shuffled Regidrago VSTAR from discard into the deck for a payable same-turn search.");
     return true;
   }
 

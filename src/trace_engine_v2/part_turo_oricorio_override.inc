@@ -135,6 +135,10 @@
 
   void choose_supporter() {
     if (!supporter_allowed()) return;
+    // Roseanne's Backup may choose its Pokémon and Energy modes together, so resolve
+    // that two-axis route before single-axis recovery policies:
+    // https://api.pokemontcg.io/v2/cards/swsh9-148
+    if (play_roseanne_vstar_energy_recovery()) return;
     // Evaluate Active-specific routes before the generic preferred-Regidrago axis
     // gate, which may consider a different Benched Regidrago already complete.
     if (play_turo_oricorio_energy_route()) return;

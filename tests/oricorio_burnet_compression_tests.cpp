@@ -9,9 +9,13 @@ namespace sim {
 
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
+  static State& state(Engine& engine) { return engine.state_; }
   static const State& state(const Engine& engine) { return engine.state_; }
+  static const TrialOutcome& outcome(const Engine& engine) { return engine.outcome_; }
   static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
+  static void choose_opening_active(Engine& engine) { engine.choose_opening_active(); }
   static void run_turn(Engine& engine) { engine.run_turn(); }
+  static void record_ready(Engine& engine) { engine.record_ready(); }
   static void play_basics_from_hand(Engine& engine) { engine.play_basics_from_hand(); }
 };
 
@@ -188,6 +192,97 @@ void test_redundant_regidrago_uses_final_slot_without_live_connector() {
   }
 }
 
+void expect_tapu_active_and_oricorio_held(const sim::LockMode lock_mode,
+                                          const bool hold_crispin) {
+  const sim::Scenario scenario{"opening-tapu-preserves-oricorio",
+                               sim::DciProfile::StrictJit,
+                               lock_mode, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{346};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::Oricorio};
+  if (hold_crispin) state.hand.push_back(sim::Card::Crispin);
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Either opening Basic may be selected. Under Path-style Rule Box Ability
+  // suppression Wonder Tag is unavailable while Vital Dance remains live. A held
+  // Crispin also supplies the current Supporter route, making Oricorio the scarce
+  // on-play Energy connector:
+  // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-55
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://api.pokemontcg.io/v2/cards/swsh6-148
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::TapuLeleGX ||
+      !contains(after.hand, sim::Card::Oricorio)) {
+    throw std::runtime_error("Tapu Lele-GX should start Active so Oricorio remains an on-play connector.");
+  }
+}
+
+void test_opening_choice_under_rule_box_ability_locks() {
+  expect_tapu_active_and_oricorio_held(sim::LockMode::FullRuleBoxAbility, false);
+  expect_tapu_active_and_oricorio_held(sim::LockMode::FullCombined, false);
+}
+
+void test_opening_choice_when_crispin_route_is_held() {
+  expect_tapu_active_and_oricorio_held(sim::LockMode::None, true);
+}
+
+void test_opening_choice_preserves_legacy_order_without_connector_signal() {
+  const sim::Scenario scenario{"opening-choice-control", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{347};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::Oricorio};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::Oricorio ||
+      !contains(after.hand, sim::Card::TapuLeleGX)) {
+    throw std::runtime_error("The legacy Wonder Tag-preserving order should remain without a route signal.");
+  }
+}
+
+void test_preserved_oricorio_completes_the_t2_burnet_route() {
+  const sim::Scenario scenario{"opening-oricorio-t2-ready", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{348};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::Oricorio, sim::Card::Crispin};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::choose_opening_active(engine);
+
+  sim::State& routed = sim::EngineTestAccess::state(engine);
+  routed.turn = 2;
+  routed.active->entered_turn = 0;
+  routed.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None},
+                  sim::Pokemon{sim::Card::LatiasEx, 1}};
+  routed.hand = {sim::Card::Oricorio, sim::Card::ProfessorBurnet};
+  routed.deck = {sim::Card::MegaDragonite, sim::Card::Fire};
+
+  // Vital Dance finds the final Fire, Professor Burnet discards the current-turn
+  // Dragon payload, and Skyliner permits the Basic Active to retreat for free:
+  // https://api.pokemontcg.io/v2/cards/sm2-55
+  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // https://api.pokemontcg.io/v2/cards/sv8-76
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  sim::EngineTestAccess::run_turn(engine);
+  sim::EngineTestAccess::record_ready(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::RegidragoVstar ||
+      after.active->grass != 2 || after.active->fire != 1 ||
+      sim::EngineTestAccess::outcome(engine).first_ready_turn != 2) {
+    throw std::runtime_error("The preserved Oricorio route should produce a ready Active Regidrago VSTAR on turn 2.");
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -196,5 +291,9 @@ int main() {
   test_oricorio_takes_final_slot_over_redundant_regidrago();
   test_tapu_takes_final_slot_over_redundant_regidrago();
   test_redundant_regidrago_uses_final_slot_without_live_connector();
+  test_opening_choice_under_rule_box_ability_locks();
+  test_opening_choice_when_crispin_route_is_held();
+  test_opening_choice_preserves_legacy_order_without_connector_signal();
+  test_preserved_oricorio_completes_the_t2_burnet_route();
   return 0;
 }

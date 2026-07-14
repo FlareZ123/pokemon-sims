@@ -1,0 +1,15 @@
+name: Export issue 525 source
+
+on:
+  pull_request:
+
+jobs:
+  export-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue-525-source
+          path: tests/legacy_star_evolution_incense_payload_tests.cpp
+          if-no-files-found: error

@@ -2,7 +2,7 @@
 
 ## Canonical surface
 
-`regidrago_policy_tests` executes **56** deterministic exact-state fixtures. The runner table is the canonical inventory and order: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/policy_fixture_v2/part_004a.inc#L134-L190
+`regidrago_policy_tests` executes **57** deterministic exact-state fixtures. The runner table is the canonical inventory and order: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/policy_fixture_v2/part_004a.inc#L134-L191
 
 Each listed function constructs its hand, board, deck, Prize, discard, lock, expected action, and expected resulting state in the adjacent split source files under `tests/policy_fixture_v2/`. The executable assertions and their direct rule or card URLs are authoritative when a historical function identifier is awkward or stale.
 
@@ -57,13 +57,14 @@ Each listed function constructs its hand, board, deck, Prize, discard, lock, exp
 47. `tate_switch_is_selected_when_it_completes_active_axis`
 48. `strict_jit_requires_payload_to_be_in_discard_now_and_this_turn`
 49. `finished_setup_does_not_burn_serena`
-50. `arven_is_not_played_during_item_lock`
-51. `first_turn_restrictions_and_celestial_cost`
-52. `evolution_timing_and_single_manual_attachment`
-53. `item_lock_blocks_item_cards`
-54. `ultra_ball_discards_payload_in_jit_window`
-55. `dipplin_is_legal_treasure_fallback_but_not_payload_ready`
-56. `late_jit_item_search_evolves_in_the_same_turn`
+50. `arven_fetches_forest_seal_stone_during_item_lock`
+51. `arven_is_not_played_during_item_lock`
+52. `first_turn_restrictions_and_celestial_cost`
+53. `evolution_timing_and_single_manual_attachment`
+54. `item_lock_blocks_item_cards`
+55. `ultra_ball_discards_payload_in_jit_window`
+56. `dipplin_is_legal_treasure_fallback_but_not_payload_ready`
+57. `late_jit_item_search_evolves_in_the_same_turn`
 
 ## Historical identifiers with corrected assertions
 

@@ -68,7 +68,7 @@ K1 begins only during a legal effect resolution. It does not grant prior knowled
 
 ## Test surfaces
 
-- `regidrago_policy_tests`: 56 executable core exact-state rule and policy fixtures. Canonical inventory: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/policy_fixture_v2/part_004a.inc#L134-L190
+- `regidrago_policy_tests`: 57 executable core exact-state rule and policy fixtures. Canonical inventory: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/policy_fixture_v2/part_004a.inc#L134-L191
 - `regidrago_tier2_tests`: 31 executable choice-differentiation, fast-compression, K1, and lock-aware fixtures. Canonical inventory: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/tier2_parts/part_003b.inc#L40-L73
 - `--simulate-this`: seeded full-game traces with state changes labeled by rule and policy IDs.
 

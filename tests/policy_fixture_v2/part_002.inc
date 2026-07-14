@@ -51,20 +51,6 @@ void test_searches_use_legal_fallback_targets_after_deck_inspection() {
   expect(contains(EngineTestAccess::state(f.engine).hand, Card::TapuLeleGX), "Quick Ball should select a legal fallback Basic after search starts.");
 }
 
-void test_heavy_ball_waits_for_normal_basic_search_and_then_exchanges_prize() {
-  State s = state(2, Card::LatiasEx);
-  s.hand = {Card::HisuianHeavyBall, Card::QuickBall, Card::Dipplin};
-  s.prizes = {Card::RegidragoV};
-  Fixture held(scenario("heavy-held"), s);
-  expect(!EngineTestAccess::play_heavy_ball(held.engine), "Heavy Ball should be held while a live normal Basic-search connector exists.");
-
-  s.hand = {Card::HisuianHeavyBall};
-  Fixture used(scenario("heavy-exchange"), s);
-  expect(EngineTestAccess::play_heavy_ball(used.engine), "Heavy Ball should be used after normal Basic search is absent.");
-  const State& after = EngineTestAccess::state(used.engine);
-  expect(contains(after.hand, Card::RegidragoV) && contains(after.prizes, Card::HisuianHeavyBall),
-         "Heavy Ball should exchange itself with a revealed prized Basic.");
-}
 
 void test_oricorio_is_held_when_earthen_vessel_already_solves_energy() {
   State s = state(2);

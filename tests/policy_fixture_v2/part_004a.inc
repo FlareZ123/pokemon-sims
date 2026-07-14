@@ -182,6 +182,7 @@ int main() {
       {"tate_switch_is_selected_when_it_completes_active_axis", test_tate_switch_is_selected_when_it_completes_active_axis},
       {"strict_jit_requires_payload_to_be_in_discard_now_and_this_turn", test_strict_jit_requires_payload_to_be_in_discard_now_and_this_turn},
       {"finished_setup_does_not_burn_serena", test_finished_setup_does_not_burn_serena},
+      {"arven_fetches_forest_seal_stone_during_item_lock", test_arven_fetches_forest_seal_stone_during_item_lock},
       {"arven_is_not_played_during_item_lock", test_arven_is_not_played_during_item_lock},
       {"first_turn_restrictions_and_celestial_cost", test_first_turn_restrictions_and_celestial_cost},
       {"evolution_timing_and_single_manual_attachment", test_evolution_timing_and_single_manual_attachment},

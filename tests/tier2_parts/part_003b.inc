@@ -52,6 +52,7 @@ int main() {
     {"arven_uses_available_vstar_item_fallback", arven_uses_available_vstar_item_fallback},
     {"fss_holds_for_live_crispin", fss_holds_for_live_crispin},
     {"ultra_ball_holds_for_live_crispin", ultra_ball_holds_for_live_crispin},
+    {"costed_search_accepts_distinct_ultra_second_cost", costed_search_accepts_distinct_ultra_second_cost},
   };
   int failures = 0;
   for (const auto& [name, run] : tests) {

@@ -40,7 +40,10 @@
         restore_hand();
         return false;
       }
-      const bool payable = choose_discard(false, true).has_value();
+      // Reserve one surviving Ultra Ball as the card being played. A distinct
+      // surviving Ultra Ball may legally be its second discard cost:
+      // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+      const bool payable = choose_discard(false, true, true, Card::UltraBall).has_value();
       restore_hand();
       return payable;
     };

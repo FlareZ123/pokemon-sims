@@ -182,6 +182,82 @@ void test_team_yell_does_not_reuse_incense_as_quick_ball_cost() {
   }));
 }
 
+void test_team_yell_restores_latias_behind_active_regidrago_v_that_cannot_evolve() {
+  using namespace sim;
+  const Scenario scenario{"team-yell-active-regi-latias", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(3901);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoV, 2, 0, 0, Tool::None};
+  state.bench.push_back(Pokemon{Card::RegidragoV, 1, 2, 1, Tool::None});
+  state.hand = {Card::TeamYellsCheer, Card::EvolutionIncense, Card::QuickBall, Card::Dipplin};
+  state.deck = {Card::Grass};
+  state.discard = {Card::RegidragoVstar, Card::LatiasEx, Card::MegaDragonite};
+  state.discarded_this_turn = {Card::MegaDragonite};
+  state.vstar_power_used = true;
+  EngineTestAccess::set_deck_seen(engine);
+
+  // The Active Regidrago V entered play this turn and cannot evolve. Team Yell's Cheer
+  // may restore VSTAR and Latias together, then Skyliner gives that Basic Active no
+  // Retreat Cost so the powered prior-turn Benched Regidrago VSTAR can be promoted:
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/swsh9-149
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/sv8-76
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  EngineTestAccess::run_turn(engine);
+
+  assert(state.supporter_used);
+  assert(state.active.has_value());
+  assert(state.active->card == Card::RegidragoVstar);
+  assert(state.active->grass == 2 && state.active->fire == 1);
+  assert(state.retreat_used);
+  assert(!contains(state.discard, Card::LatiasEx));
+  assert(std::any_of(state.bench.begin(), state.bench.end(), [](const Pokemon& pokemon) {
+    return pokemon.card == Card::LatiasEx;
+  }));
+  assert(contains(state.discarded_this_turn, Card::MegaDragonite));
+}
+
+void test_team_yell_preserves_latias_when_active_regidrago_v_is_already_ready_to_evolve() {
+  using namespace sim;
+  const Scenario scenario{"team-yell-active-ready-regi", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(3902);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoV, 1, 2, 1, Tool::None};
+  state.bench.push_back(Pokemon{Card::RegidragoV, 1, 2, 1, Tool::None});
+  state.hand = {Card::TeamYellsCheer, Card::EvolutionIncense, Card::QuickBall, Card::Dipplin};
+  state.deck = {Card::Grass};
+  state.discard = {Card::RegidragoVstar, Card::LatiasEx, Card::MegaDragonite};
+  state.discarded_this_turn = {Card::MegaDragonite};
+  state.vstar_power_used = true;
+  EngineTestAccess::set_deck_seen(engine);
+
+  // A prior-turn Active Regidrago V with GGF can evolve directly into the ready attacker,
+  // so Latias ex is unnecessary and should remain in discard:
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  EngineTestAccess::run_turn(engine);
+
+  assert(state.supporter_used);
+  assert(state.active.has_value());
+  assert(state.active->card == Card::RegidragoVstar);
+  assert(state.active->grass == 2 && state.active->fire == 1);
+  assert(!state.retreat_used);
+  assert(contains(state.discard, Card::LatiasEx));
+  assert(!std::any_of(state.bench.begin(), state.bench.end(), [](const Pokemon& pokemon) {
+    return pokemon.card == Card::LatiasEx;
+  }));
+}
+
 }  // namespace
 
 int main() {
@@ -189,5 +265,7 @@ int main() {
   test_team_yell_holds_when_latias_search_cost_is_unpayable();
   test_team_yell_restores_vstar_and_latias_in_one_resolution();
   test_team_yell_does_not_reuse_incense_as_quick_ball_cost();
+  test_team_yell_restores_latias_behind_active_regidrago_v_that_cannot_evolve();
+  test_team_yell_preserves_latias_when_active_regidrago_v_is_already_ready_to_evolve();
   return 0;
 }

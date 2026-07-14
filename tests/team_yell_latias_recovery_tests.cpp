@@ -144,6 +144,91 @@ void test_team_yell_restores_vstar_and_latias_in_one_resolution() {
   assert(contains(state.discarded_this_turn, Card::MegaDragonite));
 }
 
+void test_team_yell_latias_search_can_supply_payload_cost() {
+  using namespace sim;
+  const Scenario scenario{"team-yell-vstar-latias-payload-cost", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(4311);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::TapuLeleGX, 1, 0, 0, Tool::None};
+  state.bench.push_back(Pokemon{Card::RegidragoV, 1, 2, 1, Tool::None});
+  state.hand = {Card::TeamYellsCheer, Card::EvolutionIncense,
+                Card::QuickBall, Card::MegaDragonite};
+  state.deck = {Card::Grass};
+  state.discard = {Card::RegidragoVstar, Card::LatiasEx};
+  state.vstar_power_used = true;
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Team Yell's Cheer restores both Pokémon. Quick Ball then discards the held Dragon
+  // payload before searching Latias ex, so the same legal search establishes the
+  // strict-JIT payload axis and the Skyliner promotion route:
+  // https://api.pokemontcg.io/v2/cards/swsh9-149
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/sv8-76
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  EngineTestAccess::run_turn(engine);
+
+  assert(state.supporter_used);
+  assert(state.active.has_value());
+  assert(state.active->card == Card::RegidragoVstar);
+  assert(state.active->grass == 2 && state.active->fire == 1);
+  assert(state.retreat_used);
+  assert(contains(state.discard, Card::TeamYellsCheer));
+  assert(contains(state.discard, Card::EvolutionIncense));
+  assert(contains(state.discard, Card::QuickBall));
+  assert(contains(state.discard, Card::MegaDragonite));
+  assert(contains(state.discarded_this_turn, Card::MegaDragonite));
+  assert(!contains(state.discard, Card::LatiasEx));
+  assert(std::any_of(state.bench.begin(), state.bench.end(), [](const Pokemon& pokemon) {
+    return pokemon.card == Card::LatiasEx;
+  }));
+}
+
+void test_team_yell_generic_search_cost_does_not_supply_payload_axis() {
+  using namespace sim;
+  const Scenario scenario{"team-yell-vstar-latias-generic-cost", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(4312);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::TapuLeleGX, 1, 0, 0, Tool::None};
+  state.bench.push_back(Pokemon{Card::RegidragoV, 1, 2, 1, Tool::None});
+  state.hand = {Card::TeamYellsCheer, Card::EvolutionIncense,
+                Card::QuickBall, Card::Dipplin};
+  state.deck = {Card::Grass};
+  state.discard = {Card::RegidragoVstar, Card::LatiasEx};
+  state.vstar_power_used = true;
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Quick Ball is payable with Dipplin, but that generic cost does not give Apex
+  // Dragon an A/S payload. Restore only Regidrago VSTAR and preserve Latias ex:
+  // https://api.pokemontcg.io/v2/cards/swsh9-149
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  EngineTestAccess::run_turn(engine);
+
+  assert(state.supporter_used);
+  assert(state.active.has_value());
+  assert(state.active->card == Card::TapuLeleGX);
+  assert(!state.retreat_used);
+  assert(contains(state.discard, Card::LatiasEx));
+  assert(!std::any_of(state.bench.begin(), state.bench.end(), [](const Pokemon& pokemon) {
+    return pokemon.card == Card::LatiasEx;
+  }));
+  assert(std::any_of(state.bench.begin(), state.bench.end(), [](const Pokemon& pokemon) {
+    return pokemon.card == Card::RegidragoVstar && pokemon.grass == 2 && pokemon.fire == 1;
+  }));
+}
+
 void test_team_yell_does_not_reuse_incense_as_quick_ball_cost() {
   using namespace sim;
   const Scenario scenario{"team-yell-no-shared-search-cost", DciProfile::StrictJit, LockMode::None, false, 4};
@@ -264,6 +349,8 @@ int main() {
   test_team_yell_restores_payable_latias_promotion_route();
   test_team_yell_holds_when_latias_search_cost_is_unpayable();
   test_team_yell_restores_vstar_and_latias_in_one_resolution();
+  test_team_yell_latias_search_can_supply_payload_cost();
+  test_team_yell_generic_search_cost_does_not_supply_payload_axis();
   test_team_yell_does_not_reuse_incense_as_quick_ball_cost();
   test_team_yell_restores_latias_behind_active_regidrago_v_that_cannot_evolve();
   test_team_yell_preserves_latias_when_active_regidrago_v_is_already_ready_to_evolve();

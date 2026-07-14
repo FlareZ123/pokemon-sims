@@ -29,7 +29,6 @@ bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
 void test_wonder_tag_yields_known_dead_burnet_to_arven() {
   const sim::Scenario scenario{"wonder-tag-k1", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
-  // Engine stores the recipe by reference, so this fixture keeps it alive.
   const sim::DeckRecipe recipe{sim::baseline_recipe()};
   std::mt19937_64 rng{31415};
   sim::Engine engine(scenario, recipe, rng);
@@ -71,8 +70,6 @@ void test_wonder_tag_uses_arven_vessel_for_final_energy() {
   state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
   state.hand = {sim::Card::TapuLeleGX, sim::Card::Dipplin};
   state.deck = {sim::Card::Arven, sim::Card::EarthenVessel, sim::Card::Fire, sim::Card::Grass};
-  // Keep the fixture focused on the Wonder Tag route. Otherwise Legacy Star may
-  // legally recover paid costs after the chain and obscure the cost assertions.
   state.vstar_power_used = true;
   sim::EngineTestAccess::set_state(engine, std::move(state));
 
@@ -204,12 +201,12 @@ void test_wonder_tag_tate_connector_rejects_incomplete_target() {
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::Oricorio, 1, 0, 0, sim::Tool::None};
   state.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 1, 1, 1, sim::Tool::None}};
-  // Holding a live Crispin suppresses the independent Wonder Tag Energy connector,
-  // so this control isolates the new Tate path:
+  // Holding a truly live Crispin suppresses the independent Wonder Tag Energy
+  // connector, so this control isolates the new Tate path:
   // https://api.pokemontcg.io/v2/cards/sv7-133
   state.hand = {sim::Card::TapuLeleGX, sim::Card::MysteriousTreasure,
                 sim::Card::MegaDragonite, sim::Card::Crispin};
-  state.deck = {sim::Card::TateLiza, sim::Card::Dipplin};
+  state.deck = {sim::Card::TateLiza, sim::Card::Dipplin, sim::Card::Grass};
   sim::EngineTestAccess::set_state(engine, std::move(state));
   sim::EngineTestAccess::set_deck_seen(engine, true);
 

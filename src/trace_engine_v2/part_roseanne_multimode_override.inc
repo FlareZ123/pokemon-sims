@@ -29,7 +29,13 @@
         restore_hand();
         return false;
       }
-      const bool payable = choose_discard(false, true, true, Card::EarthenVessel).has_value();
+      // A held Dragon payload may pay Earthen Vessel's other-card cost when that
+      // discard establishes the current-turn strict-JIT Apex Dragon payload:
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+      const bool payable = choose_discard(can_play_payload_this_turn(), true, true,
+                                           Card::EarthenVessel).has_value();
       restore_hand();
       return payable;
     };

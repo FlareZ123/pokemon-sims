@@ -1,3 +1,24 @@
+  bool has_live_one_discard_hand_payload_line() const {
+    if (item_locked() || !can_play_payload_this_turn() ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    // These Items discard one other hand card before resolving their searches. When
+    // the policy-selected cost is a Dragon payload, the same play establishes the
+    // strict current-turn Apex Dragon payload axis after Tate & Liza switches Active:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    for (const Card item : {Card::MysteriousTreasure, Card::QuickBall, Card::EarthenVessel}) {
+      if (hand_count(item) == 0) continue;
+      const auto cost = choose_discard(true, true, true, item);
+      if (cost && is_payload(*cost)) return true;
+    }
+    return false;
+  }
+
   bool preserve_incomplete_tate_blender_line() const {
     const int supporters_in_hand = static_cast<int>(
         std::count_if(state_.hand.begin(), state_.hand.end(), is_supporter));
@@ -16,6 +37,21 @@
            !benched_vstar_promotion_ready() && has_live_blender_payload_line();
   }
 
+  bool preserve_tate_hand_payload_switch_line() const {
+    // Tate & Liza switch mode may promote a complete Benched Regidrago VSTAR before
+    // a payable one-discard Item puts the held Dragon into discard. Preserve that
+    // complete route instead of shuffling all three cards through Tate's draw mode:
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    return supporter_allowed() && hand_count(Card::TateLiza) > 0 &&
+           need_active_vstar() && benched_vstar_promotion_ready() && need_payload() &&
+           !can_free_retreat_with_latias() && has_live_one_discard_hand_payload_line();
+  }
+
   bool play_tate_switch() {
     if (preserve_incomplete_tate_blender_line()) {
       trace("HOLD SUPPORTER", "R-TATE-01; R-BLENDER-01; R-RVS-01; P-DCI-01",
@@ -29,6 +65,11 @@
     if (preserve_incomplete_tate_blender_line()) {
       trace("HOLD SUPPORTER", "R-TATE-01; R-BLENDER-01; R-RVS-01; P-DCI-01",
             "Retained Tate & Liza and Brilliant Blender instead of shuffling the incomplete promotion route.");
+      return false;
+    }
+    if (preserve_tate_hand_payload_switch_line()) {
+      trace("HOLD SUPPORTER", "R-TATE-01; R-RVS-01; P-DCI-01",
+            "Retained Tate & Liza switch mode and the held one-discard Dragon payload route.");
       return false;
     }
     return play_tate_draw_tate_blender_original();

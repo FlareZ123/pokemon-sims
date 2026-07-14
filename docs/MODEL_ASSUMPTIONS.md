@@ -21,7 +21,7 @@ The fixed seed makes each report reproducible. The Monte Carlo standard error sh
 - Regidrago VSTAR evolution timing.
 - Basic Bench limit.
 - Regidrago V, Regidrago VSTAR, Tapu Lele-GX, Latias ex, Oricorio, and core search-card state transitions.
-- Regidrago V’s Celestial Roar top-three discard and Basic Energy attachment in its modeled going-second turn-one use: https://api.pokemontcg.io/v2/cards/swsh12-135
+- Regidrago V’s Celestial Roar top-three discard and Basic Energy attachment on any legal attack turn when the Active Regidrago V can advance the modeled Energy axis or, under no-discard-control, bank a permitted Dragon payload. The player going first still cannot attack on that player's first turn: https://api.pokemontcg.io/v2/cards/swsh12-135 https://www.pokemon.com/us/pokemon-tcg/rules
 - Mysterious Treasure, Quick Ball, Earthen Vessel, Brilliant Blender, Arven, Crispin, Professor Burnet, Serena draw, Tate & Liza draw, Steven’s Resolve, Gladion, Hisuian Heavy Ball, and Forest Seal Stone routes relevant to setup.
 - Path-style Rule Box Ability suppression and Field Blower removal while Items are legal.
 - Item-lock restrictions.

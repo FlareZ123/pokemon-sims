@@ -11,6 +11,9 @@ namespace sim {
 struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
   static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
+  static bool play_professor_burnet(Engine& engine) {
+    return engine.play_professor_burnet();
+  }
   static bool use_celestial_roar(Engine& engine) { return engine.use_celestial_roar(); }
 };
 
@@ -69,6 +72,38 @@ void test_no_control_keeps_live_payload_banking_attack() {
   assert(contains(state.discard, sim::Card::MegaDragonite));
 }
 
+void test_burnet_uses_second_safe_selection_for_celestial_roar() {
+  const sim::Scenario scenario{"burnet-celestial-roar-thinning",
+                               sim::DciProfile::NoDiscardControl,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{340};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State& state = sim::EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 0,
+                              sim::Tool::None};
+  state.hand = {sim::Card::ProfessorBurnet};
+  state.deck = {sim::Card::MegaDragonite, sim::Card::PathToPeak,
+                sim::Card::Fire, sim::Card::Arven, sim::Card::LatiasEx};
+
+  // Burnet may discard two selected deck cards. Removing the no-lock setup-dead
+  // Stadium with the payload leaves exactly three cards, so Celestial Roar processes
+  // the remaining Fire Energy with certainty:
+  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // https://api.pokemontcg.io/v2/cards/swsh12-135
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  assert(sim::EngineTestAccess::play_professor_burnet(engine));
+  assert(state.deck.size() == 3U);
+  assert(contains(state.discard, sim::Card::MegaDragonite));
+  assert(contains(state.discard, sim::Card::PathToPeak));
+
+  assert(sim::EngineTestAccess::use_celestial_roar(engine));
+  assert(state.turn_ended);
+  assert(state.deck.empty());
+  assert(state.active->fire == 1);
+}
+
 void test_strict_jit_attacks_when_needed_fire_may_remain() {
   const sim::Scenario scenario{"celestial-roar-live-fire", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
@@ -93,6 +128,7 @@ void test_strict_jit_attacks_when_needed_fire_may_remain() {
 int main() {
   test_strict_jit_holds_when_known_deck_has_no_needed_energy();
   test_no_control_keeps_live_payload_banking_attack();
+  test_burnet_uses_second_safe_selection_for_celestial_roar();
   test_strict_jit_attacks_when_needed_fire_may_remain();
   return 0;
 }

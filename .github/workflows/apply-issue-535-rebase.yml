@@ -1,0 +1,138 @@
+name: Apply issue 535 on current main
+
+on:
+  push:
+    branches:
+      - fix/issue-535-policy-fixture-catalog
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.head_commit.message != 'Repair issue 535 on current main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-535-policy-fixture-catalog
+      - name: Apply fixture and documentation changes
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          def remove_function(path_value: str, name: str) -> None:
+              path = Path(path_value)
+              text = path.read_text(encoding="utf-8")
+              pattern = rf"\nvoid {re.escape(name)}\(\) \{{.*?\n\}}\n"
+              updated, count = re.subn(pattern, "\n", text, count=1, flags=re.DOTALL)
+              if count != 1:
+                  raise SystemExit(f"Expected exactly one {name} definition in {path_value}, found {count}.")
+              path.write_text(updated, encoding="utf-8")
+
+          remove_function(
+              "tests/policy_fixture_v2/part_002.inc",
+              "test_heavy_ball_waits_for_normal_basic_search_and_then_exchanges_prize",
+          )
+          remove_function(
+              "tests/policy_fixture_v2/part_003h.inc",
+              "test_prized_energy_does_not_preempt_item_lock_payload_bridge",
+          )
+          remove_function(
+              "tests/policy_fixture_v2/part_003i.inc",
+              "test_heavy_ball_oricorio_preserves_item_lock_burnet",
+          )
+
+          arven_path = Path("tests/policy_fixture_v2/part_003.inc")
+          arven = arven_path.read_text(encoding="utf-8")
+          old_deck = "  s.deck = {Card::EvolutionIncense, Card::ForestSealStone};"
+          new_deck = (
+              "  // Forest Seal Stone may attach to Regidrago V under Item lock, then Star Alchemy\n"
+              "  // may search Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/swsh12-136\n"
+              "  s.deck = {Card::EvolutionIncense, Card::ForestSealStone, Card::RegidragoVstar};"
+          )
+          if arven.count(old_deck) != 1:
+              raise SystemExit("Expected one current-main Arven fixture deck.")
+          arven_path.write_text(arven.replace(old_deck, new_deck), encoding="utf-8")
+
+          runner_path = Path("tests/policy_fixture_v2/part_004a.inc")
+          runner = runner_path.read_text(encoding="utf-8")
+          anchor = '      {"finished_setup_does_not_burn_serena", test_finished_setup_does_not_burn_serena},'
+          addition = (
+              anchor
+              + "\n"
+              + '      {"arven_fetches_forest_seal_stone_during_item_lock", test_arven_fetches_forest_seal_stone_during_item_lock},'
+          )
+          if runner.count(anchor) != 1:
+              raise SystemExit("Expected one fixture-table insertion anchor.")
+          runner_path.write_text(runner.replace(anchor, addition), encoding="utf-8")
+
+          index_path = Path("docs/OPTIMAL_POLICY_FIXTURES.md")
+          index = index_path.read_text(encoding="utf-8")
+          old_header = "`regidrago_policy_tests` executes **56** deterministic exact-state fixtures. The runner table is the canonical inventory and order: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/policy_fixture_v2/part_004a.inc#L134-L190"
+          new_header = "`regidrago_policy_tests` executes **57** deterministic exact-state fixtures. The runner table is the canonical inventory and order: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/policy_fixture_v2/part_004a.inc#L134-L191"
+          if index.count(old_header) != 1:
+              raise SystemExit("Expected the 56-fixture index header from current main.")
+          index = index.replace(old_header, new_header)
+          lines = index.splitlines()
+          start = lines.index("## Executed fixtures") + 1
+          end = lines.index("## Historical identifiers with corrected assertions")
+          names = []
+          for line in lines[start:end]:
+              match = re.match(r"\d+\. `([^`]+)`$", line)
+              if match:
+                  names.append(match.group(1))
+          if len(names) != 56 or "arven_fetches_forest_seal_stone_during_item_lock" in names:
+              raise SystemExit("Unexpected current-main fixture index inventory.")
+          position = names.index("finished_setup_does_not_burn_serena") + 1
+          names.insert(position, "arven_fetches_forest_seal_stone_during_item_lock")
+          rendered = [""] + [f"{number}. `{name}`" for number, name in enumerate(names, 1)] + [""]
+          lines[start:end] = rendered
+          index_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+          replacements = {
+              "README.md": (
+                  "**56 core exact-state policy fixtures**",
+                  "**57 core exact-state policy fixtures**",
+              ),
+              "docs/POLICY_DECISIONS.md": (
+                  "`regidrago_policy_tests`: 56 executable core exact-state rule and policy fixtures.",
+                  "`regidrago_policy_tests`: 57 executable core exact-state rule and policy fixtures.",
+              ),
+          }
+          for path_value, (old_count, new_count) in replacements.items():
+              path = Path(path_value)
+              text = path.read_text(encoding="utf-8")
+              if text.count(old_count) != 1 or text.count("part_004a.inc#L134-L190") != 1:
+                  raise SystemExit(f"Expected current-main fixture count and range in {path_value}.")
+              text = text.replace(old_count, new_count).replace(
+                  "part_004a.inc#L134-L190", "part_004a.inc#L134-L191"
+              )
+              path.write_text(text, encoding="utf-8")
+      - name: Validate registration inventory
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          source = "\n".join(
+              path.read_text(encoding="utf-8")
+              for path in sorted(Path("tests/policy_fixture_v2").glob("part_*.inc"))
+          )
+          definitions = set(re.findall(r"^void (test_[A-Za-z0-9_]+)\(\)", source, re.MULTILINE))
+          registrations = set(re.findall(r'\{"[^"]+", (test_[A-Za-z0-9_]+)\}', source))
+          missing = sorted(definitions - registrations)
+          if len(definitions) != 57 or len(registrations) != 57 or missing:
+              raise SystemExit(
+                  f"Fixture inventory mismatch: definitions={len(definitions)}, registrations={len(registrations)}, missing={missing}"
+              )
+      - name: Commit rebased fix and remove one-time workflow
+        shell: bash
+        run: |
+          rm .github/workflows/apply-issue-535-rebase.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Repair issue 535 on current main"
+          git push origin HEAD:fix/issue-535-policy-fixture-catalog

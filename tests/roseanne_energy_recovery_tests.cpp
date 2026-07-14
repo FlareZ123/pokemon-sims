@@ -116,6 +116,51 @@ void test_roseanne_restores_vstar_and_energy_in_one_supporter_play() {
          "The restored VSTAR and Grass should finish evolved and attached");
 }
 
+void test_roseanne_multimode_uses_payload_as_vessel_cost() {
+  const sim::Scenario scenario{"roseanne-multimode-payload-cost", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{414};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 1, 1, sim::Tool::None};
+  state.hand = {sim::Card::RoseannesBackup, sim::Card::EvolutionIncense,
+                sim::Card::EarthenVessel};
+  state.deck = {sim::Card::MegaDragonite};
+  state.discard = {sim::Card::RegidragoVstar, sim::Card::Grass};
+  // Keep Legacy Star unavailable so this test isolates the Roseanne, Incense, and
+  // Vessel continuation: https://api.pokemontcg.io/v2/cards/swsh12-136
+  state.vstar_power_used = true;
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Earthen Vessel may discard the Dragon drawn for the turn as its required other
+  // card. That discard establishes the strict-JIT Apex Dragon payload while Roseanne
+  // restores the VSTAR and final Grass Energy for the two Item searches:
+  // https://api.pokemontcg.io/v2/cards/swsh9-148
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  sim::EngineTestAccess::run_turn(engine);
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(after.active && after.active->card == sim::Card::RegidragoVstar &&
+             after.active->grass == 2 && after.active->fire == 1,
+         "The strict-JIT Roseanne route should evolve and complete GGF");
+  expect(after.supporter_used && after.manual_energy_used,
+         "The strict-JIT route should consume the Supporter and manual attachment");
+  expect(contains(after.discard, sim::Card::MegaDragonite) &&
+             contains(after.discarded_this_turn, sim::Card::MegaDragonite),
+         "The Dragon payload should pay Earthen Vessel and satisfy strict-JIT");
+  expect(contains(after.discard, sim::Card::RoseannesBackup) &&
+             contains(after.discard, sim::Card::EvolutionIncense) &&
+             contains(after.discard, sim::Card::EarthenVessel),
+         "The resolved Supporter and Items should finish in discard");
+}
+
 void test_roseanne_does_not_reuse_incense_as_vessel_cost() {
   const sim::Scenario scenario{"roseanne-no-shared-search-cost", sim::DciProfile::NoDiscardControl,
                                sim::LockMode::None, false, 4};
@@ -160,6 +205,7 @@ int main() {
   try {
     test_roseanne_restores_missing_fire_for_same_turn_vessel_attachment();
     test_roseanne_restores_vstar_and_energy_in_one_supporter_play();
+    test_roseanne_multimode_uses_payload_as_vessel_cost();
     test_roseanne_does_not_reuse_incense_as_vessel_cost();
     return 0;
   } catch (const std::exception& error) {

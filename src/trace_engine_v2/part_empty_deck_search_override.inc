@@ -53,11 +53,63 @@
     return deck_search_available() && play_quick_ball_empty_deck_original(permit_payload);
   }
 
+  bool ultra_ball_payload_continuation_survives_search(const bool permit_payload) const {
+    if (state_.deck.size() != 1U || !need_payload()) return true;
+
+    const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    if (can_jit_discard) return true;
+
+    // Preserve ordinary Ultra Ball searches. The dead route exists only when the
+    // final deck card is sought as the Dragon payload and no other target axis makes
+    // the current Ultra Ball play useful:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    const bool has_non_payload_target =
+        (need_regi() && bench_space() > 0 && might_be_unseen(Card::RegidragoV)) ||
+        (need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
+         might_be_unseen(Card::RegidragoVstar)) ||
+        (need_active_vstar() && bench_space() > 0 &&
+         ability_available_for_pokemon(Card::LatiasEx) && !in_play(Card::LatiasEx) &&
+         hand_count(Card::LatiasEx) == 0 && might_be_unseen(Card::LatiasEx)) ||
+        (need_energy() && hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
+         bench_space() > 0 && needs_oricorio_connector() &&
+         might_be_unseen(Card::Oricorio)) ||
+        (hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
+         bench_space() > 0 && needs_tapu_connector() && might_be_unseen(Card::TapuLeleGX));
+    if (has_non_payload_target) return true;
+
+    const bool payload_might_be_searchable = might_be_unseen(Card::MegaDragonite) ||
+        might_be_unseen(Card::Dragapult) || might_be_unseen(Card::GoodraVstar) ||
+        might_be_unseen(Card::DialgaGX);
+    if (!payload_might_be_searchable) return true;
+
+    // Mysterious Treasure, Quick Ball, Earthen Vessel, and another Ultra Ball all
+    // require a deck search after discarding the fetched payload. If the first Ultra
+    // Ball removes the final deck card, those Items cannot begin their search and
+    // cannot serve as the promised strict-JIT outlet:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+    const bool search_item_outlet = hand_count(Card::MysteriousTreasure) > 0 ||
+        hand_count(Card::QuickBall) > 0 || hand_count(Card::EarthenVessel) > 0 ||
+        hand_count(Card::UltraBall) > 1;
+    // Serena's draw mode discards from hand and does not require a deck search, so it
+    // remains a live outlet after Ultra Ball removes the last deck card:
+    // https://api.pokemontcg.io/v2/cards/swsh12-164
+    const bool serena_outlet = supporter_allowed() && hand_count(Card::Serena) > 0;
+    return !search_item_outlet || serena_outlet;
+  }
+
   bool play_ultra_ball(const bool permit_payload) {
     // Ultra Ball cannot spend its two-card cost when its deck search cannot begin:
     // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
-    return deck_search_available() && play_ultra_ball_empty_deck_original(permit_payload);
+    return deck_search_available() &&
+           ultra_ball_payload_continuation_survives_search(permit_payload) &&
+           play_ultra_ball_empty_deck_original(permit_payload);
   }
 
   bool play_evolution_incense(const bool permit_payload = false) {

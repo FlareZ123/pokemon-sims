@@ -174,6 +174,13 @@
     if (state_.turn <= 3) outcome_.ready_by_3 = true;
     if (state_.turn <= 4) outcome_.ready_by_4 = true;
   }
+
+  // The original run_turn() above is macro-renamed by the active composition. End
+  // that rename and compose the Latias helper and replacement while Engine is open:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/regidrago_sim.cpp#L147-L150
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c_latias_bench_override.inc#L1-L105
+#undef run_turn
+#include "part_014c_latias_bench_override.inc"
 };
 
 DeckRecipe baseline_recipe() { return DeckRecipe(kDeckRecipe.begin(), kDeckRecipe.end()); }

@@ -104,8 +104,16 @@
           return pokemon.card == Card::RegidragoV && pokemon.entered_turn < state_.turn &&
                  pokemon.grass >= 2 && pokemon.fire >= 1;
         });
+    // An Active Regidrago V makes Latias redundant only when it can legally evolve now
+    // and already carries GGF for Apex Dragon. A Regidrago V that entered this turn or
+    // lacks the attack cost cannot replace the ready Benched route:
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    const bool active_regi_can_be_ready_without_retreat = state_.active &&
+        state_.active->card == Card::RegidragoV && state_.active->entered_turn < state_.turn &&
+        state_.active->grass >= 2 && state_.active->fire >= 1;
     const bool restore_latias_for_promotion = state_.active && is_basic(state_.active->card) &&
-        state_.active->card != Card::RegidragoV && powered_benched_regi_can_evolve && payload_ready() &&
+        !active_regi_can_be_ready_without_retreat && powered_benched_regi_can_evolve && payload_ready() &&
         !state_.retreat_used && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
         !in_play(Card::LatiasEx) && count_of(state_.discard, Card::LatiasEx) > 0 &&
         !might_be_unseen(Card::LatiasEx) && evolution_incense_then_latias_search_is_payable();

@@ -134,6 +134,9 @@
 #include "trace_engine_v2/part_roseanne_multimode_override.inc"
 #include "trace_engine_v2/part_turo_oricorio_override.inc"
 #include "trace_engine_v2/part_empty_deck_search_override.inc"
+#define run_turn run_turn_original
 #include "trace_engine_v2/part_014c.inc"
+#undef run_turn
+#include "trace_engine_v2/part_014c_latias_bench_override.inc"
 #include "trace_engine_v2/part_015.inc"
 #include "trace_engine_v2/part_016.inc"

@@ -117,7 +117,10 @@
 #undef use_fss
 #undef use_celestial_roar
 #include "trace_engine_v2/part_celestial_roar_override.inc"
+#define use_legacy_star use_legacy_star_payload_possible_original
 #include "trace_engine_v2/part_013_legacy_star_override.inc"
+#undef use_legacy_star
+#include "trace_engine_v2/part_legacy_star_payload_possible_override.inc"
 #include "trace_engine_v2/part_012_gladion_override.inc"
 #define play_arven play_arven_powerglass_original
 #include "trace_engine_v2/part_012_override.inc"

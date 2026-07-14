@@ -10,6 +10,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/upload-artifact@v4
         with:
-          name: issue-525-source
-          path: tests/legacy_star_evolution_incense_payload_tests.cpp
+          name: issue-525-repo
+          path: |
+            CMakeLists.txt
+            src
+            tests
+            docs
           if-no-files-found: error

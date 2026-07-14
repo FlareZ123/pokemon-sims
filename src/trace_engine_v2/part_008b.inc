@@ -49,6 +49,25 @@
     else if (can_bench_recovered_basic && needs_oricorio_connector() && prized(Card::Oricorio)) selected = Card::Oricorio;
     else if (can_bench_recovered_basic && need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) && prized(Card::LatiasEx)) selected = Card::LatiasEx;
 
+    // Dialga-GX is a Basic Dragon payload. When payload is the only missing axis,
+    // prefer it before future connectors if a surviving one-discard Item can put it
+    // into discard this turn:
+    // https://api.pokemontcg.io/v2/cards/swsh10-146
+    // https://api.pokemontcg.io/v2/cards/sm5-100
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    const bool payload_is_only_missing_axis = need_payload() && !need_regi() && !need_vstar() &&
+        !need_energy() && !need_active_vstar();
+    const bool live_one_discard_payload_outlet = !state_.deck.empty() &&
+        (hand_count(Card::EarthenVessel) > 0 || hand_count(Card::QuickBall) > 0 ||
+         hand_count(Card::MysteriousTreasure) > 0);
+    if (selected == Card::HisuianHeavyBall && payload_is_only_missing_axis &&
+        can_play_payload_this_turn() && live_one_discard_payload_outlet && prized(Card::DialgaGX)) {
+      selected = Card::DialgaGX;
+    }
+
     // Prefer future connectors whose abilities can function in this scenario.
     if (selected == Card::HisuianHeavyBall) {
       for (const Card candidate : {Card::RegidragoV, Card::Oricorio, Card::TapuLeleGX,

@@ -88,6 +88,7 @@
 #include "trace_engine_v2/part_011.inc"
 #undef play_steven
 #undef play_professor_burnet
+#include "trace_engine_v2/part_011_burnet_thinning_override.inc"
 #undef play_crispin
 #define play_arven play_arven_original
 #define play_gladion play_gladion_original

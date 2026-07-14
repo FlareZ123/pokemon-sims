@@ -5,6 +5,16 @@ on:
     branches: [main]
 
 jobs:
+  card-audit-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate card audit provenance contract
+        run: python tests/card_audit_contract_tests.py
+
   build-test:
     runs-on: ubuntu-latest
     steps:

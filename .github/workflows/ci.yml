@@ -30,6 +30,7 @@ jobs:
           name: release-ctest-diagnostics
           path: |
             build/Testing
+            build/smoke_results.csv
             build.log
           if-no-files-found: warn
 
@@ -60,5 +61,6 @@ jobs:
           name: sanitizer-ctest-diagnostics
           path: |
             build-sanitizers/Testing
+            build-sanitizers/smoke_results.csv
             sanitizer-build.log
           if-no-files-found: warn

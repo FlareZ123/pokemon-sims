@@ -100,3 +100,32 @@ Item cards are unavailable for all modeled turns. Forest Seal Stone remains a Po
 ### Rule Box Ability lock
 
 The model applies Path-to-the-Peak-style suppression to Rule Box Pokémon Abilities. Tapu Lele-GX, Latias ex, Mawile-GX, and Pokémon VSTAR Abilities are suppressed while the modeled Path remains in play. Oricorio `sm2-55` has no Rule Box, so Vital Dance remains available: https://api.pokemontcg.io/v2/cards/sm2-55. Apex Dragon remains an attack. Forest Seal Stone’s Tool VSTAR Power remains available because its grant is printed on the Tool: https://api.pokemontcg.io/v2/cards/swsh12-156. Path to the Peak removes Abilities from Pokémon with Rule Boxes: https://api.pokemontcg.io/v2/cards/swsh6-148. When Items are legal, Field Blower may discard the modeled Path and restore those Pokémon Abilities for subsequent actions and turns: https://api.pokemontcg.io/v2/cards/sm2-125.
+
+### Combined lock
+
+This stacks full Item lock and Rule Box Ability lock. Field Blower remains blocked as an Item, so the Path-style suppression persists. It is a deliberately severe stress test. It should be read as a measure of the deck’s natural raw draws and Supporter-only recovery rather than as a common board state.
+
+## Prizing implementation
+
+Six cards are taken after opening Basic placements. The model uses their exact identities. Two recovery routes are handled:
+
+- Hisuian Heavy Ball can recover a prized Basic Pokémon and replaces that Prize with Heavy Ball.
+- Gladion recovers one selected Prize and shuffles Gladion into the remaining Prizes.
+
+This captures the central prizing asymmetry: a recovery card can itself be prized, and a one-use recovery resource can only solve one critical card at a time.
+
+## Sampling and comparison method
+
+The program uses a fixed 64-bit Mersenne Twister seed. Baseline scenarios use stable derived seeds. Variant rows use matched seeds for each scenario so percentage deltas are less noisy than independent-run deltas.
+
+For a binary success count `x` over `n` trials, the displayed Monte Carlo standard error in percentage points is:
+
+```text
+100 * sqrt((x / n) * (1 - x / n) / n)
+```
+
+A point difference smaller than roughly two combined standard errors should be treated as inconclusive. A large speed gain can still be strategically unacceptable when it removes a high-discrete-value answer such as Mawile-GX, Guzma, or Field Blower.
+
+## Windows build and result-write behavior
+
+The project is designed for Windows 11 CMake builds. The C++ result writer uses an exclusive lock file and an atomic temporary-file replacement. The audit script uses the equivalent Windows lock path through `msvcrt`, with a POSIX fallback for the current automated verification environment.

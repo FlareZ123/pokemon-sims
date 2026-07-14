@@ -81,7 +81,7 @@ void test_ultra_ball_prefers_tapu_over_irrelevant_fallback() {
   }
 }
 
-void test_ultra_ball_hands_a_payload_to_earthen_vessel() {
+void test_ultra_ball_preserves_final_payload_when_vessel_would_lose_search() {
   const sim::Scenario scenario{"ultra-ball-payload-hand-off", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
   const sim::DeckRecipe recipe{sim::baseline_recipe()};
@@ -96,27 +96,22 @@ void test_ultra_ball_hands_a_payload_to_earthen_vessel() {
   state.deck = {sim::Card::MegaDragonite};
   sim::EngineTestAccess::set_state(engine, std::move(state));
 
-  // Ultra Ball can discard two other hand cards and search the deck for any Pokémon:
+  // Ultra Ball would remove the final deck card before Earthen Vessel could begin
+  // its required search. Preserve both Items and both discard costs instead:
   // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-  if (!sim::EngineTestAccess::play_ultra_ball(engine, true)) {
-    throw std::runtime_error("Ultra Ball should fetch a modeled payload for the live Earthen Vessel discard.");
-  }
-  if (!contains(sim::EngineTestAccess::state(engine).hand, sim::Card::MegaDragonite)) {
-    throw std::runtime_error("Ultra Ball should put Mega Dragonite ex into hand for the second Item.");
-  }
-
-  // Earthen Vessel may discard another hand card before searching up to two Basic Energy:
   // https://api.pokemontcg.io/v2/cards/sv4-163
-  if (!sim::EngineTestAccess::play_earthen_vessel(engine, true)) {
-    throw std::runtime_error("Earthen Vessel should consume the fetched payload in the strict-JIT turn.");
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+  if (sim::EngineTestAccess::play_ultra_ball(engine, true)) {
+    throw std::runtime_error("Ultra Ball must hold when the promised Vessel outlet would have an empty deck.");
   }
 
-  const sim::State& after_vessel = sim::EngineTestAccess::state(engine);
-  // Regidrago VSTAR Apex Dragon can use an attack from a Dragon Pokémon in discard:
-  // https://api.pokemontcg.io/v2/cards/swsh12-136
-  if (!contains(after_vessel.discard, sim::Card::MegaDragonite) ||
-      !contains(after_vessel.discarded_this_turn, sim::Card::MegaDragonite)) {
-    throw std::runtime_error("The fetched Dragon must remain a same-turn strict-JIT payload.");
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (after.deck != std::vector<sim::Card>{sim::Card::MegaDragonite} ||
+      !after.discard.empty() ||
+      !contains(after.hand, sim::Card::UltraBall) ||
+      !contains(after.hand, sim::Card::EarthenVessel) ||
+      !contains(after.hand, sim::Card::Dipplin)) {
+    throw std::runtime_error("The dead final-card continuation must preserve the complete hand and deck state.");
   }
 }
 
@@ -363,7 +358,7 @@ void test_wonder_tag_fetches_tate_for_complete_promotion() {
 int main() {
   try {
     test_ultra_ball_prefers_tapu_over_irrelevant_fallback();
-    test_ultra_ball_hands_a_payload_to_earthen_vessel();
+    test_ultra_ball_preserves_final_payload_when_vessel_would_lose_search();
     test_duplicate_search_items_form_current_turn_payload_chain();
     test_tapu_is_preserved_when_ultra_ball_directly_finds_vstar();
     test_tapu_remains_live_when_ultra_ball_is_unpayable();

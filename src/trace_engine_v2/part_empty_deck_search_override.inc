@@ -53,7 +53,7 @@
     return deck_search_available() && play_quick_ball_empty_deck_original(permit_payload);
   }
 
-  bool ultra_ball_payload_continuation_survives_search(const bool permit_payload) const {
+  bool ultra_ball_payload_continuation_survives_search(const bool permit_payload) {
     if (state_.deck.size() != 1U || !need_payload()) return true;
 
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
@@ -96,7 +96,7 @@
     const bool search_item_outlet = hand_count(Card::MysteriousTreasure) > 0 ||
         hand_count(Card::QuickBall) > 0 || hand_count(Card::EarthenVessel) > 0 ||
         hand_count(Card::UltraBall) > 1;
-    // Serena's draw mode discards from hand and does not require a deck search, so it
+    // Serena's draw mode discards from hand and does not require another deck search, so it
     // remains a live outlet after Ultra Ball removes the last deck card:
     // https://api.pokemontcg.io/v2/cards/swsh12-164
     const bool serena_outlet = supporter_allowed() && hand_count(Card::Serena) > 0;

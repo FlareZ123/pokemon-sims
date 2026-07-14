@@ -17,24 +17,32 @@
 
   bool retreat_to_benched_vstar_with_latias() {
     if (!need_active_vstar() || !can_free_retreat_with_latias()) return false;
-    auto it = std::find_if(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) { return p.card == Card::RegidragoVstar; });
-    if (it == state_.bench.end()) return false;
-    std::swap(*state_.active, *it);
+    Pokemon* target = best_benched_vstar_for_promotion();
+    if (target == nullptr) return false;
+    // Latias ex removes the Basic Active's Retreat Cost. Promote the Benched
+    // Regidrago VSTAR that best satisfies Apex Dragon's GGF cost:
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    std::swap(*state_.active, *target);
     state_.retreat_used = true;
-    trace("RETREAT", "R-LATIAS-01; R-GAME-RETREAT", "Latias ex gives the Basic Active no Retreat Cost; promoted Benched Regidrago VSTAR.");
+    trace("RETREAT", "R-LATIAS-01; R-GAME-RETREAT", "Latias ex gives the Basic Active no Retreat Cost; promoted the best-powered Benched Regidrago VSTAR.");
     return true;
   }
 
   bool play_tate_switch() {
     // Card text source: https://api.pokemontcg.io/v2/cards/sm7-148
     if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 || !need_active_vstar()) return false;
-    auto it = std::find_if(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) { return p.card == Card::RegidragoVstar; });
-    if (it == state_.bench.end()) return false;
+    Pokemon* target = best_benched_vstar_for_promotion();
+    if (target == nullptr) return false;
     remove_one(state_.hand, Card::TateLiza);
     state_.discard.push_back(Card::TateLiza);
     state_.supporter_used = true;
-    std::swap(*state_.active, *it);
-    trace("PLAY SUPPORTER", "R-TATE-01; R-GAME-SUPPORTER", "Tate & Liza switch mode: promoted Benched Regidrago VSTAR.");
+    // Tate & Liza may switch any Benched Pokémon Active. Select the Regidrago
+    // VSTAR that best satisfies Apex Dragon's GGF cost before spending Supporter:
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    std::swap(*state_.active, *target);
+    trace("PLAY SUPPORTER", "R-TATE-01; R-GAME-SUPPORTER", "Tate & Liza switch mode: promoted the best-powered Benched Regidrago VSTAR.");
     return true;
   }
 

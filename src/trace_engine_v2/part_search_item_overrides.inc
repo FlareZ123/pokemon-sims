@@ -54,18 +54,18 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
     const bool want_regi = need_regi() && bench_space() > 0 && might_be_unseen(Card::RegidragoV);
     const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
-                            might_be_unseen(Card::RegidragoVstar);
+                             might_be_unseen(Card::RegidragoVstar);
     const bool want_latias = need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
-                             !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
-                             might_be_unseen(Card::LatiasEx);
+                              !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
+                              might_be_unseen(Card::LatiasEx);
     const bool want_oricorio = need_energy() && hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
-                                bench_space() > 0 && needs_oricorio_connector() &&
-                                might_be_unseen(Card::Oricorio);
+                                 bench_space() > 0 && needs_oricorio_connector() &&
+                                 might_be_unseen(Card::Oricorio);
     // Tapu Lele-GX may turn this Pokémon search into a live Supporter connector
     // through Wonder Tag when it is Benched from hand: https://api.pokemontcg.io/v2/cards/cel25c-60_A
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
-                           bench_space() > 0 && needs_tapu_connector() &&
-                           might_be_unseen(Card::TapuLeleGX);
+                            bench_space() > 0 && needs_tapu_connector() &&
+                            might_be_unseen(Card::TapuLeleGX);
     // A fetched Dragon payload can immediately become a strict-JIT payload when a
     // distinct live hand-discard effect remains. Mysterious Treasure, Quick Ball,
     // and Earthen Vessel each discard from hand; Serena may discard from hand before
@@ -73,16 +73,16 @@
     // Serena's mandatory discard, so Serena is not a zero-discard outlet.
     // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sv4-163 https://api.pokemontcg.io/v2/cards/swsh12-164 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     const bool has_live_hand_payload_outlet = hand_count(Card::MysteriousTreasure) > 0 ||
-                                               hand_count(Card::QuickBall) > 0 ||
-                                               hand_count(Card::EarthenVessel) > 0 ||
-                                               second_ultra_ball_can_discard_fetched_payload() ||
-                                               (supporter_allowed() && hand_count(Card::Serena) > 0);
+                                                hand_count(Card::QuickBall) > 0 ||
+                                                hand_count(Card::EarthenVessel) > 0 ||
+                                                second_ultra_ball_can_discard_fetched_payload() ||
+                                                (supporter_allowed() && hand_count(Card::Serena) > 0);
     const bool payload_might_be_searchable = might_be_unseen(Card::MegaDragonite) ||
-                                               might_be_unseen(Card::Dragapult) ||
-                                               might_be_unseen(Card::GoodraVstar) ||
-                                               might_be_unseen(Card::DialgaGX);
+                                                might_be_unseen(Card::Dragapult) ||
+                                                might_be_unseen(Card::GoodraVstar) ||
+                                                might_be_unseen(Card::DialgaGX);
     const bool want_payload = need_payload() && payload_might_be_searchable &&
-                              !can_jit_discard && has_live_hand_payload_outlet;
+                               !can_jit_discard && has_live_hand_payload_outlet;
     if (!want_regi && !want_vstar && !want_latias && !want_oricorio && !want_tapu && !want_payload && !can_jit_discard) return false;
 
     // The Ultra Ball being played cannot pay its own cost. Two other Ultra Ball
@@ -94,8 +94,16 @@
     // The Ultra Ball currently being played cannot pay its own two-card cost, while
     // a distinct remaining Ultra Ball can. Preserve that distinction in the second
     // selection: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-    const auto second = choose_discard(permit_payload && can_play_payload_this_turn() && !is_payload(*first),
-                                       true, true, Card::UltraBall);
+    std::optional<Card> second = choose_discard(permit_payload && can_play_payload_this_turn() && !is_payload(*first),
+                                                true, true, Card::UltraBall);
+    // When Evolution Incense has already searched the payload, a surviving second
+    // Incense is another card and can be Ultra Ball's distinct second discard cost:
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    const bool resolved_incense_fodder = can_jit_discard && is_payload(*first) &&
+        count_of(state_.discard, Card::EvolutionIncense) > 0 &&
+        hand_count(Card::EvolutionIncense) > 0;
+    if (!second && resolved_incense_fodder) second = Card::EvolutionIncense;
     state_.hand.push_back(*first);
     if (!second) return false;
 
@@ -131,6 +139,26 @@
     return true;
   }
 
+  bool ultra_ball_can_discard_fetched_evolution_payload() {
+    if (hand_count(Card::EvolutionIncense) == 0 || hand_count(Card::UltraBall) == 0) return false;
+    const std::vector<Card> original_hand = state_.hand;
+    const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
+
+    // Evolution Incense leaves hand before its searched Evolution payload arrives.
+    // The fetched payload supplies Ultra Ball's first cost, so reserve the Ultra Ball
+    // and evaluate the exact surviving hand for a distinct second cost:
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    if (!remove_one(state_.hand, Card::EvolutionIncense)) {
+      restore_hand();
+      return false;
+    }
+    const bool payable = choose_discard(false, true, true, Card::UltraBall).has_value() ||
+                         hand_count(Card::EvolutionIncense) > 0;
+    restore_hand();
+    return payable;
+  }
+
   bool play_evolution_incense(const bool permit_payload = false) {
     if (item_locked() || hand_count(Card::EvolutionIncense) == 0) return false;
     // Before K1, the fixed-list copy may still be in deck. After legal inspection,
@@ -139,7 +167,7 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
     const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
-                            might_be_unseen(Card::RegidragoVstar);
+                             might_be_unseen(Card::RegidragoVstar);
     // Evolution Incense can search any Evolution Pokémon. A JIT payload search is
     // live only when a separate card already in hand can discard that payload:
     // https://api.pokemontcg.io/v2/cards/swsh1-163
@@ -149,13 +177,13 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-164
     // A held Ultra Ball can discard the fetched Evolution payload plus a distinct
     // policy-legal second hand card: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-    const bool ultra_ball_payload_discard_outlet = hand_count(Card::UltraBall) > 0 &&
-                                                   is_legal_cost_available(false, true);
+    const bool ultra_ball_payload_discard_outlet =
+        ultra_ball_can_discard_fetched_evolution_payload();
     const bool hand_payload_discard_outlet = hand_count(Card::MysteriousTreasure) > 0 ||
         hand_count(Card::QuickBall) > 0 || hand_count(Card::EarthenVessel) > 0 ||
         ultra_ball_payload_discard_outlet || (supporter_allowed() && hand_count(Card::Serena) > 0);
     const bool want_payload = permit_payload && can_play_payload_this_turn() && need_payload() &&
-                              hand_payload_discard_outlet;
+                               hand_payload_discard_outlet;
     if (!want_vstar && !want_payload) return false;
 
     remove_one(state_.hand, Card::EvolutionIncense);

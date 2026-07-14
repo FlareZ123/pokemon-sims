@@ -108,12 +108,13 @@
       recovered.push_back(Card::LatiasEx);
     }
 
-    // Evolution Incense plus a hand-discard Item can form a two-card payload bridge:
+    // Evolution Incense plus a hand-discard outlet can form a two-card payload bridge:
     // https://api.pokemontcg.io/v2/cards/swsh1-163
     // https://api.pokemontcg.io/v2/cards/sm6-113
     // https://api.pokemontcg.io/v2/cards/swsh1-179
     // https://api.pokemontcg.io/v2/cards/sv4-163
     // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://api.pokemontcg.io/v2/cards/swsh12-164
     const bool evolution_incense_payload_line = need_payload() && !item_locked() && payload_might_be_in_deck() &&
         count_of(state_.discard, Card::EvolutionIncense) > 0 && recovered.empty();
     if (evolution_incense_payload_line) {
@@ -160,6 +161,20 @@
           recovered.push_back(outlet);
           break;
         }
+      }
+
+      // Serena's first mode requires discarding at least one hand card before drawing
+      // to five. After Incense fetches the Dragon, that payload is a guaranteed legal
+      // discard while the one Supporter play remains open:
+      // https://api.pokemontcg.io/v2/cards/swsh12-164
+      // https://api.pokemontcg.io/v2/cards/swsh1-163
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://www.pokemon.com/us/pokemon-tcg/rules
+      if (recovered.empty() && supporter_allowed() && count_of(state_.discard, Card::Serena) > 0) {
+        if (!recover_discard_to_hand(Card::EvolutionIncense)) throw std::logic_error("Legacy Star Evolution Incense target disappeared");
+        if (!recover_discard_to_hand(Card::Serena)) throw std::logic_error("Legacy Star Serena target disappeared");
+        recovered.push_back(Card::EvolutionIncense);
+        recovered.push_back(Card::Serena);
       }
     }
 

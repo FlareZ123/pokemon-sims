@@ -97,6 +97,16 @@
     return best;
   }
 
+  bool benched_vstar_promotion_ready() const {
+    const Pokemon* target = best_benched_vstar_for_promotion();
+    // Tate & Liza and Latias ex promote a specific Benched Regidrago VSTAR. The
+    // route is Energy-complete only when that selected attacker pays Apex Dragon's GGF:
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    return target != nullptr && target->grass >= 2 && target->fire >= 1;
+  }
+
   Pokemon* target_regi() {
     Pokemon* best = nullptr;
     int best_score = -100000;

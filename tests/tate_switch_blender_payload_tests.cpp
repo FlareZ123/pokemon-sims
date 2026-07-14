@@ -96,6 +96,42 @@ void test_incomplete_benched_vstar_preserves_tate_blender_line() {
   assert(!EngineTestAccess::payload_ready(engine));
 }
 
+void test_ready_active_basic_does_not_hide_incomplete_tate_target() {
+  using namespace sim;
+  const Scenario scenario{"tate-blender-target-aware-energy", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(398);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoV, 1, 2, 1, Tool::None};
+  state.bench = {Pokemon{Card::RegidragoVstar, 1, 1, 1, Tool::None}};
+  state.hand = {Card::TateLiza, Card::BrilliantBlender};
+  state.deck = {Card::MegaDragonite};
+
+  // The Active Basic's GGF does not complete the Energy axis of the Benched VSTAR
+  // that Tate & Liza would promote. Preserve both one-turn resources until that
+  // selected attacker can pay Apex Dragon's GGF cost:
+  // https://api.pokemontcg.io/v2/cards/sm7-148
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  EngineTestAccess::run_turn(engine);
+
+  assert(state.active && state.active->card == Card::RegidragoV);
+  assert(state.active->grass == 2 && state.active->fire == 1);
+  assert(state.bench.size() == 1U);
+  assert(state.bench.front().card == Card::RegidragoVstar);
+  assert(state.bench.front().grass == 1 && state.bench.front().fire == 1);
+  assert(!state.supporter_used);
+  assert(contains(state.hand, Card::TateLiza));
+  assert(contains(state.hand, Card::BrilliantBlender));
+  assert(state.deck.size() == 1U && state.deck.front() == Card::MegaDragonite);
+  assert(state.discard.empty());
+  assert(!EngineTestAccess::payload_ready(engine));
+}
+
 void test_blender_discards_every_payload_before_dipplin() {
   using namespace sim;
   const Scenario scenario{"blender-all-payloads", DciProfile::StrictJit,
@@ -247,6 +283,7 @@ void test_professor_turo_returns_basic_active_and_promotes_complete_vstar() {
 int main() {
   test_tate_switch_preserves_blender_payload_line();
   test_incomplete_benched_vstar_preserves_tate_blender_line();
+  test_ready_active_basic_does_not_hide_incomplete_tate_target();
   test_blender_discards_every_payload_before_dipplin();
   test_blender_uses_safe_remaining_selections_before_tate_refresh();
   test_tate_draw_holds_when_no_card_can_enter_the_deck();

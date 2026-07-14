@@ -40,15 +40,18 @@ void test_tate_switch_preserves_blender_payload_line() {
   state.active = Pokemon{Card::TapuLeleGX, 0, 0, 0, Tool::None};
   state.bench = {Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None}};
   state.hand = {Card::TateLiza, Card::BrilliantBlender};
-  state.deck = {Card::MegaDragonite};
+  state.deck = {Card::MegaDragonite, Card::FieldBlower};
 
+  // A turn begins with a mandatory draw. Field Blower is harmless in this no-lock
+  // fixture and occupies the top of the vector, preserving Mega Dragonite ex in deck:
+  // https://www.pokemon.com/us/pokemon-tcg/rules
   // Tate & Liza can switch the Active with a Benched Pokémon, and Brilliant Blender
   // can then search and discard the current-turn Dragon payload as a later Item play:
   // https://api.pokemontcg.io/v2/cards/sm7-148
   // https://api.pokemontcg.io/v2/cards/sv8-164
-  // https://www.pokemon.com/us/pokemon-tcg/rules
   EngineTestAccess::run_turn(engine);
 
+  assert(contains(state.hand, Card::FieldBlower));
   assert(state.active && state.active->card == Card::RegidragoVstar);
   assert(contains(state.discard, Card::TateLiza));
   assert(contains(state.discard, Card::BrilliantBlender));
@@ -69,19 +72,21 @@ void test_incomplete_benched_vstar_preserves_tate_blender_line() {
   state.active = Pokemon{Card::RegidragoV, 1, 2, 0, Tool::None};
   state.bench = {Pokemon{Card::RegidragoVstar, 1, 1, 0, Tool::None}};
   state.hand = {Card::Fire, Card::TateLiza, Card::BrilliantBlender};
-  state.deck = {Card::MegaDragonite};
+  state.deck = {Card::MegaDragonite, Card::FieldBlower};
 
+  // Preserve the intended payload target after the mandatory draw by putting a
+  // harmless no-lock Field Blower on top: https://www.pokemon.com/us/pokemon-tcg/rules
   // The manual attachment is once per turn. Tate & Liza can later promote the
   // Benched VSTAR, and Brilliant Blender is the one-shot current-turn payload route.
   // Put Fire on that intended attacker, then retain Tate and Blender until a later
   // Grass attachment completes Apex Dragon's GGF requirement:
-  // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://api.pokemontcg.io/v2/cards/sm7-148
   // https://api.pokemontcg.io/v2/cards/sv8-164
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
   EngineTestAccess::run_turn(engine);
 
+  assert(contains(state.hand, Card::FieldBlower));
   assert(state.active && state.active->card == Card::RegidragoV);
   assert(state.active->grass == 2 && state.active->fire == 0);
   assert(state.bench.size() == 1U);
@@ -108,8 +113,10 @@ void test_ready_active_basic_does_not_hide_incomplete_tate_target() {
   state.active = Pokemon{Card::RegidragoV, 1, 2, 1, Tool::None};
   state.bench = {Pokemon{Card::RegidragoVstar, 1, 1, 1, Tool::None}};
   state.hand = {Card::TateLiza, Card::BrilliantBlender};
-  state.deck = {Card::MegaDragonite};
+  state.deck = {Card::MegaDragonite, Card::FieldBlower};
 
+  // Preserve the intended payload target after the mandatory draw by putting a
+  // harmless no-lock Field Blower on top: https://www.pokemon.com/us/pokemon-tcg/rules
   // The Active Basic's GGF does not complete the Energy axis of the Benched VSTAR
   // that Tate & Liza would promote. Preserve both one-turn resources until that
   // selected attacker can pay Apex Dragon's GGF cost:
@@ -119,6 +126,7 @@ void test_ready_active_basic_does_not_hide_incomplete_tate_target() {
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   EngineTestAccess::run_turn(engine);
 
+  assert(contains(state.hand, Card::FieldBlower));
   assert(state.active && state.active->card == Card::RegidragoV);
   assert(state.active->grass == 2 && state.active->fire == 1);
   assert(state.bench.size() == 1U);

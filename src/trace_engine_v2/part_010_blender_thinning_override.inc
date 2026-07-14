@@ -12,13 +12,15 @@
         supporters_in_hand == hand_count(Card::TateLiza);
     // Brilliant Blender is a one-shot deck-to-discard payload outlet. Under strict
     // current-turn timing, retain it while Tate & Liza would promote a VSTAR that
-    // still lacks part of Apex Dragon's GGF cost:
+    // still lacks part of Apex Dragon's GGF cost. Inspect the actual promotion target
+    // rather than generic Energy routing to another Regidrago line:
     // https://api.pokemontcg.io/v2/cards/sv8-164
     // https://api.pokemontcg.io/v2/cards/sm7-148
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     if (strict_payload_timing() && only_tate_supporter_held &&
-        hand_count(Card::TateLiza) > 0 && need_active_vstar() && need_energy()) {
+        hand_count(Card::TateLiza) > 0 && need_active_vstar() &&
+        !benched_vstar_promotion_ready()) {
       return false;
     }
 

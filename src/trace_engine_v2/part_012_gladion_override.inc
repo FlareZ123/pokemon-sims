@@ -34,13 +34,16 @@
     }
 
     if (need_vstar() && hand_count(Card::RegidragoVstar) == 0) {
-      // Mysterious Treasure needs one other card from hand. Ultra Ball needs two
-      // other cards. Only a payable search route may preserve Gladion instead of
-      // recovering a prized VSTAR: https://api.pokemontcg.io/v2/cards/sm6-113
-      // https://api.pokemontcg.io/v2/cards/swsh12pt5-146 https://api.pokemontcg.io/v2/cards/sm4-95
+      // Mysterious Treasure needs one other card from hand. Reserve the copy being
+      // played so a distinct Ultra Ball remains a legal one-card discard cost:
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+      // Only a payable search route may preserve Gladion instead of recovering a
+      // prized VSTAR: https://api.pokemontcg.io/v2/cards/sm4-95
       const bool playable_mysterious_vstar_search = !item_locked() &&
           hand_count(Card::MysteriousTreasure) > 0 &&
-          is_legal_cost_available(can_play_payload_this_turn(), true);
+          choose_discard(can_play_payload_this_turn(), true, true,
+                         Card::MysteriousTreasure).has_value();
       const bool playable_fss_vstar_route = !state_.vstar_power_used &&
           hand_count(Card::ForestSealStone) > 0 &&
           ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||

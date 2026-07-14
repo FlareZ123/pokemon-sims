@@ -171,26 +171,33 @@
     const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
     if (!remove_one(state_.hand, Card::TeamYellsCheer)) return false;
     const bool permit_payload = can_play_payload_this_turn();
+    const bool payload_already_ready = payload_ready();
 
     // Quick Ball and Mysterious Treasure each require one other hand card as their
-    // discard cost before searching Latias ex:
+    // discard cost before searching Latias ex. When the payload axis is missing, the
+    // selected cost must itself be the Dragon that makes Apex Dragon ready this turn:
     // https://api.pokemontcg.io/v2/cards/swsh1-179
     // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
     for (const Card item : {Card::QuickBall, Card::MysteriousTreasure}) {
-      if (hand_count(item) > 0 && choose_discard(permit_payload, true, true, item).has_value()) {
+      if (hand_count(item) == 0) continue;
+      const auto cost = choose_discard(permit_payload, true, true, item);
+      if (cost && (payload_already_ready || is_payload(*cost))) {
         restore_hand();
         return true;
       }
     }
 
-    // Ultra Ball requires two other cards after Team Yell's Cheer leaves hand:
+    // Ultra Ball requires two other cards after Team Yell's Cheer leaves hand. If
+    // strict-JIT payload is still missing, one of those two costs must be the Dragon:
     // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
     if (hand_count(Card::UltraBall) > 0) {
       remove_one(state_.hand, Card::UltraBall);
       const auto first = choose_discard(permit_payload, true);
       if (first && remove_one(state_.hand, *first)) {
         const auto second = choose_discard(permit_payload && !is_payload(*first), true);
-        if (second) {
+        if (second && (payload_already_ready || is_payload(*first) || is_payload(*second))) {
           restore_hand();
           return true;
         }
@@ -210,7 +217,7 @@
         state_.active->entered_turn < state_.turn && hand_count(Card::RegidragoVstar) > 0;
     if (!supporter_allowed() || hand_count(Card::TeamYellsCheer) == 0 || !need_active_vstar() ||
         !state_.active || !is_basic(state_.active->card) || active_can_evolve_from_hand ||
-        !powered_benched_vstar || !payload_ready() || state_.retreat_used || bench_space() == 0 ||
+        !powered_benched_vstar || state_.retreat_used || bench_space() == 0 ||
         !ability_available_for_pokemon(Card::LatiasEx) || in_play(Card::LatiasEx) ||
         count_of(state_.discard, Card::LatiasEx) == 0) {
       return false;
@@ -218,6 +225,12 @@
 
     // If Latias ex may already remain in the deck, preserve Team Yell's Cheer and use
     // the direct search. The recovery route is for the known discarded singleton only.
+    // The payable-search helper also proves that a missing strict-JIT payload will be
+    // the search Item's discard cost instead of requiring it before that action:
+    // https://api.pokemontcg.io/v2/cards/swsh9-149
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
     if (might_be_unseen(Card::LatiasEx) || !has_payable_team_yell_latias_search()) return false;
 
     remove_one(state_.hand, Card::TeamYellsCheer);

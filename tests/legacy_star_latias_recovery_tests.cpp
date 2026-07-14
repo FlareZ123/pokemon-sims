@@ -141,6 +141,59 @@ void test_legacy_star_recovers_latias_after_payload_is_ready() {
   }
 }
 
+void test_legacy_star_recovers_energy_for_promotable_benched_vstar() {
+  const sim::Scenario scenario{"legacy-star-benched-energy", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{385};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::TapuLeleGX, 1, 0, 0, sim::Tool::None};
+  state.bench = {
+      sim::Pokemon{sim::Card::RegidragoVstar, 1, 1, 1, sim::Tool::None},
+      sim::Pokemon{sim::Card::LatiasEx, 1, 0, 0, sim::Tool::None},
+  };
+  state.discard = {sim::Card::MegaDragonite, sim::Card::Grass};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+  state.deck = seven_non_connector_cards();
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Legacy Star may recover the missing Basic Energy, and Skyliner supplies the legal
+  // same-turn promotion path for the selected Benched VSTAR:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://api.pokemontcg.io/v2/cards/sv8-76
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  if (!sim::EngineTestAccess::use_legacy_star(engine) ||
+      !contains(sim::EngineTestAccess::state(engine).hand, sim::Card::Grass)) {
+    throw std::runtime_error("Legacy Star should recover Energy for a promotable Benched VSTAR.");
+  }
+
+  sim::EngineTestAccess::attach_manual(engine);
+  const sim::State& attached = sim::EngineTestAccess::state(engine);
+  const auto powered = std::find_if(attached.bench.begin(), attached.bench.end(), [](const sim::Pokemon& pokemon) {
+    return pokemon.card == sim::Card::RegidragoVstar && pokemon.grass == 2 && pokemon.fire == 1;
+  });
+  if (powered == attached.bench.end()) {
+    throw std::runtime_error("The recovered Energy must attach to the selected Benched VSTAR.");
+  }
+
+  // The player may retreat once before attacking, and Latias ex makes the Basic Active's
+  // Retreat Cost zero: https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/sv8-76
+  if (!sim::EngineTestAccess::retreat_to_benched_vstar_with_latias(engine)) {
+    throw std::runtime_error("Latias ex should promote the newly powered Benched VSTAR.");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::RegidragoVstar ||
+      after.active->grass != 2 || after.active->fire != 1 ||
+      !after.vstar_power_used || !after.manual_energy_used || !after.retreat_used ||
+      !contains(after.discarded_this_turn, sim::Card::MegaDragonite)) {
+    throw std::runtime_error("The Legacy Star Energy route must complete every ready-state axis.");
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -148,6 +201,7 @@ int main() {
     test_legacy_star_recovers_latias_for_active_vstar();
     test_legacy_star_recovers_energy_after_payload_is_ready();
     test_legacy_star_recovers_latias_after_payload_is_ready();
+    test_legacy_star_recovers_energy_for_promotable_benched_vstar();
     std::cout << "legacy star Latias recovery tests passed\n";
     return 0;
   } catch (const std::exception& error) {

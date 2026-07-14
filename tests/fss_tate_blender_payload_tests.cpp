@@ -134,12 +134,11 @@ void test_fss_fetches_tate_when_blender_covers_payload() {
   state.turn = 2;
   state.active = Pokemon{Card::RegidragoV, 1, 2, 1, Tool::ForestSealStone};
   state.bench = {Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None}};
-  state.hand = {Card::BrilliantBlender};
-  state.deck = {Card::TateLiza, Card::MegaDragonite, Card::FieldBlower};
+  state.deck = {Card::TateLiza, Card::MegaDragonite, Card::BrilliantBlender};
 
-  // A turn begins with a mandatory draw. Field Blower is the harmless top card in
-  // this no-lock fixture, so Tate & Liza and Mega Dragonite ex remain in the deck for
-  // the route being tested: https://www.pokemon.com/us/pokemon-tcg/rules
+  // The mandatory draw restores the original held Brilliant Blender while preserving
+  // Tate & Liza and Mega Dragonite ex as Star Alchemy and payload targets:
+  // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Start_Your_Turn
   // Forest Seal Stone can search Tate & Liza for switch mode, then the already held
   // Brilliant Blender remains playable later that turn to discard the Dragon payload:
   // https://api.pokemontcg.io/v2/cards/swsh12-156
@@ -147,7 +146,6 @@ void test_fss_fetches_tate_when_blender_covers_payload() {
   // https://api.pokemontcg.io/v2/cards/sv8-164
   EngineTestAccess::run_full_turn(engine);
 
-  assert(contains(state.hand, Card::FieldBlower));
   assert(state.vstar_power_used);
   assert(state.active && state.active->card == Card::RegidragoVstar);
   assert(contains(state.discard, Card::TateLiza));
@@ -168,11 +166,11 @@ void test_fss_holds_when_tate_target_is_energy_incomplete() {
   state.turn = 2;
   state.active = Pokemon{Card::RegidragoV, 1, 2, 1, Tool::ForestSealStone};
   state.bench = {Pokemon{Card::RegidragoVstar, 1, 1, 1, Tool::None}};
-  state.hand = {Card::BrilliantBlender};
-  state.deck = {Card::TateLiza, Card::MegaDragonite, Card::FieldBlower};
+  state.deck = {Card::TateLiza, Card::MegaDragonite, Card::BrilliantBlender};
 
-  // Preserve the intended two-card route after the mandatory draw by placing a
-  // harmless no-lock Field Blower on top: https://www.pokemon.com/us/pokemon-tcg/rules
+  // The mandatory draw restores the original held Brilliant Blender without putting
+  // a live Field Blower against the attached Forest Seal Stone:
+  // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Start_Your_Turn
   // Star Alchemy is one per game. Tate & Liza would promote the Benched VSTAR, and
   // Brilliant Blender would spend the current-turn payload, while that attacker still
   // cannot pay Apex Dragon's GGF cost. Preserve the VSTAR Power and both route cards:
@@ -183,7 +181,6 @@ void test_fss_holds_when_tate_target_is_energy_incomplete() {
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   EngineTestAccess::run_full_turn(engine);
 
-  assert(contains(state.hand, Card::FieldBlower));
   assert(!state.vstar_power_used);
   assert(state.active && state.active->card == Card::RegidragoV);
   assert(state.bench.size() == 1U);

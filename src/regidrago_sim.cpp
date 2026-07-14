@@ -33,7 +33,10 @@
 #include "trace_engine_v2/part_001.inc"
 #include "trace_engine_v2/part_002.inc"
 #define begin_turn begin_turn_original
+#define might_be_unseen might_be_unseen_empty_deck_original
 #include "trace_engine_v2/part_003.inc"
+#undef might_be_unseen
+#include "trace_engine_v2/part_empty_deck_unseen_override.inc"
 #include "trace_engine_v2/part_004.inc"
 #include "trace_engine_v2/part_005.inc"
 #undef begin_turn

@@ -14,6 +14,7 @@ struct EngineTestAccess {
     return engine.play_mysterious_treasure(permit_payload);
   }
   static bool use_fss(Engine& engine) { return engine.use_fss(); }
+  static bool use_legacy_star(Engine& engine) { return engine.use_legacy_star(); }
   static bool bench_from_hand(Engine& engine, const Card card, const bool resolve_entry) {
     return engine.bench_from_hand(card, resolve_entry);
   }
@@ -79,6 +80,57 @@ void test_star_alchemy_preserves_the_vstar_power() {
   }
 }
 
+void test_legacy_star_rejects_impossible_empty_deck_payload() {
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1,
+                              sim::Tool::None};
+  Fixture fixture(std::move(state));
+
+  // Legacy Star discards the top seven cards. A publicly empty deck cannot contain
+  // a hidden Dragon payload, so the simulator must retain its one-per-game VSTAR
+  // Power instead of resolving a zero-card strict-JIT payload attempt:
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  if (sim::EngineTestAccess::use_legacy_star(fixture.engine)) {
+    throw std::runtime_error("Legacy Star must not activate for an impossible empty-deck payload route.");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  if (after.vstar_power_used ||
+      sim::EngineTestAccess::outcome(fixture.engine).used_legacy_star ||
+      !after.discard.empty()) {
+    throw std::runtime_error("The rejected empty-deck Legacy Star route must preserve every resource.");
+  }
+}
+
+void test_legacy_star_keeps_nonempty_payload_and_latias_recovery() {
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0,
+                              sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1,
+                              sim::Tool::None}};
+  state.deck = {sim::Card::MegaDragonite};
+  state.discard = {sim::Card::LatiasEx};
+  Fixture fixture(std::move(state));
+
+  // A nonempty deck can still supply the current-turn Dragon payload, and Legacy
+  // Star may recover Latias ex so Skyliner can support the Benched VSTAR promotion:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/sv8-76
+  if (!sim::EngineTestAccess::use_legacy_star(fixture.engine)) {
+    throw std::runtime_error("A real nonempty Legacy Star payload and Latias route must remain live.");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  if (!after.vstar_power_used ||
+      !sim::EngineTestAccess::outcome(fixture.engine).used_legacy_star ||
+      std::find(after.discard.begin(), after.discard.end(), sim::Card::MegaDragonite) == after.discard.end() ||
+      std::find(after.hand.begin(), after.hand.end(), sim::Card::LatiasEx) == after.hand.end()) {
+    throw std::runtime_error("The nonempty Legacy Star control must discard the payload and recover Latias ex.");
+  }
+}
+
 void test_optional_entry_search_is_declined_after_legal_bench() {
   sim::State state;
   state.turn = 2;
@@ -129,6 +181,8 @@ int main() {
   try {
     test_search_item_does_not_pay_its_cost();
     test_star_alchemy_preserves_the_vstar_power();
+    test_legacy_star_rejects_impossible_empty_deck_payload();
+    test_legacy_star_keeps_nonempty_payload_and_latias_recovery();
     test_optional_entry_search_is_declined_after_legal_bench();
     test_search_supporter_does_not_consume_the_supporter_slot();
     std::cout << "empty-deck search tests passed\n";

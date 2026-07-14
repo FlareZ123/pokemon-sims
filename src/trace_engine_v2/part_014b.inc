@@ -175,7 +175,11 @@
     // cost. The Vessel itself cannot be that other discarded card:
     // https://api.pokemontcg.io/v2/cards/swsh9-148
     // https://api.pokemontcg.io/v2/cards/sv4-163
-    const bool payable = choose_discard(false, true, true, Card::EarthenVessel).has_value();
+    // When a different Dragon already established the strict-JIT payload this turn,
+    // an additional modeled Dragon is a legal Vessel cost and adds another Apex Dragon option:
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    const bool payable = choose_discard(payload_ready(), true, true, Card::EarthenVessel).has_value();
     restore_hand();
     return payable;
   }

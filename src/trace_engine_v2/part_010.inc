@@ -82,7 +82,14 @@
 
   bool play_earthen_vessel(const bool permit_payload) {
     if (item_locked() || hand_count(Card::EarthenVessel) == 0) return false;
-    const bool can_jit_discard = permit_payload && can_play_payload_this_turn() && std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    // Once a different current-turn Dragon already satisfies strict-JIT, another
+    // modeled Dragon remains a legal Earthen Vessel cost and adds an Apex Dragon option:
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    const bool can_jit_discard = permit_payload &&
+        (can_play_payload_this_turn() || payload_ready()) &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
     // Earthen Vessel searches Basic Energy only after discarding another card. Once
     // K1 proves no needed modeled Basic Energy remains, preserve both hand cards
     // unless Vessel is still the current-turn outlet for an in-hand Dragon payload:

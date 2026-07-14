@@ -23,13 +23,13 @@
         need_active_vstar() && !can_free_retreat_with_latias() && state_.active &&
         state_.active->card == Card::RegidragoV && !active_can_evolve_now;
     if (coordinate_tate_blender_line) {
-      auto target = std::find_if(state_.bench.begin(), state_.bench.end(),
-                                 [this](const Pokemon& pokemon) {
-        if (pokemon.card != Card::RegidragoVstar) return false;
-        return (pokemon.grass < 2 && hand_count(Card::Grass) > 0) ||
-               (pokemon.fire < 1 && hand_count(Card::Fire) > 0);
-      });
-      if (target != state_.bench.end()) {
+      // Use the exact selector that Tate & Liza later uses for promotion. A separate
+      // first-match attachment can change the selector's stable tie and strand GGF:
+      // https://api.pokemontcg.io/v2/cards/sm7-148
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      Pokemon* target = best_benched_vstar_for_promotion();
+      if (target != nullptr) {
         Card energy = Card::Grass;
         if (target->grass < 2 && hand_count(Card::Grass) > 0) {
           energy = Card::Grass;
@@ -48,7 +48,7 @@
         state_.manual_energy_used = true;
         trace("ATTACH", "R-GAME-ENERGY; R-TATE-01; R-BLENDER-01; R-RVS-01; P-DCI-01",
               std::string(name(energy)) +
-                  " manually to the Benched Regidrago VSTAR intended for Tate & Liza promotion.");
+                  " manually to the Benched Regidrago VSTAR selected for Tate & Liza promotion.");
         return true;
       }
     }

@@ -38,7 +38,7 @@ void test_legacy_star_recovers_evolution_incense_payload_bridge() {
   state.turn = 2;
   state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
   state.deck = {Card::MegaDragonite, Card::Grass, Card::Fire, Card::Crispin,
-                Card::Arven, Card::Dipplin, Card::EvolutionIncense,
+                Card::Arven, Card::Dipplin, Card::MawileGX, Card::EvolutionIncense,
                 Card::MysteriousTreasure, Card::FieldBlower};
 
   // A turn begins with a mandatory draw. Field Blower is harmless in this no-lock

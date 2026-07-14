@@ -51,5 +51,5 @@ The API records are card-text sources. They do not replace official tournament r
 
 - Direct card-text mechanics in this table are validated against the supplied card corpus and the linked exact-print record.
 - The `FullRuleBoxAbility` scenario is a model abstraction for a Path-to-the-Peak-style lock. It suppresses Rule Box Pokémon Abilities and leaves Oricorio Vital Dance available because Oricorio GRI 55 has no Rule Box.
-- Forest Seal Stone under the Rule Box lock remains an explicit model assumption. The simulator treats an already attached Tool's Star Alchemy as distinct from playing an Item from hand. Do not interpret this as a published tournament ruling until a direct official ruling source is added here.
+- Forest Seal Stone remains usable under Path to the Peak. The published ruling explains that the Pokémon V does not have Star Alchemy; it has access to the Ability printed on the attached Tool: https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
 - Ultra Ball and Evolution Incense are comparators only, not cards in the submitted baseline deck.

@@ -7,8 +7,10 @@
     }
     // Star Alchemy is printed on Forest Seal Stone, a Pokémon Tool; the attached
     // Pokémon V can use that Tool's VSTAR Power: https://api.pokemontcg.io/v2/cards/swsh12-156
-    // Path to the Peak removes Abilities from Pokémon with Rule Boxes. It does
-    // not remove text printed on an attached Pokémon Tool: https://api.pokemontcg.io/v2/cards/swsh6-148
+    // Path to the Peak removes Abilities from Pokémon with Rule Boxes. The published
+    // ruling says the Pokémon V only has access to the Tool's Ability, so Path does
+    // not remove Star Alchemy: https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
+    // Path to the Peak card text: https://api.pokemontcg.io/v2/cards/swsh6-148
     if (holder == nullptr || !is_pokemon_v(holder->card)) return false;
     const bool tate_solves_only_missing_axis = need_active_vstar() && !need_energy() && !need_payload() &&
                                                supporter_allowed() && hand_count(Card::TateLiza) > 0;

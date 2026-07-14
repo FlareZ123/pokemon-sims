@@ -42,16 +42,19 @@
   }
 
   bool play_turo_active_promotion_route() {
-    const bool active_regidrago_can_evolve_this_turn = state_.active &&
-        state_.active->card == Card::RegidragoV && state_.active->entered_turn < state_.turn;
-    // A Pokémon cannot evolve during the turn it entered play. Preserve the direct
-    // evolution route for an older Active Regidrago V, while allowing Professor Turo
-    // to remove a same-turn Active Regidrago V and promote a complete Benched VSTAR:
+    // A direct evolution route requires a prior-turn Regidrago V, the matching
+    // Regidrago VSTAR card in hand, and GGF already attached to that Active line.
+    // Otherwise Professor Turo may promote an already complete Benched VSTAR:
     // https://www.pokemon.com/us/pokemon-tcg/rules
     // https://api.pokemontcg.io/v2/cards/sv4-171
     // https://api.pokemontcg.io/v2/cards/swsh12-136
+    const bool active_regidrago_has_ready_direct_evolution = state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        hand_count(Card::RegidragoVstar) > 0 &&
+        state_.active->grass >= 2 && state_.active->fire >= 1;
     if (!supporter_allowed() || hand_count(Card::ProfessorTuro) == 0 || !state_.active ||
-        !is_basic(state_.active->card) || active_regidrago_can_evolve_this_turn ||
+        !is_basic(state_.active->card) || active_regidrago_has_ready_direct_evolution ||
         !need_active_vstar() || need_regi() || need_vstar() || need_energy() || need_payload() ||
         can_free_retreat_with_latias() || hand_count(Card::TateLiza) > 0) {
       return false;

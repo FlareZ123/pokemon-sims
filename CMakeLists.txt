@@ -98,7 +98,7 @@ target_compile_options(regidrago_oricorio_full_energy_search_tests PRIVATE -Wall
 add_executable(regidrago_steven_missing_regi_tests tests/steven_missing_regi_tests.cpp)
 target_compile_options(regidrago_steven_missing_regi_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
-add_executable(regidrago_oricorio_type_sensitive_energy_tests tests/oricorio_type_sensitive_energy_tests.cpp)
+add_executable(regidrago_oricorio_type_sensitive_energy_tests tests/oricorio_type_sensitive_energy_search_tests.cpp)
 target_compile_options(regidrago_oricorio_type_sensitive_energy_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
 add_executable(regidrago_start_turn_deck_exhaustion_tests tests/start_turn_deck_exhaustion_tests.cpp)
@@ -142,6 +142,9 @@ target_compile_options(regidrago_tate_switch_blender_tests PRIVATE -Wall -Wextra
 
 add_executable(regidrago_fss_tate_blender_tests tests/fss_tate_blender_payload_tests.cpp)
 target_compile_options(regidrago_fss_tate_blender_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
+add_executable(regidrago_blender_fss_tate_hold_tests tests/blender_fss_tate_hold_tests.cpp)
+target_compile_options(regidrago_blender_fss_tate_hold_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
 add_executable(regidrago_powerglass_end_turn_tests tests/powerglass_end_turn_tests.cpp)
 target_compile_options(regidrago_powerglass_end_turn_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
@@ -202,6 +205,7 @@ add_test(NAME regidrago_turo_ready_direct_evolution COMMAND regidrago_turo_ready
 add_test(NAME regidrago_no_redundant_items COMMAND regidrago_no_redundant_item_tests)
 add_test(NAME regidrago_tate_switch_blender COMMAND regidrago_tate_switch_blender_tests)
 add_test(NAME regidrago_fss_tate_blender COMMAND regidrago_fss_tate_blender_tests)
+add_test(NAME regidrago_blender_fss_tate_hold COMMAND regidrago_blender_fss_tate_hold_tests)
 add_test(NAME regidrago_powerglass_end_turn COMMAND regidrago_powerglass_end_turn_tests)
 add_test(NAME regidrago_celestial_roar_live_route COMMAND regidrago_celestial_roar_live_route_tests)
 add_test(NAME regidrago_roseanne_energy_recovery COMMAND regidrago_roseanne_energy_recovery_tests)

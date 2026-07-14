@@ -16,4 +16,5 @@ struct EngineTestAccess {
   static bool play_ultra_ball(Engine& engine, bool payload) { return engine.play_ultra_ball(payload); }
   static bool play_heavy_ball(Engine& engine) { return engine.play_heavy_ball(); }
   static bool play_crispin(Engine& engine) { return engine.play_crispin(); }
+  static bool bench_tapu_if_useful(Engine& engine) { return engine.bench_tapu_if_useful(); }
   static bool attach_manual(Engine& engine) { return engine.attach_manual(); }

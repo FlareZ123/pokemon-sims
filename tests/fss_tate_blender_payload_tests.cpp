@@ -14,6 +14,15 @@ struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
   static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
   static void run_turn(Engine& engine) { engine.run_turn(); }
+  static void run_full_turn(Engine& engine) {
+    // Full-turn fixtures mirror Engine::run(): perform the mandatory draw before
+    // tactical policy, and stop when that draw ends the game:
+    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Start_Your_Turn
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L20-L34
+    const int turn = engine.state_.turn;
+    engine.begin_turn(turn);
+    if (!engine.state_.turn_ended) engine.run_turn();
+  }
   static bool use_fss(Engine& engine) { return engine.use_fss(); }
   static bool play_tate_switch(Engine& engine) { return engine.play_tate_switch(); }
   static bool play_mysterious_treasure(Engine& engine, const bool permit_payload) {
@@ -136,7 +145,7 @@ void test_fss_fetches_tate_when_blender_covers_payload() {
   // https://api.pokemontcg.io/v2/cards/swsh12-156
   // https://api.pokemontcg.io/v2/cards/sm7-148
   // https://api.pokemontcg.io/v2/cards/sv8-164
-  EngineTestAccess::run_turn(engine);
+  EngineTestAccess::run_full_turn(engine);
 
   assert(contains(state.hand, Card::FieldBlower));
   assert(state.vstar_power_used);
@@ -172,7 +181,7 @@ void test_fss_holds_when_tate_target_is_energy_incomplete() {
   // https://api.pokemontcg.io/v2/cards/sv8-164
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-  EngineTestAccess::run_turn(engine);
+  EngineTestAccess::run_full_turn(engine);
 
   assert(contains(state.hand, Card::FieldBlower));
   assert(!state.vstar_power_used);

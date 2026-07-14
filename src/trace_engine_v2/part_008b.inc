@@ -1,5 +1,5 @@
-  }
-
+  // The preceding fragment closes every Tate & Liza member before this next
+  // Engine member begins: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_008a.inc#L51-L69
   bool play_heavy_ball() {
     if (item_locked() || hand_count(Card::HisuianHeavyBall) == 0) return false;
 

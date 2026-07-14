@@ -52,7 +52,7 @@
     // absent and a discarded copy can restore a payable same-turn route.
     if (might_be_unseen(Card::RegidragoVstar) || !has_payable_team_yell_vstar_search()) return false;
 
-    const auto evolution_incense_then_latias_search_is_payable = [this]() {
+    const auto evolution_incense_then_latias_search_completes_payload_axis = [this]() {
       if (item_locked() || hand_count(Card::EvolutionIncense) == 0) return false;
       const std::vector<Card> original_hand = state_.hand;
       const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
@@ -68,9 +68,19 @@
         restore_hand();
         return false;
       }
+      const bool payload_already_ready = payload_ready();
       const bool permit_payload = can_play_payload_this_turn();
       for (const Card item : {Card::QuickBall, Card::MysteriousTreasure}) {
-        if (hand_count(item) > 0 && choose_discard(permit_payload, true, true, item).has_value()) {
+        if (hand_count(item) == 0) continue;
+        const auto cost = choose_discard(permit_payload, true, true, item);
+        // Quick Ball and Mysterious Treasure pay their discard costs before searching.
+        // A permitted Dragon cost therefore establishes the strict-JIT Apex Dragon
+        // payload before the restored Latias ex is found and Benched:
+        // https://api.pokemontcg.io/v2/cards/swsh1-179
+        // https://api.pokemontcg.io/v2/cards/sm6-113
+        // https://api.pokemontcg.io/v2/cards/swsh12-136
+        // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+        if (cost && (payload_already_ready || (permit_payload && is_payload(*cost)))) {
           restore_hand();
           return true;
         }
@@ -80,7 +90,11 @@
         const auto first = choose_discard(permit_payload, true);
         if (first && remove_one(state_.hand, *first)) {
           const auto second = choose_discard(permit_payload && !is_payload(*first), true);
-          if (second) {
+          // Ultra Ball's two-card cost may establish the same strict-JIT payload axis
+          // when either selected card is a permitted Dragon payload:
+          // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+          // https://api.pokemontcg.io/v2/cards/swsh12-136
+          if (second && (payload_already_ready || is_payload(*first) || is_payload(*second))) {
             restore_hand();
             return true;
           }
@@ -93,11 +107,13 @@
     // Team Yell's Cheer may return up to 3 eligible cards in one resolution. When a
     // powered prior-turn Benched Regidrago V will evolve behind a Basic Active, restore
     // Latias ex together with Regidrago VSTAR if Evolution Incense and a separate
-    // Basic or Psychic search remain payable:
+    // Basic or Psychic search remain payable. That later search may itself discard the
+    // held strict-JIT payload before finding Latias ex:
     // https://api.pokemontcg.io/v2/cards/swsh9-149
     // https://api.pokemontcg.io/v2/cards/sv8-76
     // https://api.pokemontcg.io/v2/cards/swsh1-163
     // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Retreat_Your_Active_Pokemon
     const bool powered_benched_regi_can_evolve = std::any_of(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
@@ -113,10 +129,11 @@
         state_.active->card == Card::RegidragoV && state_.active->entered_turn < state_.turn &&
         state_.active->grass >= 2 && state_.active->fire >= 1;
     const bool restore_latias_for_promotion = state_.active && is_basic(state_.active->card) &&
-        !active_regi_can_be_ready_without_retreat && powered_benched_regi_can_evolve && payload_ready() &&
+        !active_regi_can_be_ready_without_retreat && powered_benched_regi_can_evolve &&
         !state_.retreat_used && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
         !in_play(Card::LatiasEx) && count_of(state_.discard, Card::LatiasEx) > 0 &&
-        !might_be_unseen(Card::LatiasEx) && evolution_incense_then_latias_search_is_payable();
+        !might_be_unseen(Card::LatiasEx) &&
+        evolution_incense_then_latias_search_completes_payload_axis();
 
     remove_one(state_.hand, Card::TeamYellsCheer);
     state_.discard.push_back(Card::TeamYellsCheer);

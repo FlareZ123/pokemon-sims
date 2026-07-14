@@ -6,6 +6,7 @@
 // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
 // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
 // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+// Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
 // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
 // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
 // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
@@ -23,6 +24,11 @@
 // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
 // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
 // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+// Chaotic Swell: https://api.pokemontcg.io/v2/cards/sm12-187
+// Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
+// Team Yell's Cheer: https://api.pokemontcg.io/v2/cards/swsh9-149
+// Roseanne's Backup: https://api.pokemontcg.io/v2/cards/swsh9-148
+// Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
 #include "trace_engine_v2/part_000.inc"
 #include "trace_engine_v2/part_001.inc"
 #include "trace_engine_v2/part_002.inc"

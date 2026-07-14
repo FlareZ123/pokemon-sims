@@ -127,8 +127,8 @@ void test_roseanne_multimode_uses_payload_as_vessel_cost() {
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 1, 1, sim::Tool::None};
   state.hand = {sim::Card::RoseannesBackup, sim::Card::EvolutionIncense,
-                sim::Card::EarthenVessel};
-  state.deck = {sim::Card::MegaDragonite};
+                sim::Card::EarthenVessel, sim::Card::MegaDragonite};
+  state.deck.clear();
   state.discard = {sim::Card::RegidragoVstar, sim::Card::Grass};
   // Keep Legacy Star unavailable so this test isolates the Roseanne, Incense, and
   // Vessel continuation: https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -136,8 +136,9 @@ void test_roseanne_multimode_uses_payload_as_vessel_cost() {
   sim::EngineTestAccess::set_state(engine, std::move(state));
   sim::EngineTestAccess::set_deck_seen(engine);
 
-  // Earthen Vessel may discard the Dragon drawn for the turn as its required other
-  // card. That discard establishes the strict-JIT Apex Dragon payload while Roseanne
+  // This helper begins after the turn draw, so the exact Vessel cost must already be
+  // in hand. Earthen Vessel may discard the held Dragon as its required other card.
+  // That discard establishes the strict-JIT Apex Dragon payload while Roseanne
   // restores the VSTAR and final Grass Energy for the two Item searches:
   // https://api.pokemontcg.io/v2/cards/swsh9-148
   // https://api.pokemontcg.io/v2/cards/swsh1-163

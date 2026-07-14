@@ -1,10 +1,21 @@
-void zero_target_crispin_still_establishes_knowledge() {
+void zero_target_crispin_rejects_no_effect_play() {
   State s = st(2, Card::RegidragoV, 1, 1, 0);
   s.hand = {Card::Crispin};
   s.prizes = {Card::RegidragoVstar, Card::Grass, Card::Fire};
   Fixture f(sc("tier2-zero-target"), s);
-  expect(EngineTestAccess::play_crispin(f.engine), "Crispin should resolve even with no Energy in deck.");
-  expect(EngineTestAccess::prizes_known(f.engine), "A zero-target deck search should still establish K1.");
+
+  // Crispin searches for up to two Basic Energy of different types, then puts one
+  // into hand and attaches the other. With a publicly empty deck, every effect is
+  // known to do nothing, so the Supporter cannot be played:
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+  expect(!EngineTestAccess::play_crispin(f.engine),
+         "Crispin must be rejected when the empty deck makes every effect known to fail.");
+
+  const State& a = EngineTestAccess::state(f.engine);
+  expect(has(a.hand, Card::Crispin), "Rejected Crispin must remain in hand.");
+  expect(!a.supporter_used, "Rejected Crispin must leave the Supporter play unused.");
+  expect(a.deck.empty(), "The public zero-card deck remains empty without an illegal search.");
 }
 
 void k1_singleton_crispin_supplies_manual_energy() {
@@ -37,7 +48,7 @@ int main() {
     {"fss_uses_blender_for_payload", fss_uses_blender_for_payload},
     {"known_lusamine_is_delayed_not_direct", known_lusamine_is_delayed_not_direct},
     {"search_effects_persist_knowledge", search_effects_persist_knowledge},
-    {"zero_target_crispin_still_establishes_knowledge", zero_target_crispin_still_establishes_knowledge},
+    {"zero_target_crispin_rejects_no_effect_play", zero_target_crispin_rejects_no_effect_play},
     {"k1_singleton_crispin_supplies_manual_energy", k1_singleton_crispin_supplies_manual_energy},
     {"tapu_avoids_redundant_arven", tapu_avoids_redundant_arven},
     {"tapu_uses_gladion_for_known_prized_vstar", tapu_uses_gladion_for_known_prized_vstar},

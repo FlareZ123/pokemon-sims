@@ -168,6 +168,10 @@
     // hand already supplies its discard cost, or recover a second policy-admissible
     // cost card from the newly discarded cards: https://api.pokemontcg.io/v2/cards/sv4-163
     // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // A permitted Dragon payload is the strongest strict-JIT Vessel cost because the
+    // required discard also establishes Apex Dragon's current-turn payload axis:
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // https://www.pokemon.com/us/pokemon-tcg/rules
     const bool needed_energy_might_remain =
         (grass_needed() > 0 && might_be_unseen(Card::Grass)) ||
@@ -185,7 +189,7 @@
 
       bool found_vessel_bridge = false;
       if (recover_discard_to_hand(Card::EarthenVessel) &&
-          choose_discard(false, true, true, Card::EarthenVessel).has_value()) {
+          choose_discard(can_play_payload_this_turn(), true, true, Card::EarthenVessel).has_value()) {
         recovered.push_back(Card::EarthenVessel);
         found_vessel_bridge = true;
       } else {
@@ -196,7 +200,7 @@
         for (const Card candidate : base_discard) {
           restore();
           if (!recover_discard_to_hand(Card::EarthenVessel) || !recover_discard_to_hand(candidate)) continue;
-          if (!choose_discard(false, true, true, Card::EarthenVessel).has_value()) continue;
+          if (!choose_discard(can_play_payload_this_turn(), true, true, Card::EarthenVessel).has_value()) continue;
           recovered.push_back(Card::EarthenVessel);
           recovered.push_back(candidate);
           found_vessel_bridge = true;

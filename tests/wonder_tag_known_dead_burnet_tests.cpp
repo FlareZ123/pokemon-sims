@@ -137,23 +137,27 @@ void test_wonder_tag_tate_connector_accepts_held_payload_route() {
   state.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None}};
   state.hand = {sim::Card::TapuLeleGX, sim::Card::MysteriousTreasure,
                 sim::Card::MegaDragonite};
-  state.deck = {sim::Card::TateLiza, sim::Card::Dipplin};
+  state.deck = {sim::Card::TateLiza, sim::Card::Serena, sim::Card::Dipplin};
   state.vstar_power_used = true;
   sim::EngineTestAccess::set_state(engine, std::move(state));
   sim::EngineTestAccess::set_deck_seen(engine, true);
 
-  // Wonder Tag may search Tate & Liza. Tate may promote the GGF VSTAR, then
-  // Mysterious Treasure may discard the held Dragon and search the remaining Dipplin:
+  // Wonder Tag must prefer Tate & Liza over Serena because Tate promotes the GGF
+  // VSTAR while the held Mysterious Treasure can establish the payload afterward:
   // https://api.pokemontcg.io/v2/cards/cel25c-60_A
   // https://api.pokemontcg.io/v2/cards/sm7-148
+  // https://api.pokemontcg.io/v2/cards/swsh12-164
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   if (!sim::EngineTestAccess::needs_tapu_connector(engine)) {
     throw std::runtime_error("Wonder Tag should recognize Tate plus the payable held-payload Item.");
   }
-  if (!sim::EngineTestAccess::bench_from_hand(engine, sim::Card::TapuLeleGX, true) ||
-      !contains(sim::EngineTestAccess::state(engine).hand, sim::Card::TateLiza)) {
-    throw std::runtime_error("Wonder Tag should search Tate & Liza for the live promotion route.");
+  if (!sim::EngineTestAccess::bench_from_hand(engine, sim::Card::TapuLeleGX, true)) {
+    throw std::runtime_error("Tapu Lele-GX should resolve Wonder Tag for the live promotion route.");
+  }
+  const sim::State& selected = sim::EngineTestAccess::state(engine);
+  if (!contains(selected.hand, sim::Card::TateLiza) || contains(selected.hand, sim::Card::Serena)) {
+    throw std::runtime_error("Wonder Tag must select Tate & Liza before the incomplete Serena fallback.");
   }
 
   sim::EngineTestAccess::run_turn(engine);

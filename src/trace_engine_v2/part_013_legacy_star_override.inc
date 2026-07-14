@@ -147,12 +147,26 @@
         bool ultra_bridge_payable = false;
         if (recover_discard_to_hand(Card::EvolutionIncense) &&
             recover_discard_to_hand(Card::UltraBall)) {
+          // Simulate the exact post-Incense hand: the recovered Incense has been
+          // played, the searched Dragon is present, and Ultra Ball reserves itself.
+          // A distinct held Incense may then be Ultra Ball's second cost only when
+          // the Dragon payload completes the sole missing setup axis:
+          // https://api.pokemontcg.io/v2/cards/swsh1-163
+          // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+          // https://api.pokemontcg.io/v2/cards/swsh12-136
+          if (!remove_one(state_.hand, Card::EvolutionIncense)) {
+            throw std::logic_error("Legacy Star simulated Incense play disappeared");
+          }
           state_.hand.push_back(Card::MegaDragonite);
           if (!remove_one(state_.hand, Card::MegaDragonite)) {
             throw std::logic_error("Legacy Star representative payload disappeared");
           }
+          const bool payload_is_only_missing_axis = need_payload() && !need_regi() &&
+              !need_vstar() && !need_energy() && !need_active_vstar();
           ultra_bridge_payable =
-              choose_discard(false, true, true, Card::UltraBall).has_value();
+              choose_discard(false, true, true, Card::UltraBall).has_value() ||
+              (payload_is_only_missing_axis &&
+               hand_count(Card::EvolutionIncense) > 0);
         }
         restore();
 

@@ -11,13 +11,17 @@ namespace sim {
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
   static const State& state(const Engine& engine) { return engine.state_; }
+  static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
   static bool play_mysterious_treasure(Engine& engine) { return engine.play_mysterious_treasure(false); }
   static bool play_quick_ball(Engine& engine) { return engine.play_quick_ball(false); }
+  static bool play_quick_ball_for_payload(Engine& engine) { return engine.play_quick_ball(true); }
+  static bool play_earthen_vessel_for_payload(Engine& engine) { return engine.play_earthen_vessel(true); }
   static bool bench_from_hand(Engine& engine, const Card card) { return engine.bench_from_hand(card, true); }
   static bool play_gladion(Engine& engine) { return engine.play_gladion(); }
   static bool needs_tapu_connector(Engine& engine) { return engine.needs_tapu_connector(); }
   static bool bench_tapu_if_useful(Engine& engine) { return engine.bench_tapu_if_useful(); }
   static bool play_tate_switch(Engine& engine) { return engine.play_tate_switch(); }
+  static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
 };
 
 }  // namespace sim
@@ -130,6 +134,81 @@ void test_wonder_tag_fetches_tate_for_the_only_missing_active_axis() {
   }
 }
 
+void test_gladion_recovers_prized_payload_for_earthen_vessel() {
+  // Gladion exchanges itself for a known Prize card, Earthen Vessel discards one
+  // other hand card, and Apex Dragon uses a Dragon attack from discard:
+  // https://api.pokemontcg.io/v2/cards/sm4-95
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Mega Dragonite ex is a modeled Dragon payload:
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  const sim::Scenario scenario{"gladion-prized-payload-vessel", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{6354};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::Gladion, sim::Card::EarthenVessel};
+  state.deck = {sim::Card::Grass};
+  state.prizes = {sim::Card::MegaDragonite, sim::Card::Dipplin};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  if (!sim::EngineTestAccess::play_gladion(engine) ||
+      !contains(sim::EngineTestAccess::state(engine).hand, sim::Card::MegaDragonite)) {
+    throw std::runtime_error("Gladion should recover the known prized Mega Dragonite ex for the live Vessel outlet.");
+  }
+  if (!sim::EngineTestAccess::play_earthen_vessel_for_payload(engine)) {
+    throw std::runtime_error("Earthen Vessel should discard the recovered Dragon payload.");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!contains(after.discard, sim::Card::MegaDragonite) ||
+      !contains(after.discarded_this_turn, sim::Card::MegaDragonite) ||
+      !sim::EngineTestAccess::payload_ready(engine)) {
+    throw std::runtime_error("The Gladion into Earthen Vessel route should satisfy strict-JIT payload readiness.");
+  }
+}
+
+void test_gladion_recovers_prized_payload_for_quick_ball() {
+  // Quick Ball discards one other hand card before searching a Basic Pokémon, so it
+  // can put a Gladion-recovered Dragapult ex into discard this turn:
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/sm4-95
+  // https://api.pokemontcg.io/v2/cards/sv6-130
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  const sim::Scenario scenario{"gladion-prized-payload-quick-ball", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{6355};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::Gladion, sim::Card::QuickBall};
+  state.deck = {sim::Card::MawileGX};
+  state.prizes = {sim::Card::Dragapult, sim::Card::Dipplin};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  if (!sim::EngineTestAccess::play_gladion(engine) ||
+      !contains(sim::EngineTestAccess::state(engine).hand, sim::Card::Dragapult)) {
+    throw std::runtime_error("Gladion should recover the known prized Dragapult ex for the live Quick Ball outlet.");
+  }
+  if (!sim::EngineTestAccess::play_quick_ball_for_payload(engine)) {
+    throw std::runtime_error("Quick Ball should discard the recovered Dragon payload.");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!contains(after.discard, sim::Card::Dragapult) ||
+      !contains(after.discarded_this_turn, sim::Card::Dragapult) ||
+      !sim::EngineTestAccess::payload_ready(engine)) {
+    throw std::runtime_error("The Gladion into Quick Ball route should satisfy strict-JIT payload readiness.");
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -137,6 +216,8 @@ int main() {
     test_quick_ball_fallback_uses_tapu_for_prized_regidrago_v();
     test_mysterious_treasure_fallback_uses_tapu_for_prized_vstar();
     test_wonder_tag_fetches_tate_for_the_only_missing_active_axis();
+    test_gladion_recovers_prized_payload_for_earthen_vessel();
+    test_gladion_recovers_prized_payload_for_quick_ball();
     std::cout << "K1 Tapu connector tests passed\n";
     return 0;
   } catch (const std::exception& error) {

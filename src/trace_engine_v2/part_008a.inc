@@ -42,6 +42,11 @@
     // Tate & Liza has no hand-size condition: shuffle the whole hand into the deck, then draw 5 cards: https://api.pokemontcg.io/v2/cards/sm7-148
     // This preserves legal five-or-more-card dead-hand refreshes after direct connectors fail.
     if (!supporter_allowed() || hand_count(Card::TateLiza) == 0) return false;
+    // After the played Supporter leaves hand, an empty deck plus no remaining hand
+    // cards makes this draw mode guaranteed to do nothing, so the Trainer is illegal:
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+    if (state_.deck.empty() && state_.hand.size() == 1U) return false;
     remove_one(state_.hand, Card::TateLiza);
     state_.discard.push_back(Card::TateLiza);
     state_.supporter_used = true;
@@ -51,3 +56,4 @@
     for (int draw = 0; draw < 5; ++draw) draw_card("Tate & Liza");
     trace("PLAY SUPPORTER", "R-TATE-01; R-GAME-SUPPORTER", "Tate & Liza draw mode: shuffled remaining hand and drew 5.");
     return true;
+  }

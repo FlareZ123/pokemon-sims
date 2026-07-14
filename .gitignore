@@ -1,0 +1,3 @@
+__pycache__/
+*.py[cod]
+data/card_audit.json.lock

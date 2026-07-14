@@ -9,6 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Verify pinned card audit
+        shell: bash
+        run: |
+          python -c "from pathlib import Path; from urllib.request import urlretrieve; urlretrieve('https://github.com/PokemonTCG/pokemon-tcg-data/archive/0af6250a22495e4a3e9f60ff45fc3fedc2e0563d.zip', Path('${RUNNER_TEMP}') / 'pokemon-tcg-data.zip')"
+          python scripts/audit_card_data.py "${RUNNER_TEMP}/pokemon-tcg-data.zip" --source-ref https://github.com/PokemonTCG/pokemon-tcg-data/commit/0af6250a22495e4a3e9f60ff45fc3fedc2e0563d --out data/card_audit.json --check
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build

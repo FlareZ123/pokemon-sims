@@ -11,7 +11,7 @@ The supplied list contains exactly 60 cards:
 | Basic Energy | 9 |
 | **Total** | **60** |
 
-The reproducible raw audit is `data/card_audit.json`. It was generated from the user-supplied `pokemon-tcg-data-master(26).zip` archive with `scripts/audit_card_data.py`.
+The committed raw audit is `data/card_audit.json`. It is generated with `scripts/audit_card_data.py` from the pinned upstream card corpus at https://github.com/PokemonTCG/pokemon-tcg-data/commit/0af6250a22495e4a3e9f60ff45fc3fedc2e0563d. The artifact records a compression-independent SHA-256 fingerprint of the sorted `cards/en/*.json` corpus. The supplied archive and the pinned commit corpus both produce `90afcf0ea3ff17011921a99204eb1a2e4f56bbb86375ebb57866ca038344281a`.
 
 ## Exact print identities used by the model
 
@@ -92,7 +92,8 @@ The supplied database stores `legalities.expanded` for paper Expanded. That fiel
 ## Reproduction command
 
 ```text
-python scripts/audit_card_data.py C:\path\to\pokemon-tcg-data-master.zip --out data\card_audit.json
+python scripts\audit_card_data.py C:\path\to\pokemon-tcg-data.zip --source-ref https://github.com/PokemonTCG/pokemon-tcg-data/commit/0af6250a22495e4a3e9f60ff45fc3fedc2e0563d --out data\card_audit.json
+python scripts\audit_card_data.py C:\path\to\pokemon-tcg-data.zip --source-ref https://github.com/PokemonTCG/pokemon-tcg-data/commit/0af6250a22495e4a3e9f60ff45fc3fedc2e0563d --out data\card_audit.json --check
 ```
 
-The script accepts either the ZIP file or an extracted repository directory. It locks its destination and replaces the JSON atomically.
+The exact commit archive is available at https://github.com/PokemonTCG/pokemon-tcg-data/archive/0af6250a22495e4a3e9f60ff45fc3fedc2e0563d.zip. The script accepts either that ZIP file or an extracted repository directory. Normal generation locks the destination and replaces the JSON atomically. `--check` exits with an error when the committed artifact is missing or differs from a fresh audit of the pinned corpus.

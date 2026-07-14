@@ -7,6 +7,7 @@ partial JSON artifact.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -99,6 +100,28 @@ def atomic_json_write(destination: Path, payload: object) -> None:
                 temp_path.unlink()
 
 
+def card_corpus_sha256(source: Path) -> str:
+    digest = hashlib.sha256()
+    if source.suffix.lower() == ".zip":
+        with zipfile.ZipFile(source) as archive:
+            members = sorted(
+                member for member in archive.namelist()
+                if "/cards/en/" in member and member.endswith(".json")
+            )
+            for member in members:
+                relative_name = member.rsplit("/cards/en/", 1)[1]
+                digest.update(relative_name.encode("utf-8"))
+                digest.update(b"\0")
+                digest.update(archive.read(member))
+        return digest.hexdigest()
+
+    for file_path in sorted(source.glob("cards/en/*.json")):
+        digest.update(file_path.name.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(file_path.read_bytes())
+    return digest.hexdigest()
+
+
 def read_all_cards(source: Path) -> list[dict[str, Any]]:
     cards: list[dict[str, Any]] = []
     if source.suffix.lower() == ".zip":
@@ -134,6 +157,8 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("source", type=Path, help="pokemon-tcg-data repository directory or ZIP")
     parser.add_argument("--out", type=Path, default=Path("data/card_audit.json"))
+    parser.add_argument("--source-ref", help="Stable source URL or commit reference recorded in the audit")
+    parser.add_argument("--check", action="store_true", help="Verify that --out already matches the generated audit")
     args = parser.parse_args()
 
     by_id = {card["id"]: card for card in read_all_cards(args.source)}
@@ -150,7 +175,10 @@ def main() -> None:
 
     category_totals = {"pokemon": 19, "trainers": 32, "energy": 9}
     payload = {
-        "source": str(args.source),
+        "source": {
+            "card_corpus_sha256": card_corpus_sha256(args.source),
+            "reference": args.source_ref or args.source.name,
+        },
         "deck_total": sum(copies for _, copies in REQUESTED.values()),
         "category_totals": category_totals,
         "records": records,
@@ -161,6 +189,15 @@ def main() -> None:
     }
     if payload["deck_total"] != 60:
         raise SystemExit(f"Deck total is {payload['deck_total']}, expected 60")
+    if args.check:
+        if not args.out.is_file():
+            raise SystemExit(f"Audit artifact is missing: {args.out}")
+        existing = json.loads(args.out.read_text(encoding="utf-8"))
+        if existing != payload:
+            raise SystemExit(f"Audit artifact is stale: {args.out}")
+        print(f"Verified {payload['deck_total']} cards across {len(records)} named entries: {args.out}")
+        return
+
     atomic_json_write(args.out, payload)
     print(f"Validated {payload['deck_total']} cards across {len(records)} named entries: {args.out}")
 

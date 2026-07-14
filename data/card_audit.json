@@ -1,0 +1,1056 @@
+{
+  "category_totals": {
+    "energy": 9,
+    "pokemon": 19,
+    "trainers": 32
+  },
+  "deck_total": 60,
+  "notes": [
+    "The source corpus records paper legality. It does not encode the current Pokemon TCG Live client card pool.",
+    "Live availability remains an explicit input assumption verified by the user-provided Live list, not a claim inferred from paper Expanded legality."
+  ],
+  "records": {
+    "Arven": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 2,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "sv1-166",
+      "legalities": {
+        "expanded": "Legal",
+        "standard": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Arven",
+      "rules": [
+        "Search your deck for an Item card and a Pokémon Tool card, reveal them, and put them into your hand. Then, shuffle your deck.",
+        "You may play only 1 Supporter card during your turn."
+      ],
+      "subtypes": [
+        "Supporter"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Brilliant Blender": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "sv8-164",
+      "legalities": {
+        "expanded": "Legal",
+        "standard": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Brilliant Blender",
+      "rules": [
+        "Search your deck for up to 5 cards and discard them. Then, shuffle your deck.",
+        "You may play any number of Item cards during your turn.",
+        "ACE SPEC: You can't have more than 1 ACE SPEC card in your deck."
+      ],
+      "subtypes": [
+        "Item",
+        "ACE SPEC"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Channeler": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "sm11-190",
+      "legalities": {
+        "expanded": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Channeler",
+      "rules": [
+        "Remove all effects of attacks on you and each of your Pokémon.",
+        "You may play only 1 Supporter card during your turn (before your attack)."
+      ],
+      "subtypes": [
+        "Supporter"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Chaotic Swell": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "sm12-187",
+      "legalities": {
+        "expanded": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Chaotic Swell",
+      "rules": [
+        "Whenever either player plays a Stadium card from their hand, discard that Stadium card after discarding this one. (The new Stadium card has no effect.)",
+        "This card stays in play when you play it. Discard this card if another Stadium card comes into play. If another card with the same name is in play, you can't play this card."
+      ],
+      "subtypes": [
+        "Stadium"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Crispin": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 2,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "sv7-133",
+      "legalities": {
+        "expanded": "Legal",
+        "standard": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Crispin",
+      "rules": [
+        "Search your deck for up to 2 Basic Energy cards of different types, reveal them, and put 1 of them into your hand. Attach the other to 1 of your Pokémon. Then, shuffle your deck.",
+        "You may play only 1 Supporter card during your turn."
+      ],
+      "subtypes": [
+        "Supporter"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Dialga-GX": {
+      "abilities": [],
+      "attacks": [
+        {
+          "convertedEnergyCost": 1,
+          "cost": [
+            "Metal"
+          ],
+          "damage": "",
+          "name": "Overclock",
+          "text": "Draw cards until you have 6 cards in your hand."
+        },
+        {
+          "convertedEnergyCost": 3,
+          "cost": [
+            "Metal",
+            "Colorless",
+            "Colorless"
+          ],
+          "damage": "80",
+          "name": "Shred",
+          "text": "This attack's damage isn't affected by any effects on your opponent's Active Pokémon."
+        },
+        {
+          "convertedEnergyCost": 5,
+          "cost": [
+            "Metal",
+            "Metal",
+            "Metal",
+            "Colorless",
+            "Colorless"
+          ],
+          "damage": "150",
+          "name": "Timeless-GX",
+          "text": "Take another turn after this one. (Skip the between-turns step.) (You can't use more than 1 GX attack in a game.)"
+        }
+      ],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": "180",
+      "id": "sm5-100",
+      "legalities": {
+        "expanded": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Dialga-GX",
+      "rules": [
+        "Pokémon-GX rule: When your Pokémon-GX is Knocked Out, your opponent takes 2 Prize cards."
+      ],
+      "subtypes": [
+        "Basic",
+        "GX"
+      ],
+      "supertype": "Pokémon",
+      "types": [
+        "Dragon"
+      ]
+    },
+    "Dipplin TWM 127": {
+      "abilities": [],
+      "attacks": [
+        {
+          "convertedEnergyCost": 2,
+          "cost": [
+            "Grass",
+            "Fire"
+          ],
+          "damage": "",
+          "name": "Syrup Catcher",
+          "text": "Switch in 1 of your opponent's Benched Pokémon to the Active Spot. This attack does 70 damage to the new Active Pokémon."
+        }
+      ],
+      "copies": 1,
+      "evolvesFrom": "Applin",
+      "hp": "80",
+      "id": "sv6-127",
+      "legalities": {
+        "expanded": "Legal",
+        "standard": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Dipplin",
+      "rules": [],
+      "subtypes": [
+        "Stage 1"
+      ],
+      "supertype": "Pokémon",
+      "types": [
+        "Dragon"
+      ]
+    },
+    "Dragapult ex": {
+      "abilities": [],
+      "attacks": [
+        {
+          "convertedEnergyCost": 1,
+          "cost": [
+            "Colorless"
+          ],
+          "damage": "70",
+          "name": "Jet Headbutt",
+          "text": ""
+        },
+        {
+          "convertedEnergyCost": 2,
+          "cost": [
+            "Fire",
+            "Psychic"
+          ],
+          "damage": "200",
+          "name": "Phantom Dive",
+          "text": "Put 6 damage counters on your opponent's Benched Pokémon in any way you like."
+        }
+      ],
+      "copies": 2,
+      "evolvesFrom": "Drakloak",
+      "hp": "320",
+      "id": "sv6-130",
+      "legalities": {
+        "expanded": "Legal",
+        "standard": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Dragapult ex",
+      "rules": [
+        "As long as this Pokémon is on your Bench, prevent all damage done to this Pokémon by attacks (both yours and your opponent's).",
+        "Pokémon ex rule: When your Pokémon ex is Knocked Out, your opponent takes 2 Prize cards.",
+        "Tera: As long as this Pokémon is on your Bench, prevent all damage done to this Pokémon by attacks (both yours and your opponent's)."
+      ],
+      "subtypes": [
+        "Stage 2",
+        "Tera",
+        "ex"
+      ],
+      "supertype": "Pokémon",
+      "types": [
+        "Dragon"
+      ]
+    },
+    "Earthen Vessel": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 2,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "sv4-163",
+      "legalities": {
+        "expanded": "Legal",
+        "standard": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Earthen Vessel",
+      "rules": [
+        "You can use this card only if you discard another card from your hand.  Search your deck for up to 2 Basic Energy cards, reveal them, and put them into your hand. Then, shuffle your deck.",
+        "You may play any number of Item cards during your turn."
+      ],
+      "subtypes": [
+        "Item",
+        "Ancient"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Field Blower": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "sm2-125",
+      "legalities": {
+        "expanded": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Field Blower",
+      "rules": [
+        "Choose up to 2 in any combination of Pokémon Tool cards and Stadium cards in play (yours or your opponent's) and discard them.",
+        "You may play as many Item cards as you like during your turn (before your attack)."
+      ],
+      "subtypes": [
+        "Item"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Fire Energy": {
+      "category": "Basic Energy",
+      "copies": 3,
+      "id": "energy-fire",
+      "name": "Fire Energy"
+    },
+    "Forest Seal Stone": {
+      "abilities": [
+        {
+          "name": "Star Alchemy",
+          "text": "During your turn, you may search your deck for a card and put it into your hand. Then, shuffle your deck. (You can't use more than 1 VSTAR Power in a game.)",
+          "type": "Ability"
+        }
+      ],
+      "attacks": [],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "swsh12-156",
+      "legalities": {
+        "expanded": "Legal",
+        "standard": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Forest Seal Stone",
+      "rules": [
+        "The Pokémon V this card is attached to can use the VSTAR Power on this card.",
+        "You may play any number of Item cards during your turn.",
+        "Attach a Pokémon Tool to 1 of your Pokémon that doesn't already have a Pokémon Tool attached."
+      ],
+      "subtypes": [
+        "Item",
+        "Pokémon Tool"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Gladion": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 2,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "sm4-95",
+      "legalities": {
+        "expanded": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Gladion",
+      "rules": [
+        "Look at your face-down Prize cards and put 1 of them into your hand. Then, shuffle this Gladion into your remaining Prize cards and put them back face down. If you didn't play this Gladion from your hand, it does nothing.",
+        "You may play only 1 Supporter card during your turn (before your attack)."
+      ],
+      "subtypes": [
+        "Supporter"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Grass Energy": {
+      "category": "Basic Energy",
+      "copies": 6,
+      "id": "energy-grass",
+      "name": "Grass Energy"
+    },
+    "Guzma": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "sm3-115",
+      "legalities": {
+        "expanded": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Guzma",
+      "rules": [
+        "Switch 1 of your opponent's Benched Pokémon with their Active Pokémon. If you do, switch your Active Pokémon with 1 of your Benched Pokémon.",
+        "You may play only 1 Supporter card during your turn (before your attack)."
+      ],
+      "subtypes": [
+        "Supporter"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Hisuian Goodra VSTAR": {
+      "abilities": [
+        {
+          "name": "Moisture Star",
+          "text": "During your turn, you may heal all damage from this Pokémon. (You can't use more than 1 VSTAR Power in a game.)",
+          "type": "Ability"
+        }
+      ],
+      "attacks": [
+        {
+          "convertedEnergyCost": 3,
+          "cost": [
+            "Water",
+            "Metal",
+            "Colorless"
+          ],
+          "damage": "200",
+          "name": "Rolling Iron",
+          "text": "During your opponent's next turn, this Pokémon takes 80 less damage from attacks (after applying Weakness and Resistance)."
+        }
+      ],
+      "copies": 1,
+      "evolvesFrom": "Hisuian Goodra V",
+      "hp": "270",
+      "id": "swsh11-136",
+      "legalities": {
+        "expanded": "Legal",
+        "standard": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Hisuian Goodra VSTAR",
+      "rules": [
+        "VSTAR rule: When your Pokémon VSTAR is Knocked Out, your opponent takes 2 Prize cards."
+      ],
+      "subtypes": [
+        "VSTAR"
+      ],
+      "supertype": "Pokémon",
+      "types": [
+        "Dragon"
+      ]
+    },
+    "Hisuian Heavy Ball": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "swsh10-146",
+      "legalities": {
+        "expanded": "Legal",
+        "standard": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Hisuian Heavy Ball",
+      "rules": [
+        "Look at your face-down Prize cards. You may reveal a Basic Pokémon you find there, put it into your hand, and put this Hisuian Heavy Ball in its place as a face-down Prize card. (If you don't reveal a Basic Pokémon, put this card in the discard pile.) Then, shuffle your face-down Prize cards.",
+        "You may play any number of Item cards during your turn."
+      ],
+      "subtypes": [
+        "Item"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Latias ex": {
+      "abilities": [
+        {
+          "name": "Skyliner",
+          "text": "Your Basic Pokémon in play have no Retreat Cost.",
+          "type": "Ability"
+        }
+      ],
+      "attacks": [
+        {
+          "convertedEnergyCost": 3,
+          "cost": [
+            "Psychic",
+            "Psychic",
+            "Colorless"
+          ],
+          "damage": "200",
+          "name": "Eon Blade",
+          "text": "During your next turn, this Pokémon can't attack."
+        }
+      ],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": "210",
+      "id": "sv8-76",
+      "legalities": {
+        "expanded": "Legal",
+        "standard": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Latias ex",
+      "rules": [
+        "Pokémon ex rule: When your Pokémon ex is Knocked Out, your opponent takes 2 Prize cards."
+      ],
+      "subtypes": [
+        "Basic",
+        "ex"
+      ],
+      "supertype": "Pokémon",
+      "types": [
+        "Psychic"
+      ]
+    },
+    "Lusamine": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "sm4-96",
+      "legalities": {
+        "expanded": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Lusamine",
+      "rules": [
+        "Put 2 in any combination of Supporter and Stadium cards from your discard pile into your hand.",
+        "You may play only 1 Supporter card during your turn (before your attack)."
+      ],
+      "subtypes": [
+        "Supporter"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Mawile-GX": {
+      "abilities": [
+        {
+          "name": "Captivating Wink",
+          "text": "When you play this Pokémon from your hand onto your Bench during your turn, you may have your opponent reveal their hand and put any number of Basic Pokémon you find there onto their Bench.",
+          "type": "Ability"
+        }
+      ],
+      "attacks": [
+        {
+          "convertedEnergyCost": 2,
+          "cost": [
+            "Metal",
+            "Colorless"
+          ],
+          "damage": "10+",
+          "name": "Wily Bite",
+          "text": "This attack does 30 more damage for each of your opponent's Benched Pokémon."
+        },
+        {
+          "convertedEnergyCost": 2,
+          "cost": [
+            "Metal",
+            "Colorless"
+          ],
+          "damage": "",
+          "name": "Big Eater-GX",
+          "text": "Your opponent reveals their hand. Discard all Supporter cards you find there. (You can't use more than 1 GX attack in a game.)"
+        }
+      ],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": "170",
+      "id": "sm11-141",
+      "legalities": {
+        "expanded": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Mawile-GX",
+      "rules": [
+        "Pokémon-GX rule: When your Pokémon-GX is Knocked Out, your opponent takes 2 Prize cards."
+      ],
+      "subtypes": [
+        "Basic",
+        "GX"
+      ],
+      "supertype": "Pokémon",
+      "types": [
+        "Metal"
+      ]
+    },
+    "Mega Dragonite ex": {
+      "abilities": [
+        {
+          "name": "Sky Transport",
+          "text": "Once during your turn, you may use this Ability. Switch your Active Pokémon with 1 of your Benched Pokémon.",
+          "type": "Ability"
+        }
+      ],
+      "attacks": [
+        {
+          "convertedEnergyCost": 3,
+          "cost": [
+            "Water",
+            "Lightning",
+            "Lightning"
+          ],
+          "damage": "330",
+          "name": "Ryuno Glide",
+          "text": "Discard 2 Energy from this Pokémon."
+        }
+      ],
+      "copies": 2,
+      "evolvesFrom": "Dragonair",
+      "hp": "370",
+      "id": "me2pt5-152",
+      "legalities": {
+        "expanded": "Legal",
+        "standard": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Mega Dragonite ex",
+      "rules": [
+        "Pokémon ex rule: When your Pokémon ex is Knocked Out, your opponent takes 2 Prize cards.",
+        "Mega Evolution ex Rule: When your Mega Evolution Pokémon ex is Knocked Out, your opponent takes 3 Prize cards."
+      ],
+      "subtypes": [
+        "Stage 2",
+        "MEGA",
+        "ex"
+      ],
+      "supertype": "Pokémon",
+      "types": [
+        "Dragon"
+      ]
+    },
+    "Mysterious Treasure": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 4,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "sm6-113",
+      "legalities": {
+        "expanded": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Mysterious Treasure",
+      "rules": [
+        "Discard a card from your hand. If you do, search your deck for a Psychic or Dragon Pokémon, reveal it, and put it into your hand. Then, shuffle your deck.",
+        "You may play as many Item cards as you like during your turn (before your attack)."
+      ],
+      "subtypes": [
+        "Item"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Oricorio GRI 55": {
+      "abilities": [
+        {
+          "name": "Vital Dance",
+          "text": "When you play this Pokémon from your hand onto your Bench during your turn, you may search your deck for up to 2 basic Energy cards, reveal them, and put them into your hand. Then, shuffle your deck.",
+          "type": "Ability"
+        }
+      ],
+      "attacks": [
+        {
+          "convertedEnergyCost": 2,
+          "cost": [
+            "Psychic",
+            "Colorless"
+          ],
+          "damage": "30",
+          "name": "Casual Slap",
+          "text": ""
+        }
+      ],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": "90",
+      "id": "sm2-55",
+      "legalities": {
+        "expanded": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Oricorio",
+      "rules": [],
+      "subtypes": [
+        "Basic"
+      ],
+      "supertype": "Pokémon",
+      "types": [
+        "Psychic"
+      ]
+    },
+    "Path to the Peak": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "swsh6-148",
+      "legalities": {
+        "expanded": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Path to the Peak",
+      "rules": [
+        "Pokémon with a Rule Box in play (both yours and your opponent's) have no Abilities. (Pokémon V, Pokémon-GX, etc. have Rule Boxes.)",
+        "This Stadium stays in play when you play it. Discard it if another Stadium comes into play. If a Stadium with the same name is in play, you can't play this card."
+      ],
+      "subtypes": [
+        "Stadium"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Powerglass": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "sv6pt5-63",
+      "legalities": {
+        "expanded": "Legal",
+        "standard": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Powerglass",
+      "rules": [
+        "At the end of your turn (after your attack), if the Pokémon this card is attached to is in the Active Spot, you may attach a Basic Energy card from your discard pile to it.",
+        "You may attach any number of Pokémon Tools to your Pokémon during your turn. You may attach only 1 Pokémon Tool to each Pokémon, and it stays attached."
+      ],
+      "subtypes": [
+        "Pokémon Tool"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Professor Burnet": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "swsh12tg-TG26",
+      "legalities": {
+        "expanded": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Professor Burnet",
+      "rules": [
+        "Search your deck for up to 2 cards and discard them. Then, shuffle your deck.",
+        "You may play only 1 Supporter card during your turn."
+      ],
+      "subtypes": [
+        "Supporter"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Professor Turo's Scenario": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "sv4-171",
+      "legalities": {
+        "expanded": "Legal",
+        "standard": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Professor Turo's Scenario",
+      "rules": [
+        "Put 1 of your Pokémon in play into your hand. (Discard all cards attached to that Pokémon.)",
+        "You may play only 1 Supporter card during your turn."
+      ],
+      "subtypes": [
+        "Supporter",
+        "Future"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Quick Ball": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 3,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "swsh1-179",
+      "legalities": {
+        "expanded": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Quick Ball",
+      "rules": [
+        "You can play this card only if you discard another card from your hand.",
+        "Search your deck for a Basic Pokémon, reveal it, and put it into your hand. Then, shuffle your deck.",
+        "You may play any number of Item cards during your turn."
+      ],
+      "subtypes": [
+        "Item"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Regidrago V": {
+      "abilities": [],
+      "attacks": [
+        {
+          "convertedEnergyCost": 1,
+          "cost": [
+            "Colorless"
+          ],
+          "damage": "",
+          "name": "Celestial Roar",
+          "text": "Discard the top 3 cards of your deck. If any of those cards are Energy cards, attach them to this Pokémon."
+        },
+        {
+          "convertedEnergyCost": 3,
+          "cost": [
+            "Grass",
+            "Grass",
+            "Fire"
+          ],
+          "damage": "130",
+          "name": "Dragon Laser",
+          "text": "This attack also does 30 damage to 1 of your opponent's Benched Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)"
+        }
+      ],
+      "copies": 4,
+      "evolvesFrom": null,
+      "hp": "220",
+      "id": "swsh12-135",
+      "legalities": {
+        "expanded": "Legal",
+        "standard": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Regidrago V",
+      "rules": [
+        "V rule: When your Pokémon V is Knocked Out, your opponent takes 2 Prize cards."
+      ],
+      "subtypes": [
+        "Basic",
+        "V"
+      ],
+      "supertype": "Pokémon",
+      "types": [
+        "Dragon"
+      ]
+    },
+    "Regidrago VSTAR": {
+      "abilities": [
+        {
+          "name": "Legacy Star",
+          "text": "During your turn, you may discard the top 7 cards of your deck. Then, put up to 2 cards from your discard pile into your hand. (You can't use more than 1 VSTAR Power in a game.)",
+          "type": "Ability"
+        }
+      ],
+      "attacks": [
+        {
+          "convertedEnergyCost": 3,
+          "cost": [
+            "Grass",
+            "Grass",
+            "Fire"
+          ],
+          "damage": "",
+          "name": "Apex Dragon",
+          "text": "Choose an attack from a Dragon Pokémon in your discard pile and use it as this attack."
+        }
+      ],
+      "copies": 3,
+      "evolvesFrom": "Regidrago V",
+      "hp": "280",
+      "id": "swsh12-136",
+      "legalities": {
+        "expanded": "Legal",
+        "standard": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Regidrago VSTAR",
+      "rules": [
+        "VSTAR rule: When your Pokémon VSTAR is Knocked Out, your opponent takes 2 Prize cards."
+      ],
+      "subtypes": [
+        "VSTAR"
+      ],
+      "supertype": "Pokémon",
+      "types": [
+        "Dragon"
+      ]
+    },
+    "Roseanne's Backup": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "swsh9-148",
+      "legalities": {
+        "expanded": "Legal",
+        "standard": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Roseanne's Backup",
+      "rules": [
+        "Choose 1 or more:\n• Shuffle a Pokémon from your discard pile into your deck.\n• Shuffle a Pokémon Tool card from your discard pile into your deck.\n• Shuffle a Stadium card from your discard pile into your deck.\n• Shuffle an Energy card from your discard pile into your deck.",
+        "You may play only 1 Supporter card during your turn."
+      ],
+      "subtypes": [
+        "Supporter"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Serena": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "swsh12-164",
+      "legalities": {
+        "expanded": "Legal",
+        "standard": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Serena",
+      "rules": [
+        "Choose 1:\n• Discard up to 3 cards from your hand. (You must discard at least 1 card.) If you do, draw cards until you have 5 cards in your hand.\n• Switch 1 of your opponent's Benched Pokémon V with their Active Pokémon.",
+        "You may play only 1 Supporter card during your turn."
+      ],
+      "subtypes": [
+        "Supporter"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Steven's Resolve": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "sm7-145",
+      "legalities": {
+        "expanded": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Steven's Resolve",
+      "rules": [
+        "Search your deck for up to 3 cards and put them into your hand. Then, shuffle your deck. Your turn ends.",
+        "You may play only 1 Supporter card during your turn (before your attack)."
+      ],
+      "subtypes": [
+        "Supporter"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Tapu Lele-GX": {
+      "abilities": [
+        {
+          "name": "Wonder Tag",
+          "text": "When you play this Pokémon from your hand onto your Bench during your turn, you may search your deck for a Supporter card, reveal it, and put it into your hand. Then, shuffle your deck.",
+          "type": "Ability"
+        }
+      ],
+      "attacks": [
+        {
+          "convertedEnergyCost": 2,
+          "cost": [
+            "Colorless",
+            "Colorless"
+          ],
+          "damage": "20×",
+          "name": "Energy Drive",
+          "text": "This attack does 20 damage times the amount of Energy attached to both Active Pokémon. This damage isn't affected by Weakness or Resistance."
+        },
+        {
+          "convertedEnergyCost": 1,
+          "cost": [
+            "Psychic"
+          ],
+          "damage": "",
+          "name": "Tapu Cure-GX",
+          "text": "Heal all damage from 2 of your Benched Pokémon. (You can't use more than 1 GX attack in a game.)"
+        }
+      ],
+      "copies": 2,
+      "evolvesFrom": null,
+      "hp": "170",
+      "id": "cel25c-60_A",
+      "legalities": {
+        "expanded": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Tapu Lele-GX",
+      "rules": [
+        "Pokémon-GX rule: When your Pokémon-GX is Knocked Out, your opponent takes 2 Prize cards."
+      ],
+      "subtypes": [
+        "Basic",
+        "GX"
+      ],
+      "supertype": "Pokémon",
+      "types": [
+        "Psychic"
+      ]
+    },
+    "Tate & Liza": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "sm7-148",
+      "legalities": {
+        "expanded": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Tate & Liza",
+      "rules": [
+        "Choose 1:\n• Shuffle your hand into your deck then draw 5 cards.\n• Switch your Active Pokémon with 1 of your Benched Pokémon.",
+        "You may play only 1 Supporter card during your turn (before your attack)."
+      ],
+      "subtypes": [
+        "Supporter"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    },
+    "Team Yell's Cheer": {
+      "abilities": [],
+      "attacks": [],
+      "copies": 1,
+      "evolvesFrom": null,
+      "hp": null,
+      "id": "swsh9-149",
+      "legalities": {
+        "expanded": "Legal",
+        "standard": "Legal",
+        "unlimited": "Legal"
+      },
+      "name": "Team Yell's Cheer",
+      "rules": [
+        "Shuffle up to 3 in any combination of Pokémon and Supporter cards, except for Team Yell's Cheer, from your discard pile into your deck.",
+        "You may play only 1 Supporter card during your turn."
+      ],
+      "subtypes": [
+        "Supporter"
+      ],
+      "supertype": "Trainer",
+      "types": []
+    }
+  },
+  "source": {
+    "card_corpus_sha256": "90afcf0ea3ff17011921a99204eb1a2e4f56bbb86375ebb57866ca038344281a",
+    "reference": "https://github.com/PokemonTCG/pokemon-tcg-data/commit/0af6250a22495e4a3e9f60ff45fc3fedc2e0563d"
+  }
+}

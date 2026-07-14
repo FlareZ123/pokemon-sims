@@ -13,7 +13,12 @@ struct EngineTestAccess {
   static bool retreat_to_benched_vstar_with_latias(Engine& engine) {
     return engine.retreat_to_benched_vstar_with_latias();
   }
+  static bool attach_manual(Engine& engine) { return engine.attach_manual(); }
   static bool play_tate_switch(Engine& engine) { return engine.play_tate_switch(); }
+  static bool play_brilliant_blender(Engine& engine) {
+    return engine.play_brilliant_blender();
+  }
+  static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
 };
 
 }  // namespace sim
@@ -114,6 +119,48 @@ void test_incomplete_fallback_uses_greatest_ggf_progress() {
          "The fallback must choose the incomplete VSTAR with greater progress toward GGF.");
 }
 
+void test_tate_blender_attachment_uses_current_promotion_target() {
+  std::mt19937_64 rng{416};
+  sim::Engine engine(test_scenario(), test_recipe(), rng);
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 2, 0, 0, sim::Tool::None};
+  state.bench = {
+      sim::Pokemon{sim::Card::RegidragoVstar, 1, 0, 1, sim::Tool::None},
+      sim::Pokemon{sim::Card::RegidragoVstar, 1, 1, 1, sim::Tool::None},
+  };
+  state.hand = {sim::Card::Grass, sim::Card::TateLiza, sim::Card::BrilliantBlender};
+  state.deck = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // The once-per-turn Energy attachment must advance the same best-powered Benched
+  // Regidrago VSTAR that Tate & Liza will promote. Brilliant Blender can then create
+  // the current-turn payload and Apex Dragon can attack for GGF:
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/sm7-148
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  expect(sim::EngineTestAccess::attach_manual(engine),
+         "The Tate-Blender route should attach the held Grass Energy.");
+  const sim::State& after_attachment = sim::EngineTestAccess::state(engine);
+  expect(after_attachment.bench[0].grass == 0 && after_attachment.bench[0].fire == 1,
+         "The earlier weaker VSTAR must not receive the coordinated attachment.");
+  expect(after_attachment.bench[1].grass == 2 && after_attachment.bench[1].fire == 1,
+         "The current promotion target must receive Grass and reach GGF.");
+
+  expect(sim::EngineTestAccess::play_tate_switch(engine),
+         "Tate & Liza should promote the newly completed VSTAR.");
+  expect(sim::EngineTestAccess::play_brilliant_blender(engine),
+         "Brilliant Blender should discard the strict-JIT payload.");
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(after.active && after.active->card == sim::Card::RegidragoVstar &&
+             after.active->grass == 2 && after.active->fire == 1,
+         "Tate must promote the VSTAR completed by the coordinated attachment.");
+  expect(sim::EngineTestAccess::payload_ready(engine),
+         "The shared attachment and promotion target must reach the ready state.");
+}
+
 }  // namespace
 
 int main() {
@@ -121,6 +168,7 @@ int main() {
     test_latias_promotes_complete_vstar_over_first_match();
     test_tate_promotes_complete_vstar_over_first_match();
     test_incomplete_fallback_uses_greatest_ggf_progress();
+    test_tate_blender_attachment_uses_current_promotion_target();
     std::cout << "VSTAR promotion selection tests passed\n";
     return 0;
   } catch (const std::exception& error) {

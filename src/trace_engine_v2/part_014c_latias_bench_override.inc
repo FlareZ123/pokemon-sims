@@ -1,3 +1,9 @@
+// This fragment is composed inside Engine by part_014c.inc. The later top-level
+// compatibility include is intentionally inert after this first expansion:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc#L168-L179
+#ifndef POKEMON_SIMS_PART_014C_LATIAS_BENCH_OVERRIDE_INCLUDED
+#define POKEMON_SIMS_PART_014C_LATIAS_BENCH_OVERRIDE_INCLUDED
+
   bool bench_latias_for_pending_vstar_promotion() {
     if (bench_space() != 1 || hand_count(Card::LatiasEx) == 0 ||
         in_play(Card::LatiasEx) || !ability_available_for_pokemon(Card::LatiasEx) ||
@@ -101,3 +107,5 @@
     use_celestial_roar();
     trace("POLICY", "P-AXIS-01", "End: " + state_line());
   }
+
+#endif

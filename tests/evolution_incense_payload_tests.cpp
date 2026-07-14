@@ -56,10 +56,11 @@ void test_evolution_incense_fetches_jit_payload_for_mysterious_treasure() {
 
   // Evolution Incense may search the Stage 2 Mega Dragonite ex payload even after
   // K1 proves Regidrago VSTAR absent, because Mysterious Treasure remains a live
-  // same-turn discard continuation:
+  // same-turn discard continuation and one deck card remains after the first search:
   // https://api.pokemontcg.io/v2/cards/swsh1-163
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
   // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
   if (!sim::EngineTestAccess::play_evolution_incense(fixture.engine, true) ||
       !contains(sim::EngineTestAccess::state(fixture.engine).hand, sim::Card::MegaDragonite)) {
     throw std::runtime_error("Evolution Incense should fetch Mega Dragonite ex for a live strict-JIT discard route.");
@@ -74,6 +75,63 @@ void test_evolution_incense_fetches_jit_payload_for_mysterious_treasure() {
   if (!contains(after.discard, sim::Card::MegaDragonite) ||
       !contains(after.discarded_this_turn, sim::Card::MegaDragonite)) {
     throw std::runtime_error("Evolution Incense's fetched payload must remain in this turn's discard.");
+  }
+}
+
+void test_evolution_incense_preserves_final_payload_from_dead_search_outlet() {
+  Fixture fixture;
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::EvolutionIncense, sim::Card::MysteriousTreasure};
+  state.deck = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(fixture.engine);
+
+  // Fetching the final deck card would leave Mysterious Treasure unable to begin its
+  // required later search, so Incense must preserve both resources instead of
+  // stranding the strict-JIT payload in hand:
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  if (sim::EngineTestAccess::play_evolution_incense(fixture.engine, true)) {
+    throw std::runtime_error("Evolution Incense must reject a final-card payload route whose search outlet becomes illegal.");
+  }
+
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  if (!contains(after.hand, sim::Card::EvolutionIncense) ||
+      !contains(after.hand, sim::Card::MysteriousTreasure) ||
+      !contains(after.deck, sim::Card::MegaDragonite) || !after.discard.empty()) {
+    throw std::runtime_error("The dead final-card route must preserve Incense, its outlet, and the payload target.");
+  }
+}
+
+void test_evolution_incense_allows_final_payload_for_serena() {
+  Fixture fixture;
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::EvolutionIncense, sim::Card::Serena};
+  state.deck = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(fixture.engine);
+
+  // Serena's discard-and-draw mode does not require a later deck search to begin.
+  // It remains a live strict-JIT outlet after Incense fetches the final payload:
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
+  // https://api.pokemontcg.io/v2/cards/swsh12-164
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  if (!sim::EngineTestAccess::play_evolution_incense(fixture.engine, true)) {
+    throw std::runtime_error("Evolution Incense should preserve the final-card Serena payload route.");
+  }
+
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  if (!after.deck.empty() || !contains(after.hand, sim::Card::MegaDragonite) ||
+      !contains(after.hand, sim::Card::Serena) ||
+      !contains(after.discard, sim::Card::EvolutionIncense)) {
+    throw std::runtime_error("The Serena control must fetch the final payload and keep Serena available.");
   }
 }
 
@@ -198,6 +256,8 @@ void test_evolution_incense_uses_legal_post_search_fallbacks() {
 int main() {
   try {
     test_evolution_incense_fetches_jit_payload_for_mysterious_treasure();
+    test_evolution_incense_preserves_final_payload_from_dead_search_outlet();
+    test_evolution_incense_allows_final_payload_for_serena();
     test_evolution_incense_uses_duplicate_incense_for_ultra_ball_cost();
     test_evolution_incense_rejects_unpayable_single_incense_ultra_ball_route();
     test_evolution_incense_holds_when_k1_vstar_target_is_absent();

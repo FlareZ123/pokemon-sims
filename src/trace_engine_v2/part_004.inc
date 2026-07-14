@@ -61,6 +61,42 @@
            (p.card == Card::RegidragoVstar ? 15 : 0) + (active ? 3 : 0);
   }
 
+  int benched_vstar_promotion_score(const Pokemon& pokemon) const {
+    if (pokemon.card != Card::RegidragoVstar) return -1;
+    // Apex Dragon requires two Grass and one Fire Energy. Promotion routes must
+    // prefer a complete attacker, then the VSTAR with the most progress toward GGF;
+    // stable Bench order remains the tie-break because replacement requires >:
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    return 100 * std::min(2, pokemon.grass) + 100 * std::min(1, pokemon.fire);
+  }
+
+  Pokemon* best_benched_vstar_for_promotion() {
+    Pokemon* best = nullptr;
+    int best_score = -1;
+    for (Pokemon& pokemon : state_.bench) {
+      const int score = benched_vstar_promotion_score(pokemon);
+      if (score > best_score) {
+        best = &pokemon;
+        best_score = score;
+      }
+    }
+    return best;
+  }
+
+  const Pokemon* best_benched_vstar_for_promotion() const {
+    const Pokemon* best = nullptr;
+    int best_score = -1;
+    for (const Pokemon& pokemon : state_.bench) {
+      const int score = benched_vstar_promotion_score(pokemon);
+      if (score > best_score) {
+        best = &pokemon;
+        best_score = score;
+      }
+    }
+    return best;
+  }
+
   Pokemon* target_regi() {
     Pokemon* best = nullptr;
     int best_score = -100000;

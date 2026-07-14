@@ -11,6 +11,15 @@ namespace sim {
 struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
   static void run_turn(Engine& engine) { engine.run_turn(); }
+  static void run_full_turn(Engine& engine) {
+    // Full-turn fixtures mirror Engine::run(): perform the mandatory draw before
+    // tactical policy, and stop when that draw ends the game:
+    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Start_Your_Turn
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L20-L34
+    const int turn = engine.state_.turn;
+    engine.begin_turn(turn);
+    if (!engine.state_.turn_ended) engine.run_turn();
+  }
   static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
   static bool play_brilliant_blender(Engine& engine) {
     return engine.play_brilliant_blender();
@@ -49,7 +58,7 @@ void test_tate_switch_preserves_blender_payload_line() {
   // can then search and discard the current-turn Dragon payload as a later Item play:
   // https://api.pokemontcg.io/v2/cards/sm7-148
   // https://api.pokemontcg.io/v2/cards/sv8-164
-  EngineTestAccess::run_turn(engine);
+  EngineTestAccess::run_full_turn(engine);
 
   assert(contains(state.hand, Card::FieldBlower));
   assert(state.active && state.active->card == Card::RegidragoVstar);
@@ -84,7 +93,7 @@ void test_incomplete_benched_vstar_preserves_tate_blender_line() {
   // https://api.pokemontcg.io/v2/cards/sv8-164
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-  EngineTestAccess::run_turn(engine);
+  EngineTestAccess::run_full_turn(engine);
 
   assert(contains(state.hand, Card::FieldBlower));
   assert(state.active && state.active->card == Card::RegidragoV);
@@ -124,7 +133,7 @@ void test_ready_active_basic_does_not_hide_incomplete_tate_target() {
   // https://api.pokemontcg.io/v2/cards/sv8-164
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-  EngineTestAccess::run_turn(engine);
+  EngineTestAccess::run_full_turn(engine);
 
   assert(contains(state.hand, Card::FieldBlower));
   assert(state.active && state.active->card == Card::RegidragoV);

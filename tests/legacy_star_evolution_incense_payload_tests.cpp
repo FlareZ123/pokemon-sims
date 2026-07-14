@@ -11,7 +11,7 @@ namespace sim {
 struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
   static void set_deck_seen(Engine& engine, const bool seen) { engine.deck_seen_ = seen; }
-  static void run_turn(Engine& engine) { engine.run_turn(); }
+  static void run_tactical_turn(Engine& engine) { engine.run_turn(); }
   static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
   static bool use_legacy_star(Engine& engine) { return engine.use_legacy_star(); }
   static bool play_earthen_vessel(Engine& engine) { return engine.play_earthen_vessel(false); }
@@ -39,21 +39,17 @@ void test_legacy_star_recovers_evolution_incense_payload_bridge() {
   state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
   state.deck = {Card::MegaDragonite, Card::Grass, Card::Fire, Card::Crispin,
                 Card::Arven, Card::Dipplin, Card::MawileGX, Card::EvolutionIncense,
-                Card::MysteriousTreasure, Card::FieldBlower};
+                Card::MysteriousTreasure};
 
-  // A turn begins with a mandatory draw. Field Blower is harmless in this no-lock
-  // fixture and occupies the top of the vector, leaving the two Legacy Star bridge
-  // Items among the next seven cards: https://www.pokemon.com/us/pokemon-tcg/rules
-  // Legacy Star can return up to two discarded cards. Evolution Incense can then
-  // fetch an Evolution Dragon payload, and Mysterious Treasure can discard that
-  // fetched Dragon from hand as its cost:
+  // This is an explicit post-draw tactical state. Legacy Star can return up to two
+  // discarded cards. Evolution Incense can fetch an Evolution Dragon payload, then
+  // Mysterious Treasure can discard that fetched Dragon as its cost:
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://api.pokemontcg.io/v2/cards/swsh1-163
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
-  EngineTestAccess::run_turn(engine);
+  EngineTestAccess::run_tactical_turn(engine);
 
-  assert(contains(state.hand, Card::FieldBlower));
   assert(contains(state.discard, Card::EvolutionIncense));
   assert(contains(state.discard, Card::MysteriousTreasure));
   assert(contains(state.discard, Card::MegaDragonite));
@@ -82,7 +78,7 @@ void test_legacy_star_ignores_item_lock_dead_hand_item() {
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
-  EngineTestAccess::run_turn(engine);
+  EngineTestAccess::run_tactical_turn(engine);
 
   assert(contains(state.hand, Card::MysteriousTreasure));
   assert(contains(state.discard, Card::MegaDragonite));
@@ -111,7 +107,7 @@ void test_legacy_star_ignores_spent_supporter_burnet() {
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
-  EngineTestAccess::run_turn(engine);
+  EngineTestAccess::run_tactical_turn(engine);
 
   assert(contains(state.hand, Card::ProfessorBurnet));
   assert(contains(state.discard, Card::MegaDragonite));
@@ -136,7 +132,7 @@ void test_legacy_star_ignores_unpayable_one_discard_item() {
   // not playable, so Legacy Star remains the only current-turn payload line:
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/swsh12-136
-  EngineTestAccess::run_turn(engine);
+  EngineTestAccess::run_tactical_turn(engine);
 
   assert(contains(state.hand, Card::MysteriousTreasure));
   assert(state.vstar_power_used);
@@ -161,7 +157,7 @@ void test_legacy_star_ignores_unpayable_ultra_ball() {
   // so the held Ultra Ball must not suppress Legacy Star:
   // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
   // https://api.pokemontcg.io/v2/cards/swsh12-136
-  EngineTestAccess::run_turn(engine);
+  EngineTestAccess::run_tactical_turn(engine);
 
   assert(contains(state.hand, Card::UltraBall));
   assert(contains(state.hand, Card::Dipplin));
@@ -186,7 +182,7 @@ void test_payable_item_resolves_before_legacy_star() {
   // so the game-wide VSTAR Power should be preserved:
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/swsh12-136
-  EngineTestAccess::run_turn(engine);
+  EngineTestAccess::run_tactical_turn(engine);
 
   assert(!state.vstar_power_used);
   assert(contains(state.discard, Card::MegaDragonite));
@@ -271,7 +267,7 @@ void test_team_yell_recovers_vstar_into_evolution_incense_route() {
   // https://api.pokemontcg.io/v2/cards/swsh1-163
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://www.pokemon.com/us/pokemon-tcg/rules
-  EngineTestAccess::run_turn(engine);
+  EngineTestAccess::run_tactical_turn(engine);
 
   assert(state.active.has_value());
   assert(state.active->card == Card::RegidragoVstar);
@@ -301,7 +297,7 @@ void test_team_yell_holds_without_a_payable_post_recovery_search() {
   // Yell's Cheer is played, no such card remains, so the recovery route must be held:
   // https://api.pokemontcg.io/v2/cards/swsh9-149
   // https://api.pokemontcg.io/v2/cards/sm6-113
-  EngineTestAccess::run_turn(engine);
+  EngineTestAccess::run_tactical_turn(engine);
 
   assert(state.active.has_value());
   assert(state.active->card == Card::RegidragoV);

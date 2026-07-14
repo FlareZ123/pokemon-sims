@@ -41,7 +41,13 @@
     // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // https://www.pokemon.com/us/pokemon-tcg/rules
     const bool supporter_payload_outlet_in_hand = supporter_allowed() && hand_count(Card::ProfessorBurnet) > 0;
-    const bool only_random_payload_line = need_payload() && !item_payload_outlet_in_hand && !supporter_payload_outlet_in_hand;
+    // Legacy Star can create the strict-JIT payload only when the public deck count is
+    // nonzero and a modeled payload may remain. At K1 the identity check is exact; at
+    // K0 it uses public fixed-list counts without inspecting hidden card identities:
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    const bool only_random_payload_line = need_payload() && !state_.deck.empty() &&
+        payload_might_be_in_deck() && !item_payload_outlet_in_hand && !supporter_payload_outlet_in_hand;
 
     // Legacy Star may recover any two cards from discard, so an already-ready payload
     // does not make the VSTAR Power dead when a known recovery immediately completes a

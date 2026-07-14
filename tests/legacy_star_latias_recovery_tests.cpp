@@ -9,6 +9,7 @@ namespace sim {
 
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
+  static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
   static const State& state(const Engine& engine) { return engine.state_; }
   static bool use_legacy_star(Engine& engine) { return engine.use_legacy_star(); }
   static void play_basics_from_hand(Engine& engine) { engine.play_basics_from_hand(); }
@@ -194,6 +195,80 @@ void test_legacy_star_recovers_energy_for_promotable_benched_vstar() {
   }
 }
 
+void test_legacy_star_holds_when_deck_is_empty() {
+  const sim::Scenario scenario{"legacy-star-empty-deck", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{4051};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Legacy Star discards cards only from the top of the deck. A public zero-card deck
+  // cannot produce a Dragon payload and must preserve the one VSTAR Power:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  if (sim::EngineTestAccess::use_legacy_star(engine) ||
+      sim::EngineTestAccess::state(engine).vstar_power_used) {
+    throw std::runtime_error("Legacy Star must be held when the deck is empty.");
+  }
+}
+
+void test_legacy_star_holds_when_k1_proves_payload_absent() {
+  const sim::Scenario scenario{"legacy-star-known-absent-payload", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{4052};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.deck = seven_non_connector_cards();
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // After a legal deck inspection, the simulator may use exact remaining identities.
+  // Legacy Star cannot hit a modeled Dragon payload when none remains:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  if (sim::EngineTestAccess::use_legacy_star(engine) ||
+      sim::EngineTestAccess::state(engine).vstar_power_used) {
+    throw std::runtime_error("Legacy Star must be held when K1 proves every payload absent.");
+  }
+}
+
+void test_legacy_star_uses_known_present_payload_route() {
+  const sim::Scenario scenario{"legacy-star-known-present-payload", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{4053};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.deck = {sim::Card::ChaoticSwell, sim::Card::PathToPeak, sim::Card::MawileGX,
+                sim::Card::Dipplin, sim::Card::Guzma, sim::Card::Channeler,
+                sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // A known payload in the remaining deck preserves the legal Legacy Star route:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  if (!sim::EngineTestAccess::use_legacy_star(engine)) {
+    throw std::runtime_error("Legacy Star should remain live when K1 proves a payload remains.");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.vstar_power_used || !contains(after.discard, sim::Card::MegaDragonite) ||
+      !contains(after.discarded_this_turn, sim::Card::MegaDragonite)) {
+    throw std::runtime_error("The known-present payload route must spend Legacy Star and create strict-JIT readiness.");
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -202,6 +277,9 @@ int main() {
     test_legacy_star_recovers_energy_after_payload_is_ready();
     test_legacy_star_recovers_latias_after_payload_is_ready();
     test_legacy_star_recovers_energy_for_promotable_benched_vstar();
+    test_legacy_star_holds_when_deck_is_empty();
+    test_legacy_star_holds_when_k1_proves_payload_absent();
+    test_legacy_star_uses_known_present_payload_route();
     std::cout << "legacy star Latias recovery tests passed\n";
     return 0;
   } catch (const std::exception& error) {

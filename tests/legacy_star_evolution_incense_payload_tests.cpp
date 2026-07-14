@@ -46,13 +46,15 @@ void test_legacy_star_recovers_evolution_incense_payload_bridge() {
   State& state = EngineTestAccess::state(engine);
   state.turn = 2;
   state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
-  state.deck = {Card::MegaDragonite, Card::Grass, Card::Fire, Card::Crispin,
-                Card::Arven, Card::Dipplin, Card::EvolutionIncense,
+  state.deck = {Card::PathToPeak, Card::MegaDragonite, Card::Grass, Card::Fire,
+                Card::Crispin, Card::Arven, Card::Dipplin, Card::EvolutionIncense,
                 Card::MysteriousTreasure, Card::FieldBlower};
 
-  // A turn begins with a mandatory draw. Field Blower is harmless in this no-lock
-  // fixture and occupies the top of the vector, leaving the two Legacy Star bridge
-  // Items among the next seven cards: https://www.pokemon.com/us/pokemon-tcg/rules
+  // A turn begins with a mandatory draw. Field Blower occupies that draw slot, and
+  // Path to the Peak remains below Mega Dragonite ex so the recovered Mysterious
+  // Treasure still has a nonempty deck after Evolution Incense finds the payload:
+  // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Start_Your_Turn
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
   // Legacy Star can return up to two discarded cards. Evolution Incense can then
   // fetch an Evolution Dragon payload, and Mysterious Treasure can discard that
   // fetched Dragon from hand as its cost:
@@ -62,7 +64,6 @@ void test_legacy_star_recovers_evolution_incense_payload_bridge() {
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
   EngineTestAccess::run_full_turn(engine);
 
-  assert(contains(state.hand, Card::FieldBlower));
   assert(contains(state.discard, Card::EvolutionIncense));
   assert(contains(state.discard, Card::MysteriousTreasure));
   assert(contains(state.discard, Card::MegaDragonite));

@@ -64,8 +64,31 @@
     // Evolution Incense is a search-only Item and is unplayable with an empty deck:
     // https://api.pokemontcg.io/v2/cards/swsh1-163
     // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
-    return deck_search_available() &&
-           play_evolution_incense_empty_deck_original(permit_payload);
+    if (!deck_search_available()) return false;
+
+    const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
+                            might_be_unseen(Card::RegidragoVstar);
+    const bool later_search_item_outlet = hand_count(Card::MysteriousTreasure) > 0 ||
+        hand_count(Card::QuickBall) > 0 || hand_count(Card::EarthenVessel) > 0 ||
+        ultra_ball_can_discard_fetched_incense_payload();
+    const bool serena_outlet = supporter_allowed() && hand_count(Card::Serena) > 0;
+    // When the searched Dragon is the final deck card, every later search Item is
+    // unplayable and cannot supply its planned discard cost. Preserve Incense when
+    // payload is its sole live axis; Serena remains a legal non-search discard outlet:
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://api.pokemontcg.io/v2/cards/swsh12-164
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    const bool payload_search_would_strand_final_card = !want_vstar && permit_payload &&
+        can_play_payload_this_turn() && need_payload() && state_.deck.size() == 1U &&
+        later_search_item_outlet && !serena_outlet;
+    if (payload_search_would_strand_final_card) return false;
+
+    return play_evolution_incense_empty_deck_original(permit_payload);
   }
 
   bool play_earthen_vessel(const bool permit_payload) {

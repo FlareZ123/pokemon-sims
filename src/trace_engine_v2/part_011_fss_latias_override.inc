@@ -1,4 +1,27 @@
   bool use_fss() {
+    const bool incomplete_tate_blender_route =
+        !state_.vstar_power_used && supporter_allowed() && need_active_vstar() &&
+        !need_energy() && !benched_vstar_promotion_ready() && need_payload() &&
+        !item_locked() && hand_count(Card::BrilliantBlender) > 0 &&
+        can_play_payload_this_turn() && payload_might_be_in_deck() &&
+        !can_free_retreat_with_latias() && hand_count(Card::TateLiza) == 0 &&
+        might_be_unseen(Card::TateLiza);
+
+    if (incomplete_tate_blender_route) {
+      // Star Alchemy is a one-per-game VSTAR Power. Tate & Liza can promote the
+      // Benched VSTAR and Brilliant Blender can supply a same-turn payload, but the
+      // selected attacker must already pay Apex Dragon's GGF before that search is
+      // a complete route. Preserve the VSTAR Power while the target is incomplete:
+      // https://api.pokemontcg.io/v2/cards/swsh12-156
+      // https://api.pokemontcg.io/v2/cards/sm7-148
+      // https://api.pokemontcg.io/v2/cards/sv8-164
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      trace("HOLD VSTAR POWER", "R-FSS-02; R-TATE-01; R-BLENDER-01; R-RVS-01; P-DCI-01",
+            "Retained Star Alchemy because Tate would promote an Energy-incomplete Regidrago VSTAR.");
+      return false;
+    }
+
     const bool latias_solves_only_missing_axis =
         !state_.vstar_power_used && need_active_vstar() && !need_regi() &&
         !need_vstar() && !need_energy() && !need_payload() &&

@@ -1,0 +1,24 @@
+name: Validate issue 414 focused
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/validate-issue-414-focused.yml'
+      - 'src/trace_engine_v2/part_roseanne_multimode_override.inc'
+      - 'tests/roseanne_energy_recovery_tests.cpp'
+
+jobs:
+  focused-release-sanitizers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Release target
+        run: |
+          cmake -S . -B build-focus -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-focus --target regidrago_roseanne_energy_recovery_tests -j2
+          ./build-focus/regidrago_roseanne_energy_recovery_tests
+      - name: AddressSanitizer and UBSan target
+        run: |
+          cmake -S . -B build-focus-sanitizers -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build-focus-sanitizers --target regidrago_roseanne_energy_recovery_tests -j2
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./build-focus-sanitizers/regidrago_roseanne_energy_recovery_tests

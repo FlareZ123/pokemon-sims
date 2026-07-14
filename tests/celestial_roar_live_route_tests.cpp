@@ -72,6 +72,34 @@ void test_no_control_keeps_live_payload_banking_attack() {
   assert(contains(state.discard, sim::Card::MegaDragonite));
 }
 
+void test_burnet_discards_two_payloads_before_dipplin() {
+  const sim::Scenario scenario{"burnet-two-payloads",
+                               sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{353};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State& state = sim::EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1,
+                              sim::Tool::None};
+  state.hand = {sim::Card::ProfessorBurnet};
+  state.deck = {sim::Card::MegaDragonite, sim::Card::Dragapult,
+                sim::Card::Dipplin, sim::Card::Arven};
+
+  // Burnet may discard two selected deck cards. Both modeled A/S Dragons add an
+  // Apex Dragon attack, so they take priority over Dipplin:
+  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/sv6-130
+  assert(sim::EngineTestAccess::play_professor_burnet(engine));
+  assert(contains(state.discard, sim::Card::MegaDragonite));
+  assert(contains(state.discard, sim::Card::Dragapult));
+  assert(!contains(state.discard, sim::Card::Dipplin));
+  assert(contains(state.deck, sim::Card::Dipplin));
+}
+
 void test_burnet_uses_second_safe_selection_for_celestial_roar() {
   const sim::Scenario scenario{"burnet-celestial-roar-thinning",
                                sim::DciProfile::NoDiscardControl,
@@ -128,6 +156,7 @@ void test_strict_jit_attacks_when_needed_fire_may_remain() {
 int main() {
   test_strict_jit_holds_when_known_deck_has_no_needed_energy();
   test_no_control_keeps_live_payload_banking_attack();
+  test_burnet_discards_two_payloads_before_dipplin();
   test_burnet_uses_second_safe_selection_for_celestial_roar();
   test_strict_jit_attacks_when_needed_fire_may_remain();
   return 0;

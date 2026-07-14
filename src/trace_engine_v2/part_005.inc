@@ -64,6 +64,31 @@
   }
 
   void choose_opening_active() {
+    const bool tapu_oricorio_are_only_opening_basics =
+        hand_count(Card::TapuLeleGX) > 0 && hand_count(Card::Oricorio) > 0 &&
+        hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&
+        hand_count(Card::MawileGX) == 0 && hand_count(Card::DialgaGX) == 0;
+    const bool rule_box_ability_lock =
+        scenario_.locks == LockMode::FullRuleBoxAbility ||
+        scenario_.locks == LockMode::FullCombined;
+    const bool crispin_route_already_held = hand_count(Card::Crispin) > 0;
+
+    // Setup permits either Basic to become Active. Preserve Oricorio for Vital Dance
+    // when Wonder Tag is suppressed, or when Crispin already supplies the Supporter
+    // route and the Energy-compression Ability is the scarce on-play connector:
+    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://api.pokemontcg.io/v2/cards/sv7-133
+    // https://api.pokemontcg.io/v2/cards/swsh6-148
+    if (tapu_oricorio_are_only_opening_basics &&
+        (rule_box_ability_lock || crispin_route_already_held) &&
+        remove_one(state_.hand, Card::TapuLeleGX)) {
+      state_.active = Pokemon{Card::TapuLeleGX, 0};
+      outcome_.started_regi = false;
+      return;
+    }
+
     // Oricorio's Vital Dance triggers only when it is played from hand onto the
     // Bench during the turn. When Mawile-GX is the other available opening Basic,
     // start Mawile-GX so Oricorio remains in hand for that legal setup trigger:

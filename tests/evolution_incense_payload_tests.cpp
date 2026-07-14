@@ -168,6 +168,38 @@ void test_evolution_incense_holds_when_k1_vstar_target_is_absent() {
   }
 }
 
+void test_evolution_incense_holds_when_k1_payload_targets_are_absent() {
+  Fixture fixture;
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::EvolutionIncense, sim::Card::MysteriousTreasure};
+  state.deck = {sim::Card::TapuLeleGX, sim::Card::Dipplin};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(fixture.engine);
+
+  // K1 proves that no modeled Evolution Dragon payload remains. Dipplin is a legal
+  // Evolution Incense target, but it is outside the Apex Dragon payload set, so it
+  // cannot justify spending Incense for the held Mysterious Treasure continuation:
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
+  // https://api.pokemontcg.io/v2/cards/sv6-127
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/sv6-130
+  // https://api.pokemontcg.io/v2/cards/swsh11-136
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  if (sim::EngineTestAccess::play_evolution_incense(fixture.engine, true)) {
+    throw std::runtime_error("Evolution Incense should remain held when K1 proves every Evolution payload absent.");
+  }
+
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  if (!contains(after.hand, sim::Card::EvolutionIncense) ||
+      !contains(after.hand, sim::Card::MysteriousTreasure) ||
+      !contains(after.deck, sim::Card::Dipplin)) {
+    throw std::runtime_error("The known-dead payload route must preserve Incense, its outlet, and the fallback Evolution.");
+  }
+}
+
 void test_evolution_incense_uses_legal_post_search_fallbacks() {
   for (const sim::Card fallback : {sim::Card::MegaDragonite, sim::Card::Dragapult}) {
     Fixture fixture;
@@ -201,6 +233,7 @@ int main() {
     test_evolution_incense_uses_duplicate_incense_for_ultra_ball_cost();
     test_evolution_incense_rejects_unpayable_single_incense_ultra_ball_route();
     test_evolution_incense_holds_when_k1_vstar_target_is_absent();
+    test_evolution_incense_holds_when_k1_payload_targets_are_absent();
     test_evolution_incense_uses_legal_post_search_fallbacks();
     std::cout << "Evolution Incense payload tests passed\n";
     return 0;

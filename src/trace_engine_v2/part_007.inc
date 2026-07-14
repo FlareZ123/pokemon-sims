@@ -73,13 +73,22 @@
     }
     if (need_vstar() && deck_count_after_search_started(Card::Arven) > 0) return Card::Arven;
     // Wonder Tag can search Tate & Liza, whose switch mode immediately promotes a
-    // Benched Regidrago VSTAR. Select Tate for the Active-position axis only when
-    // the actual promotion target already pays Apex Dragon's GGF cost:
+    // Benched Regidrago VSTAR. Select Tate when the target already pays GGF and the
+    // payload is ready or a payable held one-discard Item can establish it afterward:
     // https://api.pokemontcg.io/v2/cards/cel25c-60_A
     // https://api.pokemontcg.io/v2/cards/sm7-148
     // https://api.pokemontcg.io/v2/cards/swsh12-136
-    if (need_active_vstar() && benched_vstar_promotion_ready() && !need_payload() &&
-        !can_free_retreat_with_latias() && deck_count_after_search_started(Card::TateLiza) > 0) {
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // Serena is only a fallback because it cannot promote the Benched attacker:
+    // https://api.pokemontcg.io/v2/cards/swsh12-164
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_tapu_tate_switch_override.inc#L14-L29
+    const bool payload_axis_completable_after_tate = !need_payload() ||
+        (state_.deck.size() > 1U && has_live_one_discard_hand_payload_line());
+    if (need_active_vstar() && benched_vstar_promotion_ready() &&
+        payload_axis_completable_after_tate && !can_free_retreat_with_latias() &&
+        deck_count_after_search_started(Card::TateLiza) > 0) {
       return Card::TateLiza;
     }
     if (deck_count_after_search_started(Card::Serena) > 0) return Card::Serena;

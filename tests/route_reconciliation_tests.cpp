@@ -354,20 +354,28 @@ void test_turo_preserves_prior_turn_active_regidrago_evolution_route() {
   const sim::DeckRecipe recipe = sim::baseline_recipe();
   std::mt19937_64 rng{393};
   sim::Engine engine(scenario, recipe, rng);
-  sim::EngineTestAccess::set_state(engine, turo_regidrago_active_state(1));
+  sim::State state = turo_regidrago_active_state(1);
+  // The direct route is complete only when the prior-turn Active already has GGF.
+  // After evolving, Regidrago VSTAR can immediately pay Apex Dragon's attack cost:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  state.active->grass = 2;
+  state.active->fire = 1;
+  sim::EngineTestAccess::set_state(engine, std::move(state));
 
-  // A prior-turn Active Regidrago V is legally evolvable this turn, so the existing
-  // direct evolution preference remains intact:
+  // A prior-turn Active Regidrago V with GGF and Regidrago VSTAR in hand can evolve
+  // and attack this turn, so the direct evolution route remains preferred:
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   expect(!sim::EngineTestAccess::play_turo_active_promotion_route(engine),
-         "Professor Turo should remain held when the Active Regidrago V can legally evolve this turn.");
+         "Professor Turo should remain held when the Active Regidrago V has a ready direct evolution route.");
 
   const sim::State& after = sim::EngineTestAccess::state(engine);
   expect(after.active && after.active->card == sim::Card::RegidragoV &&
+             after.active->grass == 2 && after.active->fire == 1 &&
              after.bench.size() == 1 && contains(after.hand, sim::Card::ProfessorTuro) &&
              contains(after.hand, sim::Card::RegidragoVstar) && !after.supporter_used,
-         "Rejecting the Turo route must preserve the prior-turn Active evolution state.");
+         "Rejecting the Turo route must preserve the ready prior-turn Active evolution state.");
 }
 
 }  // namespace

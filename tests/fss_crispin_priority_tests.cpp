@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cassert>
 #include <random>
+#include <string>
 #include <vector>
 
 namespace sim {
@@ -13,6 +14,7 @@ struct EngineTestAccess {
   static const TrialOutcome& outcome(const Engine& engine) { return engine.outcome_; }
   static void run_turn(Engine& engine) { engine.run_turn(); }
   static void record_ready(Engine& engine) { engine.record_ready(); }
+  static bool attach_fss(Engine& engine) { return engine.attach_fss(); }
   static bool use_fss(Engine& engine) { return engine.use_fss(); }
 };
 
@@ -170,6 +172,32 @@ void test_arven_fss_fetches_raw_energy_after_supporter_use() {
   assert(EngineTestAccess::outcome(engine).first_ready_turn == 2);
 }
 
+void test_fss_trace_names_vstar_holder() {
+  using namespace sim;
+  const Scenario scenario{"fss-vstar-holder-trace", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(350);
+  TraceLog trace;
+  trace.enabled = true;
+  Engine engine(scenario, recipe, rng, &trace);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+  state.hand = {Card::ForestSealStone};
+
+  // Pokémon V includes Pokémon VSTAR, and Forest Seal Stone may attach to a
+  // Pokémon V. The deterministic trace must name the actual selected holder:
+  // https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  assert(EngineTestAccess::attach_fss(engine));
+  assert(state.active->tool == Tool::ForestSealStone);
+  assert(std::any_of(trace.lines.begin(), trace.lines.end(), [](const std::string& line) {
+    return line.find("Attached Forest Seal Stone to Regidrago VSTAR.") !=
+           std::string::npos;
+  }));
+}
+
 }  // namespace
 
 int main() {
@@ -178,5 +206,6 @@ int main() {
   test_star_alchemy_fetches_oricorio_when_crispin_blocks_burnet();
   test_star_alchemy_takes_an_available_any_card_fallback();
   test_arven_fss_fetches_raw_energy_after_supporter_use();
+  test_fss_trace_names_vstar_holder();
   return 0;
 }

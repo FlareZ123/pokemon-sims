@@ -36,5 +36,28 @@
       }
     }
 
-    return attach_fss_original();
+    Pokemon* target = nullptr;
+    if (state_.active && is_pokemon_v(state_.active->card) &&
+        state_.active->tool == Tool::None) {
+      target = &*state_.active;
+    }
+    if (target == nullptr) {
+      for (Pokemon& pokemon : state_.bench) {
+        if (is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None) {
+          target = &pokemon;
+          break;
+        }
+      }
+    }
+    if (target == nullptr) return false;
+
+    // Pokémon V includes Pokémon VSTAR, and the trace must identify the actual
+    // holder selected by the legal attachment:
+    // https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    remove_one(state_.hand, Card::ForestSealStone);
+    target->tool = Tool::ForestSealStone;
+    trace("ATTACH TOOL", "R-FSS-01; R-GAME-TOOL",
+          "Attached Forest Seal Stone to " + std::string(name(target->card)) + ".");
+    return true;
   }

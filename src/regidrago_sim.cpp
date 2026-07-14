@@ -98,12 +98,18 @@
 #include "trace_engine_v2/part_010_attach_fss_override.inc"
 #define use_fss use_fss_latias_original
 #define play_crispin play_crispin_empty_deck_original
-#define play_professor_burnet play_professor_burnet_empty_deck_original
+#define play_professor_burnet play_professor_burnet_legacy_original
 #define play_steven play_steven_empty_deck_original
 #include "trace_engine_v2/part_011.inc"
 #undef play_steven
 #undef play_professor_burnet
+// The empty-deck wrapper must call the active Burnet thinning policy rather than
+// the superseded legacy implementation:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_011_burnet_thinning_override.inc
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_empty_deck_search_override.inc#L102-L107
+#define play_professor_burnet play_professor_burnet_empty_deck_original
 #include "trace_engine_v2/part_011_burnet_thinning_override.inc"
+#undef play_professor_burnet
 #undef play_crispin
 #define play_arven play_arven_original
 #define play_gladion play_gladion_original

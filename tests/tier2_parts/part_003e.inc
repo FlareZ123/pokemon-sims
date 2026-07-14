@@ -55,3 +55,47 @@ void tapu_holds_for_three_ultra_vstar_route() {
   expect(has(EngineTestAccess::state(f.engine).hand, Card::RegidragoVstar),
          "The direct route should find Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136");
 }
+
+void legacy_star_recovers_payable_incense_ultra_bridge() {
+  State s = st(2, Card::RegidragoVstar, 1, 2, 1);
+  s.hand = {Card::Dipplin};
+  s.deck = {Card::MegaDragonite, Card::MawileGX, Card::Guzma, Card::Channeler,
+            Card::FieldBlower, Card::ChaoticSwell, Card::EvolutionIncense,
+            Card::UltraBall};
+  Fixture f(sc("legacy-star-payable-incense-ultra"), s);
+
+  // Legacy Star may recover Evolution Incense and Ultra Ball. Incense then finds
+  // the Evolution Dragon, while Ultra Ball discards it with the pre-existing
+  // Dipplin as its distinct second cost:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  expect(EngineTestAccess::use_legacy_star(f.engine), "Legacy Star should resolve.");
+  State& after_star = EngineTestAccess::state(f.engine);
+  expect(has(after_star.hand, Card::EvolutionIncense), "Evolution Incense should be recovered.");
+  expect(has(after_star.hand, Card::UltraBall), "Payable Ultra Ball should be recovered.");
+  expect(EngineTestAccess::play_evolution_incense(f.engine, true),
+         "Evolution Incense should fetch the remaining Evolution Dragon payload.");
+  expect(EngineTestAccess::play_ultra_ball(f.engine, true),
+         "Ultra Ball should discard the fetched payload plus Dipplin.");
+  expect(has(EngineTestAccess::state(f.engine).discard, Card::MegaDragonite),
+         "Mega Dragonite ex should remain in discard for Apex Dragon: https://api.pokemontcg.io/v2/cards/me2pt5-152");
+}
+
+void legacy_star_rejects_unpayable_incense_ultra_bridge() {
+  State s = st(2, Card::RegidragoVstar, 1, 2, 1);
+  s.deck = {Card::MegaDragonite, Card::MawileGX, Card::Guzma, Card::Channeler,
+            Card::FieldBlower, Card::ChaoticSwell, Card::EvolutionIncense,
+            Card::UltraBall};
+  Fixture f(sc("legacy-star-unpayable-incense-ultra"), s);
+
+  // Ultra Ball requires two other hand cards. After Incense fetches the payload,
+  // an otherwise empty hand supplies only one cost, so Legacy Star must leave this
+  // pair in discard: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  expect(EngineTestAccess::use_legacy_star(f.engine), "Legacy Star should still resolve.");
+  const State& after_star = EngineTestAccess::state(f.engine);
+  expect(!has(after_star.hand, Card::EvolutionIncense), "Unpayable Evolution Incense bridge should not be recovered.");
+  expect(!has(after_star.hand, Card::UltraBall), "Unpayable Ultra Ball bridge should not be recovered.");
+  expect(has(after_star.discard, Card::EvolutionIncense) && has(after_star.discard, Card::UltraBall),
+         "Both unpayable bridge cards should remain in discard.");
+}

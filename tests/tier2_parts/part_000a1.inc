@@ -14,6 +14,8 @@ struct EngineTestAccess {
   static bool play_mysterious_treasure(Engine& engine, bool payload) { return engine.play_mysterious_treasure(payload); }
   static bool play_quick_ball(Engine& engine, bool payload) { return engine.play_quick_ball(payload); }
   static bool play_ultra_ball(Engine& engine, bool payload) { return engine.play_ultra_ball(payload); }
+  static bool play_evolution_incense(Engine& engine, bool payload) { return engine.play_evolution_incense(payload); }
+  static bool use_legacy_star(Engine& engine) { return engine.use_legacy_star(); }
   static bool play_heavy_ball(Engine& engine) { return engine.play_heavy_ball(); }
   static bool play_crispin(Engine& engine) { return engine.play_crispin(); }
   static bool bench_tapu_if_useful(Engine& engine) { return engine.bench_tapu_if_useful(); }

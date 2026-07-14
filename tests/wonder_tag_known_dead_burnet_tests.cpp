@@ -9,10 +9,12 @@ namespace sim {
 
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
+  static void set_deck_seen(Engine& engine, const bool seen) { engine.deck_seen_ = seen; }
   static const State& state(const Engine& engine) { return engine.state_; }
   static bool bench_from_hand(Engine& engine, const Card card, const bool resolve_entry) {
     return engine.bench_from_hand(card, resolve_entry);
   }
+  static bool needs_tapu_connector(Engine& engine) { return engine.needs_tapu_connector(); }
   static void run_turn(Engine& engine) { engine.run_turn(); }
 };
 
@@ -125,6 +127,121 @@ void test_wonder_tag_uses_an_available_supporter_fallback() {
   }
 }
 
+void test_wonder_tag_tate_connector_accepts_held_payload_route() {
+  const sim::Scenario scenario{"wonder-tag-tate-held-payload", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{450};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::Oricorio, 1, 0, 0, sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None}};
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::MysteriousTreasure,
+                sim::Card::MegaDragonite};
+  state.deck = {sim::Card::TateLiza, sim::Card::Dipplin};
+  state.vstar_power_used = true;
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine, true);
+
+  // Wonder Tag may search Tate & Liza. Tate may promote the GGF VSTAR, then
+  // Mysterious Treasure may discard the held Dragon and search the remaining Dipplin:
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm7-148
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  if (!sim::EngineTestAccess::needs_tapu_connector(engine)) {
+    throw std::runtime_error("Wonder Tag should recognize Tate plus the payable held-payload Item.");
+  }
+  if (!sim::EngineTestAccess::bench_from_hand(engine, sim::Card::TapuLeleGX, true) ||
+      !contains(sim::EngineTestAccess::state(engine).hand, sim::Card::TateLiza)) {
+    throw std::runtime_error("Wonder Tag should search Tate & Liza for the live promotion route.");
+  }
+
+  sim::EngineTestAccess::run_turn(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::RegidragoVstar ||
+      !contains(after.discarded_this_turn, sim::Card::MegaDragonite) ||
+      !contains(after.discard, sim::Card::TateLiza) ||
+      !contains(after.discard, sim::Card::MysteriousTreasure)) {
+    throw std::runtime_error("Wonder Tag, Tate, and Mysterious Treasure should complete the exact route.");
+  }
+}
+
+void test_wonder_tag_tate_connector_rejects_empty_post_search_deck() {
+  const sim::Scenario scenario{"wonder-tag-tate-empty-outlet", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{451};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::Oricorio, 1, 0, 0, sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None}};
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::MysteriousTreasure,
+                sim::Card::MegaDragonite};
+  state.deck = {sim::Card::TateLiza};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine, true);
+
+  // After Wonder Tag removes Tate, Mysterious Treasure cannot begin its required
+  // deck search from zero cards: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+  if (sim::EngineTestAccess::needs_tapu_connector(engine)) {
+    throw std::runtime_error("The connector must reject a held Item whose later search would see an empty deck.");
+  }
+}
+
+void test_wonder_tag_tate_connector_rejects_incomplete_target() {
+  const sim::Scenario scenario{"wonder-tag-tate-incomplete-target", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{452};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::Oricorio, 1, 0, 0, sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 1, 1, 1, sim::Tool::None}};
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::MysteriousTreasure,
+                sim::Card::MegaDragonite};
+  state.deck = {sim::Card::TateLiza, sim::Card::Dipplin};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine, true);
+
+  // Tate cannot make an Energy-incomplete VSTAR pay Apex Dragon's GGF cost:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  if (sim::EngineTestAccess::needs_tapu_connector(engine)) {
+    throw std::runtime_error("Wonder Tag must preserve Tapu when the promotion target is Energy-incomplete.");
+  }
+}
+
+void test_wonder_tag_tate_connector_rejects_missing_payload_cost() {
+  const sim::Scenario scenario{"wonder-tag-tate-unpayable-payload", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{453};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::Oricorio, 1, 0, 0, sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None}};
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::MysteriousTreasure};
+  state.deck = {sim::Card::TateLiza, sim::Card::Dipplin};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine, true);
+
+  // Mysterious Treasure requires another card as its discard cost, and this route
+  // specifically requires that cost to be the held Apex Dragon payload:
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  if (sim::EngineTestAccess::needs_tapu_connector(engine)) {
+    throw std::runtime_error("Wonder Tag must reject Tate when no held Dragon can pay the payload cost.");
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -132,7 +249,11 @@ int main() {
     test_wonder_tag_yields_known_dead_burnet_to_arven();
     test_wonder_tag_uses_arven_vessel_for_final_energy();
     test_wonder_tag_uses_an_available_supporter_fallback();
-    std::cout << "Wonder Tag known-dead Burnet tests passed\n";
+    test_wonder_tag_tate_connector_accepts_held_payload_route();
+    test_wonder_tag_tate_connector_rejects_empty_post_search_deck();
+    test_wonder_tag_tate_connector_rejects_incomplete_target();
+    test_wonder_tag_tate_connector_rejects_missing_payload_cost();
+    std::cout << "Wonder Tag connector tests passed\n";
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

@@ -12,6 +12,15 @@ struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
   static void set_deck_seen(Engine& engine, const bool seen) { engine.deck_seen_ = seen; }
   static void run_turn(Engine& engine) { engine.run_turn(); }
+  static void run_full_turn(Engine& engine) {
+    // Full-turn fixtures mirror Engine::run(): perform the mandatory draw before
+    // tactical policy, and stop when that draw ends the game:
+    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Start_Your_Turn
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L20-L34
+    const int turn = engine.state_.turn;
+    engine.begin_turn(turn);
+    if (!engine.state_.turn_ended) engine.run_turn();
+  }
   static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
   static bool use_legacy_star(Engine& engine) { return engine.use_legacy_star(); }
   static bool play_earthen_vessel(Engine& engine) { return engine.play_earthen_vessel(false); }
@@ -51,7 +60,7 @@ void test_legacy_star_recovers_evolution_incense_payload_bridge() {
   // https://api.pokemontcg.io/v2/cards/swsh1-163
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
-  EngineTestAccess::run_turn(engine);
+  EngineTestAccess::run_full_turn(engine);
 
   assert(contains(state.hand, Card::FieldBlower));
   assert(contains(state.discard, Card::EvolutionIncense));

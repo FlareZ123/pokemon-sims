@@ -57,6 +57,37 @@ void test_tate_switch_preserves_blender_payload_line() {
   assert(EngineTestAccess::payload_ready(engine));
 }
 
+void test_blender_discards_every_payload_before_dipplin() {
+  using namespace sim;
+  const Scenario scenario{"blender-all-payloads", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(353);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+  state.hand = {Card::BrilliantBlender};
+  state.deck = {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
+                Card::DialgaGX, Card::Dipplin, Card::Arven};
+
+  // Blender can discard five selected deck cards. Every modeled A/S Dragon adds an
+  // Apex Dragon attack, so all four payloads take priority before Dipplin:
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/sv6-130
+  // https://api.pokemontcg.io/v2/cards/swsh11-136
+  // https://api.pokemontcg.io/v2/cards/sm5-100
+  assert(EngineTestAccess::play_brilliant_blender(engine));
+  assert(state.deck.size() == 1U && state.deck.front() == Card::Arven);
+  for (const Card card : {Card::MegaDragonite, Card::Dragapult,
+                          Card::GoodraVstar, Card::DialgaGX,
+                          Card::Dipplin}) {
+    assert(contains(state.discard, card));
+  }
+}
+
 void test_blender_uses_safe_remaining_selections_before_tate_refresh() {
   using namespace sim;
   const Scenario scenario{"blender-tate-deck-thinning", DciProfile::NoDiscardControl,
@@ -176,6 +207,7 @@ void test_professor_turo_returns_basic_active_and_promotes_complete_vstar() {
 
 int main() {
   test_tate_switch_preserves_blender_payload_line();
+  test_blender_discards_every_payload_before_dipplin();
   test_blender_uses_safe_remaining_selections_before_tate_refresh();
   test_tate_draw_holds_when_no_card_can_enter_the_deck();
   test_tate_draw_uses_a_remaining_hand_card_with_empty_deck();

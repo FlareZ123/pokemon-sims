@@ -96,21 +96,58 @@
       recovered.push_back(Card::LatiasEx);
     }
 
-    // Evolution Incense plus a one-discard Item can form a two-card payload bridge:
+    // Evolution Incense plus a hand-discard Item can form a two-card payload bridge:
     // https://api.pokemontcg.io/v2/cards/swsh1-163
     // https://api.pokemontcg.io/v2/cards/sm6-113
     // https://api.pokemontcg.io/v2/cards/swsh1-179
     // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     const bool evolution_incense_payload_line = need_payload() && !item_locked() && payload_might_be_in_deck() &&
         count_of(state_.discard, Card::EvolutionIncense) > 0 && recovered.empty();
     if (evolution_incense_payload_line) {
-      for (const Card outlet : {Card::MysteriousTreasure, Card::QuickBall, Card::EarthenVessel}) {
-        if (count_of(state_.discard, outlet) == 0) continue;
-        if (!recover_discard_to_hand(Card::EvolutionIncense)) throw std::logic_error("Legacy Star Evolution Incense target disappeared");
-        if (!recover_discard_to_hand(outlet)) throw std::logic_error("Legacy Star hand-discard outlet disappeared");
-        recovered.push_back(Card::EvolutionIncense);
-        recovered.push_back(outlet);
-        break;
+      // Ultra Ball can follow Evolution Incense only when the fetched Dragon plus a
+      // distinct policy-admissible hand card can pay its two-other-card cost:
+      // https://api.pokemontcg.io/v2/cards/swsh1-163
+      // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+      if (count_of(state_.discard, Card::UltraBall) > 0) {
+        const std::vector<Card> base_hand = state_.hand;
+        const std::vector<Card> base_discard = state_.discard;
+        const std::vector<Card> base_discarded_this_turn = state_.discarded_this_turn;
+        const auto restore = [this, &base_hand, &base_discard, &base_discarded_this_turn]() {
+          state_.hand = base_hand;
+          state_.discard = base_discard;
+          state_.discarded_this_turn = base_discarded_this_turn;
+        };
+
+        bool ultra_bridge_payable = false;
+        if (recover_discard_to_hand(Card::EvolutionIncense) &&
+            recover_discard_to_hand(Card::UltraBall)) {
+          state_.hand.push_back(Card::MegaDragonite);
+          if (!remove_one(state_.hand, Card::MegaDragonite)) {
+            throw std::logic_error("Legacy Star representative payload disappeared");
+          }
+          ultra_bridge_payable =
+              choose_discard(false, true, true, Card::UltraBall).has_value();
+        }
+        restore();
+
+        if (ultra_bridge_payable) {
+          if (!recover_discard_to_hand(Card::EvolutionIncense)) throw std::logic_error("Legacy Star Evolution Incense target disappeared");
+          if (!recover_discard_to_hand(Card::UltraBall)) throw std::logic_error("Legacy Star Ultra Ball target disappeared");
+          recovered.push_back(Card::EvolutionIncense);
+          recovered.push_back(Card::UltraBall);
+        }
+      }
+
+      if (recovered.empty()) {
+        for (const Card outlet : {Card::MysteriousTreasure, Card::QuickBall, Card::EarthenVessel}) {
+          if (count_of(state_.discard, outlet) == 0) continue;
+          if (!recover_discard_to_hand(Card::EvolutionIncense)) throw std::logic_error("Legacy Star Evolution Incense target disappeared");
+          if (!recover_discard_to_hand(outlet)) throw std::logic_error("Legacy Star hand-discard outlet disappeared");
+          recovered.push_back(Card::EvolutionIncense);
+          recovered.push_back(outlet);
+          break;
+        }
       }
     }
 

@@ -295,12 +295,14 @@
     // Once the legal deck search has begun, any present Evolution Pokémon is a
     // valid fallback. Do not falsely fail while a Stage 2, VSTAR, or Stage 1 remains:
     // https://api.pokemontcg.io/v2/cards/swsh1-163
-    // https://api.pokemontcg.io/v2/cards/me2pt5-152
-    // https://api.pokemontcg.io/v2/cards/sv6-130
-    // https://api.pokemontcg.io/v2/cards/swsh11-136
-    // https://api.pokemontcg.io/v2/cards/sv6-127
+    // Regidrago VSTAR https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Mega Dragonite ex https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Dragapult ex https://api.pokemontcg.io/v2/cards/sv6-130
+    // Hisuian Goodra VSTAR https://api.pokemontcg.io/v2/cards/swsh11-136
+    // Dipplin https://api.pokemontcg.io/v2/cards/sv6-127
     if (!found) {
-      for (const Card fallback : {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::Dipplin}) {
+      for (const Card fallback : {Card::RegidragoVstar, Card::MegaDragonite,
+                                  Card::Dragapult, Card::GoodraVstar, Card::Dipplin}) {
         if (move_deck_to_hand(fallback)) {
           found = true;
           found_card = fallback;

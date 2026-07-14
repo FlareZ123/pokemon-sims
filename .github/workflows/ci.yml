@@ -23,6 +23,8 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run: bash .github/scripts/capture-build.sh build build.log
+      - name: Export final audit matrix
+        run: ./build/regidrago_sim --trials 100 --seed 20260714 --out build/smoke_results.csv
       - name: Test
         shell: bash
         run: |
@@ -40,6 +42,7 @@ jobs:
           name: release-ctest-diagnostics
           path: |
             build/Testing
+            build/smoke_results.csv
             build.log
           if-no-files-found: warn
 
@@ -51,6 +54,10 @@ jobs:
         run: cmake -S . -B build-sanitizers -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
       - name: Build sanitizers
         run: bash .github/scripts/capture-build.sh build-sanitizers sanitizer-build.log
+      - name: Export final sanitizer audit matrix
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+        run: ./build-sanitizers/regidrago_sim --trials 100 --seed 20260714 --out build-sanitizers/smoke_results.csv
       - name: Test sanitizers
         shell: bash
         env:
@@ -70,5 +77,6 @@ jobs:
           name: sanitizer-ctest-diagnostics
           path: |
             build-sanitizers/Testing
+            build-sanitizers/smoke_results.csv
             sanitizer-build.log
           if-no-files-found: warn

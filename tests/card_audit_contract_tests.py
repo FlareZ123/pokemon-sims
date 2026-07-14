@@ -46,7 +46,7 @@ def main() -> int:
     if ARCHIVE_SHA256 not in documented:
         raise AssertionError("CARD_AUDIT.md must pin the accepted archive SHA-256.")
 
-    if "--out data\\card_audit.json" not in documented:
+    if r"--out data\card_audit.json" not in documented:
         raise AssertionError("CARD_AUDIT.md must retain the local reproduction command.")
     return 0
 

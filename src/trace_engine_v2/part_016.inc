@@ -1,12 +1,18 @@
   const auto scenario = scenario_by_label("strict-jit/go-second");
   if (!scenario) return false;
   const DeckRecipe deck = baseline_recipe();
-  std::mt19937_64 rng(733105);
+  // Reuse the registered strict-JIT go-second T3 regression seed and deadline:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt
+  std::mt19937_64 rng(6);
   TraceLog trace{true, {}};
   Engine engine(*scenario, deck, rng, &trace);
   const TrialOutcome outcome = engine.run();
   if (trace.lines.empty()) return false;
-  return outcome.first_ready_turn >= 0;
+  const bool has_ready_rule_trace = std::any_of(
+      trace.lines.begin(), trace.lines.end(), [](const std::string& line) {
+        return line.find("READY | rules: R-RVS-01; P-JIT-01") != std::string::npos;
+      });
+  return outcome.first_ready_turn > 0 && outcome.first_ready_turn <= 3 && has_ready_rule_trace;
 }
 
 }  // namespace sim

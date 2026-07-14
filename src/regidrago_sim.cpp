@@ -53,12 +53,16 @@
 #define attach_manual attach_manual_tate_blender_original
 #include "trace_engine_v2/part_007.inc"
 #undef attach_manual
-#include "trace_engine_v2/part_tate_blender_attachment_override.inc"
 #define play_tate_switch play_tate_switch_tate_blender_original
 #define play_tate_draw play_tate_draw_tate_blender_original
 #include "trace_engine_v2/part_008a.inc"
 #undef play_tate_draw
 #undef play_tate_switch
+// part_007.inc opens evolve_best_regi(), and part_008a.inc completes it before
+// this member-function override may be included:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_007.inc#L169-L172
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_008a.inc#L1-L18
+#include "trace_engine_v2/part_tate_blender_attachment_override.inc"
 #include "trace_engine_v2/part_tate_blender_tate_override.inc"
 #define play_mysterious_treasure play_mysterious_treasure_empty_deck_original
 #include "trace_engine_v2/part_008b.inc"

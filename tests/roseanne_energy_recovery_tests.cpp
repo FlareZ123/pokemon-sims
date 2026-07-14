@@ -168,6 +168,9 @@ void test_roseanne_energy_route_discards_an_extra_dragon_after_payload_is_ready(
   state.deck = {sim::Card::Grass};
   state.discard = {sim::Card::Fire, sim::Card::MegaDragonite};
   state.discarded_this_turn = {sim::Card::MegaDragonite};
+  // Keep Legacy Star unavailable so this test isolates Roseanne and Earthen Vessel:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  state.vstar_power_used = true;
   sim::EngineTestAccess::set_state(engine, std::move(state));
   sim::EngineTestAccess::set_deck_seen(engine);
 
@@ -206,6 +209,9 @@ void test_roseanne_energy_route_still_requires_a_distinct_vessel_cost() {
   state.deck = {sim::Card::Grass};
   state.discard = {sim::Card::Fire, sim::Card::MegaDragonite};
   state.discarded_this_turn = {sim::Card::MegaDragonite};
+  // Keep Legacy Star unavailable so it cannot recover the missing Energy independently:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  state.vstar_power_used = true;
   sim::EngineTestAccess::set_state(engine, std::move(state));
   sim::EngineTestAccess::set_deck_seen(engine);
 

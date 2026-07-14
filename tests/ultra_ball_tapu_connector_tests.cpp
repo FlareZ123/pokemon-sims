@@ -271,6 +271,68 @@ void test_tapu_remains_live_when_ultra_ball_is_unpayable() {
   }
 }
 
+void test_wonder_tag_preserves_incomplete_tate_promotion() {
+  const sim::Scenario scenario{"wonder-tag-incomplete-tate", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{4061};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1, sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 1, 1, 1, sim::Tool::None}};
+  state.hand = {sim::Card::TapuLeleGX};
+  state.deck = {sim::Card::TateLiza};
+  state.discard = {sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Wonder Tag may search Tate & Liza, but that route spends a Bench slot, the
+  // Ability, and the Supporter before promoting a VSTAR that cannot pay GGF:
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm7-148
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  sim::EngineTestAccess::play_basics_from_hand(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!contains(after.hand, sim::Card::TapuLeleGX) ||
+      benched(after, sim::Card::TapuLeleGX) ||
+      !contains(after.deck, sim::Card::TateLiza)) {
+    throw std::runtime_error("Tapu Lele-GX must be preserved when Tate would promote an incomplete VSTAR.");
+  }
+}
+
+void test_wonder_tag_fetches_tate_for_complete_promotion() {
+  const sim::Scenario scenario{"wonder-tag-complete-tate", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{4062};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1, sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None}};
+  state.hand = {sim::Card::TapuLeleGX};
+  state.deck = {sim::Card::TateLiza};
+  state.discard = {sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // A complete GGF VSTAR makes Wonder Tag into Tate & Liza a direct Active-position
+  // connector, so the existing legal route remains available:
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm7-148
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  sim::EngineTestAccess::play_basics_from_hand(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!benched(after, sim::Card::TapuLeleGX) ||
+      !contains(after.hand, sim::Card::TateLiza) ||
+      contains(after.deck, sim::Card::TateLiza)) {
+    throw std::runtime_error("Wonder Tag should fetch Tate for a complete GGF promotion target.");
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -280,6 +342,8 @@ int main() {
     test_duplicate_search_items_form_current_turn_payload_chain();
     test_tapu_is_preserved_when_ultra_ball_directly_finds_vstar();
     test_tapu_remains_live_when_ultra_ball_is_unpayable();
+    test_wonder_tag_preserves_incomplete_tate_promotion();
+    test_wonder_tag_fetches_tate_for_complete_promotion();
     std::cout << "ultra ball connector tests passed\n";
     return 0;
   } catch (const std::exception& error) {

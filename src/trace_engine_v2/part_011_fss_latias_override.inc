@@ -22,6 +22,37 @@
       return false;
     }
 
+    const bool tate_held_payload_candidate = !state_.vstar_power_used &&
+        supporter_allowed() && need_active_vstar() && need_payload() &&
+        !can_free_retreat_with_latias() && hand_count(Card::TateLiza) == 0 &&
+        might_be_unseen(Card::TateLiza) && has_live_one_discard_hand_payload_line();
+    if (tate_held_payload_candidate && !benched_vstar_promotion_ready()) {
+      // Tate plus a held one-discard Item is useful only when the promoted VSTAR
+      // already pays Apex Dragon's GGF cost:
+      // https://api.pokemontcg.io/v2/cards/swsh12-156
+      // https://api.pokemontcg.io/v2/cards/sm7-148
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://api.pokemontcg.io/v2/cards/swsh1-179
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      trace("HOLD VSTAR POWER", "R-FSS-02; R-TATE-01; R-RVS-01; P-DCI-01",
+            "Retained Star Alchemy because Tate would promote an Energy-incomplete Regidrago VSTAR.");
+      return false;
+    }
+    if (tate_held_payload_candidate && state_.deck.size() <= 1U) {
+      // Star Alchemy's mandatory search would remove the final deck card. The held
+      // Mysterious Treasure, Quick Ball, or Earthen Vessel could then no longer begin
+      // its required search after discarding the Dragon payload:
+      // https://api.pokemontcg.io/v2/cards/swsh12-156
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://api.pokemontcg.io/v2/cards/swsh1-179
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+      trace("HOLD VSTAR POWER", "R-FSS-02; R-GAME-ITEM; P-DCI-01",
+            "Retained Star Alchemy because searching Tate would empty the deck before the held payload Item.");
+      return false;
+    }
+
     const bool latias_solves_only_missing_axis =
         !state_.vstar_power_used && need_active_vstar() && !need_regi() &&
         !need_vstar() && !need_energy() && !need_payload() &&

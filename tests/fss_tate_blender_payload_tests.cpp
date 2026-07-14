@@ -33,16 +33,19 @@ void test_fss_fetches_tate_when_blender_covers_payload() {
   state.active = Pokemon{Card::RegidragoV, 1, 2, 1, Tool::ForestSealStone};
   state.bench = {Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None}};
   state.hand = {Card::BrilliantBlender};
-  state.deck = {Card::TateLiza, Card::MegaDragonite};
+  state.deck = {Card::TateLiza, Card::MegaDragonite, Card::FieldBlower};
 
+  // A turn begins with a mandatory draw. Field Blower is the harmless top card in
+  // this no-lock fixture, so Tate & Liza and Mega Dragonite ex remain in the deck for
+  // the route being tested: https://www.pokemon.com/us/pokemon-tcg/rules
   // Forest Seal Stone can search Tate & Liza for switch mode, then the already held
   // Brilliant Blender remains playable later that turn to discard the Dragon payload:
   // https://api.pokemontcg.io/v2/cards/swsh12-156
   // https://api.pokemontcg.io/v2/cards/sm7-148
   // https://api.pokemontcg.io/v2/cards/sv8-164
-  // https://www.pokemon.com/us/pokemon-tcg/rules
   EngineTestAccess::run_turn(engine);
 
+  assert(contains(state.hand, Card::FieldBlower));
   assert(state.vstar_power_used);
   assert(state.active && state.active->card == Card::RegidragoVstar);
   assert(contains(state.discard, Card::TateLiza));
@@ -64,8 +67,10 @@ void test_fss_holds_when_tate_target_is_energy_incomplete() {
   state.active = Pokemon{Card::RegidragoV, 1, 2, 1, Tool::ForestSealStone};
   state.bench = {Pokemon{Card::RegidragoVstar, 1, 1, 1, Tool::None}};
   state.hand = {Card::BrilliantBlender};
-  state.deck = {Card::TateLiza, Card::MegaDragonite};
+  state.deck = {Card::TateLiza, Card::MegaDragonite, Card::FieldBlower};
 
+  // Preserve the intended two-card route after the mandatory draw by placing a
+  // harmless no-lock Field Blower on top: https://www.pokemon.com/us/pokemon-tcg/rules
   // Star Alchemy is one per game. Tate & Liza would promote the Benched VSTAR, and
   // Brilliant Blender would spend the current-turn payload, while that attacker still
   // cannot pay Apex Dragon's GGF cost. Preserve the VSTAR Power and both route cards:
@@ -76,6 +81,7 @@ void test_fss_holds_when_tate_target_is_energy_incomplete() {
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   EngineTestAccess::run_turn(engine);
 
+  assert(contains(state.hand, Card::FieldBlower));
   assert(!state.vstar_power_used);
   assert(state.active && state.active->card == Card::RegidragoV);
   assert(state.bench.size() == 1U);

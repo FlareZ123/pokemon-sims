@@ -35,10 +35,17 @@
 #define begin_turn begin_turn_original
 #define might_be_unseen might_be_unseen_empty_deck_original
 #include "trace_engine_v2/part_003.inc"
-#undef might_be_unseen
-#include "trace_engine_v2/part_empty_deck_unseen_override.inc"
+// part_003.inc opens begin_turn(), and part_004.inc completes it. part_004.inc
+// later opens state_line(), which part_005.inc completes before a new Engine
+// member may be defined:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L151-L154
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_004.inc#L1-L22
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_004.inc#L210-L220
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_005.inc#L1-L5
 #include "trace_engine_v2/part_004.inc"
 #include "trace_engine_v2/part_005.inc"
+#undef might_be_unseen
+#include "trace_engine_v2/part_empty_deck_unseen_override.inc"
 #undef begin_turn
 #include "trace_engine_v2/part_begin_turn_override.inc"
 #define bench_from_hand bench_from_hand_empty_deck_original
@@ -75,14 +82,20 @@
 #include "trace_engine_v2/part_009b2.inc"
 #define play_evolution_incense play_evolution_incense_original
 #define play_earthen_vessel play_earthen_vessel_empty_deck_original
-#define play_brilliant_blender play_brilliant_blender_empty_deck_original
+#define play_brilliant_blender play_brilliant_blender_legacy_original
 #define fss_target_after_search_started fss_target_after_search_started_original
 #define attach_fss attach_fss_original
 #include "trace_engine_v2/part_010.inc"
 #undef attach_fss
 #undef fss_target_after_search_started
 #undef play_brilliant_blender
+// The thinning policy remains the implementation wrapped by the later empty-deck
+// guard, while the legacy part_010 implementation stays dormant:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010_blender_thinning_override.inc#L1-L77
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_empty_deck_search_override.inc#L78-L85
+#define play_brilliant_blender play_brilliant_blender_empty_deck_original
 #include "trace_engine_v2/part_010_blender_thinning_override.inc"
+#undef play_brilliant_blender
 #undef play_earthen_vessel
 #undef play_evolution_incense
 #undef play_ultra_ball
@@ -98,7 +111,7 @@
 #include "trace_engine_v2/part_010_attach_fss_override.inc"
 #define use_fss use_fss_latias_original
 #define play_crispin play_crispin_empty_deck_original
-#define play_professor_burnet play_professor_burnet_empty_deck_original
+#define play_professor_burnet play_professor_burnet_legacy_original
 #define play_steven play_steven_empty_deck_original
 #include "trace_engine_v2/part_011.inc"
 #undef play_steven
@@ -109,16 +122,27 @@
 #include "trace_engine_v2/part_012.inc"
 #undef play_gladion
 #undef play_arven
-// part_011.inc opens play_steven(), and part_012.inc completes it before this
-// member-function override may be included:
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_011.inc#L128-L183
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_012.inc#L1-L17
-#include "trace_engine_v2/part_011_burnet_thinning_override.inc"
 #define use_celestial_roar use_celestial_roar_original
 #define use_legacy_star use_legacy_star_original
 #include "trace_engine_v2/part_013.inc"
 #undef use_legacy_star
 #include "trace_engine_v2/part_014a.inc"
+// part_012.inc opens Serena's draw-mode body, part_013.inc closes it and later
+// opens run_search_items_one_step(), and part_014a.inc completes that method.
+// Define the active Burnet policy only after this first complete member boundary:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_012.inc#L212-L228
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_013.inc#L1-L20
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_013.inc#L205-L224
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc#L1-L20
+// Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+// Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+// The active thinning policy is the implementation wrapped by the later empty-deck
+// guard, while the legacy part_011 implementation stays dormant:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_011_burnet_thinning_override.inc
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_empty_deck_search_override.inc#L102-L107
+#define play_professor_burnet play_professor_burnet_empty_deck_original
+#include "trace_engine_v2/part_011_burnet_thinning_override.inc"
+#undef play_professor_burnet
 #undef use_fss
 #define use_fss use_fss_empty_deck_original
 #include "trace_engine_v2/part_011_fss_latias_override.inc"

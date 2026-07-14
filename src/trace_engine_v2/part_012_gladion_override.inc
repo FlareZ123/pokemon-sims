@@ -98,5 +98,34 @@
       return played;
     }
 
+    // Gladion can recover a known prized Dragon payload when a one-discard Item
+    // remains in hand to put that payload into discard during the same turn:
+    // https://api.pokemontcg.io/v2/cards/sm4-95
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    const bool live_one_discard_payload_outlet = !item_locked() && !state_.deck.empty() &&
+        (hand_count(Card::EarthenVessel) > 0 || hand_count(Card::QuickBall) > 0 ||
+         hand_count(Card::MysteriousTreasure) > 0);
+    if (prizes_known() && need_payload() && can_play_payload_this_turn() &&
+        live_one_discard_payload_outlet) {
+      for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
+                                 Card::GoodraVstar, Card::DialgaGX}) {
+        if (prize_count_after_reveal(payload) == 0) continue;
+        remove_one(state_.hand, Card::Gladion);
+        state_.supporter_used = true;
+        state_.prizes_revealed = true;
+        const auto it = std::find(state_.prizes.begin(), state_.prizes.end(), payload);
+        *it = Card::Gladion;
+        state_.hand.push_back(payload);
+        shuffle(state_.prizes);
+        trace("PLAY SUPPORTER", "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-DCI-01",
+              "Looked at Prize cards and exchanged Gladion for " + std::string(name(payload)) +
+                  " to use a same-turn hand-discard outlet.");
+        return true;
+      }
+    }
+
     return play_gladion_original();
   }

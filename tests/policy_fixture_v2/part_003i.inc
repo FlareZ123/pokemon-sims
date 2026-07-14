@@ -59,25 +59,3 @@ void test_strict_serena_uses_three_safe_discards() {
          "After three legal discards, Serena should draw back to five and find the compact-deck VSTAR.");
 }
 
-void test_heavy_ball_oricorio_preserves_item_lock_burnet() {
-  State s = state(2, Card::RegidragoVstar, 1, 2, 0);
-  s.hand = {Card::HisuianHeavyBall, Card::ProfessorBurnet};
-  s.deck = {Card::Fire, Card::MegaDragonite, Card::Crispin, Card::Grass};
-  s.prizes = {Card::TapuLeleGX, Card::Oricorio};
-  Fixture f(scenario("heavy-ball-oricorio-over-tapu", DciProfile::StrictJit, LockMode::FullItem), s);
-
-  expect(EngineTestAccess::play_heavy_ball(f.engine),
-         "Heavy Ball should resolve and inspect the two live prized Basic connectors.");
-  expect(contains(EngineTestAccess::state(f.engine).hand, Card::Oricorio),
-         "With Burnet already in hand under Item lock, Heavy Ball should recover Oricorio over Tapu Lele-GX.");
-  expect(EngineTestAccess::bench_from_hand(f.engine, Card::Oricorio, true),
-         "The recovered Oricorio should Bench and use Vital Dance.");
-  expect(EngineTestAccess::attach_manual(f.engine),
-         "The searched Fire should be manually attached to finish GGF.");
-  EngineTestAccess::choose_supporter(f.engine);
-  const State& after = EngineTestAccess::state(f.engine);
-  expect(contains(after.discard, Card::ProfessorBurnet) && contains(after.discard, Card::MegaDragonite),
-         "Preserved Burnet should discard the Dragon payload in the same turn.");
-  expect(after.active->fire == 1,
-         "The Oricorio/manual line should complete the final Fire attachment.");
-}

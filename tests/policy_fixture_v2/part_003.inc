@@ -60,7 +60,9 @@ void test_finished_setup_does_not_burn_serena() {
 void test_arven_fetches_forest_seal_stone_during_item_lock() {
   State s = state(2);
   s.hand = {Card::Arven};
-  s.deck = {Card::EvolutionIncense, Card::ForestSealStone};
+  // Forest Seal Stone may attach to Regidrago V under Item lock, then Star Alchemy
+  // may search Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/swsh12-136
+  s.deck = {Card::EvolutionIncense, Card::ForestSealStone, Card::RegidragoVstar};
   Fixture f(scenario("arven-item-lock", DciProfile::StrictJit, LockMode::FullItem), s);
 
   // Arven is a Supporter, so Item lock does not prohibit playing it; Pokémon Tools

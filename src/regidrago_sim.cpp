@@ -111,7 +111,7 @@
 #include "trace_engine_v2/part_010_attach_fss_override.inc"
 #define use_fss use_fss_latias_original
 #define play_crispin play_crispin_empty_deck_original
-#define play_professor_burnet play_professor_burnet_empty_deck_original
+#define play_professor_burnet play_professor_burnet_legacy_original
 #define play_steven play_steven_empty_deck_original
 #include "trace_engine_v2/part_011.inc"
 #undef play_steven
@@ -135,8 +135,10 @@
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_013.inc#L205-L224
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc#L1-L20
 // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-// Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+// Empty-deck search ruling: https://compendium.pokegym.net/category/7-gameplay/searching-deck-or-discard/
+#define play_professor_burnet play_professor_burnet_empty_deck_original
 #include "trace_engine_v2/part_011_burnet_thinning_override.inc"
+#undef play_professor_burnet
 #undef use_fss
 #define use_fss use_fss_empty_deck_original
 #include "trace_engine_v2/part_011_fss_latias_override.inc"

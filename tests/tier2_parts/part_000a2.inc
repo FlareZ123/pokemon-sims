@@ -1,6 +1,7 @@
   static bool use_fss(Engine& engine) { return engine.use_fss(); }
   static bool bench_from_hand(Engine& engine, Card card, bool entry) { return engine.bench_from_hand(card, entry); }
-  static bool bench_tapu_if_useful(Engine& engine) { return engine.bench_tapu_if_useful(); }
+  // The preceding split declares bench_tapu_if_useful once; do not redeclare it:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/tests/tier2_parts/part_000a1.inc#L21-L24
   static bool play_earthen_vessel(Engine& engine, bool payload) { return engine.play_earthen_vessel(payload); }
   static bool play_brilliant_blender(Engine& engine) { return engine.play_brilliant_blender(); }
   static bool evolve_best_regi(Engine& engine) { return engine.evolve_best_regi(); }

@@ -10,7 +10,16 @@ namespace sim {
 
 struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
-  static void run_turn(Engine& engine) { engine.run_turn(); }
+  static void run_tactical_turn(Engine& engine) { engine.run_turn(); }
+  static void run_full_turn(Engine& engine) {
+    // Full-turn fixtures mirror Engine::run(): draw before tactical policy, then stop
+    // when the mandatory draw ends the game:
+    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Start_Your_Turn
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L20-L34
+    const int turn = engine.state_.turn;
+    engine.begin_turn(turn);
+    if (!engine.state_.turn_ended) engine.run_turn();
+  }
   static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
   static bool play_brilliant_blender(Engine& engine) {
     return engine.play_brilliant_blender();
@@ -44,18 +53,15 @@ void test_tate_switch_preserves_blender_payload_line() {
   state.active = Pokemon{Card::TapuLeleGX, 0, 0, 0, Tool::None};
   state.bench = {Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None}};
   state.hand = {Card::TateLiza, Card::BrilliantBlender};
-  state.deck = {Card::MegaDragonite, Card::FieldBlower};
+  state.deck = {Card::MegaDragonite};
 
-  // A turn begins with a mandatory draw. Field Blower is harmless in this no-lock
-  // fixture and occupies the top of the vector, preserving Mega Dragonite ex in deck:
-  // https://www.pokemon.com/us/pokemon-tcg/rules
-  // Tate & Liza can switch the Active with a Benched Pokémon, and Brilliant Blender
-  // can then search and discard the current-turn Dragon payload as a later Item play:
+  // This is an explicit post-draw tactical state. Tate & Liza can switch the Active
+  // with a Benched Pokémon, then Brilliant Blender can discard the Dragon payload:
   // https://api.pokemontcg.io/v2/cards/sm7-148
   // https://api.pokemontcg.io/v2/cards/sv8-164
-  EngineTestAccess::run_turn(engine);
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  EngineTestAccess::run_tactical_turn(engine);
 
-  assert(contains(state.hand, Card::FieldBlower));
   assert(state.active && state.active->card == Card::RegidragoVstar);
   assert(contains(state.discard, Card::TateLiza));
   assert(contains(state.discard, Card::BrilliantBlender));
@@ -76,21 +82,17 @@ void test_incomplete_benched_vstar_preserves_tate_blender_line() {
   state.active = Pokemon{Card::RegidragoV, 1, 2, 0, Tool::None};
   state.bench = {Pokemon{Card::RegidragoVstar, 1, 1, 0, Tool::None}};
   state.hand = {Card::Fire, Card::TateLiza, Card::BrilliantBlender};
-  state.deck = {Card::MegaDragonite, Card::FieldBlower};
+  state.deck = {Card::MegaDragonite};
 
-  // Preserve the intended payload target after the mandatory draw by putting a
-  // harmless no-lock Field Blower on top: https://www.pokemon.com/us/pokemon-tcg/rules
-  // The manual attachment is once per turn. Tate & Liza can later promote the
-  // Benched VSTAR, and Brilliant Blender is the one-shot current-turn payload route.
-  // Put Fire on that intended attacker, then retain Tate and Blender until a later
-  // Grass attachment completes Apex Dragon's GGF requirement:
+  // This is an explicit post-draw tactical state. The manual attachment is once per
+  // turn. Put Fire on the intended promoted attacker, then retain Tate and Blender
+  // until a later Grass attachment completes Apex Dragon's GGF requirement:
   // https://api.pokemontcg.io/v2/cards/sm7-148
   // https://api.pokemontcg.io/v2/cards/sv8-164
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-  EngineTestAccess::run_turn(engine);
+  EngineTestAccess::run_tactical_turn(engine);
 
-  assert(contains(state.hand, Card::FieldBlower));
   assert(state.active && state.active->card == Card::RegidragoV);
   assert(state.active->grass == 2 && state.active->fire == 0);
   assert(state.bench.size() == 1U);
@@ -117,20 +119,16 @@ void test_ready_active_basic_does_not_hide_incomplete_tate_target() {
   state.active = Pokemon{Card::RegidragoV, 1, 2, 1, Tool::None};
   state.bench = {Pokemon{Card::RegidragoVstar, 1, 1, 1, Tool::None}};
   state.hand = {Card::TateLiza, Card::BrilliantBlender};
-  state.deck = {Card::MegaDragonite, Card::FieldBlower};
+  state.deck = {Card::MegaDragonite};
 
-  // Preserve the intended payload target after the mandatory draw by putting a
-  // harmless no-lock Field Blower on top: https://www.pokemon.com/us/pokemon-tcg/rules
-  // The Active Basic's GGF does not complete the Energy axis of the Benched VSTAR
-  // that Tate & Liza would promote. Preserve both one-turn resources until that
-  // selected attacker can pay Apex Dragon's GGF cost:
+  // This is an explicit post-draw tactical state. The Active Basic's GGF does not
+  // complete the Energy axis of the Benched VSTAR that Tate & Liza would promote:
   // https://api.pokemontcg.io/v2/cards/sm7-148
   // https://api.pokemontcg.io/v2/cards/sv8-164
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-  EngineTestAccess::run_turn(engine);
+  EngineTestAccess::run_tactical_turn(engine);
 
-  assert(contains(state.hand, Card::FieldBlower));
   assert(state.active && state.active->card == Card::RegidragoV);
   assert(state.active->grass == 2 && state.active->fire == 1);
   assert(state.bench.size() == 1U);
@@ -256,7 +254,6 @@ void test_tate_draw_uses_a_remaining_hand_card_with_empty_deck() {
   assert(std::count(state.discard.begin(), state.discard.end(), Card::TateLiza) == 1);
 }
 
-
 void test_tate_draw_refreshes_an_empty_deck_when_search_item_cannot_follow() {
   using namespace sim;
   const Scenario scenario{"tate-empty-deck-held-payload", DciProfile::StrictJit,
@@ -351,6 +348,55 @@ void test_professor_turo_returns_basic_active_and_promotes_complete_vstar() {
   assert(!state.retreat_used);
 }
 
+void test_full_turn_draw_precedes_tactical_evolution() {
+  using namespace sim;
+  const Scenario scenario{"full-turn-draw-before-policy", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(489);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoV, 1, 2, 1, Tool::None};
+  state.deck = {Card::RegidragoVstar};
+
+  // The player draws before taking tactical actions. Drawing the VSTAR from
+  // deck.back() makes the subsequent legal evolution possible in the same full turn:
+  // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Start_Your_Turn
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L20-L34
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  EngineTestAccess::run_full_turn(engine);
+
+  assert(!state.turn_ended);
+  assert(state.deck.empty());
+  assert(state.active && state.active->card == Card::RegidragoVstar);
+  assert(!contains(state.hand, Card::RegidragoVstar));
+}
+
+void test_empty_deck_draw_prevents_tactical_evolution() {
+  using namespace sim;
+  const Scenario scenario{"empty-deck-stops-before-policy", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(490);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoV, 1, 2, 1, Tool::None};
+  state.hand = {Card::RegidragoVstar};
+  state.deck.clear();
+
+  // A player who cannot draw at the start of the turn loses before taking further
+  // actions. The held VSTAR therefore remains in hand and the Active does not evolve:
+  // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Start_Your_Turn
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L20-L34
+  EngineTestAccess::run_full_turn(engine);
+
+  assert(state.turn_ended);
+  assert(state.active && state.active->card == Card::RegidragoV);
+  assert(contains(state.hand, Card::RegidragoVstar));
+}
+
 }  // namespace
 
 int main() {
@@ -364,5 +410,7 @@ int main() {
   test_tate_draw_refreshes_an_empty_deck_when_search_item_cannot_follow();
   test_tate_preserves_one_card_deck_for_live_payload_search();
   test_professor_turo_returns_basic_active_and_promotes_complete_vstar();
+  test_full_turn_draw_precedes_tactical_evolution();
+  test_empty_deck_draw_prevents_tactical_evolution();
   return 0;
 }

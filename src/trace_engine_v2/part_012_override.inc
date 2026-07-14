@@ -48,10 +48,22 @@
       return payable;
     };
 
-    return outlet_survives_current_search(Card::MysteriousTreasure) ||
-           outlet_survives_current_search(Card::QuickBall) ||
-           outlet_survives_current_search(Card::EarthenVessel) ||
-           ultra_ball_can_pay_after_current_search() ||
+    // The initiating search removes the fetched payload. Every later search Item
+    // needs at least one remaining deck card or it is known to have no effect and
+    // cannot be played. Serena stays live because discarding the payload is itself
+    // an effect even when the deck is then empty:
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://api.pokemontcg.io/v2/cards/swsh12-164
+    const bool later_search_can_begin = state_.deck.size() > 1U;
+    return (later_search_can_begin &&
+            (outlet_survives_current_search(Card::MysteriousTreasure) ||
+             outlet_survives_current_search(Card::QuickBall) ||
+             outlet_survives_current_search(Card::EarthenVessel) ||
+             ultra_ball_can_pay_after_current_search())) ||
            (supporter_allowed() && outlet_survives_current_search(Card::Serena));
   }
 

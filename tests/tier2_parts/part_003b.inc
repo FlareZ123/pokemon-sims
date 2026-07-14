@@ -53,6 +53,7 @@ int main() {
     {"fss_holds_for_live_crispin", fss_holds_for_live_crispin},
     {"ultra_ball_holds_for_live_crispin", ultra_ball_holds_for_live_crispin},
     {"costed_search_accepts_distinct_ultra_second_cost", costed_search_accepts_distinct_ultra_second_cost},
+    {"tapu_holds_for_three_ultra_vstar_route", tapu_holds_for_three_ultra_vstar_route},
   };
   int failures = 0;
   for (const auto& [name, run] : tests) {

@@ -127,7 +127,6 @@
     // effect identifies that card, a distinct Ultra Ball is another card in hand
     // that may pay Quick Ball's discard cost: https://api.pokemontcg.io/v2/cards/swsh1-179
     if (excluded_from_cost && has_discardable_copy(Card::UltraBall)) return Card::UltraBall;
-
     // Mysterious Treasure says to discard a card from hand, so a distinct second
     // copy remains a legal cost for the first copy: https://api.pokemontcg.io/v2/cards/sm6-113
     if (hand_count(Card::MysteriousTreasure) >= 2) return Card::MysteriousTreasure;
@@ -189,7 +188,9 @@
     const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
     const bool permit_payload = can_play_payload_this_turn() &&
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
-    const auto first = choose_discard(permit_payload, true);
+    // Reserve the Ultra Ball being played. Two distinct remaining copies may pay
+    // its two-other-card cost: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    const auto first = choose_discard(permit_payload, true, true, Card::UltraBall);
     if (!first || !remove_one(state_.hand, *first)) {
       restore_hand();
       return false;

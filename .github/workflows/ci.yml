@@ -31,6 +31,9 @@ jobs:
           path: |
             build/Testing
             build.log
+            CMakeLists.txt
+            src
+            tests
           if-no-files-found: warn
 
   sanitizers:

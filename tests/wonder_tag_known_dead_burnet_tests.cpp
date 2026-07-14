@@ -204,8 +204,11 @@ void test_wonder_tag_tate_connector_rejects_incomplete_target() {
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::Oricorio, 1, 0, 0, sim::Tool::None};
   state.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 1, 1, 1, sim::Tool::None}};
+  // Holding a live Crispin suppresses the independent Wonder Tag Energy connector,
+  // so this control isolates the new Tate path:
+  // https://api.pokemontcg.io/v2/cards/sv7-133
   state.hand = {sim::Card::TapuLeleGX, sim::Card::MysteriousTreasure,
-                sim::Card::MegaDragonite};
+                sim::Card::MegaDragonite, sim::Card::Crispin};
   state.deck = {sim::Card::TateLiza, sim::Card::Dipplin};
   sim::EngineTestAccess::set_state(engine, std::move(state));
   sim::EngineTestAccess::set_deck_seen(engine, true);
@@ -213,7 +216,7 @@ void test_wonder_tag_tate_connector_rejects_incomplete_target() {
   // Tate cannot make an Energy-incomplete VSTAR pay Apex Dragon's GGF cost:
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   if (sim::EngineTestAccess::needs_tapu_connector(engine)) {
-    throw std::runtime_error("Wonder Tag must preserve Tapu when the promotion target is Energy-incomplete.");
+    throw std::runtime_error("Wonder Tag must preserve Tapu when the isolated Tate promotion target is Energy-incomplete.");
   }
 }
 

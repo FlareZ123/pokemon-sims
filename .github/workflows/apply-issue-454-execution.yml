@@ -1,0 +1,38 @@
+name: Apply issue 454 execution fix
+
+on:
+  pull_request:
+    paths:
+      - '.github/patches/issue-454-execution.patch'
+      - '.github/workflows/apply-issue-454-execution.yml'
+      - 'src/trace_engine_v2/part_010.inc'
+      - 'tests/roseanne_energy_recovery_tests.cpp'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-patch:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Apply and push execution fix
+        shell: bash
+        run: |
+          if [ ! -f .github/patches/issue-454-execution.patch ]; then
+            exit 0
+          fi
+          if git apply --reverse --check .github/patches/issue-454-execution.patch; then
+            exit 0
+          fi
+          git apply --check .github/patches/issue-454-execution.patch
+          git apply .github/patches/issue-454-execution.patch
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/trace_engine_v2/part_010.inc tests/roseanne_energy_recovery_tests.cpp
+          git commit -m "Complete Roseanne extra-Dragon Vessel route (#454)"
+          git push origin HEAD:${{ github.head_ref }}

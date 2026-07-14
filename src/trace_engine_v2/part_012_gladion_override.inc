@@ -115,7 +115,7 @@
         if (prize_count_after_reveal(payload) == 0) continue;
         remove_one(state_.hand, Card::Gladion);
         state_.supporter_used = true;
-        state_.prizes_revealed = true;
+        prizes_revealed_ = true;
         const auto it = std::find(state_.prizes.begin(), state_.prizes.end(), payload);
         *it = Card::Gladion;
         state_.hand.push_back(payload);

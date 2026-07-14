@@ -98,7 +98,7 @@ target_compile_options(regidrago_oricorio_full_energy_search_tests PRIVATE -Wall
 add_executable(regidrago_steven_missing_regi_tests tests/steven_missing_regi_tests.cpp)
 target_compile_options(regidrago_steven_missing_regi_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
-add_executable(regidrago_oricorio_type_sensitive_energy_tests tests/oricorio_type_sensitive_energy_search_tests.cpp)
+add_executable(regidrago_oricorio_type_sensitive_energy_tests tests/oricorio_type_sensitive_energy_tests.cpp)
 target_compile_options(regidrago_oricorio_type_sensitive_energy_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
 add_executable(regidrago_start_turn_deck_exhaustion_tests tests/start_turn_deck_exhaustion_tests.cpp)

@@ -24,15 +24,20 @@ void expect(const bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);
 }
 
-sim::Engine make_engine(std::mt19937_64& rng) {
-  const sim::Scenario scenario{"vstar-promotion-selection", sim::DciProfile::StrictJit,
-                               sim::LockMode::None, false, 4};
-  return sim::Engine(scenario, sim::baseline_recipe(), rng);
+const sim::Scenario& test_scenario() {
+  static const sim::Scenario scenario{"vstar-promotion-selection", sim::DciProfile::StrictJit,
+                                      sim::LockMode::None, false, 4};
+  return scenario;
+}
+
+const sim::DeckRecipe& test_recipe() {
+  static const sim::DeckRecipe recipe = sim::baseline_recipe();
+  return recipe;
 }
 
 void test_latias_promotes_complete_vstar_over_first_match() {
   std::mt19937_64 rng{4021};
-  sim::Engine engine = make_engine(rng);
+  sim::Engine engine(test_scenario(), test_recipe(), rng);
   sim::State state;
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::TapuLeleGX, 1};
@@ -59,7 +64,7 @@ void test_latias_promotes_complete_vstar_over_first_match() {
 
 void test_tate_promotes_complete_vstar_over_first_match() {
   std::mt19937_64 rng{4022};
-  sim::Engine engine = make_engine(rng);
+  sim::Engine engine(test_scenario(), test_recipe(), rng);
   sim::State state;
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::TapuLeleGX, 1};
@@ -87,7 +92,7 @@ void test_tate_promotes_complete_vstar_over_first_match() {
 
 void test_incomplete_fallback_uses_greatest_ggf_progress() {
   std::mt19937_64 rng{4023};
-  sim::Engine engine = make_engine(rng);
+  sim::Engine engine(test_scenario(), test_recipe(), rng);
   sim::State state;
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::TapuLeleGX, 1};

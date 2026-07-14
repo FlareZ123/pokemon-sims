@@ -1,5 +1,3 @@
-  }
-
   bool play_heavy_ball() {
     if (item_locked() || hand_count(Card::HisuianHeavyBall) == 0) return false;
 

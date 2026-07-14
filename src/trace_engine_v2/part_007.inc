@@ -169,3 +169,5 @@
   }
 
   bool evolve_best_regi() {
+    if (state_.turn == 1 || hand_count(Card::RegidragoVstar) == 0) return false;
+    Pokemon* best = nullptr;

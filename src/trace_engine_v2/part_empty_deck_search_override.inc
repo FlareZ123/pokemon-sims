@@ -105,10 +105,11 @@
   }
 
   bool play_steven() {
-    // Steven's Resolve cannot be played when its deck search cannot begin:
+    // Steven's Resolve also ends the turn, so the empty-search and no-effect rulings
+    // do not establish that the whole Supporter is illegal when the deck is empty:
     // https://api.pokemontcg.io/v2/cards/sm7-145
     // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
-    return deck_search_available() && play_steven_empty_deck_original();
+    return play_steven_empty_deck_original();
   }
 
   bool play_arven() {

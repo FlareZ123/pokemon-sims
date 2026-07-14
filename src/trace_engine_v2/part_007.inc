@@ -73,15 +73,27 @@
     }
     if (need_vstar() && deck_count_after_search_started(Card::Arven) > 0) return Card::Arven;
     // Wonder Tag can search Tate & Liza, whose switch mode immediately promotes a
-    // powered Benched Regidrago VSTAR when Active position is the only missing axis:
+    // Benched Regidrago VSTAR. Select Tate for the Active-position axis only when
+    // the actual promotion target already pays Apex Dragon's GGF cost:
     // https://api.pokemontcg.io/v2/cards/cel25c-60_A
     // https://api.pokemontcg.io/v2/cards/sm7-148
-    if (need_active_vstar() && !need_energy() && !need_payload() &&
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    if (need_active_vstar() && benched_vstar_promotion_ready() && !need_payload() &&
         !can_free_retreat_with_latias() && deck_count_after_search_started(Card::TateLiza) > 0) {
       return Card::TateLiza;
     }
     if (deck_count_after_search_started(Card::Serena) > 0) return Card::Serena;
-    if (deck_count_after_search_started(Card::TateLiza) > 0) return Card::TateLiza;
+    const bool tate_would_promote_incomplete_vstar = need_active_vstar() &&
+        !benched_vstar_promotion_ready() && !can_free_retreat_with_latias();
+    // Wonder Tag is optional. Do not fall through to Tate's switch route after the
+    // target-aware branch rejected an Energy-incomplete promotion:
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    if (deck_count_after_search_started(Card::TateLiza) > 0 &&
+        !tate_would_promote_incomplete_vstar) {
+      return Card::TateLiza;
+    }
 
     // Wonder Tag may search any Supporter. A completed deck inspection must not
     // nominate an absent hard-coded card while another legal Supporter remains:

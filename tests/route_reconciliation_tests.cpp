@@ -309,7 +309,12 @@ sim::State turo_regidrago_active_state(const int active_entered_turn) {
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::RegidragoV, active_entered_turn, 0, 0, sim::Tool::None};
   state.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None}};
-  state.hand = {sim::Card::ProfessorTuro};
+  // The shared state includes Regidrago VSTAR so the same-turn case still cannot
+  // evolve, while the prior-turn case has the direct evolution route required by
+  // the control's own rule claim:
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  state.hand = {sim::Card::ProfessorTuro, sim::Card::RegidragoVstar};
   state.discard = {sim::Card::MegaDragonite};
   state.discarded_this_turn = {sim::Card::MegaDragonite};
   return state;
@@ -361,7 +366,7 @@ void test_turo_preserves_prior_turn_active_regidrago_evolution_route() {
   const sim::State& after = sim::EngineTestAccess::state(engine);
   expect(after.active && after.active->card == sim::Card::RegidragoV &&
              after.bench.size() == 1 && contains(after.hand, sim::Card::ProfessorTuro) &&
-             !after.supporter_used,
+             contains(after.hand, sim::Card::RegidragoVstar) && !after.supporter_used,
          "Rejecting the Turo route must preserve the prior-turn Active evolution state.");
 }
 

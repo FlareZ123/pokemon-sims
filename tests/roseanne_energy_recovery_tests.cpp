@@ -154,6 +154,76 @@ void test_roseanne_does_not_reuse_incense_as_vessel_cost() {
          "Earthen Vessel must remain held when no other card can pay its cost");
 }
 
+void test_roseanne_energy_route_discards_an_extra_dragon_after_payload_is_ready() {
+  const sim::Scenario scenario{"roseanne-extra-dragon-vessel-cost", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{454};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+  state.hand = {sim::Card::RoseannesBackup, sim::Card::EarthenVessel, sim::Card::Dragapult};
+  state.deck = {sim::Card::Grass};
+  state.discard = {sim::Card::Fire, sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Mega Dragonite already establishes the strict-JIT payload. Earthen Vessel may
+  // discard the additional Dragon as its required other card, which also adds that
+  // attack to Apex Dragon's legal discard-pile choices:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://api.pokemontcg.io/v2/cards/swsh9-148
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  sim::EngineTestAccess::run_turn(engine);
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(after.active && after.active->fire == 1,
+         "The restored Fire Energy should complete the Active Regidrago VSTAR");
+  expect(after.supporter_used && after.manual_energy_used,
+         "The Roseanne route and manual attachment should resolve");
+  expect(contains(after.discard, sim::Card::Dragapult),
+         "The extra Dragon should legally pay Earthen Vessel's discard cost");
+  expect(contains(after.discard, sim::Card::EarthenVessel) &&
+             contains(after.discard, sim::Card::RoseannesBackup),
+         "The resolved Trainer cards should be in discard");
+}
+
+void test_roseanne_energy_route_still_requires_a_distinct_vessel_cost() {
+  const sim::Scenario scenario{"roseanne-energy-no-vessel-cost", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{455};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+  state.hand = {sim::Card::RoseannesBackup, sim::Card::EarthenVessel};
+  state.deck = {sim::Card::Grass};
+  state.discard = {sim::Card::Fire, sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Earthen Vessel requires one other card from hand. Payload readiness does not
+  // waive that cost:
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  sim::EngineTestAccess::run_turn(engine);
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(after.active && after.active->fire == 0,
+         "The Energy route must remain incomplete without another hand card");
+  expect(!after.supporter_used && !after.manual_energy_used,
+         "Roseanne and the manual attachment must be preserved when Vessel is unpayable");
+  expect(contains(after.hand, sim::Card::RoseannesBackup) &&
+             contains(after.hand, sim::Card::EarthenVessel),
+         "Both Trainers must remain in hand when the route cannot pay its cost");
+}
+
 }  // namespace
 
 int main() {
@@ -161,6 +231,8 @@ int main() {
     test_roseanne_restores_missing_fire_for_same_turn_vessel_attachment();
     test_roseanne_restores_vstar_and_energy_in_one_supporter_play();
     test_roseanne_does_not_reuse_incense_as_vessel_cost();
+    test_roseanne_energy_route_discards_an_extra_dragon_after_payload_is_ready();
+    test_roseanne_energy_route_still_requires_a_distinct_vessel_cost();
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

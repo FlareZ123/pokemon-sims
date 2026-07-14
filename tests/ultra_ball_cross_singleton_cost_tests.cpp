@@ -31,8 +31,9 @@ sim::Engine make_engine(const std::uint64_t seed, std::mt19937_64& rng) {
   using namespace sim;
   static const Scenario scenario{"ultra-ball-cross-singleton-cost",
                                  DciProfile::StrictJit, LockMode::None, false, 4};
+  static const DeckRecipe recipe = baseline_recipe();
   rng.seed(seed);
-  return Engine(scenario, baseline_recipe(), rng);
+  return Engine(scenario, recipe, rng);
 }
 
 void test_ultra_ball_preserves_vessel_when_energy_remains() {

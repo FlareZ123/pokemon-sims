@@ -64,8 +64,29 @@
     // Evolution Incense is a search-only Item and is unplayable with an empty deck:
     // https://api.pokemontcg.io/v2/cards/swsh1-163
     // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
-    return deck_search_available() &&
-           play_evolution_incense_empty_deck_original(permit_payload);
+    if (!deck_search_available()) return false;
+
+    // Evolution Incense can search only Evolution Pokemon. Preserve it after K1
+    // proves every modeled Evolution payload absent unless a live Regidrago VSTAR
+    // axis independently justifies the search:
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // https://api.pokemontcg.io/v2/cards/sv6-130
+    // https://api.pokemontcg.io/v2/cards/swsh11-136
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    const bool vstar_axis_searchable = need_vstar() &&
+        hand_count(Card::RegidragoVstar) == 0 && might_be_unseen(Card::RegidragoVstar);
+    const bool evolution_payload_searchable = might_be_unseen(Card::MegaDragonite) ||
+        might_be_unseen(Card::Dragapult) || might_be_unseen(Card::GoodraVstar);
+    const bool payload_axis_requested = permit_payload && can_play_payload_this_turn() &&
+        need_payload();
+    if (!vstar_axis_searchable && payload_axis_requested &&
+        !evolution_payload_searchable) {
+      return false;
+    }
+
+    return play_evolution_incense_empty_deck_original(permit_payload);
   }
 
   bool play_earthen_vessel(const bool permit_payload) {

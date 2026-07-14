@@ -67,6 +67,7 @@
 #undef attach_fss
 #undef fss_target_after_search_started
 #undef play_brilliant_blender
+#include "trace_engine_v2/part_010_blender_thinning_override.inc"
 #undef play_earthen_vessel
 #undef play_evolution_incense
 #undef play_ultra_ball

@@ -12,6 +12,9 @@ struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
   static void run_turn(Engine& engine) { engine.run_turn(); }
   static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
+  static bool play_brilliant_blender(Engine& engine) {
+    return engine.play_brilliant_blender();
+  }
   static bool play_tate_draw(Engine& engine) { return engine.play_tate_draw(); }
   static bool play_turo_active_promotion_route(Engine& engine) {
     return engine.play_turo_active_promotion_route();
@@ -52,6 +55,41 @@ void test_tate_switch_preserves_blender_payload_line() {
   assert(contains(state.discard, Card::MegaDragonite));
   assert(contains(state.discarded_this_turn, Card::MegaDragonite));
   assert(EngineTestAccess::payload_ready(engine));
+}
+
+void test_blender_uses_safe_remaining_selections_before_tate_refresh() {
+  using namespace sim;
+  const Scenario scenario{"blender-tate-deck-thinning", DciProfile::NoDiscardControl,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(338);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 0, Tool::None};
+  state.hand = {Card::BrilliantBlender, Card::TateLiza};
+  state.deck = {Card::MegaDragonite, Card::Dipplin, Card::PathToPeak,
+                Card::Guzma, Card::Channeler, Card::Fire,
+                Card::RegidragoVstar, Card::Grass, Card::Arven,
+                Card::LatiasEx};
+
+  // Blender may choose up to five deck cards. In no-discard-control, the three
+  // no-lock setup-dead cards are safe DCI selections before Tate & Liza shuffles
+  // the hand and draws five:
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/sm7-148
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  assert(EngineTestAccess::play_brilliant_blender(engine));
+  assert(state.deck.size() == 5U);
+  for (const Card card : {Card::MegaDragonite, Card::Dipplin,
+                          Card::PathToPeak, Card::Guzma,
+                          Card::Channeler}) {
+    assert(contains(state.discard, card));
+  }
+
+  assert(EngineTestAccess::play_tate_draw(engine));
+  assert(state.deck.empty());
+  assert(contains(state.hand, Card::Fire));
 }
 
 void test_tate_draw_holds_when_no_card_can_enter_the_deck() {
@@ -138,6 +176,7 @@ void test_professor_turo_returns_basic_active_and_promotes_complete_vstar() {
 
 int main() {
   test_tate_switch_preserves_blender_payload_line();
+  test_blender_uses_safe_remaining_selections_before_tate_refresh();
   test_tate_draw_holds_when_no_card_can_enter_the_deck();
   test_tate_draw_uses_a_remaining_hand_card_with_empty_deck();
   test_professor_turo_returns_basic_active_and_promotes_complete_vstar();

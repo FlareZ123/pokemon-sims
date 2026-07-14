@@ -51,8 +51,13 @@
 #include "trace_engine_v2/part_007.inc"
 #undef attach_manual
 #include "trace_engine_v2/part_tate_blender_attachment_override.inc"
-#define play_mysterious_treasure play_mysterious_treasure_empty_deck_original
+#define play_tate_switch play_tate_switch_tate_blender_original
+#define play_tate_draw play_tate_draw_tate_blender_original
 #include "trace_engine_v2/part_008a.inc"
+#undef play_tate_draw
+#undef play_tate_switch
+#include "trace_engine_v2/part_tate_blender_tate_override.inc"
+#define play_mysterious_treasure play_mysterious_treasure_empty_deck_original
 #include "trace_engine_v2/part_008b.inc"
 #include "trace_engine_v2/part_009a.inc"
 #undef play_mysterious_treasure
@@ -124,10 +129,7 @@
 #include "trace_engine_v2/part_team_yell_vstar_override.inc"
 #undef choose_supporter
 #include "trace_engine_v2/part_roseanne_multimode_override.inc"
-#define choose_supporter choose_supporter_tate_blender_original
 #include "trace_engine_v2/part_turo_oricorio_override.inc"
-#undef choose_supporter
-#include "trace_engine_v2/part_tate_blender_supporter_override.inc"
 #include "trace_engine_v2/part_empty_deck_search_override.inc"
 #include "trace_engine_v2/part_014c.inc"
 #include "trace_engine_v2/part_015.inc"

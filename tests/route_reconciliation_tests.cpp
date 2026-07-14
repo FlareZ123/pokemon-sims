@@ -19,6 +19,9 @@ struct EngineTestAccess {
   static bool play_gladion(Engine& engine) { return engine.play_gladion(); }
   static bool play_arven(Engine& engine) { return engine.play_arven(); }
   static bool attach_manual(Engine& engine) { return engine.attach_manual(); }
+  static bool play_turo_active_promotion_route(Engine& engine) {
+    return engine.play_turo_active_promotion_route();
+  }
 };
 
 }  // namespace sim
@@ -301,6 +304,67 @@ void test_active_evolution_route_keeps_energy_on_active_regidrago() {
          "Latias must not redirect Energy away from an immediately evolvable Active Regidrago V.");
 }
 
+sim::State turo_regidrago_active_state(const int active_entered_turn) {
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, active_entered_turn, 0, 0, sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None}};
+  state.hand = {sim::Card::ProfessorTuro};
+  state.discard = {sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+  return state;
+}
+
+void test_turo_promotes_complete_vstar_behind_same_turn_active_regidrago() {
+  const sim::Scenario scenario{"turo-same-turn-active-regidrago", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{392};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(engine, turo_regidrago_active_state(2));
+
+  // A Pokémon cannot evolve during the turn it entered play. Professor Turo's
+  // Scenario may return that Active Regidrago V, discard its attachments, and force
+  // promotion of the complete Benched Regidrago VSTAR:
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/sv4-171
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  expect(sim::EngineTestAccess::play_turo_active_promotion_route(engine),
+         "Professor Turo should remove a same-turn Active Regidrago V and promote the ready Benched VSTAR.");
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(after.active && after.active->card == sim::Card::RegidragoVstar &&
+             after.active->grass == 2 && after.active->fire == 1,
+         "Professor Turo must promote the complete Benched Regidrago VSTAR.");
+  expect(after.bench.empty() && contains(after.hand, sim::Card::RegidragoV) &&
+             contains(after.discard, sim::Card::ProfessorTuro),
+         "The same-turn Active Regidrago V must return to hand and Professor Turo must enter discard.");
+  expect(after.supporter_used && !after.retreat_used,
+         "The route must consume the Supporter play without consuming the retreat.");
+}
+
+void test_turo_preserves_prior_turn_active_regidrago_evolution_route() {
+  const sim::Scenario scenario{"turo-prior-turn-active-regidrago", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{393};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(engine, turo_regidrago_active_state(1));
+
+  // A prior-turn Active Regidrago V is legally evolvable this turn, so the existing
+  // direct evolution preference remains intact:
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  expect(!sim::EngineTestAccess::play_turo_active_promotion_route(engine),
+         "Professor Turo should remain held when the Active Regidrago V can legally evolve this turn.");
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(after.active && after.active->card == sim::Card::RegidragoV &&
+             after.bench.size() == 1 && contains(after.hand, sim::Card::ProfessorTuro) &&
+             !after.supporter_used,
+         "Rejecting the Turo route must preserve the prior-turn Active evolution state.");
+}
+
 }  // namespace
 
 int main() {
@@ -316,6 +380,8 @@ int main() {
     test_tate_route_powers_existing_benched_vstar_when_payload_ready();
     test_stranded_benched_vstar_does_not_steal_energy();
     test_active_evolution_route_keeps_energy_on_active_regidrago();
+    test_turo_promotes_complete_vstar_behind_same_turn_active_regidrago();
+    test_turo_preserves_prior_turn_active_regidrago_evolution_route();
     std::cout << "route reconciliation tests passed\n";
     return 0;
   } catch (const std::exception& error) {

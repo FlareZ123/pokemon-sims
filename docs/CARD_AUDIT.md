@@ -11,7 +11,7 @@ The supplied list contains exactly 60 cards:
 | Basic Energy | 9 |
 | **Total** | **60** |
 
-The reproducible raw audit is `data/card_audit.json`. It was generated from the user-supplied `pokemon-tcg-data-master(26).zip` archive with `scripts/audit_card_data.py`.
+The raw audit is generated locally at `data/card_audit.json` and is intentionally untracked because its `source` field records the caller-provided archive path. The accepted card-data snapshot is the immutable upstream commit https://github.com/PokemonTCG/pokemon-tcg-data/commit/0af6250a22495e4a3e9f60ff45fc3fedc2e0563d. The supplied archive used for this audit has SHA-256 `3444c74e47cdb92d83ba760e9eeefa8bbaedd9d7f396068c0e1ed390a686af08`.
 
 ## Exact print identities used by the model
 
@@ -91,8 +91,10 @@ The supplied database stores `legalities.expanded` for paper Expanded. That fiel
 
 ## Reproduction command
 
+Download the exact snapshot from https://github.com/PokemonTCG/pokemon-tcg-data/archive/0af6250a22495e4a3e9f60ff45fc3fedc2e0563d.zip and verify the archive SHA-256 before running:
+
 ```text
 python scripts/audit_card_data.py C:\path\to\pokemon-tcg-data-master.zip --out data\card_audit.json
 ```
 
-The script accepts either the ZIP file or an extracted repository directory. It locks its destination and replaces the JSON atomically.
+The script accepts either the ZIP file or an extracted repository directory. It locks its destination and replaces the JSON atomically. The generated file remains local and may be deleted after review.

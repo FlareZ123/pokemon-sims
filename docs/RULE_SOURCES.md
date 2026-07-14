@@ -23,6 +23,7 @@ The API records are card-text sources. They do not replace official tournament r
 | Regidrago V — Celestial Roar | https://api.pokemontcg.io/v2/cards/swsh12-135 |
 | Regidrago VSTAR — Apex Dragon and Legacy Star | https://api.pokemontcg.io/v2/cards/swsh12-136 |
 | Forest Seal Stone — Star Alchemy | https://api.pokemontcg.io/v2/cards/swsh12-156 |
+| Powerglass | https://api.pokemontcg.io/v2/cards/sv6pt5-63 |
 | Tapu Lele-GX — Wonder Tag | https://api.pokemontcg.io/v2/cards/cel25c-60_A |
 | Oricorio GRI 55 — Vital Dance | https://api.pokemontcg.io/v2/cards/sm2-55 |
 | Latias ex — Skyliner | https://api.pokemontcg.io/v2/cards/sv8-76 |
@@ -42,6 +43,11 @@ The API records are card-text sources. They do not replace official tournament r
 | Gladion | https://api.pokemontcg.io/v2/cards/sm4-95 |
 | Lusamine | https://api.pokemontcg.io/v2/cards/sm4-96 |
 | Path to the Peak | https://api.pokemontcg.io/v2/cards/swsh6-148 |
+| Chaotic Swell | https://api.pokemontcg.io/v2/cards/sm12-187 |
+| Field Blower | https://api.pokemontcg.io/v2/cards/sm2-125 |
+| Team Yell's Cheer | https://api.pokemontcg.io/v2/cards/swsh9-149 |
+| Roseanne's Backup | https://api.pokemontcg.io/v2/cards/swsh9-148 |
+| Professor Turo's Scenario | https://api.pokemontcg.io/v2/cards/sv4-171 |
 | Dragapult ex payload model | https://api.pokemontcg.io/v2/cards/sv6-130 |
 | Mega Dragonite ex payload model | https://api.pokemontcg.io/v2/cards/me2pt5-152 |
 | Dragon Dialga-GX payload model | https://api.pokemontcg.io/v2/cards/sm5-100 |

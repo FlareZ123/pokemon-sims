@@ -6,6 +6,13 @@
       return false;
     }
 
+    // Professor Turo's Scenario can replay Oricorio, but Vital Dance cannot begin a
+    // deck search when zero cards remain. Reject the route before using the Supporter:
+    // https://api.pokemontcg.io/v2/cards/sv4-171
+    // https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://compendium.pokegym.net/category/7-gameplay/searching-deck-or-discard/
+    if (state_.deck.empty()) return false;
+
     // This route completes the Active attacker, so compute the deficit from that
     // exact Pokémon rather than from the policy's separately preferred Regidrago:
     // https://api.pokemontcg.io/v2/cards/swsh12-136

@@ -15,6 +15,7 @@ struct EngineTestAccess {
   static void run_turn(Engine& engine) { engine.run_turn(); }
   static void record_ready(Engine& engine) { engine.record_ready(); }
   static bool attach_fss(Engine& engine) { return engine.attach_fss(); }
+  static bool attach_powerglass(Engine& engine) { return engine.attach_powerglass(); }
   static bool use_fss(Engine& engine) { return engine.use_fss(); }
 };
 
@@ -198,6 +199,54 @@ void test_fss_trace_names_vstar_holder() {
   }));
 }
 
+void test_fss_holds_without_alternate_v_when_powerglass_needs_active_slot() {
+  using namespace sim;
+  const Scenario scenario{"fss-hold-for-powerglass", DciProfile::NoDiscardControl,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(381);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 0, Tool::None};
+  state.hand = {Card::ForestSealStone, Card::Powerglass};
+  state.discard = {Card::Fire};
+
+  // Forest Seal Stone can use another Pokémon V holder, while Powerglass must be on
+  // its Active holder and each Pokémon may hold only one Tool. With no alternate V,
+  // the legal stronger route holds the Stone and reserves the Active slot:
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  assert(!EngineTestAccess::attach_fss(engine));
+  assert(state.active->tool == Tool::None);
+  assert(count(state.hand, Card::ForestSealStone) == 1);
+  assert(EngineTestAccess::attach_powerglass(engine));
+  assert(state.active->tool == Tool::Powerglass);
+}
+
+void test_fss_uses_active_when_powerglass_route_is_not_live() {
+  using namespace sim;
+  const Scenario scenario{"fss-active-without-live-powerglass", DciProfile::NoDiscardControl,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(382);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+  state.hand = {Card::ForestSealStone, Card::Powerglass};
+  state.discard = {Card::Fire};
+
+  // Powerglass cannot advance a holder that already has GGF, so the normal legal
+  // Active-first Forest Seal Stone attachment remains available:
+  // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  assert(EngineTestAccess::attach_fss(engine));
+  assert(state.active->tool == Tool::ForestSealStone);
+  assert(count(state.hand, Card::Powerglass) == 1);
+}
+
 }  // namespace
 
 int main() {
@@ -207,5 +256,7 @@ int main() {
   test_star_alchemy_takes_an_available_any_card_fallback();
   test_arven_fss_fetches_raw_energy_after_supporter_use();
   test_fss_trace_names_vstar_holder();
+  test_fss_holds_without_alternate_v_when_powerglass_needs_active_slot();
+  test_fss_uses_active_when_powerglass_route_is_not_live();
   return 0;
 }

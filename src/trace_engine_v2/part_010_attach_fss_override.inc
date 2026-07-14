@@ -34,6 +34,12 @@
               "Attached Forest Seal Stone to a Benched Pokémon V and reserved the Active Tool slot for Powerglass.");
         return true;
       }
+
+      // With no alternate Pokémon V holder, keep Forest Seal Stone in hand so the
+      // live Powerglass route retains the Active Pokémon's one Tool slot:
+      // https://api.pokemontcg.io/v2/cards/swsh12-156
+      // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+      return false;
     }
 
     Pokemon* target = nullptr;

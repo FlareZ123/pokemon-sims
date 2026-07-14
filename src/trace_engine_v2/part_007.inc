@@ -76,7 +76,10 @@
     // powered Benched Regidrago VSTAR when Active position is the only missing axis:
     // https://api.pokemontcg.io/v2/cards/cel25c-60_A
     // https://api.pokemontcg.io/v2/cards/sm7-148
-    if (need_active_vstar() && !need_energy() && !need_payload() &&
+    // The selected Benched Regidrago VSTAR must already pay Apex Dragon's GGF cost:
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    if (need_active_vstar() && benched_vstar_promotion_ready() && !need_payload() &&
         !can_free_retreat_with_latias() && deck_count_after_search_started(Card::TateLiza) > 0) {
       return Card::TateLiza;
     }
@@ -166,5 +169,3 @@
   }
 
   bool evolve_best_regi() {
-    if (state_.turn == 1 || hand_count(Card::RegidragoVstar) == 0) return false;
-    Pokemon* best = nullptr;

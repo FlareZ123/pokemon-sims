@@ -7,22 +7,28 @@
         state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn &&
         hand_count(Card::RegidragoVstar) > 0;
+    const bool blender_payload_line = has_live_blender_payload_line();
+    const bool hand_payload_line = has_live_one_discard_hand_payload_line();
 
-    // Tate & Liza promotes a Benched Pokémon, Brilliant Blender supplies a
-    // current-turn Dragon payload, and Apex Dragon still requires GGF. Direct the
-    // once-per-turn attachment toward that intended VSTAR before either resource is
-    // spent when Tate is the only held Supporter and the Active V cannot evolve now:
+    // Tate & Liza promotes a Benched Pokémon. Brilliant Blender or a payable
+    // one-discard Item can then establish the current-turn Dragon payload, while Apex
+    // Dragon still requires GGF. Direct the once-per-turn attachment toward that
+    // intended VSTAR before either resource is spent when Tate is the only held
+    // Supporter and the Active V cannot evolve now:
     // https://api.pokemontcg.io/v2/cards/sm7-148
     // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://www.pokemon.com/us/pokemon-tcg/rules
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    const bool coordinate_tate_blender_line = !state_.manual_energy_used &&
+    const bool coordinate_tate_payload_line = !state_.manual_energy_used &&
         strict_payload_timing() && supporter_allowed() && only_tate_supporter_held &&
-        hand_count(Card::TateLiza) > 0 && has_live_blender_payload_line() &&
+        hand_count(Card::TateLiza) > 0 && (blender_payload_line || hand_payload_line) &&
         need_active_vstar() && !can_free_retreat_with_latias() && state_.active &&
         state_.active->card == Card::RegidragoV && !active_can_evolve_now;
-    if (coordinate_tate_blender_line) {
+    if (coordinate_tate_payload_line) {
       // Use the exact selector that Tate & Liza later uses for promotion. A separate
       // first-match attachment can change the selector's stable tie and strand GGF:
       // https://api.pokemontcg.io/v2/cards/sm7-148
@@ -46,7 +52,7 @@
           ++target->fire;
         }
         state_.manual_energy_used = true;
-        trace("ATTACH", "R-GAME-ENERGY; R-TATE-01; R-BLENDER-01; R-RVS-01; P-DCI-01",
+        trace("ATTACH", "R-GAME-ENERGY; R-TATE-01; R-RVS-01; P-DCI-01",
               std::string(name(energy)) +
                   " manually to the Benched Regidrago VSTAR selected for Tate & Liza promotion.");
         return true;

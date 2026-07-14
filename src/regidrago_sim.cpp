@@ -103,13 +103,17 @@
 #include "trace_engine_v2/part_011.inc"
 #undef play_steven
 #undef play_professor_burnet
-#include "trace_engine_v2/part_011_burnet_thinning_override.inc"
 #undef play_crispin
 #define play_arven play_arven_original
 #define play_gladion play_gladion_original
 #include "trace_engine_v2/part_012.inc"
 #undef play_gladion
 #undef play_arven
+// part_011.inc opens play_steven(), and part_012.inc completes it before this
+// member-function override may be included:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_011.inc#L128-L183
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_012.inc#L1-L17
+#include "trace_engine_v2/part_011_burnet_thinning_override.inc"
 #define use_celestial_roar use_celestial_roar_original
 #define use_legacy_star use_legacy_star_original
 #include "trace_engine_v2/part_013.inc"

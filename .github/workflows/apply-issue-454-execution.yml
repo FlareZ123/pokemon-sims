@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 jobs:
-  apply-patch:
+  apply-fix:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
@@ -20,17 +20,63 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
-      - name: Apply and push execution fix
+      - name: Apply exact source and fixture replacements
+        shell: python
+        run: |
+          from pathlib import Path
+
+          source_path = Path('src/trace_engine_v2/part_010.inc')
+          source = source_path.read_text()
+          old = '''    const bool can_jit_discard = permit_payload && can_play_payload_this_turn() && std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);'''
+          new = '''    // Once a different current-turn Dragon already satisfies strict-JIT, another
+              // modeled Dragon remains a legal Earthen Vessel cost and adds an Apex Dragon option:
+              // https://api.pokemontcg.io/v2/cards/sv4-163
+              // https://api.pokemontcg.io/v2/cards/swsh12-136
+              // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+              const bool can_jit_discard = permit_payload &&
+                  (can_play_payload_this_turn() || payload_ready()) &&
+                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);'''
+          if old in source:
+              source_path.write_text(source.replace(old, new, 1))
+          elif new not in source:
+              raise SystemExit('Earthen Vessel source replacement did not match')
+
+          tests_path = Path('tests/roseanne_energy_recovery_tests.cpp')
+          tests = tests_path.read_text()
+          fixtures = [
+              (
+                  'void test_roseanne_energy_route_discards_an_extra_dragon_after_payload_is_ready()',
+                  '  // Keep Legacy Star unavailable so this test isolates Roseanne and Earthen Vessel:\n'
+                  '  // https://api.pokemontcg.io/v2/cards/swsh12-136\n'
+                  '  state.vstar_power_used = true;\n'
+              ),
+              (
+                  'void test_roseanne_energy_route_still_requires_a_distinct_vessel_cost()',
+                  '  // Keep Legacy Star unavailable so it cannot recover the missing Energy independently:\n'
+                  '  // https://api.pokemontcg.io/v2/cards/swsh12-136\n'
+                  '  state.vstar_power_used = true;\n'
+              ),
+          ]
+          for function, insertion in fixtures:
+              start = tests.index(function)
+              end = tests.find('\nvoid ', start + len(function))
+              if end < 0:
+                  end = len(tests)
+              block = tests[start:end]
+              if 'state.vstar_power_used = true;' in block:
+                  continue
+              marker = '  state.discarded_this_turn = {sim::Card::MegaDragonite};\n'
+              if marker not in block:
+                  raise SystemExit(f'fixture marker missing for {function}')
+              block = block.replace(marker, marker + insertion, 1)
+              tests = tests[:start] + block + tests[end:]
+          tests_path.write_text(tests)
+      - name: Commit and push source changes
         shell: bash
         run: |
-          if [ ! -f .github/patches/issue-454-execution.patch ]; then
+          if git diff --quiet -- src/trace_engine_v2/part_010.inc tests/roseanne_energy_recovery_tests.cpp; then
             exit 0
           fi
-          if git apply --reverse --check .github/patches/issue-454-execution.patch; then
-            exit 0
-          fi
-          git apply --check .github/patches/issue-454-execution.patch
-          git apply .github/patches/issue-454-execution.patch
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/trace_engine_v2/part_010.inc tests/roseanne_energy_recovery_tests.cpp

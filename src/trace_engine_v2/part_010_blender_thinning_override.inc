@@ -24,6 +24,32 @@
       return false;
     }
 
+    const auto live_fss_holder = [this](const Pokemon& pokemon) {
+      return pokemon.tool == Tool::ForestSealStone && is_pokemon_v(pokemon.card) &&
+          ability_available_for_pokemon(pokemon.card);
+    };
+    const bool forest_seal_stone_is_live =
+        (state_.active && live_fss_holder(*state_.active)) ||
+        std::any_of(state_.bench.begin(), state_.bench.end(), live_fss_holder);
+    const bool fss_tate_incomplete_promotion = strict_payload_timing() &&
+        !state_.vstar_power_used && supporter_allowed() && need_active_vstar() &&
+        !need_energy() && !benched_vstar_promotion_ready() &&
+        !can_free_retreat_with_latias() && hand_count(Card::TateLiza) == 0 &&
+        might_be_unseen(Card::TateLiza) && forest_seal_stone_is_live;
+    if (fss_tate_incomplete_promotion) {
+      // Star Alchemy can search Tate & Liza, but the actual Benched Regidrago VSTAR
+      // must already pay Apex Dragon's GGF cost before the one-shot Blender payload
+      // is useful this turn. Preserve Blender in the same incomplete connector state
+      // where the Forest Seal Stone selector preserves the VSTAR Power:
+      // https://api.pokemontcg.io/v2/cards/swsh12-156
+      // https://api.pokemontcg.io/v2/cards/sm7-148
+      // https://api.pokemontcg.io/v2/cards/sv8-164
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_011_fss_latias_override.inc#L4-L24
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      return false;
+    }
+
     remove_one(state_.hand, Card::BrilliantBlender);
     state_.discard.push_back(Card::BrilliantBlender);
     std::vector<Card> discarded;

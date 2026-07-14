@@ -35,9 +35,13 @@
 #define begin_turn begin_turn_original
 #define might_be_unseen might_be_unseen_empty_deck_original
 #include "trace_engine_v2/part_003.inc"
+// part_003.inc opens begin_turn(), and part_004.inc completes it before a new
+// Engine member may be defined:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L151-L154
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_004.inc#L1-L22
+#include "trace_engine_v2/part_004.inc"
 #undef might_be_unseen
 #include "trace_engine_v2/part_empty_deck_unseen_override.inc"
-#include "trace_engine_v2/part_004.inc"
 #include "trace_engine_v2/part_005.inc"
 #undef begin_turn
 #include "trace_engine_v2/part_begin_turn_override.inc"

@@ -89,6 +89,31 @@
       return;
     }
 
+    const bool tapu_dialga_are_only_opening_basics =
+        hand_count(Card::TapuLeleGX) > 0 && hand_count(Card::DialgaGX) > 0 &&
+        hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&
+        hand_count(Card::MawileGX) == 0 && hand_count(Card::Oricorio) == 0;
+    const int payloads_in_hand = static_cast<int>(
+        std::count_if(state_.hand.begin(), state_.hand.end(), is_payload));
+    const bool dialga_is_unique_in_hand_payload =
+        hand_count(Card::DialgaGX) == 1 && payloads_in_hand == 1;
+
+    // Dialga-GX is a modeled Apex Dragon payload. Under strict current-turn DCI,
+    // preserve the unique in-hand payload when Crispin already covers the Supporter
+    // connector and Tapu Lele-GX can legally start instead:
+    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+    // https://api.pokemontcg.io/v2/cards/sm5-100
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/sv7-133
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    if (tapu_dialga_are_only_opening_basics && strict_payload_timing() &&
+        dialga_is_unique_in_hand_payload && crispin_route_already_held &&
+        remove_one(state_.hand, Card::TapuLeleGX)) {
+      state_.active = Pokemon{Card::TapuLeleGX, 0};
+      outcome_.started_regi = false;
+      return;
+    }
+
     // Oricorio's Vital Dance triggers only when it is played from hand onto the
     // Bench during the turn. When Mawile-GX is the other available opening Basic,
     // start Mawile-GX so Oricorio remains in hand for that legal setup trigger:

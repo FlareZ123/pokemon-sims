@@ -1,55 +1,80 @@
-# Exact-State Policy Fixture Catalog
+# Core Exact-State Policy Fixture Index
 
-## What these tests prove
+## Canonical surface
 
-These are **policy-oracle fixtures**, not a mathematical proof over every possible hidden deck order. Every fixture builds an exact player-visible state, calls the same policy method used by the simulator, and asserts the selected action and resulting state. The objective is the earliest legal setup-ready state: Active Regidrago VSTAR with GGF and a payload that meets the selected DCI/JIT profile.
+`regidrago_policy_tests` executes **56** deterministic exact-state fixtures. The runner table is the canonical inventory and order: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/policy_fixture_v2/part_004a.inc#L134-L190
 
-Notation: `T` is the player turn; `A` is Active; `B` is Bench; `H` is hand; `D` is deck; `P` is Prizes; `X` is discard; `DTT` is cards discarded this turn. Omitted zones are empty. `G` and `F` are Energy attached to the named Pokémon.
+Each listed function constructs its hand, board, deck, Prize, discard, lock, expected action, and expected resulting state in the adjacent split source files under `tests/policy_fixture_v2/`. The executable assertions and their direct rule or card URLs are authoritative when a historical function identifier is awkward or stale.
 
-## Fixture list
+## Executed fixtures
 
-1. **Selects Gladion only when it is the sole VSTAR route.** Initial: `T1; A Regidrago V[-]; H Gladion; P Regidrago VSTAR, Grass, Fire, Dipplin, Mawile-GX, Guzma`. Pass: Gladion is played, VSTAR moves to hand, Gladion is shuffled into Prizes, and Gladion is not discarded.
-2. **Holds Gladion when VSTAR is already in hand.** Initial: `T2; A Regidrago V[G]; H Gladion, Regidrago VSTAR; P Regidrago VSTAR`. Pass: Gladion remains in hand and is not spent.
-3. **Uses Steven's Resolve as the correct turn-one Item-lock bridge.** Initial: `T1 going second; A Regidrago V[-]; H Steven's Resolve; D Regidrago VSTAR, Crispin, Professor Burnet, Brilliant Blender; turn-two Item lock`. Pass: searches VSTAR, Crispin, Burnet, ends turn, and does not take Blender.
-4. **Uses a useful legal Steven fallback after a preferred card is prized.** Initial: `T1 going second; A Regidrago V[-]; H Steven's Resolve; P Regidrago VSTAR; D Crispin, Professor Burnet, Earthen Vessel; turn-two Item lock`. Pass: finds Crispin, Burnet, Earthen Vessel rather than leaving an unused search slot.
-5. **Uses Forest Seal Stone for Steven when three axes are missing.** Initial: `T1 going second; A Regidrago V[-] with Forest Seal Stone; D Steven's Resolve`. Pass: Star Alchemy finds Steven and consumes the single VSTAR Power.
-6. **Uses Star Alchemy fallback when VSTAR is not in deck.** Initial: `T2; A Regidrago V[G] with Forest Seal Stone; P Regidrago VSTAR; D Crispin, Professor Burnet`. Pass: Star Alchemy finds Crispin instead of failing.
-7. **Does not use Forest Seal Stone from an evolved holder.** Initial: `T2; A Regidrago VSTAR[GGF] with Forest Seal Stone; D Arven`. Pass: Star Alchemy is rejected.
-8. **Uses already attached Forest Seal Stone through Item lock.** Initial: `T2; A Regidrago V[G] with Forest Seal Stone; D Regidrago VSTAR; full Item lock`. Pass: Star Alchemy finds VSTAR because no Item is being played from hand.
-9. **Crispin attaches only after finding two different Basic Energy types.** Initial: `T2; A Regidrago V[G]; H Crispin; D Grass, Fire`. Pass: attaches Grass and puts Fire into hand.
-10. **Crispin does not illegally attach with one Energy type.** Initial: `T2; A Regidrago V[G]; H Crispin; D Fire`. Pass: Fire enters hand and no Energy attaches.
-11. **Earthen Vessel can take two Grass.** Initial: `T2; A Regidrago V[F]; H Earthen Vessel, Dipplin; D Grass, Grass`. Pass: Dipplin pays the cost and both Grass cards enter hand.
-12. **Strict JIT protects the only payload before turn two.** Initial A: `T1; A Regidrago V[-]; H Mysterious Treasure, Mega Dragonite ex; D Regidrago VSTAR`. Pass A: Treasure is not played. Initial B is identical except `T2`. Pass B: Treasure discards Mega Dragonite ex.
-13. **No-control permits early payload banking.** Initial: `T1; A Latias ex[-]; H Quick Ball, Mega Dragonite ex; D Regidrago V`. Pass: strict JIT declines; no-discard-control plays Quick Ball, discards Mega Dragonite ex, and searches Regidrago V.
-14. **Brilliant Blender dominates a redundant Mysterious Treasure payload line.** Initial: `T2; A Regidrago VSTAR[GGF]; H Brilliant Blender, Mysterious Treasure, Dipplin; D Mega Dragonite ex`. Pass: Blender is played and discards Mega Dragonite ex; Treasure remains in hand.
-15. **Searches choose a legal fallback after inspection.** Initial: `T2; A Latias ex[-]; H Quick Ball, Dipplin; D Tapu Lele-GX`. Pass: Quick Ball is played, Dipplin pays the cost, and Tapu Lele-GX is found instead of treating the search as a failure.
-16. **Heavy Ball is a K0 Prize-information action and chains through Tapu.** Initial: `T2; A Regidrago V[-]; H Heavy Ball, Quick Ball, Dipplin; P Tapu Lele-GX; D Crispin, Grass, Fire`. Pass: Heavy Ball is played before Quick Ball, exchanges itself for Tapu Lele-GX, then the next stabilization pass Benches Tapu and Wonder Tag finds Crispin. Crispin is selected as the Supporter.
-17. **Known no-Basic Prizes preserve Heavy Ball as discard fodder.** Initial: `T2; A Regidrago V[-]; H Mysterious Treasure, Dipplin, Heavy Ball, Quick Ball; D VSTAR, Oricorio, Grass, Fire; P Grass, Fire, Dipplin`. Pass: Treasure establishes K1 and gets VSTAR. Heavy Ball is held because no Prize Basic exists. Quick Ball then discards Heavy Ball and gets Oricorio.
-18. **Holds Oricorio when Earthen Vessel already covers Energy.** Initial: `T2; A Regidrago V[-]; H Oricorio, Earthen Vessel, Dipplin; D Grass, Fire`. Pass: Oricorio remains in hand; Vessel is the chosen direct connector and finds G plus F.
-19. **Uses Oricorio through Rule Box Ability lock.** Initial: `T2; A Regidrago V[-]; H Oricorio; D Grass, Fire; full Rule Box lock`. Pass: Oricorio is Benched and Vital Dance adds Grass and Fire to hand.
-20. **Blocks Tapu Lele-GX Wonder Tag through Rule Box lock.** Initial: `T1; A Regidrago V[-]; H Tapu Lele-GX; D Crispin; full Rule Box lock`. Pass: Tapu is Benched, but Crispin is not searched.
-21. **Uses Tapu Lele-GX for Steven when Steven is the live turn-one bridge.** Initial: `T1 going second; A Regidrago V[-]; H Tapu Lele-GX; D Steven's Resolve`. Pass: Tapu is Benched and Wonder Tag finds Steven.
-22. **Uses Latias only for a Basic Active's free retreat.** Initial A: `T2; A Tapu Lele-GX[-]; B Latias ex[-], Regidrago VSTAR[GGF]`. Pass A: free retreat promotes VSTAR. Initial B: `T2; A Regidrago VSTAR[GGF]; B Latias ex[-]`. Pass B: free retreat is unavailable.
-23. **Uses Tate & Liza switch mode when it completes the Active axis.** Initial: `T2; A Tapu Lele-GX[-]; B Regidrago VSTAR[GGF]; H Tate & Liza; X Mega Dragonite ex; DTT Mega Dragonite ex`. Pass: switch mode promotes VSTAR.
-24. **Strict JIT requires the payload in discard now and from this turn.** Initial A: `T3; A Regidrago VSTAR[GGF]; X Mega Dragonite ex; DTT empty`. Pass A: not ready. Initial B adds `DTT Mega Dragonite ex`. Pass B: payload is valid. Then the fixture recovers Mega Dragonite ex to hand. Pass C: payload is no longer valid. No-control accepts the prior-turn discard state.
-25. **Does not burn Serena after all setup axes are complete.** Initial: `T3; A Regidrago VSTAR[GGF]; H Serena, Dipplin; X Mega Dragonite ex; DTT Mega Dragonite ex`. Pass: Serena remains in hand and the Supporter slot remains unused.
-26. **Uses Arven's Tool-only route through current Item lock.** Initial: `T2; A Regidrago V[-]; H Arven; D Evolution Incense, Forest Seal Stone, Regidrago VSTAR; full Item lock`. Pass: Arven is played as the Supporter, does not take Evolution Incense, and takes Forest Seal Stone as its Pokémon Tool target. Forest Seal Stone then attaches to Regidrago V and Star Alchemy finds VSTAR. Arven's printed search supports an Item card and a Pokémon Tool card: https://api.pokemontcg.io/v2/cards/sv1-166. Pokémon Tools are separate from Item cards after the official Tool errata: https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata. Forest Seal Stone supplies Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156.
-27. **Enforces first-turn restrictions and Celestial Roar's cost.** Initial A: `T1 going first; A Regidrago V[G]; H Arven`. Pass A: no Supporter and no attack. Initial B: `T1 going second; A Regidrago V[-]; D Grass, Fire, Grass`. Pass B: Celestial Roar fails for no Energy. Initial C: same, except `A Regidrago V[G]`. Pass C: Celestial Roar discards the three cards and attaches both Grass plus Fire.
-28. **Enforces evolution timing and one manual attachment.** Initial A: `T2; A Regidrago V[-] entered T2; H VSTAR, Grass, Fire`. Pass A: evolution fails. Initial B: same but Regidrago entered T1. Pass B: evolution succeeds; one manual attachment succeeds; the second fails.
-29. **Full Item lock prevents Item cards.** Initial: `T2; A Regidrago V[-]; H Earthen Vessel, Dipplin; D Grass, Fire; full Item lock`. Pass: Earthen Vessel cannot be played.
-30. **K1 Gladion retrieves final prized Fire rather than using dead Crispin.** Initial: `T2; A Regidrago V[GG]; H Mysterious Treasure, Dipplin, Gladion, Crispin; D VSTAR; P Fire; X/DTT Mega Dragonite ex`. Pass: Treasure legally takes VSTAR and establishes K1; Gladion takes Fire because no Fire remains in deck; manual attachment completes GGF.
-31. **Heavy Ball prize revelation also marks dead Crispin.** Initial: `T2; A Regidrago V[GG]; H Heavy Ball, Crispin, Gladion; D VSTAR; P Fire; X/DTT Mega Dragonite ex`. Pass: Heavy Ball reveals the non-Basic Prize set and is discarded; fixed-list deduction proves Fire absent from deck; Gladion takes Fire rather than spending Crispin.
-32. **Prized Energy does not preempt the Item-lock payload bridge.** Initial: `T2; A Regidrago V[GG]; H Heavy Ball, Gladion, Professor Burnet, VSTAR; D Mega Dragonite ex; P Fire; full Item lock`. Pass: Heavy Ball reveals Fire; Burnet is selected and discards Mega Dragonite ex; Gladion stays in hand because Fire alone cannot create readiness.
-33. **Celestial Roar transfers Energy out of discard.** Initial: `T1 going second; A Regidrago V[G]; D Dipplin, Fire, Grass`. Pass: the top-three Grass and Fire become attached, neither remains in discard, and only Dipplin remains there.
-34. **Tate & Liza draws from a four-card dead hand.** Initial: `T2; A Regidrago V[GGF]; H Tate & Liza, Dipplin, Mawile-GX, Guzma; D VSTAR; X/DTT Mega Dragonite ex`. Pass: no direct Supporter line exists; Tate shuffles the three remaining cards and draws five, finding VSTAR.
-35. **Star Alchemy establishes K1 before final-Energy Gladion choice.** Initial: `T2; A Regidrago V[GG] with Forest Seal Stone; H VSTAR; D Gladion; P Fire; X/DTT Mega Dragonite ex`. Pass: Star Alchemy records legal deck knowledge, fetches Gladion, and Gladion takes Fire.
+1. `gladion_fetches_prized_vstar_only_when_no_route_exists`
+2. `gladion_is_not_burned_when_vstar_is_already_in_hand`
+3. `steven_fetches_burnet_before_turn_two_item_lock`
+4. `steven_uses_legal_fallback_when_preferred_card_is_prized`
+5. `steven_resolve_reserves_gladion_for_prized_vstar`
+6. `steven_skips_known_dead_crispin`
+7. `fss_finds_steven_on_turn_one_when_three_axes_are_missing`
+8. `fss_uses_a_fallback_when_vstar_is_not_in_deck`
+9. `fss_fetches_missing_basic_energy_for_manual_attachment`
+10. `fss_cannot_be_used_from_a_vstar_holder`
+11. `existing_fss_is_usable_under_item_lock`
+12. `fss_is_blocked_by_rule_box_lock`
+13. `crispin_attaches_only_with_two_different_energy_types`
+14. `crispin_single_type_only_puts_energy_in_hand`
+15. `earthen_vessel_can_take_two_grass`
+16. `strict_jit_holds_payload_before_turn_two`
+17. `no_control_allows_early_payload_banking`
+18. `blender_dominates_mysterious_treasure_when_no_search_axis_exists`
+19. `searches_use_legal_fallback_targets_after_deck_inspection`
+20. `heavy_ball_inspects_prizes_and_chains_tapu`
+21. `known_no_basic_prize_holds_heavy_ball_for_discard_cost`
+22. `k1_gladion_recovers_final_prized_energy`
+23. `heavy_ball_reveal_marks_crispin_dead`
+24. `fss_reveal_preserves_burnet_over_prized_energy`
+25. `celestial_roar_attached_energy_leaves_discard`
+26. `tate_draws_from_a_four_card_dead_hand`
+27. `tate_refreshes_a_five_card_dead_hand`
+28. `fss_fetches_gladion_for_final_prized_energy`
+29. `full_bench_blocks_basic_search_connectors`
+30. `strict_serena_uses_three_safe_discards`
+31. `heavy_ball_oricorio_preserves_burnet_supporter`
+32. `legacy_star_recovered_blender_is_played_same_turn`
+33. `legacy_star_recovered_crispin_is_played_same_turn`
+34. `legacy_star_recovers_burnet_for_deck_payload`
+35. `lusamine_recovers_only_live_axis_connectors`
+36. `wonder_tag_skips_known_dead_crispin`
+37. `payload_selectors_fetch_burnet_when_blender_is_unavailable`
+38. `live_burnet_preempts_arven_when_blender_is_absent`
+39. `tapu_fetches_burnet_without_item_lock_when_blender_is_not_live`
+40. `lusamine_recovers_current_axis_connectors`
+41. `arven_requires_a_live_item_or_tool_route`
+42. `oricorio_is_held_when_earthen_vessel_already_solves_energy`
+43. `oricorio_works_under_rule_box_lock`
+44. `tapu_is_blocked_by_rule_box_lock`
+45. `tapu_fetches_steven_when_it_is_the_live_turn_one_connector`
+46. `latias_retreat_is_basic_only`
+47. `tate_switch_is_selected_when_it_completes_active_axis`
+48. `strict_jit_requires_payload_to_be_in_discard_now_and_this_turn`
+49. `finished_setup_does_not_burn_serena`
+50. `arven_is_not_played_during_item_lock`
+51. `first_turn_restrictions_and_celestial_cost`
+52. `evolution_timing_and_single_manual_attachment`
+53. `item_lock_blocks_item_cards`
+54. `ultra_ball_discards_payload_in_jit_window`
+55. `dipplin_is_legal_treasure_fallback_but_not_payload_ready`
+56. `late_jit_item_search_evolves_in_the_same_turn`
 
-## Test command
+## Historical identifiers with corrected assertions
+
+- `fss_cannot_be_used_from_a_vstar_holder` is a retained historical identifier. Its current assertion requires Star Alchemy to work from a Regidrago VSTAR holder because Pokémon V includes Pokémon VSTAR: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/policy_fixture_v2/part_001.inc#L67-L79 https://compendium.pokegym.net/category/7-gameplay/pokemon-v/ https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
+- `fss_is_blocked_by_rule_box_lock` is also a retained historical identifier. Forest Seal Stone's Ability remains usable through Path to the Peak because Star Alchemy is the Tool's Ability: https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
+- The registered K0 Heavy Ball fixtures follow the repository knowledge policy and play Hisuian Heavy Ball as an information action while Items are legal: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection https://api.pokemontcg.io/v2/cards/swsh10-146
+
+## Run
 
 ```text
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel 2
-ctest --test-dir build --output-on-failure
+./build/regidrago_policy_tests
 ```
-
-`regidrago_policy_fixtures` runs all 35 exact-state cases. The existing six seeded trace regressions and the aggregate smoke test remain separate CTest targets.

@@ -1,5 +1,11 @@
   bool has_live_one_discard_hand_payload_line() const {
-    if (item_locked() || !can_play_payload_this_turn() ||
+    // Each modeled one-discard outlet must begin a deck search after paying its cost.
+    // An empty deck makes that promised post-Tate payload route unavailable:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+    if (!deck_search_available() || item_locked() || !can_play_payload_this_turn() ||
         !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
       return false;
     }

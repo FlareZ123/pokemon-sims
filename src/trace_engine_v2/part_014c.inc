@@ -177,7 +177,7 @@
 
   // The original run_turn() above is macro-renamed by the active composition. End
   // that rename and compose the Latias helper and replacement while Engine is open:
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/regidrago_sim.cpp#L165-L169
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/regidrago_sim.cpp#L147-L150
   // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c_latias_bench_override.inc#L1-L105
 #undef run_turn
 #include "part_014c_latias_bench_override.inc"

@@ -118,11 +118,23 @@
     const bool evolution_incense_payload_line = need_payload() && !item_locked() && payload_might_be_in_deck() &&
         count_of(state_.discard, Card::EvolutionIncense) > 0 && recovered.empty();
     if (evolution_incense_payload_line) {
+      // A later search Item needs one card to remain after Evolution Incense removes
+      // the payload. Serena remains live with a one-card deck because its mandatory
+      // discard is an effect and does not require another deck search:
+      // https://api.pokemontcg.io/v2/cards/swsh1-163
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://api.pokemontcg.io/v2/cards/swsh1-179
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+      // https://api.pokemontcg.io/v2/cards/swsh12-164
+      // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+      const bool later_search_can_begin = state_.deck.size() > 1U;
+
       // Ultra Ball can follow Evolution Incense only when the fetched Dragon plus a
       // distinct policy-admissible hand card can pay its two-other-card cost:
       // https://api.pokemontcg.io/v2/cards/swsh1-163
       // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-      if (count_of(state_.discard, Card::UltraBall) > 0) {
+      if (later_search_can_begin && count_of(state_.discard, Card::UltraBall) > 0) {
         const std::vector<Card> base_hand = state_.hand;
         const std::vector<Card> base_discard = state_.discard;
         const std::vector<Card> base_discarded_this_turn = state_.discarded_this_turn;
@@ -152,7 +164,7 @@
         }
       }
 
-      if (recovered.empty()) {
+      if (later_search_can_begin && recovered.empty()) {
         for (const Card outlet : {Card::MysteriousTreasure, Card::QuickBall, Card::EarthenVessel}) {
           if (count_of(state_.discard, outlet) == 0) continue;
           if (!recover_discard_to_hand(Card::EvolutionIncense)) throw std::logic_error("Legacy Star Evolution Incense target disappeared");

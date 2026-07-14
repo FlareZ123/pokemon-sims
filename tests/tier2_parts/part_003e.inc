@@ -59,27 +59,52 @@ void tapu_holds_for_three_ultra_vstar_route() {
 void legacy_star_recovers_payable_incense_ultra_bridge() {
   State s = st(2, Card::RegidragoVstar, 1, 2, 1);
   s.hand = {Card::Dipplin};
-  s.deck = {Card::MegaDragonite, Card::MawileGX, Card::Guzma, Card::Channeler,
-            Card::FieldBlower, Card::ChaoticSwell, Card::EvolutionIncense,
-            Card::UltraBall};
+  s.deck = {Card::MegaDragonite, Card::TapuLeleGX, Card::MawileGX, Card::Guzma,
+            Card::Channeler, Card::FieldBlower, Card::ChaoticSwell,
+            Card::EvolutionIncense, Card::UltraBall};
   Fixture f(sc("legacy-star-payable-incense-ultra"), s);
 
   // Legacy Star may recover Evolution Incense and Ultra Ball. Incense then finds
-  // the Evolution Dragon, while Ultra Ball discards it with the pre-existing
-  // Dipplin as its distinct second cost:
+  // the Evolution Dragon, while one deck card remains for Ultra Ball's later search.
+  // The fetched Dragon and Dipplin pay Ultra Ball's two-card cost:
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://api.pokemontcg.io/v2/cards/swsh1-163
   // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
   expect(EngineTestAccess::use_legacy_star(f.engine), "Legacy Star should resolve.");
   State& after_star = EngineTestAccess::state(f.engine);
+  expect(after_star.deck.size() == 2U, "Two cards should remain before the Incense bridge begins.");
   expect(has(after_star.hand, Card::EvolutionIncense), "Evolution Incense should be recovered.");
   expect(has(after_star.hand, Card::UltraBall), "Payable Ultra Ball should be recovered.");
   expect(EngineTestAccess::play_evolution_incense(f.engine, true),
          "Evolution Incense should fetch the remaining Evolution Dragon payload.");
   expect(EngineTestAccess::play_ultra_ball(f.engine, true),
-         "Ultra Ball should discard the fetched payload plus Dipplin.");
+         "Ultra Ball should discard the fetched payload plus Dipplin and search the remaining card.");
   expect(has(EngineTestAccess::state(f.engine).discard, Card::MegaDragonite),
          "Mega Dragonite ex should remain in discard for Apex Dragon: https://api.pokemontcg.io/v2/cards/me2pt5-152");
+}
+
+void legacy_star_rejects_final_card_incense_ultra_bridge() {
+  State s = st(2, Card::RegidragoVstar, 1, 2, 1);
+  s.hand = {Card::Dipplin};
+  s.deck = {Card::MegaDragonite, Card::MawileGX, Card::Guzma, Card::Channeler,
+            Card::FieldBlower, Card::ChaoticSwell, Card::EvolutionIncense,
+            Card::UltraBall};
+  Fixture f(sc("legacy-star-final-card-incense-ultra"), s);
+
+  // Incense would remove the final deck card. Ultra Ball would then be known to
+  // have no effect and cannot serve as the promised strict-JIT discard outlet:
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+  expect(EngineTestAccess::use_legacy_star(f.engine), "Legacy Star should still resolve its discard-seven effect.");
+  const State& after_star = EngineTestAccess::state(f.engine);
+  expect(after_star.deck.size() == 1U && has(after_star.deck, Card::MegaDragonite),
+         "The sole payload should remain in deck after Legacy Star.");
+  expect(!has(after_star.hand, Card::EvolutionIncense) && !has(after_star.hand, Card::UltraBall),
+         "Legacy Star must not recover a bridge whose second search cannot begin.");
+  expect(has(after_star.discard, Card::EvolutionIncense) && has(after_star.discard, Card::UltraBall),
+         "Both dead bridge cards should remain in discard.");
 }
 
 void legacy_star_rejects_unpayable_incense_ultra_bridge() {

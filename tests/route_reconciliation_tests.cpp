@@ -343,27 +343,8 @@ void test_turo_promotes_complete_vstar_behind_same_turn_active_regidrago() {
          "The route must consume the Supporter play without consuming the retreat.");
 }
 
-void test_turo_preserves_prior_turn_active_regidrago_evolution_route() {
-  const sim::Scenario scenario{"turo-prior-turn-active-regidrago", sim::DciProfile::StrictJit,
-                               sim::LockMode::None, false, 4};
-  const sim::DeckRecipe recipe = sim::baseline_recipe();
-  std::mt19937_64 rng{393};
-  sim::Engine engine(scenario, recipe, rng);
-  sim::EngineTestAccess::set_state(engine, turo_regidrago_active_state(1));
-
-  // A prior-turn Active Regidrago V is legally evolvable this turn, so the existing
-  // direct evolution preference remains intact:
-  // https://www.pokemon.com/us/pokemon-tcg/rules
-  // https://api.pokemontcg.io/v2/cards/swsh12-136
-  expect(!sim::EngineTestAccess::play_turo_active_promotion_route(engine),
-         "Professor Turo should remain held when the Active Regidrago V can legally evolve this turn.");
-
-  const sim::State& after = sim::EngineTestAccess::state(engine);
-  expect(after.active && after.active->card == sim::Card::RegidragoV &&
-             after.bench.size() == 1 && contains(after.hand, sim::Card::ProfessorTuro) &&
-             !after.supporter_used,
-         "Rejecting the Turo route must preserve the prior-turn Active evolution state.");
-}
+// The ready prior-turn direct-evolution and missing-VSTAR controls are covered by
+// the dedicated Turo fixture: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/turo_ready_direct_evolution_tests.cpp
 
 }  // namespace
 
@@ -381,7 +362,6 @@ int main() {
     test_stranded_benched_vstar_does_not_steal_energy();
     test_active_evolution_route_keeps_energy_on_active_regidrago();
     test_turo_promotes_complete_vstar_behind_same_turn_active_regidrago();
-    test_turo_preserves_prior_turn_active_regidrago_evolution_route();
     std::cout << "route reconciliation tests passed\n";
     return 0;
   } catch (const std::exception& error) {

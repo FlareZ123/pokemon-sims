@@ -1,0 +1,118 @@
+#define REGIDRAGO_SIM_NO_MAIN
+#include "../src/regidrago_sim.cpp"
+
+#include <algorithm>
+#include <cassert>
+#include <random>
+#include <vector>
+
+namespace sim {
+
+struct EngineTestAccess {
+  static State& state(Engine& engine) { return engine.state_; }
+  static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
+  static bool play_brilliant_blender(Engine& engine) {
+    return engine.play_brilliant_blender();
+  }
+};
+
+}  // namespace sim
+
+namespace {
+
+bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
+  return std::find(cards.begin(), cards.end(), card) != cards.end();
+}
+
+void test_blender_holds_for_live_fss_tate_connector_with_incomplete_target() {
+  using namespace sim;
+  const Scenario scenario{"blender-fss-tate-incomplete", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(521);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoV, 1, 2, 1, Tool::ForestSealStone};
+  state.bench = {Pokemon{Card::RegidragoVstar, 1, 1, 1, Tool::None}};
+  state.hand = {Card::BrilliantBlender};
+  state.deck = {Card::TateLiza, Card::MegaDragonite};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Star Alchemy preserves its one-per-game search when Tate would promote an
+  // Energy-incomplete VSTAR. Brilliant Blender must preserve the matching one-shot
+  // payload resource until that selected attacker can pay Apex Dragon's GGF cost:
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/sm7-148
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_011_fss_latias_override.inc#L4-L24
+  assert(!EngineTestAccess::play_brilliant_blender(engine));
+  assert(contains(state.hand, Card::BrilliantBlender));
+  assert(contains(state.deck, Card::TateLiza));
+  assert(contains(state.deck, Card::MegaDragonite));
+  assert(state.discard.empty());
+}
+
+void test_blender_resolves_when_fss_tate_target_is_energy_complete() {
+  using namespace sim;
+  const Scenario scenario{"blender-fss-tate-complete", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(522);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoV, 1, 2, 1, Tool::ForestSealStone};
+  state.bench = {Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None}};
+  state.hand = {Card::BrilliantBlender};
+  state.deck = {Card::TateLiza, Card::MegaDragonite};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // A GGF-complete promotion target makes the Star Alchemy to Tate route complete,
+  // so Blender may supply the strict-JIT Dragon payload this turn:
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/sm7-148
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  assert(EngineTestAccess::play_brilliant_blender(engine));
+  assert(contains(state.discard, Card::BrilliantBlender));
+  assert(contains(state.discard, Card::MegaDragonite));
+  assert(contains(state.discarded_this_turn, Card::MegaDragonite));
+}
+
+void test_blender_resolves_when_no_fss_tate_connector_remains() {
+  using namespace sim;
+  const Scenario scenario{"blender-fss-no-tate", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(523);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoV, 1, 2, 1, Tool::ForestSealStone};
+  state.bench = {Pokemon{Card::RegidragoVstar, 1, 1, 1, Tool::None}};
+  state.hand = {Card::BrilliantBlender};
+  state.deck = {Card::MegaDragonite};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // After a legal inspection proves Tate & Liza absent from the deck, Forest Seal
+  // Stone no longer supplies the incomplete promotion connector. Blender remains the
+  // live strict-JIT payload outlet and may resolve:
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  assert(EngineTestAccess::play_brilliant_blender(engine));
+  assert(contains(state.discard, Card::BrilliantBlender));
+  assert(contains(state.discard, Card::MegaDragonite));
+}
+
+}  // namespace
+
+int main() {
+  test_blender_holds_for_live_fss_tate_connector_with_incomplete_target();
+  test_blender_resolves_when_fss_tate_target_is_energy_complete();
+  test_blender_resolves_when_no_fss_tate_connector_remains();
+  return 0;
+}

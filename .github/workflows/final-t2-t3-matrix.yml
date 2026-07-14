@@ -1,0 +1,47 @@
+name: Final T2 T3 Matrix
+
+on:
+  pull_request:
+
+jobs:
+  release-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build Release
+        run: cmake --build build --config Release --parallel 2
+      - name: Run 10000-trial matrix
+        run: |
+          ./build/regidrago_sim --trials 10000 --seed 20260714 --out build/final_matrix.csv
+          sha256sum build/final_matrix.csv > build/final_matrix.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: final-t2-t3-release
+          path: |
+            build/final_matrix.csv
+            build/final_matrix.sha256
+          if-no-files-found: error
+
+  sanitizer-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure sanitizers
+        run: cmake -S . -B build-sanitizers -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - name: Build sanitizers
+        run: cmake --build build-sanitizers --config Debug --parallel 2
+      - name: Run 10000-trial sanitizer matrix
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+        run: |
+          ./build-sanitizers/regidrago_sim --trials 10000 --seed 20260714 --out build-sanitizers/final_matrix.csv
+          sha256sum build-sanitizers/final_matrix.csv > build-sanitizers/final_matrix.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: final-t2-t3-sanitizer
+          path: |
+            build-sanitizers/final_matrix.csv
+            build-sanitizers/final_matrix.sha256
+          if-no-files-found: error

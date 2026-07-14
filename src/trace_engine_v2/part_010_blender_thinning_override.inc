@@ -24,9 +24,14 @@
       return false;
     }
 
-    const auto live_fss_holder = [this](const Pokemon& pokemon) {
-      return pokemon.tool == Tool::ForestSealStone && is_pokemon_v(pokemon.card) &&
-          ability_available_for_pokemon(pokemon.card);
+    // Path to the Peak suppresses Abilities on Rule Box Pokémon, while Forest Seal
+    // Stone remains usable because Star Alchemy is the Tool's Ability. Treat the
+    // attached Tool as live independently of the holder's own Ability availability:
+    // https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://api.pokemontcg.io/v2/cards/swsh6-148
+    const auto live_fss_holder = [](const Pokemon& pokemon) {
+      return pokemon.tool == Tool::ForestSealStone && is_pokemon_v(pokemon.card);
     };
     const bool forest_seal_stone_is_live =
         (state_.active && live_fss_holder(*state_.active)) ||

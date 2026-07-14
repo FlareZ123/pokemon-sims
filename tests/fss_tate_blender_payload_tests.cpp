@@ -20,6 +20,7 @@ struct EngineTestAccess {
     return engine.play_mysterious_treasure(permit_payload);
   }
   static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
+  static bool play_brilliant_blender(Engine& engine) { return engine.play_brilliant_blender(); }
 };
 
 }  // namespace sim
@@ -182,6 +183,63 @@ void test_fss_holds_when_tate_target_is_energy_incomplete() {
   assert(!EngineTestAccess::payload_ready(engine));
 }
 
+void test_rule_box_lock_preserves_blender_for_live_fss_incomplete_target() {
+  using namespace sim;
+  const Scenario scenario{"fss-tate-incomplete-promotion-rulebox", DciProfile::StrictJit,
+                          LockMode::FullRuleBoxAbility, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(537);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoV, 1, 2, 1, Tool::ForestSealStone};
+  state.bench = {Pokemon{Card::RegidragoVstar, 1, 1, 1, Tool::None}};
+  state.hand = {Card::BrilliantBlender};
+  state.deck = {Card::TateLiza, Card::MegaDragonite};
+
+  // Forest Seal Stone remains usable through a Path-style Rule Box Ability lock.
+  // Tate would promote an Energy-incomplete VSTAR, so Star Alchemy and the one-shot
+  // Brilliant Blender payload outlet must both remain preserved:
+  // https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/swsh6-148
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/sm7-148
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  EngineTestAccess::run_tactical_turn(engine);
+
+  assert(!state.vstar_power_used);
+  assert(state.active && state.active->card == Card::RegidragoV);
+  assert(contains(state.hand, Card::BrilliantBlender));
+  assert(contains(state.deck, Card::TateLiza));
+  assert(contains(state.deck, Card::MegaDragonite));
+  assert(state.discard.empty());
+}
+
+void test_rule_box_lock_without_fss_does_not_trigger_the_preservation_guard() {
+  using namespace sim;
+  const Scenario scenario{"no-fss-rulebox-blender-control", DciProfile::StrictJit,
+                          LockMode::FullRuleBoxAbility, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(538);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoV, 1, 2, 1, Tool::None};
+  state.bench = {Pokemon{Card::RegidragoVstar, 1, 1, 1, Tool::None}};
+  state.hand = {Card::BrilliantBlender};
+  state.deck = {Card::TateLiza, Card::MegaDragonite};
+
+  // The Path ruling applies only when Forest Seal Stone is actually attached.
+  // Without that Tool route, the FSS-specific incomplete-promotion guard must not
+  // block Brilliant Blender's otherwise legal deck-to-discard effect:
+  // https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  assert(EngineTestAccess::play_brilliant_blender(engine));
+  assert(contains(state.discard, Card::BrilliantBlender));
+  assert(contains(state.discard, Card::MegaDragonite));
+}
+
 }  // namespace
 
 int main() {
@@ -191,5 +249,7 @@ int main() {
   std::cout << "FSS held-payload Tate tests passed" << std::endl;
   test_fss_fetches_tate_when_blender_covers_payload();
   test_fss_holds_when_tate_target_is_energy_incomplete();
+  test_rule_box_lock_preserves_blender_for_live_fss_incomplete_target();
+  test_rule_box_lock_without_fss_does_not_trigger_the_preservation_guard();
   return 0;
 }

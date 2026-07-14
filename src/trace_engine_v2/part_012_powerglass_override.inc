@@ -4,15 +4,24 @@
       return false;
     }
 
-    // Forest Seal Stone remains the higher-priority Tool while its one-per-game VSTAR
-    // Power can still be used. Once that route is spent or known unavailable, Arven may
-    // search Powerglass for an Active-holder Energy recovery line:
-    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Arven consumes the turn's Supporter play before the searched Tool can resolve.
+    // When Energy is the only missing axis, Forest Seal Stone can advance that axis
+    // after Arven only while the manual attachment remains unused. Powerglass can
+    // still attach the needed Basic Energy from discard at end of turn:
     // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
     // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    // https://www.pokemon.com/us/pokemon-tcg/rules
     const bool forest_seal_route_available = !state_.vstar_power_used &&
         (hand_count(Card::ForestSealStone) > 0 || might_be_unseen(Card::ForestSealStone));
-    if (forest_seal_route_available || !might_be_unseen(Card::Powerglass)) return false;
+    const bool energy_is_only_missing_axis = need_energy() && !need_regi() && !need_vstar() &&
+        !need_active_vstar() && !need_payload();
+    const bool forest_seal_can_advance_after_arven =
+        !energy_is_only_missing_axis || !state_.manual_energy_used;
+    if ((forest_seal_route_available && forest_seal_can_advance_after_arven) ||
+        !might_be_unseen(Card::Powerglass)) {
+      return false;
+    }
 
     const bool needed_grass_in_discard =
         state_.active->grass < 2 && count_of(state_.discard, Card::Grass) > 0;

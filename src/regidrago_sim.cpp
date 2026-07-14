@@ -47,9 +47,17 @@
 #undef needs_tapu_connector
 #undef bench_oricorio_if_useful
 #undef bench_from_hand
+#define attach_manual attach_manual_tate_blender_original
 #include "trace_engine_v2/part_007.inc"
-#define play_mysterious_treasure play_mysterious_treasure_empty_deck_original
+#undef attach_manual
+#include "trace_engine_v2/part_tate_blender_attachment_override.inc"
+#define play_tate_switch play_tate_switch_tate_blender_original
+#define play_tate_draw play_tate_draw_tate_blender_original
 #include "trace_engine_v2/part_008a.inc"
+#undef play_tate_draw
+#undef play_tate_switch
+#include "trace_engine_v2/part_tate_blender_tate_override.inc"
+#define play_mysterious_treasure play_mysterious_treasure_empty_deck_original
 #include "trace_engine_v2/part_008b.inc"
 #include "trace_engine_v2/part_009a.inc"
 #undef play_mysterious_treasure

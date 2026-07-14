@@ -6,6 +6,22 @@
       return false;
     }
 
+    const int supporters_in_hand = static_cast<int>(
+        std::count_if(state_.hand.begin(), state_.hand.end(), is_supporter));
+    const bool only_tate_supporter_held =
+        supporters_in_hand == hand_count(Card::TateLiza);
+    // Brilliant Blender is a one-shot deck-to-discard payload outlet. Under strict
+    // current-turn timing, retain it while Tate & Liza would promote a VSTAR that
+    // still lacks part of Apex Dragon's GGF cost:
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    if (strict_payload_timing() && only_tate_supporter_held &&
+        hand_count(Card::TateLiza) > 0 && need_active_vstar() && need_energy()) {
+      return false;
+    }
+
     remove_one(state_.hand, Card::BrilliantBlender);
     state_.discard.push_back(Card::BrilliantBlender);
     std::vector<Card> discarded;

@@ -1,0 +1,24 @@
+name: T2 T3 Probability Matrix
+
+on:
+  pull_request:
+
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release build
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --config Release --target regidrago_sim --parallel 2
+      - name: Generate 100000-trial matrix
+        run: build/regidrago_sim --trials 100000 --seed 20260705 --out ci_t2_t3_matrix.csv
+      - name: Print matrix
+        run: cat ci_t2_t3_matrix.csv
+      - name: Upload matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: t2-t3-matrix-100000
+          path: ci_t2_t3_matrix.csv
+          if-no-files-found: error

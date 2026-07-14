@@ -66,6 +66,7 @@ int main() {
     {"costed_search_accepts_distinct_ultra_second_cost", costed_search_accepts_distinct_ultra_second_cost},
     {"tapu_holds_for_three_ultra_vstar_route", tapu_holds_for_three_ultra_vstar_route},
     {"legacy_star_recovers_payable_incense_ultra_bridge", legacy_star_recovers_payable_incense_ultra_bridge},
+    {"legacy_star_rejects_final_card_incense_ultra_bridge", legacy_star_rejects_final_card_incense_ultra_bridge},
     {"legacy_star_rejects_unpayable_incense_ultra_bridge", legacy_star_rejects_unpayable_incense_ultra_bridge},
   };
   int failures = 0;

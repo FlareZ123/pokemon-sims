@@ -18,6 +18,9 @@ struct EngineTestAccess {
   static bool play_mysterious_treasure(Engine& engine, const bool permit_payload) {
     return engine.play_mysterious_treasure(permit_payload);
   }
+  static bool play_ultra_ball(Engine& engine, const bool permit_payload) {
+    return engine.play_ultra_ball(permit_payload);
+  }
 };
 
 }  // namespace sim
@@ -26,6 +29,10 @@ namespace {
 
 bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
   return std::find(cards.begin(), cards.end(), card) != cards.end();
+}
+
+int count(const std::vector<sim::Card>& cards, const sim::Card card) {
+  return static_cast<int>(std::count(cards.begin(), cards.end(), card));
 }
 
 struct Fixture {
@@ -67,6 +74,66 @@ void test_evolution_incense_fetches_jit_payload_for_mysterious_treasure() {
   if (!contains(after.discard, sim::Card::MegaDragonite) ||
       !contains(after.discarded_this_turn, sim::Card::MegaDragonite)) {
     throw std::runtime_error("Evolution Incense's fetched payload must remain in this turn's discard.");
+  }
+}
+
+void test_evolution_incense_uses_duplicate_incense_for_ultra_ball_cost() {
+  Fixture fixture;
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::EvolutionIncense, sim::Card::EvolutionIncense, sim::Card::UltraBall};
+  state.deck = {sim::Card::MegaDragonite, sim::Card::MawileGX};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(fixture.engine);
+
+  // One Evolution Incense searches Mega Dragonite ex. Ultra Ball may then discard
+  // that fetched payload and the distinct surviving Incense as its two other cards:
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  if (!sim::EngineTestAccess::play_evolution_incense(fixture.engine, true)) {
+    throw std::runtime_error("Evolution Incense should start the payable duplicate-Incense Ultra Ball route.");
+  }
+  if (!contains(sim::EngineTestAccess::state(fixture.engine).hand, sim::Card::MegaDragonite)) {
+    throw std::runtime_error("Evolution Incense should fetch the Evolution Dragon payload.");
+  }
+  if (!sim::EngineTestAccess::play_ultra_ball(fixture.engine, true)) {
+    throw std::runtime_error("Ultra Ball should discard the fetched payload and surviving Evolution Incense.");
+  }
+
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  if (!contains(after.discard, sim::Card::MegaDragonite) ||
+      !contains(after.discarded_this_turn, sim::Card::MegaDragonite) ||
+      count(after.discard, sim::Card::EvolutionIncense) != 2) {
+    throw std::runtime_error("The duplicate-Incense route should leave the payload and both Incense copies in discard.");
+  }
+}
+
+void test_evolution_incense_rejects_unpayable_single_incense_ultra_ball_route() {
+  Fixture fixture;
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::EvolutionIncense, sim::Card::UltraBall};
+  state.deck = {sim::Card::MegaDragonite, sim::Card::MawileGX};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(fixture.engine);
+
+  // With one Incense and one Ultra Ball, the fetched payload supplies only one of
+  // Ultra Ball's two other-card costs. The Incense must remain held:
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  if (sim::EngineTestAccess::play_evolution_incense(fixture.engine, true)) {
+    throw std::runtime_error("Evolution Incense should reject an Ultra Ball route with no distinct second cost.");
+  }
+
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  if (!contains(after.hand, sim::Card::EvolutionIncense) ||
+      !contains(after.hand, sim::Card::UltraBall) ||
+      !contains(after.deck, sim::Card::MegaDragonite)) {
+    throw std::runtime_error("The unpayable single-Incense route must preserve the hand and payload target.");
   }
 }
 
@@ -131,6 +198,8 @@ void test_evolution_incense_uses_legal_post_search_fallbacks() {
 int main() {
   try {
     test_evolution_incense_fetches_jit_payload_for_mysterious_treasure();
+    test_evolution_incense_uses_duplicate_incense_for_ultra_ball_cost();
+    test_evolution_incense_rejects_unpayable_single_incense_ultra_ball_route();
     test_evolution_incense_holds_when_k1_vstar_target_is_absent();
     test_evolution_incense_uses_legal_post_search_fallbacks();
     std::cout << "Evolution Incense payload tests passed\n";

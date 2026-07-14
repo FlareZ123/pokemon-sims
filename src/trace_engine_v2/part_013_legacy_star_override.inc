@@ -46,9 +46,15 @@
     // Legacy Star may recover any two cards from discard, so an already-ready payload
     // does not make the VSTAR Power dead when a known recovery immediately completes a
     // different setup axis: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // A recovered Basic Energy can be manually attached once during the turn:
+    // A recovered Basic Energy can be manually attached once during the turn. The
+    // selected VSTAR may already be Active or have a legal same-turn Latias retreat path:
+    // https://api.pokemontcg.io/v2/cards/sv8-76
     // https://www.pokemon.com/us/pokemon-tcg/rules
-    const bool known_energy_completion = payload_ready() && active_is_vstar() && need_energy() &&
+    const Pokemon* energy_target = target_regi();
+    const bool selected_vstar_can_be_active_this_turn = active_is_vstar() ||
+        (need_active_vstar() && can_free_retreat_with_latias() && energy_target != nullptr &&
+         energy_target->card == Card::RegidragoVstar);
+    const bool known_energy_completion = payload_ready() && selected_vstar_can_be_active_this_turn && need_energy() &&
         !state_.manual_energy_used &&
         ((grass_needed() > 0 && count_of(state_.discard, Card::Grass) > 0) ||
          (fire_needed() > 0 && count_of(state_.discard, Card::Fire) > 0));

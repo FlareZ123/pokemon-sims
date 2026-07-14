@@ -61,7 +61,11 @@
   bool play_lusamine() {
     if (!supporter_allowed() || hand_count(Card::Lusamine) == 0) return false;
     const std::vector<Card> targets = lusamine_recovery_targets();
-    if (targets.empty()) return false;
+    // Lusamine requires exactly 2 Supporter and/or Stadium cards from the public
+    // discard pile. It does not say "up to 2", so one eligible target is insufficient:
+    // https://api.pokemontcg.io/v2/cards/sm4-96
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+    if (targets.size() != 2U) return false;
     remove_one(state_.hand, Card::Lusamine);
     state_.discard.push_back(Card::Lusamine);
     state_.supporter_used = true;

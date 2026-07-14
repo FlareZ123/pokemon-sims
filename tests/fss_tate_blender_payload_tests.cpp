@@ -52,9 +52,46 @@ void test_fss_fetches_tate_when_blender_covers_payload() {
   assert(EngineTestAccess::payload_ready(engine));
 }
 
+void test_fss_holds_when_tate_target_is_energy_incomplete() {
+  using namespace sim;
+  const Scenario scenario{"fss-tate-incomplete-promotion", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(400);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoV, 1, 2, 1, Tool::ForestSealStone};
+  state.bench = {Pokemon{Card::RegidragoVstar, 1, 1, 1, Tool::None}};
+  state.hand = {Card::BrilliantBlender};
+  state.deck = {Card::TateLiza, Card::MegaDragonite};
+
+  // Star Alchemy is one per game. Tate & Liza would promote the Benched VSTAR, and
+  // Brilliant Blender would spend the current-turn payload, while that attacker still
+  // cannot pay Apex Dragon's GGF cost. Preserve the VSTAR Power and both route cards:
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/sm7-148
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  EngineTestAccess::run_turn(engine);
+
+  assert(!state.vstar_power_used);
+  assert(state.active && state.active->card == Card::RegidragoV);
+  assert(state.bench.size() == 1U);
+  assert(state.bench.front().card == Card::RegidragoVstar);
+  assert(state.bench.front().grass == 1 && state.bench.front().fire == 1);
+  assert(contains(state.hand, Card::BrilliantBlender));
+  assert(contains(state.deck, Card::TateLiza));
+  assert(contains(state.deck, Card::MegaDragonite));
+  assert(state.discard.empty());
+  assert(!EngineTestAccess::payload_ready(engine));
+}
+
 }  // namespace
 
 int main() {
   test_fss_fetches_tate_when_blender_covers_payload();
+  test_fss_holds_when_tate_target_is_energy_incomplete();
   return 0;
 }

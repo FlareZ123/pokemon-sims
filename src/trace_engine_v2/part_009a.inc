@@ -31,7 +31,7 @@
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 &&
                            needs_tapu_connector() && might_be_unseen(Card::TapuLeleGX);
     const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 &&
-                                needs_oricorio_connector() && might_be_unseen(Card::Oricorio);
+                                 needs_oricorio_connector() && might_be_unseen(Card::Oricorio);
     // Treasure must pay its discard before the fetched payload reaches hand. A later
     // Ultra Ball route is live only when its own two-card cost remains payable:
     // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
@@ -52,8 +52,15 @@
     // Card text source: https://api.pokemontcg.io/v2/cards/sm6-113
     // The deck is now being legally searched. Select a legal target after inspecting it.
     record_deck_search_knowledge("Mysterious Treasure");
-    const std::array<Card, 9> targets{Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::TapuLeleGX,
-                                      Card::Oricorio, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::DialgaGX};
+    // A proved payable Dragon-payload route is checked before the pre-search Tapu
+    // estimate. The direct current-turn payload completes Apex Dragon's missing axis,
+    // while Wonder Tag is only an indirect connector that may become stale at K1:
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    const std::array<Card, 9> targets{Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx,
+                                      Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
+                                      Card::DialgaGX, Card::TapuLeleGX, Card::Oricorio};
     for (const Card target : targets) {
       const bool desired = (target == Card::RegidragoV && want_regi) ||
                            (target == Card::RegidragoVstar && want_vstar) ||

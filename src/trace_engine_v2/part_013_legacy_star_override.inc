@@ -161,6 +161,20 @@
           break;
         }
       }
+
+      // Serena's draw mode must discard at least one card from hand. When the
+      // Supporter play remains available, recovering Serena with Evolution Incense
+      // lets Incense fetch the Dragon and Serena discard it without another deck search:
+      // https://api.pokemontcg.io/v2/cards/swsh12-164
+      // https://api.pokemontcg.io/v2/cards/swsh1-163
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://www.pokemon.com/us/pokemon-tcg/rules
+      if (recovered.empty() && supporter_allowed() && count_of(state_.discard, Card::Serena) > 0) {
+        if (!recover_discard_to_hand(Card::EvolutionIncense)) throw std::logic_error("Legacy Star Evolution Incense target disappeared");
+        if (!recover_discard_to_hand(Card::Serena)) throw std::logic_error("Legacy Star Serena target disappeared");
+        recovered.push_back(Card::EvolutionIncense);
+        recovered.push_back(Card::Serena);
+      }
     }
 
     // Earthen Vessel can turn one or two Legacy Star recoveries into the exact Basic

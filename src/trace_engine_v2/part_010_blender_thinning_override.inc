@@ -9,14 +9,21 @@
     remove_one(state_.hand, Card::BrilliantBlender);
     state_.discard.push_back(Card::BrilliantBlender);
     std::vector<Card> discarded;
+    // Apex Dragon copies attacks from Dragon Pokémon in discard. Prioritize every
+    // modeled A/S Dragon payload before Dipplin or generic deck compression:
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // https://api.pokemontcg.io/v2/cards/sv6-130
+    // https://api.pokemontcg.io/v2/cards/swsh11-136
+    // https://api.pokemontcg.io/v2/cards/sm5-100
     for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
                                Card::GoodraVstar, Card::DialgaGX}) {
-      if (move_deck_to_discard(payload)) {
-        discarded.push_back(payload);
-        break;
-      }
+      if (discarded.size() >= 5U) break;
+      if (move_deck_to_discard(payload)) discarded.push_back(payload);
     }
-    if (move_deck_to_discard(Card::Dipplin)) discarded.push_back(Card::Dipplin);
+    if (discarded.size() < 5U && move_deck_to_discard(Card::Dipplin)) {
+      discarded.push_back(Card::Dipplin);
+    }
 
     // In no-discard-control, the engine protects only resources needed immediately.
     // Before a legal same-turn draw refresh, use Blender's remaining selections on

@@ -88,18 +88,18 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
     const bool want_regi = need_regi() && bench_space() > 0 && might_be_unseen(Card::RegidragoV);
     const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
-                             might_be_unseen(Card::RegidragoVstar);
+                            might_be_unseen(Card::RegidragoVstar);
     const bool want_latias = need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
-                              !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
-                              might_be_unseen(Card::LatiasEx);
+                             !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
+                             might_be_unseen(Card::LatiasEx);
     const bool want_oricorio = need_energy() && hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
-                                 bench_space() > 0 && needs_oricorio_connector() &&
-                                 might_be_unseen(Card::Oricorio);
+                                bench_space() > 0 && needs_oricorio_connector() &&
+                                might_be_unseen(Card::Oricorio);
     // Tapu Lele-GX may turn this Pokémon search into a live Supporter connector
     // through Wonder Tag when it is Benched from hand: https://api.pokemontcg.io/v2/cards/cel25c-60_A
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
-                            bench_space() > 0 && needs_tapu_connector() &&
-                            might_be_unseen(Card::TapuLeleGX);
+                           bench_space() > 0 && needs_tapu_connector() &&
+                           might_be_unseen(Card::TapuLeleGX);
     // A fetched Dragon payload can immediately become a strict-JIT payload when a
     // distinct live hand-discard effect remains. Mysterious Treasure, Quick Ball,
     // and Earthen Vessel each discard from hand; Serena may discard from hand before
@@ -183,7 +183,7 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
     const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
-                             might_be_unseen(Card::RegidragoVstar);
+                            might_be_unseen(Card::RegidragoVstar);
     // Evolution Incense can search any Evolution Pokémon. A JIT payload search is
     // live only when a separate card already in hand can discard that payload:
     // https://api.pokemontcg.io/v2/cards/swsh1-163

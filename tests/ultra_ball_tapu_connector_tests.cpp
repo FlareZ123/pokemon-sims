@@ -300,6 +300,31 @@ void test_wonder_tag_preserves_incomplete_tate_promotion() {
       !contains(after.deck, sim::Card::TateLiza)) {
     throw std::runtime_error("Tapu Lele-GX must be preserved when Tate would promote an incomplete VSTAR.");
   }
+
+  std::mt19937_64 forced_rng{4063};
+  sim::Engine forced_engine(scenario, recipe, forced_rng);
+  sim::State forced_state;
+  forced_state.turn = 2;
+  forced_state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1, sim::Tool::None};
+  forced_state.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 1, 1, 1, sim::Tool::None}};
+  forced_state.hand = {sim::Card::TapuLeleGX};
+  forced_state.deck = {sim::Card::TateLiza};
+  forced_state.discard = {sim::Card::MegaDragonite};
+  forced_state.discarded_this_turn = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(forced_engine, std::move(forced_state));
+
+  // Even if another legal route already put Tapu Lele-GX onto the Bench, Wonder Tag
+  // is optional and must not fall through to Tate after rejecting the incomplete switch:
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm7-148
+  if (!sim::EngineTestAccess::bench_from_hand(forced_engine, sim::Card::TapuLeleGX, true)) {
+    throw std::runtime_error("The forced Wonder Tag selector reproduction should Bench Tapu Lele-GX.");
+  }
+  const sim::State& forced_after = sim::EngineTestAccess::state(forced_engine);
+  if (contains(forced_after.hand, sim::Card::TateLiza) ||
+      !contains(forced_after.deck, sim::Card::TateLiza)) {
+    throw std::runtime_error("Wonder Tag must not use the generic Tate fallback for an incomplete promotion.");
+  }
 }
 
 void test_wonder_tag_fetches_tate_for_complete_promotion() {

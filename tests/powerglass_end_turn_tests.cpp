@@ -126,6 +126,47 @@ void test_arven_falls_back_to_powerglass_after_fss_search_miss() {
          "The searched Powerglass should attach to the Active Regidrago VSTAR");
 }
 
+void test_arven_prefers_live_powerglass_after_manual_attachment_is_spent() {
+  const sim::Scenario scenario{"arven-live-powerglass-priority", sim::DciProfile::NoDiscardControl,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{386};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+  state.hand = {sim::Card::Arven};
+  state.deck = {sim::Card::ForestSealStone, sim::Card::Powerglass, sim::Card::Fire};
+  state.discard = {sim::Card::Fire, sim::Card::MegaDragonite};
+  state.manual_energy_used = true;
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Arven uses the Supporter play, and the manual Energy attachment is already spent.
+  // Star Alchemy can only put an Energy or connector into hand in this isolated state,
+  // while Powerglass can attach the missing Fire from discard at end of turn:
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  expect(sim::EngineTestAccess::play_arven(engine),
+         "Arven should choose the live Powerglass Tool route");
+  expect(contains(sim::EngineTestAccess::state(engine).hand, sim::Card::Powerglass),
+         "Arven should search Powerglass when Forest Seal Stone cannot advance Energy this turn");
+  expect(!contains(sim::EngineTestAccess::state(engine).hand, sim::Card::ForestSealStone),
+         "Arven should not select the dead Forest Seal Stone Tool route");
+  expect(contains(sim::EngineTestAccess::state(engine).deck, sim::Card::ForestSealStone),
+         "Forest Seal Stone should remain in the deck");
+  expect(sim::EngineTestAccess::state(engine).supporter_used,
+         "Arven should consume the turn's Supporter play");
+  expect(sim::EngineTestAccess::attach_powerglass(engine),
+         "The searched Powerglass should attach to the Active Regidrago VSTAR");
+  expect(sim::EngineTestAccess::resolve_powerglass_end_turn(engine),
+         "Powerglass should attach the missing Fire Energy from discard");
+  expect(sim::EngineTestAccess::state(engine).active->fire == 1,
+         "The live Powerglass route should complete the Active holder's GGF Energy");
+}
+
 void test_powerglass_does_not_resolve_from_the_bench() {
   const sim::Scenario scenario{"powerglass-benched-holder", sim::DciProfile::NoDiscardControl,
                                sim::LockMode::None, false, 4};
@@ -247,6 +288,7 @@ int main() {
     test_powerglass_energy_counts_on_the_following_turn();
     test_powerglass_is_attachable_through_item_lock();
     test_arven_falls_back_to_powerglass_after_fss_search_miss();
+    test_arven_prefers_live_powerglass_after_manual_attachment_is_spent();
     test_powerglass_does_not_resolve_from_the_bench();
     test_spent_vstar_power_preserves_tool_slot_for_powerglass();
     test_fss_uses_bench_when_powerglass_needs_active_tool_slot();

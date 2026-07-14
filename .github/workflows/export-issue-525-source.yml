@@ -1,19 +1,29 @@
-name: Export issue 525 source
+name: Apply issue 525 fixture patch
 
 on:
-  pull_request:
+  push:
+    branches:
+      - fix/525-legacy-star-vessel-fixture
+
+permissions:
+  contents: write
 
 jobs:
-  export-source:
+  apply-patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/upload-artifact@v4
         with:
-          name: issue-525-repo
-          path: |
-            CMakeLists.txt
-            src
-            tests
-            docs
-          if-no-files-found: error
+          ref: fix/525-legacy-star-vessel-fixture
+      - name: Apply validated fixture patch
+        shell: bash
+        run: |
+          git apply --check .github/issue-525.patch
+          git apply .github/issue-525.patch
+          rm .github/issue-525.patch
+          rm .github/workflows/export-issue-525-source.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/legacy_star_evolution_incense_payload_tests.cpp .github
+          git commit -m "Correct Legacy Star Vessel payload-cost fixture"
+          git push origin HEAD:fix/525-legacy-star-vessel-fixture

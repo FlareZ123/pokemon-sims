@@ -1,10 +1,24 @@
   bool active_powerglass_tool_slot_needed() const {
-    if (hand_count(Card::Powerglass) == 0 || !state_.active ||
-        state_.active->tool != Tool::None ||
+    if (!state_.active || state_.active->tool != Tool::None ||
         (state_.active->card != Card::RegidragoV &&
          state_.active->card != Card::RegidragoVstar)) {
       return false;
     }
+
+    const bool powerglass_held = hand_count(Card::Powerglass) > 0;
+    // Arven can search a Pokémon Tool. When the manual attachment is already spent
+    // and Energy is the only missing setup axis, a Powerglass still in deck is the
+    // immediate live route while Forest Seal Stone would occupy the same Tool slot:
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    const bool energy_is_only_missing_axis = need_energy() && !need_regi() &&
+        !need_vstar() && !need_active_vstar() && !need_payload();
+    const bool arven_searches_live_powerglass = supporter_allowed() &&
+        hand_count(Card::Arven) > 0 && state_.manual_energy_used &&
+        energy_is_only_missing_axis && might_be_unseen(Card::Powerglass);
+    if (!powerglass_held && !arven_searches_live_powerglass) return false;
 
     // Powerglass must be attached to the Pokémon that will be Active when its
     // end-of-turn effect resolves, and that Pokémon may hold only one Tool:

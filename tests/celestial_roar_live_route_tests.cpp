@@ -72,6 +72,88 @@ void test_no_control_keeps_live_payload_banking_attack() {
   assert(contains(state.discard, sim::Card::MegaDragonite));
 }
 
+void test_no_control_banks_payload_with_full_ggf_and_known_prized_vstar() {
+  const sim::Scenario scenario{"celestial-roar-full-ggf-payload-bank",
+                               sim::DciProfile::NoDiscardControl,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{6081};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State& state = sim::EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.supporter_used = true;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::Gladion};
+  state.prizes = {sim::Card::RegidragoVstar};
+  state.deck = {sim::Card::Arven, sim::Card::MegaDragonite,
+                sim::Card::Grass, sim::Card::Fire};
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Celestial Roar remains a legal attack after GGF is complete and may bank a
+  // Dragon payload for a later Apex Dragon turn. The known prized VSTAR plus held
+  // Gladion preserves the next-turn evolution route without exposing the VSTAR to
+  // the top-three discard:
+  // https://api.pokemontcg.io/v2/cards/swsh12-135
+  // https://api.pokemontcg.io/v2/cards/sm4-95
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+  assert(sim::EngineTestAccess::use_celestial_roar(engine));
+  assert(state.turn_ended);
+  assert(contains(state.discard, sim::Card::MegaDragonite));
+  assert(contains(state.prizes, sim::Card::RegidragoVstar));
+  assert(contains(state.hand, sim::Card::Gladion));
+}
+
+void test_strict_jit_holds_celestial_roar_with_full_ggf() {
+  const sim::Scenario scenario{"celestial-roar-full-ggf-strict-hold",
+                               sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{6082};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State& state = sim::EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1, sim::Tool::None};
+  state.deck = {sim::Card::Arven, sim::Card::MegaDragonite,
+                sim::Card::Grass, sim::Card::Fire};
+  const std::vector<sim::Card> original_deck = state.deck;
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Strict JIT requires the payload to enter discard during the eventual ready
+  // turn, so a full-GGF unevolved Regidrago V must preserve the deck here:
+  // https://api.pokemontcg.io/v2/cards/swsh12-135
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+  assert(!sim::EngineTestAccess::use_celestial_roar(engine));
+  assert(!state.turn_ended);
+  assert(state.deck == original_deck);
+  assert(state.discard.empty());
+}
+
+void test_no_control_holds_full_ggf_when_known_deck_has_no_payload() {
+  const sim::Scenario scenario{"celestial-roar-full-ggf-no-payload-hold",
+                               sim::DciProfile::NoDiscardControl,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{6083};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State& state = sim::EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1, sim::Tool::None};
+  state.deck = {sim::Card::Arven, sim::Card::Grass, sim::Card::Fire};
+  const std::vector<sim::Card> original_deck = state.deck;
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // K1 proves that neither a needed Energy nor a modeled Dragon payload can be
+  // advanced, so the optional top-three discard remains correctly held:
+  // https://api.pokemontcg.io/v2/cards/swsh12-135
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+  assert(!sim::EngineTestAccess::use_celestial_roar(engine));
+  assert(!state.turn_ended);
+  assert(state.deck == original_deck);
+  assert(state.discard.empty());
+}
+
 void test_burnet_discards_two_payloads_before_dipplin() {
   const sim::Scenario scenario{"burnet-two-payloads",
                                sim::DciProfile::StrictJit,
@@ -156,6 +238,9 @@ void test_strict_jit_attacks_when_needed_fire_may_remain() {
 int main() {
   test_strict_jit_holds_when_known_deck_has_no_needed_energy();
   test_no_control_keeps_live_payload_banking_attack();
+  test_no_control_banks_payload_with_full_ggf_and_known_prized_vstar();
+  test_strict_jit_holds_celestial_roar_with_full_ggf();
+  test_no_control_holds_full_ggf_when_known_deck_has_no_payload();
   test_burnet_discards_two_payloads_before_dipplin();
   test_burnet_uses_second_safe_selection_for_celestial_roar();
   test_strict_jit_attacks_when_needed_fire_may_remain();

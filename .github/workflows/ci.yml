@@ -35,6 +35,11 @@ jobs:
             find build/Testing -name LastTest.log -type f -print -exec cat {} \; || true
             exit "$status"
           }
+      - name: Run temporary 100k T2/T3 matrix
+        run: |
+          # Aggregate command specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out /tmp/ci-simulation-results.csv
+          cat /tmp/ci-simulation-results.csv
       - name: Upload CTest diagnostics
         if: always()
         uses: actions/upload-artifact@v4

@@ -94,6 +94,76 @@ void test_mysterious_treasure_can_discard_unpayable_ultra_ball() {
   expect(after.deck.empty(), "the searched Regidrago V should leave the deck");
 }
 
+void test_duplicate_supporter_is_legal_cost(const sim::Card supporter,
+                                            const std::uint64_t seed) {
+  const sim::Scenario scenario{"duplicate-supporter-cost", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{seed};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1};
+  state.hand = {sim::Card::MysteriousTreasure, supporter, supporter};
+  state.deck = {sim::Card::RegidragoVstar};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Mysterious Treasure may discard any other hand card, and strict DCI lists a
+  // duplicate as potential discard fuel while one copy remains available:
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  // A player may use only one Supporter per turn, so preserving one copy retains
+  // the complete Supporter option: https://www.pokemon.com/us/pokemon-tcg/rules
+  expect(sim::EngineTestAccess::play_mysterious_treasure(engine, false),
+         "Mysterious Treasure should use one duplicated Supporter as its discard cost");
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(contains(after.hand, sim::Card::RegidragoVstar),
+         "Mysterious Treasure should search Regidrago VSTAR");
+  expect(count(after.hand, supporter) == 1,
+         "one Supporter copy should remain in hand");
+  expect(count(after.discard, supporter) == 1,
+         "one duplicated Supporter should pay the discard cost");
+  expect(count(after.discard, sim::Card::MysteriousTreasure) == 1,
+         "the played Mysterious Treasure should enter discard");
+  expect(after.deck.empty(), "the searched Regidrago VSTAR should leave the deck");
+}
+
+void test_singleton_supporter_is_preserved(const sim::Card supporter,
+                                           const std::uint64_t seed) {
+  const sim::Scenario scenario{"singleton-supporter-hold", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{seed};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1};
+  state.hand = {sim::Card::MysteriousTreasure, supporter};
+  state.deck = {sim::Card::RegidragoVstar};
+  const std::vector<sim::Card> original_hand = state.hand;
+  const std::vector<sim::Card> original_deck = state.deck;
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // The duplicate policy requires two copies. A singleton Arven, Crispin, or Gladion
+  // remains protected under strict DCI:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  // Card texts: https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://api.pokemontcg.io/v2/cards/sm4-95
+  expect(!sim::EngineTestAccess::play_mysterious_treasure(engine, false),
+         "Mysterious Treasure should preserve a singleton Supporter under strict DCI");
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(after.hand == original_hand, "the singleton Supporter hand should remain unchanged");
+  expect(after.deck == original_deck, "the unplayed search should leave the deck unchanged");
+  expect(after.discard.empty(), "no card should enter discard when the cost is unavailable");
+}
+
 void test_known_no_target_mysterious_treasure_preserves_payload() {
   const sim::Scenario scenario{"mysterious-treasure-known-no-target", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
@@ -157,6 +227,12 @@ int main() {
   try {
     test_duplicate_mysterious_treasure_is_legal_cost();
     test_mysterious_treasure_can_discard_unpayable_ultra_ball();
+    test_duplicate_supporter_is_legal_cost(sim::Card::Arven, 6071);
+    test_duplicate_supporter_is_legal_cost(sim::Card::Crispin, 6072);
+    test_duplicate_supporter_is_legal_cost(sim::Card::Gladion, 6073);
+    test_singleton_supporter_is_preserved(sim::Card::Arven, 6074);
+    test_singleton_supporter_is_preserved(sim::Card::Crispin, 6075);
+    test_singleton_supporter_is_preserved(sim::Card::Gladion, 6076);
     test_known_no_target_mysterious_treasure_preserves_payload();
     test_known_no_target_mysterious_treasure_is_not_a_tate_route();
     return 0;

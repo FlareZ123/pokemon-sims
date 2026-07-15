@@ -139,6 +139,18 @@
     // cost, so it remains legal low-DCI fodder when no higher-priority cost exists:
     // https://api.pokemontcg.io/v2/cards/swsh1-179
     if (hand_count(Card::QuickBall) >= 2) return Card::QuickBall;
+
+    // Strict DCI permits one duplicated baseline Supporter to pay a discard cost
+    // while another copy remains for the turn's single Supporter play. Existing
+    // duplicate search Items stay ahead because they consume fewer future options:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/sv7-133
+    // https://api.pokemontcg.io/v2/cards/sm4-95
+    for (const Card card : {Card::Arven, Card::Crispin, Card::Gladion}) {
+      if (hand_count(card) >= 2) return card;
+    }
     return std::nullopt;
   }
 

@@ -5,6 +5,19 @@ on:
     branches: [main]
 
 jobs:
+  source-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create exact PR merge snapshot
+        run: git archive --format=zip --output=pr582-merge-source.zip HEAD
+      - name: Upload exact PR merge snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr582-merge-source
+          path: pr582-merge-source.zip
+          if-no-files-found: error
+
   card-audit-contract:
     runs-on: ubuntu-latest
     steps:

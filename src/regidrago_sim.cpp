@@ -50,11 +50,13 @@
 #include "trace_engine_v2/part_begin_turn_override.inc"
 #define bench_from_hand bench_from_hand_empty_deck_original
 #define bench_oricorio_if_useful bench_oricorio_if_useful_empty_deck_original
+#define needs_oricorio_connector needs_oricorio_connector_original
 #define needs_tapu_connector needs_tapu_connector_original
 #define bench_tapu_if_useful bench_tapu_if_useful_original
 #include "trace_engine_v2/part_006.inc"
 #undef bench_tapu_if_useful
 #undef needs_tapu_connector
+#undef needs_oricorio_connector
 #undef bench_oricorio_if_useful
 #undef bench_from_hand
 #define attach_manual attach_manual_tate_blender_original
@@ -165,7 +167,10 @@
 #undef choose_supporter
 #include "trace_engine_v2/part_roseanne_multimode_override.inc"
 #include "trace_engine_v2/part_turo_oricorio_override.inc"
+#define bench_oricorio_if_useful bench_oricorio_if_useful_target_original
 #include "trace_engine_v2/part_empty_deck_search_override.inc"
+#undef bench_oricorio_if_useful
+#include "trace_engine_v2/part_oricorio_needed_energy_override.inc"
 #define run_turn run_turn_original
 #include "trace_engine_v2/part_014c.inc"
 #undef run_turn

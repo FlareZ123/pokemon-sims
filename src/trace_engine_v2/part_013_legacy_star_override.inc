@@ -5,16 +5,42 @@
     // discard-7 can create a JIT payload line.
     const bool permit_payload_cost = can_play_payload_this_turn() &&
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
-    const auto one_discard_item_payable = [this, permit_payload_cost](const Card item) {
-      if (hand_count(item) == 0) return false;
+    const auto search_item_has_legal_target = [this](const Card item) {
+      // A payable discard requirement does not make a K1 search Item live when the
+      // inspected deck has no legal target:
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://api.pokemontcg.io/v2/cards/swsh1-179
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+      // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+      if (item == Card::MysteriousTreasure) {
+        return !deck_seen_ ||
+            std::any_of(state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic);
+      }
+      if (item == Card::QuickBall) {
+        return !deck_seen_ || std::any_of(state_.deck.begin(), state_.deck.end(), is_basic);
+      }
+      if (item == Card::EarthenVessel) return earthen_vessel_has_legal_target();
+      if (item == Card::UltraBall) {
+        return !deck_seen_ || std::any_of(state_.deck.begin(), state_.deck.end(),
+            [](const Card card) { return is_basic(card) || is_dragon_or_psychic(card); });
+      }
+      return false;
+    };
+    const auto one_discard_item_payable =
+        [this, permit_payload_cost, &search_item_has_legal_target](const Card item) {
+      if (hand_count(item) == 0 || !search_item_has_legal_target(item)) return false;
       // These Items require a card other than the played Item to pay their cost:
       // https://api.pokemontcg.io/v2/cards/sm6-113
       // https://api.pokemontcg.io/v2/cards/swsh1-179
       // https://api.pokemontcg.io/v2/cards/sv4-163
       return choose_discard(permit_payload_cost, true, true, item).has_value();
     };
-    const auto ultra_ball_payable = [this, permit_payload_cost]() {
-      if (hand_count(Card::UltraBall) == 0) return false;
+    const auto ultra_ball_payable =
+        [this, permit_payload_cost, &search_item_has_legal_target]() {
+      if (hand_count(Card::UltraBall) == 0 ||
+          !search_item_has_legal_target(Card::UltraBall)) return false;
       const std::vector<Card> original_hand = state_.hand;
       const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
       const auto first = choose_discard(permit_payload_cost, true, true, Card::UltraBall);
@@ -118,23 +144,55 @@
     const bool evolution_incense_payload_line = need_payload() && !item_locked() && payload_might_be_in_deck() &&
         count_of(state_.discard, Card::EvolutionIncense) > 0 && recovered.empty();
     if (evolution_incense_payload_line) {
-      // A later search Item needs one card to remain after Evolution Incense removes
-      // the payload. Serena remains live with a one-card deck because its mandatory
-      // discard is an effect and does not require another deck search:
+      // Evaluate the exact deck after Evolution Incense removes its first available
+      // modeled Evolution Dragon payload. At K0, one remaining card preserves public
+      // fixed-list plausibility; at K1, the promised second Item needs its own target:
       // https://api.pokemontcg.io/v2/cards/swsh1-163
       // https://api.pokemontcg.io/v2/cards/sm6-113
       // https://api.pokemontcg.io/v2/cards/swsh1-179
       // https://api.pokemontcg.io/v2/cards/sv4-163
       // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-      // https://api.pokemontcg.io/v2/cards/swsh12-164
-      // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
-      const bool later_search_can_begin = state_.deck.size() > 1U;
+      // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+      const auto post_incense_search_has_target = [this](const Card outlet) {
+        if (state_.deck.size() <= 1U) return false;
+        if (!deck_seen_) return true;
+
+        std::vector<Card> remaining = state_.deck;
+        auto payload = remaining.end();
+        for (const Card candidate :
+             {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar}) {
+          payload = std::find(remaining.begin(), remaining.end(), candidate);
+          if (payload != remaining.end()) break;
+        }
+        if (payload == remaining.end()) return false;
+        remaining.erase(payload);
+
+        if (outlet == Card::MysteriousTreasure) {
+          return std::any_of(remaining.begin(), remaining.end(), is_dragon_or_psychic);
+        }
+        if (outlet == Card::QuickBall) {
+          return std::any_of(remaining.begin(), remaining.end(), is_basic);
+        }
+        if (outlet == Card::EarthenVessel) {
+          return std::any_of(remaining.begin(), remaining.end(), [](const Card card) {
+            return card == Card::Grass || card == Card::Fire;
+          });
+        }
+        if (outlet == Card::UltraBall) {
+          return std::any_of(remaining.begin(), remaining.end(), [](const Card card) {
+            return is_basic(card) || is_dragon_or_psychic(card);
+          });
+        }
+        return false;
+      };
 
       // Ultra Ball can follow Evolution Incense only when the fetched Dragon plus a
       // distinct policy-admissible hand card can pay its two-other-card cost:
       // https://api.pokemontcg.io/v2/cards/swsh1-163
       // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-      if (later_search_can_begin && count_of(state_.discard, Card::UltraBall) > 0) {
+      if (post_incense_search_has_target(Card::UltraBall) &&
+          count_of(state_.discard, Card::UltraBall) > 0) {
         const std::vector<Card> base_hand = state_.hand;
         const std::vector<Card> base_discard = state_.discard;
         const std::vector<Card> base_discarded_this_turn = state_.discarded_this_turn;
@@ -178,9 +236,10 @@
         }
       }
 
-      if (later_search_can_begin && recovered.empty()) {
+      if (recovered.empty()) {
         for (const Card outlet : {Card::MysteriousTreasure, Card::QuickBall, Card::EarthenVessel}) {
-          if (count_of(state_.discard, outlet) == 0) continue;
+          if (count_of(state_.discard, outlet) == 0 ||
+              !post_incense_search_has_target(outlet)) continue;
           if (!recover_discard_to_hand(Card::EvolutionIncense)) throw std::logic_error("Legacy Star Evolution Incense target disappeared");
           if (!recover_discard_to_hand(outlet)) throw std::logic_error("Legacy Star hand-discard outlet disappeared");
           recovered.push_back(Card::EvolutionIncense);

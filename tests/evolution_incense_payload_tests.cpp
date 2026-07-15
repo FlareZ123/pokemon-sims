@@ -282,6 +282,85 @@ void test_evolution_incense_uses_legal_post_search_fallbacks() {
   }
 }
 
+void test_k1_evolution_incense_requires_outlet_specific_remaining_targets() {
+  struct Case {
+    sim::Card outlet;
+    sim::Card dead_remaining;
+    sim::Card live_remaining;
+  };
+  const Case cases[] = {
+      {sim::Card::MysteriousTreasure, sim::Card::Serena, sim::Card::RegidragoVstar},
+      {sim::Card::QuickBall, sim::Card::Dragapult, sim::Card::RegidragoV},
+      {sim::Card::EarthenVessel, sim::Card::Dipplin, sim::Card::Fire},
+  };
+
+  for (const Case& test_case : cases) {
+    for (const bool live : {false, true}) {
+      Fixture fixture;
+      sim::State state;
+      state.turn = 2;
+      state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1,
+                                  sim::Tool::None};
+      state.hand = {sim::Card::EvolutionIncense, test_case.outlet};
+      state.deck = {sim::Card::MegaDragonite,
+                    live ? test_case.live_remaining : test_case.dead_remaining};
+      sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+      sim::EngineTestAccess::set_deck_seen(fixture.engine);
+
+      // After Incense removes Mega Dragonite ex, the promised outlet must retain its
+      // own printed target class. Treasure needs Psychic or Dragon, Quick Ball needs a
+      // Basic Pokémon, and Vessel needs Basic Energy. Known zero-effect Trainers are
+      // unplayable, so the dead controls must preserve both cards:
+      // Evolution Incense https://api.pokemontcg.io/v2/cards/swsh1-163
+      // Mysterious Treasure https://api.pokemontcg.io/v2/cards/sm6-113
+      // Quick Ball https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Earthen Vessel https://api.pokemontcg.io/v2/cards/sv4-163
+      // Mega Dragonite ex https://api.pokemontcg.io/v2/cards/me2pt5-152
+      // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      const bool played = sim::EngineTestAccess::play_evolution_incense(fixture.engine, true);
+      if (played != live) {
+        throw std::runtime_error("Evolution Incense outlet target preflight disagreed with the exact post-search deck.");
+      }
+
+      const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+      if (live) {
+        if (!contains(after.hand, sim::Card::MegaDragonite)) {
+          throw std::runtime_error("A target-legal outlet should keep the Incense payload route live.");
+        }
+      } else if (!contains(after.hand, sim::Card::EvolutionIncense) ||
+                 !contains(after.hand, test_case.outlet) ||
+                 !contains(after.deck, sim::Card::MegaDragonite) ||
+                 !after.discard.empty()) {
+        throw std::runtime_error("An off-target outlet must preserve Incense, the outlet, and the payload.");
+      }
+    }
+  }
+}
+
+void test_k0_evolution_incense_preserves_unknown_outlet_targets() {
+  Fixture fixture;
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::EvolutionIncense, sim::Card::QuickBall};
+  state.deck = {sim::Card::MegaDragonite, sim::Card::Dragapult};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // K0 cannot inspect the remaining deck identity before Evolution Incense resolves,
+  // so a fixed-list Basic Pokémon target for Quick Ball remains plausible:
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+  if (!sim::EngineTestAccess::play_evolution_incense(fixture.engine, true)) {
+    throw std::runtime_error("K0 should preserve an unknown post-Incense Quick Ball target.");
+  }
+  if (!contains(sim::EngineTestAccess::state(fixture.engine).hand,
+                sim::Card::MegaDragonite)) {
+    throw std::runtime_error("The K0 control should fetch the modeled Evolution payload.");
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -294,6 +373,8 @@ int main() {
     test_evolution_incense_holds_when_k1_vstar_target_is_absent();
     test_evolution_incense_holds_when_k1_payload_targets_are_absent();
     test_evolution_incense_uses_legal_post_search_fallbacks();
+    test_k1_evolution_incense_requires_outlet_specific_remaining_targets();
+    test_k0_evolution_incense_preserves_unknown_outlet_targets();
     std::cout << "Evolution Incense payload tests passed\n";
     return 0;
   } catch (const std::exception& error) {

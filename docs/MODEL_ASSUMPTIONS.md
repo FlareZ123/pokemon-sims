@@ -58,7 +58,7 @@ This avoids a common simulation error where a solver chooses Serena because it a
 
 ### Draw Supporters
 
-Serena and Tate & Liza use simple fallback priorities. They are not evaluated by a full expected-value belief-state calculation. Their performance is therefore a conservative policy estimate. Future refinement should evaluate draw-Supporter expected value while preserving the K0/K1 knowledge model in `POLICY_DECISIONS.md`.
+Serena and Tate & Liza use simple fallback priorities. They are not evaluated by a full expected-value belief-state calculation. Their performance is therefore a conservative policy estimate, with further refinement planned in `SIM-PLAN.md`.
 
 ### Strict JIT definition
 

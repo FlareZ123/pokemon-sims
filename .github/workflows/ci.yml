@@ -5,6 +5,25 @@ on:
     branches: [main]
 
 jobs:
+  source-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upload exact source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-source-snapshot
+          path: |
+            .github
+            docs
+            results
+            scripts
+            src
+            tests
+            CMakeLists.txt
+            README.md
+          if-no-files-found: error
+
   card-audit-contract:
     runs-on: ubuntu-latest
     steps:

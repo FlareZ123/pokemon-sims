@@ -10,7 +10,11 @@ namespace sim {
 
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
+  static void set_deck_seen(Engine& engine, const bool seen = true) { engine.deck_seen_ = seen; }
   static const State& state(const Engine& engine) { return engine.state_; }
+  static bool needs_oricorio_connector(const Engine& engine) {
+    return engine.needs_oricorio_connector();
+  }
   static bool bench_oricorio_if_useful(Engine& engine) { return engine.bench_oricorio_if_useful(); }
   static void choose_supporter(Engine& engine) { engine.choose_supporter(); }
   static bool play_turo_oricorio_energy_route(Engine& engine) {
@@ -50,6 +54,117 @@ void test_off_type_fire_does_not_hide_missing_grass_connector() {
          "An off-type Fire Energy must not suppress Vital Dance for a missing Grass Energy.");
   expect(contains(sim::EngineTestAccess::state(engine).hand, sim::Card::Grass),
          "Vital Dance should put the missing Grass Energy into hand.");
+}
+
+void test_k1_oricorio_holds_when_only_off_type_energy_remains() {
+  sim::Scenario scenario{"oricorio-k1-off-type", sim::DciProfile::StrictJit,
+                         sim::LockMode::None, false, 4};
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+  state.hand = {sim::Card::Oricorio};
+  state.deck = {sim::Card::Grass};
+  state.discard = {sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+
+  sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{562};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Vital Dance may search Basic Energy, while Apex Dragon still needs Fire. K1
+  // proves the remaining Grass cannot advance that missing component, so the policy
+  // preserves Oricorio, its Bench slot, and the one-time on-play Ability:
+  // https://api.pokemontcg.io/v2/cards/sm2-55
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  expect(!sim::EngineTestAccess::needs_oricorio_connector(engine),
+         "K1 must reject an Oricorio route when only the off-type Energy remains.");
+  expect(!sim::EngineTestAccess::bench_oricorio_if_useful(engine),
+         "Oricorio must stay in hand when Vital Dance cannot find the needed type.");
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(contains(after.hand, sim::Card::Oricorio) && after.bench.empty(),
+         "The dead K1 route must preserve Oricorio and the Bench slot.");
+}
+
+void test_k1_oricorio_holds_when_no_basic_energy_remains() {
+  sim::Scenario scenario{"oricorio-k1-zero-energy", sim::DciProfile::StrictJit,
+                         sim::LockMode::None, false, 4};
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+  state.hand = {sim::Card::Oricorio};
+  state.deck = {sim::Card::Serena};
+  state.discard = {sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+
+  sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{563};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // A known deck with no Basic Energy cannot make Vital Dance a live Energy connector:
+  // https://api.pokemontcg.io/v2/cards/sm2-55
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  expect(!sim::EngineTestAccess::needs_oricorio_connector(engine),
+         "K1 must reject Oricorio when the inspected deck has no Basic Energy.");
+  expect(!sim::EngineTestAccess::bench_oricorio_if_useful(engine),
+         "The zero-Energy route must preserve Oricorio in hand.");
+}
+
+void test_k1_oricorio_uses_vital_dance_when_needed_type_remains() {
+  sim::Scenario scenario{"oricorio-k1-needed-fire", sim::DciProfile::StrictJit,
+                         sim::LockMode::None, false, 4};
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+  state.hand = {sim::Card::Oricorio};
+  state.deck = {sim::Card::Fire};
+  state.discard = {sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+
+  sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{564};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Vital Dance can legally take the exact Fire required by Apex Dragon:
+  // https://api.pokemontcg.io/v2/cards/sm2-55
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  expect(sim::EngineTestAccess::needs_oricorio_connector(engine),
+         "K1 should keep Oricorio live when the needed Fire remains in deck.");
+  expect(sim::EngineTestAccess::bench_oricorio_if_useful(engine),
+         "Oricorio should be Benched for the live needed-type search.");
+  expect(contains(sim::EngineTestAccess::state(engine).hand, sim::Card::Fire),
+         "Vital Dance should put the needed Fire into hand.");
+}
+
+void test_k0_oricorio_preserves_unknown_needed_type_possibility() {
+  sim::Scenario scenario{"oricorio-k0-unknown-fire", sim::DciProfile::StrictJit,
+                         sim::LockMode::None, false, 4};
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+  state.hand = {sim::Card::Oricorio};
+  state.deck = {sim::Card::Grass};
+  state.discard = {sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+
+  sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{565};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Before legal inspection, the policy cannot read the actual remaining identity.
+  // The fixed list still permits unseen Fire, so K0 keeps the connector plausible:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
+  // https://api.pokemontcg.io/v2/cards/sm2-55
+  expect(sim::EngineTestAccess::needs_oricorio_connector(engine),
+         "K0 must preserve the publicly plausible needed-Energy route.");
 }
 
 void test_turo_completes_the_active_vstar_even_when_a_benched_vstar_scores_higher() {
@@ -162,6 +277,10 @@ void test_turo_defers_to_crispin_for_the_same_exact_energy() {
 int main() {
   try {
     test_off_type_fire_does_not_hide_missing_grass_connector();
+    test_k1_oricorio_holds_when_only_off_type_energy_remains();
+    test_k1_oricorio_holds_when_no_basic_energy_remains();
+    test_k1_oricorio_uses_vital_dance_when_needed_type_remains();
+    test_k0_oricorio_preserves_unknown_needed_type_possibility();
     test_turo_completes_the_active_vstar_even_when_a_benched_vstar_scores_higher();
     test_turo_discards_oricorio_attachments_before_replay();
     test_turo_defers_to_crispin_for_the_same_exact_energy();

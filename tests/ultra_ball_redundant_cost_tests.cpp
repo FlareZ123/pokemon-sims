@@ -13,6 +13,9 @@ struct EngineTestAccess {
   static bool play_ultra_ball(Engine& engine, const bool permit_payload = false) {
     return engine.play_ultra_ball(permit_payload);
   }
+  static bool play_mysterious_treasure(Engine& engine) {
+    return engine.play_mysterious_treasure(true);
+  }
   static bool play_gladion(Engine& engine) { return engine.play_gladion(); }
   static bool second_ultra_ball_can_discard_fetched_payload(Engine& engine) {
     return engine.second_ultra_ball_can_discard_fetched_payload();
@@ -216,6 +219,111 @@ void test_k1_ultra_ball_route_probes_reject_a_known_non_pokemon_deck() {
   assert(!EngineTestAccess::ultra_ball_can_discard_fetched_incense_payload(engine));
 }
 
+void test_k1_ultra_ball_preserves_final_payload_before_search_item_outlet() {
+  using namespace sim;
+  const Scenario scenario{"ultra-ball-final-payload-dead-outlet", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(4481);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1};
+  state.hand = {Card::UltraBall, Card::MysteriousTreasure, Card::Dipplin,
+                Card::RegidragoVstar};
+  state.deck = {Card::MegaDragonite};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Ultra Ball would remove the final deck card before Mysterious Treasure could
+  // begin its required search. Preserve both Items and both Ultra Ball costs:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  assert(!EngineTestAccess::play_ultra_ball(engine));
+  assert(state.hand == std::vector<Card>({Card::UltraBall, Card::MysteriousTreasure,
+                                         Card::Dipplin, Card::RegidragoVstar}));
+  assert(state.deck == std::vector<Card>({Card::MegaDragonite}));
+  assert(state.discard.empty());
+}
+
+void test_k1_ultra_ball_keeps_target_legal_search_item_continuation() {
+  using namespace sim;
+  const Scenario scenario{"ultra-ball-live-treasure-continuation", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(4482);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1};
+  state.hand = {Card::UltraBall, Card::MysteriousTreasure, Card::Dipplin, Card::Dipplin};
+  state.deck = {Card::MegaDragonite, Card::RegidragoVstar};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // After Ultra Ball fetches Mega Dragonite ex, Regidrago VSTAR remains a legal
+  // Dragon target for Mysterious Treasure, which may discard the fetched payload:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  assert(EngineTestAccess::play_ultra_ball(engine));
+  assert(EngineTestAccess::play_mysterious_treasure(engine));
+  assert(std::count(state.discard.begin(), state.discard.end(), Card::MegaDragonite) == 1);
+  assert(std::count(state.hand.begin(), state.hand.end(), Card::RegidragoVstar) == 1);
+}
+
+void test_k1_ultra_ball_keeps_serena_final_card_continuation() {
+  using namespace sim;
+  const Scenario scenario{"ultra-ball-final-payload-serena", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(4483);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1};
+  state.hand = {Card::UltraBall, Card::Serena, Card::Dipplin, Card::Dipplin};
+  state.deck = {Card::MegaDragonite};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Serena can discard the fetched Dragon without a second deck search, so Ultra Ball
+  // remains a live final-card continuation:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://api.pokemontcg.io/v2/cards/swsh12-164
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  assert(EngineTestAccess::play_ultra_ball(engine));
+  assert(state.deck.empty());
+  assert(std::count(state.hand.begin(), state.hand.end(), Card::MegaDragonite) == 1);
+  assert(std::count(state.hand.begin(), state.hand.end(), Card::Serena) == 1);
+}
+
+void test_k0_ultra_ball_preserves_unknown_final_card_routes() {
+  using namespace sim;
+  const Scenario scenario{"ultra-ball-k0-final-card", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(4484);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1};
+  state.hand = {Card::UltraBall, Card::MysteriousTreasure, Card::Dipplin, Card::Dipplin};
+  state.deck = {Card::MegaDragonite};
+
+  // K0 cannot inspect the remaining card identity before the legal Ultra Ball search,
+  // so fixed-list ordinary Pokémon targets remain plausible and the play is preserved:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+  assert(EngineTestAccess::play_ultra_ball(engine));
+  assert(state.deck.empty());
+  assert(std::count(state.hand.begin(), state.hand.end(), Card::MegaDragonite) == 1);
+}
+
 }  // namespace
 
 int main() {
@@ -227,5 +335,9 @@ int main() {
   test_k1_ultra_ball_payload_cost_remains_legal_with_a_pokemon_target();
   test_k0_ultra_ball_may_legally_attempt_an_unknown_search();
   test_k1_ultra_ball_route_probes_reject_a_known_non_pokemon_deck();
+  test_k1_ultra_ball_preserves_final_payload_before_search_item_outlet();
+  test_k1_ultra_ball_keeps_target_legal_search_item_continuation();
+  test_k1_ultra_ball_keeps_serena_final_card_continuation();
+  test_k0_ultra_ball_preserves_unknown_final_card_routes();
   return 0;
 }

@@ -173,8 +173,11 @@
 #include "trace_engine_v2/part_roseanne_multimode_override.inc"
 #include "trace_engine_v2/part_turo_oricorio_override.inc"
 #define bench_oricorio_if_useful bench_oricorio_if_useful_target_original
+#define play_ultra_ball play_ultra_ball_payload_outlet_original
 #include "trace_engine_v2/part_empty_deck_search_override.inc"
+#undef play_ultra_ball
 #undef bench_oricorio_if_useful
+#include "trace_engine_v2/part_ultra_ball_payload_outlet_override.inc"
 #include "trace_engine_v2/part_oricorio_needed_energy_override.inc"
 #define run_turn run_turn_original
 #include "trace_engine_v2/part_014c.inc"

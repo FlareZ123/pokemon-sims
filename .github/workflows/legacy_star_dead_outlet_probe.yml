@@ -1,0 +1,31 @@
+name: Legacy Star Dead Outlet Probe
+
+on:
+  pull_request:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mode: [release, sanitizers]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build focused probe
+        shell: bash
+        run: |
+          flags="-std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -UNDEBUG"
+          if [[ "${{ matrix.mode }}" == "sanitizers" ]]; then
+            flags="$flags -fsanitize=address,undefined -fno-omit-frame-pointer"
+          else
+            flags="$flags -O2"
+          fi
+          g++ $flags tests/legacy_star_dead_outlet_probe.cpp -o legacy_star_dead_outlet_probe
+      - name: Run focused probe
+        shell: bash
+        run: |
+          if [[ "${{ matrix.mode }}" == "sanitizers" ]]; then
+            ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 ./legacy_star_dead_outlet_probe
+          else
+            ./legacy_star_dead_outlet_probe
+          fi

@@ -1,4 +1,4 @@
-  bool original_wonder_tag_route_has_live_target() const {
+  bool original_wonder_tag_route_has_live_target() {
     // Wonder Tag searches a Supporter. At K1, the Supporter that justifies spending
     // Tapu Lele-GX and a Bench slot must actually remain in the inspected deck;
     // K0 keeps fixed-list uncertainty through might_be_unseen():

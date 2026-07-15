@@ -33,6 +33,14 @@ jobs:
             find build/Testing -name LastTest.log -type f -print -exec cat {} \; || true
             exit "$status"
           }
+      - name: Generate T2/T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/t2_t3_matrix.csv
+      - name: Upload T2/T3 matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: t2-t3-matrix-fb7875b
+          path: build/t2_t3_matrix.csv
+          if-no-files-found: error
       - name: Upload CTest diagnostics
         if: always()
         uses: actions/upload-artifact@v4

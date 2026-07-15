@@ -125,7 +125,7 @@
            play_ultra_ball_empty_deck_original(permit_payload);
   }
 
-  bool evolution_incense_has_live_post_payload_outlet() const {
+  bool evolution_incense_has_live_post_payload_outlet() {
     const bool serena_outlet = supporter_allowed() && hand_count(Card::Serena) > 0;
     const bool ultra_ball_outlet = ultra_ball_can_discard_fetched_incense_payload();
 

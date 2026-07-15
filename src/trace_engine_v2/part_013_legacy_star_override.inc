@@ -22,10 +22,7 @@
         return !deck_seen_ || std::any_of(state_.deck.begin(), state_.deck.end(), is_basic);
       }
       if (item == Card::EarthenVessel) return earthen_vessel_has_legal_target();
-      if (item == Card::UltraBall) {
-        return !deck_seen_ || std::any_of(state_.deck.begin(), state_.deck.end(),
-            [](const Card card) { return is_basic(card) || is_dragon_or_psychic(card); });
-      }
+      if (item == Card::UltraBall) return ultra_ball_has_legal_target();
       return false;
     };
     const auto one_discard_item_payable =
@@ -180,9 +177,7 @@
           });
         }
         if (outlet == Card::UltraBall) {
-          return std::any_of(remaining.begin(), remaining.end(), [](const Card card) {
-            return is_basic(card) || is_dragon_or_psychic(card);
-          });
+          return std::any_of(remaining.begin(), remaining.end(), is_pokemon);
         }
         return false;
       };

@@ -48,22 +48,77 @@
       return payable;
     };
 
-    // The initiating search removes the fetched payload. Every later search Item
-    // needs at least one remaining deck card or it is known to have no effect and
-    // cannot be played. Serena stays live because discarding the payload is itself
-    // an effect even when the deck is then empty:
-    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+    // The initiating search removes its selected payload before the promised
+    // outlet is played. At K1, simulate that exact removal and require a legal
+    // target for the outlet's own search instead of trusting deck cardinality:
     // https://api.pokemontcg.io/v2/cards/sm6-113
     // https://api.pokemontcg.io/v2/cards/swsh1-179
     // https://api.pokemontcg.io/v2/cards/sv4-163
     // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    std::optional<Card> planned_payload;
+    if (deck_seen_) {
+      if (excluded == Card::QuickBall) {
+        if (deck_count_after_search_started(Card::DialgaGX) > 0) {
+          planned_payload = Card::DialgaGX;
+        }
+      } else {
+        for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
+                                   Card::GoodraVstar, Card::DialgaGX}) {
+          if (deck_count_after_search_started(payload) > 0) {
+            planned_payload = payload;
+            break;
+          }
+        }
+      }
+    }
+
+    const auto target_remains_after_payload = [this, planned_payload](const auto predicate) {
+      bool payload_removed = false;
+      for (const Card card : state_.deck) {
+        if (!payload_removed && planned_payload && card == *planned_payload) {
+          payload_removed = true;
+          continue;
+        }
+        if (predicate(card)) return true;
+      }
+      return false;
+    };
+    const auto outlet_has_legal_target = [this, planned_payload,
+                                          &target_remains_after_payload](const Card outlet) {
+      // Before legal inspection, preserve the existing fixed-list uncertainty.
+      if (!deck_seen_) return state_.deck.size() > 1U;
+      if (!planned_payload) return false;
+      switch (outlet) {
+        case Card::MysteriousTreasure:
+          return target_remains_after_payload(
+              [](const Card card) { return is_dragon_or_psychic(card); });
+        case Card::QuickBall:
+          return target_remains_after_payload(
+              [](const Card card) { return is_basic(card); });
+        case Card::EarthenVessel:
+          return target_remains_after_payload(
+              [](const Card card) { return card == Card::Grass || card == Card::Fire; });
+        case Card::UltraBall:
+          return target_remains_after_payload(
+              [](const Card card) { return is_pokemon(card); });
+        default:
+          return false;
+      }
+    };
+
+    // Serena stays live because its mandatory hand discard is itself an effect and
+    // does not depend on another deck-search target:
     // https://api.pokemontcg.io/v2/cards/swsh12-164
-    const bool later_search_can_begin = state_.deck.size() > 1U;
-    return (later_search_can_begin &&
-            (outlet_survives_current_search(Card::MysteriousTreasure) ||
-             outlet_survives_current_search(Card::QuickBall) ||
-             outlet_survives_current_search(Card::EarthenVessel) ||
-             ultra_ball_can_pay_after_current_search())) ||
+    return (outlet_survives_current_search(Card::MysteriousTreasure) &&
+            outlet_has_legal_target(Card::MysteriousTreasure)) ||
+           (outlet_survives_current_search(Card::QuickBall) &&
+            outlet_has_legal_target(Card::QuickBall)) ||
+           (outlet_survives_current_search(Card::EarthenVessel) &&
+            outlet_has_legal_target(Card::EarthenVessel)) ||
+           (ultra_ball_can_pay_after_current_search() &&
+            outlet_has_legal_target(Card::UltraBall)) ||
            (supporter_allowed() && outlet_survives_current_search(Card::Serena));
   }
 

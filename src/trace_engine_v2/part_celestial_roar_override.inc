@@ -8,10 +8,10 @@
     // prevents the player going first from attacking on their first turn:
     // https://api.pokemontcg.io/v2/cards/swsh12-135
     // https://www.pokemon.com/us/pokemon-tcg/rules
-    // The setup policy attacks only while this Active Regidrago V is still missing
-    // part of GGF, avoiding an optional discard-3 that cannot advance its Energy axis.
+    // The setup policy attacks only when Celestial Roar may advance either the
+    // Active's GGF Energy axis or a permitted no-discard-control payload bank:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
     const bool active_needs_energy = state_.active->grass < 2 || state_.active->fire < 1;
-    if (!active_needs_energy) return false;
 
     // Celestial Roar costs one Colorless Energy, so any attached Energy pays it:
     // https://api.pokemontcg.io/v2/cards/swsh12-135
@@ -22,13 +22,14 @@
     // before K1, it uses only public fixed-list counts:
     // https://api.pokemontcg.io/v2/cards/swsh12-135
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
-    const bool needed_energy_might_be_in_deck =
-        (state_.active->grass < 2 && might_be_unseen(Card::Grass)) ||
-        (state_.active->fire < 1 && might_be_unseen(Card::Fire));
+    const bool needed_energy_might_be_in_deck = active_needs_energy &&
+        ((state_.active->grass < 2 && might_be_unseen(Card::Grass)) ||
+         (state_.active->fire < 1 && might_be_unseen(Card::Fire)));
     // No-discard-control may still use the random top-three effect to bank a missing
     // Dragon payload. Strict and matchup-flex JIT require the payload to enter discard
     // during the later ready turn, so an attack by unevolved Regidrago V cannot advance
     // that axis for them:
+    // https://api.pokemontcg.io/v2/cards/swsh12-135
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
     const bool payload_banking_might_advance = !strict_payload_timing() && need_payload() &&

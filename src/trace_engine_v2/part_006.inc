@@ -123,6 +123,17 @@
       return Card::HisuianHeavyBall;
     }
 
+    // Strict DCI permits one duplicated baseline Supporter to pay a discard cost
+    // while another copy remains for the turn's single Supporter play:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/sv7-133
+    // https://api.pokemontcg.io/v2/cards/sm4-95
+    for (const Card card : {Card::Arven, Card::Crispin, Card::Gladion}) {
+      if (hand_count(card) >= 2) return card;
+    }
+
     // The card currently being played cannot pay its own discard cost. When an
     // effect identifies that card, a distinct Ultra Ball is another card in hand
     // that may pay Quick Ball's discard cost: https://api.pokemontcg.io/v2/cards/swsh1-179

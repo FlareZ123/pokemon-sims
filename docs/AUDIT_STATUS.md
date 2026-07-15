@@ -2,34 +2,25 @@
 
 ## Current source and test inventory
 
-- Core exact-state policy fixtures: **39** in `regidrago_policy_tests`.
-- Tier Two choice-differentiation fixtures: **26** in `regidrago_tier2_tests`.
-- Deterministic scenario trace regressions: six CTest cases.
-- Aggregate scenario smoke test: one CTest case.
+- Core exact-state policy fixtures: **57** in `regidrago_policy_tests`. The canonical runner table is https://github.com/FlareZ123/pokemon-sims/blob/main/tests/policy_fixture_v2/part_004a.inc#L134-L191
+- Tier Two choice-differentiation fixtures: **31** in `regidrago_tier2_tests`. The canonical runner table is https://github.com/FlareZ123/pokemon-sims/blob/main/tests/tier2_parts/part_003b.inc#L40-L73
+- Deterministic scenario trace regressions: six CTest cases. The registered tests are https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt#L219-L224
+- Aggregate scenario smoke test: one CTest case. The registered test is https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt#L225-L226
 
-The current audit added or corrected source-linked regressions for:
+The detailed fixture names and executable evidence remain indexed in:
 
-1. Heavy Ball K0 Prize information and Tapu Lele-GX chaining.
-2. Heavy Ball K1 deduction, including known-dead Crispin and known no-Basic Prize retention.
-3. Final prized Energy via Gladion, without preempting a Burnet Item-lock payload bridge.
-4. Steven's Resolve selecting Gladion after it sees a prized VSTAR.
-5. Forest Seal Stone K1 target selection for the same final-Energy line.
-6. Celestial Roar moving attached Energy out of discard.
-7. Full-Bench holds for Basic search connectors.
-8. Tate & Liza's net-positive four-card draw mode.
-9. Serena's printed one-to-three discard draw mode, including three safe discards in strict JIT.
-10. Heavy Ball selecting Oricorio over Tapu when that preserves in-hand Burnet under Item lock.
+- Core policy index: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/OPTIMAL_POLICY_FIXTURES.md
+- Tier Two policy index: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/TIER2_POLICY_FIXTURES.md
+- Card-data provenance audit: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CARD_AUDIT.md
 
-## Build evidence and limit
+## Build and CI evidence
 
-An isolated manual C++ reconstruction of the corrected rule-sensitive algorithms was compiled under AddressSanitizer and UndefinedBehaviorSanitizer in this runtime. It covered Prize-to-deck K1 deduction, Celestial Roar final-zone transfer, strict Serena safe discards, the prohibition on zero-discard Serena, and Steven's Resolve's K1 Gladion selection.
+Pull requests run the card-audit provenance contract, a Release build with the full CTest suite, and a Debug build with AddressSanitizer and UndefinedBehaviorSanitizer. The workflow definition is https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml
 
-This is not an exact branch build. The private repository cannot be cloned from this environment because `github.com` does not resolve here, and the available GitHub connector cannot materialize the complete split source tree into the local compiler workspace.
+Both compiled lanes upload their CTest directories and build logs when validation succeeds or fails, so test conclusions can be checked against exact branch artifacts. The artifact configuration is https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml#L38-L46 and https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml#L68-L76
 
-## GitHub Actions visibility
+The inventory counts above are checked by `tests/card_audit_contract_tests.py` against the canonical runner tables and fixture-index documents. That contract runs in CI before either compiled lane: https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml#L10-L18
 
-The available connector can read the workflow definition and classic combined commit statuses. It cannot list push-triggered workflow runs or retrieve historical job logs for this branch. The current combined-status surface is empty. The workflow now emits `LastTest.log` and uploads CTest diagnostic artifacts on future failures.
+## Remaining explicit model boundary
 
-## Remaining explicit model assumption
-
-Forest Seal Stone activation while the `FullRuleBoxAbility` scenario is active remains a documented model assumption. The audit did not find a direct published ruling source for that exact interaction. It must not be treated as a verified tournament ruling.
+`FullRuleBoxAbility` is a scenario-level abstraction for a Path-to-the-Peak-style lock. Forest Seal Stone remains usable by an attached Pokémon V because the published ruling attributes Star Alchemy to the Tool rather than the Pokémon's own Ability: https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/

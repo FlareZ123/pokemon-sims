@@ -43,17 +43,18 @@ void test_legacy_star_recovers_evolution_incense_payload_bridge() {
   State& state = EngineTestAccess::state(engine);
   state.turn = 2;
   state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
-  state.deck = {Card::MegaDragonite, Card::Grass, Card::Fire, Card::Crispin,
+  state.deck = {Card::MegaDragonite, Card::RegidragoV, Card::Fire, Card::Crispin,
                 Card::Arven, Card::Dipplin, Card::MawileGX, Card::EvolutionIncense,
                 Card::MysteriousTreasure};
 
   // This is an explicit post-draw tactical state. Legacy Star can return up to two
   // discarded cards. Evolution Incense can fetch an Evolution Dragon payload, then
-  // Mysterious Treasure can discard that fetched Dragon as its cost:
+  // Mysterious Treasure can discard it and legally search the remaining Regidrago V:
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://api.pokemontcg.io/v2/cards/swsh1-163
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/swsh12-135
   EngineTestAccess::run_tactical_turn(engine);
 
   assert(contains(state.discard, Card::EvolutionIncense));
@@ -316,6 +317,93 @@ void test_team_yell_holds_without_a_payable_post_recovery_search() {
   assert(contains(state.discard, Card::RegidragoVstar));
 }
 
+void test_legacy_star_ignores_k1_dead_search_items() {
+  using namespace sim;
+  for (const Card item : {Card::QuickBall, Card::EarthenVessel}) {
+    const Scenario scenario{"legacy-star-k1-dead-search-item", DciProfile::StrictJit,
+                            LockMode::None, false, 4};
+    const DeckRecipe recipe = baseline_recipe();
+    std::mt19937_64 rng(item == Card::QuickBall ? 5671U : 5672U);
+    Engine engine(scenario, recipe, rng);
+    State& state = EngineTestAccess::state(engine);
+    state.turn = 2;
+    state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+    state.hand = {item, Card::Dipplin};
+    state.deck = {Card::MegaDragonite};
+    state.supporter_used = true;
+    EngineTestAccess::set_deck_seen(engine, true);
+
+    // The inspected deck gives Quick Ball no Basic Pokémon and Earthen Vessel no
+    // Basic Energy. A payable discard must not suppress the only Legacy Star line:
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    assert(EngineTestAccess::use_legacy_star(engine));
+    assert(contains(state.discarded_this_turn, Card::MegaDragonite));
+    assert(EngineTestAccess::payload_ready(engine));
+  }
+}
+
+void test_legacy_star_preserves_live_and_unknown_search_items() {
+  using namespace sim;
+  for (const bool deck_seen : {false, true}) {
+    const Scenario scenario{"legacy-star-live-or-unknown-quick-ball", DciProfile::StrictJit,
+                            LockMode::None, false, 4};
+    const DeckRecipe recipe = baseline_recipe();
+    std::mt19937_64 rng(deck_seen ? 5673U : 5674U);
+    Engine engine(scenario, recipe, rng);
+    State& state = EngineTestAccess::state(engine);
+    state.turn = 2;
+    state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+    state.hand = {Card::QuickBall, Card::DialgaGX};
+    state.deck = {Card::RegidragoV};
+    state.supporter_used = true;
+    EngineTestAccess::set_deck_seen(engine, deck_seen);
+
+    // Quick Ball can discard the held Basic Dragon payload and search Regidrago V.
+    // K0 also preserves fixed-list uncertainty before legal deck inspection:
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sm5-100
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    assert(!EngineTestAccess::use_legacy_star(engine));
+    assert(!state.vstar_power_used);
+  }
+}
+
+void test_legacy_star_incense_recovery_is_target_aware() {
+  using namespace sim;
+  for (const Card remaining : {Card::Dragapult, Card::RegidragoV}) {
+    const Scenario scenario{"legacy-star-incense-quick-target", DciProfile::StrictJit,
+                            LockMode::None, false, 4};
+    const DeckRecipe recipe = baseline_recipe();
+    std::mt19937_64 rng(remaining == Card::RegidragoV ? 5675U : 5676U);
+    Engine engine(scenario, recipe, rng);
+    State& state = EngineTestAccess::state(engine);
+    state.turn = 2;
+    state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+    state.supporter_used = true;
+    state.deck = {Card::MegaDragonite, remaining, Card::Grass, Card::Crispin,
+                  Card::Arven, Card::Dipplin, Card::MawileGX,
+                  Card::EvolutionIncense, Card::QuickBall};
+    EngineTestAccess::set_deck_seen(engine, true);
+
+    // Incense removes Mega Dragonite ex. Dragapult ex leaves Quick Ball with no
+    // Basic target, while Regidrago V keeps the recovered bridge legal:
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // https://api.pokemontcg.io/v2/cards/sv6-130
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    assert(EngineTestAccess::use_legacy_star(engine));
+    const bool recovered_bridge = contains(state.hand, Card::EvolutionIncense) &&
+                                  contains(state.hand, Card::QuickBall);
+    assert(recovered_bridge == (remaining == Card::RegidragoV));
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -329,5 +417,8 @@ int main() {
   test_legacy_star_still_recovers_crispin_with_supporter_available();
   test_team_yell_recovers_vstar_into_evolution_incense_route();
   test_team_yell_holds_without_a_payable_post_recovery_search();
+  test_legacy_star_ignores_k1_dead_search_items();
+  test_legacy_star_preserves_live_and_unknown_search_items();
+  test_legacy_star_incense_recovery_is_target_aware();
   return 0;
 }

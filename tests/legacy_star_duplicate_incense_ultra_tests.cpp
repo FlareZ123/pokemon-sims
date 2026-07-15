@@ -56,16 +56,18 @@ void test_legacy_star_recovers_duplicate_incense_ultra_bridge() {
   state.turn = 2;
   state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1};
   state.hand = {Card::EvolutionIncense};
-  state.deck = {Card::MegaDragonite, Card::Grass};
+  state.deck = {Card::MegaDragonite, Card::Dipplin};
   append_top_seven(state.deck);
 
   // Legacy Star may recover Evolution Incense plus Ultra Ball. After one Incense
   // fetches Mega Dragonite ex, the distinct held Incense may join that payload as
-  // Ultra Ball's two-card cost, leaving the Dragon in discard for Apex Dragon:
+  // Ultra Ball's two-card cost, leaving the Dragon in discard while the remaining
+  // non-Dragon Evolution Pokémon Dipplin supplies Ultra Ball's legal search target:
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://api.pokemontcg.io/v2/cards/swsh1-163
   // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/sv6-127
   assert(EngineTestAccess::use_legacy_star(engine));
   assert(count(state.hand, Card::EvolutionIncense) == 2);
   assert(count(state.hand, Card::UltraBall) == 1);
@@ -83,12 +85,14 @@ void test_legacy_star_rejects_bridge_without_held_duplicate() {
   State& state = EngineTestAccess::state(engine);
   state.turn = 2;
   state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1};
-  state.deck = {Card::MegaDragonite, Card::Grass};
+  state.deck = {Card::MegaDragonite, Card::Dipplin};
   append_top_seven(state.deck);
 
-  // Ultra Ball needs two other cards. With only the played Incense and fetched
-  // payload, no distinct second cost remains:
+  // Ultra Ball has a legal non-Dragon Evolution Pokémon target, yet still needs
+  // two other cards. Dipplin proves the check covers every modeled Pokémon class:
+  // With only the played Incense and fetched payload, no distinct second cost remains:
   // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://api.pokemontcg.io/v2/cards/sv6-127
   assert(EngineTestAccess::use_legacy_star(engine));
   assert(count(state.hand, Card::EvolutionIncense) == 0);
   assert(count(state.hand, Card::UltraBall) == 0);
@@ -125,12 +129,14 @@ void test_legacy_star_rejects_bridge_when_energy_is_also_missing() {
   state.turn = 2;
   state.active = Pokemon{Card::RegidragoVstar, 1, 1, 1};
   state.hand = {Card::EvolutionIncense};
-  state.deck = {Card::MegaDragonite, Card::Grass};
+  state.deck = {Card::MegaDragonite, Card::RegidragoV};
   append_top_seven(state.deck);
 
-  // Preserve the pair while the selected attacker still lacks Apex Dragon's GGF
-  // cost. The duplicate-Incense exception is reserved for a complete final axis:
+  // Regidrago V keeps Ultra Ball's search legal. Preserve the pair while the
+  // selected attacker still lacks Apex Dragon's GGF cost; the duplicate-Incense
+  // exception is reserved for a complete final axis:
   // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://api.pokemontcg.io/v2/cards/swsh12-135
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   assert(EngineTestAccess::use_legacy_star(engine));
   assert(count(state.hand, Card::EvolutionIncense) == 1);

@@ -17,6 +17,9 @@ struct EngineTestAccess {
   static bool second_ultra_ball_can_discard_fetched_payload(Engine& engine) {
     return engine.second_ultra_ball_can_discard_fetched_payload();
   }
+  static bool second_ultra_ball_has_post_payload_target(Engine& engine) {
+    return engine.second_ultra_ball_has_post_payload_target();
+  }
   static bool ultra_ball_can_discard_fetched_incense_payload(Engine& engine) {
     return engine.ultra_ball_can_discard_fetched_incense_payload();
   }
@@ -216,6 +219,82 @@ void test_k1_ultra_ball_route_probes_reject_a_known_non_pokemon_deck() {
   assert(!EngineTestAccess::ultra_ball_can_discard_fetched_incense_payload(engine));
 }
 
+void test_k1_second_ultra_route_rejects_a_zero_target_post_payload_deck() {
+  using namespace sim;
+  const Scenario scenario{"second-ultra-post-payload-zero-target", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(590);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1};
+  state.hand = {Card::UltraBall, Card::UltraBall, Card::Dipplin,
+                Card::Dipplin, Card::Dipplin};
+  state.deck = {Card::MegaDragonite, Card::Grass};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // The first Ultra Ball would fetch Mega Dragonite ex, leaving only Grass Energy.
+  // A second Ultra Ball would then be known to have no Pokémon target, so the route
+  // must preserve both Items and all three discardable cards:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/base1-99
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+  assert(!EngineTestAccess::second_ultra_ball_has_post_payload_target(engine));
+  assert(!EngineTestAccess::play_ultra_ball(engine));
+  assert(state.hand == std::vector<Card>({Card::UltraBall, Card::UltraBall,
+                                         Card::Dipplin, Card::Dipplin, Card::Dipplin}));
+  assert(state.deck == std::vector<Card>({Card::MegaDragonite, Card::Grass}));
+  assert(state.discard.empty());
+}
+
+void test_k1_second_ultra_route_accepts_a_remaining_pokemon_target() {
+  using namespace sim;
+  const Scenario scenario{"second-ultra-post-payload-live-target", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(591);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1};
+  state.hand = {Card::UltraBall, Card::UltraBall, Card::Dipplin,
+                Card::Dipplin, Card::Dipplin};
+  state.deck = {Card::MegaDragonite, Card::Dipplin};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // After Mega Dragonite ex is removed, Dipplin remains a Pokémon target for the
+  // second Ultra Ball, so the target-legality portion of the route is live:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/sv6-127
+  assert(EngineTestAccess::second_ultra_ball_has_post_payload_target(engine));
+}
+
+void test_k0_second_ultra_route_preserves_hidden_deck_uncertainty() {
+  using namespace sim;
+  const Scenario scenario{"second-ultra-k0-unknown-target", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(592);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1};
+  state.hand = {Card::UltraBall, Card::UltraBall, Card::Dipplin,
+                Card::Dipplin, Card::Dipplin};
+  state.deck = {Card::MegaDragonite, Card::Grass};
+
+  // K0 cannot inspect the remaining deck identities before a legal search resolves,
+  // so the fixed-list second-target possibility remains live:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  assert(EngineTestAccess::second_ultra_ball_has_post_payload_target(engine));
+}
+
 }  // namespace
 
 int main() {
@@ -227,5 +306,8 @@ int main() {
   test_k1_ultra_ball_payload_cost_remains_legal_with_a_pokemon_target();
   test_k0_ultra_ball_may_legally_attempt_an_unknown_search();
   test_k1_ultra_ball_route_probes_reject_a_known_non_pokemon_deck();
+  test_k1_second_ultra_route_rejects_a_zero_target_post_payload_deck();
+  test_k1_second_ultra_route_accepts_a_remaining_pokemon_target();
+  test_k0_second_ultra_route_preserves_hidden_deck_uncertainty();
   return 0;
 }

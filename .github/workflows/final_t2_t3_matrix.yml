@@ -1,0 +1,30 @@
+name: Final T2 T3 Matrix
+
+on:
+  pull_request:
+
+jobs:
+  matrix-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Record tested main SHA
+        run: git rev-parse HEAD | tee tested-main-sha.txt
+      - name: Configure simulator
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Run 100000-trial matrix
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260714 --out t2_t3_results.csv
+          cat t2_t3_results.csv
+      - name: Upload final matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-t2-t3-results
+          path: |
+            t2_t3_results.csv
+            tested-main-sha.txt
+          if-no-files-found: error

@@ -114,6 +114,35 @@
       return;
     }
 
+    const bool oricorio_dialga_are_only_opening_basics =
+        hand_count(Card::Oricorio) > 0 && hand_count(Card::DialgaGX) > 0 &&
+        hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&
+        hand_count(Card::MawileGX) == 0 && hand_count(Card::TapuLeleGX) == 0;
+    const bool separate_payload_remains_in_hand =
+        std::any_of(state_.hand.begin(), state_.hand.end(), [](const Card card) {
+          return card != Card::DialgaGX && is_payload(card);
+        });
+    const bool vital_dance_advances_opening_energy =
+        ability_available_for_pokemon(Card::Oricorio) &&
+        (hand_count(Card::Grass) < 2 || hand_count(Card::Fire) < 1);
+
+    // When another modeled payload remains, Dialga-GX can become the opening Active
+    // without consuming the strict-JIT payload axis. Preserve Oricorio in hand so
+    // playing it onto the Bench can use Vital Dance to supply a missing GGF component:
+    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+    // https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://api.pokemontcg.io/v2/cards/sm5-100
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // https://api.pokemontcg.io/v2/cards/swsh12-135
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    if (oricorio_dialga_are_only_opening_basics && strict_payload_timing() &&
+        separate_payload_remains_in_hand && vital_dance_advances_opening_energy &&
+        remove_one(state_.hand, Card::DialgaGX)) {
+      state_.active = Pokemon{Card::DialgaGX, 0};
+      outcome_.started_regi = false;
+      return;
+    }
+
     // Oricorio's Vital Dance triggers only when it is played from hand onto the
     // Bench during the turn. When Mawile-GX is the other available opening Basic,
     // start Mawile-GX so Oricorio remains in hand for that legal setup trigger:

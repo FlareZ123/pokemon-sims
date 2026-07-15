@@ -33,6 +33,11 @@
       const bool known_dead_quick = item == Card::QuickBall && deck_seen_ &&
           std::none_of(state_.deck.begin(), state_.deck.end(), is_basic);
       if (known_dead_quick) continue;
+      // Earthen Vessel is live only while K0 keeps Basic Energy plausible or K1
+      // proves at least one modeled Basic Energy remains in deck:
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+      if (item == Card::EarthenVessel && !earthen_vessel_has_legal_target()) continue;
       const auto cost = choose_discard(true, true, true, item);
       if (cost && is_payload(*cost)) return true;
     }

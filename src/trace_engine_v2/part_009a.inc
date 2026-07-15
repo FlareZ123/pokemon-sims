@@ -17,6 +17,14 @@
     // https://api.pokemontcg.io/v2/cards/sv6-127
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
                                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    // At K1, Mysterious Treasure cannot be played when the inspected deck contains
+    // no Psychic or Dragon Pokémon. Its discard requirement does not make a known
+    // zero-target search effective:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+    const bool search_has_target = !deck_seen_ ||
+        std::any_of(state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic);
+    if (!search_has_target) return false;
     // Mysterious Treasure searches only the deck after paying its discard cost.
     // K0 keeps fixed-list targets plausible; K1 requires the inspected deck to
     // contain the desired Psychic or Dragon Pokémon before spending both cards:
@@ -31,7 +39,7 @@
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 &&
                            needs_tapu_connector() && might_be_unseen(Card::TapuLeleGX);
     const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 &&
-                                 needs_oricorio_connector() && might_be_unseen(Card::Oricorio);
+                                  needs_oricorio_connector() && might_be_unseen(Card::Oricorio);
     // Treasure must pay its discard before the fetched payload reaches hand. A later
     // Ultra Ball route is live only when its own two-card cost remains payable:
     // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh12pt5-146

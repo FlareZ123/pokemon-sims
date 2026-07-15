@@ -19,6 +19,14 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     for (const Card item : {Card::MysteriousTreasure, Card::QuickBall, Card::EarthenVessel}) {
       if (hand_count(item) == 0) continue;
+      // A K1 Mysterious Treasure route is live only when the inspected deck still
+      // contains a Psychic or Dragon Pokémon. The payload discard is a play cost and
+      // cannot justify a Trainer that is known to have no effect:
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+      const bool known_dead_mysterious = item == Card::MysteriousTreasure && deck_seen_ &&
+          std::none_of(state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic);
+      if (known_dead_mysterious) continue;
       const auto cost = choose_discard(true, true, true, item);
       if (cost && is_payload(*cost)) return true;
     }

@@ -14,6 +14,7 @@ struct EngineTestAccess {
   static bool bench_from_hand(Engine& engine, const Card card, const bool resolve_entry) {
     return engine.bench_from_hand(card, resolve_entry);
   }
+  static bool bench_tapu_if_useful(Engine& engine) { return engine.bench_tapu_if_useful(); }
   static bool needs_tapu_connector(Engine& engine) { return engine.needs_tapu_connector(); }
   static void run_turn(Engine& engine) { engine.run_turn(); }
 };
@@ -246,6 +247,202 @@ void test_wonder_tag_tate_connector_rejects_missing_payload_cost() {
   }
 }
 
+void test_k1_wonder_tag_rejects_serena_only_energy_route() {
+  const sim::Scenario scenario{"wonder-tag-k1-dead-energy", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{5591};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+  state.hand = {sim::Card::TapuLeleGX};
+  state.deck = {sim::Card::Serena};
+  state.discard = {sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine, true);
+
+  // Serena cannot attach or search Energy. K1 therefore preserves Tapu Lele-GX
+  // when neither Crispin nor a live Arven to Earthen Vessel route remains:
+  // https://api.pokemontcg.io/v2/cards/swsh12-164
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  if (sim::EngineTestAccess::needs_tapu_connector(engine) ||
+      sim::EngineTestAccess::bench_tapu_if_useful(engine)) {
+    throw std::runtime_error("K1 must reject the Serena-only Wonder Tag Energy route.");
+  }
+}
+
+void test_k1_wonder_tag_rejects_serena_only_vstar_route() {
+  const sim::Scenario scenario{"wonder-tag-k1-dead-vstar", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{5592};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::TapuLeleGX};
+  state.deck = {sim::Card::Serena};
+  state.discard = {sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine, true);
+
+  // Serena cannot search Arven or an Evolution card. K1 must retain Tapu when
+  // the Supporter target that justified the VSTAR connector is absent:
+  // https://api.pokemontcg.io/v2/cards/swsh12-164
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  if (sim::EngineTestAccess::needs_tapu_connector(engine) ||
+      sim::EngineTestAccess::bench_tapu_if_useful(engine)) {
+    throw std::runtime_error("K1 must reject the Serena-only Wonder Tag VSTAR route.");
+  }
+}
+
+void test_k1_wonder_tag_rejects_serena_only_steven_route() {
+  const sim::Scenario scenario{"wonder-tag-k1-dead-steven", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{5593};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 1;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 0, 0, 0, sim::Tool::None};
+  state.hand = {sim::Card::TapuLeleGX};
+  state.deck = {sim::Card::Serena};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine, true);
+
+  // Steven's Resolve is the modeled turn-one compression target. Serena cannot
+  // replace its up-to-three-card search after K1 proves Steven absent:
+  // https://api.pokemontcg.io/v2/cards/sm7-145
+  // https://api.pokemontcg.io/v2/cards/swsh12-164
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  if (sim::EngineTestAccess::needs_tapu_connector(engine) ||
+      sim::EngineTestAccess::bench_tapu_if_useful(engine)) {
+    throw std::runtime_error("K1 must reject the Serena-only Wonder Tag Steven route.");
+  }
+}
+
+void test_k1_wonder_tag_accepts_each_live_intended_target() {
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+
+  {
+    const sim::Scenario scenario{"wonder-tag-k1-live-crispin", sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    std::mt19937_64 rng{5594};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::State state;
+    state.turn = 2;
+    state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+    state.hand = {sim::Card::TapuLeleGX};
+    state.deck = {sim::Card::Crispin, sim::Card::Fire};
+    state.discard = {sim::Card::MegaDragonite};
+    state.discarded_this_turn = {sim::Card::MegaDragonite};
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+    sim::EngineTestAccess::set_deck_seen(engine, true);
+    // Crispin can search the needed Fire: https://api.pokemontcg.io/v2/cards/sv7-133
+    if (!sim::EngineTestAccess::needs_tapu_connector(engine)) {
+      throw std::runtime_error("K1 should retain the live Wonder Tag to Crispin route.");
+    }
+  }
+
+  {
+    const sim::Scenario scenario{"wonder-tag-k1-live-arven-energy", sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    std::mt19937_64 rng{5595};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::State state;
+    state.turn = 2;
+    state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+    state.hand = {sim::Card::TapuLeleGX, sim::Card::Dipplin};
+    state.deck = {sim::Card::Arven, sim::Card::EarthenVessel, sim::Card::Fire};
+    state.discard = {sim::Card::MegaDragonite};
+    state.discarded_this_turn = {sim::Card::MegaDragonite};
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+    sim::EngineTestAccess::set_deck_seen(engine, true);
+    // Arven and Earthen Vessel form a paid final-Energy route:
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    if (!sim::EngineTestAccess::needs_tapu_connector(engine)) {
+      throw std::runtime_error("K1 should retain the live Wonder Tag to Arven Energy route.");
+    }
+  }
+
+  {
+    const sim::Scenario scenario{"wonder-tag-k1-live-arven-vstar", sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    std::mt19937_64 rng{5596};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::State state;
+    state.turn = 2;
+    state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1, sim::Tool::None};
+    state.hand = {sim::Card::TapuLeleGX};
+    state.deck = {sim::Card::Arven, sim::Card::EvolutionIncense,
+                  sim::Card::RegidragoVstar};
+    state.discard = {sim::Card::MegaDragonite};
+    state.discarded_this_turn = {sim::Card::MegaDragonite};
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+    sim::EngineTestAccess::set_deck_seen(engine, true);
+    // Arven remains searchable for the modeled Evolution Item route:
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    if (!sim::EngineTestAccess::needs_tapu_connector(engine)) {
+      throw std::runtime_error("K1 should retain the live Wonder Tag to Arven VSTAR route.");
+    }
+  }
+
+  {
+    const sim::Scenario scenario{"wonder-tag-k1-live-steven", sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    std::mt19937_64 rng{5597};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::State state;
+    state.turn = 1;
+    state.active = sim::Pokemon{sim::Card::RegidragoV, 0, 0, 0, sim::Tool::None};
+    state.hand = {sim::Card::TapuLeleGX};
+    state.deck = {sim::Card::StevensResolve, sim::Card::Grass};
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+    sim::EngineTestAccess::set_deck_seen(engine, true);
+    // Steven's Resolve remains a searchable turn-one compression target:
+    // https://api.pokemontcg.io/v2/cards/sm7-145
+    if (!sim::EngineTestAccess::needs_tapu_connector(engine)) {
+      throw std::runtime_error("K1 should retain the live Wonder Tag to Steven route.");
+    }
+  }
+}
+
+void test_k0_wonder_tag_preserves_unknown_supporter_possibility() {
+  const sim::Scenario scenario{"wonder-tag-k0-unknown-crispin", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{5598};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+  state.hand = {sim::Card::TapuLeleGX};
+  state.deck = {sim::Card::Serena};
+  state.discard = {sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Before a legal inspection, fixed-list public information still permits Crispin
+  // and Fire to remain in the hidden deck or Prizes. K0 must keep that route plausible:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  if (!sim::EngineTestAccess::needs_tapu_connector(engine)) {
+    throw std::runtime_error("K0 must preserve the publicly plausible Wonder Tag route.");
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -257,6 +454,11 @@ int main() {
     test_wonder_tag_tate_connector_rejects_empty_post_search_deck();
     test_wonder_tag_tate_connector_rejects_incomplete_target();
     test_wonder_tag_tate_connector_rejects_missing_payload_cost();
+    test_k1_wonder_tag_rejects_serena_only_energy_route();
+    test_k1_wonder_tag_rejects_serena_only_vstar_route();
+    test_k1_wonder_tag_rejects_serena_only_steven_route();
+    test_k1_wonder_tag_accepts_each_live_intended_target();
+    test_k0_wonder_tag_preserves_unknown_supporter_possibility();
     std::cout << "Wonder Tag connector tests passed\n";
     return 0;
   } catch (const std::exception& error) {

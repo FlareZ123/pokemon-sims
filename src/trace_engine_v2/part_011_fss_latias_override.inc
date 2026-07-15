@@ -78,5 +78,103 @@
       }
     }
 
+    if (deck_seen_) {
+      // K1 must preserve the once-per-game VSTAR Power when the inspected deck has no
+      // card or complete chain that advances a currently unresolved setup axis:
+      // https://api.pokemontcg.io/v2/cards/swsh12-156
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      const Card planned_target = fss_target_after_search_started();
+      const bool target_present = deck_count_after_search_started(planned_target) > 0;
+      const bool needed_energy_present =
+          (grass_needed() > 0 && deck_count_after_search_started(Card::Grass) > 0) ||
+          (fire_needed() > 0 && deck_count_after_search_started(Card::Fire) > 0);
+      const bool payload_present = payload_might_be_in_deck();
+      const bool one_discard_cost_available =
+          is_legal_cost_available(can_play_payload_this_turn(), true);
+      const bool arven_has_live_chain = supporter_allowed() && !item_locked() &&
+          ((need_regi() && bench_space() > 0 &&
+            ((deck_count_after_search_started(Card::RegidragoV) > 0 &&
+              (deck_count_after_search_started(Card::QuickBall) > 0 ||
+               deck_count_after_search_started(Card::MysteriousTreasure) > 0) &&
+              one_discard_cost_available) ||
+             (prizes_known() && prize_count_after_reveal(Card::RegidragoV) > 0 &&
+              deck_count_after_search_started(Card::HisuianHeavyBall) > 0))) ||
+           (need_vstar() && deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
+            (deck_count_after_search_started(Card::EvolutionIncense) > 0 ||
+             (deck_count_after_search_started(Card::MysteriousTreasure) > 0 &&
+              one_discard_cost_available))) ||
+           (need_energy() && needed_energy_present &&
+            deck_count_after_search_started(Card::EarthenVessel) > 0 &&
+            one_discard_cost_available) ||
+           (need_active_vstar() && bench_space() > 0 &&
+            ability_available_for_pokemon(Card::LatiasEx) &&
+            deck_count_after_search_started(Card::LatiasEx) > 0 &&
+            (deck_count_after_search_started(Card::QuickBall) > 0 ||
+             deck_count_after_search_started(Card::MysteriousTreasure) > 0) &&
+            one_discard_cost_available) ||
+           (need_payload() && can_play_payload_this_turn() && payload_present &&
+            deck_count_after_search_started(Card::BrilliantBlender) > 0));
+      const bool target_advances_axis = [&]() {
+        switch (planned_target) {
+          case Card::StevensResolve:
+            return should_play_steven();
+          case Card::RegidragoV:
+            return need_regi() && bench_space() > 0;
+          case Card::RegidragoVstar:
+            return need_vstar();
+          case Card::Gladion:
+            return prizes_known() &&
+                ((need_regi() && prize_count_after_reveal(Card::RegidragoV) > 0) ||
+                 (need_vstar() && prize_count_after_reveal(Card::RegidragoVstar) > 0) ||
+                 final_prized_energy_for_gladion().has_value());
+          case Card::LatiasEx:
+            return need_active_vstar() && bench_space() > 0 &&
+                ability_available_for_pokemon(Card::LatiasEx);
+          case Card::TateLiza:
+            return need_active_vstar() && supporter_allowed();
+          case Card::BrilliantBlender:
+            return need_payload() && can_play_payload_this_turn() && !item_locked() &&
+                payload_present;
+          case Card::ProfessorBurnet:
+            return need_payload() && can_play_payload_this_turn() && supporter_allowed() &&
+                payload_present;
+          case Card::Crispin:
+            return need_energy() && supporter_allowed() && crispin_can_advance_energy_axis();
+          case Card::Oricorio:
+            return need_energy() && bench_space() > 0 && needed_energy_present;
+          case Card::EarthenVessel:
+            return need_energy() && !item_locked() && needed_energy_present &&
+                one_discard_cost_available;
+          case Card::Grass:
+            return grass_needed() > 0 && !state_.manual_energy_used;
+          case Card::Fire:
+            return fire_needed() > 0 && !state_.manual_energy_used;
+          case Card::Arven:
+            return arven_has_live_chain;
+          case Card::MysteriousTreasure:
+            return !item_locked() && one_discard_cost_available &&
+                ((need_regi() && deck_count_after_search_started(Card::RegidragoV) > 0) ||
+                 (need_vstar() && deck_count_after_search_started(Card::RegidragoVstar) > 0) ||
+                 (need_active_vstar() && deck_count_after_search_started(Card::LatiasEx) > 0));
+          case Card::QuickBall:
+            return !item_locked() && one_discard_cost_available &&
+                ((need_regi() && deck_count_after_search_started(Card::RegidragoV) > 0) ||
+                 (need_active_vstar() && deck_count_after_search_started(Card::LatiasEx) > 0));
+          case Card::Serena:
+            return need_payload() && can_play_payload_this_turn() && supporter_allowed() &&
+                std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+          default:
+            return false;
+        }
+      }();
+      if (!target_present || !target_advances_axis) {
+        trace("HOLD VSTAR POWER", "R-FSS-02; R-VSTAR-01; P-KNOWLEDGE-01; P-DCI-01",
+              "Retained Star Alchemy because K1 proved that no searched card advances setup.");
+        return false;
+      }
+    }
+
     return use_fss_latias_original();
   }

@@ -12,6 +12,7 @@ namespace sim {
 struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
   static const TrialOutcome& outcome(const Engine& engine) { return engine.outcome_; }
+  static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
   static void run_turn(Engine& engine) { engine.run_turn(); }
   static void record_ready(Engine& engine) { engine.record_ready(); }
   static bool attach_fss(Engine& engine) { return engine.attach_fss(); }
@@ -119,7 +120,7 @@ void test_star_alchemy_fetches_oricorio_when_crispin_blocks_burnet() {
   assert(EngineTestAccess::outcome(engine).first_ready_turn == 2);
 }
 
-void test_star_alchemy_takes_an_available_any_card_fallback() {
+void test_k0_star_alchemy_may_take_an_unknown_any_card_fallback() {
   using namespace sim;
   const Scenario scenario{"fss-any-card-fallback", DciProfile::StrictJit, LockMode::None, false, 4};
   const DeckRecipe recipe = baseline_recipe();
@@ -130,13 +131,107 @@ void test_star_alchemy_takes_an_available_any_card_fallback() {
   state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::ForestSealStone};
   state.deck = {Card::TeamYellsCheer};
 
-  // Star Alchemy searches for any card. After its legal inspection proves all
-  // preferred setup targets absent, the remaining Team Yell's Cheer is still a
-  // valid card to put into hand: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Before legal deck inspection, fixed-list setup targets remain plausible under K0.
+  // Star Alchemy may therefore resolve and discover only the fallback card:
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
   assert(EngineTestAccess::use_fss(engine));
   assert(state.vstar_power_used);
   assert(count(state.hand, Card::TeamYellsCheer) == 1);
   assert(state.deck.empty());
+}
+
+void test_k1_star_alchemy_holds_when_only_irrelevant_serena_remains() {
+  using namespace sim;
+  const Scenario scenario{"fss-k1-irrelevant-serena", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(563);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 0, Tool::ForestSealStone};
+  state.deck = {Card::Serena};
+  state.discard = {Card::MegaDragonite};
+  state.discarded_this_turn = {Card::MegaDragonite};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Forest Seal Stone supplies one game-wide VSTAR Power. Serena cannot search or
+  // attach the missing Fire Energy, so K1 must preserve Star Alchemy:
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/swsh12-164
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  assert(!EngineTestAccess::use_fss(engine));
+  assert(!state.vstar_power_used);
+  assert(state.hand.empty());
+  assert(state.deck == std::vector<Card>{Card::Serena});
+}
+
+void test_k1_star_alchemy_uses_a_live_energy_target() {
+  using namespace sim;
+  const Scenario scenario{"fss-k1-live-energy", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(564);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 0, Tool::ForestSealStone};
+  state.deck = {Card::Fire};
+  state.discard = {Card::MegaDragonite};
+  state.discarded_this_turn = {Card::MegaDragonite};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Star Alchemy may search the missing Fire Energy, which can be manually attached
+  // to satisfy Apex Dragon's GGF cost: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  assert(EngineTestAccess::use_fss(engine));
+  assert(state.vstar_power_used);
+  assert(count(state.hand, Card::Fire) == 1);
+}
+
+void test_k1_star_alchemy_uses_a_live_payload_outlet() {
+  using namespace sim;
+  const Scenario scenario{"fss-k1-live-payload", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(565);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::ForestSealStone};
+  state.deck = {Card::BrilliantBlender, Card::MegaDragonite};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Brilliant Blender searches and discards a Dragon payload from deck, so it is a
+  // live strict-JIT Star Alchemy target: https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  assert(EngineTestAccess::use_fss(engine));
+  assert(state.vstar_power_used);
+  assert(count(state.hand, Card::BrilliantBlender) == 1);
+}
+
+void test_k1_star_alchemy_uses_a_live_vstar_target() {
+  using namespace sim;
+  const Scenario scenario{"fss-k1-live-vstar", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(566);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoV, 1, 2, 1, Tool::ForestSealStone};
+  state.deck = {Card::RegidragoVstar};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Regidrago VSTAR is the direct missing Evolution target for the established Basic:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  assert(EngineTestAccess::use_fss(engine));
+  assert(state.vstar_power_used);
+  assert(count(state.hand, Card::RegidragoVstar) == 1);
 }
 
 void test_arven_fss_fetches_raw_energy_after_supporter_use() {
@@ -253,7 +348,11 @@ int main() {
   test_star_alchemy_uses_crispin_for_same_turn_ggf();
   test_star_alchemy_keeps_vessel_priority_without_same_turn_crispin_completion();
   test_star_alchemy_fetches_oricorio_when_crispin_blocks_burnet();
-  test_star_alchemy_takes_an_available_any_card_fallback();
+  test_k0_star_alchemy_may_take_an_unknown_any_card_fallback();
+  test_k1_star_alchemy_holds_when_only_irrelevant_serena_remains();
+  test_k1_star_alchemy_uses_a_live_energy_target();
+  test_k1_star_alchemy_uses_a_live_payload_outlet();
+  test_k1_star_alchemy_uses_a_live_vstar_target();
   test_arven_fss_fetches_raw_energy_after_supporter_use();
   test_fss_trace_names_vstar_holder();
   test_fss_holds_without_alternate_v_when_powerglass_needs_active_slot();

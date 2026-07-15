@@ -125,6 +125,53 @@
            play_ultra_ball_empty_deck_original(permit_payload);
   }
 
+  bool evolution_incense_has_live_post_payload_outlet() {
+    const bool serena_outlet = supporter_allowed() && hand_count(Card::Serena) > 0;
+    const bool ultra_ball_outlet = ultra_ball_can_discard_fetched_incense_payload();
+
+    // Before a legal deck inspection, fixed-list targets remain plausible. Preserve
+    // each held discard-search Item as a possible continuation under K0:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    if (!deck_seen_) {
+      return hand_count(Card::MysteriousTreasure) > 0 || hand_count(Card::QuickBall) > 0 ||
+             hand_count(Card::EarthenVessel) > 0 || ultra_ball_outlet || serena_outlet;
+    }
+
+    std::optional<Card> planned_payload;
+    for (const Card payload : {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar}) {
+      if (std::find(state_.deck.begin(), state_.deck.end(), payload) != state_.deck.end()) {
+        planned_payload = payload;
+        break;
+      }
+    }
+    if (!planned_payload) return ultra_ball_outlet || serena_outlet;
+
+    std::vector<Card> post_search_deck = state_.deck;
+    const auto payload_it = std::find(post_search_deck.begin(), post_search_deck.end(),
+                                      *planned_payload);
+    if (payload_it != post_search_deck.end()) post_search_deck.erase(payload_it);
+
+    // Each promised second Item must retain a target after Evolution Incense removes
+    // the selected Evolution Dragon. A known zero-target Trainer cannot be played:
+    // Mysterious Treasure https://api.pokemontcg.io/v2/cards/sm6-113
+    // Quick Ball https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Earthen Vessel https://api.pokemontcg.io/v2/cards/sv4-163
+    // Evolution Incense https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    const bool mysterious_outlet = hand_count(Card::MysteriousTreasure) > 0 &&
+        std::any_of(post_search_deck.begin(), post_search_deck.end(), is_dragon_or_psychic);
+    const bool quick_outlet = hand_count(Card::QuickBall) > 0 &&
+        std::any_of(post_search_deck.begin(), post_search_deck.end(), is_basic);
+    const bool vessel_outlet = hand_count(Card::EarthenVessel) > 0 &&
+        (std::find(post_search_deck.begin(), post_search_deck.end(), Card::Grass) !=
+             post_search_deck.end() ||
+         std::find(post_search_deck.begin(), post_search_deck.end(), Card::Fire) !=
+             post_search_deck.end());
+    return mysterious_outlet || quick_outlet || vessel_outlet || ultra_ball_outlet ||
+           serena_outlet;
+  }
+
   bool play_evolution_incense(const bool permit_payload = false) {
     // Evolution Incense is a search-only Item and is unplayable with an empty deck:
     // https://api.pokemontcg.io/v2/cards/swsh1-163
@@ -151,25 +198,18 @@
       return false;
     }
 
-    const bool later_search_item_outlet = hand_count(Card::MysteriousTreasure) > 0 ||
-        hand_count(Card::QuickBall) > 0 || hand_count(Card::EarthenVessel) > 0 ||
-        ultra_ball_can_discard_fetched_incense_payload();
-    const bool serena_outlet = supporter_allowed() && hand_count(Card::Serena) > 0;
-    // When the searched Dragon is the final deck card, every later search Item is
-    // unplayable and cannot supply its planned discard cost. Preserve Incense when
-    // payload is its sole live axis; Serena remains a legal non-search discard outlet:
+    // When payload is the sole axis advanced by Incense, require the exact post-search
+    // deck to keep at least one held discard outlet legal. Serena remains a live
+    // non-search continuation, and K0 preserves hidden-deck uncertainty:
     // https://api.pokemontcg.io/v2/cards/swsh1-163
-    // https://api.pokemontcg.io/v2/cards/sm6-113
-    // https://api.pokemontcg.io/v2/cards/swsh1-179
-    // https://api.pokemontcg.io/v2/cards/sv4-163
-    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     // https://api.pokemontcg.io/v2/cards/swsh12-164
-    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    const bool payload_search_would_strand_final_card = !vstar_axis_searchable &&
-        payload_axis_requested && state_.deck.size() == 1U &&
-        later_search_item_outlet && !serena_outlet;
-    if (payload_search_would_strand_final_card) return false;
+    if (!vstar_axis_searchable && payload_axis_requested &&
+        !evolution_incense_has_live_post_payload_outlet()) {
+      return false;
+    }
 
     return play_evolution_incense_empty_deck_original(permit_payload);
   }

@@ -5,6 +5,13 @@
     if (item_locked() || hand_count(Card::QuickBall) == 0) return false;
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
                                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    // At K1, Quick Ball cannot be played when the inspected deck contains no Basic
+    // Pokémon. Its discard requirement does not make a known zero-target search effective:
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+    const bool search_has_target = !deck_seen_ ||
+        std::any_of(state_.deck.begin(), state_.deck.end(), is_basic);
+    if (!search_has_target) return false;
     // Quick Ball searches only the deck after paying its discard cost. K0 keeps
     // fixed-list Basic targets plausible; K1 requires the inspected deck to contain
     // the desired Basic before spending both cards:
@@ -17,7 +24,7 @@
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 &&
                            needs_tapu_connector() && might_be_unseen(Card::TapuLeleGX);
     const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 &&
-                                needs_oricorio_connector() && might_be_unseen(Card::Oricorio);
+                                 needs_oricorio_connector() && might_be_unseen(Card::Oricorio);
     // Quick Ball searches only a Basic Pokémon. Dialga-GX is the only modeled
     // Dragon payload that is Basic; Mega Dragonite ex and Dragapult ex are Stage 2,
     // and Hisuian Goodra VSTAR is a VSTAR Evolution Pokémon:

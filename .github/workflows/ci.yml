@@ -16,6 +16,8 @@ jobs:
         run: python tests/card_audit_contract_tests.py
       - name: Validate setup report provenance contract
         run: python tests/setup_report_contract_tests.py
+      - name: Validate MODEL_ASSUMPTIONS file references
+        run: python tests/model_assumptions_reference_contract_tests.py
 
   build-test:
     runs-on: ubuntu-latest

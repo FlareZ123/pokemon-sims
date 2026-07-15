@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cassert>
 #include <random>
+#include <vector>
 
 namespace sim {
 
@@ -216,6 +217,107 @@ void test_k1_ultra_ball_route_probes_reject_a_known_non_pokemon_deck() {
   assert(!EngineTestAccess::ultra_ball_can_discard_fetched_incense_payload(engine));
 }
 
+void test_k1_ultra_ball_rejects_off_target_payload_outlets() {
+  using namespace sim;
+  const Scenario scenario{"ultra-ball-off-target-outlet", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+
+  const auto rejected = [&](const Card outlet, std::vector<Card> deck,
+                            const std::uint64_t seed) {
+    std::mt19937_64 rng(seed);
+    Engine engine(scenario, recipe, rng);
+    State& state = EngineTestAccess::state(engine);
+    state.turn = 2;
+    state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1};
+    state.hand = {Card::UltraBall, outlet, Card::Dipplin, Card::Dipplin};
+    state.deck = std::move(deck);
+    EngineTestAccess::set_deck_seen(engine);
+    const std::vector<Card> original_hand = state.hand;
+    const std::vector<Card> original_deck = state.deck;
+    assert(!EngineTestAccess::play_ultra_ball(engine, true));
+    assert(state.hand == original_hand);
+    assert(state.deck == original_deck);
+    assert(state.discard.empty());
+  };
+
+  // Ultra Ball would fetch Mega Dragonite ex. The remaining card is off-class for
+  // the promised second Item, so the three-card Ultra Ball play must be preserved:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+  rejected(Card::MysteriousTreasure, {Card::MegaDragonite, Card::Serena}, 5761);
+  rejected(Card::QuickBall, {Card::MegaDragonite, Card::Dragapult}, 5762);
+  rejected(Card::EarthenVessel, {Card::MegaDragonite, Card::Dipplin}, 5763);
+}
+
+void test_k1_ultra_ball_accepts_live_payload_outlets() {
+  using namespace sim;
+  const Scenario scenario{"ultra-ball-live-outlet", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+
+  const auto accepted = [&](const Card outlet, std::vector<Card> deck,
+                            const std::uint64_t seed) {
+    std::mt19937_64 rng(seed);
+    Engine engine(scenario, recipe, rng);
+    State& state = EngineTestAccess::state(engine);
+    state.turn = 2;
+    state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1};
+    state.hand = {Card::UltraBall, outlet, Card::Dipplin, Card::Dipplin};
+    state.deck = std::move(deck);
+    EngineTestAccess::set_deck_seen(engine);
+    assert(EngineTestAccess::play_ultra_ball(engine, true));
+    assert(std::count(state.hand.begin(), state.hand.end(), Card::MegaDragonite) == 1);
+    assert(std::count(state.discard.begin(), state.discard.end(), Card::UltraBall) == 1);
+  };
+
+  // Dipplin is Dragon, Dialga-GX is Basic, and Grass is Basic Energy, so each
+  // post-Ultra-Ball search remains legal:
+  // https://api.pokemontcg.io/v2/cards/sv6-127
+  // https://api.pokemontcg.io/v2/cards/sm5-100
+  // https://api.pokemontcg.io/v2/cards/sve-1
+  accepted(Card::MysteriousTreasure, {Card::MegaDragonite, Card::Dipplin}, 5764);
+  accepted(Card::QuickBall, {Card::MegaDragonite, Card::DialgaGX}, 5765);
+  accepted(Card::EarthenVessel, {Card::MegaDragonite, Card::Grass}, 5766);
+}
+
+void test_ultra_ball_preserves_serena_and_k0_payload_routes() {
+  using namespace sim;
+  const Scenario scenario{"ultra-ball-serena-and-k0", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+
+  {
+    std::mt19937_64 rng(5767);
+    Engine engine(scenario, recipe, rng);
+    State& state = EngineTestAccess::state(engine);
+    state.turn = 2;
+    state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1};
+    state.hand = {Card::UltraBall, Card::Serena, Card::Dipplin, Card::Dipplin};
+    state.deck = {Card::MegaDragonite, Card::Dragapult};
+    EngineTestAccess::set_deck_seen(engine);
+    // Serena can discard the fetched payload without another deck search:
+    // https://api.pokemontcg.io/v2/cards/swsh12-164
+    assert(EngineTestAccess::play_ultra_ball(engine, true));
+  }
+
+  {
+    std::mt19937_64 rng(5768);
+    Engine engine(scenario, recipe, rng);
+    State& state = EngineTestAccess::state(engine);
+    state.turn = 2;
+    state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1};
+    state.hand = {Card::UltraBall, Card::QuickBall, Card::Dipplin, Card::Dipplin};
+    state.deck = {Card::MegaDragonite, Card::Dragapult};
+    // K0 cannot inspect the remaining card class before the legal Ultra Ball search:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    assert(EngineTestAccess::play_ultra_ball(engine, true));
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -227,5 +329,8 @@ int main() {
   test_k1_ultra_ball_payload_cost_remains_legal_with_a_pokemon_target();
   test_k0_ultra_ball_may_legally_attempt_an_unknown_search();
   test_k1_ultra_ball_route_probes_reject_a_known_non_pokemon_deck();
+  test_k1_ultra_ball_rejects_off_target_payload_outlets();
+  test_k1_ultra_ball_accepts_live_payload_outlets();
+  test_ultra_ball_preserves_serena_and_k0_payload_routes();
   return 0;
 }

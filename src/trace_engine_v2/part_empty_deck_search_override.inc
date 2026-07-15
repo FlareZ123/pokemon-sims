@@ -4,6 +4,15 @@
     return !state_.deck.empty();
   }
 
+  bool earthen_vessel_has_legal_target() const {
+    // Earthen Vessel searches for Basic Energy. At K0, fixed-list copies remain
+    // plausible; at K1, at least one Grass or Fire must actually remain in deck:
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    return might_be_unseen(Card::Grass) || might_be_unseen(Card::Fire);
+  }
+
   bool bench_from_hand(const Card card, const bool resolve_entry) {
     if (!resolve_entry || deck_search_available() ||
         (card != Card::TapuLeleGX && card != Card::Oricorio)) {
@@ -110,10 +119,12 @@
   }
 
   bool play_earthen_vessel(const bool permit_payload) {
-    // Earthen Vessel cannot discard another card when the required deck search cannot begin:
+    // Earthen Vessel cannot pay its discard requirement when K1 proves that its
+    // required Basic Energy search has no legal target:
     // https://api.pokemontcg.io/v2/cards/sv4-163
-    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
-    return deck_search_available() && play_earthen_vessel_empty_deck_original(permit_payload);
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+    return deck_search_available() && earthen_vessel_has_legal_target() &&
+           play_earthen_vessel_empty_deck_original(permit_payload);
   }
 
   bool play_brilliant_blender() {

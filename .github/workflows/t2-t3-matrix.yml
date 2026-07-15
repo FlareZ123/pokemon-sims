@@ -1,0 +1,24 @@
+name: T2 T3 Matrix Run
+
+on:
+  pull_request:
+
+jobs:
+  matrix-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure simulator
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Run 100000-trial matrix
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260714 --out t2_t3_results.csv
+          cat t2_t3_results.csv
+      - name: Upload matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: t2-t3-results
+          path: t2_t3_results.csv
+          if-no-files-found: error

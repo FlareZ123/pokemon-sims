@@ -19,6 +19,11 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     for (const Card item : {Card::MysteriousTreasure, Card::QuickBall, Card::EarthenVessel}) {
       if (hand_count(item) == 0) continue;
+      // A known nonempty deck is insufficient for Earthen Vessel. K1 must leave at
+      // least one Basic Energy target before Tate can preserve this payload route:
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+      if (item == Card::EarthenVessel && !earthen_vessel_has_legal_target()) continue;
       const auto cost = choose_discard(true, true, true, item);
       if (cost && is_payload(*cost)) return true;
     }

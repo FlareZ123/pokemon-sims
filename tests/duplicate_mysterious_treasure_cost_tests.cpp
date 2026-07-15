@@ -5,7 +5,6 @@
 #include <iostream>
 #include <random>
 #include <stdexcept>
-#include <string>
 
 namespace sim {
 
@@ -96,7 +95,6 @@ void test_mysterious_treasure_can_discard_unpayable_ultra_ball() {
 }
 
 void test_duplicate_supporter_is_legal_cost(const sim::Card supporter,
-                                            const char* supporter_name,
                                             const std::uint64_t seed) {
   const sim::Scenario scenario{"duplicate-supporter-cost", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
@@ -131,11 +129,9 @@ void test_duplicate_supporter_is_legal_cost(const sim::Card supporter,
   expect(count(after.discard, sim::Card::MysteriousTreasure) == 1,
          "the played Mysterious Treasure should enter discard");
   expect(after.deck.empty(), "the searched Regidrago VSTAR should leave the deck");
-  expect(supporter_name[0] != '\0', "the Supporter label should be nonempty");
 }
 
 void test_singleton_supporter_is_preserved(const sim::Card supporter,
-                                           const char* supporter_name,
                                            const std::uint64_t seed) {
   const sim::Scenario scenario{"singleton-supporter-hold", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
@@ -166,7 +162,6 @@ void test_singleton_supporter_is_preserved(const sim::Card supporter,
   expect(after.hand == original_hand, "the singleton Supporter hand should remain unchanged");
   expect(after.deck == original_deck, "the unplayed search should leave the deck unchanged");
   expect(after.discard.empty(), "no card should enter discard when the cost is unavailable");
-  expect(supporter_name[0] != '\0', "the Supporter label should be nonempty");
 }
 
 void test_known_no_target_mysterious_treasure_preserves_payload() {
@@ -232,12 +227,12 @@ int main() {
   try {
     test_duplicate_mysterious_treasure_is_legal_cost();
     test_mysterious_treasure_can_discard_unpayable_ultra_ball();
-    test_duplicate_supporter_is_legal_cost(sim::Card::Arven, "Arven", 6071);
-    test_duplicate_supporter_is_legal_cost(sim::Card::Crispin, "Crispin", 6072);
-    test_duplicate_supporter_is_legal_cost(sim::Card::Gladion, "Gladion", 6073);
-    test_singleton_supporter_is_preserved(sim::Card::Arven, "Arven", 6074);
-    test_singleton_supporter_is_preserved(sim::Card::Crispin, "Crispin", 6075);
-    test_singleton_supporter_is_preserved(sim::Card::Gladion, "Gladion", 6076);
+    test_duplicate_supporter_is_legal_cost(sim::Card::Arven, 6071);
+    test_duplicate_supporter_is_legal_cost(sim::Card::Crispin, 6072);
+    test_duplicate_supporter_is_legal_cost(sim::Card::Gladion, 6073);
+    test_singleton_supporter_is_preserved(sim::Card::Arven, 6074);
+    test_singleton_supporter_is_preserved(sim::Card::Crispin, 6075);
+    test_singleton_supporter_is_preserved(sim::Card::Gladion, 6076);
     test_known_no_target_mysterious_treasure_preserves_payload();
     test_known_no_target_mysterious_treasure_is_not_a_tate_route();
     return 0;

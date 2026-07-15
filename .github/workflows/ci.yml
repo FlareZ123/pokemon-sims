@@ -5,6 +5,19 @@ on:
     branches: [main]
 
 jobs:
+  source-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create exact source snapshot
+        run: git archive --format=zip --output=current-main-source.zip HEAD
+      - name: Upload exact source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-source-8900639
+          path: current-main-source.zip
+          if-no-files-found: error
+
   card-audit-contract:
     runs-on: ubuntu-latest
     steps:

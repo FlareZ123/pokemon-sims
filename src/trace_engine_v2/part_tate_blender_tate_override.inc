@@ -27,6 +27,12 @@
       const bool known_dead_mysterious = item == Card::MysteriousTreasure && deck_seen_ &&
           std::none_of(state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic);
       if (known_dead_mysterious) continue;
+      // The same target-aware legality applies to Quick Ball's Basic Pokémon search:
+      // https://api.pokemontcg.io/v2/cards/swsh1-179
+      // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+      const bool known_dead_quick = item == Card::QuickBall && deck_seen_ &&
+          std::none_of(state_.deck.begin(), state_.deck.end(), is_basic);
+      if (known_dead_quick) continue;
       const auto cost = choose_discard(true, true, true, item);
       if (cost && is_payload(*cost)) return true;
     }

@@ -5,6 +5,19 @@ on:
     branches: [main]
 
 jobs:
+  source-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create exact PR 582 current-base snapshot
+        run: git archive --format=zip --output=pr582-current-source.zip HEAD
+      - name: Upload exact PR 582 current-base snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr582-current-source
+          path: pr582-current-source.zip
+          if-no-files-found: error
+
   card-audit-contract:
     runs-on: ubuntu-latest
     steps:

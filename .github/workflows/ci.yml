@@ -45,6 +45,7 @@ jobs:
           path: |
             build/Testing
             build.log
+            build/t2_t3_matrix.csv
           if-no-files-found: warn
 
   sanitizers:

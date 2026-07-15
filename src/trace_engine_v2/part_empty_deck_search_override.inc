@@ -13,6 +13,15 @@
     return might_be_unseen(Card::Grass) || might_be_unseen(Card::Fire);
   }
 
+  bool ultra_ball_has_legal_target() const {
+    // Ultra Ball searches for any Pokémon. K0 keeps fixed-list Pokémon plausible;
+    // K1 requires at least one modeled Pokémon to remain in the inspected deck:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    return !deck_seen_ || std::any_of(state_.deck.begin(), state_.deck.end(), is_pokemon);
+  }
+
   bool bench_from_hand(const Card card, const bool resolve_entry) {
     if (!resolve_entry || deck_search_available() ||
         (card != Card::TapuLeleGX && card != Card::Oricorio)) {
@@ -63,10 +72,12 @@
   }
 
   bool play_ultra_ball(const bool permit_payload) {
-    // Ultra Ball cannot spend its two-card cost when its deck search cannot begin:
+    // Ultra Ball cannot pay its two-card requirement when K1 proves that no Pokémon
+    // target exists, even when the costs would advance strict-JIT payload readiness:
     // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
-    return deck_search_available() && play_ultra_ball_empty_deck_original(permit_payload);
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+    return deck_search_available() && ultra_ball_has_legal_target() &&
+           play_ultra_ball_empty_deck_original(permit_payload);
   }
 
   bool play_evolution_incense(const bool permit_payload = false) {

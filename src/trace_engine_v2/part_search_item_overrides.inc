@@ -1,4 +1,9 @@
   bool second_ultra_ball_can_discard_fetched_payload() {
+    // A K1 Ultra Ball route requires at least one Pokémon target before either copy
+    // can pay its two-card requirement:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+    if (!ultra_ball_has_legal_target()) return false;
     // Ultra Ball requires two other cards each time it is played. A first Ultra Ball
     // can only fetch a strict-JIT payload for another Ultra Ball when the second play
     // can discard that payload plus one further policy-legal hand card:
@@ -42,6 +47,11 @@
   }
 
   bool ultra_ball_can_discard_fetched_incense_payload() {
+    // A future Ultra Ball cannot be counted as a live discard outlet when K1 proves
+    // that its Pokémon search has no target:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+    if (!ultra_ball_has_legal_target()) return false;
     if (hand_count(Card::UltraBall) == 0 || hand_count(Card::EvolutionIncense) == 0) return false;
     const std::vector<Card> original_hand = state_.hand;
     const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };

@@ -45,6 +45,28 @@ constexpr bool is_basic(const Card card) {
   }
 }
 
+// Ultra Ball may search any Pokémon, so K1 target legality must recognize every
+// Pokémon represented by the simulator rather than only Basic or payload subsets:
+// https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+constexpr bool is_pokemon(const Card card) {
+  switch (card) {
+    case Card::RegidragoV:
+    case Card::RegidragoVstar:
+    case Card::Dragapult:
+    case Card::MegaDragonite:
+    case Card::DialgaGX:
+    case Card::GoodraVstar:
+    case Card::TapuLeleGX:
+    case Card::LatiasEx:
+    case Card::MawileGX:
+    case Card::Oricorio:
+    case Card::Dipplin:
+      return true;
+    default:
+      return false;
+  }
+}
+
 // TPCi defines Pokémon V to include Pokémon VSTAR. Forest Seal Stone can remain
 // usable after its Pokémon V evolves into a Pokémon VSTAR:
 // https://compendium.pokegym.net/category/7-gameplay/pokemon-v/

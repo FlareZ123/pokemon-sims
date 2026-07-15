@@ -10,8 +10,16 @@ namespace sim {
 struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
   static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
-  static bool play_ultra_ball(Engine& engine) { return engine.play_ultra_ball(false); }
+  static bool play_ultra_ball(Engine& engine, const bool permit_payload = false) {
+    return engine.play_ultra_ball(permit_payload);
+  }
   static bool play_gladion(Engine& engine) { return engine.play_gladion(); }
+  static bool second_ultra_ball_can_discard_fetched_payload(Engine& engine) {
+    return engine.second_ultra_ball_can_discard_fetched_payload();
+  }
+  static bool ultra_ball_can_discard_fetched_incense_payload(Engine& engine) {
+    return engine.ultra_ball_can_discard_fetched_incense_payload();
+  }
 };
 
 }  // namespace sim
@@ -107,6 +115,107 @@ void test_payload_probe_requires_a_second_ultra_ball_after_the_first_play() {
   assert(state.discard.empty());
 }
 
+void test_k1_ultra_ball_preserves_payload_when_no_pokemon_target_exists() {
+  using namespace sim;
+  const Scenario scenario{"ultra-ball-known-no-pokemon", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(555);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1};
+  state.hand = {Card::UltraBall, Card::MegaDragonite, Card::Dipplin};
+  state.deck = {Card::Arven};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // K1 proves that Ultra Ball has no Pokémon target. Its two-card play requirement
+  // cannot be paid merely to put a Dragon payload into discard:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+  assert(!EngineTestAccess::play_ultra_ball(engine, true));
+  assert(state.hand == std::vector<Card>({Card::UltraBall, Card::MegaDragonite, Card::Dipplin}));
+  assert(state.deck == std::vector<Card>({Card::Arven}));
+  assert(state.discard.empty());
+  assert(state.discarded_this_turn.empty());
+}
+
+void test_k1_ultra_ball_payload_cost_remains_legal_with_a_pokemon_target() {
+  using namespace sim;
+  const Scenario scenario{"ultra-ball-known-pokemon", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(556);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1};
+  state.hand = {Card::UltraBall, Card::MegaDragonite, Card::Dipplin};
+  state.deck = {Card::MawileGX};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Mawile-GX is a Pokémon, so the known Ultra Ball search remains legal after its
+  // two-card requirement is paid: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  assert(EngineTestAccess::play_ultra_ball(engine, true));
+  assert(std::count(state.hand.begin(), state.hand.end(), Card::MawileGX) == 1);
+  assert(std::count(state.discard.begin(), state.discard.end(), Card::MegaDragonite) == 1);
+  assert(std::count(state.discard.begin(), state.discard.end(), Card::Dipplin) == 1);
+  assert(std::count(state.discard.begin(), state.discard.end(), Card::UltraBall) == 1);
+}
+
+void test_k0_ultra_ball_may_legally_attempt_an_unknown_search() {
+  using namespace sim;
+  const Scenario scenario{"ultra-ball-unknown-target", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(557);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1};
+  state.hand = {Card::UltraBall, Card::MegaDragonite, Card::Dipplin};
+  state.deck = {Card::Arven};
+
+  // Before legal deck inspection, the fixed-list Pokémon remain plausible under K0,
+  // so Ultra Ball may be played and discover that the search has no target:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+  assert(EngineTestAccess::play_ultra_ball(engine, true));
+  assert(state.hand.empty());
+  assert(state.deck == std::vector<Card>({Card::Arven}));
+  assert(std::count(state.discard.begin(), state.discard.end(), Card::UltraBall) == 1);
+  assert(std::count(state.discard.begin(), state.discard.end(), Card::MegaDragonite) == 1);
+  assert(std::count(state.discard.begin(), state.discard.end(), Card::Dipplin) == 1);
+}
+
+void test_k1_ultra_ball_route_probes_reject_a_known_non_pokemon_deck() {
+  using namespace sim;
+  const Scenario scenario{"ultra-ball-known-dead-probes", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(558);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1};
+  state.hand = {Card::UltraBall, Card::UltraBall, Card::UltraBall,
+                Card::EvolutionIncense, Card::EvolutionIncense,
+                Card::Dipplin, Card::Grass};
+  state.deck = {Card::Arven};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Route probes must apply the same known-target legality as the eventual Ultra Ball
+  // play and cannot promise a discard outlet through a known zero-target search:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+  assert(!EngineTestAccess::second_ultra_ball_can_discard_fetched_payload(engine));
+  assert(!EngineTestAccess::ultra_ball_can_discard_fetched_incense_payload(engine));
+}
+
 }  // namespace
 
 int main() {
@@ -114,5 +223,9 @@ int main() {
   test_two_other_ultra_balls_pay_the_cost();
   test_gladion_preserves_a_payable_three_copy_ultra_ball_route();
   test_payload_probe_requires_a_second_ultra_ball_after_the_first_play();
+  test_k1_ultra_ball_preserves_payload_when_no_pokemon_target_exists();
+  test_k1_ultra_ball_payload_cost_remains_legal_with_a_pokemon_target();
+  test_k0_ultra_ball_may_legally_attempt_an_unknown_search();
+  test_k1_ultra_ball_route_probes_reject_a_known_non_pokemon_deck();
   return 0;
 }

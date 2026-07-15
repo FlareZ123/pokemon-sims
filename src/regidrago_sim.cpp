@@ -74,7 +74,9 @@
 #include "trace_engine_v2/part_tate_blender_attachment_override.inc"
 #include "trace_engine_v2/part_tate_blender_tate_override.inc"
 #define play_mysterious_treasure play_mysterious_treasure_empty_deck_original
+#define play_heavy_ball play_heavy_ball_prize_payload_original
 #include "trace_engine_v2/part_008b.inc"
+#undef play_heavy_ball
 #include "trace_engine_v2/part_009a.inc"
 #undef play_mysterious_treasure
 #define play_quick_ball play_quick_ball_empty_deck_original
@@ -152,7 +154,10 @@
 #undef use_celestial_roar
 #include "trace_engine_v2/part_celestial_roar_override.inc"
 #include "trace_engine_v2/part_013_legacy_star_override.inc"
+#define play_gladion play_gladion_prize_payload_original
 #include "trace_engine_v2/part_012_gladion_override.inc"
+#undef play_gladion
+#include "trace_engine_v2/part_prize_payload_outlet_override.inc"
 #define play_arven play_arven_powerglass_original
 #include "trace_engine_v2/part_012_override.inc"
 #undef play_arven

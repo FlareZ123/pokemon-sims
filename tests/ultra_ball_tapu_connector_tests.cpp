@@ -93,7 +93,7 @@ void test_ultra_ball_hands_a_payload_to_earthen_vessel() {
   state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
   state.hand = {sim::Card::UltraBall, sim::Card::EarthenVessel, sim::Card::Dipplin,
                 sim::Card::Grass, sim::Card::Grass};
-  state.deck = {sim::Card::MegaDragonite};
+  state.deck = {sim::Card::MegaDragonite, sim::Card::Grass};
   sim::EngineTestAccess::set_state(engine, std::move(state));
 
   // Ultra Ball can discard two other hand cards and search the deck for any Pokémon:
@@ -105,10 +105,12 @@ void test_ultra_ball_hands_a_payload_to_earthen_vessel() {
     throw std::runtime_error("Ultra Ball should put Mega Dragonite ex into hand for the second Item.");
   }
 
-  // Earthen Vessel may discard another hand card before searching up to two Basic Energy:
+  // Earthen Vessel may discard another hand card before searching Basic Energy. The
+  // remaining Grass target keeps this K1 continuation legal after Ultra Ball resolves:
   // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
   if (!sim::EngineTestAccess::play_earthen_vessel(engine, true)) {
-    throw std::runtime_error("Earthen Vessel should consume the fetched payload in the strict-JIT turn.");
+    throw std::runtime_error("Earthen Vessel should consume the fetched payload while a Basic Energy target remains.");
   }
 
   const sim::State& after_vessel = sim::EngineTestAccess::state(engine);

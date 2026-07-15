@@ -71,12 +71,57 @@
     return deck_search_available() && play_quick_ball_empty_deck_original(permit_payload);
   }
 
+  bool ultra_ball_payload_search_would_strand_final_card(const bool permit_payload) {
+    if (!deck_seen_ || state_.deck.size() != 1U || !need_payload()) return false;
+
+    const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    if (can_jit_discard) return false;
+
+    // Preserve ordinary Ultra Ball searches. The final-card guard applies only when
+    // the sole inspected Pokémon is the Dragon payload and no other setup axis makes
+    // the current search useful:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    const bool has_non_payload_target =
+        (need_regi() && bench_space() > 0 && might_be_unseen(Card::RegidragoV)) ||
+        (need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
+         might_be_unseen(Card::RegidragoVstar)) ||
+        (need_active_vstar() && bench_space() > 0 &&
+         ability_available_for_pokemon(Card::LatiasEx) && !in_play(Card::LatiasEx) &&
+         hand_count(Card::LatiasEx) == 0 && might_be_unseen(Card::LatiasEx)) ||
+        (need_energy() && hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
+         bench_space() > 0 && needs_oricorio_connector() &&
+         might_be_unseen(Card::Oricorio)) ||
+        (hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
+         bench_space() > 0 && needs_tapu_connector() && might_be_unseen(Card::TapuLeleGX));
+    if (has_non_payload_target || !is_payload(state_.deck.front())) return false;
+
+    // Every search-based outlet becomes unplayable after the first Ultra Ball removes
+    // the final deck card. Serena remains live because its discard-and-draw mode does
+    // not require a second deck search:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://api.pokemontcg.io/v2/cards/swsh12-164
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+    const bool later_search_item_outlet = hand_count(Card::MysteriousTreasure) > 0 ||
+        hand_count(Card::QuickBall) > 0 || hand_count(Card::EarthenVessel) > 0 ||
+        second_ultra_ball_can_discard_fetched_payload();
+    const bool serena_outlet = supporter_allowed() && hand_count(Card::Serena) > 0;
+    return later_search_item_outlet && !serena_outlet;
+  }
+
   bool play_ultra_ball(const bool permit_payload) {
     // Ultra Ball cannot pay its two-card requirement when K1 proves that no Pokémon
-    // target exists, even when the costs would advance strict-JIT payload readiness:
+    // target exists, or when fetching the final Dragon would make its promised
+    // search-based discard outlet unplayable:
     // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
     return deck_search_available() && ultra_ball_has_legal_target() &&
+           !ultra_ball_payload_search_would_strand_final_card(permit_payload) &&
            play_ultra_ball_empty_deck_original(permit_payload);
   }
 

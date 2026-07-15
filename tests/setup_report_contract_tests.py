@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import importlib.util
 import json
+from collections import Counter
 from pathlib import Path
 from types import ModuleType
 
@@ -21,6 +22,39 @@ def load_generator() -> ModuleType:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def validate_scenario_inventory(rows: list[dict[str, str]], expected_scenarios: set[str]) -> None:
+    # The aggregate matrix specification and canonical generator require exactly one
+    # row for every scenario, rather than set membership alone:
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/update_setup_docs.py#L14-L29
+    scenario_counts = Counter(row["scenario"] for row in rows)
+    observed_scenarios = set(scenario_counts)
+    missing = sorted(expected_scenarios - observed_scenarios)
+    extra = sorted(observed_scenarios - expected_scenarios)
+    duplicates = sorted(scenario for scenario, count in scenario_counts.items() if count > 1)
+    if missing or extra or duplicates or len(rows) != len(expected_scenarios):
+        raise AssertionError(
+            "Matrix scenario drift: "
+            f"missing={missing}, extra={extra}, duplicates={duplicates}, "
+            f"rows={len(rows)}, expected_rows={len(expected_scenarios)}."
+        )
+
+
+def assert_duplicate_scenario_is_rejected(
+    rows: list[dict[str, str]], expected_scenarios: set[str]
+) -> None:
+    # Regression for duplicate-row provenance drift identified in issue #606:
+    # https://github.com/FlareZ123/pokemon-sims/issues/606
+    duplicate_rows = [*rows, dict(rows[0])]
+    try:
+        validate_scenario_inventory(duplicate_rows, expected_scenarios)
+    except AssertionError as error:
+        if "duplicates=" not in str(error):
+            raise AssertionError("Duplicate scenario rejection lost its multiplicity diagnostic.") from error
+    else:
+        raise AssertionError("Duplicate scenario rows must fail the setup report provenance contract.")
 
 
 def main() -> int:
@@ -44,11 +78,8 @@ def main() -> int:
         )
 
     expected_scenarios = set(generator.SCENARIO_LABELS)
-    observed_scenarios = {row["scenario"] for row in rows}
-    if observed_scenarios != expected_scenarios:
-        missing = sorted(expected_scenarios - observed_scenarios)
-        extra = sorted(observed_scenarios - expected_scenarios)
-        raise AssertionError(f"Matrix scenario drift: missing={missing}, extra={extra}.")
+    validate_scenario_inventory(rows, expected_scenarios)
+    assert_duplicate_scenario_is_rejected(rows, expected_scenarios)
 
     # REPORT.md is generated from the CSV and manifest by this canonical function:
     # https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/update_setup_docs.py#L71-L120

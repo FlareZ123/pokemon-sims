@@ -14,17 +14,32 @@
     // https://www.pokemon.com/us/pokemon-tcg/rules
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
     // https://github.com/FlareZ123/pokemon-sims/issues/719
-    if (strict_payload_timing() && has_vstar()) {
-      const bool held_latias_route = state_.active && is_basic(state_.active->card) &&
-          hand_count(Card::LatiasEx) > 0 && bench_space() > 0 &&
-          ability_available_for_pokemon(Card::LatiasEx) && !state_.retreat_used;
-      const bool direct_active_evolution = state_.active &&
-          state_.active->card == Card::RegidragoV &&
-          state_.active->entered_turn < state_.turn &&
-          (hand_count(Card::RegidragoVstar) > 0 ||
-           held_item_can_find_pending_vstar());
-      const bool active_axis_without_new_bench = !need_active_vstar() ||
-          can_free_retreat_with_latias() || direct_active_evolution;
+    const bool vstar_search_route = hand_count(Card::RegidragoVstar) > 0 ||
+        held_item_can_find_pending_vstar();
+    const bool active_regi_can_evolve = state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn && vstar_search_route;
+    const bool benched_vstar_exists = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoVstar;
+        });
+    const bool benched_regi_can_evolve = vstar_search_route && std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV &&
+              pokemon.entered_turn < state_.turn;
+        });
+    const bool vstar_exists_or_evolvable =
+        has_vstar() || active_regi_can_evolve || benched_regi_can_evolve;
+    if (strict_payload_timing() && vstar_exists_or_evolvable) {
+      const bool benched_vstar_can_exist =
+          benched_vstar_exists || benched_regi_can_evolve;
+      const bool held_latias_route = benched_vstar_can_exist && state_.active &&
+          is_basic(state_.active->card) && hand_count(Card::LatiasEx) > 0 &&
+          bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
+          !state_.retreat_used;
+      const bool active_axis_without_new_bench = active_is_vstar() ||
+          active_regi_can_evolve ||
+          (benched_vstar_can_exist && can_free_retreat_with_latias());
       const bool active_axis_can_finish = active_axis_without_new_bench ||
           held_latias_route;
       if (!active_axis_can_finish) return false;

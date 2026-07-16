@@ -22,9 +22,10 @@
           state_.active->card == Card::RegidragoV &&
           state_.active->entered_turn < state_.turn &&
           hand_count(Card::RegidragoVstar) > 0;
-      const bool active_axis_can_finish = !need_active_vstar() ||
-          can_free_retreat_with_latias() || held_latias_route ||
-          direct_active_evolution;
+      const bool active_axis_without_new_bench = !need_active_vstar() ||
+          can_free_retreat_with_latias() || direct_active_evolution;
+      const bool active_axis_can_finish = active_axis_without_new_bench ||
+          held_latias_route;
       if (!active_axis_can_finish) return false;
 
       const int missing_energy = grass_needed() + fire_needed();
@@ -40,7 +41,12 @@
         const bool held_vessel_route = needed_energy_might_be_in_deck &&
             !item_locked() && hand_count(Card::EarthenVessel) > 0 &&
             choose_discard(false, true, true, Card::EarthenVessel).has_value();
-        if (!held_energy_route && !held_oricorio_route && !held_vessel_route) {
+        const bool energy_axis_without_new_bench =
+            held_energy_route || held_vessel_route;
+        if (!energy_axis_without_new_bench && !held_oricorio_route) return false;
+        if (!active_axis_without_new_bench && held_latias_route &&
+            !energy_axis_without_new_bench && held_oricorio_route &&
+            bench_space() < 2) {
           return false;
         }
       }

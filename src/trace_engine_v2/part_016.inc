@@ -18,9 +18,10 @@
 }  // namespace sim
 
 #ifndef REGIDRAGO_SIM_NO_MAIN
-std::optional<std::uint64_t> parse_positive_trial_count(const std::string& text) {
-  // The aggregate simulator requires a positive Monte Carlo sample size:
+std::optional<std::uint64_t> parse_positive_count(const std::string& text) {
+  // Aggregate trials and requested ready traces are positive sample counts:
   // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
   // std::stoull accepts an optional sign, so validate the decimal spelling first:
   // https://en.cppreference.com/w/cpp/string/basic_string/stoul
   const bool decimal_digits_only = !text.empty() && std::all_of(
@@ -53,7 +54,7 @@ int main(int argc, char** argv) {
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
     if (arg == "--trials" && i + 1 < argc) {
-      const auto parsed_trials = parse_positive_trial_count(argv[++i]);
+      const auto parsed_trials = parse_positive_count(argv[++i]);
       if (!parsed_trials) {
         std::cerr << "--trials must be a positive integer\n";
         return 2;
@@ -64,8 +65,18 @@ int main(int argc, char** argv) {
     else if (arg == "--scenario" && i + 1 < argc) scenario_label = argv[++i];
     else if (arg == "--simulate-this") simulate_this = true;
     else if (arg == "--require-ready-by" && i + 1 < argc) require_ready_by = std::stoi(argv[++i]);
-    else if (arg == "--find-ready" && i + 1 < argc) find_ready = std::stoull(argv[++i]);
-    else if (arg == "--start-seed" && i + 1 < argc) start_seed = std::stoull(argv[++i]);
+    else if (arg == "--find-ready" && i + 1 < argc) {
+      // --find-ready is a requested result count. Reject signed, zero, and
+      // out-of-range spellings before entering the trace-generation loop:
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
+      // https://en.cppreference.com/w/cpp/string/basic_string/stoul
+      const auto parsed_find_ready = parse_positive_count(argv[++i]);
+      if (!parsed_find_ready) {
+        std::cerr << "--find-ready must be a positive integer\n";
+        return 2;
+      }
+      find_ready = *parsed_find_ready;
+    } else if (arg == "--start-seed" && i + 1 < argc) start_seed = std::stoull(argv[++i]);
     else if (arg == "--self-test") self_test = true;
     else if (arg == "--help") {
       std::cout << "Usage: regidrago_sim [--trials N] [--seed N] [--out PATH] [--scenario LABEL] [--simulate-this] [--require-ready-by TURN] [--find-ready N --start-seed N] [--self-test]\n";
@@ -77,12 +88,15 @@ int main(int argc, char** argv) {
   }
 
   if (self_test) {
-    // Keep the documented aggregate sample-size contract in the existing CLI self-test:
+    // Keep both documented positive-count CLI contracts in the existing self-test:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
-    const auto one_trial = parse_positive_trial_count("1");
-    const bool trial_parser_ok = one_trial && *one_trial == 1 &&
-        !parse_positive_trial_count("0") && !parse_positive_trial_count("-1");
-    return sim::self_test() && trial_parser_ok ? 0 : 1;
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
+    const auto one_count = parse_positive_count("1");
+    const bool positive_count_parser_ok = one_count && *one_count == 1 &&
+        !parse_positive_count("0") && !parse_positive_count("-1") &&
+        !parse_positive_count("") &&
+        !parse_positive_count("18446744073709551616");
+    return sim::self_test() && positive_count_parser_ok ? 0 : 1;
   }
 
   try {

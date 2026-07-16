@@ -1,0 +1,109 @@
+name: Apply focused issue 663 patch
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-issue-663-focused.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Apply selector and CMake registration
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          def replace_once(path_text: str, old: str, new: str) -> None:
+              path = Path(path_text)
+              text = path.read_text(encoding="utf-8")
+              if text.count(old) != 1:
+                  raise RuntimeError(f"expected exactly one replacement target in {path_text}")
+              temporary = path.with_name(path.name + ".tmp")
+              temporary.write_text(text.replace(old, new, 1), encoding="utf-8")
+              os.replace(temporary, path)
+
+          selector_anchor = '''    const bool tapu_dialga_are_only_opening_basics =
+'''
+          selector_block = '''    const bool oricorio_dialga_are_only_opening_basics =
+        hand_count(Card::Oricorio) > 0 && hand_count(Card::DialgaGX) > 0 &&
+        hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&
+        hand_count(Card::MawileGX) == 0 && hand_count(Card::TapuLeleGX) == 0;
+    const int opening_payloads = static_cast<int>(
+        std::count_if(state_.hand.begin(), state_.hand.end(), is_payload));
+    const bool another_payload_covers_strict_jit =
+        hand_count(Card::DialgaGX) == 1 && opening_payloads > 1;
+    const bool vital_dance_has_energy_value =
+        hand_count(Card::Grass) == 0 || hand_count(Card::Fire) == 0;
+    const bool held_direct_regidrago_connector =
+        hand_count(Card::QuickBall) > 0 || hand_count(Card::MysteriousTreasure) > 0;
+    const bool arven_can_expose_regidrago_connector =
+        hand_count(Card::Arven) > 0 &&
+        (might_be_unseen(Card::QuickBall) || might_be_unseen(Card::MysteriousTreasure));
+    const bool held_public_regidrago_connector =
+        held_direct_regidrago_connector || arven_can_expose_regidrago_connector ||
+        hand_count(Card::StevensResolve) > 0;
+    const bool issue_663_no_lock_scope = scenario_.locks == LockMode::None;
+
+    // Setup may start Dialga-GX so Oricorio remains in hand for its printed
+    // play-from-hand-to-Bench Vital Dance trigger. Apply the approved no-lock route
+    // only when another held Dragon covers strict-JIT payload value, at least one
+    // GGF Energy type is missing, and public cards expose a Regidrago V search route.
+    // Lock-specific Oricorio/Dialga policy remains isolated in issue #674:
+    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+    // https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://api.pokemontcg.io/v2/cards/sm5-100
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // https://api.pokemontcg.io/v2/cards/swsh11-136
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/sm7-145
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/663
+    // https://github.com/FlareZ123/pokemon-sims/issues/674
+    if (issue_663_no_lock_scope && oricorio_dialga_are_only_opening_basics &&
+        strict_payload_timing() && another_payload_covers_strict_jit &&
+        vital_dance_has_energy_value && held_public_regidrago_connector &&
+        might_be_unseen(Card::RegidragoV) && remove_one(state_.hand, Card::DialgaGX)) {
+      state_.active = Pokemon{Card::DialgaGX, 0};
+      outcome_.started_regi = false;
+      return;
+    }
+
+    const bool tapu_dialga_are_only_opening_basics =
+'''
+          replace_once("src/trace_engine_v2/part_005.inc", selector_anchor, selector_block)
+
+          target_anchor = '''add_executable(regidrago_opening_dialga_payload_tests tests/opening_active_dialga_payload_tests.cpp)
+target_compile_options(regidrago_opening_dialga_payload_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+'''
+          target_block = target_anchor + '''
+add_executable(regidrago_opening_oricorio_dialga_tests tests/opening_oricorio_dialga_tests.cpp)
+target_compile_options(regidrago_opening_oricorio_dialga_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+'''
+          replace_once("CMakeLists.txt", target_anchor, target_block)
+
+          test_anchor = '''add_test(NAME regidrago_opening_dialga_payload COMMAND regidrago_opening_dialga_payload_tests)
+'''
+          test_block = test_anchor + '''add_test(NAME regidrago_opening_oricorio_dialga COMMAND regidrago_opening_oricorio_dialga_tests)
+'''
+          replace_once("CMakeLists.txt", test_anchor, test_block)
+          PY
+          git rm .github/workflows/apply-issue-663-focused.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_005.inc CMakeLists.txt
+          git commit -m "Fix no-lock Oricorio-Dialga opening route (#663)"
+          git push origin HEAD:${{ github.head_ref }}

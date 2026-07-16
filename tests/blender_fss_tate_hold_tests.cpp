@@ -24,6 +24,12 @@ bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
   return std::find(cards.begin(), cards.end(), card) != cards.end();
 }
 
+sim::Engine make_engine(const char* label, std::mt19937_64& rng) {
+  const sim::Scenario scenario{label, sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  return sim::Engine(scenario, sim::baseline_recipe(), rng);
+}
+
 void test_blender_holds_for_live_fss_tate_connector_with_incomplete_target() {
   using namespace sim;
   const Scenario scenario{"blender-fss-tate-incomplete", DciProfile::StrictJit,
@@ -108,11 +114,112 @@ void test_blender_resolves_when_no_fss_tate_connector_remains() {
   assert(contains(state.discard, Card::MegaDragonite));
 }
 
+void test_blender_holds_after_manual_energy_window_closes() {
+  using namespace sim;
+  std::mt19937_64 rng(7371);
+  Engine engine = make_engine("blender-energy-window-closed", rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 1, 1, Tool::None};
+  state.hand = {Card::BrilliantBlender, Card::Grass};
+  state.deck = {Card::MegaDragonite, Card::Dragapult};
+  state.manual_energy_used = true;
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Apex Dragon still lacks one Grass, and the once-per-turn attachment has already
+  // been used. Preserve Brilliant Blender so the held Grass plus Blender remains a
+  // deterministic next-turn ready route:
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+  // https://github.com/FlareZ123/pokemon-sims/issues/737
+  assert(!EngineTestAccess::play_brilliant_blender(engine));
+  assert(contains(state.hand, Card::BrilliantBlender));
+  assert(contains(state.hand, Card::Grass));
+  assert(contains(state.deck, Card::MegaDragonite));
+  assert(state.discard.empty());
+}
+
+void test_blender_resolves_with_unused_final_manual_attachment() {
+  using namespace sim;
+  std::mt19937_64 rng(7372);
+  Engine engine = make_engine("blender-energy-manual-live", rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 1, 1, Tool::None};
+  state.hand = {Card::BrilliantBlender, Card::Grass};
+  state.deck = {Card::MegaDragonite};
+  state.manual_energy_used = false;
+  EngineTestAccess::set_deck_seen(engine);
+
+  // The held Grass can still be attached after Blender, so every non-payload axis
+  // remains completable this turn:
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/issues/737
+  assert(EngineTestAccess::play_brilliant_blender(engine));
+  assert(contains(state.discard, Card::BrilliantBlender));
+  assert(contains(state.discard, Card::MegaDragonite));
+}
+
+void test_blender_resolves_with_live_crispin_attachment() {
+  using namespace sim;
+  std::mt19937_64 rng(7373);
+  Engine engine = make_engine("blender-energy-crispin-live", rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 1, 1, Tool::None};
+  state.hand = {Card::BrilliantBlender, Card::Crispin};
+  state.deck = {Card::MegaDragonite, Card::Grass, Card::Fire};
+  state.manual_energy_used = true;
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Crispin may still attach the missing Grass directly even after the manual
+  // attachment is spent, so Blender remains a live same-turn strict-JIT outlet:
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/issues/737
+  assert(EngineTestAccess::play_brilliant_blender(engine));
+  assert(contains(state.discard, Card::BrilliantBlender));
+  assert(contains(state.discard, Card::MegaDragonite));
+}
+
+void test_blender_holds_when_crispin_cannot_finish_two_missing_energy() {
+  using namespace sim;
+  std::mt19937_64 rng(7374);
+  Engine engine = make_engine("blender-energy-crispin-incomplete", rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 0, 1, Tool::None};
+  state.hand = {Card::BrilliantBlender, Card::Crispin};
+  state.deck = {Card::MegaDragonite, Card::Grass, Card::Fire};
+  state.manual_energy_used = true;
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Crispin can attach only one searched Energy. With both Grass requirements still
+  // missing and the manual attachment spent, the Supporter cannot finish GGF:
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/issues/737
+  assert(!EngineTestAccess::play_brilliant_blender(engine));
+  assert(contains(state.hand, Card::BrilliantBlender));
+  assert(contains(state.deck, Card::MegaDragonite));
+}
+
 }  // namespace
 
 int main() {
   test_blender_holds_for_live_fss_tate_connector_with_incomplete_target();
   test_blender_resolves_when_fss_tate_target_is_energy_complete();
   test_blender_resolves_when_no_fss_tate_connector_remains();
+  test_blender_holds_after_manual_energy_window_closes();
+  test_blender_resolves_with_unused_final_manual_attachment();
+  test_blender_resolves_with_live_crispin_attachment();
+  test_blender_holds_when_crispin_cannot_finish_two_missing_energy();
   return 0;
 }

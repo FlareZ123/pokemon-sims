@@ -28,6 +28,9 @@
     case Card::Grass: return "Grass Energy";
     case Card::Fire: return "Fire Energy";
     case Card::TurboBlank: return "Turbo sensitivity blank";
+    case Card::BattleVipPass: return "Battle VIP Pass";
+    case Card::PokeStop: return "PokéStop";
+    case Card::Carmine: return "Carmine";
   }
   return "Unknown";
 }

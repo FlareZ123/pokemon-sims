@@ -60,6 +60,13 @@ std::optional<int> parse_ready_deadline(const std::string& text) {
   return static_cast<int>(*parsed);
 }
 
+enum class CliMode : std::uint8_t {
+  Aggregate,
+  SingleTrace,
+  FindReady,
+  SelfTest,
+};
+
 int main(int argc, char** argv) {
   std::uint64_t trials = 100000;
   std::uint64_t seed = 20260705;
@@ -71,6 +78,14 @@ int main(int argc, char** argv) {
   std::uint64_t find_ready = 0;
   std::uint64_t start_seed = 1;
 
+  bool trials_supplied = false;
+  bool seed_supplied = false;
+  bool output_supplied = false;
+  bool scenario_supplied = false;
+  bool deadline_supplied = false;
+  bool find_ready_supplied = false;
+  bool start_seed_supplied = false;
+
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
     if (arg == "--trials" && i + 1 < argc) {
@@ -80,6 +95,7 @@ int main(int argc, char** argv) {
         return 2;
       }
       trials = *parsed_trials;
+      trials_supplied = true;
     } else if (arg == "--seed" && i + 1 < argc) {
       // Handle malformed and overflowing seed operands as normal CLI errors instead
       // of allowing std::stoull to terminate before the main exception handler:
@@ -91,17 +107,23 @@ int main(int argc, char** argv) {
         return 2;
       }
       seed = *parsed_seed;
-    }
-    else if (arg == "--out" && i + 1 < argc) output = argv[++i];
-    else if (arg == "--scenario" && i + 1 < argc) scenario_label = argv[++i];
-    else if (arg == "--simulate-this") simulate_this = true;
-    else if (arg == "--require-ready-by" && i + 1 < argc) {
+      seed_supplied = true;
+    } else if (arg == "--out" && i + 1 < argc) {
+      output = argv[++i];
+      output_supplied = true;
+    } else if (arg == "--scenario" && i + 1 < argc) {
+      scenario_label = argv[++i];
+      scenario_supplied = true;
+    } else if (arg == "--simulate-this") {
+      simulate_this = true;
+    } else if (arg == "--require-ready-by" && i + 1 < argc) {
       const auto parsed_deadline = parse_ready_deadline(argv[++i]);
       if (!parsed_deadline) {
         std::cerr << "--require-ready-by must be an integer from 1 through 4\n";
         return 2;
       }
       require_ready_by = *parsed_deadline;
+      deadline_supplied = true;
     } else if (arg == "--find-ready" && i + 1 < argc) {
       // --find-ready is a requested result count. Reject signed, zero, and
       // out-of-range spellings before entering the trace-generation loop:
@@ -113,6 +135,7 @@ int main(int argc, char** argv) {
         return 2;
       }
       find_ready = *parsed_find_ready;
+      find_ready_supplied = true;
     } else if (arg == "--start-seed" && i + 1 < argc) {
       // The ready-trace search accepts seed zero, while signed, malformed, and
       // overflowing operands are command errors rather than uncaught exceptions:
@@ -125,9 +148,10 @@ int main(int argc, char** argv) {
         return 2;
       }
       start_seed = *parsed_start_seed;
-    }
-    else if (arg == "--self-test") self_test = true;
-    else if (arg == "--help") {
+      start_seed_supplied = true;
+    } else if (arg == "--self-test") {
+      self_test = true;
+    } else if (arg == "--help") {
       std::cout << "Usage: regidrago_sim [--trials N] [--seed N] [--out PATH] [--scenario LABEL] [--simulate-this] [--require-ready-by TURN] [--find-ready N --start-seed N] [--self-test]\n";
       return 0;
     } else {
@@ -136,7 +160,50 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (self_test) {
+  // The README specifies separate aggregate and readable-trace interfaces, and the
+  // help text groups find-ready with start-seed. Select exactly one mode, then reject
+  // every supplied option that cannot affect that mode instead of returning success
+  // after silently ignoring it:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+  // https://github.com/FlareZ123/pokemon-sims/issues/633
+  const int explicit_mode_count = static_cast<int>(self_test) +
+      static_cast<int>(simulate_this) + static_cast<int>(find_ready_supplied);
+  if (explicit_mode_count > 1) {
+    std::cerr << "--self-test, --simulate-this, and --find-ready select incompatible modes\n";
+    return 2;
+  }
+
+  const CliMode mode = self_test ? CliMode::SelfTest :
+      (find_ready_supplied ? CliMode::FindReady :
+       (simulate_this ? CliMode::SingleTrace : CliMode::Aggregate));
+  const auto reject_option = [](const char* option, const char* mode_name) {
+    std::cerr << option << " is not valid in " << mode_name << " mode\n";
+    return 2;
+  };
+
+  if (mode == CliMode::Aggregate) {
+    if (scenario_supplied) return reject_option("--scenario", "aggregate");
+    if (deadline_supplied) return reject_option("--require-ready-by", "aggregate");
+    if (start_seed_supplied) return reject_option("--start-seed", "aggregate");
+  } else if (mode == CliMode::SingleTrace) {
+    if (trials_supplied) return reject_option("--trials", "single-trace");
+    if (output_supplied) return reject_option("--out", "single-trace");
+    if (start_seed_supplied) return reject_option("--start-seed", "single-trace");
+  } else if (mode == CliMode::FindReady) {
+    if (trials_supplied) return reject_option("--trials", "find-ready");
+    if (output_supplied) return reject_option("--out", "find-ready");
+    if (seed_supplied) return reject_option("--seed", "find-ready");
+  } else {
+    if (trials_supplied) return reject_option("--trials", "self-test");
+    if (seed_supplied) return reject_option("--seed", "self-test");
+    if (output_supplied) return reject_option("--out", "self-test");
+    if (scenario_supplied) return reject_option("--scenario", "self-test");
+    if (deadline_supplied) return reject_option("--require-ready-by", "self-test");
+    if (start_seed_supplied) return reject_option("--start-seed", "self-test");
+  }
+
+  if (mode == CliMode::SelfTest) {
     // Keep both documented positive-count CLI contracts in the existing self-test:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
     // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
@@ -176,18 +243,19 @@ int main(int argc, char** argv) {
 
   try {
     const sim::DeckRecipe deck = sim::baseline_recipe();
-    if (simulate_this || find_ready > 0) {
+    if (mode == CliMode::SingleTrace || mode == CliMode::FindReady) {
       const std::string selected = scenario_label.empty() ? "strict-jit/go-second" : scenario_label;
       const auto scenario = sim::scenario_by_label(selected);
       if (!scenario) throw std::runtime_error("unknown scenario: " + selected);
-      const std::uint64_t desired = find_ready == 0 ? 1 : find_ready;
+      const std::uint64_t desired = mode == CliMode::SingleTrace ? 1 : find_ready;
       std::uint64_t found = 0;
-      for (std::uint64_t candidate_seed = find_ready == 0 ? seed : start_seed; found < desired; ++candidate_seed) {
+      for (std::uint64_t candidate_seed = mode == CliMode::SingleTrace ? seed : start_seed;
+           found < desired; ++candidate_seed) {
         std::mt19937_64 rng(candidate_seed);
         sim::TraceLog trace{true, {}};
         sim::Engine engine(*scenario, deck, rng, &trace);
         const sim::TrialOutcome outcome = engine.run();
-        if (find_ready > 0 && outcome.first_ready_turn == 0) continue;
+        if (mode == CliMode::FindReady && outcome.first_ready_turn == 0) continue;
         std::cout << "\nSeed: " << candidate_seed << " | first-ready turn: " << (outcome.first_ready_turn == 0 ? std::string("not ready through T4") : std::to_string(outcome.first_ready_turn)) << '\n';
         for (const std::string& line : trace.lines) std::cout << line << '\n';
         if (require_ready_by > 0 && (outcome.first_ready_turn == 0 || outcome.first_ready_turn > require_ready_by)) {
@@ -195,7 +263,7 @@ int main(int argc, char** argv) {
           return 1;
         }
         ++found;
-        if (find_ready == 0) break;
+        if (mode == CliMode::SingleTrace) break;
       }
       return 0;
     }

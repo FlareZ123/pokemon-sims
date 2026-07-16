@@ -118,6 +118,52 @@
       return;
     }
 
+    const bool oricorio_dialga_are_only_opening_basics =
+        hand_count(Card::Oricorio) > 0 && hand_count(Card::DialgaGX) > 0 &&
+        hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&
+        hand_count(Card::MawileGX) == 0 && hand_count(Card::TapuLeleGX) == 0;
+    const int opening_payloads = static_cast<int>(
+        std::count_if(state_.hand.begin(), state_.hand.end(), is_payload));
+    const bool another_payload_covers_strict_jit =
+        hand_count(Card::DialgaGX) == 1 && opening_payloads > 1;
+    const bool vital_dance_has_energy_value = !both_manual_energy_types_held;
+    const bool turn_one_item_search_is_live =
+        scenario_.locks == LockMode::TurnTwoItem ||
+        scenario_.locks == LockMode::FullRuleBoxAbility;
+    const bool full_item_conditioned_graph =
+        (scenario_.locks == LockMode::FullItem ||
+         scenario_.locks == LockMode::FullCombined) &&
+        hand_count(Card::QuickBall) > 0 && hand_count(Card::TeamYellsCheer) > 0 &&
+        hand_count(Card::Powerglass) > 0 && hand_count(Card::RegidragoVstar) > 0;
+    const bool lock_route_supports_vital_dance =
+        (turn_one_item_search_is_live && direct_pokemon_search_already_held) ||
+        full_item_conditioned_graph;
+
+    // Under the modeled lock scenarios, start Dialga-GX only when another held
+    // Dragon already covers strict-JIT payload and preserving Oricorio keeps a live
+    // Vital Dance Energy connector. Turn-two Item lock and Rule Box Ability lock
+    // retain the public Item-search route. Oricorio has no Rule Box, so Path-style
+    // suppression does not disable Vital Dance. The full-Item cases are restricted
+    // to the approved conditioned public graph whose matched-seed policy comparison
+    // favors Dialga Active despite Quick Ball being locked:
+    // Setup procedure: https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+    // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+    // Mega Dragonite ex payload: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-scenarios
+    // Decision priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Regression evidence: https://github.com/FlareZ123/pokemon-sims/issues/674
+    if (oricorio_dialga_are_only_opening_basics && strict_payload_timing() &&
+        another_payload_covers_strict_jit && vital_dance_has_energy_value &&
+        lock_route_supports_vital_dance && remove_one(state_.hand, Card::DialgaGX)) {
+      state_.active = Pokemon{Card::DialgaGX, 0};
+      outcome_.started_regi = false;
+      return;
+    }
+
     const bool tapu_dialga_are_only_opening_basics =
         hand_count(Card::TapuLeleGX) > 0 && hand_count(Card::DialgaGX) > 0 &&
         hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&

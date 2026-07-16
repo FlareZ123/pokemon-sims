@@ -36,7 +36,7 @@ sim::State exact_k1_state() {
 
 sim::Engine make_engine(const sim::Scenario& scenario, sim::State state,
                         std::mt19937_64& rng) {
-  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  static const sim::DeckRecipe recipe = sim::baseline_recipe();
   sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, std::move(state));
   sim::EngineTestAccess::set_deck_seen(engine, true);

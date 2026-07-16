@@ -28,6 +28,18 @@ struct EngineTestAccess {
   static bool might_be_unseen(const Engine& engine, const Card card) {
     return engine.might_be_unseen(card);
   }
+  static bool vstar_can_exist_this_turn(const Engine& engine) {
+    return engine.vstar_can_exist_this_turn();
+  }
+  static bool can_play_payload_this_turn(const Engine& engine) {
+    return engine.can_play_payload_this_turn();
+  }
+  static bool has_live_blender_payload_line(const Engine& engine) {
+    return engine.has_live_blender_payload_line();
+  }
+  static bool play_brilliant_blender(Engine& engine) {
+    return engine.play_brilliant_blender();
+  }
 };
 
 }  // namespace sim
@@ -232,6 +244,68 @@ void test_k0_counts_the_regidrago_v_under_an_evolved_vstar() {
   }
 }
 
+void test_strict_jit_holds_payload_when_no_vstar_can_exist() {
+  Fixture fixture{721};
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::LatiasEx, 1};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoV, 2}};
+  state.hand = {sim::Card::BrilliantBlender};
+  state.deck = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // A Pokémon cannot evolve during the turn it entered play. Strict JIT counts a
+  // payload only on the same turn that readiness is created, so Blender must remain
+  // held while no Regidrago VSTAR can legally exist:
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+  // https://github.com/FlareZ123/pokemon-sims/issues/721
+  if (sim::EngineTestAccess::vstar_can_exist_this_turn(fixture.engine) ||
+      sim::EngineTestAccess::can_play_payload_this_turn(fixture.engine) ||
+      sim::EngineTestAccess::has_live_blender_payload_line(fixture.engine) ||
+      sim::EngineTestAccess::play_brilliant_blender(fixture.engine)) {
+    throw std::runtime_error("Strict JIT must hold every payload route when no VSTAR can exist this turn.");
+  }
+
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  if (!contains(after.hand, sim::Card::BrilliantBlender) ||
+      !contains(after.deck, sim::Card::MegaDragonite) || !after.discard.empty()) {
+    throw std::runtime_error("The held Blender route must leave hand, deck, and discard unchanged.");
+  }
+}
+
+void test_strict_jit_keeps_payload_live_for_prior_turn_regidrago() {
+  Fixture fixture{722};
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::LatiasEx, 1};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoV, 1}};
+  state.hand = {sim::Card::BrilliantBlender};
+  state.deck = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // A prior-turn Regidrago V may evolve during the current turn, so the narrow
+  // VSTAR-existence gate must preserve the live same-turn Blender payload route:
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://github.com/FlareZ123/pokemon-sims/issues/721
+  if (!sim::EngineTestAccess::vstar_can_exist_this_turn(fixture.engine) ||
+      !sim::EngineTestAccess::can_play_payload_this_turn(fixture.engine) ||
+      !sim::EngineTestAccess::has_live_blender_payload_line(fixture.engine) ||
+      !sim::EngineTestAccess::play_brilliant_blender(fixture.engine)) {
+    throw std::runtime_error("A prior-turn Regidrago V must keep the strict-JIT payload route live.");
+  }
+
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  if (!contains(after.discard, sim::Card::BrilliantBlender) ||
+      !contains(after.discard, sim::Card::MegaDragonite)) {
+    throw std::runtime_error("The positive control should consume Blender and discard its payload.");
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -243,5 +317,7 @@ int main() {
   test_ultra_ball_holds_when_vstar_is_known_absent();
   test_k0_mysterious_treasure_keeps_plausible_vstar_route();
   test_k0_counts_the_regidrago_v_under_an_evolved_vstar();
+  test_strict_jit_holds_payload_when_no_vstar_can_exist();
+  test_strict_jit_keeps_payload_live_for_prior_turn_regidrago();
   return 0;
 }

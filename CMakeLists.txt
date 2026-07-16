@@ -226,3 +226,8 @@ add_test(NAME trace_rulebox_lock_t3 COMMAND regidrago_sim --simulate-this --scen
 add_test(NAME trace_no_control_first_t4 COMMAND regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 6 --require-ready-by 4)
 add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
 set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)
+
+
+add_executable(regidrago_arven_complementary_latias_tests tests/arven_complementary_latias_route_tests.cpp)
+target_compile_options(regidrago_arven_complementary_latias_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+add_test(NAME regidrago_arven_complementary_latias COMMAND regidrago_arven_complementary_latias_tests)

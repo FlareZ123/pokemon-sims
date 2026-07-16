@@ -1,0 +1,41 @@
+name: Manual Trace From Main
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  trace-one-play:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out current main simulator
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Record exact main commit
+        run: git rev-parse HEAD | tee main-commit.txt
+
+      - name: Build active simulator
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Trace one deterministic play
+        run: |
+          ./build/regidrago_sim \
+            --simulate-this \
+            --scenario strict-jit/go-second \
+            --seed 3 \
+            --require-ready-by 3 | tee manual-trace.txt
+
+      - name: Upload trace and provenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: manual-trace-main-seed-3
+          path: |
+            manual-trace.txt
+            main-commit.txt
+          if-no-files-found: error

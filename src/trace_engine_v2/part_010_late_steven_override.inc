@@ -25,21 +25,35 @@
         choose_discard(permit_payload, true, true, Card::QuickBall).has_value();
     const bool treasure_route = hand_count(Card::MysteriousTreasure) > 0 &&
         choose_discard(permit_payload, true, true, Card::MysteriousTreasure).has_value();
-    const bool communication_route = hand_count(Card::PokemonCommunication) > 0;
-    const bool arven_route = hand_count(Card::Arven) > 0 &&
+
+    Engine communication_shadow = *this;
+    const bool communication_route =
+        communication_shadow.pokemon_communication_has_direct_target_route(
+            Card::RegidragoV);
+
+    const bool arven_search_item_route = hand_count(Card::Arven) > 0 &&
         is_legal_cost_available(permit_payload, true) &&
         (might_be_unseen(Card::QuickBall) || might_be_unseen(Card::MysteriousTreasure));
+    Engine arven_communication_shadow = *this;
+    const auto arven_communication_plan =
+        arven_communication_shadow.pokemon_communication_plan_after_playing_supporter(
+            Card::Arven, false);
+    const bool arven_communication_route = hand_count(Card::Arven) > 0 &&
+        might_be_unseen(Card::PokemonCommunication) &&
+        arven_communication_plan &&
+        arven_communication_plan->target == Card::RegidragoV;
 
-    // Quick Ball and Mysterious Treasure each need another discard, Ultra Ball needs
-    // two, and Pokémon Communication needs a Pokémon to return. Conservatively keep
-    // Steven behind a held Communication until its exchange planner has resolved:
+    // Every faster Basic route is cost-aware. Quick Ball and Mysterious Treasure
+    // each need another discard, Ultra Ball needs two, and Pokémon Communication
+    // must have a safe hand Pokémon to return for an available Regidrago V target:
     // https://api.pokemontcg.io/v2/cards/swsh1-179
     // https://api.pokemontcg.io/v2/cards/sm6-113
     // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     // https://api.pokemontcg.io/v2/cards/sm9-152
     // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_pokemon_communication.inc#L42-L61
     return quick_ball_route || treasure_route || held_ultra_ball_can_find_regidrago_now() ||
-        communication_route || arven_route;
+        communication_route || arven_search_item_route || arven_communication_route;
   }
 
   bool late_steven_is_only_basic_connector() const {

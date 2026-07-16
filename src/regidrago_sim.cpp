@@ -99,7 +99,9 @@
 #define play_brilliant_blender play_brilliant_blender_legacy_original
 #define fss_target_after_search_started fss_target_after_search_started_original
 #define attach_fss attach_fss_original
+#define should_play_steven should_play_steven_original
 #include "trace_engine_v2/part_010.inc"
+#undef should_play_steven
 #undef attach_fss
 #undef fss_target_after_search_started
 #undef play_brilliant_blender
@@ -126,6 +128,7 @@
 #undef play_evolution_incense
 #undef play_ultra_ball
 #include "trace_engine_v2/part_pokemon_communication.inc"
+#include "trace_engine_v2/part_010_late_steven_override.inc"
 #include "trace_engine_v2/part_010_fss_override.inc"
 #include "trace_engine_v2/part_010_attach_fss_override.inc"
 #define use_fss use_fss_latias_original

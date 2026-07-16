@@ -81,6 +81,38 @@ void test_payable_mysterious_treasure_stays_faster() {
   }
 }
 
+void test_communication_requires_a_safe_exchange() {
+  const sim::Scenario scenario{"issue-779-communication", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, true, 4};
+  {
+    std::mt19937_64 rng{7801};
+    sim::State state = exact_turn_two_state();
+    state.hand.push_back(sim::Card::PokemonCommunication);
+    state.hand.push_back(sim::Card::Dipplin);
+    sim::Engine engine = make_engine(scenario, std::move(state), rng);
+    // Pokémon Communication can return Dipplin and search Regidrago V immediately:
+    // https://api.pokemontcg.io/v2/cards/sm9-152
+    // https://api.pokemontcg.io/v2/cards/swsh12-135
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_pokemon_communication.inc#L42-L61
+    if (sim::EngineTestAccess::should_play_steven(engine)) {
+      throw std::runtime_error("A live Communication exchange must stay ahead of Steven.");
+    }
+  }
+  {
+    std::mt19937_64 rng{7802};
+    sim::State state = exact_turn_two_state();
+    state.hand.erase(std::remove(state.hand.begin(), state.hand.end(), sim::Card::MawileGX),
+                     state.hand.end());
+    state.hand.erase(std::remove(state.hand.begin(), state.hand.end(), sim::Card::MegaDragonite),
+                     state.hand.end());
+    state.hand.push_back(sim::Card::PokemonCommunication);
+    sim::Engine engine = make_engine(scenario, std::move(state), rng);
+    if (!sim::EngineTestAccess::should_play_steven(engine)) {
+      throw std::runtime_error("A dead Communication with no hand Pokémon must not suppress Steven.");
+    }
+  }
+}
+
 void test_item_lock_allows_only_supporter_route() {
   const sim::Scenario scenario{"issue-779-item-lock", sim::DciProfile::StrictJit,
                                sim::LockMode::FullItem, true, 4};
@@ -114,30 +146,17 @@ void test_existing_basic_and_no_bench_space_suppress_steven() {
   }
 }
 
-void test_unused_fss_and_known_prized_basic_suppress_late_route() {
-  const sim::Scenario scenario{"issue-779-route-controls", sim::DciProfile::StrictJit,
+void test_known_prized_basic_suppresses_late_route() {
+  const sim::Scenario scenario{"issue-779-prized-control", sim::DciProfile::StrictJit,
                                sim::LockMode::None, true, 4};
-  {
-    std::mt19937_64 rng{784};
-    sim::State state = exact_turn_two_state();
-    state.active = sim::Pokemon{sim::Card::RegidragoV, 0, 0, 0,
-                                sim::Tool::ForestSealStone};
-    state.bench.clear();
-    sim::Engine engine = make_engine(scenario, std::move(state), rng);
-    if (sim::EngineTestAccess::should_play_steven(engine)) {
-      throw std::runtime_error("An unused Star Alchemy route must stay ahead of Steven.");
-    }
-  }
-  {
-    std::mt19937_64 rng{785};
-    sim::State state = exact_turn_two_state();
-    state.deck.erase(state.deck.begin());
-    state.prizes.push_back(sim::Card::RegidragoV);
-    sim::Engine engine = make_engine(scenario, std::move(state), rng);
-    sim::EngineTestAccess::set_deck_seen(engine, true);
-    if (sim::EngineTestAccess::should_play_steven(engine)) {
-      throw std::runtime_error("A known-prized Regidrago V is not a Steven deck target.");
-    }
+  std::mt19937_64 rng{785};
+  sim::State state = exact_turn_two_state();
+  state.deck.erase(state.deck.begin());
+  state.prizes.push_back(sim::Card::RegidragoV);
+  sim::Engine engine = make_engine(scenario, std::move(state), rng);
+  sim::EngineTestAccess::set_deck_seen(engine, true);
+  if (sim::EngineTestAccess::should_play_steven(engine)) {
+    throw std::runtime_error("A known-prized Regidrago V is not a Steven deck target.");
   }
 }
 
@@ -158,9 +177,10 @@ void test_first_turn_going_first_remains_illegal() {
 int main() {
   test_turn_two_going_first_uses_only_basic_connector();
   test_payable_mysterious_treasure_stays_faster();
+  test_communication_requires_a_safe_exchange();
   test_item_lock_allows_only_supporter_route();
   test_existing_basic_and_no_bench_space_suppress_steven();
-  test_unused_fss_and_known_prized_basic_suppress_late_route();
+  test_known_prized_basic_suppresses_late_route();
   test_first_turn_going_first_remains_illegal();
   return 0;
 }

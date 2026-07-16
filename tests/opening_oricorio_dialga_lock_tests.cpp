@@ -1,45 +1,4 @@
-from pathlib import Path
-
-source = Path("src/trace_engine_v2/part_005.inc")
-text = source.read_text(encoding="utf-8")
-anchor = """    // Oricorio's Vital Dance triggers only when it is played from hand onto the
-"""
-insertion = """    const bool oricorio_dialga_are_only_opening_basics =
-        hand_count(Card::Oricorio) > 0 && hand_count(Card::DialgaGX) > 0 &&
-        hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&
-        hand_count(Card::MawileGX) == 0 && hand_count(Card::TapuLeleGX) == 0;
-    const bool modeled_lock_scenario = scenario_.locks != LockMode::None;
-    const bool dialga_is_redundant_payload =
-        hand_count(Card::DialgaGX) == 1 && payloads_in_hand > 1;
-    const bool vital_dance_has_missing_energy_type = !both_manual_energy_types_held;
-
-    // Setup permits either opening Basic to become Active. In strict-JIT lock
-    // scenarios, start a redundant Dialga-GX so Oricorio remains in hand for
-    // Vital Dance while at least one GGF Energy type is missing. Path-style Rule
-    // Box Ability lock does not suppress Oricorio because it has no Rule Box:
-    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
-    // https://api.pokemontcg.io/v2/cards/sm2-55
-    // https://api.pokemontcg.io/v2/cards/sm5-100
-    // https://api.pokemontcg.io/v2/cards/me2pt5-152
-    // https://api.pokemontcg.io/v2/cards/swsh6-148
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // https://github.com/FlareZ123/pokemon-sims/issues/674
-    if (oricorio_dialga_are_only_opening_basics && modeled_lock_scenario &&
-        scenario_.dci == DciProfile::StrictJit && dialga_is_redundant_payload &&
-        vital_dance_has_missing_energy_type && remove_one(state_.hand, Card::DialgaGX)) {
-      state_.active = Pokemon{Card::DialgaGX, 0};
-      outcome_.started_regi = false;
-      return;
-    }
-
-"""
-if "oricorio_dialga_are_only_opening_basics" not in text:
-    if anchor not in text:
-        raise SystemExit("source anchor missing")
-    source.write_text(text.replace(anchor, insertion + anchor, 1), encoding="utf-8")
-
-test_source = r'''#define REGIDRAGO_SIM_NO_MAIN
+#define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
 #include <algorithm>
@@ -157,29 +116,3 @@ int main() {
   test_complete_energy_hand_does_not_spend_payload();
   return 0;
 }
-'''
-Path("tests/opening_oricorio_dialga_lock_tests.cpp").write_text(test_source, encoding="utf-8")
-
-cmake = Path("CMakeLists.txt")
-cmake_text = cmake.read_text(encoding="utf-8")
-target_anchor = """add_executable(regidrago_opening_dialga_payload_tests tests/opening_active_dialga_payload_tests.cpp)
-target_compile_options(regidrago_opening_dialga_payload_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-"""
-target_insert = target_anchor + """
-add_executable(regidrago_opening_oricorio_dialga_lock_tests tests/opening_oricorio_dialga_lock_tests.cpp)
-target_compile_options(regidrago_opening_oricorio_dialga_lock_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-"""
-if "regidrago_opening_oricorio_dialga_lock_tests" not in cmake_text:
-    if target_anchor not in cmake_text:
-        raise SystemExit("CMake target anchor missing")
-    cmake_text = cmake_text.replace(target_anchor, target_insert, 1)
-
-test_anchor = """add_test(NAME regidrago_opening_dialga_payload COMMAND regidrago_opening_dialga_payload_tests)
-"""
-test_insert = test_anchor + """add_test(NAME regidrago_opening_oricorio_dialga_lock COMMAND regidrago_opening_oricorio_dialga_lock_tests)
-"""
-if "NAME regidrago_opening_oricorio_dialga_lock " not in cmake_text:
-    if test_anchor not in cmake_text:
-        raise SystemExit("CMake test anchor missing")
-    cmake_text = cmake_text.replace(test_anchor, test_insert, 1)
-cmake.write_text(cmake_text, encoding="utf-8")

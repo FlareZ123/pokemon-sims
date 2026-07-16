@@ -151,6 +151,35 @@
       return;
     }
 
+    const bool oricorio_dialga_are_only_opening_basics =
+        hand_count(Card::Oricorio) > 0 && hand_count(Card::DialgaGX) > 0 &&
+        hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&
+        hand_count(Card::MawileGX) == 0 && hand_count(Card::TapuLeleGX) == 0;
+    const bool modeled_lock_scenario = scenario_.locks != LockMode::None;
+    const bool dialga_is_redundant_payload =
+        hand_count(Card::DialgaGX) == 1 && payloads_in_hand > 1;
+    const bool vital_dance_has_missing_energy_type = !both_manual_energy_types_held;
+
+    // Setup permits either opening Basic to become Active. In strict-JIT lock
+    // scenarios, start a redundant Dialga-GX so Oricorio remains in hand for
+    // Vital Dance while at least one GGF Energy type is missing. Path-style Rule
+    // Box Ability lock does not suppress Oricorio because it has no Rule Box:
+    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+    // https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://api.pokemontcg.io/v2/cards/sm5-100
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // https://api.pokemontcg.io/v2/cards/swsh6-148
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/674
+    if (oricorio_dialga_are_only_opening_basics && modeled_lock_scenario &&
+        scenario_.dci == DciProfile::StrictJit && dialga_is_redundant_payload &&
+        vital_dance_has_missing_energy_type && remove_one(state_.hand, Card::DialgaGX)) {
+      state_.active = Pokemon{Card::DialgaGX, 0};
+      outcome_.started_regi = false;
+      return;
+    }
+
     // Oricorio's Vital Dance triggers only when it is played from hand onto the
     // Bench during the turn. When Mawile-GX is the other available opening Basic,
     // start Mawile-GX so Oricorio remains in hand for that legal setup trigger:

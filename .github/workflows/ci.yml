@@ -4,56 +4,7 @@ on:
   pull_request:
     branches: [main]
 
-permissions:
-  contents: write
-
 jobs:
-  apply-issue-674:
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/674-oricorio-dialga-lock-routing'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: fix/674-oricorio-dialga-lock-routing
-          fetch-depth: 0
-      - name: Apply lock-aware opening fix and regressions
-        run: python tools/apply_issue_674.py
-      - name: Configure and build Release
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
-      - name: Run Release tests
-        run: ctest --test-dir build --output-on-failure
-      - name: Run issue 674 regression under UBSan
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=undefined -fno-omit-frame-pointer tests/opening_oricorio_dialga_lock_tests.cpp -o build/issue_674_ubsan && ./build/issue_674_ubsan
-      - name: Simulate turn-two Item lock
-        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee build/trace_turn2_item_lock.txt
-      - name: Simulate Rule Box Ability lock
-        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee build/trace_rulebox_lock.txt
-      - name: Simulate full Item lock
-        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-full-item-lock/go-second --seed 2 | tee build/trace_full_item_lock.txt
-      - name: Generate full T2 T3 matrix
-        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/t2_t3_matrix.csv
-      - name: Restore CI and commit validated fix
-        run: |
-          git show origin/main:.github/workflows/ci.yml > .github/workflows/ci.yml
-          rm -f .github/workflows/issue-674-apply.yml tools/apply_issue_674.py
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add CMakeLists.txt src/trace_engine_v2/part_005.inc tests/opening_oricorio_dialga_lock_tests.cpp .github/workflows/ci.yml .github/workflows/issue-674-apply.yml tools/apply_issue_674.py
-          git commit -m 'Fix lock-aware Oricorio-Dialga opening selection (#674)'
-          git push origin HEAD:fix/674-oricorio-dialga-lock-routing
-      - name: Upload issue 674 validation artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: issue-674-validation
-          path: |
-            build/trace_turn2_item_lock.txt
-            build/trace_rulebox_lock.txt
-            build/trace_full_item_lock.txt
-            build/t2_t3_matrix.csv
-            build/Testing
-          if-no-files-found: warn
-
   card-audit-contract:
     runs-on: ubuntu-latest
     steps:

@@ -138,17 +138,27 @@
         can_play_payload_this_turn() && !prize_payload_one_discard_outlet_has_legal_target();
     if (!dead_prize_payload_route) return play_gladion_prize_payload_original();
 
-    // Gladion may exchange itself for a Prize card. Hide only the proven-dead Item
-    // identities while the existing selector runs, then restore the exact hand when
-    // it correctly declines the stranded payload route:
-    // https://api.pokemontcg.io/v2/cards/sm4-95
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-    const std::vector<Card> original_hand = state_.hand;
-    while (remove_one(state_.hand, Card::MysteriousTreasure)) {}
-    while (remove_one(state_.hand, Card::QuickBall)) {}
-    while (remove_one(state_.hand, Card::EarthenVessel)) {}
+    // Gladion exchanges only itself with a Prize card. Temporarily hidden search
+    // Items remain physical cards in hand and must be restored after every delegated
+    // result while preserving Gladion's legitimate hand and Prize mutations:
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Core game procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Zone-integrity priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Regression: https://github.com/FlareZ123/pokemon-sims/issues/646
+    std::vector<Card> held_dead_routes;
+    while (remove_one(state_.hand, Card::MysteriousTreasure)) {
+      held_dead_routes.push_back(Card::MysteriousTreasure);
+    }
+    while (remove_one(state_.hand, Card::QuickBall)) {
+      held_dead_routes.push_back(Card::QuickBall);
+    }
+    while (remove_one(state_.hand, Card::EarthenVessel)) {
+      held_dead_routes.push_back(Card::EarthenVessel);
+    }
     const bool played = play_gladion_prize_payload_original();
-    if (!played) state_.hand = original_hand;
+    state_.hand.insert(state_.hand.end(), held_dead_routes.begin(), held_dead_routes.end());
     return played;
   }

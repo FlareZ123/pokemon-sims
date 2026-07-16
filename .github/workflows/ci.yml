@@ -117,3 +117,39 @@ jobs:
             build-sanitizers/Testing
             sanitizer-build.log
           if-no-files-found: warn
+
+  audit-current-main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure audit build
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build audit executable
+        run: cmake --build build --parallel 2
+      - name: Create audit output directory
+        run: mkdir -p audit
+      - name: Trace strict JIT going first
+        # Readable trace interface and public-knowledge contract:
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 > audit/strict-jit-go-first-seed-6.txt
+      - name: Trace matchup-flex JIT going second
+        # Strict current-turn payload policy and earliest-ready objective:
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
+        run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 > audit/matchup-flex-jit-go-second-seed-3.txt
+      - name: Trace no-discard-control going second
+        # Resource-preservation and route-priority specification:
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+        run: ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 19 > audit/no-discard-control-go-second-seed-19.txt
+      - name: Generate canonical T2/T3 matrix
+        # Canonical aggregate command and ready-state definition:
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#scope
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit/simulation_results.csv
+      - name: Upload current-main audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-traces-and-matrix
+          path: audit
+          if-no-files-found: error

@@ -64,6 +64,103 @@ void test_duplicate_quick_ball_is_legal_k1_cost() {
   expect(after.deck.empty(), "the searched Regidrago V should leave the deck");
 }
 
+void test_duplicate_tapu_is_fallback_quick_ball_cost() {
+  const sim::Scenario scenario{"duplicate-tapu-quick-ball-cost", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{711};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::LatiasEx, 1};
+  state.hand = {sim::Card::QuickBall, sim::Card::TapuLeleGX,
+                sim::Card::TapuLeleGX};
+  state.deck = {sim::Card::RegidragoV};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Quick Ball permits any other hand card as its cost. Discarding one of two
+  // Tapu Lele-GX preserves the identical future Wonder Tag connector:
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  // https://github.com/FlareZ123/pokemon-sims/issues/711
+  expect(sim::EngineTestAccess::play_quick_ball(engine, false),
+         "Quick Ball should use one redundant Tapu Lele-GX as fallback cost");
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(contains(after.hand, sim::Card::RegidragoV),
+         "Quick Ball should search Regidrago V");
+  expect(count(after.hand, sim::Card::TapuLeleGX) == 1,
+         "one Tapu Lele-GX should remain as the Wonder Tag connector");
+  expect(count(after.discard, sim::Card::TapuLeleGX) == 1,
+         "exactly one redundant Tapu Lele-GX should pay the cost");
+  expect(count(after.discard, sim::Card::QuickBall) == 1,
+         "the played Quick Ball should enter discard");
+}
+
+void test_singleton_tapu_remains_protected() {
+  const sim::Scenario scenario{"singleton-tapu-quick-ball-control", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{712};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::LatiasEx, 1};
+  state.hand = {sim::Card::QuickBall, sim::Card::TapuLeleGX};
+  state.deck = {sim::Card::RegidragoV};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Wonder Tag is available only when Tapu Lele-GX is played from hand to the
+  // Bench, so strict DCI must retain the sole copy when no other cost exists:
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  // https://github.com/FlareZ123/pokemon-sims/issues/711
+  expect(!sim::EngineTestAccess::play_quick_ball(engine, false),
+         "Quick Ball should not discard the singleton Tapu Lele-GX");
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(after.hand == std::vector<sim::Card>{sim::Card::QuickBall,
+                                               sim::Card::TapuLeleGX},
+         "the unpayable Quick Ball and singleton Tapu Lele-GX should remain held");
+  expect(after.discard.empty(), "no cost should be paid for the held Quick Ball");
+}
+
+void test_duplicate_quick_ball_stays_ahead_of_duplicate_tapu() {
+  const sim::Scenario scenario{"duplicate-item-before-tapu-control", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{713};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::LatiasEx, 1};
+  state.hand = {sim::Card::QuickBall, sim::Card::QuickBall,
+                sim::Card::TapuLeleGX, sim::Card::TapuLeleGX};
+  state.deck = {sim::Card::RegidragoV};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Existing duplicate search Items remain lower-DCI fuel than a redundant
+  // Wonder Tag connector, so the second Quick Ball must pay first:
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://github.com/FlareZ123/pokemon-sims/issues/711
+  expect(sim::EngineTestAccess::play_quick_ball(engine, false),
+         "Quick Ball should remain payable through its duplicate");
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(count(after.discard, sim::Card::QuickBall) == 2,
+         "both Quick Ball copies should enter discard");
+  expect(count(after.hand, sim::Card::TapuLeleGX) == 2,
+         "both Tapu Lele-GX copies should remain when lower-DCI fuel exists");
+}
+
 void test_known_no_target_quick_ball_preserves_payload() {
   const sim::Scenario scenario{"quick-ball-known-no-target", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
@@ -126,6 +223,9 @@ void test_known_no_target_quick_ball_is_not_a_tate_route() {
 int main() {
   try {
     test_duplicate_quick_ball_is_legal_k1_cost();
+    test_duplicate_tapu_is_fallback_quick_ball_cost();
+    test_singleton_tapu_remains_protected();
+    test_duplicate_quick_ball_stays_ahead_of_duplicate_tapu();
     test_known_no_target_quick_ball_preserves_payload();
     test_known_no_target_quick_ball_is_not_a_tate_route();
     return 0;

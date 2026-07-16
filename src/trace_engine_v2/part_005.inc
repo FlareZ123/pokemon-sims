@@ -159,8 +159,31 @@
       remove_one(state_.hand, Card::RegidragoV);
       state_.bench.push_back(Pokemon{Card::RegidragoV, 0});
     }
-    if (bench_space() > 0 && hand_count(Card::LatiasEx) > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
-        !in_play(Card::LatiasEx) && !active_is_regi_v()) {
+
+    const bool held_shuffle_draw_can_use_hand_compression = hand_count(Card::TateLiza) > 0;
+    const bool dense_regi_opening_can_use_hand_compression =
+        active_is_regi_v() && hand_count(Card::StevensResolve) > 0 &&
+        hand_count(Card::BrilliantBlender) > 0 && hand_count(Card::Grass) > 0 &&
+        hand_count(Card::Fire) > 0 &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    const bool latias_has_opening_bench_value =
+        !active_is_regi_v() || held_shuffle_draw_can_use_hand_compression ||
+        dense_regi_opening_can_use_hand_compression;
+
+    // Setup-benching Latias ex is legal even when Regidrago V starts Active. Preserve
+    // it in hand for generic Regidrago openings, while allowing the public routes that
+    // gain hand compression before Tate & Liza or already hold Steven, Blender, both
+    // Energy types, and a Dragon payload:
+    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://api.pokemontcg.io/v2/cards/sm7-145
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/657
+    if (bench_space() > 0 && hand_count(Card::LatiasEx) > 0 &&
+        ability_available_for_pokemon(Card::LatiasEx) && !in_play(Card::LatiasEx) &&
+        latias_has_opening_bench_value) {
       remove_one(state_.hand, Card::LatiasEx);
       state_.bench.push_back(Pokemon{Card::LatiasEx, 0});
     }

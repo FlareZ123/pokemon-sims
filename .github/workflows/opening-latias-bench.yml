@@ -1,0 +1,32 @@
+name: Opening Latias Bench
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - src/trace_engine_v2/part_005.inc
+      - tests/opening_latias_bench_tests.cpp
+      - .github/workflows/opening-latias-bench.yml
+  push:
+    branches: [main]
+    paths:
+      - src/trace_engine_v2/part_005.inc
+      - tests/opening_latias_bench_tests.cpp
+      - .github/workflows/opening-latias-bench.yml
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Release fixture
+        run: |
+          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror tests/opening_latias_bench_tests.cpp -o opening-latias-bench
+          ./opening-latias-bench
+      - name: Undefined behavior sanitizer fixture
+        run: |
+          g++ -std=c++20 -O1 -g -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -fsanitize=undefined -fno-omit-frame-pointer tests/opening_latias_bench_tests.cpp -o opening-latias-bench-ubsan
+          ./opening-latias-bench-ubsan

@@ -2,16 +2,18 @@
     if (!strict_payload_timing()) return true;
 
     // Professor Burnet consumes the turn's Supporter play and only places deck cards
-    // in discard. It cannot reopen the once-per-turn manual attachment window. Under
-    // strict JIT, do not spend Burnet after that window is closed while the selected
-    // Regidrago attacker still lacks part of Apex Dragon's GGF attack cost:
+    // in discard. The active turn procedure has already attempted every deterministic
+    // Item, Ability, and manual-attachment Energy route before choosing this Supporter.
+    // Under strict JIT, do not spend Burnet while the selected Regidrago attacker still
+    // lacks any part of Apex Dragon's GGF attack cost:
     // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://www.pokemon.com/us/pokemon-tcg/rules
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c_latias_bench_override.inc#L72-L108
     // https://github.com/FlareZ123/pokemon-sims/issues/719
-    if (need_energy() && state_.manual_energy_used) return false;
+    if (need_energy()) return false;
 
     if (!need_active_vstar()) return true;
 

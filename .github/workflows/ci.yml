@@ -34,7 +34,11 @@ jobs:
       - name: Validate K0 Quick Ball target accounting
         run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/k0_quick_ball_target_tests.cpp -o build/k0_quick_ball_target_tests && ./build/k0_quick_ball_target_tests
       - name: Validate Lusamine Arven-FSS payload route
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/lusamine_arven_fss_payload_tests.cpp -o build/lusamine_arven_fss_payload_tests && ./build/lusamine_arven_fss_payload_tests
+        shell: bash
+        run: |
+          set -o pipefail
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/lusamine_arven_fss_payload_tests.cpp -o build/lusamine_arven_fss_payload_tests
+          ./build/lusamine_arven_fss_payload_tests 2>&1 | tee build/lusamine_arven_fss_payload.log
       - name: Test
         shell: bash
         run: |
@@ -68,6 +72,7 @@ jobs:
           path: |
             build/Testing
             build.log
+            build/lusamine_arven_fss_payload.log
           if-no-files-found: warn
 
   sanitizers:
@@ -91,9 +96,13 @@ jobs:
           ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
         run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=address,undefined -fno-omit-frame-pointer tests/k0_quick_ball_target_tests.cpp -o build-sanitizers/k0_quick_ball_target_tests && ./build-sanitizers/k0_quick_ball_target_tests
       - name: Validate Lusamine Arven-FSS payload route under sanitizers
+        shell: bash
         env:
           ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=address,undefined -fno-omit-frame-pointer tests/lusamine_arven_fss_payload_tests.cpp -o build-sanitizers/lusamine_arven_fss_payload_tests && ./build-sanitizers/lusamine_arven_fss_payload_tests
+        run: |
+          set -o pipefail
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=address,undefined -fno-omit-frame-pointer tests/lusamine_arven_fss_payload_tests.cpp -o build-sanitizers/lusamine_arven_fss_payload_tests
+          ./build-sanitizers/lusamine_arven_fss_payload_tests 2>&1 | tee build-sanitizers/lusamine_arven_fss_payload.log
       - name: Test sanitizers
         shell: bash
         env:
@@ -118,4 +127,5 @@ jobs:
           path: |
             build-sanitizers/Testing
             sanitizer-build.log
+            build-sanitizers/lusamine_arven_fss_payload.log
           if-no-files-found: warn

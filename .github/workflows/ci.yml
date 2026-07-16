@@ -52,6 +52,24 @@ jobs:
       # https://github.com/FlareZ123/pokemon-sims/issues/633
       - name: Validate CLI mode compatibility
         run: cmake -DSIMULATOR="$PWD/build/regidrago_sim" -DTEST_DIR="$PWD/build/cli-mode-contract" -P tests/run_cli_mode_contract.cmake
+      - name: Simulate strict-JIT trace seed 3
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 > build/simulate-this-seed-3.txt
+      - name: Simulate strict-JIT trace seed 6
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 > build/simulate-this-seed-6.txt
+      - name: Simulate strict-JIT trace seed 29
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 29 > build/simulate-this-seed-29.txt
+      - name: Generate T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/t2_t3_matrix.csv
+      - name: Upload debug traces and matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-711-debug-traces-and-matrix
+          path: |
+            build/simulate-this-seed-3.txt
+            build/simulate-this-seed-6.txt
+            build/simulate-this-seed-29.txt
+            build/t2_t3_matrix.csv
+          if-no-files-found: error
       - name: Upload CTest diagnostics
         if: always()
         uses: actions/upload-artifact@v4

@@ -85,6 +85,51 @@
     return payable;
   }
 
+  bool ultra_ball_has_live_post_payload_outlet() {
+    const bool second_ultra_outlet = second_ultra_ball_can_discard_fetched_payload();
+    const bool serena_outlet = supporter_allowed() && hand_count(Card::Serena) > 0;
+
+    // K0 preserves fixed-list uncertainty. At K1, remove the Dragon that Ultra Ball
+    // will fetch and require each promised search Item to retain a printed-class target:
+    // Mysterious Treasure https://api.pokemontcg.io/v2/cards/sm6-113
+    // Quick Ball https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Earthen Vessel https://api.pokemontcg.io/v2/cards/sv4-163
+    // Ultra Ball https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    if (!deck_seen_) {
+      return hand_count(Card::MysteriousTreasure) > 0 || hand_count(Card::QuickBall) > 0 ||
+             hand_count(Card::EarthenVessel) > 0 || second_ultra_outlet || serena_outlet;
+    }
+
+    std::optional<Card> planned_payload;
+    for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
+                               Card::GoodraVstar, Card::DialgaGX}) {
+      if (std::find(state_.deck.begin(), state_.deck.end(), payload) != state_.deck.end()) {
+        planned_payload = payload;
+        break;
+      }
+    }
+    if (!planned_payload) return second_ultra_outlet || serena_outlet;
+
+    std::vector<Card> post_search_deck = state_.deck;
+    const auto payload_it = std::find(post_search_deck.begin(), post_search_deck.end(),
+                                      *planned_payload);
+    if (payload_it != post_search_deck.end()) post_search_deck.erase(payload_it);
+
+    const bool mysterious_outlet = hand_count(Card::MysteriousTreasure) > 0 &&
+        std::any_of(post_search_deck.begin(), post_search_deck.end(), is_dragon_or_psychic);
+    const bool quick_outlet = hand_count(Card::QuickBall) > 0 &&
+        std::any_of(post_search_deck.begin(), post_search_deck.end(), is_basic);
+    const bool vessel_outlet = hand_count(Card::EarthenVessel) > 0 &&
+        (std::find(post_search_deck.begin(), post_search_deck.end(), Card::Grass) !=
+             post_search_deck.end() ||
+         std::find(post_search_deck.begin(), post_search_deck.end(), Card::Fire) !=
+             post_search_deck.end());
+    return mysterious_outlet || quick_outlet || vessel_outlet || second_ultra_outlet ||
+           serena_outlet;
+  }
+
   bool play_ultra_ball(const bool permit_payload) {
     if (item_locked() || hand_count(Card::UltraBall) == 0) return false;
     // Ultra Ball discards 2 other cards from hand before searching a Pokémon: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
@@ -110,17 +155,10 @@
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
                            bench_space() > 0 && needs_tapu_connector() &&
                            might_be_unseen(Card::TapuLeleGX);
-    // A fetched Dragon payload can immediately become a strict-JIT payload when a
-    // distinct live hand-discard effect remains. Mysterious Treasure, Quick Ball,
-    // and Earthen Vessel each discard from hand; Serena may discard from hand before
-    // drawing, but must discard at least 1 card. Here the fetched payload becomes
-    // Serena's mandatory discard, so Serena is not a zero-discard outlet.
-    // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sv4-163 https://api.pokemontcg.io/v2/cards/swsh12-164 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-    const bool has_live_hand_payload_outlet = hand_count(Card::MysteriousTreasure) > 0 ||
-                                               hand_count(Card::QuickBall) > 0 ||
-                                               hand_count(Card::EarthenVessel) > 0 ||
-                                               second_ultra_ball_can_discard_fetched_payload() ||
-                                               (supporter_allowed() && hand_count(Card::Serena) > 0);
+    // A fetched Dragon becomes a strict-JIT payload only when a surviving discard
+    // outlet remains legal after Ultra Ball removes that Dragon from the deck:
+    // Apex Dragon https://api.pokemontcg.io/v2/cards/swsh12-136
+    const bool has_live_hand_payload_outlet = ultra_ball_has_live_post_payload_outlet();
     const bool payload_might_be_searchable = might_be_unseen(Card::MegaDragonite) ||
                                                might_be_unseen(Card::Dragapult) ||
                                                might_be_unseen(Card::GoodraVstar) ||

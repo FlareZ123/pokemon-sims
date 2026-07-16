@@ -65,7 +65,6 @@
 #undef needs_oricorio_connector
 #undef bench_oricorio_if_useful
 #undef bench_from_hand
-#include "trace_engine_v2/part_strict_jit_semantics_override.inc"
 #define attach_manual attach_manual_tate_blender_original
 #include "trace_engine_v2/part_007.inc"
 #undef attach_manual
@@ -138,6 +137,7 @@
 #include "trace_engine_v2/part_013.inc"
 #undef use_legacy_star
 #include "trace_engine_v2/part_014a.inc"
+#include "trace_engine_v2/part_strict_jit_semantics_override.inc"
 // part_012.inc opens Serena's draw-mode body, part_013.inc closes it and later
 // opens run_search_items_one_step(), and part_014a.inc completes that method.
 // Define the active Burnet policy only after this first complete member boundary:

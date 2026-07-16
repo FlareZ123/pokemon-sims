@@ -1,0 +1,27 @@
+name: Issue 648 T2 T3 Matrix
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Run 100000-trial setup matrix
+        run: |
+          mkdir -p results
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out results/simulation_results.csv | tee results/simulation_results.txt
+      - name: Upload matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-648-t2-t3-matrix
+          path: |
+            results/simulation_results.csv
+            results/simulation_results.txt
+          if-no-files-found: error

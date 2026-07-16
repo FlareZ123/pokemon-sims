@@ -72,17 +72,33 @@
         scenario_.locks == LockMode::FullRuleBoxAbility ||
         scenario_.locks == LockMode::FullCombined;
     const bool crispin_route_already_held = hand_count(Card::Crispin) > 0;
+    const bool manual_energy_already_held =
+        hand_count(Card::Grass) > 0 || hand_count(Card::Fire) > 0;
+    const bool direct_pokemon_search_already_held =
+        hand_count(Card::MysteriousTreasure) > 0 || hand_count(Card::QuickBall) > 0 ||
+        hand_count(Card::UltraBall) > 0;
+    const bool wonder_tag_retains_higher_marginal_value =
+        manual_energy_already_held && hand_count(Card::Arven) > 0 &&
+        direct_pokemon_search_already_held;
+    const bool crispin_makes_vital_dance_scarce =
+        crispin_route_already_held && !wonder_tag_retains_higher_marginal_value;
 
     // Setup permits either Basic to become Active. Preserve Oricorio for Vital Dance
     // when Wonder Tag is suppressed, or when Crispin already supplies the Supporter
-    // route and the Energy-compression Ability is the scarce on-play connector:
+    // route and the Energy-compression Ability remains the scarce on-play connector.
+    // When Energy, Arven, and direct Pokemon search are all already held, preserve
+    // Tapu Lele-GX instead because Wonder Tag retains broader post-K1 Supporter access:
     // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
     // https://api.pokemontcg.io/v2/cards/cel25c-60_A
     // https://api.pokemontcg.io/v2/cards/sm2-55
     // https://api.pokemontcg.io/v2/cards/sv7-133
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/sm6-113
     // https://api.pokemontcg.io/v2/cards/swsh6-148
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/654
     if (tapu_oricorio_are_only_opening_basics &&
-        (rule_box_ability_lock || crispin_route_already_held) &&
+        (rule_box_ability_lock || crispin_makes_vital_dance_scarce) &&
         remove_one(state_.hand, Card::TapuLeleGX)) {
       state_.active = Pokemon{Card::TapuLeleGX, 0};
       outcome_.started_regi = false;

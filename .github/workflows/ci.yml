@@ -40,17 +40,6 @@ jobs:
           # Aggregate command specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
           ./build/regidrago_sim --trials 100000 --seed 20260705 --out /tmp/ci-simulation-results.csv
           cat /tmp/ci-simulation-results.csv
-      - name: Upload temporary matrix and source snapshot
-        uses: actions/upload-artifact@v4
-        with:
-          name: temporary-matrix-and-source
-          path: |
-            /tmp/ci-simulation-results.csv
-            .
-            !build/**
-            !.git/**
-          if-no-files-found: error
-          include-hidden-files: true
       - name: Upload CTest diagnostics
         if: always()
         uses: actions/upload-artifact@v4

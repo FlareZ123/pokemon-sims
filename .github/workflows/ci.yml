@@ -42,6 +42,15 @@ jobs:
       # https://github.com/FlareZ123/pokemon-sims/issues/633
       - name: Validate CLI mode compatibility
         run: cmake -DSIMULATOR="$PWD/build/regidrago_sim" -DTEST_DIR="$PWD/build/cli-mode-contract" -P tests/run_cli_mode_contract.cmake
+      # Re-run the documented fixed-seed aggregate command and compare every output
+      # field with the published matrix so policy changes cannot leave stale results:
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
+      # https://github.com/FlareZ123/pokemon-sims/issues/642
+      - name: Validate published setup baseline against executable
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/current-baseline.csv
+          cmake -E compare_files build/current-baseline.csv results/simulation_results.csv
       - name: Upload CTest diagnostics
         if: always()
         uses: actions/upload-artifact@v4

@@ -2,6 +2,7 @@
     case Card::TeamYellsCheer:
     case Card::RoseannesBackup:
     case Card::ProfessorTuro:
+    case Card::Carmine:
       return true;
     default:
       return false;
@@ -11,7 +12,7 @@
 enum class DciProfile : std::uint8_t { StrictJit, MatchupFlexJit, NoDiscardControl };
 enum class LockMode : std::uint8_t { None, TurnTwoItem, FullItem, FullRuleBoxAbility, FullCombined };
 enum class Tool : std::uint8_t { None, ForestSealStone, Powerglass };
-enum class Stadium : std::uint8_t { None, ChaoticSwell };
+enum class Stadium : std::uint8_t { None, ChaoticSwell, PokeStop };
 
 struct Scenario {
   std::string label;
@@ -44,6 +45,7 @@ struct State {
   bool vstar_power_used{false};
   bool turn_ended{false};
   bool path_lock_removed{false};
+  bool stadium_ability_used{false};
   Stadium stadium{Stadium::None};
 };
 

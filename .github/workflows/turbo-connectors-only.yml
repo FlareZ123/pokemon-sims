@@ -26,3 +26,24 @@ jobs:
           name: connector-only-discovery
           path: connector-only-discovery.csv
           if-no-files-found: error
+
+  exact-connector-finalists:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile exact connector finalist runner
+        run: g++ -std=c++20 -O3 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tools/turbo_connector_exact_finalists.cpp -o turbo_connector_exact_finalists
+      - name: Run 100,000 trials in every modeled condition
+        run: ./turbo_connector_exact_finalists 100000 ${{ matrix.variant }} > exact-connector-${{ matrix.variant }}.csv
+      - name: Verify Dialga-GX and protected-card invariants
+        run: test -s exact-connector-${{ matrix.variant }}.csv
+      - name: Upload exact connector matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: exact-connector-${{ matrix.variant }}
+          path: exact-connector-${{ matrix.variant }}.csv
+          if-no-files-found: error

@@ -10,12 +10,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Package exact source snapshot
-        run: tar --exclude=.git --exclude=build -czf repository-source.tgz .
+        run: tar --exclude=.git --exclude=build -czf /tmp/repository-source.tgz .
       - name: Upload exact source snapshot
         uses: actions/upload-artifact@v4
         with:
           name: issue-674-source
-          path: repository-source.tgz
+          path: /tmp/repository-source.tgz
           if-no-files-found: error
       - name: Configure Release
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release

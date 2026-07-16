@@ -42,6 +42,19 @@ jobs:
       # https://github.com/FlareZ123/pokemon-sims/issues/633
       - name: Validate CLI mode compatibility
         run: cmake -DSIMULATOR="$PWD/build/regidrago_sim" -DTEST_DIR="$PWD/build/cli-mode-contract" -P tests/run_cli_mode_contract.cmake
+      # Validation-only export from exact current main. This branch is never merged:
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#what-the-probability-means
+      - name: Generate final-main T2/T3 setup matrix
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/final_main_t2_t3_matrix.csv
+          cat build/final_main_t2_t3_matrix.csv
+      - name: Upload final-main T2/T3 setup matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-main-t2-t3-matrix
+          path: build/final_main_t2_t3_matrix.csv
+          if-no-files-found: error
       - name: Upload CTest diagnostics
         if: always()
         uses: actions/upload-artifact@v4

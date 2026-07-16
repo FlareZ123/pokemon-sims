@@ -1,0 +1,205 @@
+name: Issue 780 Gladion Revealed Axis
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  validate-issue-780:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/780-gladion-revealed-axis'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/780-gladion-revealed-axis
+          fetch-depth: 0
+
+      - name: Apply exact revealed-axis fix
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          def atomic_write(path: Path, text: str) -> None:
+              temporary = path.with_name(path.name + '.tmp-780')
+              temporary.write_text(text, encoding='utf-8')
+              os.replace(temporary, path)
+
+          source = Path('src/trace_engine_v2/part_012.inc')
+          text = source.read_text(encoding='utf-8')
+          marker = 'revealed_missing_axis_target'
+          if marker not in text:
+              old = '''    prizes_revealed_ = true;
+    const auto exchange = [this](const Card target) {
+'''
+              new = '''    prizes_revealed_ = true;
+
+    // Gladion reveals every Prize before the exchange choice. Recalculate the exact
+    // missing Regidrago axis from that newly public information instead of entering
+    // the generic VSTAR-first fallback with a stale pre-reveal classification:
+    // https://api.pokemontcg.io/v2/cards/sm4-95
+    // https://api.pokemontcg.io/v2/cards/swsh12-135
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/780
+    const std::optional<Card> revealed_missing_axis_target =
+        need_regi() && bench_space() > 0 && prize_count_after_reveal(Card::RegidragoV) > 0
+            ? std::optional<Card>{Card::RegidragoV}
+            : need_vstar() && prize_count_after_reveal(Card::RegidragoVstar) > 0
+                  ? std::optional<Card>{Card::RegidragoVstar}
+                  : std::nullopt;
+    if (!known_target && revealed_missing_axis_target) known_target = revealed_missing_axis_target;
+
+    const auto exchange = [this](const Card target) {
+'''
+              if old not in text:
+                  raise SystemExit('Gladion reveal anchor missing')
+              text = text.replace(old, new, 1)
+              atomic_write(source, text)
+
+          test = Path('tests/gladion_revealed_axis_tests.cpp')
+          test_text = r'''#define REGIDRAGO_SIM_NO_MAIN
+#include "../src/regidrago_sim.cpp"
+
+#include <algorithm>
+#include <stdexcept>
+
+namespace sim {
+
+struct EngineTestAccess {
+  static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
+  static const State& state(const Engine& engine) { return engine.state_; }
+  static bool play_gladion(Engine& engine) { return engine.play_gladion(); }
+};
+
+}  // namespace sim
+
+namespace {
+
+bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
+  return std::find(cards.begin(), cards.end(), card) != cards.end();
+}
+
+sim::State blind_prize_state(const bool regidrago_in_play) {
+  sim::State state;
+  state.turn = 2;
+  state.active = regidrago_in_play
+      ? sim::Pokemon{sim::Card::RegidragoV, 0}
+      : sim::Pokemon{sim::Card::Oricorio, 0};
+  state.hand = regidrago_in_play
+      ? std::vector<sim::Card>{sim::Card::Gladion}
+      : std::vector<sim::Card>{sim::Card::Gladion, sim::Card::RegidragoVstar};
+  state.prizes = {sim::Card::RegidragoVstar, sim::Card::RegidragoV,
+                  sim::Card::Dipplin, sim::Card::Powerglass,
+                  sim::Card::FieldBlower, sim::Card::ChaoticSwell};
+  return state;
+}
+
+void test_revealed_missing_basic_beats_redundant_vstar() {
+  const sim::Scenario scenario{"issue-780-missing-basic", sim::DciProfile::StrictJit,
+                               sim::LockMode::FullItem, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{780};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(engine, blind_prize_state(false));
+
+  // Gladion chooses after all Prize cards are revealed. Regidrago V is the exact
+  // missing Basic axis, while a Regidrago VSTAR is already held:
+  // https://api.pokemontcg.io/v2/cards/sm4-95
+  // https://api.pokemontcg.io/v2/cards/swsh12-135
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // https://github.com/FlareZ123/pokemon-sims/issues/780
+  if (!sim::EngineTestAccess::play_gladion(engine)) {
+    throw std::runtime_error("Gladion should resolve in the blind critical state.");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!contains(after.hand, sim::Card::RegidragoV) ||
+      std::count(after.hand.begin(), after.hand.end(), sim::Card::RegidragoVstar) != 1 ||
+      !contains(after.prizes, sim::Card::RegidragoVstar)) {
+    throw std::runtime_error("Gladion must recover the missing Basic instead of a redundant VSTAR.");
+  }
+}
+
+void test_revealed_missing_vstar_remains_priority() {
+  const sim::Scenario scenario{"issue-780-missing-vstar", sim::DciProfile::StrictJit,
+                               sim::LockMode::FullItem, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{7801};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(engine, blind_prize_state(true));
+
+  // When Regidrago V is already in play and VSTAR is the exact missing axis, the
+  // same revealed-state selector must retain the VSTAR recovery priority:
+  // https://api.pokemontcg.io/v2/cards/sm4-95
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/780
+  if (!sim::EngineTestAccess::play_gladion(engine) ||
+      !contains(sim::EngineTestAccess::state(engine).hand, sim::Card::RegidragoVstar)) {
+    throw std::runtime_error("Gladion should recover VSTAR when VSTAR is the missing axis.");
+  }
+}
+
+}  // namespace
+
+int main() {
+  test_revealed_missing_basic_beats_redundant_vstar();
+  test_revealed_missing_vstar_remains_priority();
+  return 0;
+}
+'''
+          atomic_write(test, test_text)
+
+          cmake = Path('CMakeLists.txt')
+          cmake_text = cmake.read_text(encoding='utf-8')
+          if 'regidrago_gladion_revealed_axis_tests' not in cmake_text:
+              cmake_text += '''
+
+add_executable(regidrago_gladion_revealed_axis_tests tests/gladion_revealed_axis_tests.cpp)
+target_compile_options(regidrago_gladion_revealed_axis_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+add_test(NAME regidrago_gladion_revealed_axis COMMAND regidrago_gladion_revealed_axis_tests)
+'''
+              atomic_write(cmake, cmake_text)
+          PY
+
+      - name: Configure and build Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run full Release suite
+        run: ctest --test-dir build --output-on-failure
+      - name: Run focused UBSan regression
+        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=undefined -fno-omit-frame-pointer tests/gladion_revealed_axis_tests.cpp -o build/gladion_revealed_axis_ubsan && ./build/gladion_revealed_axis_ubsan
+      - name: Simulate pass 1
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 3 --require-ready-by 3 | tee issue-780-trace-1.txt
+      - name: Simulate pass 2
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee issue-780-trace-2.txt
+      - name: Simulate pass 3
+        run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 11 --require-ready-by 3 | tee issue-780-trace-3.txt
+      - name: Generate T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-780-t2-t3-matrix.csv
+      - name: Archive exact source
+        run: git archive --format=tar.gz -o issue-780-source.tgz HEAD
+
+      - name: Commit validated fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add CMakeLists.txt src/trace_engine_v2/part_012.inc tests/gladion_revealed_axis_tests.cpp
+          if ! git diff --cached --quiet; then
+            git commit -m 'Recalculate Gladion target after Prize reveal (#780)'
+            git push origin HEAD:fix/780-gladion-revealed-axis
+          fi
+
+      - name: Upload validation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-780-validation
+          path: |
+            issue-780-trace-*.txt
+            issue-780-t2-t3-matrix.csv
+            issue-780-source.tgz
+            build/Testing
+          if-no-files-found: warn

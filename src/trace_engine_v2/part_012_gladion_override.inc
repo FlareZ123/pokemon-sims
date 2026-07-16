@@ -127,5 +127,26 @@
       }
     }
 
+    // A held Burnet is not a live Item-lock payload route when its own ready-turn
+    // preflight proves that Energy or Active position cannot finish. Hide only that
+    // dead connector while the original Gladion classifier evaluates the missing
+    // Prize axis, then restore the exact hand multiset after the exchange:
+    // https://api.pokemontcg.io/v2/cards/sm4-95
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+    // https://github.com/FlareZ123/pokemon-sims/issues/719
+    if (item_locked() && need_energy() &&
+        hand_count(Card::ProfessorBurnet) > 0 &&
+        !professor_burnet_has_live_ready_turn_route()) {
+      std::vector<Card> held_dead_burnet;
+      while (remove_one(state_.hand, Card::ProfessorBurnet)) {
+        held_dead_burnet.push_back(Card::ProfessorBurnet);
+      }
+      const bool played = play_gladion_original();
+      state_.hand.insert(state_.hand.end(), held_dead_burnet.begin(), held_dead_burnet.end());
+      return played;
+    }
+
     return play_gladion_original();
   }

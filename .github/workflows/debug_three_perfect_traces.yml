@@ -1,0 +1,64 @@
+name: Debug Three Perfect Traces
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  audit-current-main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Archive exact tracked source
+        run: git ls-files -z | tar --null -T - -czf repository-source.tgz
+
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+
+      - name: Run full Release tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Pass 1 - matchup-flex JIT going second
+        # Readable-hand interface and curated trace contract:
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
+        run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-pass-1.txt
+
+      - name: Pass 2 - turn-two Item lock going second
+        # Scenario semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee trace-pass-2.txt
+
+      - name: Pass 3 - Rule Box Ability lock going second
+        # Scenario semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee trace-pass-3.txt
+
+      - name: Pass 4 - no-discard-control going first
+        # DCI semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+        run: ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 1 --require-ready-by 4 | tee trace-pass-4.txt
+
+      - name: Known issue control - stranded powered VSTAR Blender
+        # Existing confirmed reproduction: https://github.com/FlareZ123/pokemon-sims/issues/725
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 29 | tee trace-known-725.txt
+
+      - name: Known issue control - false FSS hold trace
+        # Existing confirmed reproduction: https://github.com/FlareZ123/pokemon-sims/issues/727
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 | tee trace-known-727.txt
+
+      - name: Generate T2 and T3 matrix
+        # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-three-perfect-traces
+          path: |
+            repository-source.tgz
+            trace-*.txt
+            t2-t3-matrix.csv
+          if-no-files-found: error

@@ -1,0 +1,35 @@
+name: Final Burnet Matrix Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-final-main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Final trace 1
+        # Trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 | tee final-trace-1.txt
+      - name: Final trace 2
+        # First-turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 | tee final-trace-2.txt
+      - name: Final trace 3
+        # Strict current-turn payload contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+        run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 | tee final-trace-3.txt
+      - name: Generate final T2 and T3 matrix
+        # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out final-t2-t3-matrix.csv
+      - name: Upload final evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-burnet-matrix-validation
+          path: |
+            final-trace-*.txt
+            final-t2-t3-matrix.csv
+          if-no-files-found: error

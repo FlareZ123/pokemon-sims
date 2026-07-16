@@ -1,0 +1,40 @@
+name: Issue 674 Materialize and Validate
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  materialize-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and all tests
+        run: cmake --build build --parallel 2
+      - name: Run full Release suite
+        run: ctest --test-dir build --output-on-failure
+      - name: Simulate pass 1
+        # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 13 --require-ready-by 2 | tee issue-674-pass-1.txt
+      - name: Simulate pass 2
+        # Lock specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-scenarios
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 44 --require-ready-by 2 | tee issue-674-pass-2.txt
+      - name: Simulate pass 3
+        # DCI specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+        run: ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 19 --require-ready-by 2 | tee issue-674-pass-3.txt
+      - name: Generate T2 and T3 matrix
+        # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-674-matrix.csv
+      - name: Package exact source snapshot
+        run: tar --exclude=.git --exclude=build -czf repository-source.tgz .
+      - name: Upload validation evidence and source
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-674-materialize
+          path: |
+            issue-674-pass-*.txt
+            issue-674-matrix.csv
+            repository-source.tgz
+          if-no-files-found: error

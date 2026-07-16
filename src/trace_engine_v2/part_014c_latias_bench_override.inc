@@ -64,7 +64,7 @@
     // Steven's Resolve ends the turn, so attach a live Powerglass before choosing
     // that Supporter: https://api.pokemontcg.io/v2/cards/sm7-145
     if (should_play_steven()) attach_powerglass();
-    choose_supporter();
+    if (!play_turbo_external_supporter()) choose_supporter();
     play_turbo_external_actions();
     if (state_.turn_ended) {
       trace("TURN END", "R-STEVEN-01 or R-RV-01", state_line());
@@ -94,7 +94,7 @@
     // before the ready check: https://api.pokemontcg.io/v2/cards/cel25c-60_A
     // Professor Burnet can discard a current-turn deck payload after this chain:
     // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-    if (!state_.supporter_used && setup_axis_missing()) choose_supporter();
+    if (!state_.supporter_used && setup_axis_missing() && !play_turbo_external_supporter()) choose_supporter();
     if (use_legacy_star()) {
       // Core procedure source: https://www.pokemon.com/us/pokemon-tcg/rules
       // Recovered Items may be played later in the same turn.
@@ -107,7 +107,7 @@
       // https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/sv7-133
       // A player may use one available Supporter during the turn before attacking:
       // https://www.pokemon.com/us/pokemon-tcg/rules
-      if (!state_.supporter_used && setup_axis_missing()) choose_supporter();
+      if (!state_.supporter_used && setup_axis_missing() && !play_turbo_external_supporter()) choose_supporter();
     }
     attach_manual();
     retreat_to_benched_vstar_with_latias();

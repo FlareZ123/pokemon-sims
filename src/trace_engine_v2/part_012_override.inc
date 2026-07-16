@@ -176,6 +176,34 @@
         add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
       }
       if (can_play_payload_this_turn() && live_payload_target) add_item_candidate(Card::BrilliantBlender, true);
+
+      // Once K1 proves the payload is held and every other setup axis is complete,
+      // Arven can search a one-discard Item that legally resolves after discarding
+      // that Dragon. Direct Blender remains earlier in the candidate order:
+      // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Trainer resolution ruling: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+      // Strict-JIT contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+      // Regression: https://github.com/FlareZ123/pokemon-sims/issues/647
+      const bool held_payload_is_only_missing_axis = deck_seen_ && need_payload() &&
+          !need_regi() && !need_vstar() && !need_energy() && !need_active_vstar() &&
+          can_play_payload_this_turn() &&
+          std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+      if (held_payload_is_only_missing_axis) {
+        add_item_candidate(
+            Card::MysteriousTreasure,
+            std::any_of(state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic));
+        add_item_candidate(
+            Card::QuickBall,
+            std::any_of(state_.deck.begin(), state_.deck.end(), is_basic));
+        add_item_candidate(
+            Card::EarthenVessel,
+            deck_count_after_search_started(Card::Grass) > 0 ||
+                deck_count_after_search_started(Card::Fire) > 0);
+      }
       return candidates;
     };
 

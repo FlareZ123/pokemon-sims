@@ -41,7 +41,12 @@
     const bool want_latias = need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
                              !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
                              might_be_unseen(Card::LatiasEx);
-    const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 &&
+    // A separate Tapu Lele-GX copy may be searched and then played for Wonder
+    // Tag even when another copy is already in play. might_be_unseen() provides
+    // the fixed-list or exact-deck physical-copy check:
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://github.com/FlareZ123/pokemon-sims/issues/746
+    const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && bench_space() > 0 &&
                            needs_tapu_connector() && might_be_unseen(Card::TapuLeleGX);
     const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 &&
                                   needs_oricorio_connector() && might_be_unseen(Card::Oricorio);
@@ -96,8 +101,8 @@
          (need_vstar() && deck_count_after_search_started(Card::RegidragoVstar) == 0 &&
           prize_count_after_reveal(Card::RegidragoVstar) > 0));
     const bool found_tapu_for_gladion = prized_regi_axis && bench_space() > 0 &&
-        hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
-        move_deck_to_hand(Card::TapuLeleGX);
+        hand_count(Card::TapuLeleGX) == 0 &&
+        move_deck_to_hand(Card::TapuLeleGX); // Separate-copy Wonder Tag: https://api.pokemontcg.io/v2/cards/cel25c-60_A https://github.com/FlareZ123/pokemon-sims/issues/746
     const Card fallback = found_tapu_for_gladion ? Card::TapuLeleGX : fallback_mysterious_target_after_search_started();
     const bool found_fallback = found_tapu_for_gladion || move_deck_to_hand(fallback);
     shuffle(state_.deck);

@@ -14,10 +14,19 @@ struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
   static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
   static void run_tactical_turn(Engine& engine) { engine.run_turn(); }
+  static Card fss_target_after_search_started(const Engine& engine) {
+    return engine.fss_target_after_search_started();
+  }
   static bool use_fss(Engine& engine) { return engine.use_fss(); }
   static bool play_tate_switch(Engine& engine) { return engine.play_tate_switch(); }
   static bool play_mysterious_treasure(Engine& engine, const bool permit_payload) {
     return engine.play_mysterious_treasure(permit_payload);
+  }
+  static bool play_quick_ball(Engine& engine, const bool permit_payload) {
+    return engine.play_quick_ball(permit_payload);
+  }
+  static bool play_earthen_vessel(Engine& engine, const bool permit_payload) {
+    return engine.play_earthen_vessel(permit_payload);
   }
   static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
   static bool play_brilliant_blender(Engine& engine) { return engine.play_brilliant_blender(); }
@@ -29,6 +38,187 @@ namespace {
 
 bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
   return std::find(cards.begin(), cards.end(), card) != cards.end();
+}
+
+void test_fss_fetches_mysterious_treasure_for_held_payload() {
+  using namespace sim;
+  const Scenario scenario{"fss-held-payload-mysterious-treasure", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(64501);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::ForestSealStone};
+  state.hand = {Card::MegaDragonite};
+  state.deck = {Card::MysteriousTreasure, Card::Dipplin};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Star Alchemy may search any card. Mysterious Treasure may discard the held
+  // Dragon, then search the remaining legal Dragon target to establish strict JIT:
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/645
+  if (EngineTestAccess::fss_target_after_search_started(engine) != Card::MysteriousTreasure ||
+      !EngineTestAccess::use_fss(engine) ||
+      !contains(state.hand, Card::MysteriousTreasure) ||
+      !EngineTestAccess::play_mysterious_treasure(engine, true) ||
+      !contains(state.discarded_this_turn, Card::MegaDragonite) ||
+      !EngineTestAccess::payload_ready(engine)) {
+    throw std::runtime_error("Star Alchemy should complete the held-payload Mysterious Treasure route.");
+  }
+}
+
+void test_fss_fetches_quick_ball_for_held_payload() {
+  using namespace sim;
+  const Scenario scenario{"fss-held-payload-quick-ball", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(64502);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::ForestSealStone};
+  state.hand = {Card::MegaDragonite};
+  state.deck = {Card::QuickBall, Card::RegidragoV};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Quick Ball's one-card discard can place the held Dragon in discard while its
+  // mandatory search still finds the known Basic Pokémon:
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/645
+  if (EngineTestAccess::fss_target_after_search_started(engine) != Card::QuickBall ||
+      !EngineTestAccess::use_fss(engine) || !contains(state.hand, Card::QuickBall) ||
+      !EngineTestAccess::play_quick_ball(engine, true) ||
+      !contains(state.discarded_this_turn, Card::MegaDragonite) ||
+      !EngineTestAccess::payload_ready(engine)) {
+    throw std::runtime_error("Star Alchemy should complete the held-payload Quick Ball route.");
+  }
+}
+
+void test_fss_fetches_earthen_vessel_for_held_payload() {
+  using namespace sim;
+  const Scenario scenario{"fss-held-payload-earthen-vessel", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(64503);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::ForestSealStone};
+  state.hand = {Card::MegaDragonite};
+  state.deck = {Card::EarthenVessel, Card::Grass};
+  EngineTestAccess::set_deck_seen(engine);
+
+  // Earthen Vessel can discard the held Dragon and legally search the known Basic
+  // Energy even after the Active Regidrago already has GGF attached:
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/645
+  if (EngineTestAccess::fss_target_after_search_started(engine) != Card::EarthenVessel ||
+      !EngineTestAccess::use_fss(engine) || !contains(state.hand, Card::EarthenVessel) ||
+      !EngineTestAccess::play_earthen_vessel(engine, true) ||
+      !contains(state.discarded_this_turn, Card::MegaDragonite) ||
+      !EngineTestAccess::payload_ready(engine)) {
+    throw std::runtime_error("Star Alchemy should complete the held-payload Earthen Vessel route.");
+  }
+}
+
+void test_fss_rejects_dead_held_payload_item_routes() {
+  using namespace sim;
+  const DeckRecipe recipe = baseline_recipe();
+
+  {
+    const Scenario scenario{"fss-held-payload-no-held-dragon", DciProfile::StrictJit,
+                            LockMode::None, false, 4};
+    std::mt19937_64 rng(64504);
+    Engine engine(scenario, recipe, rng);
+    State& state = EngineTestAccess::state(engine);
+    state.turn = 2;
+    state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::ForestSealStone};
+    state.deck = {Card::MysteriousTreasure, Card::Dipplin};
+    EngineTestAccess::set_deck_seen(engine);
+    if (EngineTestAccess::use_fss(engine)) {
+      throw std::runtime_error("Star Alchemy must hold when no Dragon payload is held.");
+    }
+  }
+
+  {
+    const Scenario scenario{"fss-held-payload-empty-target", DciProfile::StrictJit,
+                            LockMode::None, false, 4};
+    std::mt19937_64 rng(64505);
+    Engine engine(scenario, recipe, rng);
+    State& state = EngineTestAccess::state(engine);
+    state.turn = 2;
+    state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::ForestSealStone};
+    state.hand = {Card::MegaDragonite};
+    state.deck = {Card::MysteriousTreasure};
+    EngineTestAccess::set_deck_seen(engine);
+    if (EngineTestAccess::use_fss(engine)) {
+      throw std::runtime_error("Star Alchemy must hold when the Item would empty the deck before its search.");
+    }
+  }
+
+  {
+    const Scenario scenario{"fss-held-payload-off-class-target", DciProfile::StrictJit,
+                            LockMode::None, false, 4};
+    std::mt19937_64 rng(64506);
+    Engine engine(scenario, recipe, rng);
+    State& state = EngineTestAccess::state(engine);
+    state.turn = 2;
+    state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::ForestSealStone};
+    state.hand = {Card::MegaDragonite};
+    state.deck = {Card::MysteriousTreasure, Card::Grass};
+    EngineTestAccess::set_deck_seen(engine);
+    if (EngineTestAccess::use_fss(engine)) {
+      throw std::runtime_error("Star Alchemy must hold when Mysterious Treasure has no class-legal target.");
+    }
+  }
+
+  {
+    const Scenario scenario{"fss-held-payload-item-lock", DciProfile::StrictJit,
+                            LockMode::FullItem, false, 4};
+    std::mt19937_64 rng(64507);
+    Engine engine(scenario, recipe, rng);
+    State& state = EngineTestAccess::state(engine);
+    state.turn = 2;
+    state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::ForestSealStone};
+    state.hand = {Card::MegaDragonite};
+    state.deck = {Card::MysteriousTreasure, Card::Dipplin};
+    EngineTestAccess::set_deck_seen(engine);
+    if (EngineTestAccess::use_fss(engine)) {
+      throw std::runtime_error("Star Alchemy must hold when Item lock blocks the promised outlet.");
+    }
+  }
+
+  {
+    const Scenario scenario{"fss-held-payload-before-window", DciProfile::StrictJit,
+                            LockMode::None, true, 4};
+    std::mt19937_64 rng(64508);
+    Engine engine(scenario, recipe, rng);
+    State& state = EngineTestAccess::state(engine);
+    state.turn = 1;
+    state.active = Pokemon{Card::RegidragoVstar, 0, 2, 1, Tool::ForestSealStone};
+    state.hand = {Card::MegaDragonite};
+    state.deck = {Card::MysteriousTreasure, Card::Dipplin};
+    EngineTestAccess::set_deck_seen(engine);
+    if (EngineTestAccess::use_fss(engine)) {
+      throw std::runtime_error("Star Alchemy must preserve the held payload before the strict-JIT attack window.");
+    }
+  }
+
+  // A known-empty or off-class search cannot be played solely for its discard cost:
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+  // Item-lock and strict-JIT contracts:
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
 }
 
 void test_fss_fetches_tate_for_held_one_discard_payload() {
@@ -243,10 +433,14 @@ void test_rule_box_lock_without_fss_does_not_trigger_the_preservation_guard() {
 }  // namespace
 
 int main() {
+  test_fss_fetches_mysterious_treasure_for_held_payload();
+  test_fss_fetches_quick_ball_for_held_payload();
+  test_fss_fetches_earthen_vessel_for_held_payload();
+  test_fss_rejects_dead_held_payload_item_routes();
   test_fss_fetches_tate_for_held_one_discard_payload();
   test_fss_holds_held_payload_route_for_incomplete_target();
   test_fss_holds_when_tate_would_empty_deck_before_payload_item();
-  std::cout << "FSS held-payload Tate tests passed" << std::endl;
+  std::cout << "FSS held-payload Item tests passed" << std::endl;
   test_fss_fetches_tate_when_blender_covers_payload();
   test_fss_holds_when_tate_target_is_energy_incomplete();
   test_rule_box_lock_preserves_blender_for_live_fss_incomplete_target();

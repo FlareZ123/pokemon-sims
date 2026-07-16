@@ -47,6 +47,9 @@ target_compile_options(regidrago_oricorio_burnet_tests PRIVATE -Wall -Wextra -Wp
 add_executable(regidrago_opening_dialga_payload_tests tests/opening_active_dialga_payload_tests.cpp)
 target_compile_options(regidrago_opening_dialga_payload_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+add_executable(regidrago_opening_oricorio_dialga_no_lock_tests tests/opening_oricorio_dialga_no_lock_tests.cpp)
+target_compile_options(regidrago_opening_oricorio_dialga_no_lock_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 add_executable(regidrago_late_item_supporter_tests tests/late_item_supporter_tests.cpp)
 target_compile_options(regidrago_late_item_supporter_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
@@ -176,6 +179,7 @@ add_test(NAME regidrago_ultra_ball_tapu COMMAND regidrago_ultra_ball_tapu_tests)
 add_test(NAME regidrago_wonder_tag_dead_burnet COMMAND regidrago_wonder_tag_dead_burnet_tests)
 add_test(NAME regidrago_oricorio_burnet COMMAND regidrago_oricorio_burnet_tests)
 add_test(NAME regidrago_opening_dialga_payload COMMAND regidrago_opening_dialga_payload_tests)
+add_test(NAME regidrago_opening_oricorio_dialga_no_lock COMMAND regidrago_opening_oricorio_dialga_no_lock_tests)
 add_test(NAME regidrago_late_item_supporter COMMAND regidrago_late_item_supporter_tests)
 add_test(NAME regidrago_lusamine_arven_item_lock COMMAND regidrago_lusamine_arven_item_lock_tests)
 add_test(NAME regidrago_serena_mandatory_discard COMMAND regidrago_serena_mandatory_discard_tests)

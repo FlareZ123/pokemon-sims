@@ -81,9 +81,11 @@
     const bool duplicate_crispin_competes_for_missing_energy_type =
         hand_count(Card::Crispin) > 1 && manual_energy_already_held &&
         !both_manual_energy_types_held;
+    const bool communication_search_already_held =
+        pokemon_communication_opening_route_has_safe_exchange();
     const bool direct_pokemon_search_already_held =
         hand_count(Card::MysteriousTreasure) > 0 || hand_count(Card::QuickBall) > 0 ||
-        hand_count(Card::UltraBall) > 0;
+        hand_count(Card::UltraBall) > 0 || communication_search_already_held;
     const bool wonder_tag_retains_higher_marginal_value =
         manual_energy_already_held && hand_count(Card::Arven) > 0 &&
         direct_pokemon_search_already_held &&

@@ -119,8 +119,12 @@
             return false;
         }
       };
+      const bool arven_communication_chain =
+          deck_count_after_search_started(Card::PokemonCommunication) > 0 &&
+          pokemon_communication_plan(true, false, true).has_value();
       const bool arven_has_live_chain = supporter_allowed() && !item_locked() &&
-          ((need_regi() && bench_space() > 0 &&
+          (arven_communication_chain ||
+           (need_regi() && bench_space() > 0 &&
             ((deck_count_after_search_started(Card::RegidragoV) > 0 &&
               (deck_count_after_search_started(Card::QuickBall) > 0 ||
                deck_count_after_search_started(Card::MysteriousTreasure) > 0) &&
@@ -188,6 +192,9 @@
             return fire_needed() > 0 && !state_.manual_energy_used;
           case Card::Arven:
             return arven_has_live_chain;
+          case Card::PokemonCommunication:
+            return !item_locked() &&
+                pokemon_communication_plan(true, false, false).has_value();
           case Card::MysteriousTreasure:
             return (!item_locked() && one_discard_cost_available &&
                     ((need_regi() && deck_count_after_search_started(Card::RegidragoV) > 0) ||

@@ -13,6 +13,7 @@
 // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
 // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
 // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+// Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152
 // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
 // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
 // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
@@ -111,6 +112,7 @@
 #include "trace_engine_v2/part_search_item_overrides.inc"
 #undef play_evolution_incense
 #undef play_ultra_ball
+#include "trace_engine_v2/part_pokemon_communication.inc"
 #include "trace_engine_v2/part_010_fss_override.inc"
 #include "trace_engine_v2/part_010_attach_fss_override.inc"
 #define use_fss use_fss_latias_original
@@ -173,12 +175,7 @@
 #include "trace_engine_v2/part_roseanne_multimode_override.inc"
 #include "trace_engine_v2/part_turo_oricorio_override.inc"
 #define bench_oricorio_if_useful bench_oricorio_if_useful_target_original
-#define ultra_ball_has_legal_target ultra_ball_has_legal_target_k0_target_original
-#define play_ultra_ball play_ultra_ball_k0_target_original
 #include "trace_engine_v2/part_empty_deck_search_override.inc"
-#undef play_ultra_ball
-#undef ultra_ball_has_legal_target
-#include "trace_engine_v2/part_k0_ultra_ball_target_override.inc"
 #undef bench_oricorio_if_useful
 #include "trace_engine_v2/part_oricorio_needed_energy_override.inc"
 #define run_turn run_turn_original

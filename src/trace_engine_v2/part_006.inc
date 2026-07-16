@@ -272,7 +272,10 @@
     // https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/swsh12-135
     const bool needs_t1_steven = state_.turn == 1 && !scenario_.going_first && should_play_steven() &&
                                  hand_count(Card::StevensResolve) == 0;
-    const bool needs_crispin = need_energy() && (hand_count(Card::Crispin) == 0 || !crispin_can_advance_energy_axis());
+    const bool direct_communication_oricorio_route = need_energy() &&
+        pokemon_communication_has_direct_target_route(Card::Oricorio);
+    const bool needs_crispin = need_energy() && !direct_communication_oricorio_route &&
+        (hand_count(Card::Crispin) == 0 || !crispin_can_advance_energy_axis());
     // Wonder Tag can inspect the deck for Burnet. It is a live direct payload
     // bridge only while a payload may remain in deck: https://api.pokemontcg.io/v2/cards/cel25c-60_A
     const bool needs_burnet = can_play_payload_this_turn() && payload_might_be_in_deck() &&
@@ -284,10 +287,13 @@
     // https://api.pokemontcg.io/v2/cards/cel25c-60_A
     // https://api.pokemontcg.io/v2/cards/sv1-166
     const bool direct_ultra_vstar_route = payable_ultra_ball_vstar_route();
+    const bool direct_communication_vstar_route = need_vstar() &&
+        pokemon_communication_has_direct_target_route(Card::RegidragoVstar);
     const bool needs_arven_for_vstar = need_vstar() && hand_count(Card::Arven) == 0 &&
                                        hand_count(Card::EvolutionIncense) == 0 &&
                                        hand_count(Card::MysteriousTreasure) == 0 &&
-                                       !direct_ultra_vstar_route;
+                                       !direct_ultra_vstar_route &&
+                                       !direct_communication_vstar_route;
     // A direct in-hand one-discard Item avoids Tapu Lele-GX's Bench cost and the
     // Supporter play, so Wonder Tag is reserved for the known Arven-only bridge:
     // https://api.pokemontcg.io/v2/cards/cel25c-60_A

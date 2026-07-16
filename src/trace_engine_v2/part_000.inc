@@ -46,6 +46,7 @@ enum class Card : std::uint8_t {
   QuickBall,
   UltraBall,
   EvolutionIncense,
+  PokemonCommunication,
   EarthenVessel,
   Arven,
   Crispin,

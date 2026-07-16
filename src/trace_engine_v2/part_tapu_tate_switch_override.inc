@@ -120,10 +120,20 @@
     // Regression: https://github.com/FlareZ123/pokemon-sims/issues/648
     const bool live_arven_held_payload =
         wonder_tag_arven_held_payload_route_available();
+    const bool live_arven_communication = !item_locked() &&
+        hand_count(Card::Arven) == 0 && might_be_unseen(Card::Arven) &&
+        might_be_unseen(Card::PokemonCommunication) &&
+        pokemon_communication_plan_after_wonder_tag_arven().has_value();
+    // Wonder Tag may find Arven, which may search Pokémon Communication, only when
+    // the exact post-Supporter exchange is live:
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/sm9-152
+    // https://github.com/FlareZ123/pokemon-sims/issues/701
 
     return live_t1_steven || live_direct_crispin || live_arven_vessel_energy ||
            live_burnet || live_arven_vstar || live_gladion_axis ||
-           live_arven_held_payload;
+           live_arven_held_payload || live_arven_communication;
   }
 
   bool needs_tapu_connector() {
@@ -160,10 +170,12 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_tate_blender_tate_override.inc#L1-L22
     const bool payload_axis_completable = !need_payload() ||
         (state_.deck.size() > 1U && has_live_one_discard_hand_payload_line());
+    const bool direct_communication_latias_route = need_active_vstar() &&
+        pokemon_communication_has_direct_target_route(Card::LatiasEx);
     const bool tate_completes_active_axis = need_active_vstar() &&
         benched_vstar_promotion_ready() && payload_axis_completable &&
-        !can_free_retreat_with_latias() && hand_count(Card::TateLiza) == 0 &&
-        might_be_unseen(Card::TateLiza);
+        !can_free_retreat_with_latias() && !direct_communication_latias_route &&
+        hand_count(Card::TateLiza) == 0 && might_be_unseen(Card::TateLiza);
     return supporter_allowed() && ability_available_for_pokemon(Card::TapuLeleGX) &&
            tate_completes_active_axis;
   }

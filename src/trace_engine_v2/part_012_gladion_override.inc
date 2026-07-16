@@ -1,6 +1,11 @@
   bool play_gladion() {
     if (!supporter_allowed() || hand_count(Card::Gladion) == 0) return false;
 
+    const auto playable_communication = [this]() {
+      return !item_locked() && hand_count(Card::PokemonCommunication) > 0 &&
+          pokemon_communication_plan(true, true, true).has_value();
+    };
+
     const auto playable_ultra_search = [this]() {
       if (item_locked() || hand_count(Card::UltraBall) == 0) return false;
       const std::vector<Card> original_hand = state_.hand;
@@ -31,6 +36,51 @@
       const bool played = play_gladion_original();
       state_.hand.insert(state_.hand.end(), held_unpayable_ultra_balls.begin(), held_unpayable_ultra_balls.end());
       return played;
+    }
+
+    const bool direct_missing_pokemon_prized = prizes_known() &&
+        ((need_vstar() && prize_count_after_reveal(Card::RegidragoVstar) > 0) ||
+         (need_regi() && bench_space() > 0 &&
+          prize_count_after_reveal(Card::RegidragoV) > 0) ||
+         (need_active_vstar() && bench_space() > 0 &&
+          prize_count_after_reveal(Card::LatiasEx) > 0));
+    const bool prized_communication_route = prizes_known() &&
+        !direct_missing_pokemon_prized &&
+        prize_count_after_reveal(Card::PokemonCommunication) > 0 &&
+        pokemon_communication_plan_after_playing_supporter(
+            Card::Gladion, false).has_value();
+    if (prized_communication_route) {
+      // Gladion may exchange itself for a known prized Pokémon Communication. The
+      // recovered Item resolves after the Supporter play, so its plan is evaluated
+      // with Wonder Tag and Serena unavailable for the rest of this turn:
+      // https://api.pokemontcg.io/v2/cards/sm4-95
+      // https://api.pokemontcg.io/v2/cards/sm9-152
+      // https://www.pokemon.com/us/pokemon-tcg/rules
+      // https://github.com/FlareZ123/pokemon-sims/issues/701
+      remove_one(state_.hand, Card::Gladion);
+      state_.supporter_used = true;
+      prizes_revealed_ = true;
+      const auto prize = std::find(state_.prizes.begin(), state_.prizes.end(),
+                                   Card::PokemonCommunication);
+      if (prize == state_.prizes.end()) {
+        throw std::logic_error("Known prized Pokémon Communication disappeared");
+      }
+      *prize = Card::Gladion;
+      state_.hand.push_back(Card::PokemonCommunication);
+      shuffle(state_.prizes);
+      trace("PLAY SUPPORTER", "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; R-PCOMM-01",
+            "Exchanged Gladion for Pokémon Communication to complete a live Pokémon exchange route.");
+      return true;
+    }
+
+    if (!direct_missing_pokemon_prized && playable_communication()) {
+      // A held, payable Pokémon Communication already advances the missing Pokémon
+      // axis. Preserve the one Supporter play instead of spending Gladion on a slower
+      // blind Prize exchange:
+      // https://api.pokemontcg.io/v2/cards/sm9-152
+      // https://api.pokemontcg.io/v2/cards/sm4-95
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      return false;
     }
 
     if (need_vstar() && hand_count(Card::RegidragoVstar) == 0) {
@@ -77,7 +127,8 @@
            }));
       const bool live_vstar_route = playable_evolution_incense_vstar_route ||
           playable_mysterious_vstar_search || playable_ultra_search() ||
-          playable_fss_vstar_route || playable_arven_fss_vstar_route;
+          playable_communication() || playable_fss_vstar_route ||
+          playable_arven_fss_vstar_route;
       if (live_vstar_route) return false;
 
       // The original route classifier predates the playable-route distinction and
@@ -89,6 +140,11 @@
       while (remove_one(state_.hand, Card::UltraBall)) held_unpayable_routes.push_back(Card::UltraBall);
       if (!playable_evolution_incense_vstar_route) {
         while (remove_one(state_.hand, Card::EvolutionIncense)) held_unpayable_routes.push_back(Card::EvolutionIncense);
+      }
+      if (!playable_communication()) {
+        while (remove_one(state_.hand, Card::PokemonCommunication)) {
+          held_unpayable_routes.push_back(Card::PokemonCommunication);
+        }
       }
       if (known_prized_vstar_absent_from_deck) {
         while (remove_one(state_.hand, Card::Arven)) held_unpayable_routes.push_back(Card::Arven);

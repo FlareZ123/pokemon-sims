@@ -1,0 +1,147 @@
+name: Apply issue 654 opening policy fix
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'fix/654-opening-tapu-oricorio-routing'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Apply and validate focused fix
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          source = Path('src/trace_engine_v2/part_005.inc')
+          text = source.read_text()
+          old = '''    const bool crispin_route_already_held = hand_count(Card::Crispin) > 0;
+
+    // Setup permits either Basic to become Active. Preserve Oricorio for Vital Dance
+    // when Wonder Tag is suppressed, or when Crispin already supplies the Supporter
+    // route and the Energy-compression Ability is the scarce on-play connector:
+'''
+          new = '''    const bool crispin_route_already_held = hand_count(Card::Crispin) > 0;
+    const bool manual_energy_already_held =
+        hand_count(Card::Grass) > 0 || hand_count(Card::Fire) > 0;
+    const bool direct_pokemon_search_already_held =
+        hand_count(Card::MysteriousTreasure) > 0 || hand_count(Card::QuickBall) > 0 ||
+        hand_count(Card::UltraBall) > 0;
+    const bool wonder_tag_retains_higher_marginal_value =
+        manual_energy_already_held && hand_count(Card::Arven) > 0 &&
+        direct_pokemon_search_already_held;
+    const bool crispin_makes_vital_dance_scarce =
+        crispin_route_already_held && !wonder_tag_retains_higher_marginal_value;
+
+    // Setup permits either Basic to become Active. Preserve Oricorio for Vital Dance
+    // when Wonder Tag is suppressed, or when Crispin already supplies the Supporter
+    // route and the Energy-compression Ability remains the scarce on-play connector.
+    // When Energy, Arven, and direct Pokemon search are all already held, preserve
+    // Tapu Lele-GX instead because Wonder Tag retains broader post-K1 Supporter access:
+'''
+          if old not in text:
+              raise SystemExit('opening Tapu-Oricorio selector insertion point not found')
+          text = text.replace(old, new, 1)
+          old = '''    // https://api.pokemontcg.io/v2/cards/sv7-133
+    // https://api.pokemontcg.io/v2/cards/swsh6-148
+    if (tapu_oricorio_are_only_opening_basics &&
+        (rule_box_ability_lock || crispin_route_already_held) &&
+'''
+          new = '''    // https://api.pokemontcg.io/v2/cards/sv7-133
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh6-148
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/654
+    if (tapu_oricorio_are_only_opening_basics &&
+        (rule_box_ability_lock || crispin_makes_vital_dance_scarce) &&
+'''
+          if old not in text:
+              raise SystemExit('opening Tapu-Oricorio condition not found')
+          source.write_text(text.replace(old, new, 1))
+
+          test = Path('tests/oricorio_burnet_compression_tests.cpp')
+          text = test.read_text()
+          insertion = r'''
+void test_opening_choice_preserves_tapu_when_connectors_are_already_dense() {
+  const sim::Scenario scenario{"opening-tapu-oricorio-dense-connectors", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{65401};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::Oricorio, sim::Card::Grass,
+                sim::Card::MysteriousTreasure, sim::Card::ChaoticSwell,
+                sim::Card::Arven, sim::Card::Crispin};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Both on-play Abilities are lost from the opening Active. The held Energy,
+  // Arven, and direct Pokemon search already cover much of Vital Dance's route,
+  // while Wonder Tag retains flexible Supporter access after deck inspection:
+  // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-55
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://github.com/FlareZ123/pokemon-sims/issues/654
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::Oricorio ||
+      !contains(after.hand, sim::Card::TapuLeleGX)) {
+    throw std::runtime_error("Oricorio should start while Tapu Lele-GX remains available for Wonder Tag.");
+  }
+}
+
+void test_crispin_without_arven_signal_preserves_oricorio() {
+  const sim::Scenario scenario{"opening-tapu-oricorio-crispin-control", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{65402};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::Oricorio, sim::Card::Grass,
+                sim::Card::MysteriousTreasure, sim::Card::Crispin};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::TapuLeleGX ||
+      !contains(after.hand, sim::Card::Oricorio)) {
+    throw std::runtime_error("Held Crispin without the dense Arven graph should still preserve Vital Dance.");
+  }
+}
+
+'''
+          marker = '}  // namespace\n\nint main() {'
+          if marker not in text:
+              raise SystemExit('Oricorio opening test insertion point not found')
+          text = text.replace(marker, insertion + marker, 1)
+          call_marker = '  test_preserved_oricorio_completes_the_t2_burnet_route();\n'
+          if call_marker not in text:
+              raise SystemExit('Oricorio main call insertion point not found')
+          text = text.replace(
+              call_marker,
+              call_marker +
+              '  test_opening_choice_preserves_tapu_when_connectors_are_already_dense();\n'
+              '  test_crispin_without_arven_signal_preserves_oricorio();\n',
+              1,
+          )
+          test.write_text(text)
+          PY
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target regidrago_oricorio_burnet_tests --parallel 2
+          ./build/regidrago_oricorio_burnet_tests
+          rm .github/workflows/apply-654.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_005.inc tests/oricorio_burnet_compression_tests.cpp .github/workflows/apply-654.yml
+          git commit -m "Make Tapu-Oricorio opening choice route-aware (#654)"
+          git push origin HEAD:${{ github.head_ref }}

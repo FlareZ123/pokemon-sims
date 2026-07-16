@@ -1,20 +1,19 @@
 name: Apply issue 654 opening policy fix
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches: [fix/654-opening-tapu-oricorio-routing]
 
 permissions:
   contents: write
 
 jobs:
   apply:
-    if: github.head_ref == 'fix/654-opening-tapu-oricorio-routing'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: fix/654-opening-tapu-oricorio-routing
       - name: Apply and validate focused fix
         shell: bash
         run: |
@@ -144,4 +143,4 @@ void test_crispin_without_arven_signal_preserves_oricorio() {
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add src/trace_engine_v2/part_005.inc tests/oricorio_burnet_compression_tests.cpp .github/workflows/apply-654.yml
           git commit -m "Make Tapu-Oricorio opening choice route-aware (#654)"
-          git push origin HEAD:${{ github.head_ref }}
+          git push origin HEAD:fix/654-opening-tapu-oricorio-routing

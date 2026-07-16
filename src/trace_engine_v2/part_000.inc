@@ -69,6 +69,9 @@ enum class Card : std::uint8_t {
   Grass,
   Fire,
   TurboBlank,
+  BattleVipPass,
+  PokeStop,
+  Carmine,
 };
 
 constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{

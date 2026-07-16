@@ -9,7 +9,12 @@ namespace sim {
 struct EngineTestAccess {
   static void set_state(Engine& e, State s) { e.state_ = std::move(s); }
   static State& state(Engine& e) { return e.state_; }
+  static void set_deck_seen(Engine& e) { e.deck_seen_ = true; }
   static bool arven(Engine& e) { return e.play_arven(); }
+  static bool mysterious_treasure(Engine& e) { return e.play_mysterious_treasure(true); }
+  static bool quick_ball(Engine& e) { return e.play_quick_ball(true); }
+  static bool earthen_vessel(Engine& e) { return e.play_earthen_vessel(true); }
+  static bool payload_ready(const Engine& e) { return e.payload_ready(); }
   static bool attach(Engine& e) { return e.attach_fss(); }
   static bool attach_powerglass(Engine& e) { return e.attach_powerglass(); }
   static bool resolve_powerglass(Engine& e) { return e.resolve_powerglass_end_turn(); }
@@ -20,6 +25,193 @@ struct EngineTestAccess {
 
 bool has(const std::vector<sim::Card>& cards, sim::Card card) {
   return std::find(cards.begin(), cards.end(), card) != cards.end();
+}
+
+sim::State arven_payload_only_state(std::vector<sim::Card> deck) {
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::Arven, sim::Card::MegaDragonite};
+  state.deck = std::move(deck);
+  return state;
+}
+
+void test_arven_finds_mysterious_treasure_for_held_payload() {
+  const sim::Scenario scenario{"arven-held-payload-treasure", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng(64701);
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(
+      engine, arven_payload_only_state({sim::Card::MysteriousTreasure, sim::Card::Dipplin}));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Arven searches Mysterious Treasure, whose one-card discard places the held
+  // Dragon payload in discard before its legal Dipplin search:
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/647
+  if (!sim::EngineTestAccess::arven(engine) ||
+      !has(sim::EngineTestAccess::state(engine).hand, sim::Card::MysteriousTreasure) ||
+      !sim::EngineTestAccess::mysterious_treasure(engine) ||
+      !has(sim::EngineTestAccess::state(engine).discarded_this_turn, sim::Card::MegaDragonite) ||
+      !sim::EngineTestAccess::payload_ready(engine)) {
+    throw std::runtime_error("Arven must complete the target-legal Mysterious Treasure held-payload route.");
+  }
+}
+
+void test_arven_finds_quick_ball_for_held_payload() {
+  const sim::Scenario scenario{"arven-held-payload-quick-ball", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng(64702);
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(
+      engine, arven_payload_only_state({sim::Card::QuickBall, sim::Card::RegidragoV}));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Quick Ball may discard the held Dragon and legally search the known Basic:
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/647
+  if (!sim::EngineTestAccess::arven(engine) ||
+      !has(sim::EngineTestAccess::state(engine).hand, sim::Card::QuickBall) ||
+      !sim::EngineTestAccess::quick_ball(engine) ||
+      !has(sim::EngineTestAccess::state(engine).discarded_this_turn, sim::Card::MegaDragonite) ||
+      !sim::EngineTestAccess::payload_ready(engine)) {
+    throw std::runtime_error("Arven must complete the target-legal Quick Ball held-payload route.");
+  }
+}
+
+void test_arven_finds_earthen_vessel_for_held_payload() {
+  const sim::Scenario scenario{"arven-held-payload-vessel", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng(64703);
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(
+      engine, arven_payload_only_state({sim::Card::EarthenVessel, sim::Card::Grass}));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Earthen Vessel may discard the held Dragon and legally search Basic Energy:
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/647
+  if (!sim::EngineTestAccess::arven(engine) ||
+      !has(sim::EngineTestAccess::state(engine).hand, sim::Card::EarthenVessel) ||
+      !sim::EngineTestAccess::earthen_vessel(engine) ||
+      !has(sim::EngineTestAccess::state(engine).discarded_this_turn, sim::Card::MegaDragonite) ||
+      !sim::EngineTestAccess::payload_ready(engine)) {
+    throw std::runtime_error("Arven must complete the target-legal Earthen Vessel held-payload route.");
+  }
+}
+
+void test_arven_rejects_dead_held_payload_routes() {
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+
+  {
+    const sim::Scenario scenario{"arven-no-held-payload", sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    std::mt19937_64 rng(64704);
+    sim::Engine engine(scenario, recipe, rng);
+    sim::State state = arven_payload_only_state({sim::Card::MysteriousTreasure, sim::Card::Dipplin});
+    state.hand = {sim::Card::Arven};
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+    sim::EngineTestAccess::set_deck_seen(engine);
+    if (sim::EngineTestAccess::arven(engine)) {
+      throw std::runtime_error("Arven must hold when no Dragon payload is held.");
+    }
+  }
+
+  {
+    const sim::Scenario scenario{"arven-held-payload-item-lock", sim::DciProfile::StrictJit,
+                                 sim::LockMode::FullItem, false, 4};
+    std::mt19937_64 rng(64705);
+    sim::Engine engine(scenario, recipe, rng);
+    sim::EngineTestAccess::set_state(
+        engine, arven_payload_only_state({sim::Card::MysteriousTreasure, sim::Card::Dipplin}));
+    sim::EngineTestAccess::set_deck_seen(engine);
+    if (sim::EngineTestAccess::arven(engine)) {
+      throw std::runtime_error("Arven must hold when Item lock blocks the promised outlet.");
+    }
+  }
+
+  {
+    const sim::Scenario scenario{"arven-held-payload-off-class", sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    std::mt19937_64 rng(64706);
+    sim::Engine engine(scenario, recipe, rng);
+    sim::EngineTestAccess::set_state(
+        engine, arven_payload_only_state({sim::Card::MysteriousTreasure, sim::Card::Grass}));
+    sim::EngineTestAccess::set_deck_seen(engine);
+    if (sim::EngineTestAccess::arven(engine)) {
+      throw std::runtime_error("Arven must hold when Mysterious Treasure has no class-legal target.");
+    }
+  }
+
+  {
+    const sim::Scenario scenario{"arven-held-payload-empty-after-search", sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    std::mt19937_64 rng(64707);
+    sim::Engine engine(scenario, recipe, rng);
+    sim::EngineTestAccess::set_state(
+        engine, arven_payload_only_state({sim::Card::MysteriousTreasure}));
+    sim::EngineTestAccess::set_deck_seen(engine);
+    if (sim::EngineTestAccess::arven(engine)) {
+      throw std::runtime_error("Arven must hold when taking the Item would leave no search target.");
+    }
+  }
+
+  {
+    const sim::Scenario scenario{"arven-held-payload-supporter-spent", sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    std::mt19937_64 rng(64708);
+    sim::Engine engine(scenario, recipe, rng);
+    sim::State state = arven_payload_only_state({sim::Card::MysteriousTreasure, sim::Card::Dipplin});
+    state.supporter_used = true;
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+    sim::EngineTestAccess::set_deck_seen(engine);
+    if (sim::EngineTestAccess::arven(engine)) {
+      throw std::runtime_error("Arven must remain unavailable after the turn's Supporter play.");
+    }
+  }
+
+  // Known-empty and off-class searches cannot be played solely for their cost:
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+  // Supporter and Item timing: https://www.pokemon.com/us/pokemon-tcg/rules
+}
+
+void test_arven_preserves_blender_priority_over_held_payload_item() {
+  const sim::Scenario scenario{"arven-held-payload-blender-priority", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng(64709);
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state = arven_payload_only_state(
+      {sim::Card::BrilliantBlender, sim::Card::Dragapult,
+       sim::Card::MysteriousTreasure, sim::Card::Dipplin});
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Brilliant Blender directly searches and discards a deck payload, so it remains
+  // earlier than a held-payload discard Item in Arven's candidate order:
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  if (!sim::EngineTestAccess::arven(engine) ||
+      !has(sim::EngineTestAccess::state(engine).hand, sim::Card::BrilliantBlender) ||
+      has(sim::EngineTestAccess::state(engine).hand, sim::Card::MysteriousTreasure)) {
+    throw std::runtime_error("Arven must preserve direct Brilliant Blender priority.");
+  }
 }
 
 void test_arven_fss_known_prize_route() {
@@ -156,6 +348,11 @@ void test_fss_attaches_when_manual_energy_route_remains_live() {
 }
 
 int main() {
+  test_arven_finds_mysterious_treasure_for_held_payload();
+  test_arven_finds_quick_ball_for_held_payload();
+  test_arven_finds_earthen_vessel_for_held_payload();
+  test_arven_rejects_dead_held_payload_routes();
+  test_arven_preserves_blender_priority_over_held_payload_item();
   test_arven_fss_known_prize_route();
   test_arven_finds_powerglass_after_vstar_power_is_spent();
   test_held_fss_preserves_active_slot_for_arven_powerglass();

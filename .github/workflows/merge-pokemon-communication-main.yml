@@ -1,16 +1,14 @@
 name: Merge Pokémon Communication with main
 
 on:
-  pull_request:
-    branches: [main]
-    types: [edited]
+  push:
+    branches: [feature/701-pokemon-communication]
 
 permissions:
   contents: write
 
 jobs:
   merge-validate-push:
-    if: github.event.pull_request.head.ref == 'feature/701-pokemon-communication'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

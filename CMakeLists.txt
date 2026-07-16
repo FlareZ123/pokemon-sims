@@ -166,6 +166,15 @@ target_compile_options(regidrago_release_assertion_tests PRIVATE -Wall -Wextra -
 
 enable_testing()
 add_test(NAME regidrago_sim_self_test COMMAND regidrago_sim --self-test)
+# Reject parsed options that cannot affect the selected execution mode:
+# https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+# https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+# https://github.com/FlareZ123/pokemon-sims/issues/633
+add_test(NAME regidrago_cli_mode_compatibility
+  COMMAND ${CMAKE_COMMAND}
+    -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
+    -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/cli-mode-compatibility
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/cli_mode_compatibility_tests.cmake)
 add_test(NAME regidrago_policy_fixtures COMMAND regidrago_policy_tests)
 add_test(NAME regidrago_tier2_policy_fixtures COMMAND regidrago_tier2_tests)
 add_test(NAME regidrago_fss_rulebox COMMAND regidrago_fss_rulebox_tests)

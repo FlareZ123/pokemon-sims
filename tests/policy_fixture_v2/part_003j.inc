@@ -6,6 +6,11 @@ void test_fss_reveal_preserves_burnet_over_prized_energy() {
   s.deck = {Card::MegaDragonite};
   s.prizes = {Card::Fire};
   Fixture f(scenario("prized-fire-versus-burnet", DciProfile::StrictJit, LockMode::FullItem), s);
+  // This fixture models K1 knowledge after a legal deck search: the singleton deck
+  // complement proves that Fire is the remaining Prize card.
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // https://github.com/FlareZ123/pokemon-sims/issues/719
+  EngineTestAccess::set_deck_seen(f.engine, true);
 
   // Star Alchemy must search for a card because its text gives no choice. With the
   // sole deck card as Burnet's payload, using FSS would remove that target:

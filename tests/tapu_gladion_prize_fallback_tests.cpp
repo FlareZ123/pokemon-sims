@@ -12,7 +12,11 @@ struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
   static const State& state(const Engine& engine) { return engine.state_; }
   static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
+  static bool play_arven(Engine& engine) { return engine.play_arven(); }
   static bool play_mysterious_treasure(Engine& engine) { return engine.play_mysterious_treasure(false); }
+  static bool play_mysterious_treasure_for_payload(Engine& engine) {
+    return engine.play_mysterious_treasure(true);
+  }
   static bool play_quick_ball(Engine& engine) { return engine.play_quick_ball(false); }
   static bool play_quick_ball_for_payload(Engine& engine) { return engine.play_quick_ball(true); }
   static bool play_earthen_vessel_for_payload(Engine& engine) { return engine.play_earthen_vessel(true); }
@@ -44,6 +48,244 @@ struct Fixture {
         rng(seed),
         engine(scenario, recipe, rng) {}
 };
+
+sim::State wonder_tag_payload_state(std::vector<sim::Card> deck) {
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::MegaDragonite};
+  state.deck = std::move(deck);
+  return state;
+}
+
+void test_wonder_tag_arven_treasure_held_payload_route() {
+  const sim::Scenario scenario{"wonder-tag-arven-held-treasure", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{64801};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(
+      engine, wonder_tag_payload_state(
+                  {sim::Card::Arven, sim::Card::MysteriousTreasure, sim::Card::Dipplin}));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Wonder Tag finds Arven, Arven finds Mysterious Treasure, and Treasure discards
+  // the held Dragon before legally searching Dipplin:
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/648
+  if (!sim::EngineTestAccess::needs_tapu_connector(engine) ||
+      !sim::EngineTestAccess::bench_tapu_if_useful(engine) ||
+      !contains(sim::EngineTestAccess::state(engine).hand, sim::Card::Arven) ||
+      !sim::EngineTestAccess::play_arven(engine) ||
+      !contains(sim::EngineTestAccess::state(engine).hand, sim::Card::MysteriousTreasure) ||
+      !sim::EngineTestAccess::play_mysterious_treasure_for_payload(engine) ||
+      !contains(sim::EngineTestAccess::state(engine).discarded_this_turn, sim::Card::MegaDragonite) ||
+      !sim::EngineTestAccess::payload_ready(engine)) {
+    throw std::runtime_error("Wonder Tag must complete the Arven into Mysterious Treasure held-payload route.");
+  }
+}
+
+void test_wonder_tag_arven_quick_ball_held_payload_route() {
+  const sim::Scenario scenario{"wonder-tag-arven-held-quick-ball", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{64802};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(
+      engine, wonder_tag_payload_state(
+                  {sim::Card::Arven, sim::Card::QuickBall, sim::Card::RegidragoV}));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // The equivalent Quick Ball route retains a legal Basic target:
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/648
+  if (!sim::EngineTestAccess::needs_tapu_connector(engine) ||
+      !sim::EngineTestAccess::bench_tapu_if_useful(engine) ||
+      !contains(sim::EngineTestAccess::state(engine).hand, sim::Card::Arven) ||
+      !sim::EngineTestAccess::play_arven(engine) ||
+      !contains(sim::EngineTestAccess::state(engine).hand, sim::Card::QuickBall) ||
+      !sim::EngineTestAccess::play_quick_ball_for_payload(engine) ||
+      !contains(sim::EngineTestAccess::state(engine).discarded_this_turn, sim::Card::MegaDragonite) ||
+      !sim::EngineTestAccess::payload_ready(engine)) {
+    throw std::runtime_error("Wonder Tag must complete the Arven into Quick Ball held-payload route.");
+  }
+}
+
+void test_wonder_tag_arven_vessel_held_payload_route() {
+  const sim::Scenario scenario{"wonder-tag-arven-held-vessel", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{64803};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(
+      engine, wonder_tag_payload_state(
+                  {sim::Card::Arven, sim::Card::EarthenVessel, sim::Card::Grass}));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // The equivalent Earthen Vessel route retains legal Basic Energy:
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/648
+  if (!sim::EngineTestAccess::needs_tapu_connector(engine) ||
+      !sim::EngineTestAccess::bench_tapu_if_useful(engine) ||
+      !contains(sim::EngineTestAccess::state(engine).hand, sim::Card::Arven) ||
+      !sim::EngineTestAccess::play_arven(engine) ||
+      !contains(sim::EngineTestAccess::state(engine).hand, sim::Card::EarthenVessel) ||
+      !sim::EngineTestAccess::play_earthen_vessel_for_payload(engine) ||
+      !contains(sim::EngineTestAccess::state(engine).discarded_this_turn, sim::Card::MegaDragonite) ||
+      !sim::EngineTestAccess::payload_ready(engine)) {
+    throw std::runtime_error("Wonder Tag must complete the Arven into Earthen Vessel held-payload route.");
+  }
+}
+
+void test_wonder_tag_arven_held_payload_controls() {
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+
+  {
+    const sim::Scenario scenario{"wonder-tag-direct-item-preferred", sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    std::mt19937_64 rng{64804};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::State state = wonder_tag_payload_state({sim::Card::Arven, sim::Card::Dipplin});
+    state.hand.push_back(sim::Card::MysteriousTreasure);
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+    sim::EngineTestAccess::set_deck_seen(engine);
+    if (sim::EngineTestAccess::needs_tapu_connector(engine)) {
+      throw std::runtime_error("A live held Mysterious Treasure must remain preferable to Tapu and Arven.");
+    }
+  }
+
+  {
+    const sim::Scenario scenario{"wonder-tag-no-held-payload", sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    std::mt19937_64 rng{64805};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::State state = wonder_tag_payload_state(
+        {sim::Card::Arven, sim::Card::MysteriousTreasure, sim::Card::Dipplin});
+    state.hand = {sim::Card::TapuLeleGX};
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+    sim::EngineTestAccess::set_deck_seen(engine);
+    if (sim::EngineTestAccess::needs_tapu_connector(engine)) {
+      throw std::runtime_error("Wonder Tag must hold when no Dragon payload is held.");
+    }
+  }
+
+  {
+    const sim::Scenario scenario{"wonder-tag-held-payload-item-lock", sim::DciProfile::StrictJit,
+                                 sim::LockMode::FullItem, false, 4};
+    std::mt19937_64 rng{64806};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::EngineTestAccess::set_state(
+        engine, wonder_tag_payload_state(
+                    {sim::Card::Arven, sim::Card::MysteriousTreasure, sim::Card::Dipplin}));
+    sim::EngineTestAccess::set_deck_seen(engine);
+    if (sim::EngineTestAccess::needs_tapu_connector(engine)) {
+      throw std::runtime_error("Wonder Tag must hold when Item lock blocks Arven's promised Item.");
+    }
+  }
+
+  {
+    const sim::Scenario scenario{"wonder-tag-held-payload-off-class", sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    std::mt19937_64 rng{64807};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::EngineTestAccess::set_state(
+        engine, wonder_tag_payload_state(
+                    {sim::Card::Arven, sim::Card::MysteriousTreasure, sim::Card::Grass}));
+    sim::EngineTestAccess::set_deck_seen(engine);
+    if (sim::EngineTestAccess::needs_tapu_connector(engine)) {
+      throw std::runtime_error("Wonder Tag must hold when Mysterious Treasure has no class-legal target.");
+    }
+  }
+
+  {
+    const sim::Scenario scenario{"wonder-tag-held-payload-empty-tail", sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    std::mt19937_64 rng{64808};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::EngineTestAccess::set_state(
+        engine, wonder_tag_payload_state({sim::Card::Arven, sim::Card::MysteriousTreasure}));
+    sim::EngineTestAccess::set_deck_seen(engine);
+    if (sim::EngineTestAccess::needs_tapu_connector(engine)) {
+      throw std::runtime_error("Wonder Tag must hold when the final Item has no post-search target.");
+    }
+  }
+
+  {
+    const sim::Scenario scenario{"wonder-tag-held-payload-full-bench", sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    std::mt19937_64 rng{64809};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::State state = wonder_tag_payload_state(
+        {sim::Card::Arven, sim::Card::MysteriousTreasure, sim::Card::Dipplin});
+    state.bench = {
+        sim::Pokemon{sim::Card::RegidragoV, 1}, sim::Pokemon{sim::Card::RegidragoV, 1},
+        sim::Pokemon{sim::Card::Oricorio, 1}, sim::Pokemon{sim::Card::LatiasEx, 1},
+        sim::Pokemon{sim::Card::MawileGX, 1}};
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+    sim::EngineTestAccess::set_deck_seen(engine);
+    if (sim::EngineTestAccess::needs_tapu_connector(engine)) {
+      throw std::runtime_error("Wonder Tag must hold when no Bench slot is available.");
+    }
+  }
+
+  {
+    const sim::Scenario scenario{"wonder-tag-held-payload-ability-lock", sim::DciProfile::StrictJit,
+                                 sim::LockMode::FullRuleBoxAbility, false, 4};
+    std::mt19937_64 rng{64810};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::EngineTestAccess::set_state(
+        engine, wonder_tag_payload_state(
+                    {sim::Card::Arven, sim::Card::MysteriousTreasure, sim::Card::Dipplin}));
+    sim::EngineTestAccess::set_deck_seen(engine);
+    if (sim::EngineTestAccess::needs_tapu_connector(engine)) {
+      throw std::runtime_error("Wonder Tag must hold when a Rule Box Ability lock suppresses Tapu Lele-GX.");
+    }
+  }
+
+  {
+    const sim::Scenario scenario{"wonder-tag-held-payload-supporter-spent", sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    std::mt19937_64 rng{64811};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::State state = wonder_tag_payload_state(
+        {sim::Card::Arven, sim::Card::MysteriousTreasure, sim::Card::Dipplin});
+    state.supporter_used = true;
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+    sim::EngineTestAccess::set_deck_seen(engine);
+    if (sim::EngineTestAccess::needs_tapu_connector(engine)) {
+      throw std::runtime_error("Wonder Tag must hold after the turn's Supporter play is spent.");
+    }
+  }
+
+  {
+    const sim::Scenario scenario{"wonder-tag-held-payload-arven-absent", sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    std::mt19937_64 rng{64812};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::EngineTestAccess::set_state(
+        engine, wonder_tag_payload_state({sim::Card::MysteriousTreasure, sim::Card::Dipplin}));
+    sim::EngineTestAccess::set_deck_seen(engine);
+    if (sim::EngineTestAccess::needs_tapu_connector(engine)) {
+      throw std::runtime_error("Wonder Tag must hold when Arven is absent from the known deck.");
+    }
+  }
+
+  // Bench, Ability, Supporter, and Item restrictions:
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/swsh6-148
+  // Target-aware Trainer resolution:
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+}
 
 void test_quick_ball_fallback_uses_tapu_for_prized_regidrago_v() {
   Fixture fixture{"quick-k1-prized-regi", 6201};
@@ -213,6 +455,10 @@ void test_gladion_recovers_prized_payload_for_quick_ball() {
 
 int main() {
   try {
+    test_wonder_tag_arven_treasure_held_payload_route();
+    test_wonder_tag_arven_quick_ball_held_payload_route();
+    test_wonder_tag_arven_vessel_held_payload_route();
+    test_wonder_tag_arven_held_payload_controls();
     test_quick_ball_fallback_uses_tapu_for_prized_regidrago_v();
     test_mysterious_treasure_fallback_uses_tapu_for_prized_vstar();
     test_wonder_tag_fetches_tate_for_the_only_missing_active_axis();

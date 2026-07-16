@@ -50,6 +50,22 @@ jobs:
       # https://github.com/FlareZ123/pokemon-sims/issues/633
       - name: Validate CLI mode compatibility
         run: cmake -DSIMULATOR="$PWD/build/regidrago_sim" -DTEST_DIR="$PWD/build/cli-mode-contract" -P tests/run_cli_mode_contract.cmake
+      # Three independent deterministic trace audits required by the repository's
+      # readable-hand contract and current trace manifest:
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
+      - name: Audit strict JIT going second trace
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 --require-ready-by 3 | tee build/audit_strict_jit_go_second_seed_3.txt
+      - name: Audit strict JIT going first trace
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 --require-ready-by 4 | tee build/audit_strict_jit_go_first_seed_6.txt
+      - name: Audit Rule Box lock going second trace
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee build/audit_rulebox_lock_go_second_seed_20.txt
+      - name: Upload three simulate-this audit traces
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulate-this-audit-traces
+          path: build/audit_*.txt
+          if-no-files-found: error
       - name: Upload CTest diagnostics
         if: always()
         uses: actions/upload-artifact@v4

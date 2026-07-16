@@ -28,7 +28,9 @@ const std::vector<sim::Card> kCards{
     sim::Card::ForestSealStone, sim::Card::Powerglass, sim::Card::FieldBlower,
     sim::Card::ChaoticSwell, sim::Card::PathToPeak, sim::Card::HisuianHeavyBall,
     sim::Card::Grass, sim::Card::Fire, sim::Card::BattleVipPass,
-    sim::Card::PokeStop, sim::Card::Carmine,
+    sim::Card::PokeStop, sim::Card::Carmine, sim::Card::ProfessorsResearch,
+    sim::Card::PokemonCommunication, sim::Card::Pokegear, sim::Card::Lillie,
+    sim::Card::NestBall, sim::Card::AdventurersDiscovery,
 };
 
 // Only setup connectors may be removed. Cards with independent matchup, attack,
@@ -73,6 +75,12 @@ const std::vector<sim::Card> kAdditionCandidates{
     sim::Card::BattleVipPass,
     sim::Card::PokeStop,
     sim::Card::Carmine,
+    sim::Card::ProfessorsResearch,
+    sim::Card::PokemonCommunication,
+    sim::Card::Pokegear,
+    sim::Card::Lillie,
+    sim::Card::NestBall,
+    sim::Card::AdventurersDiscovery,
 };
 
 using Counts = std::vector<int>;
@@ -120,6 +128,8 @@ bool protected_counts_unchanged(const Counts& counts, const Counts& base) {
       return false;
     }
   }
+  // External additions begin at zero and are allowed. Every baseline discrete card,
+  // including Dialga-GX, must remain exactly unchanged.
   const std::vector<sim::Card> protected_cards{
       sim::Card::RegidragoV, sim::Card::RegidragoVstar, sim::Card::Dragapult,
       sim::Card::MegaDragonite, sim::Card::DialgaGX, sim::Card::GoodraVstar,

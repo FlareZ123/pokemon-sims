@@ -55,6 +55,28 @@
       return false;
     }
 
+    const int selected_energy_missing = grass_needed() + fire_needed();
+    const bool held_crispin_finishes_energy = supporter_allowed() &&
+        hand_count(Card::Crispin) > 0 && selected_energy_missing == 1 &&
+        crispin_can_advance_energy_axis();
+    const bool active_vstar_energy_window_closed = strict_payload_timing() &&
+        active_is_vstar() && state_.manual_energy_used && need_energy() &&
+        !held_crispin_finishes_energy;
+    if (active_vstar_energy_window_closed) {
+      // A player may attach one Energy from hand during the turn. After that window is
+      // spent, an Energy-incomplete Active Regidrago VSTAR cannot use the current-turn
+      // Blender payload unless a still-legal Crispin attachment finishes GGF. Preserve
+      // the one-shot ACE SPEC for the first turn where every ready axis can complete:
+      // https://www.pokemon.com/us/pokemon-tcg/rules
+      // https://api.pokemontcg.io/v2/cards/sv7-133
+      // https://api.pokemontcg.io/v2/cards/sv8-164
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // https://github.com/FlareZ123/pokemon-sims/issues/737
+      return false;
+    }
+
     remove_one(state_.hand, Card::BrilliantBlender);
     state_.discard.push_back(Card::BrilliantBlender);
     std::vector<Card> discarded;

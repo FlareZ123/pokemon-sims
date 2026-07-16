@@ -1,5 +1,5 @@
 
-void test_fss_reveal_holds_burnet_until_prized_energy_is_recovered() {
+void test_fss_reveal_preserves_burnet_over_prized_energy() {
   State s = state(2, Card::RegidragoV, 1, 2, 0);
   s.active->tool = Tool::ForestSealStone;
   s.hand = {Card::Gladion, Card::ProfessorBurnet, Card::RegidragoVstar};

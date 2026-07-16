@@ -1,0 +1,41 @@
+name: Current Main Perfect Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-current-main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Archive exact audited source
+        run: git ls-files -z | tar --null -T - -czf current-main-source.tgz
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build all repository targets
+        run: cmake --build build --parallel 2
+      - name: Run full Release tests
+        run: ctest --test-dir build --output-on-failure
+      - name: Pass 1 strict JIT going first
+        # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 13 --require-ready-by 2 | tee current-main-pass-1-strict-first-seed-13.txt
+      - name: Pass 2 Rule Box Ability lock going second
+        # Lock semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 44 --require-ready-by 2 | tee current-main-pass-2-rulebox-second-seed-44.txt
+      - name: Pass 3 no-discard-control going second
+        # DCI semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+        run: ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 19 --require-ready-by 2 | tee current-main-pass-3-no-control-second-seed-19.txt
+      - name: Generate current T2 and T3 matrix
+        # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out current-main-t2-t3-matrix.csv
+      - name: Upload current-main audit bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-perfect-audit
+          path: |
+            current-main-source.tgz
+            current-main-pass-*.txt
+            current-main-t2-t3-matrix.csv
+          if-no-files-found: error

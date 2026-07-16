@@ -66,6 +66,17 @@ jobs:
           name: simulate-this-audit-traces
           path: build/audit_*.txt
           if-no-files-found: error
+      # Generate every documented setup condition from the exact audited PR head:
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+      # https://github.com/FlareZ123/pokemon-sims/issues/642
+      - name: Generate current T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/t2_t3_matrix.csv
+      - name: Upload current T2 and T3 matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-t2-t3-matrix
+          path: build/t2_t3_matrix.csv
+          if-no-files-found: error
       - name: Upload CTest diagnostics
         if: always()
         uses: actions/upload-artifact@v4

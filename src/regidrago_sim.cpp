@@ -32,9 +32,11 @@
 #include "trace_engine_v2/part_000.inc"
 #include "trace_engine_v2/part_001.inc"
 #include "trace_engine_v2/part_002.inc"
+#define payload_window_open payload_window_open_legacy
 #define begin_turn begin_turn_original
 #define might_be_unseen might_be_unseen_empty_deck_original
 #include "trace_engine_v2/part_003.inc"
+#undef payload_window_open
 // part_003.inc opens begin_turn(), and part_004.inc completes it. part_004.inc
 // later opens state_line(), which part_005.inc completes before a new Engine
 // member may be defined:
@@ -42,8 +44,12 @@
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_004.inc#L1-L22
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_004.inc#L210-L220
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_005.inc#L1-L5
+#define strict_payload_timing strict_payload_timing_for_readiness
 #include "trace_engine_v2/part_004.inc"
+#undef strict_payload_timing
+#define setup setup_same_turn_legacy
 #include "trace_engine_v2/part_005.inc"
+#undef setup
 #undef might_be_unseen
 #include "trace_engine_v2/part_empty_deck_unseen_override.inc"
 #undef begin_turn
@@ -59,6 +65,7 @@
 #undef needs_oricorio_connector
 #undef bench_oricorio_if_useful
 #undef bench_from_hand
+#include "trace_engine_v2/part_strict_jit_semantics_override.inc"
 #define attach_manual attach_manual_tate_blender_original
 #include "trace_engine_v2/part_007.inc"
 #undef attach_manual

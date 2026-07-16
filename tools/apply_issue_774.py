@@ -1,7 +1,7 @@
 from pathlib import Path
 
-path = Path("src/regidrago_sim.cpp")
-text = path.read_text(encoding="utf-8")
+source = Path("src/regidrago_sim.cpp")
+text = source.read_text(encoding="utf-8")
 old = '''#define fss_target_after_search_started fss_target_after_search_started_original
 #define attach_fss attach_fss_original
 #include "trace_engine_v2/part_010.inc"
@@ -20,4 +20,28 @@ new = '''#define fss_target_after_search_started fss_target_after_search_started
 if 'part_010_steven_crispin_override.inc' not in text:
     if old not in text:
         raise SystemExit("part_010 composition anchor missing")
-    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+    source.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+cmake = Path("CMakeLists.txt")
+cmake_text = cmake.read_text(encoding="utf-8")
+target_anchor = '''add_executable(regidrago_steven_missing_regi_tests tests/steven_missing_regi_tests.cpp)
+target_compile_options(regidrago_steven_missing_regi_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+'''
+target_insert = target_anchor + '''
+add_executable(regidrago_steven_crispin_turn2_item_lock_tests tests/steven_crispin_turn2_item_lock_tests.cpp)
+target_compile_options(regidrago_steven_crispin_turn2_item_lock_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+'''
+if "regidrago_steven_crispin_turn2_item_lock_tests" not in cmake_text:
+    if target_anchor not in cmake_text:
+        raise SystemExit("CMake target anchor missing")
+    cmake_text = cmake_text.replace(target_anchor, target_insert, 1)
+
+test_anchor = '''add_test(NAME regidrago_steven_missing_regi COMMAND regidrago_steven_missing_regi_tests)
+'''
+test_insert = test_anchor + '''add_test(NAME regidrago_steven_crispin_turn2_item_lock COMMAND regidrago_steven_crispin_turn2_item_lock_tests)
+'''
+if "NAME regidrago_steven_crispin_turn2_item_lock " not in cmake_text:
+    if test_anchor not in cmake_text:
+        raise SystemExit("CMake test anchor missing")
+    cmake_text = cmake_text.replace(test_anchor, test_insert, 1)
+cmake.write_text(cmake_text, encoding="utf-8")

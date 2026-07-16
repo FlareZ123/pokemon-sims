@@ -12,6 +12,7 @@ enum class DciProfile : std::uint8_t { StrictJit, MatchupFlexJit, NoDiscardContr
 enum class LockMode : std::uint8_t { None, TurnTwoItem, FullItem, FullRuleBoxAbility, FullCombined };
 enum class Tool : std::uint8_t { None, ForestSealStone, Powerglass };
 enum class Stadium : std::uint8_t { None, ChaoticSwell };
+enum class OpponentBenchState : std::uint8_t { Unknown, Unavailable, Available };
 
 struct Scenario {
   std::string label;
@@ -19,6 +20,12 @@ struct Scenario {
   LockMode locks{LockMode::None};
   bool going_first{true};
   int max_turn{4};
+  // Guzma's self-switch is conditional on successfully switching an opposing
+  // Benched Pokémon. Existing goldfish scenarios cannot prove that prerequisite:
+  // https://api.pokemontcg.io/v2/cards/sm3-115
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#opponent-actions
+  // https://github.com/FlareZ123/pokemon-sims/issues/741
+  OpponentBenchState opponent_bench{OpponentBenchState::Unknown};
 };
 
 struct Pokemon {

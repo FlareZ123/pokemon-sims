@@ -146,7 +146,7 @@ void test_direct_vstar_connector_is_preferred() {
 
   // Evolution Incense already searches the Evolution Pokémon directly, so Tapu and
   // a future Supporter should not consume an additional Bench slot and connector:
-  // https://api.pokemontcg.io/v2/cards/swsh8-163
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
   // https://api.pokemontcg.io/v2/cards/cel25c-60_A
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // https://github.com/FlareZ123/pokemon-sims/issues/748

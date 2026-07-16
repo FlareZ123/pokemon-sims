@@ -1,0 +1,36 @@
+name: Three Simulate-This Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  audit-current-main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+      - name: Trace strict JIT going second
+        # Trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 | tee trace-strict-jit-seed-6.txt
+      - name: Trace Rule Box Ability lock going second
+        # Lock specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 | tee trace-rulebox-seed-20.txt
+      - name: Trace no-discard-control going first
+        # DCI specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+        run: ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 2 | tee trace-no-discard-seed-2.txt
+      - name: Generate T2 and T3 matrix
+        # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+      - name: Upload traces and matrix
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: three-simulate-this-audit
+          path: |
+            trace-*.txt
+            t2-t3-matrix.csv
+          if-no-files-found: error

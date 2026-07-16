@@ -165,7 +165,7 @@ int main(int argc, char** argv) {
     const auto maximum_seed = parse_unsigned_decimal("18446744073709551615");
     const bool seed_parser_ok = zero_seed && *zero_seed == 0 &&
         ordinary_seed && *ordinary_seed == 20260705ULL &&
-        maximum_seed && *maximum_seed == std::numeric_limits<std::uint64_t>::max() &&
+        maximum_seed && *maximum_seed == ~std::uint64_t{0} &&
         !parse_unsigned_decimal("-1") && !parse_unsigned_decimal("+1") &&
         !parse_unsigned_decimal("nope") && !parse_unsigned_decimal(" 1") &&
         !parse_unsigned_decimal("") &&

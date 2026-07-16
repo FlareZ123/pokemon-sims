@@ -47,3 +47,24 @@ jobs:
           name: exact-connector-${{ matrix.variant }}
           path: exact-connector-${{ matrix.variant }}.csv
           if-no-files-found: error
+
+  exact-discovery-finalists:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile corrected discovery finalist runner
+        run: g++ -std=c++20 -O3 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tools/turbo_connector_discovery_finalists.cpp -o turbo_connector_discovery_finalists
+      - name: Run 100,000 trials in every modeled condition
+        run: ./turbo_connector_discovery_finalists 100000 ${{ matrix.variant }} > exact-discovery-${{ matrix.variant }}.csv
+      - name: Verify protected-card invariants
+        run: test -s exact-discovery-${{ matrix.variant }}.csv
+      - name: Upload exact discovery matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: exact-discovery-${{ matrix.variant }}
+          path: exact-discovery-${{ matrix.variant }}.csv
+          if-no-files-found: error

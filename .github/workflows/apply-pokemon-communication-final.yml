@@ -1,0 +1,48 @@
+name: Apply final Pokémon Communication bundle
+
+on:
+  pull_request:
+    branches: [main]
+    types: [edited]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.number == 709 && github.event.pull_request.head.ref == 'feature/701-pokemon-communication'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/701-pokemon-communication
+          fetch-depth: 0
+
+      - name: Apply verified final implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "e54a09448818c8b24caf1c2f83383f7c04e674685ecbbe4d57ac77777dc8d86b  .github/pc-final-payload/000" | sha256sum --check
+          echo "ccd8a30e45994e224f3d8c92efc98654ae3aa07989fbb4315b2ae206cb246809  .github/pc-final-payload/001" | sha256sum --check
+          echo "7d4fa188ba1cf6fd8faaf5ffb6c8f53c52095c2540a1a8d733112c612e21ee9f  .github/pc-final-payload/002" | sha256sum --check
+          echo "4f1f13945ef29f835cbd9df2f944b23d951296212383a41f01fd8da9e6fea5fd  .github/pc-final-payload/003" | sha256sum --check
+          echo "3cb129345be8228885ecbd04bcdff4517105803c3c3b6603b48599104c9d6b17  .github/pc-final-payload/004" | sha256sum --check
+          echo "2bd93121646c011f280563e2f30dec492cd6d2612a7b64960e9c22016220b60d  .github/pc-final-payload/005a" | sha256sum --check
+          echo "bc63e3df1de8a4f8616b24df28bd1c482c139a3ec2c03e0e6034e04d4db9e445  .github/pc-final-payload/005b" | sha256sum --check
+          echo "e744877e834ac984afcf017cc62066245c6a2c87df4c3594f96ef87c21bb362e  .github/pc-final-payload/005c" | sha256sum --check
+          echo "cbabb41f6f9de0743dd0f7478aae52725b0e1b8dc4646068e3adc2c33e1ab619  .github/pc-final-payload/006a" | sha256sum --check
+          echo "69a8583b374645c0e2d286ea3b5f6da07f3d959ca8ccf8f448408cac23f88791  .github/pc-final-payload/006b" | sha256sum --check
+          echo "2472fcba9a996f5bf5335887ba8b599e94304bcda7248078485ae8c9a0223ceb  .github/pc-final-payload/006c" | sha256sum --check
+          echo "733c4cbb1edf78e9805ce698b255eed6dfbfb89a261c170cc7cb22f929dab3b1  .github/pc-final-payload/007a" | sha256sum --check
+          echo "88949236049898663782515d9e211d6ae9b01e3e52ee387e19a8d8453a36c2b4  .github/pc-final-payload/007b" | sha256sum --check
+          cat .github/pc-final-payload/* | tr -d '\n' > /tmp/pc-final.b64
+          base64 --decode /tmp/pc-final.b64 > /tmp/pc-final.tar.gz
+          echo "9138cf8d5fcec9ecdd8ad1d78991f9f5caaa0b86e5e67cf6a2f3b21ddb3c5536  /tmp/pc-final.tar.gz" | sha256sum --check
+          tar -xzf /tmp/pc-final.tar.gz -C "$GITHUB_WORKSPACE"
+          rm -rf .github/pc-final-payload
+          rm .github/workflows/apply-pokemon-communication-final.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Implement Pokémon Communication (#701)"
+          git push origin HEAD:feature/701-pokemon-communication

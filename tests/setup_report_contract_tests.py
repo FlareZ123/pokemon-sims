@@ -3,12 +3,15 @@ from __future__ import annotations
 import csv
 import importlib.util
 import json
+import sys
 from collections import Counter
 from pathlib import Path
 from types import ModuleType
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+from scripts.baseline_provenance import simulator_policy_source_digest
 GENERATOR_PATH = REPO_ROOT / "scripts" / "update_setup_docs.py"
 MANIFEST_PATH = REPO_ROOT / "results" / "baseline_manifest.json"
 CSV_PATH = REPO_ROOT / "results" / "simulation_results.csv"
@@ -70,6 +73,17 @@ def main() -> int:
     # The documented aggregate command and manifest define one trial count for every row:
     # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
     # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
+    # The fixed-seed artifact must be regenerated whenever a simulation-policy input changes:
+    # https://github.com/FlareZ123/pokemon-sims/issues/642
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
+    expected_source_digest = simulator_policy_source_digest(REPO_ROOT)
+    recorded_source_digest = str(manifest.get("simulator_policy_source_sha256", ""))
+    if recorded_source_digest != expected_source_digest:
+        raise AssertionError(
+            "Simulator policy changed after the published setup baseline. Regenerate "
+            "results/simulation_results.csv and results/baseline_manifest.json before merging."
+        )
+
     observed_trials = {int(row["trials"]) for row in rows}
     expected_trials = {int(manifest["trials"])}
     if observed_trials != expected_trials:

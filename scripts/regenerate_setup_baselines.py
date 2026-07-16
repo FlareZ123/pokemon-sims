@@ -5,8 +5,13 @@ import json
 import os
 import subprocess
 import tempfile
+import sys
 from contextlib import contextmanager
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+from scripts.baseline_provenance import simulator_policy_source_digest
 
 TRACE_SPECS = (
     ("strict-jit/go-second", 3, "strict_jit_go_second"),
@@ -80,6 +85,9 @@ def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, m
     manifest: dict[str, object] = {
         "matrix_seed": matrix_seed,
         "trials": trials,
+        # Bind the generated matrix to the exact policy inputs so later policy changes
+        # cannot leave the published probabilities stale: https://github.com/FlareZ123/pokemon-sims/issues/642
+        "simulator_policy_source_sha256": simulator_policy_source_digest(REPO_ROOT),
         "traces": [],
     }
 

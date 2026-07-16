@@ -1,6 +1,6 @@
 # Reproducible results and trace artifacts
 
-`simulation_results.csv` is the prior 100,000-trial baseline produced with seed `20260705`. It remains useful as a historical audit artifact, but it is **not the result set for the current `fix-sims` policy**: K1 Prize-aware routing, Heavy Ball, Arven fallback, Tate & Liza draw, and Rule Box lock decisions were refined afterward. Regenerate it from the current executable before using it for deck-performance claims.
+`simulation_results.csv` is the current 100,000-trial baseline produced with seed `20260705`. Its manifest records a SHA-256 digest of the simulation-policy source inputs, and the setup-report contract rejects policy changes until the matrix is regenerated: https://github.com/FlareZ123/pokemon-sims/issues/642 and https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json.
 
 `traces/` contains deterministic `--simulate-this` transcripts used for manual review. Each state-changing line includes the rule IDs documented in [`../docs/RULES_TRACEABILITY.md`](../docs/RULES_TRACEABILITY.md).
 

@@ -78,6 +78,47 @@ expect_cli_error(find-output --find-ready 1 --out "${ignored_find_output}")
 expect_cli_error(find-seed --find-ready 1 --seed 999)
 expect_cli_error(conflicting-trace-modes --simulate-this --find-ready 1)
 
+# A find-ready deadline is part of the search predicate. Seed 2 first becomes
+# ready on T3, so the search must continue to seed 6, which is ready on T2:
+# https://github.com/FlareZ123/pokemon-sims/issues/641
+# https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
+execute_process(
+  COMMAND "${SIMULATOR}" --find-ready 1 --start-seed 1
+          --scenario strict-jit/go-second --require-ready-by 2
+  RESULT_VARIABLE find_deadline_result
+  OUTPUT_VARIABLE find_deadline_output
+  ERROR_VARIABLE find_deadline_error
+)
+if(NOT find_deadline_result EQUAL 0)
+  message(FATAL_ERROR "find-ready-deadline: expected exit 0, got ${find_deadline_result}\nstdout:\n${find_deadline_output}\nstderr:\n${find_deadline_error}")
+endif()
+string(FIND "${find_deadline_output}" "Seed: 6 | first-ready turn: 2" find_seed_six)
+if(find_seed_six EQUAL -1)
+  message(FATAL_ERROR "find-ready-deadline: qualifying seed 6 was not reported\n${find_deadline_output}")
+endif()
+string(FIND "${find_deadline_output}" "Seed: 2 |" find_late_seed_two)
+if(NOT find_late_seed_two EQUAL -1)
+  message(FATAL_ERROR "find-ready-deadline: late-ready seed 2 was reported\n${find_deadline_output}")
+endif()
+
+# Single-trace mode still reports its chosen seed and returns failure when that
+# seed misses the requested deadline:
+# https://github.com/FlareZ123/pokemon-sims/issues/641
+execute_process(
+  COMMAND "${SIMULATOR}" --simulate-this --seed 2
+          --scenario strict-jit/go-second --require-ready-by 2
+  RESULT_VARIABLE trace_deadline_result
+  OUTPUT_VARIABLE trace_deadline_output
+  ERROR_VARIABLE trace_deadline_error
+)
+if(NOT trace_deadline_result EQUAL 1)
+  message(FATAL_ERROR "single-trace-deadline: expected exit 1, got ${trace_deadline_result}\nstdout:\n${trace_deadline_output}\nstderr:\n${trace_deadline_error}")
+endif()
+string(FIND "${trace_deadline_output}" "Seed: 2 | first-ready turn: 3" trace_seed_two)
+if(trace_seed_two EQUAL -1)
+  message(FATAL_ERROR "single-trace-deadline: selected seed 2 was not reported\n${trace_deadline_output}")
+endif()
+
 # Self-test is its own execution mode and must not silently override parsed work.
 expect_cli_error(self-test-trials --self-test --trials 1)
 expect_cli_error(self-test-trace --self-test --simulate-this)

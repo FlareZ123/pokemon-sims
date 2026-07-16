@@ -19,10 +19,10 @@ jobs:
           if-no-files-found: error
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-      - name: Build
-        run: cmake --build build --config Release --parallel 2
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
       - name: Validate baseline simulator
-        run: ctest --test-dir build --output-on-failure
+        run: ./build/regidrago_sim --self-test
       - name: Generate current 100,000-trial baseline
         run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/turbo_baseline.csv
       - name: Upload baseline matrix
@@ -40,15 +40,28 @@ jobs:
         start: [0, 6, 12, 18, 24, 30]
     steps:
       - uses: actions/checkout@v4
-      - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-      - name: Build sensitivity executable
-        run: cmake --build build --target turbo_sensitivity --parallel 2
+      - name: Compile sensitivity executable
+        run: g++ -std=c++20 -O3 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tools/turbo_sensitivity.cpp -o turbo_sensitivity
       - name: Run matched-seed removal sensitivity shard
-        run: ./build/turbo_sensitivity 250 20260716 ${{ matrix.start }} $(( ${{ matrix.start }} + 6 )) > sensitivity-${{ matrix.start }}.csv
+        run: ./turbo_sensitivity 250 20260716 ${{ matrix.start }} $(( ${{ matrix.start }} + 6 )) > sensitivity-${{ matrix.start }}.csv
       - name: Upload sensitivity shard
         uses: actions/upload-artifact@v4
         with:
           name: turbo-sensitivity-${{ matrix.start }}
           path: sensitivity-${{ matrix.start }}.csv
+          if-no-files-found: error
+
+  current-connector-beam:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile exact current-card beam search
+        run: g++ -std=c++20 -O3 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tools/turbo_current_search.cpp -o turbo_current_search
+      - name: Search three-swap current connector packages
+        run: ./turbo_current_search 50 50000 12 > current_connector_beam.csv
+      - name: Upload current connector beam
+        uses: actions/upload-artifact@v4
+        with:
+          name: turbo-current-connector-beam
+          path: current_connector_beam.csv
           if-no-files-found: error

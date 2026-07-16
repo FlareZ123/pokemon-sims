@@ -40,6 +40,18 @@ std::optional<std::uint64_t> parse_positive_count(const std::string& text) {
   }
 }
 
+std::optional<int> parse_ready_deadline(const std::string& text) {
+  const auto parsed = parse_positive_count(text);
+  // Trace scenarios model readiness only through turn 4. A deadline must select one
+  // of those positive modeled turns instead of becoming a sentinel that disables
+  // the later check:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L20-L33
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
+  if (!parsed || *parsed > 4) return std::nullopt;
+  return static_cast<int>(*parsed);
+}
+
 int main(int argc, char** argv) {
   std::uint64_t trials = 100000;
   std::uint64_t seed = 20260705;
@@ -64,8 +76,14 @@ int main(int argc, char** argv) {
     else if (arg == "--out" && i + 1 < argc) output = argv[++i];
     else if (arg == "--scenario" && i + 1 < argc) scenario_label = argv[++i];
     else if (arg == "--simulate-this") simulate_this = true;
-    else if (arg == "--require-ready-by" && i + 1 < argc) require_ready_by = std::stoi(argv[++i]);
-    else if (arg == "--find-ready" && i + 1 < argc) {
+    else if (arg == "--require-ready-by" && i + 1 < argc) {
+      const auto parsed_deadline = parse_ready_deadline(argv[++i]);
+      if (!parsed_deadline) {
+        std::cerr << "--require-ready-by must be an integer from 1 through 4\n";
+        return 2;
+      }
+      require_ready_by = *parsed_deadline;
+    } else if (arg == "--find-ready" && i + 1 < argc) {
       // --find-ready is a requested result count. Reject signed, zero, and
       // out-of-range spellings before entering the trace-generation loop:
       // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
@@ -96,7 +114,18 @@ int main(int argc, char** argv) {
         !parse_positive_count("0") && !parse_positive_count("-1") &&
         !parse_positive_count("") &&
         !parse_positive_count("18446744073709551616");
-    return sim::self_test() && positive_count_parser_ok ? 0 : 1;
+    // Exercise both accepted modeled deadlines and rejected nonpositive, signed,
+    // out-of-horizon, empty, and overflow operands through the CLI parser:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L20-L33
+    // https://github.com/FlareZ123/pokemon-sims/issues/626
+    const auto turn_one = parse_ready_deadline("1");
+    const auto turn_four = parse_ready_deadline("4");
+    const bool deadline_parser_ok = turn_one && *turn_one == 1 &&
+        turn_four && *turn_four == 4 && !parse_ready_deadline("0") &&
+        !parse_ready_deadline("-1") && !parse_ready_deadline("+1") &&
+        !parse_ready_deadline("5") && !parse_ready_deadline("") &&
+        !parse_ready_deadline("18446744073709551616");
+    return sim::self_test() && positive_count_parser_ok && deadline_parser_ok ? 0 : 1;
   }
 
   try {

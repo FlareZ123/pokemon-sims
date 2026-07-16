@@ -1,0 +1,1 @@
+This temporary CI branch checks out `main` before building, so the traced simulator source is exactly the active main branch. Only temporary workflow and documentation files are changed on this branch.

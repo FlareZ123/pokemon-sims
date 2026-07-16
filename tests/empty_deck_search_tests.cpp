@@ -10,8 +10,12 @@ struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
   static const State& state(const Engine& engine) { return engine.state_; }
   static TrialOutcome& outcome(Engine& engine) { return engine.outcome_; }
+  static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
   static bool play_mysterious_treasure(Engine& engine, const bool permit_payload) {
     return engine.play_mysterious_treasure(permit_payload);
+  }
+  static bool play_ultra_ball(Engine& engine, const bool permit_payload) {
+    return engine.play_ultra_ball(permit_payload);
   }
   static bool use_fss(Engine& engine) { return engine.use_fss(); }
   static bool use_legacy_star(Engine& engine) { return engine.use_legacy_star(); }
@@ -39,6 +43,19 @@ struct Fixture {
   }
 };
 
+sim::State ultra_payload_state(const sim::Card outlet, std::vector<sim::Card> deck,
+                               const bool supporter_used = true) {
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1,
+                              sim::Tool::None};
+  state.hand = {sim::Card::UltraBall, outlet, sim::Card::Dipplin,
+                sim::Card::Dipplin};
+  state.deck = std::move(deck);
+  state.supporter_used = supporter_used;
+  return state;
+}
+
 void test_search_item_does_not_pay_its_cost() {
   sim::State state;
   state.turn = 2;
@@ -57,6 +74,104 @@ void test_search_item_does_not_pay_its_cost() {
   const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
   if (after.hand.size() != 2U || !after.discard.empty()) {
     throw std::runtime_error("An illegal empty-deck search must not spend the Item or discard cost.");
+  }
+}
+
+void test_ultra_ball_rejects_off_target_payload_outlets() {
+  struct Case {
+    sim::Card outlet;
+    std::vector<sim::Card> deck;
+    const char* name;
+  };
+  const std::vector<Case> cases{
+      {sim::Card::MysteriousTreasure,
+       {sim::Card::MegaDragonite, sim::Card::Grass}, "Mysterious Treasure"},
+      {sim::Card::QuickBall,
+       {sim::Card::MegaDragonite, sim::Card::Dragapult}, "Quick Ball"},
+      {sim::Card::EarthenVessel,
+       {sim::Card::MegaDragonite, sim::Card::Dragapult}, "Earthen Vessel"},
+  };
+
+  // Ultra Ball may fetch any Pokémon, but the fetched Dragon reaches discard only
+  // when the promised second Item still has a target after that payload leaves deck:
+  // Ultra Ball https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // Mysterious Treasure https://api.pokemontcg.io/v2/cards/sm6-113
+  // Quick Ball https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Earthen Vessel https://api.pokemontcg.io/v2/cards/sv4-163
+  // Apex Dragon https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  for (const Case& test_case : cases) {
+    Fixture fixture(ultra_payload_state(test_case.outlet, test_case.deck));
+    sim::EngineTestAccess::set_deck_seen(fixture.engine);
+    if (sim::EngineTestAccess::play_ultra_ball(fixture.engine, true)) {
+      throw std::runtime_error(std::string("Ultra Ball must hold before off-target ") +
+                               test_case.name + ".");
+    }
+    const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+    if (after.hand.size() != 4U || after.deck.size() != 2U || !after.discard.empty()) {
+      throw std::runtime_error(std::string("The rejected ") + test_case.name +
+                               " route must preserve every card.");
+    }
+  }
+}
+
+void test_ultra_ball_accepts_target_legal_payload_outlets() {
+  struct Case {
+    sim::Card outlet;
+    std::vector<sim::Card> deck;
+    const char* name;
+  };
+  const std::vector<Case> cases{
+      {sim::Card::MysteriousTreasure,
+       {sim::Card::MegaDragonite, sim::Card::Dragapult}, "Mysterious Treasure"},
+      {sim::Card::QuickBall,
+       {sim::Card::MegaDragonite, sim::Card::RegidragoV}, "Quick Ball"},
+      {sim::Card::EarthenVessel,
+       {sim::Card::MegaDragonite, sim::Card::Grass}, "Earthen Vessel"},
+  };
+
+  // These K1 controls leave the exact target class required by the held second Item,
+  // so Ultra Ball may spend its costs and fetch Mega Dragonite ex:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  for (const Case& test_case : cases) {
+    Fixture fixture(ultra_payload_state(test_case.outlet, test_case.deck));
+    sim::EngineTestAccess::set_deck_seen(fixture.engine);
+    if (!sim::EngineTestAccess::play_ultra_ball(fixture.engine, true)) {
+      throw std::runtime_error(std::string("Ultra Ball must keep the target-legal ") +
+                               test_case.name + " route.");
+    }
+    const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+    if (std::find(after.hand.begin(), after.hand.end(), sim::Card::MegaDragonite) ==
+            after.hand.end() ||
+        after.deck.size() != 1U || after.discard.size() != 3U) {
+      throw std::runtime_error(std::string("The live ") + test_case.name +
+                               " route must fetch the payload and pay Ultra Ball.");
+    }
+  }
+}
+
+void test_ultra_ball_preserves_serena_payload_outlet() {
+  Fixture fixture(ultra_payload_state(sim::Card::Serena,
+                                      {sim::Card::MegaDragonite}, false));
+  sim::EngineTestAccess::set_deck_seen(fixture.engine);
+
+  // Serena's mandatory hand discard does not require a second deck-search target,
+  // so it remains a live outlet after Ultra Ball removes the final payload:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://api.pokemontcg.io/v2/cards/swsh12-164
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  if (!sim::EngineTestAccess::play_ultra_ball(fixture.engine, true)) {
+    throw std::runtime_error("Ultra Ball must preserve the non-search Serena outlet.");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  if (!after.deck.empty() ||
+      std::find(after.hand.begin(), after.hand.end(), sim::Card::MegaDragonite) ==
+          after.hand.end()) {
+    throw std::runtime_error("The Serena control must fetch the final Dragon payload.");
   }
 }
 
@@ -180,6 +295,9 @@ void test_search_supporter_does_not_consume_the_supporter_slot() {
 int main() {
   try {
     test_search_item_does_not_pay_its_cost();
+    test_ultra_ball_rejects_off_target_payload_outlets();
+    test_ultra_ball_accepts_target_legal_payload_outlets();
+    test_ultra_ball_preserves_serena_payload_outlet();
     test_star_alchemy_preserves_the_vstar_power();
     test_legacy_star_rejects_impossible_empty_deck_payload();
     test_legacy_star_keeps_nonempty_payload_and_latias_recovery();

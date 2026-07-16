@@ -18,11 +18,14 @@
     // Burnet also consumes the Supporter slot that Tate & Liza would need to promote
     // a Benched Regidrago VSTAR. Keep the payload play only when Latias ex already
     // supplies a legal free-retreat route, or when the current Active Regidrago V can
-    // evolve from the held VSTAR later in this same turn:
+    // evolve from the held VSTAR later in this same turn. The active turn procedure
+    // resolves ordinary Item searches before the Supporter decision, so no unresolved
+    // search-Item evolution route remains at this gate:
     // https://api.pokemontcg.io/v2/cards/sm7-148
     // https://api.pokemontcg.io/v2/cards/sv8-76
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c_latias_bench_override.inc#L74-L124
     // https://github.com/FlareZ123/pokemon-sims/issues/719
     const bool active_regi_can_evolve_from_hand = state_.active &&
         state_.active->card == Card::RegidragoV &&

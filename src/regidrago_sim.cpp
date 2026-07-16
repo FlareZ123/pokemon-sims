@@ -176,6 +176,7 @@
 #include "trace_engine_v2/part_empty_deck_search_override.inc"
 #undef bench_oricorio_if_useful
 #include "trace_engine_v2/part_oricorio_needed_energy_override.inc"
+#include "trace_engine_v2/part_turbo_external_exact.inc"
 #define run_turn run_turn_original
 #include "trace_engine_v2/part_014c.inc"
 #undef run_turn

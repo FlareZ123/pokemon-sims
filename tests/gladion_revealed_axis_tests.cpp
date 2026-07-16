@@ -1,46 +1,4 @@
-import os
-from pathlib import Path
-
-
-def atomic_write(path: Path, text: str) -> None:
-    temporary = path.with_name(path.name + ".tmp-780")
-    temporary.write_text(text, encoding="utf-8")
-    os.replace(temporary, path)
-
-
-source = Path("src/trace_engine_v2/part_012.inc")
-text = source.read_text(encoding="utf-8")
-if "revealed_missing_axis_target" not in text:
-    old = """    prizes_revealed_ = true;
-    const auto exchange = [this](const Card target) {
-"""
-    new = """    prizes_revealed_ = true;
-
-    // Gladion reveals every Prize before the exchange choice. Recalculate the exact
-    // missing Regidrago axis from that newly public information instead of entering
-    // the generic VSTAR-first fallback with a stale pre-reveal classification:
-    // https://api.pokemontcg.io/v2/cards/sm4-95
-    // https://api.pokemontcg.io/v2/cards/swsh12-135
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // https://github.com/FlareZ123/pokemon-sims/issues/780
-    const std::optional<Card> revealed_missing_axis_target =
-        need_regi() && bench_space() > 0 && prize_count_after_reveal(Card::RegidragoV) > 0
-            ? std::optional<Card>{Card::RegidragoV}
-            : need_vstar() && prize_count_after_reveal(Card::RegidragoVstar) > 0
-                  ? std::optional<Card>{Card::RegidragoVstar}
-                  : std::nullopt;
-    if (!known_target && revealed_missing_axis_target) known_target = revealed_missing_axis_target;
-
-    const auto exchange = [this](const Card target) {
-"""
-    if old not in text:
-        raise SystemExit("Gladion reveal anchor missing")
-    text = text.replace(old, new, 1)
-    atomic_write(source, text)
-
-test = Path("tests/gladion_revealed_axis_tests.cpp")
-test_text = r'''#define REGIDRAGO_SIM_NO_MAIN
+#define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
 #include <algorithm>
@@ -115,20 +73,3 @@ int main() {
   missing_vstar_stays_priority();
   return 0;
 }
-'''
-atomic_write(test, test_text)
-
-cmake = Path("CMakeLists.txt")
-cmake_text = cmake.read_text(encoding="utf-8")
-if "regidrago_gladion_revealed_axis_tests" not in cmake_text:
-    cmake_text += """
-
-add_executable(regidrago_gladion_revealed_axis_tests tests/gladion_revealed_axis_tests.cpp)
-target_compile_options(regidrago_gladion_revealed_axis_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-add_test(NAME regidrago_gladion_revealed_axis COMMAND regidrago_gladion_revealed_axis_tests)
-"""
-    atomic_write(cmake, cmake_text)
-
-for path in [Path(".github/workflows/issue-780-gladion-revealed-axis.yml"), Path(__file__)]:
-    if path.exists():
-        path.unlink()

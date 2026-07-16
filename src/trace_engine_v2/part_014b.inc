@@ -26,19 +26,43 @@
                                    legal_search_cost && might_be_unseen(Card::EarthenVessel);
     const bool arven_payload_axis = need_payload() && !item_locked() &&
                                     might_be_unseen(Card::BrilliantBlender);
-    // Arven remains a playable Supporter during Item lock and may choose Forest Seal
-    // Stone as its Pokémon Tool target while selecting no Item: https://api.pokemontcg.io/v2/cards/sv1-166
-    // Pokémon Tools are separate from Item cards after the Tool erratum, so that Tool
-    // route remains legal during Item lock: https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
-    const bool arven_fss_vstar_axis = need_vstar() && !state_.vstar_power_used &&
-        might_be_unseen(Card::ForestSealStone) &&
-        ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
-         std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) {
-           return p.card == Card::RegidragoV && p.tool == Tool::None;
-         }));
+    // Arven is a Supporter, so Item lock does not prohibit it. Arven may select no
+    // Item and search Forest Seal Stone as its Pokémon Tool target:
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
+    // Pokémon V includes Pokémon VSTAR, and Forest Seal Stone's Star Alchemy may
+    // search any card. Under Item lock, Professor Burnet is the concrete delayed
+    // payload outlet because it searches and discards the Dragon on the next turn:
+    // https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/issues/705
+    const bool open_fss_holder =
+        (state_.active && is_pokemon_v(state_.active->card) && state_.active->tool == Tool::None) ||
+        std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
+          return is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None;
+        });
+    const bool fss_payload_axis = need_payload() && can_play_payload_this_turn() &&
+        payload_might_be_in_deck() &&
+        ((!item_locked() && might_be_unseen(Card::BrilliantBlender)) ||
+         might_be_unseen(Card::ProfessorBurnet));
+    const bool known_prized_vstar_fss_axis = prizes_known() && need_vstar() &&
+        prize_count_after_reveal(Card::RegidragoVstar) > 0 && might_be_unseen(Card::Gladion);
+    const bool fss_live_axis = known_prized_vstar_fss_axis ||
+        (need_regi() && bench_space() > 0 && might_be_unseen(Card::RegidragoV)) ||
+        (need_vstar() && might_be_unseen(Card::RegidragoVstar)) ||
+        (need_energy() && !state_.manual_energy_used &&
+         ((grass_needed() > 0 && might_be_unseen(Card::Grass)) ||
+          (fire_needed() > 0 && might_be_unseen(Card::Fire)))) ||
+        (need_active_vstar() && bench_space() > 0 && !in_play(Card::LatiasEx) &&
+         might_be_unseen(Card::LatiasEx)) ||
+        fss_payload_axis;
+    const bool arven_fss_axis = !state_.vstar_power_used && open_fss_holder &&
+        might_be_unseen(Card::ForestSealStone) && fss_live_axis;
 
     if (known_gladion_axis) recover_once(Card::Gladion);
-    if (arven_vstar_axis || arven_regi_axis || arven_fss_vstar_axis) recover_once(Card::Arven);
+    if (arven_vstar_axis || arven_regi_axis || arven_fss_axis) recover_once(Card::Arven);
     if (need_active_vstar()) recover_once(Card::TateLiza);
     if (need_energy() && crispin_can_advance_energy_axis()) recover_once(Card::Crispin);
     if (need_payload()) recover_once(Card::ProfessorBurnet);

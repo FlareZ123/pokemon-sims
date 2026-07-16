@@ -89,6 +89,32 @@
     return true;
   }
 
+  bool play_guzma_active_promotion_route() {
+    // The setup simulator models the user's board and assumes the opponent-side
+    // switch required by Guzma can resolve. Use its self-switch only when it completes
+    // the remaining Active axis for a GGF-ready Benched Regidrago VSTAR:
+    // https://api.pokemontcg.io/v2/cards/sm3-115
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
+    // https://github.com/FlareZ123/pokemon-sims/issues/725
+    if (!supporter_allowed() || hand_count(Card::Guzma) == 0 ||
+        hand_count(Card::TateLiza) > 0 || !need_active_vstar() ||
+        need_regi() || need_vstar() || need_energy() || need_payload() ||
+        !benched_vstar_promotion_ready()) {
+      return false;
+    }
+
+    Pokemon* target = best_benched_vstar_for_promotion();
+    if (target == nullptr) return false;
+    remove_one(state_.hand, Card::Guzma);
+    state_.discard.push_back(Card::Guzma);
+    state_.supporter_used = true;
+    std::swap(*state_.active, *target);
+    trace("PLAY SUPPORTER", "R-GUZMA-01; R-GAME-SUPPORTER",
+          "Guzma promoted the GGF-ready Benched Regidrago VSTAR after the modeled opponent switch.");
+    return true;
+  }
+
   bool play_turo_oricorio_energy_route() {
     if (!turo_oricorio_energy_route_live()) return false;
 
@@ -159,6 +185,7 @@
     if (play_roseanne_vstar_energy_recovery()) return;
     // Evaluate Active-specific routes before the generic preferred-Regidrago axis
     // gate, which may consider a different Benched Regidrago already complete.
+    if (play_guzma_active_promotion_route()) return;
     if (play_turo_oricorio_energy_route()) return;
     if (play_turo_active_promotion_route()) return;
     if (!setup_axis_missing()) return;

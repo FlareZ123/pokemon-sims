@@ -59,6 +59,25 @@ jobs:
       - name: Archive exact committed source
         run: git archive --format=tar.gz -o source.tgz HEAD
 
+      - name: Publish issue 788 validation evidence
+        if: github.event.pull_request.head.ref == 'fix/788-dialga-opening-payable-search'
+        run: |
+          mkdir -p .github/validation/issue-788
+          cp trace-1.txt trace-2.txt trace-3.txt t2-t3-matrix.csv .github/validation/issue-788/
+          {
+            echo "validated_head=$(git rev-parse HEAD)"
+            echo "workflow_run=${GITHUB_RUN_ID}"
+            echo "workflow_attempt=${GITHUB_RUN_ATTEMPT}"
+            echo "release_ctest=passed"
+            echo "simulate_this_passes=3"
+            echo "matrix_trials_per_condition=100000"
+          } > .github/validation/issue-788/summary.txt
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/validation/issue-788
+          git commit -m "Record issue 788 CI evidence [skip ci]"
+          git push --force origin HEAD:evidence/issue-788-ci
+
       - name: Upload validation artifacts
         if: always()
         uses: actions/upload-artifact@v4

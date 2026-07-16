@@ -1,0 +1,41 @@
+name: Issue 642 current-main audit
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  audit-current-main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel 2
+      # These are three independent deterministic readable-hand audits required by the repository workflow:
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      # https://github.com/FlareZ123/pokemon-sims/issues/642
+      - name: Simulate-this pass 1
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 --require-ready-by 3 > issue-642-trace-1.txt
+      - name: Simulate-this pass 2
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 --require-ready-by 4 > issue-642-trace-2.txt
+      - name: Simulate-this pass 3
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 > issue-642-trace-3.txt
+      # Reproduce the documented fixed-seed aggregate baseline from the exact PR merge ref:
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
+      - name: Generate current matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-642-current-matrix.csv
+      - name: Export exact source snapshot
+        run: git archive --format=zip --output=issue-642-source.zip HEAD
+      - name: Upload audit bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-642-current-main-audit
+          path: |
+            issue-642-source.zip
+            issue-642-trace-1.txt
+            issue-642-trace-2.txt
+            issue-642-trace-3.txt
+            issue-642-current-matrix.csv

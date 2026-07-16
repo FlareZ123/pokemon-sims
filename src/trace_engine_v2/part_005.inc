@@ -105,6 +105,39 @@
       return;
     }
 
+    const bool oricorio_dialga_are_only_opening_basics =
+        hand_count(Card::Oricorio) > 0 && hand_count(Card::DialgaGX) > 0 &&
+        hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&
+        hand_count(Card::MawileGX) == 0 && hand_count(Card::TapuLeleGX) == 0;
+    const int oricorio_dialga_payloads = static_cast<int>(
+        std::count_if(state_.hand.begin(), state_.hand.end(), is_payload));
+    const bool another_payload_covers_strict_jit =
+        hand_count(Card::DialgaGX) == 1 && oricorio_dialga_payloads > 1;
+    const bool vital_dance_has_energy_value =
+        ability_available_for_pokemon(Card::Oricorio) &&
+        (might_be_unseen(Card::Grass) || might_be_unseen(Card::Fire));
+    const bool modeled_lock_scenario = scenario_.locks != LockMode::None;
+
+    // Setup may start Dialga-GX so the non-Rule-Box Oricorio can later be played
+    // from hand to the Bench for Vital Dance. In modeled lock scenarios, preserve
+    // that live Energy connector when another held Dragon covers strict-JIT DCI:
+    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+    // https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://api.pokemontcg.io/v2/cards/swsh6-148
+    // https://api.pokemontcg.io/v2/cards/sm5-100
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/674
+    if (oricorio_dialga_are_only_opening_basics && modeled_lock_scenario &&
+        strict_payload_timing() && another_payload_covers_strict_jit &&
+        vital_dance_has_energy_value && remove_one(state_.hand, Card::DialgaGX)) {
+      state_.active = Pokemon{Card::DialgaGX, 0};
+      outcome_.started_regi = false;
+      return;
+    }
+
     const bool tapu_dialga_are_only_opening_basics =
         hand_count(Card::TapuLeleGX) > 0 && hand_count(Card::DialgaGX) > 0 &&
         hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&

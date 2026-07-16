@@ -54,6 +54,15 @@ REQUESTED: dict[str, tuple[str, int]] = {
     "Fire Energy": ("energy-fire", 3),
 }
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DECKLIST_PATH = REPO_ROOT / "data" / "decklist.json"
+DECKLIST_NAME_ALIASES = {
+    "Dialga-GX (Dragon)": "Dialga-GX",
+    "Latias ex (Skyliner)": "Latias ex",
+    "Oricorio GRI 55 (Vital Dance)": "Oricorio GRI 55",
+}
+SUPERTYPE_TO_CATEGORY = {"Pokémon": "pokemon", "Trainer": "trainers"}
+
 
 @contextmanager
 def exclusive_lock(lock_path: Path) -> Iterator[None]:
@@ -130,28 +139,84 @@ def card_summary(card: dict[str, Any], copies: int) -> dict[str, Any]:
     }
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("source", type=Path, help="pokemon-tcg-data repository directory or ZIP")
-    parser.add_argument("--out", type=Path, default=Path("data/card_audit.json"))
-    args = parser.parse_args()
+def canonical_category_contract() -> tuple[dict[str, str], dict[str, int]]:
+    # The repository decklist owns the expected group and count for each requested
+    # entry. The audit must compare corpus supertypes with that specification:
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/data/decklist.json
+    # https://github.com/FlareZ123/pokemon-sims/issues/691
+    decklist = json.loads(DECKLIST_PATH.read_text(encoding="utf-8"))
+    expected_by_name: dict[str, str] = {}
+    expected_totals = {"pokemon": 0, "trainers": 0, "energy": 0}
+    for category in expected_totals:
+        entries = decklist.get(category)
+        if not isinstance(entries, dict):
+            raise SystemExit(f"Decklist category {category!r} must be an object")
+        for deck_name, copies in entries.items():
+            requested_name = DECKLIST_NAME_ALIASES.get(deck_name, deck_name)
+            if requested_name not in REQUESTED:
+                raise SystemExit(f"Decklist entry is not present in REQUESTED: {deck_name}")
+            if requested_name in expected_by_name:
+                raise SystemExit(f"Decklist entry appears more than once: {requested_name}")
+            if REQUESTED[requested_name][1] != copies:
+                raise SystemExit(
+                    f"Decklist copies for {deck_name} are {copies}, expected {REQUESTED[requested_name][1]}"
+                )
+            expected_by_name[requested_name] = category
+            expected_totals[category] += copies
 
-    by_id = {card["id"]: card for card in read_all_cards(args.source)}
-    missing = [f"{name} ({card_id})" for name, (card_id, _) in REQUESTED.items() if card_id not in by_id and not card_id.startswith("energy-")]
+    missing_groups = sorted(set(REQUESTED) - set(expected_by_name))
+    if missing_groups:
+        raise SystemExit("REQUESTED entries missing from decklist groups: " + ", ".join(missing_groups))
+    if sum(expected_totals.values()) != decklist.get("total"):
+        raise SystemExit("Decklist category totals do not match its declared total")
+    return expected_by_name, expected_totals
+
+
+def build_payload(source: Path, by_id: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    missing = [
+        f"{name} ({card_id})"
+        for name, (card_id, _) in REQUESTED.items()
+        if card_id not in by_id and not card_id.startswith("energy-")
+    ]
     if missing:
         raise SystemExit("Missing requested card IDs: " + ", ".join(missing))
 
+    expected_by_name, expected_totals = canonical_category_contract()
+    category_totals = {"pokemon": 0, "trainers": 0, "energy": 0}
     records: dict[str, Any] = {}
     for name, (card_id, copies) in REQUESTED.items():
+        expected_category = expected_by_name[name]
         if card_id.startswith("energy-"):
+            if expected_category != "energy":
+                raise SystemExit(f"Explicit Basic Energy entry is grouped as {expected_category}: {name}")
             records[name] = {"copies": copies, "id": card_id, "name": name, "category": "Basic Energy"}
-        else:
-            records[name] = card_summary(by_id[card_id], copies)
+            category_totals["energy"] += copies
+            continue
 
-    category_totals = {"pokemon": 19, "trainers": 32, "energy": 9}
+        card = by_id[card_id]
+        actual_category = SUPERTYPE_TO_CATEGORY.get(card.get("supertype"))
+        # pokemon-tcg-data is the authoritative supplied record. Reject unsupported
+        # supertypes and any requested print whose corpus category disagrees with the
+        # canonical decklist instead of certifying hard-coded totals:
+        # https://github.com/PokemonTCG/pokemon-tcg-data
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/data/decklist.json
+        # https://github.com/FlareZ123/pokemon-sims/issues/691
+        if actual_category is None:
+            raise SystemExit(f"Unsupported supertype for {name} ({card_id}): {card.get('supertype')!r}")
+        if actual_category != expected_category:
+            raise SystemExit(
+                f"Unexpected supertype for {name} ({card_id}): {card.get('supertype')!r}; "
+                f"decklist category is {expected_category}"
+            )
+        records[name] = card_summary(card, copies)
+        category_totals[actual_category] += copies
+
+    if category_totals != expected_totals:
+        raise SystemExit(f"Derived category totals {category_totals} do not match decklist totals {expected_totals}")
+
     payload = {
-        "source": str(args.source),
-        "deck_total": sum(copies for _, copies in REQUESTED.values()),
+        "source": str(source),
+        "deck_total": sum(category_totals.values()),
         "category_totals": category_totals,
         "records": records,
         "notes": [
@@ -161,8 +226,19 @@ def main() -> None:
     }
     if payload["deck_total"] != 60:
         raise SystemExit(f"Deck total is {payload['deck_total']}, expected 60")
+    return payload
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("source", type=Path, help="pokemon-tcg-data repository directory or ZIP")
+    parser.add_argument("--out", type=Path, default=Path("data/card_audit.json"))
+    args = parser.parse_args()
+
+    by_id = {card["id"]: card for card in read_all_cards(args.source)}
+    payload = build_payload(args.source, by_id)
     atomic_json_write(args.out, payload)
-    print(f"Validated {payload['deck_total']} cards across {len(records)} named entries: {args.out}")
+    print(f"Validated {payload['deck_total']} cards across {len(payload['records'])} named entries: {args.out}")
 
 
 if __name__ == "__main__":

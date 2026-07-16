@@ -26,6 +26,17 @@
                                    legal_search_cost && might_be_unseen(Card::EarthenVessel);
     const bool arven_payload_axis = need_payload() && !item_locked() &&
                                     might_be_unseen(Card::BrilliantBlender);
+    const bool arven_communication_axis = !item_locked() &&
+        might_be_unseen(Card::PokemonCommunication) &&
+        pokemon_communication_plan_after_playing_supporter(
+            Card::Lusamine, false).has_value();
+    // Lusamine may recover Arven for a future turn where Arven searches Pokémon
+    // Communication. The exchange must already have a safe hand Pokémon and a live
+    // target under the same route-aware planner used by direct Arven resolution:
+    // https://api.pokemontcg.io/v2/cards/sm4-96
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/sm9-152
+    // https://github.com/FlareZ123/pokemon-sims/issues/701
     // Arven is a Supporter, so Item lock does not prohibit it. Arven may select no
     // Item and search Forest Seal Stone as its Pokémon Tool target:
     // https://api.pokemontcg.io/v2/cards/sv1-166
@@ -72,8 +83,10 @@
     const bool arven_fss_axis = !state_.vstar_power_used && open_fss_holder &&
         might_be_unseen(Card::ForestSealStone) && fss_live_axis;
 
+
     if (known_gladion_axis) recover_once(Card::Gladion);
-    if (arven_vstar_axis || arven_regi_axis || arven_fss_axis) recover_once(Card::Arven);
+    if (arven_vstar_axis || arven_regi_axis || arven_fss_axis ||
+        arven_communication_axis) recover_once(Card::Arven);
     if (need_active_vstar()) recover_once(Card::TateLiza);
     if (need_energy() && crispin_can_advance_energy_axis()) recover_once(Card::Crispin);
     if (need_payload()) recover_once(Card::ProfessorBurnet);
@@ -139,6 +152,21 @@
       restore_hand();
       return true;
     }
+
+    // Roseanne's Backup restores Regidrago VSTAR before Pokémon Communication
+    // resolves. Require an exact post-Supporter exchange plan for that restored
+    // target instead of counting the Item by name alone:
+    // https://api.pokemontcg.io/v2/cards/swsh9-148
+    // https://api.pokemontcg.io/v2/cards/sm9-152
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/issues/701
+    restore_hand();
+    if (pokemon_communication_can_find_after_recovery(
+            Card::RegidragoVstar, Card::RoseannesBackup,
+            {Card::RegidragoVstar})) {
+      return true;
+    }
+    if (!remove_one(state_.hand, Card::RoseannesBackup)) return false;
 
     // Mysterious Treasure requires another hand card before it searches a Dragon
     // Pokémon. Test that cost after the Supporter has left hand:

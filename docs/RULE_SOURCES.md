@@ -32,6 +32,7 @@ The API records are card-text sources. They do not replace official tournament r
 | Quick Ball | https://api.pokemontcg.io/v2/cards/swsh1-179 |
 | Ultra Ball comparator | https://api.pokemontcg.io/v2/cards/swsh12pt5-146 |
 | Evolution Incense comparator | https://api.pokemontcg.io/v2/cards/swsh1-163 |
+| Pokémon Communication variant support | https://api.pokemontcg.io/v2/cards/sm9-152 |
 | Earthen Vessel | https://api.pokemontcg.io/v2/cards/sv4-163 |
 | Brilliant Blender | https://api.pokemontcg.io/v2/cards/sv8-164 |
 | Arven | https://api.pokemontcg.io/v2/cards/sv1-166 |
@@ -58,4 +59,4 @@ The API records are card-text sources. They do not replace official tournament r
 - Direct card-text mechanics in this table are validated against the supplied card corpus and the linked exact-print record.
 - The `FullRuleBoxAbility` scenario is a model abstraction for a Path-to-the-Peak-style lock. It suppresses Rule Box Pokémon Abilities and leaves Oricorio Vital Dance available because Oricorio GRI 55 has no Rule Box.
 - Forest Seal Stone remains usable under Path to the Peak. The published ruling explains that the Pokémon V does not have Star Alchemy; it has access to the Ability printed on the attached Tool: https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
-- Ultra Ball and Evolution Incense are comparators only, not cards in the submitted baseline deck.
+- Ultra Ball, Evolution Incense, and Pokémon Communication are variant-support cards only. They are not cards in the submitted baseline deck.

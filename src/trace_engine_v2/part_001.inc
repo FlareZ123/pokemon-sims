@@ -5,6 +5,7 @@
     case Card::QuickBall: return "Quick Ball";
     case Card::UltraBall: return "Ultra Ball";
     case Card::EvolutionIncense: return "Evolution Incense";
+    case Card::PokemonCommunication: return "Pokémon Communication";
     case Card::EarthenVessel: return "Earthen Vessel";
     case Card::Arven: return "Arven";
     case Card::Crispin: return "Crispin";

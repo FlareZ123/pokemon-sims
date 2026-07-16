@@ -9,15 +9,21 @@
   bool held_item_can_find_pending_vstar() {
     if (item_locked() || !might_be_unseen(Card::RegidragoVstar)) return false;
 
-    // A held direct Pokemon-search Item can make the VSTAR available later in this
-    // turn. Reserve Latias ex before a redundant Basic fills the final Bench slot:
-    // https://api.pokemontcg.io/v2/cards/swsh1-163
-    // https://api.pokemontcg.io/v2/cards/sm6-113
-    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    // A held direct Pokémon-search Item can make Regidrago VSTAR available later in
+    // this turn. Pokémon Communication is live only when its exact exchange plan
+    // returns a safe held Pokémon and selects the pending VSTAR:
+    // Evolution Incense: https://api.pokemontcg.io/v2/cards/swsh1-163
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/issues/687
+    // https://github.com/FlareZ123/pokemon-sims/issues/701
     if (hand_count(Card::EvolutionIncense) > 0) return true;
+    if (hand_count(Card::PokemonCommunication) > 0) {
+      const auto plan = pokemon_communication_plan(false);
+      if (plan && plan->target == Card::RegidragoVstar) return true;
+    }
 
     const bool permit_payload_cost = can_play_payload_this_turn();
     if (hand_count(Card::MysteriousTreasure) > 0 &&

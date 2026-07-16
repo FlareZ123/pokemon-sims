@@ -13,6 +13,7 @@
 // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
 // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
 // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+// Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152
 // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
 // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
 // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
@@ -124,6 +125,7 @@
 #undef in_play
 #undef play_evolution_incense
 #undef play_ultra_ball
+#include "trace_engine_v2/part_pokemon_communication.inc"
 #include "trace_engine_v2/part_010_fss_override.inc"
 #include "trace_engine_v2/part_010_attach_fss_override.inc"
 #define use_fss use_fss_latias_original

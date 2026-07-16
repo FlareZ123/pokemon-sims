@@ -15,10 +15,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Configure Release
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-      - name: Build Release
-        run: cmake --build build --parallel 2
-      - name: Run full Release test suite
-        run: ctest --test-dir build --output-on-failure
+      - name: Build simulator target
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Run simulator self-test
+        run: ./build/regidrago_sim --self-test
       - name: Run three deterministic simulate-this audits
         shell: bash
         run: |

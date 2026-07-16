@@ -143,7 +143,40 @@ void test_opening_choice_preserves_dialga_with_redundant_payload_graph() {
   }
 }
 
-void test_multiple_payloads_without_recovery_graph_keep_legacy_order() {
+void test_opening_choice_preserves_dialga_with_direct_regi_route() {
+  const sim::Scenario scenario{"opening-dialga-direct-regi-route", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{65301};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::DialgaGX,
+                sim::Card::Crispin, sim::Card::MysteriousTreasure,
+                sim::Card::QuickBall, sim::Card::MegaDragonite,
+                sim::Card::ChaoticSwell};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // The one-discard search Items already expose Regidrago V while the second
+  // Dragon supplies legal DCI flexibility. Preserving Dialga-GX is stronger than
+  // preserving a redundant Wonder Tag when Crispin is already held:
+  // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+  // https://api.pokemontcg.io/v2/cards/sm5-100
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // https://github.com/FlareZ123/pokemon-sims/issues/653
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::TapuLeleGX ||
+      !contains(after.hand, sim::Card::DialgaGX) ||
+      !contains(after.hand, sim::Card::MegaDragonite)) {
+    throw std::runtime_error("Tapu Lele-GX should start when a held one-discard Item already exposes Regidrago V.");
+  }
+}
+
+void test_multiple_payloads_without_public_connector_keep_legacy_order() {
   const sim::Scenario scenario{"opening-dialga-multiple-payload-control", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
   const sim::DeckRecipe recipe = sim::baseline_recipe();
@@ -157,7 +190,35 @@ void test_multiple_payloads_without_recovery_graph_keep_legacy_order() {
   const sim::State& after = sim::EngineTestAccess::state(engine);
   if (!after.active || after.active->card != sim::Card::DialgaGX ||
       !contains(after.hand, sim::Card::TapuLeleGX)) {
-    throw std::runtime_error("Multiple payloads alone should preserve the legacy Wonder Tag route.");
+    throw std::runtime_error("Multiple payloads alone should preserve the live Wonder Tag connector.");
+  }
+}
+
+void test_full_item_lock_rejects_direct_regi_item_signal() {
+  const sim::Scenario scenario{"opening-dialga-direct-regi-item-lock", sim::DciProfile::StrictJit,
+                               sim::LockMode::FullItem, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{65302};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::DialgaGX,
+                sim::Card::Crispin, sim::Card::MysteriousTreasure,
+                sim::Card::QuickBall, sim::Card::MegaDragonite,
+                sim::Card::ChaoticSwell};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Full Item lock blocks Quick Ball and Mysterious Treasure, so those cards
+  // cannot make Wonder Tag redundant during opening selection:
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-scenarios
+  // https://github.com/FlareZ123/pokemon-sims/issues/653
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::DialgaGX ||
+      !contains(after.hand, sim::Card::TapuLeleGX)) {
+    throw std::runtime_error("Full Item lock should retain Tapu Lele-GX as the live connector.");
   }
 }
 
@@ -168,6 +229,8 @@ int main() {
   test_preserved_dialga_enables_turn_two_vessel_route();
   test_opening_choice_keeps_legacy_order_without_crispin_signal();
   test_opening_choice_preserves_dialga_with_redundant_payload_graph();
-  test_multiple_payloads_without_recovery_graph_keep_legacy_order();
+  test_opening_choice_preserves_dialga_with_direct_regi_route();
+  test_multiple_payloads_without_public_connector_keep_legacy_order();
+  test_full_item_lock_rejects_direct_regi_item_signal();
   return 0;
 }

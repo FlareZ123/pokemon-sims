@@ -103,7 +103,7 @@ The model applies Path-to-the-Peak-style suppression to Rule Box Pokémon Abilit
 
 ### Combined lock
 
-This stacks full Item lock and Rule Box Ability lock. Field Blower remains blocked as an Item, so the Path-style suppression persists. It is a deliberately severe stress test. It should be read as a measure of the deck’s natural raw draws and Supporter-only recovery rather than as a common board state.
+This starts with full Item lock and Path-to-the-Peak-style Rule Box Ability suppression. Field Blower remains blocked as an Item. Chaotic Swell is a Stadium, so it may still be played through Item lock; when it replaces the modeled Path, Rule Box Pokémon Abilities become available for later actions and turns. The scenario is a deliberately severe stress test of raw draws, Supporter routes, and the deck’s Stadium out rather than a persistent Supporter-only lock: https://api.pokemontcg.io/v2/cards/sm12-187, https://api.pokemontcg.io/v2/cards/swsh6-148, https://www.pokemon.com/us/pokemon-tcg/rules, https://github.com/FlareZ123/pokemon-sims/issues/644.
 
 ## Prizing implementation
 

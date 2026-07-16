@@ -6,6 +6,46 @@
       return false;
     }
 
+    // Strict JIT recognizes only a Dragon discarded during the same turn that the
+    // Active Regidrago VSTAR reaches GGF. Burnet consumes the Supporter play, so do
+    // not spend it when an observable non-payload axis cannot still finish this turn:
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+    // https://github.com/FlareZ123/pokemon-sims/issues/719
+    if (strict_payload_timing() && has_vstar()) {
+      const bool held_latias_route = state_.active && is_basic(state_.active->card) &&
+          hand_count(Card::LatiasEx) > 0 && bench_space() > 0 &&
+          ability_available_for_pokemon(Card::LatiasEx) && !state_.retreat_used;
+      const bool direct_active_evolution = state_.active &&
+          state_.active->card == Card::RegidragoV &&
+          state_.active->entered_turn < state_.turn &&
+          hand_count(Card::RegidragoVstar) > 0;
+      const bool active_axis_can_finish = !need_active_vstar() ||
+          can_free_retreat_with_latias() || held_latias_route ||
+          direct_active_evolution;
+      if (!active_axis_can_finish) return false;
+
+      const int missing_energy = grass_needed() + fire_needed();
+      if (missing_energy > 0) {
+        if (missing_energy != 1 || state_.manual_energy_used) return false;
+
+        const Card needed_energy = grass_needed() == 1 ? Card::Grass : Card::Fire;
+        const bool held_energy_route = hand_count(needed_energy) > 0;
+        const bool needed_energy_might_be_in_deck = might_be_unseen(needed_energy);
+        const bool held_oricorio_route = needed_energy_might_be_in_deck &&
+            hand_count(Card::Oricorio) > 0 && !in_play(Card::Oricorio) &&
+            bench_space() > 0 && ability_available_for_pokemon(Card::Oricorio);
+        const bool held_vessel_route = needed_energy_might_be_in_deck &&
+            !item_locked() && hand_count(Card::EarthenVessel) > 0 &&
+            choose_discard(false, true, true, Card::EarthenVessel).has_value();
+        if (!held_energy_route && !held_oricorio_route && !held_vessel_route) {
+          return false;
+        }
+      }
+    }
+
     remove_one(state_.hand, Card::ProfessorBurnet);
     state_.discard.push_back(Card::ProfessorBurnet);
     state_.supporter_used = true;

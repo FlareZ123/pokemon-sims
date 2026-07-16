@@ -1,0 +1,59 @@
+name: Issue 779 Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  validate-issue-779:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/779-late-steven-basic-connector'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/779-late-steven-basic-connector
+          fetch-depth: 0
+      - name: Apply composition and CTest registration
+        run: python tools/apply_issue_779.py
+      - name: Configure and build Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run full Release suite
+        run: ctest --test-dir build --output-on-failure
+      - name: Run focused late-Steven regression
+        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/late_steven_basic_connector_tests.cpp -o build/issue_779_tests && ./build/issue_779_tests
+      - name: Run focused regression under UBSan
+        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=undefined -fno-omit-frame-pointer tests/late_steven_basic_connector_tests.cpp -o build/issue_779_ubsan && ./build/issue_779_ubsan
+      - name: Audit exact going-first trace
+        shell: bash
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 3 | tee build/issue-779-seed-3.txt
+          grep -F "Steven's Resolve" build/issue-779-seed-3.txt
+      - name: Audit two control traces
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 --require-ready-by 3 | tee build/issue-779-control-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee build/issue-779-control-2.txt
+      - name: Generate T2 T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/issue-779-matrix.csv
+      - name: Commit validated source and remove temporary CI
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm tools/apply_issue_779.py .github/workflows/issue-779-validation.yml
+          git add CMakeLists.txt src/regidrago_sim.cpp src/trace_engine_v2/part_010_late_steven_override.inc tests/late_steven_basic_connector_tests.cpp
+          git commit -m 'Use Steven as the only late Basic connector (#779)'
+          git push origin HEAD:fix/779-late-steven-basic-connector
+      - name: Upload issue 779 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-779-validation
+          path: |
+            build/issue-779-seed-3.txt
+            build/issue-779-control-1.txt
+            build/issue-779-control-2.txt
+            build/issue-779-matrix.csv
+            build/Testing
+          if-no-files-found: warn

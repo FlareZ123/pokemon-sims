@@ -110,11 +110,64 @@ void test_opening_choice_keeps_legacy_order_without_crispin_signal() {
   }
 }
 
+void test_opening_choice_preserves_dialga_with_redundant_payload_graph() {
+  const sim::Scenario scenario{"opening-dialga-multiple-payloads", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{653};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.hand = {sim::Card::DialgaGX, sim::Card::TapuLeleGX,
+                sim::Card::RegidragoVstar, sim::Card::Dragapult,
+                sim::Card::ProfessorTuro, sim::Card::ForestSealStone,
+                sim::Card::Crispin};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Setup may choose either Basic. Crispin covers the immediate Supporter route,
+  // Turo can recover the opening Tapu, and Forest Seal Stone supplies a later
+  // unrestricted connector, so the additional Dragapult payload does not erase
+  // Dialga-GX's DCI value:
+  // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+  // https://api.pokemontcg.io/v2/cards/sm5-100
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sv4-171
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://github.com/FlareZ123/pokemon-sims/issues/653
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::TapuLeleGX ||
+      !contains(after.hand, sim::Card::DialgaGX) ||
+      !contains(after.hand, sim::Card::Dragapult)) {
+    throw std::runtime_error("Tapu Lele-GX should start while both Dragon payloads remain in hand.");
+  }
+}
+
+void test_multiple_payloads_without_recovery_graph_keep_legacy_order() {
+  const sim::Scenario scenario{"opening-dialga-multiple-payload-control", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{654};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.hand = {sim::Card::DialgaGX, sim::Card::TapuLeleGX,
+                sim::Card::Dragapult, sim::Card::Crispin};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::DialgaGX ||
+      !contains(after.hand, sim::Card::TapuLeleGX)) {
+    throw std::runtime_error("Multiple payloads alone should preserve the legacy Wonder Tag route.");
+  }
+}
+
 }  // namespace
 
 int main() {
   test_opening_choice_preserves_unique_dialga_payload();
   test_preserved_dialga_enables_turn_two_vessel_route();
   test_opening_choice_keeps_legacy_order_without_crispin_signal();
+  test_opening_choice_preserves_dialga_with_redundant_payload_graph();
+  test_multiple_payloads_without_recovery_graph_keep_legacy_order();
   return 0;
 }

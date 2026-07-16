@@ -194,6 +194,15 @@ int main(int argc, char** argv) {
     if (trials_supplied) return reject_option("--trials", "find-ready");
     if (output_supplied) return reject_option("--out", "find-ready");
     if (seed_supplied) return reject_option("--seed", "find-ready");
+    // The active readiness contract cannot be met before turn 2. Rejecting the
+    // impossible search deadline here preserves turn 1 as a finite single-trace
+    // assertion while preventing an unbounded find-ready search:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc#L168-L177
+    // https://github.com/FlareZ123/pokemon-sims/issues/683
+    if (deadline_supplied && require_ready_by == 1) {
+      std::cerr << "--require-ready-by 1 cannot be satisfied in find-ready mode; readiness begins on turn 2\n";
+      return 2;
+    }
   } else {
     if (trials_supplied) return reject_option("--trials", "self-test");
     if (seed_supplied) return reject_option("--seed", "self-test");
@@ -249,8 +258,8 @@ int main(int argc, char** argv) {
       if (!scenario) throw std::runtime_error("unknown scenario: " + selected);
       const std::uint64_t desired = mode == CliMode::SingleTrace ? 1 : find_ready;
       std::uint64_t found = 0;
-      for (std::uint64_t candidate_seed = mode == CliMode::SingleTrace ? seed : start_seed;
-           found < desired; ++candidate_seed) {
+      std::uint64_t candidate_seed = mode == CliMode::SingleTrace ? seed : start_seed;
+      while (found < desired) {
         std::mt19937_64 rng(candidate_seed);
         sim::TraceLog trace{true, {}};
         sim::Engine engine(*scenario, deck, rng, &trace);
@@ -262,18 +271,27 @@ int main(int argc, char** argv) {
         // trace, while --simulate-this still reports its selected seed and exits 1:
         // https://github.com/FlareZ123/pokemon-sims/issues/641
         // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
-        if (mode == CliMode::FindReady &&
-            (outcome.first_ready_turn == 0 || misses_required_deadline)) {
-          continue;
+        const bool find_ready_miss = mode == CliMode::FindReady &&
+            (outcome.first_ready_turn == 0 || misses_required_deadline);
+        if (!find_ready_miss) {
+          std::cout << "\nSeed: " << candidate_seed << " | first-ready turn: " << (outcome.first_ready_turn == 0 ? std::string("not ready through T4") : std::to_string(outcome.first_ready_turn)) << '\n';
+          for (const std::string& line : trace.lines) std::cout << line << '\n';
+          if (misses_required_deadline) {
+            std::cerr << "Trace did not reach a ready state by required turn " << require_ready_by << "\n";
+            return 1;
+          }
+          ++found;
+          if (mode == CliMode::SingleTrace) break;
         }
-        std::cout << "\nSeed: " << candidate_seed << " | first-ready turn: " << (outcome.first_ready_turn == 0 ? std::string("not ready through T4") : std::to_string(outcome.first_ready_turn)) << '\n';
-        for (const std::string& line : trace.lines) std::cout << line << '\n';
-        if (misses_required_deadline) {
-          std::cerr << "Trace did not reach a ready state by required turn " << require_ready_by << "\n";
-          return 1;
+        if (found >= desired) break;
+        // Unsigned integers wrap modulo 2^N. Guard the final seed before advancing
+        // so an exhausted find-ready search cannot silently restart at seed zero:
+        // https://eel.is/c++draft/basic.fundamental#4
+        // https://github.com/FlareZ123/pokemon-sims/issues/683
+        if (candidate_seed == ~std::uint64_t{0}) {
+          throw std::runtime_error("find-ready search exhausted the uint64 seed range");
         }
-        ++found;
-        if (mode == CliMode::SingleTrace) break;
+        ++candidate_seed;
       }
       return 0;
     }

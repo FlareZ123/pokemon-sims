@@ -78,6 +78,29 @@ expect_cli_error(find-output --find-ready 1 --out "${ignored_find_output}")
 expect_cli_error(find-seed --find-ready 1 --seed 999)
 expect_cli_error(conflicting-trace-modes --simulate-this --find-ready 1)
 
+# The active ready-state implementation requires turn 2 or later. A turn-one
+# deadline is still a valid finite single-trace assertion, while accepting it as a
+# find-ready predicate would make every seed miss forever:
+# https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc#L168-L177
+# https://github.com/FlareZ123/pokemon-sims/issues/683
+execute_process(
+  COMMAND "${SIMULATOR}" --find-ready 1 --require-ready-by 1
+  RESULT_VARIABLE impossible_deadline_result
+  OUTPUT_VARIABLE impossible_deadline_output
+  ERROR_VARIABLE impossible_deadline_error
+  TIMEOUT 30
+)
+if(NOT impossible_deadline_result EQUAL 2)
+  message(FATAL_ERROR "find-ready-impossible-deadline: expected exit 2, got ${impossible_deadline_result}\nstdout:\n${impossible_deadline_output}\nstderr:\n${impossible_deadline_error}")
+endif()
+if(NOT impossible_deadline_output STREQUAL "")
+  message(FATAL_ERROR "find-ready-impossible-deadline: invalid search reached simulation output:\n${impossible_deadline_output}")
+endif()
+string(FIND "${impossible_deadline_error}" "readiness begins on turn 2" impossible_deadline_message)
+if(impossible_deadline_message EQUAL -1)
+  message(FATAL_ERROR "find-ready-impossible-deadline: missing clear diagnostic\n${impossible_deadline_error}")
+endif()
+
 # A find-ready deadline is part of the search predicate. Seed 2 first becomes
 # ready on T3, so the search must continue to seed 6, which is ready on T2:
 # https://github.com/FlareZ123/pokemon-sims/issues/641
@@ -101,6 +124,27 @@ if(NOT find_late_seed_two EQUAL -1)
   message(FATAL_ERROR "find-ready-deadline: late-ready seed 2 was reported\n${find_deadline_output}")
 endif()
 
+# uint64_t arithmetic wraps modulo 2^N. Requesting two results from the maximum
+# seed must report finite range exhaustion before a hidden restart at seed zero:
+# https://eel.is/c++draft/basic.fundamental#4
+# https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
+# https://github.com/FlareZ123/pokemon-sims/issues/683
+execute_process(
+  COMMAND "${SIMULATOR}" --find-ready 2 --start-seed 18446744073709551615
+          --scenario strict-jit/go-second
+  RESULT_VARIABLE exhausted_seed_result
+  OUTPUT_VARIABLE exhausted_seed_output
+  ERROR_VARIABLE exhausted_seed_error
+  TIMEOUT 30
+)
+if(NOT exhausted_seed_result EQUAL 1)
+  message(FATAL_ERROR "find-ready-seed-exhaustion: expected exit 1, got ${exhausted_seed_result}\nstdout:\n${exhausted_seed_output}\nstderr:\n${exhausted_seed_error}")
+endif()
+string(FIND "${exhausted_seed_error}" "find-ready search exhausted the uint64 seed range" exhausted_seed_message)
+if(exhausted_seed_message EQUAL -1)
+  message(FATAL_ERROR "find-ready-seed-exhaustion: missing clear diagnostic\n${exhausted_seed_error}")
+endif()
+
 # Single-trace mode still reports its chosen seed and returns failure when that
 # seed misses the requested deadline:
 # https://github.com/FlareZ123/pokemon-sims/issues/641
@@ -117,6 +161,25 @@ endif()
 string(FIND "${trace_deadline_output}" "Seed: 2 | first-ready turn: 3" trace_seed_two)
 if(trace_seed_two EQUAL -1)
   message(FATAL_ERROR "single-trace-deadline: selected seed 2 was not reported\n${trace_deadline_output}")
+endif()
+
+# Turn one remains a valid finite assertion in single-trace mode even though the
+# active model cannot record readiness until turn 2:
+# https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc#L168-L177
+# https://github.com/FlareZ123/pokemon-sims/issues/683
+execute_process(
+  COMMAND "${SIMULATOR}" --simulate-this --seed 2
+          --scenario strict-jit/go-second --require-ready-by 1
+  RESULT_VARIABLE trace_turn_one_result
+  OUTPUT_VARIABLE trace_turn_one_output
+  ERROR_VARIABLE trace_turn_one_error
+)
+if(NOT trace_turn_one_result EQUAL 1)
+  message(FATAL_ERROR "single-trace-turn-one-deadline: expected exit 1, got ${trace_turn_one_result}\nstdout:\n${trace_turn_one_output}\nstderr:\n${trace_turn_one_error}")
+endif()
+string(FIND "${trace_turn_one_output}" "Seed: 2 | first-ready turn: 3" trace_turn_one_seed)
+if(trace_turn_one_seed EQUAL -1)
+  message(FATAL_ERROR "single-trace-turn-one-deadline: selected seed 2 was not reported\n${trace_turn_one_output}")
 endif()
 
 # Self-test is its own execution mode and must not silently override parsed work.

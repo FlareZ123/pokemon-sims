@@ -161,38 +161,91 @@ void test_multiple_payloads_without_recovery_graph_keep_legacy_order() {
   }
 }
 
-void test_opening_choice_preserves_dialga_with_direct_regi_route() {
-  const sim::Scenario scenario{"opening-dialga-direct-regi-route", sim::DciProfile::StrictJit,
+void test_quick_ball_only_payable_route_preserves_dialga() {
+  const sim::Scenario scenario{"opening-dialga-quick-ball-route", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
   const sim::DeckRecipe recipe = sim::baseline_recipe();
   std::mt19937_64 rng{65301};
   sim::Engine engine(scenario, recipe, rng);
   sim::State state;
   state.hand = {sim::Card::TapuLeleGX, sim::Card::DialgaGX,
-                sim::Card::Crispin, sim::Card::MysteriousTreasure,
+                sim::Card::Crispin, sim::Card::QuickBall,
                 sim::Card::QuickBall, sim::Card::MegaDragonite,
-                sim::Card::ChaoticSwell};
+                sim::Card::Powerglass};
   sim::EngineTestAccess::set_state(engine, std::move(state));
 
-  // Setup may choose either Basic. The held one-discard Items already expose
-  // Regidrago V, Crispin covers the Supporter route, and Mega Dragonite ex provides
-  // a second Dragon payload, so Tapu Lele-GX has lower marginal connector value:
+  // A second Quick Ball is a legal low-DCI cost for the first copy. The paid Item
+  // therefore exposes Regidrago V while Dialga-GX remains the protected payload:
   // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/swsh12-135
   // https://api.pokemontcg.io/v2/cards/sm5-100
   // https://api.pokemontcg.io/v2/cards/cel25c-60_A
-  // https://api.pokemontcg.io/v2/cards/swsh12-135
-  // https://api.pokemontcg.io/v2/cards/swsh1-179
-  // https://api.pokemontcg.io/v2/cards/sm6-113
-  // https://api.pokemontcg.io/v2/cards/me2pt5-152
-  // https://api.pokemontcg.io/v2/cards/sv7-133
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
   // https://github.com/FlareZ123/pokemon-sims/issues/653
   sim::EngineTestAccess::choose_opening_active(engine);
   const sim::State& after = sim::EngineTestAccess::state(engine);
   if (!after.active || after.active->card != sim::Card::TapuLeleGX ||
-      !contains(after.hand, sim::Card::DialgaGX) ||
-      !contains(after.hand, sim::Card::MegaDragonite)) {
-    throw std::runtime_error("Tapu Lele-GX should start when a held one-discard Item exposes Regidrago V.");
+      !contains(after.hand, sim::Card::DialgaGX)) {
+    throw std::runtime_error("A payable Quick Ball route should preserve Dialga-GX.");
+  }
+}
+
+void test_mysterious_treasure_only_payable_route_preserves_dialga() {
+  const sim::Scenario scenario{"opening-dialga-treasure-route", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{65302};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::DialgaGX,
+                sim::Card::Crispin, sim::Card::MysteriousTreasure,
+                sim::Card::MysteriousTreasure, sim::Card::MegaDragonite,
+                sim::Card::Powerglass};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // A second Mysterious Treasure legally pays the first copy's discard cost, and
+  // Regidrago V is a legal Dragon search target:
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/swsh12-135
+  // https://api.pokemontcg.io/v2/cards/sm5-100
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // https://github.com/FlareZ123/pokemon-sims/issues/653
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::TapuLeleGX ||
+      !contains(after.hand, sim::Card::DialgaGX)) {
+    throw std::runtime_error("A payable Mysterious Treasure route should preserve Dialga-GX.");
+  }
+}
+
+void test_unpayable_cross_item_graph_preserves_wonder_tag() {
+  const sim::Scenario scenario{"opening-dialga-unpayable-items", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{65303};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::DialgaGX,
+                sim::Card::Crispin, sim::Card::QuickBall,
+                sim::Card::MysteriousTreasure, sim::Card::MegaDragonite,
+                sim::Card::ChaoticSwell};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Before a same-turn VSTAR payload window exists, strict-JIT protects Mega Dragonite
+  // ex and Chaotic Swell. The centralized selector does not admit either singleton
+  // search Item as the other Item's cost, so Wonder Tag remains the live connector:
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // https://github.com/FlareZ123/pokemon-sims/issues/788
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::DialgaGX ||
+      !contains(after.hand, sim::Card::TapuLeleGX)) {
+    throw std::runtime_error("An unpayable cross-Item graph should preserve Wonder Tag.");
   }
 }
 
@@ -265,7 +318,9 @@ int main() {
   test_opening_choice_keeps_legacy_order_without_crispin_signal();
   test_opening_choice_preserves_dialga_with_redundant_payload_graph();
   test_multiple_payloads_without_recovery_graph_keep_legacy_order();
-  test_opening_choice_preserves_dialga_with_direct_regi_route();
+  test_quick_ball_only_payable_route_preserves_dialga();
+  test_mysterious_treasure_only_payable_route_preserves_dialga();
+  test_unpayable_cross_item_graph_preserves_wonder_tag();
   test_full_item_lock_rejects_direct_regi_item_signal();
   test_blender_duplicate_crispin_preserves_wonder_tag();
   return 0;

@@ -13,7 +13,8 @@ jobs:
     if: >-
       github.event.pull_request.head.repo.full_name == github.repository &&
       (github.event.pull_request.head.ref == 'fix/780-gladion-revealed-axis' ||
-       github.event.pull_request.head.ref == 'fix/781-arven-complementary-latias-route')
+       github.event.pull_request.head.ref == 'fix/781-arven-complementary-latias-route' ||
+       github.event.pull_request.head.ref == 'fix/788-dialga-opening-payable-search')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

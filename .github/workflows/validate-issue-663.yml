@@ -1,0 +1,37 @@
+name: Validate issue 663
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build Release
+        run: cmake --build build --parallel 2
+      - name: Run focused regression
+        run: ./build/regidrago_opening_oricorio_dialga_tests
+      - name: Run full Release CTest
+        run: ctest --test-dir build --output-on-failure
+      - name: Audit strict JIT going second
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 --require-ready-by 3 | tee build/trace_strict_jit_go_second_seed_3.txt
+      - name: Audit strict JIT going first
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 --require-ready-by 4 | tee build/trace_strict_jit_go_first_seed_6.txt
+      - name: Audit matchup-flex JIT going second
+        run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee build/trace_matchup_flex_go_second_seed_3.txt
+      - name: Generate T2/T3/T4 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/t2_t3_matrix.csv
+      - name: Upload audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-663-traces-and-matrix
+          path: |
+            build/trace_strict_jit_go_second_seed_3.txt
+            build/trace_strict_jit_go_first_seed_6.txt
+            build/trace_matchup_flex_go_second_seed_3.txt
+            build/t2_t3_matrix.csv
+          if-no-files-found: error

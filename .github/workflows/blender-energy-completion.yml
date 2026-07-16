@@ -1,0 +1,65 @@
+name: Blender Energy Completion
+
+on:
+  pull_request:
+
+jobs:
+  focused-regression:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mode: [release, sanitizers]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build focused regression
+        shell: bash
+        run: |
+          flags="-std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -UNDEBUG"
+          if [[ "${{ matrix.mode }}" == "sanitizers" ]]; then
+            flags="$flags -fsanitize=address,undefined -fno-omit-frame-pointer"
+          else
+            flags="$flags -O2"
+          fi
+          g++ $flags tests/blender_energy_completion_tests.cpp -o blender_energy_completion_tests
+      - name: Run focused regression
+        shell: bash
+        run: |
+          if [[ "${{ matrix.mode }}" == "sanitizers" ]]; then
+            ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 ./blender_energy_completion_tests
+          else
+            ./blender_energy_completion_tests
+          fi
+
+  traces-and-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Reproduce corrected seed 2 route
+        # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        # Issue evidence: https://github.com/FlareZ123/pokemon-sims/issues/737
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 2 --require-ready-by 3 | tee blender-energy-seed-2.txt
+      - name: Validate strict JIT going first route
+        # Strict-JIT definition: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 13 --require-ready-by 2 | tee blender-energy-seed-13.txt
+      - name: Validate Rule Box lock route
+        # Rule Box Ability lock: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 44 --require-ready-by 2 | tee blender-energy-seed-44.txt
+      - name: Reject the original premature T2 Blender play
+        # Blender card text: https://api.pokemontcg.io/v2/cards/sv8-164
+        # Apex Dragon cost and discard requirement: https://api.pokemontcg.io/v2/cards/swsh12-136
+        run: '! grep -q "T2 | PLAY ITEM .*R-BLENDER-01" blender-energy-seed-2.txt'
+      - name: Generate T2 and T3 matrix
+        # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out blender-energy-t2-t3-matrix.csv
+      - name: Upload trace and matrix evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: blender-energy-completion-evidence
+          path: |
+            blender-energy-seed-*.txt
+            blender-energy-t2-t3-matrix.csv
+          if-no-files-found: error

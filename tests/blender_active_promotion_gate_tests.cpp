@@ -121,6 +121,41 @@ void test_forest_seal_stone_latias_route_keeps_blender_live() {
          "Blender should remain live with an available FSS-to-Latias route");
 }
 
+void test_unknown_guzma_route_holds_blender() {
+  Fixture fixture({"blender-unknown-guzma", sim::DciProfile::StrictJit,
+                   sim::LockMode::None, false, 4,
+                   sim::OpponentBenchState::Unknown});
+  sim::State state = powered_benched_vstar_state();
+  state.hand.push_back(sim::Card::Guzma);
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // Guzma's user-side switch is conditional on switching an opposing Benched
+  // Pokémon. Unknown opponent state cannot prove that prerequisite:
+  // https://api.pokemontcg.io/v2/cards/sm3-115
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#guzma-opponent-bench-prerequisite
+  // https://github.com/FlareZ123/pokemon-sims/issues/741
+  expect(!sim::EngineTestAccess::play_brilliant_blender(fixture.engine),
+         "unknown opponent state must not make Guzma a live promotion route");
+}
+
+void test_available_guzma_route_keeps_blender_live() {
+  Fixture fixture({"blender-available-guzma", sim::DciProfile::StrictJit,
+                   sim::LockMode::None, false, 4,
+                   sim::OpponentBenchState::Available});
+  sim::State state = powered_benched_vstar_state();
+  state.hand.push_back(sim::Card::Guzma);
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // An explicit Available opponent Bench satisfies Guzma's conditional first
+  // switch, so the merged #741 resolver can promote the powered VSTAR after Blender:
+  // https://api.pokemontcg.io/v2/cards/sm3-115
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#guzma-opponent-bench-prerequisite
+  // https://github.com/FlareZ123/pokemon-sims/issues/741
+  // https://github.com/FlareZ123/pokemon-sims/issues/725
+  expect(sim::EngineTestAccess::play_brilliant_blender(fixture.engine),
+         "explicitly available Guzma route should keep Blender live");
+}
+
 void test_already_active_vstar_keeps_blender_live() {
   Fixture fixture({"blender-active-vstar-control", sim::DciProfile::StrictJit,
                    sim::LockMode::None, false, 4});
@@ -158,6 +193,8 @@ int main() {
     test_tate_route_keeps_blender_live();
     test_latias_route_keeps_blender_live();
     test_forest_seal_stone_latias_route_keeps_blender_live();
+    test_unknown_guzma_route_holds_blender();
+    test_available_guzma_route_keeps_blender_live();
     test_already_active_vstar_keeps_blender_live();
     test_no_discard_control_behavior_is_unchanged();
     return 0;

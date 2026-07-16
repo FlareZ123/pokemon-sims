@@ -24,7 +24,10 @@ jobs:
           -o build/strict_jit_payload_semantics_tests
 
       - name: Run focused semantic regression
-        run: ./build/strict_jit_payload_semantics_tests
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/strict_jit_payload_semantics_tests 2>&1 | tee semantic-release.log
 
       - name: Run complete CTest suite
         run: ctest --test-dir build --output-on-failure
@@ -43,12 +46,15 @@ jobs:
           ! grep -q 'LEGACY STAR' strict-seed-3.txt
           grep -q 'T3 | READY' strict-seed-3.txt
 
-      - name: Upload Release trace
+      - name: Upload Release diagnostics
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: strict-jit-seed-3-release
-          path: strict-seed-3.txt
-          if-no-files-found: error
+          name: strict-jit-release-diagnostics
+          path: |
+            semantic-release.log
+            strict-seed-3.txt
+          if-no-files-found: warn
 
   semantic-sanitizers:
     runs-on: ubuntu-latest
@@ -72,16 +78,27 @@ jobs:
           -o build-sanitizers/strict_jit_payload_semantics_tests
 
       - name: Run semantic regression under sanitizers
+        shell: bash
         env:
           ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
           UBSAN_OPTIONS: halt_on_error=1
-        run: ./build-sanitizers/strict_jit_payload_semantics_tests
+        run: |
+          set -o pipefail
+          ./build-sanitizers/strict_jit_payload_semantics_tests 2>&1 | tee semantic-sanitizers.log
 
       - name: Run simulator self-test under sanitizers
         env:
           ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
           UBSAN_OPTIONS: halt_on_error=1
         run: ./build-sanitizers/regidrago_sim --self-test
+
+      - name: Upload sanitizer diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: strict-jit-sanitizer-diagnostics
+          path: semantic-sanitizers.log
+          if-no-files-found: warn
 
   multi-seed-evaluation:
     runs-on: ubuntu-latest

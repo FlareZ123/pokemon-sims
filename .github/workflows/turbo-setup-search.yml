@@ -31,3 +31,24 @@ jobs:
           name: turbo-baseline-matrix
           path: build/turbo_baseline.csv
           if-no-files-found: error
+
+  removal-sensitivity:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        start: [0, 6, 12, 18, 24, 30]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build sensitivity executable
+        run: cmake --build build --target turbo_sensitivity --parallel 2
+      - name: Run matched-seed removal sensitivity shard
+        run: ./build/turbo_sensitivity 250 20260716 ${{ matrix.start }} $(( ${{ matrix.start }} + 6 )) > sensitivity-${{ matrix.start }}.csv
+      - name: Upload sensitivity shard
+        uses: actions/upload-artifact@v4
+        with:
+          name: turbo-sensitivity-${{ matrix.start }}
+          path: sensitivity-${{ matrix.start }}.csv
+          if-no-files-found: error

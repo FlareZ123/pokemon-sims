@@ -107,12 +107,68 @@
            (remaining_fire == 1 && fire_in_hand > 0);
   }
 
+  bool blender_active_axis_can_finish_this_turn() const {
+    if (!strict_payload_timing() || !need_active_vstar()) return true;
+
+    // Issue #725 is specifically the loss of the one-shot ACE SPEC while a complete
+    // Regidrago VSTAR is stranded on the Bench. Preserve the repository's existing
+    // policy for Energy-incomplete targets, which are handled by the narrower Tate and
+    // Forest Seal Stone guards below:
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/725
+    if (!benched_vstar_promotion_ready()) return true;
+    if (can_free_retreat_with_latias()) return true;
+
+    // Tate & Liza may switch the powered Benched VSTAR Active before the later Item
+    // pass resolves Blender. Professor Turo's Scenario may remove a Basic Active and
+    // promote the same complete Benched VSTAR after Blender establishes the payload:
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://api.pokemontcg.io/v2/cards/sv4-171
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    const bool supporter_promotion_route = supporter_allowed() &&
+        (hand_count(Card::TateLiza) > 0 ||
+         (hand_count(Card::ProfessorTuro) > 0 && state_.active &&
+          is_basic(state_.active->card)));
+    if (supporter_promotion_route) return true;
+
+    // Star Alchemy may search Tate & Liza through a Rule Box Ability lock because the
+    // Ability belongs to Forest Seal Stone. A live attached Tool therefore completes
+    // the same-turn promotion route when Tate remains a legal unseen search target:
+    // https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://api.pokemontcg.io/v2/cards/swsh6-148
+    const auto live_fss_holder = [](const Pokemon& pokemon) {
+      return pokemon.tool == Tool::ForestSealStone && is_pokemon_v(pokemon.card);
+    };
+    const bool star_alchemy_to_tate =
+        !state_.vstar_power_used && supporter_allowed() &&
+        hand_count(Card::TateLiza) == 0 && might_be_unseen(Card::TateLiza) &&
+        ((state_.active && live_fss_holder(*state_.active)) ||
+         std::any_of(state_.bench.begin(), state_.bench.end(), live_fss_holder));
+    if (star_alchemy_to_tate) return true;
+
+    // A held Latias ex can be played to the open Bench before the final retreat step.
+    // Skyliner then removes the Basic Active's Retreat Cost. Bench capacity, Ability
+    // availability, and the once-per-turn retreat state are all observable now:
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    return state_.active && is_basic(state_.active->card) &&
+        hand_count(Card::LatiasEx) > 0 && !in_play(Card::LatiasEx) &&
+        bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
+        !state_.retreat_used;
+  }
+
   bool play_brilliant_blender() {
     // Brilliant Blender may search for and discard up to 5 deck cards:
     // https://api.pokemontcg.io/v2/cards/sv8-164
     if (item_locked() || hand_count(Card::BrilliantBlender) == 0 ||
         !can_play_payload_this_turn() || !payload_might_be_in_deck() ||
-        !blender_energy_axis_can_finish_this_turn()) {
+        !blender_energy_axis_can_finish_this_turn() ||
+        !blender_active_axis_can_finish_this_turn()) {
       return false;
     }
 

@@ -1,0 +1,42 @@
+name: Validate Blender Energy Window Fix
+
+on:
+  pull_request:
+    branches: [fix/737-blender-energy-window]
+
+jobs:
+  validate-fixed-code:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and regressions
+        run: cmake --build build --parallel 2
+      - name: Run full deterministic suite
+        # Repository exact-state validation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+        run: ctest --test-dir build --output-on-failure
+      - name: Run focused Blender Energy-window regression
+        # Issue and governing sources: https://github.com/FlareZ123/pokemon-sims/issues/737 https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/sv7-133 https://www.pokemon.com/us/pokemon-tcg/rules
+        run: ./build/regidrago_blender_fss_tate_hold_tests
+      - name: Re-run the Energy-window CI reproducer
+        # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 2 | tee fixed-trace-1-energy-window-seed-2.txt
+      - name: Run strict-JIT control trace
+        # Strict-JIT definition: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 | tee fixed-trace-2-strict-jit-seed-6.txt
+      - name: Run Rule Box lock control trace
+        # Lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 | tee fixed-trace-3-rulebox-lock-seed-20.txt
+      - name: Generate fixed-code T2 and T3 matrix
+        # Fixed-seed probability contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out fixed-t2-t3-matrix.csv
+      - name: Upload fixed-code evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-737-fixed-code-evidence
+          path: |
+            fixed-trace-*.txt
+            fixed-t2-t3-matrix.csv
+          if-no-files-found: error

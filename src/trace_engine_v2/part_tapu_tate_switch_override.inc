@@ -1,3 +1,57 @@
+  bool has_live_ultra_ball_hand_payload_line() const {
+    if (item_locked() || hand_count(Card::UltraBall) == 0 ||
+        !can_play_payload_this_turn() || !ultra_ball_has_legal_target()) {
+      return false;
+    }
+
+    // Ultra Ball may discard the held Dragon payload plus one other policy-legal
+    // card, then search a Pokemon. Simulate the exact hand while reserving the
+    // Ultra Ball being played instead of treating its presence as sufficient:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    Engine simulated = *this;
+    const auto payload_cost = simulated.choose_discard(true, true, true, Card::UltraBall);
+    if (!payload_cost || !is_payload(*payload_cost) ||
+        !remove_one(simulated.state_.hand, *payload_cost)) {
+      return false;
+    }
+    return simulated.choose_discard(false, true, true, Card::UltraBall).has_value();
+  }
+
+  bool oricorio_preserves_burnet_with_current_hand() const {
+    const bool exactly_one_energy_missing = grass_needed() + fire_needed() == 1;
+    const bool needed_energy_might_be_in_deck =
+        (grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
+        (fire_needed() == 1 && might_be_unseen(Card::Fire));
+    const bool payload_in_hand =
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    const bool live_hand_payload_outlet = payload_in_hand &&
+        (has_live_one_discard_hand_payload_line() ||
+         has_live_ultra_ball_hand_payload_line());
+
+    // An in-hand Dragon does not complete strict-JIT readiness by itself. When no
+    // legal Item can discard it this turn, Vital Dance must keep the Supporter play
+    // available for Professor Burnet's deck-to-discard payload bridge. A live Item
+    // outlet keeps the existing Tapu Lele-GX into Crispin route available:
+    // https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sv7-133
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    return supporter_allowed() && !state_.manual_energy_used &&
+           exactly_one_energy_missing && needed_energy_might_be_in_deck &&
+           can_play_payload_this_turn() && hand_count(Card::ProfessorBurnet) > 0 &&
+           !has_live_blender_payload_line() && payload_might_be_in_deck() &&
+           !live_hand_payload_outlet;
+  }
+
   bool original_wonder_tag_route_has_live_target() {
     // Wonder Tag searches a Supporter. At K1, the Supporter that justifies spending
     // Tapu Lele-GX and a Bench slot must actually remain in the inspected deck;
@@ -60,6 +114,17 @@
   }
 
   bool needs_tapu_connector() {
+    // With one Bench slot left, suppress Wonder Tag into Crispin when an in-hand
+    // payload is stranded and Oricorio preserves Professor Burnet's only complete
+    // current-turn route. This extends the completed #180 selector to the usable-
+    // payload distinction documented in #616:
+    // https://github.com/FlareZ123/pokemon-sims/issues/180
+    // https://github.com/FlareZ123/pokemon-sims/issues/616
+    if (bench_space() == 1 && hand_count(Card::Oricorio) > 0 &&
+        !in_play(Card::Oricorio) && oricorio_preserves_burnet_with_current_hand()) {
+      return false;
+    }
+
     if (needs_tapu_connector_original() && original_wonder_tag_route_has_live_target()) {
       return true;
     }

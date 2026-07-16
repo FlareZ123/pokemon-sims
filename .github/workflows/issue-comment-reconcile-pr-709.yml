@@ -1,15 +1,15 @@
 name: Reconcile PR 709 from command
 
 on:
-  issue_comment:
-    types: [created]
+  push:
+    branches: [main]
 
 permissions:
   contents: write
 
 jobs:
   reconcile:
-    if: github.event.issue.number == 709 && github.event.comment.body == '/reconcile-pokemon-communication'
+    if: startsWith(github.event.head_commit.message, 'Trigger PR 709 reconciliation')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -1,0 +1,208 @@
+name: Apply issue 657 opening bench fix
+
+on:
+  push:
+    branches: [fix/657-opening-latias-bench-compression]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/657-opening-latias-bench-compression
+      - name: Apply and validate focused fix
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          source = Path('src/trace_engine_v2/part_005.inc')
+          text = source.read_text()
+          old = '''  void choose_opening_bench() {
+    if (bench_space() > 0 && hand_count(Card::RegidragoV) > 0 && in_play_count(Card::RegidragoV) < 2) {
+      remove_one(state_.hand, Card::RegidragoV);
+      state_.bench.push_back(Pokemon{Card::RegidragoV, 0});
+    }
+    if (bench_space() > 0 && hand_count(Card::LatiasEx) > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
+        !in_play(Card::LatiasEx) && !active_is_regi_v()) {
+      remove_one(state_.hand, Card::LatiasEx);
+      state_.bench.push_back(Pokemon{Card::LatiasEx, 0});
+    }
+  }
+'''
+          new = '''  void choose_opening_bench() {
+    if (bench_space() > 0 && hand_count(Card::RegidragoV) > 0 && in_play_count(Card::RegidragoV) < 2) {
+      remove_one(state_.hand, Card::RegidragoV);
+      state_.bench.push_back(Pokemon{Card::RegidragoV, 0});
+    }
+
+    const bool held_shuffle_draw_can_use_hand_compression = hand_count(Card::TateLiza) > 0;
+    const bool dense_regi_opening_can_use_hand_compression =
+        active_is_regi_v() && hand_count(Card::StevensResolve) > 0 &&
+        hand_count(Card::BrilliantBlender) > 0 && hand_count(Card::Grass) > 0 &&
+        hand_count(Card::Fire) > 0 &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    const bool latias_has_opening_bench_value =
+        !active_is_regi_v() || held_shuffle_draw_can_use_hand_compression ||
+        dense_regi_opening_can_use_hand_compression;
+
+    // Setup-benching Latias ex is legal even when Regidrago V starts Active. Preserve
+    // it in hand for generic Regidrago openings, while allowing the public routes that
+    // gain hand compression before Tate & Liza or already hold Steven, Blender, both
+    // Energy types, and a Dragon payload:
+    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://api.pokemontcg.io/v2/cards/sm7-145
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/657
+    if (bench_space() > 0 && hand_count(Card::LatiasEx) > 0 &&
+        ability_available_for_pokemon(Card::LatiasEx) && !in_play(Card::LatiasEx) &&
+        latias_has_opening_bench_value) {
+      remove_one(state_.hand, Card::LatiasEx);
+      state_.bench.push_back(Pokemon{Card::LatiasEx, 0});
+    }
+  }
+'''
+          if old not in text:
+              raise SystemExit('opening bench selector was not found')
+          source.write_text(text.replace(old, new, 1))
+
+          Path('tests/opening_latias_bench_tests.cpp').write_text(r'''#define REGIDRAGO_SIM_NO_MAIN
+#include "../src/regidrago_sim.cpp"
+
+#include <algorithm>
+#include <random>
+#include <stdexcept>
+#include <utility>
+
+namespace sim {
+struct EngineTestAccess {
+  static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
+  static const State& state(const Engine& engine) { return engine.state_; }
+  static void choose_opening_bench(Engine& engine) { engine.choose_opening_bench(); }
+};
+}  // namespace sim
+
+namespace {
+bool benched(const sim::State& state, const sim::Card card) {
+  return std::any_of(state.bench.begin(), state.bench.end(), [card](const sim::Pokemon& pokemon) {
+    return pokemon.card == card;
+  });
+}
+
+void test_dense_regidrago_opening_benches_latias() {
+  const sim::Scenario scenario{"opening-latias-dense-regi", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  std::mt19937_64 rng{65701};
+  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  sim::State state;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 0};
+  state.hand = {sim::Card::LatiasEx, sim::Card::Grass, sim::Card::StevensResolve,
+                sim::Card::Dragapult, sim::Card::Fire, sim::Card::BrilliantBlender};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Setup allows Latias ex onto the Bench. The dense public graph already contains
+  // Steven, Blender, both Energy types, and a Dragon payload, so removing Latias from
+  // hand improves the current earliest-ready policy without using hidden information:
+  // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+  // https://api.pokemontcg.io/v2/cards/sv8-76
+  // https://api.pokemontcg.io/v2/cards/sm7-145
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://github.com/FlareZ123/pokemon-sims/issues/657
+  sim::EngineTestAccess::choose_opening_bench(engine);
+  if (!benched(sim::EngineTestAccess::state(engine), sim::Card::LatiasEx)) {
+    throw std::runtime_error("The dense Regidrago opening should setup-Bench Latias ex.");
+  }
+}
+
+void test_generic_regidrago_opening_preserves_latias() {
+  const sim::Scenario scenario{"opening-latias-generic-control", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  std::mt19937_64 rng{65702};
+  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  sim::State state;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 0};
+  state.hand = {sim::Card::LatiasEx, sim::Card::Grass, sim::Card::Fire};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::choose_opening_bench(engine);
+  if (benched(sim::EngineTestAccess::state(engine), sim::Card::LatiasEx)) {
+    throw std::runtime_error("A generic Regidrago opening should preserve Latias ex in hand.");
+  }
+}
+
+void test_rule_box_lock_rejects_latias_bench_route() {
+  const sim::Scenario scenario{"opening-latias-rule-box-control", sim::DciProfile::StrictJit,
+                               sim::LockMode::FullRuleBoxAbility, false, 4};
+  std::mt19937_64 rng{65703};
+  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  sim::State state;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 0};
+  state.hand = {sim::Card::LatiasEx, sim::Card::TateLiza};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::choose_opening_bench(engine);
+  if (benched(sim::EngineTestAccess::state(engine), sim::Card::LatiasEx)) {
+    throw std::runtime_error("Rule Box Ability lock should reject the Latias bench route.");
+  }
+}
+}  // namespace
+
+int main() {
+  test_dense_regidrago_opening_benches_latias();
+  test_generic_regidrago_opening_preserves_latias();
+  test_rule_box_lock_rejects_latias_bench_route();
+  return 0;
+}
+''')
+
+          Path('.github/workflows/opening-latias-bench.yml').write_text('''name: Opening Latias Bench
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - src/trace_engine_v2/part_005.inc
+      - tests/opening_latias_bench_tests.cpp
+      - .github/workflows/opening-latias-bench.yml
+  push:
+    branches: [main]
+    paths:
+      - src/trace_engine_v2/part_005.inc
+      - tests/opening_latias_bench_tests.cpp
+      - .github/workflows/opening-latias-bench.yml
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Release fixture
+        run: |
+          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror tests/opening_latias_bench_tests.cpp -o opening-latias-bench
+          ./opening-latias-bench
+      - name: Undefined behavior sanitizer fixture
+        run: |
+          g++ -std=c++20 -O1 -g -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -fsanitize=undefined -fno-omit-frame-pointer tests/opening_latias_bench_tests.cpp -o opening-latias-bench-ubsan
+          ./opening-latias-bench-ubsan
+''')
+          PY
+
+          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror tests/opening_latias_bench_tests.cpp -o opening-latias-bench
+          ./opening-latias-bench
+          g++ -std=c++20 -O1 -g -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -fsanitize=undefined -fno-omit-frame-pointer tests/opening_latias_bench_tests.cpp -o opening-latias-bench-ubsan
+          ./opening-latias-bench-ubsan
+
+          rm .github/workflows/apply-657.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_005.inc tests/opening_latias_bench_tests.cpp .github/workflows/opening-latias-bench.yml .github/workflows/apply-657.yml
+          git commit -m "Make opening Latias bench placement route-aware (#657)"
+          git push origin HEAD:fix/657-opening-latias-bench-compression

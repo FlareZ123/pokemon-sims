@@ -9,6 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Archive exact tracked source
+        # Exact-source review supports the repository audit contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#audit-status
+        run: git ls-files -z | tar --null -T - -czf repository-source.tgz
       - name: Configure Release
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator
@@ -25,12 +28,13 @@ jobs:
       - name: Generate T2 and T3 probability matrix
         # Published aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
         run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/t2_t3_matrix.csv
-      - name: Upload trace and matrix evidence
+      - name: Upload trace, matrix, and source evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: current-main-traces-and-matrix
+          name: current-main-traces-matrix-and-source
           path: |
             build/simulate-this-pass-*.txt
             build/t2_t3_matrix.csv
+            repository-source.tgz
           if-no-files-found: error

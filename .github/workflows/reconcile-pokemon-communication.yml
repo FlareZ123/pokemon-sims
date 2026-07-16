@@ -1,0 +1,148 @@
+name: Reconcile Pokémon Communication
+
+on:
+  pull_request:
+    types: [edited]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    if: github.event.pull_request.number == 709
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/701-pokemon-communication
+          fetch-depth: 0
+      - name: Merge current main and resolve known overlaps
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          set +e
+          git merge --no-edit origin/main
+          merge_status=$?
+          set -e
+          if [ "$merge_status" -ne 0 ]; then
+            mapfile -t conflicts < <(git diff --name-only --diff-filter=U | sort)
+            printf 'Conflicts:\n%s\n' "${conflicts[*]}"
+            expected=(
+              src/regidrago_sim.cpp
+              src/trace_engine_v2/part_011_fss_latias_override.inc
+              src/trace_engine_v2/part_012_gladion_override.inc
+              src/trace_engine_v2/part_tapu_tate_switch_override.inc
+            )
+            if [ "${conflicts[*]}" != "${expected[*]}" ]; then
+              echo 'Unexpected conflict set' >&2
+              exit 1
+            fi
+            for file in "${expected[@]}"; do git checkout --theirs -- "$file"; done
+            python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              p = Path(path)
+              text = p.read_text()
+              if text.count(old) != 1:
+                  raise SystemExit(f"anchor count for {path}: {text.count(old)}")
+              p.write_text(text.replace(old, new, 1))
+
+          path = "src/regidrago_sim.cpp"
+          replace_once(path,
+              "// Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179\n",
+              "// Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179\n// Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152\n")
+          replace_once(path,
+              "#undef play_evolution_incense\n#undef play_ultra_ball\n#include \"trace_engine_v2/part_010_fss_override.inc\"\n",
+              "#undef play_evolution_incense\n#undef play_ultra_ball\n#include \"trace_engine_v2/part_pokemon_communication.inc\"\n#include \"trace_engine_v2/part_010_fss_override.inc\"\n")
+
+          path = "src/trace_engine_v2/part_011_fss_latias_override.inc"
+          replace_once(path,
+              "      const bool arven_has_live_chain = supporter_allowed() && !item_locked() &&\n          ((need_regi() && bench_space() > 0 &&\n",
+              "      const bool arven_communication_chain =\n          deck_count_after_search_started(Card::PokemonCommunication) > 0 &&\n          pokemon_communication_plan(true, false, true).has_value();\n      const bool arven_has_live_chain = supporter_allowed() && !item_locked() &&\n          (arven_communication_chain ||\n           (need_regi() && bench_space() > 0 &&\n")
+          replace_once(path,
+              "          case Card::Arven:\n            return arven_has_live_chain;\n          case Card::MysteriousTreasure:\n",
+              "          case Card::Arven:\n            return arven_has_live_chain;\n          case Card::PokemonCommunication:\n            return !item_locked() &&\n                pokemon_communication_plan(true, false, false).has_value();\n          case Card::MysteriousTreasure:\n")
+
+          path = "src/trace_engine_v2/part_tapu_tate_switch_override.inc"
+          replace_once(path,
+              "    const bool live_arven_held_payload =\n        wonder_tag_arven_held_payload_route_available();\n\n    return live_t1_steven || live_direct_crispin || live_arven_vessel_energy ||\n           live_burnet || live_arven_vstar || live_gladion_axis ||\n           live_arven_held_payload;\n",
+              "    const bool live_arven_held_payload =\n        wonder_tag_arven_held_payload_route_available();\n    const bool live_arven_communication = !item_locked() &&\n        hand_count(Card::Arven) == 0 && might_be_unseen(Card::Arven) &&\n        might_be_unseen(Card::PokemonCommunication) &&\n        pokemon_communication_plan_after_wonder_tag_arven().has_value();\n    // Wonder Tag may find Arven, which may search Pokémon Communication, only when\n    // the exact post-Supporter exchange is live:\n    // https://api.pokemontcg.io/v2/cards/cel25c-60_A\n    // https://api.pokemontcg.io/v2/cards/sv1-166\n    // https://api.pokemontcg.io/v2/cards/sm9-152\n    // https://github.com/FlareZ123/pokemon-sims/issues/701\n\n    return live_t1_steven || live_direct_crispin || live_arven_vessel_energy ||\n           live_burnet || live_arven_vstar || live_gladion_axis ||\n           live_arven_held_payload || live_arven_communication;\n")
+          replace_once(path,
+              "    const bool tate_completes_active_axis = need_active_vstar() &&\n        benched_vstar_promotion_ready() && payload_axis_completable &&\n        !can_free_retreat_with_latias() && hand_count(Card::TateLiza) == 0 &&\n        might_be_unseen(Card::TateLiza);\n",
+              "    const bool direct_communication_latias_route = need_active_vstar() &&\n        pokemon_communication_has_direct_target_route(Card::LatiasEx);\n    const bool tate_completes_active_axis = need_active_vstar() &&\n        benched_vstar_promotion_ready() && payload_axis_completable &&\n        !can_free_retreat_with_latias() && !direct_communication_latias_route &&\n        hand_count(Card::TateLiza) == 0 && might_be_unseen(Card::TateLiza);\n")
+
+          path = "src/trace_engine_v2/part_012_gladion_override.inc"
+          replace_once(path,
+              "  bool play_gladion() {\n    if (!supporter_allowed() || hand_count(Card::Gladion) == 0) return false;\n\n",
+              "  bool play_gladion() {\n    if (!supporter_allowed() || hand_count(Card::Gladion) == 0) return false;\n\n    const auto playable_communication = [this]() {\n      return !item_locked() && hand_count(Card::PokemonCommunication) > 0 &&\n          pokemon_communication_plan(true, true, true).has_value();\n    };\n\n")
+          block = '''    const bool direct_missing_pokemon_prized = prizes_known() &&
+        ((need_vstar() && prize_count_after_reveal(Card::RegidragoVstar) > 0) ||
+         (need_regi() && bench_space() > 0 &&
+          prize_count_after_reveal(Card::RegidragoV) > 0) ||
+         (need_active_vstar() && bench_space() > 0 &&
+          prize_count_after_reveal(Card::LatiasEx) > 0));
+    const bool prized_communication_route = prizes_known() &&
+        !direct_missing_pokemon_prized &&
+        prize_count_after_reveal(Card::PokemonCommunication) > 0 &&
+        pokemon_communication_plan_after_playing_supporter(
+            Card::Gladion, false).has_value();
+    if (prized_communication_route) {
+      // Gladion may exchange itself for a known prized Pokémon Communication. The
+      // recovered Item resolves after the Supporter play, so its plan is evaluated
+      // with Wonder Tag and Serena unavailable for the rest of this turn:
+      // https://api.pokemontcg.io/v2/cards/sm4-95
+      // https://api.pokemontcg.io/v2/cards/sm9-152
+      // https://www.pokemon.com/us/pokemon-tcg/rules
+      // https://github.com/FlareZ123/pokemon-sims/issues/701
+      remove_one(state_.hand, Card::Gladion);
+      state_.supporter_used = true;
+      prizes_revealed_ = true;
+      const auto prize = std::find(state_.prizes.begin(), state_.prizes.end(),
+                                   Card::PokemonCommunication);
+      if (prize == state_.prizes.end()) {
+        throw std::logic_error("Known prized Pokémon Communication disappeared");
+      }
+      *prize = Card::Gladion;
+      state_.hand.push_back(Card::PokemonCommunication);
+      shuffle(state_.prizes);
+      trace("PLAY SUPPORTER", "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; R-PCOMM-01",
+            "Exchanged Gladion for Pokémon Communication to complete a live Pokémon exchange route.");
+      return true;
+    }
+
+    if (!direct_missing_pokemon_prized && playable_communication()) {
+      return false;
+    }
+
+'''
+          replace_once(path, "    if (need_vstar() && hand_count(Card::RegidragoVstar) == 0) {\n", block + "    if (need_vstar() && hand_count(Card::RegidragoVstar) == 0) {\n")
+          replace_once(path,
+              "          playable_fss_vstar_route || playable_arven_fss_vstar_route;\n",
+              "          playable_communication() || playable_fss_vstar_route ||\n          playable_arven_fss_vstar_route;\n")
+          replace_once(path,
+              "      if (known_prized_vstar_absent_from_deck) {\n",
+              "      if (!playable_communication()) {\n        while (remove_one(state_.hand, Card::PokemonCommunication)) {\n          held_unpayable_routes.push_back(Card::PokemonCommunication);\n        }\n      }\n      if (known_prized_vstar_absent_from_deck) {\n")
+          PY
+            git add src/regidrago_sim.cpp \
+              src/trace_engine_v2/part_011_fss_latias_override.inc \
+              src/trace_engine_v2/part_012_gladion_override.inc \
+              src/trace_engine_v2/part_tapu_tate_switch_override.inc
+            git commit --no-edit
+          fi
+      - name: Remove one-shot workflow
+        run: |
+          git rm .github/workflows/reconcile-pokemon-communication.yml
+          git commit -m 'Remove one-shot reconciliation workflow'
+      - name: Build and test
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j2
+          ctest --test-dir build --output-on-failure
+          ./build/regidrago_sim --self-test
+      - name: Push reconciled branch
+        run: git push origin HEAD:feature/701-pokemon-communication

@@ -167,5 +167,5 @@ jobs:
             echo "Audit evidence is unchanged."
           else
             git commit -m "Record current-main audit evidence [skip ci]"
-            git push
+            git push origin HEAD:audit-20260716-current-main-traces
           fi

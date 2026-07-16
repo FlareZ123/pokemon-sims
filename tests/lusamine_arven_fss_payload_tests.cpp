@@ -133,6 +133,20 @@ void test_full_item_lock_route_reaches_t4_payload() {
   }
 }
 
+void test_insufficient_horizon_blocks_item_lock_route() {
+  sim::State state = live_route_state();
+  state.turn = 3;
+  // With max_turn=4, T3 Lusamine would leave only T4 for Arven. Professor Burnet
+  // could not be played until T5, so the Item-lock payload chain is outside the
+  // configured horizon and must remain unselected:
+  // https://api.pokemontcg.io/v2/cards/sm4-96
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // https://github.com/FlareZ123/pokemon-sims/issues/705
+  expect_lusamine_rejected(std::move(state), "insufficient T3-to-T4 horizon");
+}
+
 void test_used_vstar_power_blocks_recovery() {
   sim::State state = live_route_state();
   state.vstar_power_used = true;
@@ -180,6 +194,7 @@ void test_lusamine_still_requires_two_targets() {
 int main() {
   try {
     test_full_item_lock_route_reaches_t4_payload();
+    test_insufficient_horizon_blocks_item_lock_route();
     test_used_vstar_power_blocks_recovery();
     test_occupied_tool_slot_blocks_recovery();
     test_absent_forest_seal_stone_blocks_recovery();

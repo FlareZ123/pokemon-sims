@@ -35,11 +35,11 @@ jobs:
       # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
       # https://github.com/FlareZ123/pokemon-sims/issues/642
       - name: Simulate-this pass 1
-        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 --require-ready-by 3 > issue-642-trace-1.txt
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 13 --require-ready-by 2 > issue-642-trace-1.txt
       - name: Simulate-this pass 2
-        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 --require-ready-by 4 > issue-642-trace-2.txt
+        run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 > issue-642-trace-2.txt
       - name: Simulate-this pass 3
-        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 > issue-642-trace-3.txt
+        run: ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 19 --require-ready-by 2 > issue-642-trace-3.txt
       # Regenerate the documented fixed-seed baseline from the exact current branch after main reconciliation:
       # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
       # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json

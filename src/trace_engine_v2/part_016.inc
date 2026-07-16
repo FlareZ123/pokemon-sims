@@ -18,6 +18,27 @@
 }  // namespace sim
 
 #ifndef REGIDRAGO_SIM_NO_MAIN
+std::optional<std::uint64_t> parse_positive_trial_count(const std::string& text) {
+  // The aggregate simulator requires a positive Monte Carlo sample size:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+  // std::stoull accepts an optional sign, so validate the decimal spelling first:
+  // https://en.cppreference.com/w/cpp/string/basic_string/stoul
+  const bool decimal_digits_only = !text.empty() && std::all_of(
+      text.begin(), text.end(), [](const unsigned char character) {
+        return character >= static_cast<unsigned char>('0') &&
+               character <= static_cast<unsigned char>('9');
+      });
+  if (!decimal_digits_only) return std::nullopt;
+
+  try {
+    const std::uint64_t value = std::stoull(text);
+    if (value == 0) return std::nullopt;
+    return value;
+  } catch (const std::out_of_range&) {
+    return std::nullopt;
+  }
+}
+
 int main(int argc, char** argv) {
   std::uint64_t trials = 100000;
   std::uint64_t seed = 20260705;
@@ -31,8 +52,14 @@ int main(int argc, char** argv) {
 
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
-    if (arg == "--trials" && i + 1 < argc) trials = std::stoull(argv[++i]);
-    else if (arg == "--seed" && i + 1 < argc) seed = std::stoull(argv[++i]);
+    if (arg == "--trials" && i + 1 < argc) {
+      const auto parsed_trials = parse_positive_trial_count(argv[++i]);
+      if (!parsed_trials) {
+        std::cerr << "--trials must be a positive integer\n";
+        return 2;
+      }
+      trials = *parsed_trials;
+    } else if (arg == "--seed" && i + 1 < argc) seed = std::stoull(argv[++i]);
     else if (arg == "--out" && i + 1 < argc) output = argv[++i];
     else if (arg == "--scenario" && i + 1 < argc) scenario_label = argv[++i];
     else if (arg == "--simulate-this") simulate_this = true;
@@ -49,7 +76,14 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (self_test) return sim::self_test() ? 0 : 1;
+  if (self_test) {
+    // Keep the documented aggregate sample-size contract in the existing CLI self-test:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+    const auto one_trial = parse_positive_trial_count("1");
+    const bool trial_parser_ok = one_trial && *one_trial == 1 &&
+        !parse_positive_trial_count("0") && !parse_positive_trial_count("-1");
+    return sim::self_test() && trial_parser_ok ? 0 : 1;
+  }
 
   try {
     const sim::DeckRecipe deck = sim::baseline_recipe();

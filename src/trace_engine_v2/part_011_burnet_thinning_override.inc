@@ -21,7 +21,8 @@
       const bool direct_active_evolution = state_.active &&
           state_.active->card == Card::RegidragoV &&
           state_.active->entered_turn < state_.turn &&
-          hand_count(Card::RegidragoVstar) > 0;
+          (hand_count(Card::RegidragoVstar) > 0 ||
+           held_item_can_find_pending_vstar());
       const bool active_axis_without_new_bench = !need_active_vstar() ||
           can_free_retreat_with_latias() || direct_active_evolution;
       const bool active_axis_can_finish = active_axis_without_new_bench ||

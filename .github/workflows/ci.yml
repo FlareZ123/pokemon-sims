@@ -35,6 +35,8 @@ jobs:
         run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/k0_quick_ball_target_tests.cpp -o build/k0_quick_ball_target_tests && ./build/k0_quick_ball_target_tests
       - name: Validate Lusamine Arven-FSS payload route
         run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/lusamine_arven_fss_payload_tests.cpp -o build/lusamine_arven_fss_payload_tests && ./build/lusamine_arven_fss_payload_tests
+      - name: Validate Forest Seal Stone hold-trace provenance
+        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/fss_hold_trace_requires_tool_tests.cpp -o build/fss_hold_trace_requires_tool_tests && ./build/fss_hold_trace_requires_tool_tests
       - name: Test
         shell: bash
         run: |
@@ -86,6 +88,10 @@ jobs:
         env:
           ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
         run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=address,undefined -fno-omit-frame-pointer tests/lusamine_arven_fss_payload_tests.cpp -o build-sanitizers/lusamine_arven_fss_payload_tests && ./build-sanitizers/lusamine_arven_fss_payload_tests
+      - name: Validate Forest Seal Stone hold-trace provenance under sanitizers
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=address,undefined -fno-omit-frame-pointer tests/fss_hold_trace_requires_tool_tests.cpp -o build-sanitizers/fss_hold_trace_requires_tool_tests && ./build-sanitizers/fss_hold_trace_requires_tool_tests
       - name: Test sanitizers
         shell: bash
         env:

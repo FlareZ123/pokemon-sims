@@ -9,6 +9,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Package exact source snapshot
+        run: tar --exclude=.git --exclude=build -czf repository-source.tgz .
+      - name: Upload exact source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-674-source
+          path: repository-source.tgz
+          if-no-files-found: error
       - name: Configure Release
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator and all tests
@@ -27,14 +35,11 @@ jobs:
       - name: Generate T2 and T3 matrix
         # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
         run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-674-matrix.csv
-      - name: Package exact source snapshot
-        run: tar --exclude=.git --exclude=build -czf repository-source.tgz .
-      - name: Upload validation evidence and source
+      - name: Upload validation evidence
         uses: actions/upload-artifact@v4
         with:
-          name: issue-674-materialize
+          name: issue-674-validation
           path: |
             issue-674-pass-*.txt
             issue-674-matrix.csv
-            repository-source.tgz
           if-no-files-found: error

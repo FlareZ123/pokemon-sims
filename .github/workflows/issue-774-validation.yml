@@ -16,7 +16,7 @@ jobs:
         with:
           ref: fix/774-steven-crispin-turn2-lock
           fetch-depth: 0
-      - name: Apply composition change
+      - name: Apply composition and CTest registration
         run: python tools/apply_issue_774.py
       - name: Configure and build Release
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
@@ -39,7 +39,7 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git rm tools/apply_issue_774.py .github/workflows/issue-774-validation.yml
-          git add src/regidrago_sim.cpp src/trace_engine_v2/part_010_steven_crispin_override.inc tests/steven_crispin_turn2_item_lock_tests.cpp
+          git add CMakeLists.txt src/regidrago_sim.cpp src/trace_engine_v2/part_010_steven_crispin_override.inc tests/steven_crispin_turn2_item_lock_tests.cpp
           git commit -m 'Prefer Crispin over Steven for live turn-two lock route (#774)'
           git push origin HEAD:fix/774-steven-crispin-turn2-lock
       - name: Upload issue 774 evidence

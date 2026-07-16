@@ -1,0 +1,51 @@
+name: Three Simulate-This Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  strict-jit-going-first:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Audit strict JIT going first
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 3 | tee strict-jit-go-first-seed-2.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: strict-jit-go-first-seed-2
+          path: strict-jit-go-first-seed-2.txt
+
+  strict-jit-going-second:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Audit strict JIT going second
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 2 --require-ready-by 3 | tee strict-jit-go-second-seed-2.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: strict-jit-go-second-seed-2
+          path: strict-jit-go-second-seed-2.txt
+
+  rulebox-lock-going-second:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Audit Rule Box Ability lock going second
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee strict-rulebox-lock-go-second-seed-20.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: strict-rulebox-lock-go-second-seed-20
+          path: strict-rulebox-lock-go-second-seed-20.txt

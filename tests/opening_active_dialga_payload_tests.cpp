@@ -35,7 +35,7 @@ sim::State exact_opening_hand() {
 
 sim::State oricorio_dialga_opening_hand() {
   sim::State state;
-  state.hand = {sim::Card::QuickBall, sim::Card::TeamYellCheer,
+  state.hand = {sim::Card::QuickBall, sim::Card::TeamYellsCheer,
                 sim::Card::MegaDragonite, sim::Card::DialgaGX,
                 sim::Card::Oricorio, sim::Card::Powerglass,
                 sim::Card::RegidragoVstar};
@@ -171,7 +171,7 @@ void test_oricorio_dialga_route_controls() {
     std::mt19937_64 rng{66302};
     sim::Engine engine(scenario, recipe, rng);
     sim::State state = oricorio_dialga_opening_hand();
-    state.hand.erase(std::remove(state.hand.begin(), state.hand.end(), sim::Card::TeamYellCheer),
+    state.hand.erase(std::remove(state.hand.begin(), state.hand.end(), sim::Card::TeamYellsCheer),
                      state.hand.end());
     state.hand.erase(std::remove(state.hand.begin(), state.hand.end(), sim::Card::Powerglass),
                      state.hand.end());

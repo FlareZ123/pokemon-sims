@@ -1,0 +1,40 @@
+name: Issue 674 Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-issue-674:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and focused regression
+        run: cmake --build build --target regidrago_sim regidrago_opening_dialga_payload_tests --parallel 2
+      - name: Run simulator self-test and issue 674 regression
+        run: |
+          ./build/regidrago_sim --self-test
+          ./build/regidrago_opening_dialga_payload_tests
+      - name: Run three deterministic simulate-this audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/issue-674
+          # Saved-trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 --require-ready-by 3 | tee build/issue-674/strict-jit-go-second-seed-3.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee build/issue-674/strict-turn2-item-lock-go-second-seed-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee build/issue-674/strict-rulebox-lock-go-second-seed-20.txt
+      - name: Generate T2 and T3 probability matrix
+        # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/issue-674/t2_t3_matrix.csv
+      - name: Upload issue 674 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-674-validation
+          path: build/issue-674
+          if-no-files-found: error

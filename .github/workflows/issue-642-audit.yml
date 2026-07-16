@@ -4,15 +4,33 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-642-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   audit-current-main:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Reconcile current main
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run: cmake --build build --parallel 2
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
       # These are three independent deterministic readable-hand audits required by the repository workflow:
       # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
       # https://github.com/FlareZ123/pokemon-sims/issues/642
@@ -22,11 +40,27 @@ jobs:
         run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 --require-ready-by 4 > issue-642-trace-2.txt
       - name: Simulate-this pass 3
         run: ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 > issue-642-trace-3.txt
-      # Reproduce the documented fixed-seed aggregate baseline from the exact PR merge ref:
+      # Regenerate the documented fixed-seed baseline from the exact current branch after main reconciliation:
       # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
       # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
-      - name: Generate current matrix
-        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-642-current-matrix.csv
+      - name: Regenerate baseline bundle
+        run: python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir generated-baselines --trials 100000 --matrix-seed 20260705
+      - name: Install regenerated artifacts
+        run: |
+          cp generated-baselines/simulation_results.csv results/simulation_results.csv
+          cp generated-baselines/baseline_manifest.json results/baseline_manifest.json
+          rm -rf results/traces
+          cp -R generated-baselines/traces results/traces
+          python scripts/update_setup_docs.py --repo-root .
+          python tests/setup_report_contract_tests.py
+      - name: Commit regenerated baseline
+        run: |
+          git add README.md docs/REPORT.md docs/TRACE_AUDIT.md results/baseline_manifest.json results/simulation_results.csv
+          git add -A results/traces
+          if ! git diff --cached --quiet; then
+            git commit -m "Refresh current-main setup baseline for #642"
+          fi
+          git push origin HEAD:${{ github.head_ref }}
       - name: Export exact source snapshot
         run: git archive --format=zip --output=issue-642-source.zip HEAD
       - name: Upload audit bundle
@@ -38,4 +72,6 @@ jobs:
             issue-642-trace-1.txt
             issue-642-trace-2.txt
             issue-642-trace-3.txt
-            issue-642-current-matrix.csv
+            results/simulation_results.csv
+            results/baseline_manifest.json
+            docs/REPORT.md

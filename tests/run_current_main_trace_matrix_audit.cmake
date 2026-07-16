@@ -1,5 +1,6 @@
 # Re-run three deterministic readable traces and the canonical aggregate matrix in
 # pull-request CI, then compare every byte with the provenance-locked baseline.
+# This validation file intentionally changes no simulator or policy behavior.
 # Readable trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
 # Aggregate interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
 # Knowledge contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states

@@ -1,0 +1,1 @@
+./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 --require-ready-by 3

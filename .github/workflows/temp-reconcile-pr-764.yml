@@ -1,6 +1,9 @@
 name: Temporary PR 764 Reconciliation
 
 on:
+  pull_request_target:
+    types: [edited]
+    branches: [main]
   issue_comment:
     types: [created]
 
@@ -9,7 +12,7 @@ permissions:
 
 jobs:
   reconcile:
-    if: github.event.issue.number == 764
+    if: github.event.pull_request.number == 764 || github.event.issue.number == 764
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

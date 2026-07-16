@@ -1,0 +1,49 @@
+name: Issue 642 Final Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-current-baseline:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/642-current-baseline-provenance-v2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run full Release suite
+        run: ctest --test-dir build --output-on-failure
+      - name: Run Python provenance and card-data contracts
+        run: |
+          python tests/card_audit_contract_tests.py
+          python tests/card_audit_category_contract_tests.py
+          python tests/setup_report_contract_tests.py
+          python tests/update_setup_docs_tests.py
+      - name: Simulate pass 1, matchup-flex earliest T2 route
+        # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee build/issue-642-pass-1.txt
+      - name: Simulate pass 2, Rule Box lock earliest T2 route
+        # Lock specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-scenarios
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee build/issue-642-pass-2.txt
+      - name: Simulate pass 3, no-control earliest T3 route
+        # DCI specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+        run: ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 2 --require-ready-by 3 | tee build/issue-642-pass-3.txt
+      - name: Reproduce official 100000-trial matrix
+        # Aggregate command: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/issue-642-matrix.csv
+      - name: Compare checked-in and reproduced matrices
+        run: cmp results/simulation_results.csv build/issue-642-matrix.csv
+      - name: Upload trace and matrix evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-642-final-validation
+          path: |
+            build/issue-642-pass-*.txt
+            build/issue-642-matrix.csv
+            build/Testing
+          if-no-files-found: warn

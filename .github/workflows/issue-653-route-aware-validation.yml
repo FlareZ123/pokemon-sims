@@ -29,7 +29,7 @@ jobs:
         # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
         run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-653-t2-t3-matrix.csv
       - name: Archive exact source snapshot
-        run: tar --exclude=.git --exclude=build -czf issue-653-source.tgz .
+        run: git archive --format=tar.gz -o issue-653-source.tgz HEAD
       - name: Upload traces, matrix, and source
         if: always()
         uses: actions/upload-artifact@v4

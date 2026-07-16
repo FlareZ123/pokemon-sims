@@ -93,6 +93,38 @@ void test_preserved_dialga_enables_turn_two_vessel_route() {
   }
 }
 
+void test_opening_choice_preserves_dialga_with_additional_payload() {
+  const sim::Scenario scenario{"opening-dialga-multiple-payloads", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, true, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{653};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.hand = {sim::Card::DialgaGX, sim::Card::TapuLeleGX,
+                sim::Card::RegidragoVstar, sim::Card::Dragapult,
+                sim::Card::ProfessorTuro, sim::Card::ForestSealStone,
+                sim::Card::Crispin};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Setup may choose Tapu Lele-GX as the Active while retaining Dialga-GX as a
+  // separate strict-JIT discard route. A second held Dragon does not erase the
+  // discrete value of the additional legal payload outlet:
+  // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+  // https://api.pokemontcg.io/v2/cards/sm5-100
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // https://github.com/FlareZ123/pokemon-sims/issues/653
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::TapuLeleGX ||
+      !contains(after.hand, sim::Card::DialgaGX) ||
+      !contains(after.hand, sim::Card::Dragapult)) {
+    throw std::runtime_error(
+        "Tapu Lele-GX should start while both strict-JIT Dragon routes remain in hand.");
+  }
+}
+
 void test_opening_choice_keeps_legacy_order_without_crispin_signal() {
   const sim::Scenario scenario{"opening-dialga-control", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
@@ -115,6 +147,7 @@ void test_opening_choice_keeps_legacy_order_without_crispin_signal() {
 int main() {
   test_opening_choice_preserves_unique_dialga_payload();
   test_preserved_dialga_enables_turn_two_vessel_route();
+  test_opening_choice_preserves_dialga_with_additional_payload();
   test_opening_choice_keeps_legacy_order_without_crispin_signal();
   return 0;
 }

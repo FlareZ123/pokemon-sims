@@ -126,6 +126,10 @@ jobs:
         run: cmake -S . -B build-audit -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator audit target
         run: cmake --build build-audit --target regidrago_sim --parallel 2
+      - name: Reproduce issue 784
+        # Vital Dance different-types restriction: https://api.pokemontcg.io/v2/cards/sm2-55
+        # Earthen Vessel control text: https://api.pokemontcg.io/v2/cards/sv4-163
+        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/debug_vital_dance_distinct_type_probe.cpp -o build-audit/debug_vital_dance_distinct_type_probe && ./build-audit/debug_vital_dance_distinct_type_probe | tee debug-vital-dance-probe.txt
       - name: Simulate-this pass 1
         # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
         # Earliest-ready objective: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
@@ -144,6 +148,7 @@ jobs:
         with:
           name: repository-debug-audit
           path: |
+            debug-vital-dance-probe.txt
             debug-trace-*.txt
             debug-t2-t3-matrix.csv
           if-no-files-found: error

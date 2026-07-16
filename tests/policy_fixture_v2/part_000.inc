@@ -9,6 +9,7 @@ namespace sim {
 
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
+  static void set_deck_seen(Engine& engine, const bool value) { engine.deck_seen_ = value; }
   static State& state(Engine& engine) { return engine.state_; }
   static const State& state(const Engine& engine) { return engine.state_; }
   static TrialOutcome& outcome(Engine& engine) { return engine.outcome_; }

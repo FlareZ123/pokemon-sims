@@ -151,6 +151,39 @@
       return;
     }
 
+    const bool oricorio_dialga_are_only_opening_basics =
+        hand_count(Card::Oricorio) > 0 && hand_count(Card::DialgaGX) > 0 &&
+        hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&
+        hand_count(Card::MawileGX) == 0 && hand_count(Card::TapuLeleGX) == 0;
+    const bool lock_scenario_under_review = scenario_.locks != LockMode::None;
+    const bool held_vstar_without_basic = hand_count(Card::RegidragoVstar) > 0;
+    const bool another_payload_remains_held = payloads_in_hand > 1;
+    const bool vital_dance_energy_axis_is_live = !both_manual_energy_types_held;
+
+    // In the modeled lock scenarios, keep Oricorio in hand when Dialga-GX is a
+    // redundant opening payload, Regidrago VSTAR is already held, and Vital Dance
+    // can still compress a missing GGF Energy type. Oricorio has no Rule Box, so a
+    // Path-to-the-Peak-style lock does not suppress Vital Dance. Starting Dialga-GX
+    // is legal during setup and preserves the stronger on-play Energy connector:
+    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+    // https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://api.pokemontcg.io/v2/cards/sm5-100
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/swsh6-148
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-scenarios
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/674
+    if (oricorio_dialga_are_only_opening_basics && lock_scenario_under_review &&
+        scenario_.dci == DciProfile::StrictJit && held_vstar_without_basic &&
+        another_payload_remains_held && vital_dance_energy_axis_is_live &&
+        ability_available_for_pokemon(Card::Oricorio) &&
+        remove_one(state_.hand, Card::DialgaGX)) {
+      state_.active = Pokemon{Card::DialgaGX, 0};
+      outcome_.started_regi = false;
+      return;
+    }
+
     // Oricorio's Vital Dance triggers only when it is played from hand onto the
     // Bench during the turn. When Mawile-GX is the other available opening Basic,
     // start Mawile-GX so Oricorio remains in hand for that legal setup trigger:

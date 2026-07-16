@@ -1,8 +1,65 @@
+  bool blender_energy_axis_can_finish_this_turn() const {
+    if (!strict_payload_timing() || !need_energy()) return true;
+
+    int grass_missing = grass_needed();
+    int fire_missing = fire_needed();
+    int grass_in_hand = hand_count(Card::Grass);
+    int fire_in_hand = hand_count(Card::Fire);
+
+    // A held Crispin may still resolve after a late Item search and before the final
+    // manual attachment. Simulate only the exact public/K1 route implemented by
+    // play_crispin(), rather than assuming a future draw or Legacy Star recovery:
+    // https://api.pokemontcg.io/v2/cards/sv7-133
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+    // https://github.com/FlareZ123/pokemon-sims/issues/737
+    if (supporter_allowed() && hand_count(Card::Crispin) > 0) {
+      const bool grass_available = prizes_known()
+          ? deck_count_after_search_started(Card::Grass) > 0
+          : might_be_unseen(Card::Grass);
+      const bool fire_available = prizes_known()
+          ? deck_count_after_search_started(Card::Fire) > 0
+          : might_be_unseen(Card::Fire);
+
+      if (grass_available && fire_available) {
+        if (grass_missing > 0) {
+          --grass_missing;
+          ++fire_in_hand;
+        } else if (fire_missing > 0) {
+          --fire_missing;
+          ++grass_in_hand;
+        }
+      } else if (grass_available) {
+        ++grass_in_hand;
+      } else if (fire_available) {
+        ++fire_in_hand;
+      }
+    }
+
+    // The final manual attachment remains a legal same-turn route only while it has
+    // not been used and a needed Basic Energy is already observable in hand. Vital
+    // Dance and Earthen Vessel routes resolve before Blender and therefore appear
+    // here as that held Energy:
+    // https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    if (!state_.manual_energy_used) {
+      if (grass_missing > 0 && grass_in_hand > 0) {
+        --grass_missing;
+      } else if (fire_missing > 0 && fire_in_hand > 0) {
+        --fire_missing;
+      }
+    }
+
+    return grass_missing == 0 && fire_missing == 0;
+  }
+
   bool play_brilliant_blender() {
     // Brilliant Blender may search for and discard up to 5 deck cards:
     // https://api.pokemontcg.io/v2/cards/sv8-164
     if (item_locked() || hand_count(Card::BrilliantBlender) == 0 ||
-        !can_play_payload_this_turn() || !payload_might_be_in_deck()) {
+        !can_play_payload_this_turn() || !payload_might_be_in_deck() ||
+        !blender_energy_axis_can_finish_this_turn()) {
       return false;
     }
 

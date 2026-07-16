@@ -126,7 +126,8 @@
         std::count_if(state_.hand.begin(), state_.hand.end(), is_payload));
     const bool another_payload_covers_strict_jit =
         hand_count(Card::DialgaGX) == 1 && opening_payloads > 1;
-    const bool vital_dance_has_energy_value = !both_manual_energy_types_held;
+    const bool vital_dance_has_energy_value =
+        hand_count(Card::Grass) < 2 || hand_count(Card::Fire) < 1;
     const bool turn_one_item_search_is_live =
         scenario_.locks == LockMode::TurnTwoItem ||
         scenario_.locks == LockMode::FullRuleBoxAbility;

@@ -1,0 +1,37 @@
+name: Final T2 T3 Matrix
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    if: github.head_ref == 'audit/20260716-final-t2-t3-matrix'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record exact merge source
+        run: |
+          mkdir -p build
+          git rev-parse HEAD > build/exact_merge_sha.txt
+          git show -s --format=%P HEAD > build/merge_parents.txt
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Generate 100000-trial matrix
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/t2_t3_matrix.csv
+          cat build/t2_t3_matrix.csv
+      - name: Upload exact matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-main-t2-t3-matrix
+          path: |
+            build/t2_t3_matrix.csv
+            build/exact_merge_sha.txt
+            build/merge_parents.txt
+          if-no-files-found: error

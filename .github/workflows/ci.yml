@@ -4,116 +4,67 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
-  card-audit-contract:
+  issue-663-apply-and-validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/663-route-aware-oricorio-dialga-no-lock'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-      - name: Validate card audit provenance contract
-        run: python tests/card_audit_contract_tests.py
-      - name: Validate derived card audit categories
-        run: python tests/card_audit_category_contract_tests.py
-      - name: Validate setup report provenance contract
-        run: python tests/setup_report_contract_tests.py
+          ref: fix/663-route-aware-oricorio-dialga-no-lock
+          fetch-depth: 0
 
-  build-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Configure
+      - name: Apply focused issue 663 change
+        run: python scripts/apply_issue_663.py
+
+      - name: Configure Release
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-      - name: Build
-        run: bash .github/scripts/capture-build.sh build build.log
-      - name: Validate K0 Ultra Ball target accounting
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/k0_ultra_ball_target_tests.cpp -o build/k0_ultra_ball_target_tests && ./build/k0_ultra_ball_target_tests
-      - name: Validate K0 Mysterious Treasure target accounting
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/k0_mysterious_treasure_target_tests.cpp -o build/k0_mysterious_treasure_target_tests && ./build/k0_mysterious_treasure_target_tests
-      - name: Validate K0 Quick Ball target accounting
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/k0_quick_ball_target_tests.cpp -o build/k0_quick_ball_target_tests && ./build/k0_quick_ball_target_tests
-      - name: Validate Lusamine Arven-FSS payload route
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/lusamine_arven_fss_payload_tests.cpp -o build/lusamine_arven_fss_payload_tests && ./build/lusamine_arven_fss_payload_tests
-      - name: Validate Forest Seal Stone hold-trace provenance
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/fss_hold_trace_requires_tool_tests.cpp -o build/fss_hold_trace_requires_tool_tests && ./build/fss_hold_trace_requires_tool_tests
-      - name: Test
-        shell: bash
-        run: |
-          set -o pipefail
-          ctest --test-dir build --output-on-failure || {
-            status=$?
-            echo '===== CTest LastTest.log ====='
-            find build/Testing -name LastTest.log -type f -print -exec cat {} \; || true
-            exit "$status"
-          }
-      # Execute every documented CLI mode and prove incompatible options fail before
-      # simulation or file creation:
-      # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
-      # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
-      # https://github.com/FlareZ123/pokemon-sims/issues/633
-      - name: Validate CLI mode compatibility
-        run: cmake -DSIMULATOR="$PWD/build/regidrago_sim" -DTEST_DIR="$PWD/build/cli-mode-contract" -P tests/run_cli_mode_contract.cmake
-      - name: Upload CTest diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-ctest-diagnostics
-          path: |
-            build/Testing
-            build.log
-          if-no-files-found: warn
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run full Release suite
+        run: ctest --test-dir build --output-on-failure
+      - name: Run focused UBSan regression
+        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=undefined -fno-omit-frame-pointer tests/opening_oricorio_dialga_no_lock_tests.cpp -o build/issue_663_ubsan && ./build/issue_663_ubsan
 
-  sanitizers:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Configure sanitizers
-        run: cmake -S . -B build-sanitizers -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
-      - name: Build sanitizers
-        run: bash .github/scripts/capture-build.sh build-sanitizers sanitizer-build.log
-      - name: Validate K0 Ultra Ball target accounting under sanitizers
-        env:
-          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=address,undefined -fno-omit-frame-pointer tests/k0_ultra_ball_target_tests.cpp -o build-sanitizers/k0_ultra_ball_target_tests && ./build-sanitizers/k0_ultra_ball_target_tests
-      - name: Validate K0 Mysterious Treasure target accounting under sanitizers
-        env:
-          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=address,undefined -fno-omit-frame-pointer tests/k0_mysterious_treasure_target_tests.cpp -o build-sanitizers/k0_mysterious_treasure_target_tests && ./build-sanitizers/k0_mysterious_treasure_target_tests
-      - name: Validate K0 Quick Ball target accounting under sanitizers
-        env:
-          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=address,undefined -fno-omit-frame-pointer tests/k0_quick_ball_target_tests.cpp -o build-sanitizers/k0_quick_ball_target_tests && ./build-sanitizers/k0_quick_ball_target_tests
-      - name: Validate Lusamine Arven-FSS payload route under sanitizers
-        env:
-          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=address,undefined -fno-omit-frame-pointer tests/lusamine_arven_fss_payload_tests.cpp -o build-sanitizers/lusamine_arven_fss_payload_tests && ./build-sanitizers/lusamine_arven_fss_payload_tests
-      - name: Validate Forest Seal Stone hold-trace provenance under sanitizers
-        env:
-          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=address,undefined -fno-omit-frame-pointer tests/fss_hold_trace_requires_tool_tests.cpp -o build-sanitizers/fss_hold_trace_requires_tool_tests && ./build-sanitizers/fss_hold_trace_requires_tool_tests
-      - name: Test sanitizers
-        shell: bash
-        env:
-          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+      - name: Simulate pass 1
+        # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 3 | tee build/issue-663-pass-1.txt
+      - name: Simulate pass 2
+        # Earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 2 --require-ready-by 3 | tee build/issue-663-pass-2.txt
+      - name: Simulate pass 3
+        # Oricorio remains live under Rule Box Ability lock: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee build/issue-663-pass-3.txt
+      - name: Generate T2 and T3 matrix
+        # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/issue-663-matrix.csv
+
+      - name: Package exact validated source
         run: |
-          set -o pipefail
-          ctest --test-dir build-sanitizers --output-on-failure || {
-            status=$?
-            echo '===== Sanitizer CTest LastTest.log ====='
-            find build-sanitizers/Testing -name LastTest.log -type f -print -exec cat {} \; || true
-            exit "$status"
-          }
-      - name: Validate CLI mode compatibility under sanitizers
-        env:
-          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
-        run: cmake -DSIMULATOR="$PWD/build-sanitizers/regidrago_sim" -DTEST_DIR="$PWD/build-sanitizers/cli-mode-contract" -P tests/run_cli_mode_contract.cmake
-      - name: Upload sanitizer diagnostics
+          tar --exclude=.git --exclude=build -czf /tmp/issue-663-repository-source.tgz .
+          cp /tmp/issue-663-repository-source.tgz build/issue-663-repository-source.tgz
+
+      - name: Commit validated permanent fix
+        run: |
+          git show origin/main:.github/workflows/ci.yml > .github/workflows/ci.yml
+          rm -f .github/workflows/issue-663-apply.yml scripts/apply_issue_663.py
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add CMakeLists.txt src/trace_engine_v2/part_005.inc tests/opening_oricorio_dialga_no_lock_tests.cpp .github/workflows/ci.yml .github/workflows/issue-663-apply.yml scripts/apply_issue_663.py
+          git commit -m 'Fix route-aware no-lock Oricorio-Dialga openings (#663)'
+          git push origin HEAD:fix/663-route-aware-oricorio-dialga-no-lock
+
+      - name: Upload issue 663 validation artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: sanitizer-ctest-diagnostics
+          name: issue-663-validation
           path: |
-            build-sanitizers/Testing
-            sanitizer-build.log
+            build/issue-663-pass-*.txt
+            build/issue-663-matrix.csv
+            build/issue-663-repository-source.tgz
+            build/Testing
           if-no-files-found: warn

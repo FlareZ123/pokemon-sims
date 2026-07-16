@@ -13,8 +13,6 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator
         run: cmake --build build --target regidrago_sim --parallel 2
-      - name: Run full Release tests
-        run: ctest --test-dir build --output-on-failure
       - name: Pass 1 - strict JIT going first
         # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
         run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 13 --require-ready-by 2 | tee verified-pass-1-strict-first-seed-13.txt
@@ -35,3 +33,6 @@ jobs:
             verified-pass-*.txt
             verified-current-main-matrix.csv
           if-no-files-found: error
+      - name: Run full Release tests after preserving audit artifacts
+        # Current-main suite status remains part of the audit even when a test fails.
+        run: ctest --test-dir build --output-on-failure

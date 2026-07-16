@@ -17,13 +17,18 @@
     // https://api.pokemontcg.io/v2/cards/sv6-127
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
                                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
-    // At K1, Mysterious Treasure cannot be played when the inspected deck contains
-    // no Psychic or Dragon Pokémon. Its discard requirement does not make a known
-    // zero-target search effective:
+    // Mysterious Treasure searches for a Psychic or Dragon Pokémon. At K0, a target
+    // remains plausible only when a fixed-list copy is not accounted for in public
+    // zones. At K1, the inspected deck is checked exactly before paying the cost:
     // https://api.pokemontcg.io/v2/cards/sm6-113
     // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
-    const bool search_has_target = !deck_seen_ ||
-        std::any_of(state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic);
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    // https://github.com/FlareZ123/pokemon-sims/issues/693
+    const bool search_has_target = deck_seen_
+        ? std::any_of(state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic)
+        : std::any_of(recipe_.begin(), recipe_.end(), [this](const auto& entry) {
+            return is_dragon_or_psychic(entry.first) && might_be_unseen(entry.first);
+          });
     if (!search_has_target) return false;
     // Mysterious Treasure searches only the deck after paying its discard cost.
     // K0 keeps fixed-list targets plausible; K1 requires the inspected deck to

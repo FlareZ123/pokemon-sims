@@ -13,7 +13,7 @@ The model is deliberately a single-player setup model. It does not claim to reso
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel 2
-./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 --require-ready-by 3
+./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3
 ```
 
 The command prints the opening player-known state, debug-only prizes, every draw, card cost, search, attachment, evolution, retreat, VSTAR Power, attack, and ready-state check. The debug Prize list is never read by policy before a legal reveal/search effect.

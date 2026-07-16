@@ -46,6 +46,7 @@ void chooses_complementary_quick_ball() {
   // https://api.pokemontcg.io/v2/cards/swsh1-179
   // https://api.pokemontcg.io/v2/cards/sv8-76
   // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // https://github.com/FlareZ123/pokemon-sims/issues/781
   if (!sim::EngineTestAccess::play_arven(engine)) throw std::runtime_error("Arven did not resolve.");
   const sim::State& after = sim::EngineTestAccess::state(engine);

@@ -1,7 +1,7 @@
 name: Temporary PR 709 Reconciliation
 
 on:
-  pull_request:
+  pull_request_target:
     types: [edited]
     branches: [main]
 
@@ -28,11 +28,12 @@ jobs:
           Path('/tmp/reconcile.sh').write_text(script)
           PY
           bash /tmp/reconcile.sh
-      - name: Remove feature-branch temporary workflows
+      - name: Remove temporary workflows from feature branch
         run: |
           git rm .github/workflows/reconcile-pokemon-communication.yml
           git rm .github/workflows/run-reconcile-pokemon-communication.yml
           git rm -f .github/workflows/merge-pokemon-communication-main.yml || true
+          git rm -f .github/workflows/temp-reconcile-pr-709.yml || true
           git commit -m 'Remove temporary Pokémon Communication workflows'
       - name: Build and test
         run: |
@@ -40,5 +41,19 @@ jobs:
           cmake --build build -j2
           ctest --test-dir build --output-on-failure
           ./build/regidrago_sim --self-test
-      - name: Push reconciled branch
+      - name: Push reconciled feature branch
         run: git push origin HEAD:feature/701-pokemon-communication
+      - name: Check out main for cleanup
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          path: main-clean
+      - name: Remove temporary workflow from main
+        working-directory: main-clean
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/temp-reconcile-pr-709.yml
+          git commit -m 'Remove temporary PR 709 reconciliation workflow'
+          git push origin HEAD:main

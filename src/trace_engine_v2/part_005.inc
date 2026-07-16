@@ -89,6 +89,40 @@
       return;
     }
 
+    const bool oricorio_dialga_are_only_opening_basics =
+        hand_count(Card::Oricorio) > 0 && hand_count(Card::DialgaGX) > 0 &&
+        hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&
+        hand_count(Card::MawileGX) == 0 && hand_count(Card::TapuLeleGX) == 0;
+    const int opening_payloads = static_cast<int>(
+        std::count_if(state_.hand.begin(), state_.hand.end(), is_payload));
+    const bool another_payload_covers_strict_jit =
+        hand_count(Card::DialgaGX) == 1 && opening_payloads > 1;
+    const bool quick_ball_regi_route_held = hand_count(Card::QuickBall) > 0;
+    const bool vital_dance_has_energy_value =
+        hand_count(Card::Grass) == 0 || hand_count(Card::Fire) == 0;
+    const bool opening_route_unlocked = scenario_.locks == LockMode::None;
+
+    // Setup may start Dialga-GX so Oricorio can later be played from hand to the
+    // Bench for Vital Dance. Use this route only when another held Dragon already
+    // covers strict-JIT payload, Quick Ball supplies direct Regidrago access, an
+    // Energy type is still missing, and neither Item nor Rule Box Ability lock
+    // invalidates the public connector graph:
+    // Setup procedure: https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+    // Mega Dragonite ex payload: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Strict-JIT and connector priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Regression evidence: https://github.com/FlareZ123/pokemon-sims/issues/663
+    if (oricorio_dialga_are_only_opening_basics && strict_payload_timing() &&
+        another_payload_covers_strict_jit && quick_ball_regi_route_held &&
+        vital_dance_has_energy_value && opening_route_unlocked &&
+        remove_one(state_.hand, Card::DialgaGX)) {
+      state_.active = Pokemon{Card::DialgaGX, 0};
+      outcome_.started_regi = false;
+      return;
+    }
+
     const bool tapu_dialga_are_only_opening_basics =
         hand_count(Card::TapuLeleGX) > 0 && hand_count(Card::DialgaGX) > 0 &&
         hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&

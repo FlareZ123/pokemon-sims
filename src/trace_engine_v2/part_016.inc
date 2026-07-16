@@ -18,11 +18,12 @@
 }  // namespace sim
 
 #ifndef REGIDRAGO_SIM_NO_MAIN
-std::optional<std::uint64_t> parse_positive_count(const std::string& text) {
-  // Aggregate trials and requested ready traces are positive sample counts:
+std::optional<std::uint64_t> parse_unsigned_decimal(const std::string& text) {
+  // Seed operands are unsigned decimal values and zero is a valid deterministic seed:
   // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
   // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
-  // std::stoull accepts an optional sign, so validate the decimal spelling first:
+  // std::stoull accepts an optional sign and throws for malformed or overflowing input,
+  // so validate the spelling and range before the CLI enters simulation:
   // https://en.cppreference.com/w/cpp/string/basic_string/stoul
   const bool decimal_digits_only = !text.empty() && std::all_of(
       text.begin(), text.end(), [](const unsigned char character) {
@@ -32,12 +33,19 @@ std::optional<std::uint64_t> parse_positive_count(const std::string& text) {
   if (!decimal_digits_only) return std::nullopt;
 
   try {
-    const std::uint64_t value = std::stoull(text);
-    if (value == 0) return std::nullopt;
-    return value;
+    return std::stoull(text);
   } catch (const std::out_of_range&) {
     return std::nullopt;
   }
+}
+
+std::optional<std::uint64_t> parse_positive_count(const std::string& text) {
+  // Aggregate trials and requested ready traces are positive sample counts:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
+  const auto parsed = parse_unsigned_decimal(text);
+  if (!parsed || *parsed == 0) return std::nullopt;
+  return parsed;
 }
 
 std::optional<int> parse_ready_deadline(const std::string& text) {
@@ -72,7 +80,18 @@ int main(int argc, char** argv) {
         return 2;
       }
       trials = *parsed_trials;
-    } else if (arg == "--seed" && i + 1 < argc) seed = std::stoull(argv[++i]);
+    } else if (arg == "--seed" && i + 1 < argc) {
+      // Handle malformed and overflowing seed operands as normal CLI errors instead
+      // of allowing std::stoull to terminate before the main exception handler:
+      // https://en.cppreference.com/w/cpp/string/basic_string/stoul
+      // https://github.com/FlareZ123/pokemon-sims/issues/627
+      const auto parsed_seed = parse_unsigned_decimal(argv[++i]);
+      if (!parsed_seed) {
+        std::cerr << "--seed must be an unsigned integer\n";
+        return 2;
+      }
+      seed = *parsed_seed;
+    }
     else if (arg == "--out" && i + 1 < argc) output = argv[++i];
     else if (arg == "--scenario" && i + 1 < argc) scenario_label = argv[++i];
     else if (arg == "--simulate-this") simulate_this = true;
@@ -94,7 +113,19 @@ int main(int argc, char** argv) {
         return 2;
       }
       find_ready = *parsed_find_ready;
-    } else if (arg == "--start-seed" && i + 1 < argc) start_seed = std::stoull(argv[++i]);
+    } else if (arg == "--start-seed" && i + 1 < argc) {
+      // The ready-trace search accepts seed zero, while signed, malformed, and
+      // overflowing operands are command errors rather than uncaught exceptions:
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
+      // https://en.cppreference.com/w/cpp/string/basic_string/stoul
+      // https://github.com/FlareZ123/pokemon-sims/issues/627
+      const auto parsed_start_seed = parse_unsigned_decimal(argv[++i]);
+      if (!parsed_start_seed) {
+        std::cerr << "--start-seed must be an unsigned integer\n";
+        return 2;
+      }
+      start_seed = *parsed_start_seed;
+    }
     else if (arg == "--self-test") self_test = true;
     else if (arg == "--help") {
       std::cout << "Usage: regidrago_sim [--trials N] [--seed N] [--out PATH] [--scenario LABEL] [--simulate-this] [--require-ready-by TURN] [--find-ready N --start-seed N] [--self-test]\n";
@@ -125,7 +156,22 @@ int main(int argc, char** argv) {
         !parse_ready_deadline("-1") && !parse_ready_deadline("+1") &&
         !parse_ready_deadline("5") && !parse_ready_deadline("") &&
         !parse_ready_deadline("18446744073709551616");
-    return sim::self_test() && positive_count_parser_ok && deadline_parser_ok ? 0 : 1;
+    // Zero and the full uint64_t range are valid deterministic seeds. Signed,
+    // malformed, whitespace-prefixed, and overflowing spellings are rejected:
+    // https://github.com/FlareZ123/pokemon-sims/issues/627
+    // https://en.cppreference.com/w/cpp/string/basic_string/stoul
+    const auto zero_seed = parse_unsigned_decimal("0");
+    const auto ordinary_seed = parse_unsigned_decimal("20260705");
+    const auto maximum_seed = parse_unsigned_decimal("18446744073709551615");
+    const bool seed_parser_ok = zero_seed && *zero_seed == 0 &&
+        ordinary_seed && *ordinary_seed == 20260705ULL &&
+        maximum_seed && *maximum_seed == ~std::uint64_t{0} &&
+        !parse_unsigned_decimal("-1") && !parse_unsigned_decimal("+1") &&
+        !parse_unsigned_decimal("nope") && !parse_unsigned_decimal(" 1") &&
+        !parse_unsigned_decimal("") &&
+        !parse_unsigned_decimal("18446744073709551616");
+    return sim::self_test() && positive_count_parser_ok && deadline_parser_ok &&
+        seed_parser_ok ? 0 : 1;
   }
 
   try {

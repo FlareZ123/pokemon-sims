@@ -89,6 +89,9 @@ void item_lock_blocks_complementary_item() {
   std::mt19937_64 rng{7813};
   sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, route_state(2, true));
+  // Arven remains a legal Supporter, while its searched Item route cannot resolve:
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/sv1-166
   sim::EngineTestAccess::play_arven(engine);
   if (contains(sim::EngineTestAccess::state(engine).hand, sim::Card::QuickBall)) {
     throw std::runtime_error("Item lock failed to block Arven's Item target.");

@@ -54,6 +54,60 @@ if(NOT EXISTS "${aggregate_output}")
 endif()
 expect_cli_success(single-trace-valid --simulate-this --scenario strict-jit/go-second --seed 3)
 expect_cli_success(find-ready-valid --find-ready 1 --start-seed 1 --scenario strict-jit/go-second)
+
+# A find-ready deadline is part of the search predicate. The command must skip the
+# late-ready seed 2 and continue to the first deadline-qualified seed 6:
+# https://github.com/FlareZ123/pokemon-sims/issues/641
+# https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
+execute_process(
+  COMMAND "${SIMULATOR}" --find-ready 1 --start-seed 1
+      --scenario strict-jit/go-second --require-ready-by 2
+  RESULT_VARIABLE deadline_find_result
+  OUTPUT_VARIABLE deadline_find_output
+  ERROR_VARIABLE deadline_find_error
+)
+if(NOT deadline_find_result EQUAL 0)
+  message(FATAL_ERROR
+      "deadline-find-ready: expected exit 0, got ${deadline_find_result}\n"
+      "stdout:\n${deadline_find_output}\nstderr:\n${deadline_find_error}")
+endif()
+if(NOT deadline_find_output MATCHES "Seed: 6 \\| first-ready turn: 2")
+  message(FATAL_ERROR
+      "deadline-find-ready: expected the first qualifying seed 6\n"
+      "stdout:\n${deadline_find_output}")
+endif()
+if(deadline_find_output MATCHES "Seed: 2 \\|")
+  message(FATAL_ERROR
+      "deadline-find-ready: late-ready seed 2 must be skipped\n"
+      "stdout:\n${deadline_find_output}")
+endif()
+
+# Single-trace mode still reports the selected late-ready seed and exits 1:
+# https://github.com/FlareZ123/pokemon-sims/issues/641
+execute_process(
+  COMMAND "${SIMULATOR}" --simulate-this --seed 2
+      --scenario strict-jit/go-second --require-ready-by 2
+  RESULT_VARIABLE deadline_trace_result
+  OUTPUT_VARIABLE deadline_trace_output
+  ERROR_VARIABLE deadline_trace_error
+)
+if(NOT deadline_trace_result EQUAL 1)
+  message(FATAL_ERROR
+      "deadline-single-trace: expected exit 1, got ${deadline_trace_result}\n"
+      "stdout:\n${deadline_trace_output}\nstderr:\n${deadline_trace_error}")
+endif()
+if(NOT deadline_trace_output MATCHES "Seed: 2 \\| first-ready turn: 3")
+  message(FATAL_ERROR
+      "deadline-single-trace: selected seed 2 was not printed\n"
+      "stdout:\n${deadline_trace_output}")
+endif()
+if(NOT deadline_trace_error MATCHES
+    "Trace did not reach a ready state by required turn 2")
+  message(FATAL_ERROR
+      "deadline-single-trace: missing deadline failure\n"
+      "stderr:\n${deadline_trace_error}")
+endif()
+
 expect_cli_success(self-test-valid --self-test)
 
 # Aggregate mode may use trials, seed, and output. Trace-only selectors must fail

@@ -15,12 +15,21 @@ new = '''#define fss_target_after_search_started fss_target_after_search_started
 #undef should_play_steven
 #undef attach_fss
 #undef fss_target_after_search_started
-#include "trace_engine_v2/part_010_late_steven_override.inc"
 '''
-if 'part_010_late_steven_override.inc' not in text:
+if '#define should_play_steven should_play_steven_original' not in text:
     if old not in text:
         raise SystemExit("part_010 composition anchor missing")
-    source.write_text(text.replace(old, new, 1), encoding="utf-8")
+    text = text.replace(old, new, 1)
+
+communication_anchor = '''#include "trace_engine_v2/part_pokemon_communication.inc"
+'''
+communication_insert = communication_anchor + '''#include "trace_engine_v2/part_010_late_steven_override.inc"
+'''
+if 'part_010_late_steven_override.inc' not in text:
+    if communication_anchor not in text:
+        raise SystemExit("Pokemon Communication composition anchor missing")
+    text = text.replace(communication_anchor, communication_insert, 1)
+source.write_text(text, encoding="utf-8")
 
 cmake = Path("CMakeLists.txt")
 cmake_text = cmake.read_text(encoding="utf-8")

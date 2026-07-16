@@ -156,6 +156,31 @@ void test_earthen_vessel_allows_final_energy_route() {
   }
 }
 
+void test_active_regi_can_use_held_evolution_search() {
+  Fixture fixture;
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1,
+                              sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 1, 0, 0,
+                              sim::Tool::None}};
+  state.hand = {sim::Card::ProfessorBurnet, sim::Card::EvolutionIncense};
+  state.deck = {sim::Card::MegaDragonite, sim::Card::RegidragoVstar,
+                sim::Card::Dragapult};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // Evolution Incense can find the second VSTAR after Burnet, and the Active
+  // Regidrago V entered on a prior turn, so the direct Active evolution remains
+  // a legal same-turn route:
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/issues/719
+  if (!sim::EngineTestAccess::play_professor_burnet(fixture.engine)) {
+    throw std::runtime_error("Held Evolution Incense must preserve the Active evolution route.");
+  }
+}
+
 void test_one_bench_slot_cannot_host_latias_and_oricorio() {
   sim::State state;
   state.turn = 2;
@@ -235,6 +260,7 @@ int main() {
     test_held_energy_allows_immediate_route();
     test_held_oricorio_allows_energy_compression();
     test_earthen_vessel_allows_final_energy_route();
+    test_active_regi_can_use_held_evolution_search();
     test_one_bench_slot_cannot_host_latias_and_oricorio();
     test_latias_route_allows_benched_vstar();
     test_no_discard_control_keeps_banking_behavior();

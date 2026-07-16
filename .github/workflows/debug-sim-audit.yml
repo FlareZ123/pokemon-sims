@@ -1,0 +1,54 @@
+name: Repository-wide debug simulation audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  debug-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build all targets
+        run: cmake --build build --parallel 2
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Run simulator self-test
+        run: ./build/regidrago_sim --self-test
+
+      - name: Simulate-this pass 1: strict JIT going first
+        # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        # Earliest-ready objective: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 3 | tee build/debug-trace-1.txt
+
+      - name: Simulate-this pass 2: strict JIT going second
+        # Going-first/second timing model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#fully-modeled-parts
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 --require-ready-by 3 | tee build/debug-trace-2.txt
+
+      - name: Simulate-this pass 3: scheduled turn-two Item lock
+        # Lock contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee build/debug-trace-3.txt
+
+      - name: Generate T2 and T3 probability matrix
+        # Canonical aggregate command: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/debug-t2-t3-matrix.csv
+
+      - name: Upload debug evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: repository-debug-audit
+          path: |
+            build/debug-trace-*.txt
+            build/debug-t2-t3-matrix.csv
+            build/Testing
+          if-no-files-found: warn

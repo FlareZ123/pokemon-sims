@@ -249,6 +249,123 @@ void test_blender_duplicate_crispin_preserves_wonder_tag() {
   }
 }
 
+sim::State issue_663_quick_ball_hand() {
+  sim::State state;
+  state.hand = {sim::Card::QuickBall, sim::Card::TeamYellsCheer,
+                sim::Card::MegaDragonite, sim::Card::DialgaGX,
+                sim::Card::Oricorio, sim::Card::Powerglass,
+                sim::Card::RegidragoVstar};
+  return state;
+}
+
+void test_oricorio_dialga_quick_ball_route_preserves_vital_dance() {
+  const sim::Scenario scenario{"opening-oricorio-dialga-quick-ball", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{663};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(engine, issue_663_quick_ball_hand());
+
+  // Dialga-GX may start Active because Mega Dragonite ex already covers the
+  // strict-JIT payload axis, Quick Ball supplies public Regidrago access, and
+  // preserving Oricorio keeps Vital Dance available for the missing Energy:
+  // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+  // https://api.pokemontcg.io/v2/cards/sm2-55
+  // https://api.pokemontcg.io/v2/cards/sm5-100
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://github.com/FlareZ123/pokemon-sims/issues/663
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::DialgaGX ||
+      !contains(after.hand, sim::Card::Oricorio) ||
+      !contains(after.hand, sim::Card::MegaDragonite)) {
+    throw std::runtime_error("Dialga-GX should start while the live Vital Dance route remains in hand.");
+  }
+}
+
+void test_oricorio_dialga_supporter_connectors_preserve_vital_dance() {
+  const sim::Scenario scenario{"opening-oricorio-dialga-supporters", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{66301};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.hand = {sim::Card::Oricorio, sim::Card::RegidragoVstar,
+                sim::Card::StevensResolve, sim::Card::Lusamine,
+                sim::Card::Arven, sim::Card::GoodraVstar,
+                sim::Card::DialgaGX};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Arven and Steven's Resolve are visible search connectors, Goodra VSTAR is
+  // the second payload, and Oricorio still compresses the missing Energy axis:
+  // https://api.pokemontcg.io/v2/cards/sm2-55
+  // https://api.pokemontcg.io/v2/cards/sm5-100
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://api.pokemontcg.io/v2/cards/sm7-145
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/663
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::DialgaGX ||
+      !contains(after.hand, sim::Card::Oricorio) ||
+      !contains(after.hand, sim::Card::GoodraVstar)) {
+    throw std::runtime_error("The public Arven and Steven graph should preserve Vital Dance.");
+  }
+}
+
+void test_oricorio_dialga_unique_payload_control() {
+  const sim::Scenario scenario{"opening-oricorio-dialga-unique-payload", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{66302};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state = issue_663_quick_ball_hand();
+  state.hand.erase(std::remove(state.hand.begin(), state.hand.end(), sim::Card::MegaDragonite),
+                   state.hand.end());
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Dialga-GX remains the only payload, so its strict-JIT DCI value outranks
+  // preserving Oricorio:
+  // https://api.pokemontcg.io/v2/cards/sm5-100
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // https://github.com/FlareZ123/pokemon-sims/issues/663
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::Oricorio ||
+      !contains(after.hand, sim::Card::DialgaGX)) {
+    throw std::runtime_error("A unique Dialga-GX payload must remain in hand.");
+  }
+}
+
+void test_oricorio_dialga_complete_energy_control() {
+  const sim::Scenario scenario{"opening-oricorio-dialga-energy-complete", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{66303};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state = issue_663_quick_ball_hand();
+  state.hand.erase(std::remove(state.hand.begin(), state.hand.end(), sim::Card::TeamYellsCheer),
+                   state.hand.end());
+  state.hand.erase(std::remove(state.hand.begin(), state.hand.end(), sim::Card::Powerglass),
+                   state.hand.end());
+  state.hand.push_back(sim::Card::Grass);
+  state.hand.push_back(sim::Card::Fire);
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Both Energy types are already held, so Vital Dance has no missing-type value
+  // and Dialga-GX remains the protected payload route:
+  // https://api.pokemontcg.io/v2/cards/sm2-55
+  // https://api.pokemontcg.io/v2/cards/sm5-100
+  // https://github.com/FlareZ123/pokemon-sims/issues/663
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::Oricorio ||
+      !contains(after.hand, sim::Card::DialgaGX)) {
+    throw std::runtime_error("Complete held Energy should preserve Dialga-GX in hand.");
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -260,5 +377,9 @@ int main() {
   test_redundant_one_discard_graph_preserves_dialga();
   test_full_item_lock_rejects_redundant_item_graph();
   test_blender_duplicate_crispin_preserves_wonder_tag();
+  test_oricorio_dialga_quick_ball_route_preserves_vital_dance();
+  test_oricorio_dialga_supporter_connectors_preserve_vital_dance();
+  test_oricorio_dialga_unique_payload_control();
+  test_oricorio_dialga_complete_energy_control();
   return 0;
 }

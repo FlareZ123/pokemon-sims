@@ -1,0 +1,35 @@
+name: Issue 727 Clean Trace Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  three-clean-traces:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure and build Release simulator
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target regidrago_sim --parallel 2
+      - name: Run three independently pre-screened simulate-this traces
+        run: |
+          mkdir -p validation-clean
+          # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Strict-JIT contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 > validation-clean/trace-matchup-flex-go-second-seed-3.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 > validation-clean/trace-turn2-item-lock-go-second-seed-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 > validation-clean/trace-rulebox-lock-go-second-seed-20.txt
+      - name: Reject false Star Alchemy hold traces
+        run: |
+          if grep -R "HOLD VSTAR POWER" validation-clean/*.txt; then
+            echo "Unexpected Star Alchemy hold trace in a pre-screened no-Tool state."
+            exit 1
+          fi
+      - name: Upload clean traces
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-727-clean-traces
+          path: validation-clean
+          if-no-files-found: error

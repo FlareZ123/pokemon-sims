@@ -37,7 +37,7 @@ The raw audit is generated locally at `data/card_audit.json` and is intentionall
 | Professor Burnet | `swsh12tg-TG26` | 1 | deck-discard up to two |
 | Serena | `swsh12-164` | 1 | discard/draw or Pokémon V gust |
 | Tate & Liza | `sm7-148` | 1 | draw five or switch |
-| Steven’s Resolve | `sm7-145` | 1 | exact three cards, end turn |
+| Steven’s Resolve | `sm7-145` | 1 | up to three cards, end turn (https://api.pokemontcg.io/v2/cards/sm7-145) |
 | Guzma | `sm3-115` | 1 | gust plus self-switch |
 | Channeler | `sm11-190` | 1 | remove effects of attacks on own Pokémon |
 | Gladion | `sm4-95` | 2 | Prize inspection and one recovery |

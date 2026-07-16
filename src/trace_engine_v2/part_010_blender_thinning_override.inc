@@ -119,6 +119,9 @@
         ability_available_for_pokemon(Card::LatiasEx) && !state_.retreat_used;
     const bool held_tate_route = supporter_allowed() &&
         hand_count(Card::TateLiza) > 0;
+    const bool held_guzma_route =
+        scenario_.opponent_bench == OpponentBenchState::Available &&
+        supporter_allowed() && hand_count(Card::Guzma) > 0;
     const bool active_regi_can_evolve_ready = state_.active &&
         state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn &&
@@ -144,18 +147,23 @@
 
     // Strict JIT counts Blender's Dragon only during this turn. Preserve the
     // one-copy ACE SPEC while a powered Benched Regidrago VSTAR has no observable
-    // same-turn route to the Active Spot:
+    // same-turn route to the Active Spot. Guzma counts only when the scenario
+    // explicitly guarantees the opposing Benched target required by its text:
     // https://api.pokemontcg.io/v2/cards/sv8-164
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/sm7-148
     // https://api.pokemontcg.io/v2/cards/sv8-76
     // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://api.pokemontcg.io/v2/cards/sm3-115
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#guzma-opponent-bench-prerequisite
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/725
+    // https://github.com/FlareZ123/pokemon-sims/issues/741
     return can_free_retreat_with_latias() || held_latias_route ||
-           held_tate_route || active_regi_can_evolve_ready ||
-           fss_latias_route || fss_tate_route;
+           held_tate_route || held_guzma_route ||
+           active_regi_can_evolve_ready || fss_latias_route ||
+           fss_tate_route;
   }
 
   bool play_brilliant_blender() {

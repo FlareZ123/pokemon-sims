@@ -117,38 +117,3 @@ jobs:
             build-sanitizers/Testing
             sanitizer-build.log
           if-no-files-found: warn
-
-  repository-debug-audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Configure Release audit
-        run: cmake -S . -B build-audit -DCMAKE_BUILD_TYPE=Release
-      - name: Build simulator audit target
-        run: cmake --build build-audit --target regidrago_sim --parallel 2
-      - name: Reproduce issue 784
-        # Vital Dance different-types restriction: https://api.pokemontcg.io/v2/cards/sm2-55
-        # Earthen Vessel control text: https://api.pokemontcg.io/v2/cards/sv4-163
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/debug_vital_dance_distinct_type_probe.cpp -o build-audit/debug_vital_dance_distinct_type_probe && ./build-audit/debug_vital_dance_distinct_type_probe | tee debug-vital-dance-probe.txt
-      - name: Simulate-this pass 1
-        # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
-        # Earliest-ready objective: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
-        run: ./build-audit/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 3 | tee debug-trace-1.txt
-      - name: Simulate-this pass 2
-        # Turn timing model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#fully-modeled-parts
-        run: ./build-audit/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 --require-ready-by 3 | tee debug-trace-2.txt
-      - name: Simulate-this pass 3
-        # Turn-two Item lock: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
-        run: ./build-audit/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee debug-trace-3.txt
-      - name: Generate T2 and T3 probability matrix
-        # Canonical aggregate command: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
-        run: ./build-audit/regidrago_sim --trials 100000 --seed 20260705 --out debug-t2-t3-matrix.csv
-      - name: Upload debug traces and matrix
-        uses: actions/upload-artifact@v4
-        with:
-          name: repository-debug-audit
-          path: |
-            debug-vital-dance-probe.txt
-            debug-trace-*.txt
-            debug-t2-t3-matrix.csv
-          if-no-files-found: error

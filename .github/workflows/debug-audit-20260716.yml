@@ -13,8 +13,8 @@ jobs:
         run: git ls-files -z | tar --null -T - -czf audited-source.tgz
       - name: Configure Release
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-      - name: Build simulator
-        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Build repository targets
+        run: cmake --build build --parallel 2
       - name: Run repository tests
         run: ctest --test-dir build --output-on-failure
       - name: Audit strict JIT going second seed 2

@@ -12,8 +12,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Compile connector-only optimizer
         run: g++ -std=c++20 -O3 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tools/turbo_connector_only_search.cpp -o turbo_connector_only_search
-      - name: Search four-swap connector packages
-        run: ./turbo_connector_only_search 20 2000 16 4 > connector-only-discovery.csv
+      - name: Search three-swap connector packages
+        run: ./turbo_connector_only_search 5 1000 16 3 > connector-only-discovery.csv
       - name: Verify no protected card was changed
         run: |
           if grep -E 'Dialga-GX|Mawile-GX|Guzma|Team Yell|Roseanne|Field Blower|Chaotic Swell|Regidrago VSTAR|Dragapult ex|Mega Dragonite' connector-only-discovery.csv; then

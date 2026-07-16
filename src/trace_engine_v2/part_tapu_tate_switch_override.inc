@@ -169,8 +169,13 @@
   }
 
   bool bench_tapu_if_useful() {
-    if (hand_count(Card::TapuLeleGX) == 0 || in_play(Card::TapuLeleGX) ||
-        bench_space() <= 0 || !needs_tapu_connector()) {
+    // Wonder Tag belongs to the physical Tapu Lele-GX played from hand. An
+    // existing copy in play does not suppress a separate held copy:
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/issues/746
+    if (hand_count(Card::TapuLeleGX) == 0 || bench_space() <= 0 ||
+        !needs_tapu_connector()) {
       return false;
     }
     return bench_from_hand(Card::TapuLeleGX, true);

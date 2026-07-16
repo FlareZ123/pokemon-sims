@@ -1,0 +1,132 @@
+name: Strict JIT Payload Semantics
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  semantic-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build full simulator suite
+        run: cmake --build build --parallel 2
+
+      - name: Compile focused semantic regression
+        run: >-
+          c++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow
+          tests/strict_jit_payload_semantics_tests.cpp
+          -o build/strict_jit_payload_semantics_tests
+
+      - name: Run focused semantic regression
+        run: ./build/strict_jit_payload_semantics_tests
+
+      - name: Run complete CTest suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Evaluate corrected seed-3 trace
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim \
+            --simulate-this \
+            --scenario strict-jit/go-second \
+            --seed 3 \
+            --require-ready-by 3 | tee strict-seed-3.txt
+          test "$(grep -c 'R-BLENDER-01' strict-seed-3.txt)" -eq 1
+          ! grep -q 'T2 | PLAY ITEM | rules: R-BLENDER-01' strict-seed-3.txt
+          ! grep -q 'LEGACY STAR' strict-seed-3.txt
+          grep -q 'T3 | READY' strict-seed-3.txt
+
+      - name: Upload Release trace
+        uses: actions/upload-artifact@v4
+        with:
+          name: strict-jit-seed-3-release
+          path: strict-seed-3.txt
+          if-no-files-found: error
+
+  semantic-sanitizers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure sanitizer build
+        run: >-
+          cmake -S . -B build-sanitizers -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+
+      - name: Build simulator under sanitizers
+        run: cmake --build build-sanitizers --target regidrago_sim --parallel 2
+
+      - name: Compile semantic regression under sanitizers
+        run: >-
+          c++ -std=c++20 -O1 -g -Wall -Wextra -Wpedantic -Wconversion -Wshadow
+          -fsanitize=address,undefined -fno-omit-frame-pointer
+          tests/strict_jit_payload_semantics_tests.cpp
+          -o build-sanitizers/strict_jit_payload_semantics_tests
+
+      - name: Run semantic regression under sanitizers
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: ./build-sanitizers/strict_jit_payload_semantics_tests
+
+      - name: Run simulator self-test under sanitizers
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: ./build-sanitizers/regidrago_sim --self-test
+
+  multi-seed-evaluation:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [3, 20260716, 8675309]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure and build active simulator
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target regidrago_sim --parallel 2
+
+      - name: Run 25,000-trial scenario matrix
+        run: >-
+          ./build/regidrago_sim --trials 25000 --seed ${{ matrix.seed }}
+          --out results-${{ matrix.seed }}.csv
+
+      - name: Validate aggregate invariants
+        env:
+          RESULT: results-${{ matrix.seed }}.csv
+        run: |
+          python3 - <<'PY'
+          import csv
+          import os
+          from pathlib import Path
+
+          path = Path(os.environ["RESULT"])
+          rows = list(csv.DictReader(path.open(newline="")))
+          assert len(rows) == 14, len(rows)
+          labels = {row["scenario"] for row in rows}
+          assert "strict-jit/go-first" in labels
+          assert "strict-jit/go-second" in labels
+          for row in rows:
+              by2 = float(row["ready_by_t2_pct"])
+              by3 = float(row["ready_by_t3_pct"])
+              by4 = float(row["ready_by_t4_pct"])
+              assert 0.0 <= by2 <= by3 <= by4 <= 100.0, row
+          PY
+
+      - name: Upload aggregate evaluation
+        uses: actions/upload-artifact@v4
+        with:
+          name: strict-jit-matrix-${{ matrix.seed }}
+          path: results-${{ matrix.seed }}.csv
+          if-no-files-found: error

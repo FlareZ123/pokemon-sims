@@ -1,0 +1,24 @@
+name: Latest Main Audit Snapshot
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  source-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record exact checked-out commit
+        run: git rev-parse HEAD > latest-main-sha.txt
+      - name: Upload exact source for rules and policy audit
+        # Repository audit source: https://github.com/FlareZ123/pokemon-sims
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-main-audit-snapshot
+          path: .
+          include-hidden-files: true
+          if-no-files-found: error

@@ -6,6 +6,46 @@
       return false;
     }
 
+    // Path to the Peak suppresses Abilities on Rule Box Pokémon, while Forest Seal
+    // Stone remains usable because Star Alchemy is the Tool's Ability. Treat the
+    // attached Tool as live independently of the holder's own Ability availability:
+    // https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://api.pokemontcg.io/v2/cards/swsh6-148
+    const auto live_fss_holder = [](const Pokemon& pokemon) {
+      return pokemon.tool == Tool::ForestSealStone && is_pokemon_v(pokemon.card);
+    };
+    const bool forest_seal_stone_is_live =
+        (state_.active && live_fss_holder(*state_.active)) ||
+        std::any_of(state_.bench.begin(), state_.bench.end(), live_fss_holder);
+
+    const int missing_energy = grass_needed() + fire_needed();
+    const bool held_crispin_completes_energy = supporter_allowed() &&
+        hand_count(Card::Crispin) > 0 && missing_energy == 1 &&
+        crispin_can_advance_energy_axis();
+    const bool fss_crispin_completes_energy = !state_.vstar_power_used &&
+        forest_seal_stone_is_live && supporter_allowed() && missing_energy == 1 &&
+        hand_count(Card::Crispin) == 0 && might_be_unseen(Card::Crispin) &&
+        crispin_can_advance_energy_axis();
+    // Strict JIT accepts a payload only on the turn that creates readiness. Once
+    // the manual attachment is spent, preserve the one-shot Blender while Energy
+    // is still missing unless Crispin can attach the final required Basic Energy
+    // from hand or through a live Star Alchemy search. A one-type Crispin search
+    // puts that Energy into hand and attaches none, so crispin_can_advance_energy_axis()
+    // rejects it after the manual window is lost:
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/sv7-133
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/737
+    if (strict_payload_timing() && state_.manual_energy_used && need_energy() &&
+        !held_crispin_completes_energy && !fss_crispin_completes_energy) {
+      return false;
+    }
+
     const int supporters_in_hand = static_cast<int>(
         std::count_if(state_.hand.begin(), state_.hand.end(), is_supporter));
     const bool only_tate_supporter_held =
@@ -24,18 +64,6 @@
       return false;
     }
 
-    // Path to the Peak suppresses Abilities on Rule Box Pokémon, while Forest Seal
-    // Stone remains usable because Star Alchemy is the Tool's Ability. Treat the
-    // attached Tool as live independently of the holder's own Ability availability:
-    // https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
-    // https://api.pokemontcg.io/v2/cards/swsh12-156
-    // https://api.pokemontcg.io/v2/cards/swsh6-148
-    const auto live_fss_holder = [](const Pokemon& pokemon) {
-      return pokemon.tool == Tool::ForestSealStone && is_pokemon_v(pokemon.card);
-    };
-    const bool forest_seal_stone_is_live =
-        (state_.active && live_fss_holder(*state_.active)) ||
-        std::any_of(state_.bench.begin(), state_.bench.end(), live_fss_holder);
     const bool fss_tate_incomplete_promotion = strict_payload_timing() &&
         !state_.vstar_power_used && supporter_allowed() && need_active_vstar() &&
         !need_energy() && !benched_vstar_promotion_ready() &&

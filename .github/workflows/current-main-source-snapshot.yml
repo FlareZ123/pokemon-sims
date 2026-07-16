@@ -1,0 +1,26 @@
+name: Current Main Source Snapshot
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record source commit
+        run: git rev-parse HEAD > source-snapshot-sha.txt
+      - name: Upload exact checked-out source
+        # Audit-only materialization for repository-wide review:
+        # https://github.com/FlareZ123/pokemon-sims
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-source-snapshot
+          path: .
+          include-hidden-files: true
+          if-no-files-found: error

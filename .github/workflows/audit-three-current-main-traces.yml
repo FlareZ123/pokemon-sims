@@ -1,0 +1,36 @@
+name: Audit three current-main traces
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  trace-and-matrix-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2 --target regidrago_sim
+      - name: Pass 1 - strict JIT going first
+        # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 --require-ready-by 2 | tee build/simulate-this-pass-1.txt
+      - name: Pass 2 - Rule Box lock going second
+        # Lock semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee build/simulate-this-pass-2.txt
+      - name: Pass 3 - turn-two Item lock going second
+        # Lock semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee build/simulate-this-pass-3.txt
+      - name: Generate T2 and T3 probability matrix
+        # Published aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/t2_t3_matrix.csv
+      - name: Upload trace and matrix evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-traces-and-matrix
+          path: |
+            build/simulate-this-pass-*.txt
+            build/t2_t3_matrix.csv
+          if-no-files-found: error

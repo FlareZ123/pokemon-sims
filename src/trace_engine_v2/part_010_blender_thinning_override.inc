@@ -6,6 +6,74 @@
       return false;
     }
 
+    // Strict JIT only values Blender when every non-payload ready axis can still
+    // complete this turn. Model the remaining Energy routes before consuming the
+    // one-shot ACE SPEC. A manual attachment may use a held Basic Energy later in
+    // the turn. A still-live Crispin may attach one searched Energy directly and,
+    // while the manual attachment remains, put the other searched type into hand:
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/sv7-133
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/737
+    const auto energy_can_finish_this_turn = [this]() {
+      const Pokemon* target = target_regi();
+      if (target == nullptr) return false;
+
+      const auto can_finish_after_manual = [this](int grass, int fire,
+                                                   const bool grass_in_hand,
+                                                   const bool fire_in_hand) {
+        if (grass >= 2 && fire >= 1) return true;
+        if (state_.manual_energy_used) return false;
+        if (grass < 2 && grass_in_hand) ++grass;
+        else if (fire < 1 && fire_in_hand) ++fire;
+        return grass >= 2 && fire >= 1;
+      };
+
+      const bool grass_in_hand = hand_count(Card::Grass) > 0;
+      const bool fire_in_hand = hand_count(Card::Fire) > 0;
+      if (can_finish_after_manual(target->grass, target->fire,
+                                  grass_in_hand, fire_in_hand)) {
+        return true;
+      }
+
+      if (!supporter_allowed() || hand_count(Card::Crispin) == 0 ||
+          !crispin_can_advance_energy_axis()) {
+        return false;
+      }
+
+      const bool grass_available = prizes_known()
+          ? deck_count_after_search_started(Card::Grass) > 0
+          : might_be_unseen(Card::Grass);
+      const bool fire_available = prizes_known()
+          ? deck_count_after_search_started(Card::Fire) > 0
+          : might_be_unseen(Card::Fire);
+      int grass = target->grass;
+      int fire = target->fire;
+      bool grass_after_crispin = grass_in_hand;
+      bool fire_after_crispin = fire_in_hand;
+      if (grass_available && fire_available) {
+        if (grass < 2) {
+          ++grass;
+          fire_after_crispin = true;
+        } else if (fire < 1) {
+          ++fire;
+          grass_after_crispin = true;
+        }
+      } else {
+        grass_after_crispin = grass_after_crispin || grass_available;
+        fire_after_crispin = fire_after_crispin || fire_available;
+      }
+      return can_finish_after_manual(grass, fire, grass_after_crispin,
+                                     fire_after_crispin);
+    };
+    if (strict_payload_timing() && need_energy() &&
+        !energy_can_finish_this_turn()) {
+      return false;
+    }
+
     const int supporters_in_hand = static_cast<int>(
         std::count_if(state_.hand.begin(), state_.hand.end(), is_supporter));
     const bool only_tate_supporter_held =

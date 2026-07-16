@@ -72,6 +72,12 @@ enum class Card : std::uint8_t {
   BattleVipPass,
   PokeStop,
   Carmine,
+  ProfessorsResearch,
+  PokemonCommunication,
+  Pokegear,
+  Lillie,
+  NestBall,
+  AdventurersDiscovery,
 };
 
 constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{

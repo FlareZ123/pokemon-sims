@@ -79,6 +79,41 @@ void test_manual_attachment_used_holds_burnet() {
   expect_rejected(std::move(state), "used manual attachment");
 }
 
+void test_ci_item_lock_route_holds_burnet_before_evolution() {
+  sim::Scenario scenario{"burnet-ci-item-lock", sim::DciProfile::StrictJit,
+                         sim::LockMode::TurnTwoItem, false, 4};
+  sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{17};
+  sim::Engine engine{scenario, recipe, rng};
+  sim::State state;
+  state.turn = 3;
+  state.active = sim::Pokemon{sim::Card::Oricorio, 1, 0, 0, sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoV, 2, 1, 1,
+                              sim::Tool::None}};
+  state.hand = {sim::Card::ProfessorBurnet, sim::Card::RegidragoVstar};
+  state.deck = {sim::Card::MegaDragonite, sim::Card::Dragapult,
+                sim::Card::Grass};
+  const auto hand_before = state.hand;
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // The prior-turn Benched Regidrago V can evolve, but Item lock leaves it at GF
+  // behind a Basic Active with no Latias ex route. Burnet cannot complete either
+  // remaining non-payload axis during this turn:
+  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://api.pokemontcg.io/v2/cards/sv8-76
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/actions/runs/29479560060
+  // https://github.com/FlareZ123/pokemon-sims/issues/719
+  if (sim::EngineTestAccess::play_professor_burnet(engine)) {
+    throw std::runtime_error("The CI-derived Item-lock Burnet play must be held.");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (after.hand != hand_before || after.supporter_used || !after.discard.empty()) {
+    throw std::runtime_error("The rejected CI-derived route must preserve Burnet and payloads.");
+  }
+}
+
 void test_stranded_benched_vstar_holds_burnet() {
   sim::State state;
   state.turn = 3;
@@ -256,6 +291,7 @@ void test_no_discard_control_keeps_banking_behavior() {
 int main() {
   try {
     test_manual_attachment_used_holds_burnet();
+    test_ci_item_lock_route_holds_burnet_before_evolution();
     test_stranded_benched_vstar_holds_burnet();
     test_held_energy_allows_immediate_route();
     test_held_oricorio_allows_energy_compression();

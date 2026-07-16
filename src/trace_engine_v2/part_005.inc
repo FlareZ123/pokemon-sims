@@ -72,31 +72,44 @@
         scenario_.locks == LockMode::FullRuleBoxAbility ||
         scenario_.locks == LockMode::FullCombined;
     const bool crispin_route_already_held = hand_count(Card::Crispin) > 0;
+    const bool grass_energy_already_held = hand_count(Card::Grass) > 0;
+    const bool fire_energy_already_held = hand_count(Card::Fire) > 0;
     const bool manual_energy_already_held =
-        hand_count(Card::Grass) > 0 || hand_count(Card::Fire) > 0;
+        grass_energy_already_held || fire_energy_already_held;
+    const bool both_manual_energy_types_held =
+        grass_energy_already_held && fire_energy_already_held;
+    const bool duplicate_crispin_competes_for_missing_energy_type =
+        hand_count(Card::Crispin) > 1 && manual_energy_already_held &&
+        !both_manual_energy_types_held;
     const bool direct_pokemon_search_already_held =
         hand_count(Card::MysteriousTreasure) > 0 || hand_count(Card::QuickBall) > 0 ||
         hand_count(Card::UltraBall) > 0;
     const bool wonder_tag_retains_higher_marginal_value =
         manual_energy_already_held && hand_count(Card::Arven) > 0 &&
-        direct_pokemon_search_already_held;
+        direct_pokemon_search_already_held &&
+        !duplicate_crispin_competes_for_missing_energy_type;
     const bool crispin_makes_vital_dance_scarce =
         crispin_route_already_held && !wonder_tag_retains_higher_marginal_value;
 
     // Setup permits either Basic to become Active. Preserve Oricorio for Vital Dance
     // when Wonder Tag is suppressed, or when Crispin already supplies the Supporter
     // route and the Energy-compression Ability remains the scarce on-play connector.
-    // When Energy, Arven, and direct Pokemon search are all already held, preserve
-    // Tapu Lele-GX instead because Wonder Tag retains broader post-K1 Supporter access:
+    // Energy, Arven, and direct Pokemon search normally preserve Wonder Tag, except
+    // when duplicate Crispin and Arven compete for the Supporter slot while one GGF
+    // Energy type is still missing. Vital Dance then supplies the missing type without
+    // consuming that Supporter play:
     // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
     // https://api.pokemontcg.io/v2/cards/cel25c-60_A
     // https://api.pokemontcg.io/v2/cards/sm2-55
     // https://api.pokemontcg.io/v2/cards/sv7-133
     // https://api.pokemontcg.io/v2/cards/sv1-166
     // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/swsh6-148
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/654
+    // https://github.com/FlareZ123/pokemon-sims/issues/678
     if (tapu_oricorio_are_only_opening_basics &&
         (rule_box_ability_lock || crispin_makes_vital_dance_scarce) &&
         remove_one(state_.hand, Card::TapuLeleGX)) {

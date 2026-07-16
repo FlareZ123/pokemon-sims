@@ -111,7 +111,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Force Wonder Tag to choose Crispin for the exact seed-2 comparison
-        run: python -c "from pathlib import Path; p=Path('src/trace_engine_v2/part_007.inc'); s=p.read_text(encoding='utf-8'); old='if (state_.turn == 1 && !scenario_.going_first && should_play_steven() &&\n        deck_count_after_search_started(Card::StevensResolve) > 0) return Card::StevensResolve;'; new='if (state_.turn == 1 && !scenario_.going_first && should_play_steven() &&\n        deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin; // Counterfactual only. Crispin: https://api.pokemontcg.io/v2/cards/sv7-133 Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135'; assert old in s; p.write_text(s.replace(old,new,1),encoding='utf-8')"
+        run: python -c "from pathlib import Path; p=Path('src/trace_engine_v2/part_007.inc'); s=p.read_text(encoding='utf-8'); old='if (state_.turn == 1 && !scenario_.going_first && should_play_steven() &&\n        deck_count_after_search_started(Card::StevensResolve) > 0) return Card::StevensResolve;'; new='if (state_.turn == 1 && !scenario_.going_first && should_play_steven() &&\n        deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin; // Counterfactual only. Crispin source https://api.pokemontcg.io/v2/cards/sv7-133 Regidrago V source https://api.pokemontcg.io/v2/cards/swsh12-135'; assert old in s; p.write_text(s.replace(old,new,1),encoding='utf-8')"
       - name: Configure Release
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator

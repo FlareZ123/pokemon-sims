@@ -1,0 +1,36 @@
+name: Issue 748 Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  simulate-and-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+      - name: Run focused Wonder Tag future-Supporter regression
+        run: >-
+          c++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow
+          tests/wonder_tag_future_supporter_tests.cpp
+          -o build/wonder_tag_future_supporter_tests
+          && ./build/wonder_tag_future_supporter_tests
+      - name: Run four independent simulate-this traces
+        run: |
+          mkdir -p validation-748
+          ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 1 > validation-748/trace-reproduction-seed-1.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 > validation-748/trace-clean-seed-3.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 > validation-748/trace-clean-seed-6.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 > validation-748/trace-clean-seed-20.txt
+      - name: Generate 100000-trial setup matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out validation-748/t2_t3_matrix.csv
+      - name: Upload traces and matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-748-validation
+          path: validation-748
+          if-no-files-found: error

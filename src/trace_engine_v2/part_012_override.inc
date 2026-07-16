@@ -151,6 +151,17 @@
                                        might_be_unseen(Card::DialgaGX);
       const bool known_prized_regi_target = prizes_known() && need_regi() && bench_space() > 0 &&
                                              prize_count_after_reveal(Card::RegidragoV) > 0;
+      // Arven may search Pokémon Communication as its Item target only when the
+      // post-Supporter hand has a safe Pokémon exchange and that exchange advances a
+      // current setup axis. Wonder Tag is excluded because Arven consumes the turn's
+      // Supporter play before the searched Item resolves:
+      // https://api.pokemontcg.io/v2/cards/sv1-166
+      // https://api.pokemontcg.io/v2/cards/sm9-152
+      // https://www.pokemon.com/us/pokemon-tcg/rules
+      // https://github.com/FlareZ123/pokemon-sims/issues/701
+      const bool live_communication = might_be_unseen(Card::PokemonCommunication) &&
+          pokemon_communication_plan_after_playing_supporter(
+              Card::Arven, false).has_value();
       std::vector<Card> candidates;
       // Item lock prevents Arven's Item target from advancing this turn; its Tool target remains independent: https://api.pokemontcg.io/v2/cards/sv1-166 https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
       if (item_locked()) return candidates;
@@ -162,20 +173,29 @@
       };
 
       if (need_regi() && bench_space() > 0 && live_regi_target) {
+        add_item_candidate(Card::PokemonCommunication, live_communication);
         add_item_candidate(Card::QuickBall, can_pay_search_cost);
         add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
       }
       if (known_prized_regi_target) add_item_candidate(Card::HisuianHeavyBall, true);
       if (need_vstar() && live_vstar_target) {
         add_item_candidate(Card::EvolutionIncense, true);
+        add_item_candidate(Card::PokemonCommunication, live_communication);
         add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
       }
-      if (need_energy() && live_energy_target) add_item_candidate(Card::EarthenVessel, can_pay_search_cost);
+      if (need_energy() && live_energy_target) {
+        add_item_candidate(Card::PokemonCommunication, live_communication);
+        add_item_candidate(Card::EarthenVessel, can_pay_search_cost);
+      }
       if (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) && live_latias_target) {
+        add_item_candidate(Card::PokemonCommunication, live_communication);
         add_item_candidate(Card::QuickBall, can_pay_search_cost);
         add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
       }
-      if (can_play_payload_this_turn() && live_payload_target) add_item_candidate(Card::BrilliantBlender, true);
+      if (can_play_payload_this_turn() && live_payload_target) {
+        add_item_candidate(Card::BrilliantBlender, true);
+        add_item_candidate(Card::PokemonCommunication, live_communication);
+      }
 
       // Once K1 proves the payload is held and every other setup axis is complete,
       // Arven can search a one-discard Item that legally resolves after discarding

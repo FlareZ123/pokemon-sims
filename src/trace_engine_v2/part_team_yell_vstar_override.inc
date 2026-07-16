@@ -12,6 +12,21 @@
       return true;
     }
 
+    // Team Yell's Cheer restores Regidrago VSTAR to the deck before the held Item
+    // resolves. Pokémon Communication is live only when the post-Supporter hand has
+    // a safe Pokémon to exchange for that exact restored target:
+    // https://api.pokemontcg.io/v2/cards/swsh9-149
+    // https://api.pokemontcg.io/v2/cards/sm9-152
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/issues/701
+    restore_hand();
+    if (pokemon_communication_can_find_after_recovery(
+            Card::RegidragoVstar, Card::TeamYellsCheer,
+            {Card::RegidragoVstar})) {
+      return true;
+    }
+    if (!remove_one(state_.hand, Card::TeamYellsCheer)) return false;
+
     // Mysterious Treasure must discard another hand card before searching a Dragon
     // Pokémon. Test the cost after removing the Supporter that will already be played:
     // https://api.pokemontcg.io/v2/cards/sm6-113
@@ -70,6 +85,32 @@
       }
       const bool payload_already_ready = payload_ready();
       const bool permit_payload = can_play_payload_this_turn();
+
+      // Evolution Incense first searches the restored VSTAR. Pokémon Communication
+      // may then exchange a remaining hand Pokémon for the separately restored
+      // Latias ex. Because the exchange does not discard a Dragon, this continuation
+      // is valid only when the strict-JIT payload axis is already complete:
+      // https://api.pokemontcg.io/v2/cards/swsh1-163
+      // https://api.pokemontcg.io/v2/cards/sm9-152
+      // https://api.pokemontcg.io/v2/cards/sv8-76
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://github.com/FlareZ123/pokemon-sims/issues/701
+      if (payload_already_ready && hand_count(Card::PokemonCommunication) > 0) {
+        Engine simulated = *this;
+        if (remove_one(simulated.state_.hand, Card::TeamYellsCheer) &&
+            remove_one(simulated.state_.hand, Card::EvolutionIncense)) {
+          simulated.state_.deck.push_back(Card::RegidragoVstar);
+          simulated.state_.deck.push_back(Card::LatiasEx);
+          if (simulated.move_deck_to_hand(Card::RegidragoVstar)) {
+            const auto plan = simulated.pokemon_communication_plan(false, true, true);
+            if (plan && plan->target == Card::LatiasEx) {
+              restore_hand();
+              return true;
+            }
+          }
+        }
+      }
+
       for (const Card item : {Card::QuickBall, Card::MysteriousTreasure}) {
         if (hand_count(item) == 0) continue;
         const auto cost = choose_discard(permit_payload, true, true, item);
@@ -172,6 +213,23 @@
     if (!remove_one(state_.hand, Card::TeamYellsCheer)) return false;
     const bool permit_payload = can_play_payload_this_turn();
     const bool payload_already_ready = payload_ready();
+
+    // Pokémon Communication can search the restored Latias ex when a safe exchange
+    // Pokémon remains after Team Yell's Cheer leaves hand. It cannot establish the
+    // strict-JIT payload axis, so a missing payload still requires the discard-search
+    // routes below:
+    // https://api.pokemontcg.io/v2/cards/swsh9-149
+    // https://api.pokemontcg.io/v2/cards/sm9-152
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/issues/701
+    restore_hand();
+    if (payload_already_ready &&
+        pokemon_communication_can_find_after_recovery(
+            Card::LatiasEx, Card::TeamYellsCheer, {Card::LatiasEx})) {
+      return true;
+    }
+    if (!remove_one(state_.hand, Card::TeamYellsCheer)) return false;
 
     // Quick Ball and Mysterious Treasure each require one other hand card as their
     // discard cost before searching Latias ex. When the payload axis is missing, the

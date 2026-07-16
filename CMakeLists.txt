@@ -47,6 +47,9 @@ target_compile_options(regidrago_oricorio_burnet_tests PRIVATE -Wall -Wextra -Wp
 add_executable(regidrago_opening_dialga_payload_tests tests/opening_active_dialga_payload_tests.cpp)
 target_compile_options(regidrago_opening_dialga_payload_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+add_executable(regidrago_opening_oricorio_dialga_no_lock_tests tests/opening_oricorio_dialga_no_lock_tests.cpp)
+target_compile_options(regidrago_opening_oricorio_dialga_no_lock_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 add_executable(regidrago_late_item_supporter_tests tests/late_item_supporter_tests.cpp)
 target_compile_options(regidrago_late_item_supporter_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
@@ -97,6 +100,9 @@ target_compile_options(regidrago_oricorio_full_energy_search_tests PRIVATE -Wall
 
 add_executable(regidrago_steven_missing_regi_tests tests/steven_missing_regi_tests.cpp)
 target_compile_options(regidrago_steven_missing_regi_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
+add_executable(regidrago_steven_crispin_turn2_item_lock_tests tests/steven_crispin_turn2_item_lock_tests.cpp)
+target_compile_options(regidrago_steven_crispin_turn2_item_lock_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
 add_executable(regidrago_oricorio_type_sensitive_energy_tests tests/oricorio_type_sensitive_energy_tests.cpp)
 target_compile_options(regidrago_oricorio_type_sensitive_energy_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
@@ -161,6 +167,9 @@ target_compile_options(regidrago_roseanne_energy_recovery_tests PRIVATE -Wall -W
 add_executable(regidrago_empty_deck_search_tests tests/empty_deck_search_tests.cpp)
 target_compile_options(regidrago_empty_deck_search_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+add_executable(regidrago_pokemon_communication_tests tests/pokemon_communication_tests.cpp)
+target_compile_options(regidrago_pokemon_communication_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 add_executable(regidrago_release_assertion_tests tests/release_assertion_tests.cpp)
 target_compile_options(regidrago_release_assertion_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
@@ -176,6 +185,7 @@ add_test(NAME regidrago_ultra_ball_tapu COMMAND regidrago_ultra_ball_tapu_tests)
 add_test(NAME regidrago_wonder_tag_dead_burnet COMMAND regidrago_wonder_tag_dead_burnet_tests)
 add_test(NAME regidrago_oricorio_burnet COMMAND regidrago_oricorio_burnet_tests)
 add_test(NAME regidrago_opening_dialga_payload COMMAND regidrago_opening_dialga_payload_tests)
+add_test(NAME regidrago_opening_oricorio_dialga_no_lock COMMAND regidrago_opening_oricorio_dialga_no_lock_tests)
 add_test(NAME regidrago_late_item_supporter COMMAND regidrago_late_item_supporter_tests)
 add_test(NAME regidrago_lusamine_arven_item_lock COMMAND regidrago_lusamine_arven_item_lock_tests)
 add_test(NAME regidrago_serena_mandatory_discard COMMAND regidrago_serena_mandatory_discard_tests)
@@ -193,6 +203,7 @@ add_test(NAME regidrago_quick_ball_ultra_cost COMMAND regidrago_quick_ball_ultra
 add_test(NAME regidrago_ultra_ball_redundant_cost COMMAND regidrago_ultra_ball_redundant_cost_tests)
 add_test(NAME regidrago_oricorio_full_energy_search COMMAND regidrago_oricorio_full_energy_search_tests)
 add_test(NAME regidrago_steven_missing_regi COMMAND regidrago_steven_missing_regi_tests)
+add_test(NAME regidrago_steven_crispin_turn2_item_lock COMMAND regidrago_steven_crispin_turn2_item_lock_tests)
 add_test(NAME regidrago_oricorio_type_sensitive_energy COMMAND regidrago_oricorio_type_sensitive_energy_tests)
 add_test(NAME regidrago_start_turn_deck_exhaustion COMMAND regidrago_start_turn_deck_exhaustion_tests)
 add_test(NAME regidrago_full_turn_order COMMAND regidrago_full_turn_order_tests)
@@ -214,6 +225,7 @@ add_test(NAME regidrago_powerglass_end_turn COMMAND regidrago_powerglass_end_tur
 add_test(NAME regidrago_celestial_roar_live_route COMMAND regidrago_celestial_roar_live_route_tests)
 add_test(NAME regidrago_roseanne_energy_recovery COMMAND regidrago_roseanne_energy_recovery_tests)
 add_test(NAME regidrago_empty_deck_search COMMAND regidrago_empty_deck_search_tests)
+add_test(NAME regidrago_pokemon_communication COMMAND regidrago_pokemon_communication_tests)
 add_test(NAME regidrago_release_assertions_enabled
   COMMAND ${CMAKE_COMMAND}
     -DASSERTION_PROBE=$<TARGET_FILE:regidrago_release_assertion_tests>

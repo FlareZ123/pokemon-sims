@@ -64,6 +64,50 @@
     // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // https://www.pokemon.com/us/pokemon-tcg/rules
     const bool supporter_payload_outlet_in_hand = supporter_allowed() && hand_count(Card::ProfessorBurnet) > 0;
+    const auto communication_recovery_return = [this]() -> std::optional<Card> {
+      if (item_locked() || count_of(state_.discard, Card::PokemonCommunication) == 0) {
+        return std::nullopt;
+      }
+      const bool missing_pokemon_connector = need_active_vstar() || need_energy() ||
+          needs_tapu_connector() || needs_oricorio_connector();
+      if (!missing_pokemon_connector) return std::nullopt;
+
+      // Legacy Star can recover Pokémon Communication alone when a safe exchange
+      // Pokémon is already held. Otherwise it can recover the Item and one Pokémon
+      // as its two selected cards. The exchange plan is evaluated against the exact
+      // post-recovery hand without inspecting hidden deck order:
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://api.pokemontcg.io/v2/cards/sm9-152
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+      // https://github.com/FlareZ123/pokemon-sims/issues/701
+      if (pokemon_communication_plan(false, false, false)) {
+        return Card::PokemonCommunication;
+      }
+
+      const std::vector<Card> original_hand = state_.hand;
+      const std::vector<Card> original_discard = state_.discard;
+      std::optional<Card> best_candidate;
+      int best_score = 1000;
+      for (const Card candidate : pokemon_communication_pokemon()) {
+        if (count_of(original_discard, candidate) == 0) continue;
+        state_.hand = original_hand;
+        state_.discard = original_discard;
+        if (!remove_one(state_.discard, candidate)) continue;
+        state_.hand.push_back(candidate);
+        const auto plan = pokemon_communication_plan(false, false, false);
+        if (!plan || plan->returned != candidate) continue;
+        const int score = pokemon_communication_return_score(candidate, false);
+        if (score < best_score) {
+          best_candidate = candidate;
+          best_score = score;
+        }
+      }
+      state_.hand = original_hand;
+      state_.discard = original_discard;
+      return best_candidate;
+    };
+    const bool known_communication_completion =
+        communication_recovery_return().has_value();
     // Legacy Star can create the strict-JIT payload only when the public deck count is
     // nonzero and a modeled payload may remain. At K1 the identity check is exact; at
     // K0 it uses public fixed-list counts without inspecting hidden card identities:
@@ -95,7 +139,8 @@
         state_.active && is_basic(state_.active->card) && bench_space() > 0 &&
         !in_play(Card::LatiasEx) && ability_available_for_pokemon(Card::LatiasEx) &&
         count_of(state_.discard, Card::LatiasEx) > 0;
-    if (!only_random_payload_line && !known_energy_completion && !known_latias_completion) return false;
+    if (!only_random_payload_line && !known_energy_completion &&
+        !known_latias_completion && !known_communication_completion) return false;
 
     state_.vstar_power_used = true;
     outcome_.used_legacy_star = true;
@@ -108,6 +153,19 @@
       discarded.push_back(top);
     }
     std::vector<Card> recovered;
+    const auto communication_return = communication_recovery_return();
+    if (communication_return && recovered.size() < 2U) {
+      if (!recover_discard_to_hand(Card::PokemonCommunication)) {
+        throw std::logic_error("Legacy Star Pokémon Communication target disappeared");
+      }
+      recovered.push_back(Card::PokemonCommunication);
+      if (*communication_return != Card::PokemonCommunication) {
+        if (!recover_discard_to_hand(*communication_return)) {
+          throw std::logic_error("Legacy Star Pokémon Communication exchange target disappeared");
+        }
+        recovered.push_back(*communication_return);
+      }
+    }
     // Legacy Star may recover any card after discarding the top 7 cards:
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     const bool blender_payload_line = need_payload() && !item_locked() && payload_might_be_in_deck();

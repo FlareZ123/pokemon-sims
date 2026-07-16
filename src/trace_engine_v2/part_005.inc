@@ -81,9 +81,11 @@
     const bool duplicate_crispin_competes_for_missing_energy_type =
         hand_count(Card::Crispin) > 1 && manual_energy_already_held &&
         !both_manual_energy_types_held;
+    const bool communication_search_already_held =
+        pokemon_communication_opening_route_has_safe_exchange();
     const bool direct_pokemon_search_already_held =
         hand_count(Card::MysteriousTreasure) > 0 || hand_count(Card::QuickBall) > 0 ||
-        hand_count(Card::UltraBall) > 0;
+        hand_count(Card::UltraBall) > 0 || communication_search_already_held;
     const bool wonder_tag_retains_higher_marginal_value =
         manual_energy_already_held && hand_count(Card::Arven) > 0 &&
         direct_pokemon_search_already_held &&
@@ -128,25 +130,76 @@
         hand_count(Card::DialgaGX) == 1 && payloads_in_hand == 1;
     const bool held_turo_fss_recovery_graph =
         hand_count(Card::ProfessorTuro) > 0 && hand_count(Card::ForestSealStone) > 0;
+    const bool held_redundant_one_discard_regi_graph =
+        !item_locked() && might_be_unseen(Card::RegidragoV) &&
+        hand_count(Card::QuickBall) > 0 && hand_count(Card::MysteriousTreasure) > 0 &&
+        payloads_in_hand > 1 && hand_count(Card::Crispin) == 1 &&
+        hand_count(Card::BrilliantBlender) == 0;
     const bool dialga_has_route_preservation_value =
         hand_count(Card::DialgaGX) == 1 &&
-        (dialga_is_unique_in_hand_payload || held_turo_fss_recovery_graph);
+        (dialga_is_unique_in_hand_payload || held_turo_fss_recovery_graph ||
+         held_redundant_one_discard_regi_graph);
 
     // Dialga-GX is a modeled Apex Dragon payload. Under strict current-turn DCI,
     // preserve it when Crispin already covers the Supporter connector and the public
-    // hand either has no other payload or has Turo plus Forest Seal Stone redundancy:
+    // hand retains either Tapu recovery or the reviewed redundant Quick Ball plus
+    // Mysterious Treasure graph. Exactly one Crispin and no held Blender preserve
+    // Wonder Tag whenever a stronger direct payload outlet already solves that axis:
     // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
     // https://api.pokemontcg.io/v2/cards/sm5-100
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/swsh12-135
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/sv7-133
     // https://api.pokemontcg.io/v2/cards/swsh12-156
     // https://api.pokemontcg.io/v2/cards/sv4-171
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/653
     if (tapu_dialga_are_only_opening_basics && strict_payload_timing() &&
         dialga_has_route_preservation_value && crispin_route_already_held &&
         remove_one(state_.hand, Card::TapuLeleGX)) {
       state_.active = Pokemon{Card::TapuLeleGX, 0};
+      outcome_.started_regi = false;
+      return;
+    }
+
+    const bool no_lock_oricorio_dialga_are_only_opening_basics =
+        hand_count(Card::Oricorio) > 0 && hand_count(Card::DialgaGX) > 0 &&
+        hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&
+        hand_count(Card::MawileGX) == 0 && hand_count(Card::TapuLeleGX) == 0;
+    const bool no_lock_dialga_is_redundant_payload =
+        hand_count(Card::DialgaGX) == 1 && payloads_in_hand > 1;
+    const bool no_lock_vital_dance_has_energy_value = !both_manual_energy_types_held;
+    const bool no_lock_public_regidrago_v_route =
+        hand_count(Card::RegidragoVstar) > 0 &&
+        (hand_count(Card::QuickBall) > 0 ||
+         hand_count(Card::MysteriousTreasure) > 0 ||
+         hand_count(Card::Arven) > 0 ||
+         hand_count(Card::StevensResolve) > 0);
+
+    // Setup may start a redundant Dialga-GX so Oricorio remains in hand and can
+    // later be played onto the Bench for Vital Dance. Apply the no-lock route only
+    // under strict JIT, while another held Dragon covers payload timing, at least
+    // one GGF Energy type is missing, Regidrago VSTAR is held, and the public hand
+    // exposes Regidrago V through a direct one-discard Item, Arven, or Steven's Resolve:
+    // Setup procedure: https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Regression evidence: https://github.com/FlareZ123/pokemon-sims/issues/663
+    if (no_lock_oricorio_dialga_are_only_opening_basics &&
+        scenario_.locks == LockMode::None && scenario_.dci == DciProfile::StrictJit &&
+        no_lock_dialga_is_redundant_payload && no_lock_vital_dance_has_energy_value &&
+        no_lock_public_regidrago_v_route && remove_one(state_.hand, Card::DialgaGX)) {
+      state_.active = Pokemon{Card::DialgaGX, 0};
       outcome_.started_regi = false;
       return;
     }

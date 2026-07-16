@@ -11,6 +11,31 @@
     if (missing_grass + missing_fire != 1) return false;
     const Card needed_energy = missing_grass == 1 ? Card::Grass : Card::Fire;
 
+    const auto pokemon_communication_then_vessel_is_payable = [this, needed_energy]() {
+      if (item_locked() || hand_count(Card::PokemonCommunication) == 0 ||
+          hand_count(Card::EarthenVessel) == 0) {
+        return false;
+      }
+      Engine simulated = *this;
+      if (!remove_one(simulated.state_.hand, Card::RoseannesBackup)) return false;
+      simulated.state_.deck.push_back(Card::RegidragoVstar);
+      simulated.state_.deck.push_back(needed_energy);
+      const auto plan = simulated.pokemon_communication_plan(false, true, true);
+      if (!plan || plan->target != Card::RegidragoVstar ||
+          !simulated.resolve_pokemon_communication(plan->returned, plan->target)) {
+        return false;
+      }
+      // Earthen Vessel resolves after the exchange and must retain a distinct legal
+      // discard cost in that exact post-Communication hand:
+      // https://api.pokemontcg.io/v2/cards/sm9-152
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://api.pokemontcg.io/v2/cards/swsh9-148
+      // https://github.com/FlareZ123/pokemon-sims/issues/701
+      return simulated.choose_discard(
+          simulated.can_play_payload_this_turn(), true, true,
+          Card::EarthenVessel).has_value();
+    };
+
     const auto evolution_incense_then_vessel_is_payable = [this]() {
       if (item_locked() || hand_count(Card::EvolutionIncense) == 0 ||
           hand_count(Card::EarthenVessel) == 0) {
@@ -51,7 +76,8 @@
     // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Play_Basic_Energy_Cards
     if (count_of(state_.discard, needed_energy) == 0 ||
         might_be_unseen(Card::RegidragoVstar) || might_be_unseen(needed_energy) ||
-        !evolution_incense_then_vessel_is_payable()) {
+        !(evolution_incense_then_vessel_is_payable() ||
+          pokemon_communication_then_vessel_is_payable())) {
       return false;
     }
 
@@ -76,6 +102,7 @@
     shuffle(state_.deck);
     trace("PLAY SUPPORTER", "R-GAME-SUPPORTER",
           "Roseanne's Backup chose both Pokémon and Energy modes, restoring Regidrago VSTAR and " +
-              std::string(name(needed_energy)) + " for Evolution Incense and Earthen Vessel.");
+              std::string(name(needed_energy)) +
+              " for a payable Pokémon search and Earthen Vessel.");
     return true;
   }

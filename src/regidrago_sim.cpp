@@ -13,6 +13,7 @@
 // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
 // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
 // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+// Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152
 // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
 // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
 // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
@@ -98,9 +99,12 @@
 #define play_brilliant_blender play_brilliant_blender_legacy_original
 #define fss_target_after_search_started fss_target_after_search_started_original
 #define attach_fss attach_fss_original
+#define should_play_steven should_play_steven_original
 #include "trace_engine_v2/part_010.inc"
+#undef should_play_steven
 #undef attach_fss
 #undef fss_target_after_search_started
+#include "trace_engine_v2/part_010_steven_crispin_override.inc"
 #undef play_brilliant_blender
 // The thinning policy remains the implementation wrapped by the later empty-deck
 // guard, while the legacy part_010 implementation stays dormant:
@@ -124,6 +128,7 @@
 #undef in_play
 #undef play_evolution_incense
 #undef play_ultra_ball
+#include "trace_engine_v2/part_pokemon_communication.inc"
 #include "trace_engine_v2/part_010_fss_override.inc"
 #include "trace_engine_v2/part_010_attach_fss_override.inc"
 #define use_fss use_fss_latias_original

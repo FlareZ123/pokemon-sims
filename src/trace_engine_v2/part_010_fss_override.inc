@@ -19,6 +19,32 @@
     if (tate_held_payload_route) return Card::TateLiza;
 
     const Card original = fss_target_after_search_started_original();
+
+    const bool needed_energy_in_deck =
+        (grass_needed() == 1 && deck_count_after_search_started(Card::Grass) > 0) ||
+        (fire_needed() == 1 && deck_count_after_search_started(Card::Fire) > 0);
+    const bool oricorio_in_deck =
+        bench_space() > 0 && !in_play(Card::Oricorio) &&
+        hand_count(Card::Oricorio) == 0 &&
+        deck_count_after_search_started(Card::Oricorio) > 0;
+    // #616 defines the shared exact-hand test for whether a held Dragon has a legal
+    // same-turn Item discard route. Star Alchemy should take Oricorio when Vital
+    // Dance supplies the final Energy and preserves Professor Burnet's one Supporter
+    // play for the only live deck-to-discard payload bridge:
+    // Forest Seal Stone https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Oricorio https://api.pokemontcg.io/v2/cards/sm2-55
+    // Crispin https://api.pokemontcg.io/v2/cards/sv7-133
+    // Professor Burnet https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Apex Dragon https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Shared outlet policy https://github.com/FlareZ123/pokemon-sims/issues/616
+    // Parent route https://github.com/FlareZ123/pokemon-sims/issues/187
+    // Core turn limits https://www.pokemon.com/us/pokemon-tcg/rules
+    // Decision priority https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    const bool oricorio_preserves_burnet_with_stranded_payload =
+        original == Card::Crispin && needed_energy_in_deck && oricorio_in_deck &&
+        oricorio_preserves_burnet_with_current_hand();
+    if (oricorio_preserves_burnet_with_stranded_payload) return Card::Oricorio;
+
     if (original != Card::Crispin || supporter_allowed()) return original;
 
     // Crispin is a Supporter, so it cannot resolve after Arven has already used the

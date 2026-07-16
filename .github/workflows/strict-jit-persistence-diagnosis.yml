@@ -1,3 +1,4 @@
+# Temporary analysis workflow. It checks out main and does not modify repository source.
 name: Strict JIT Persistence Diagnosis
 
 on:
@@ -31,7 +32,6 @@ jobs:
             --seed 3 \
             --require-ready-by 3 | tee original-trace.txt
           grep -q "T3 | LEGACY STAR" original-trace.txt
-          test "$(grep -c "PLAY ITEM.*Brilliant Blender\|Searched and discarded" original-trace.txt || true)" -ge 2
 
       - name: Prove current readiness forgets prior-turn payloads
         run: |

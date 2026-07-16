@@ -1,17 +1,16 @@
 name: Apply Pokémon Communication feature cleanup
 
 on:
-  push:
+  pull_request_target:
     branches: [main]
-    paths:
-      - .github/workflows/apply-pc-feature.yml
-      - .github/pc-feature-trigger
+    types: [edited]
 
 permissions:
   contents: write
 
 jobs:
   apply:
+    if: github.event.pull_request.number == 709 && github.event.pull_request.head.ref == 'feature/701-pokemon-communication'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -79,6 +79,62 @@ void test_rejects_burnet_after_manual_attachment_window_closes() {
   expect(!after.supporter_used, "the Supporter slot should remain available");
 }
 
+void test_rejects_burnet_when_no_needed_energy_is_held() {
+  Fixture fixture({"burnet-no-held-energy", sim::DciProfile::StrictJit,
+                   sim::LockMode::None, false, 4});
+  sim::State state = base_state();
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 1, 1};
+  state.manual_energy_used = false;
+  const sim::State before = state;
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // Before the Supporter decision, the active turn procedure has already attempted
+  // Item searches, Basic-entry Abilities, and the manual attachment. If GGF is still
+  // incomplete, Burnet cannot create an Energy route because it only discards deck cards:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c_latias_bench_override.inc#L72-L108
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/719
+  expect(!sim::EngineTestAccess::play_professor_burnet(fixture.engine),
+         "Burnet should be held when no deterministic same-turn Energy route remains");
+
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  expect(after.hand == before.hand, "Burnet should remain held");
+  expect(after.deck == before.deck, "the payload deck should remain unchanged");
+  expect(after.discard.empty(), "no payload or Supporter should enter discard");
+  expect(!after.supporter_used, "the Supporter slot should remain available");
+}
+
+void test_rejects_ci_item_lock_trace_state() {
+  Fixture fixture({"burnet-ci-item-lock-state", sim::DciProfile::StrictJit,
+                   sim::LockMode::TurnTwoItem, false, 4});
+  sim::State state = base_state();
+  state.turn = 3;
+  state.active = sim::Pokemon{sim::Card::Oricorio, 1};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 2, 1, 1}};
+  state.manual_energy_used = false;
+  const sim::State before = state;
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // CI seed 17 reached this structure: Oricorio Active, a GF Regidrago VSTAR on the
+  // Bench, no needed Energy in hand, and Burnet available. Burnet cannot finish the
+  // Energy or Active-position axis, so its strict-JIT payload would expire:
+  // https://github.com/FlareZ123/pokemon-sims/actions/runs/29477535274
+  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/issues/719
+  expect(!sim::EngineTestAccess::play_professor_burnet(fixture.engine),
+         "Burnet should be held in the CI-derived incomplete Item-lock state");
+
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  expect(after.hand == before.hand, "Burnet should remain held in the CI state");
+  expect(after.deck == before.deck, "the CI-state payload deck should remain unchanged");
+  expect(after.discard.empty(), "the CI state should not discard a payload");
+  expect(!after.supporter_used, "the CI state should preserve the Supporter slot");
+}
+
 void test_allows_burnet_when_energy_is_already_complete() {
   Fixture fixture({"burnet-energy-complete", sim::DciProfile::StrictJit,
                    sim::LockMode::None, false, 4});
@@ -188,6 +244,8 @@ void test_no_discard_control_keeps_payload_banking() {
 int main() {
   try {
     test_rejects_burnet_after_manual_attachment_window_closes();
+    test_rejects_burnet_when_no_needed_energy_is_held();
+    test_rejects_ci_item_lock_trace_state();
     test_allows_burnet_when_energy_is_already_complete();
     test_rejects_burnet_when_promotion_requires_tate();
     test_allows_burnet_with_existing_latias_promotion();

@@ -139,7 +139,7 @@ void test_wonder_tag_unique_connector_is_preserved() {
   sim::State state;
   state.hand = {sim::Card::TapuLeleGX, sim::Card::Oricorio, sim::Card::Grass,
                 sim::Card::Powerglass, sim::Card::ChaoticSwell,
-                sim::Card::TeamYellCheer, sim::Card::RegidragoVStar};
+                sim::Card::TeamYellsCheer, sim::Card::RegidragoVstar};
   sim::EngineTestAccess::set_state(engine, std::move(state));
   sim::EngineTestAccess::choose_opening_active(engine);
   const sim::State& after = sim::EngineTestAccess::state(engine);

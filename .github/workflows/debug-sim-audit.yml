@@ -1,0 +1,40 @@
+name: Debug simulator audit
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  simulator-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build Release
+        run: cmake --build build --parallel 2
+      - name: Run full Release test suite
+        run: ctest --test-dir build --output-on-failure
+      - name: Run three deterministic simulate-this audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/audit
+          # Saved-trace contract and scenarios: https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 --require-ready-by 3 | tee build/audit/strict-jit-go-second-seed-3.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee build/audit/strict-turn2-item-lock-go-second-seed-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee build/audit/strict-rulebox-lock-go-second-seed-20.txt
+      - name: Generate current T2 and T3 probability matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/audit/t2_t3_matrix.csv
+      - name: Archive exact source snapshot
+        run: git archive --format=zip HEAD -o build/audit/repository-source.zip
+      - name: Upload audit artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-simulator-audit
+          path: build/audit
+          if-no-files-found: error

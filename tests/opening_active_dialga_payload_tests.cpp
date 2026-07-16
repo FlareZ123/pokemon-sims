@@ -33,6 +33,15 @@ sim::State exact_opening_hand() {
   return state;
 }
 
+sim::State oricorio_dialga_opening_hand() {
+  sim::State state;
+  state.hand = {sim::Card::QuickBall, sim::Card::TeamYellCheer,
+                sim::Card::MegaDragonite, sim::Card::DialgaGX,
+                sim::Card::Oricorio, sim::Card::Powerglass,
+                sim::Card::RegidragoVstar};
+  return state;
+}
+
 void test_opening_choice_preserves_unique_dialga_payload() {
   const sim::Scenario scenario{"opening-dialga-payload", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
@@ -110,11 +119,119 @@ void test_opening_choice_keeps_legacy_order_without_crispin_signal() {
   }
 }
 
+void test_opening_choice_preserves_oricorio_for_vital_dance() {
+  const sim::Scenario scenario{"opening-oricorio-dialga-live-route", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{663};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(engine, oricorio_dialga_opening_hand());
+
+  // Dialga-GX may start Active because Mega Dragonite ex already preserves a Dragon
+  // payload, Quick Ball supplies Regidrago access, and Oricorio remains a live
+  // on-play Energy connector when played from hand to the Bench:
+  // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+  // https://api.pokemontcg.io/v2/cards/sm2-55
+  // https://api.pokemontcg.io/v2/cards/sm5-100
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://github.com/FlareZ123/pokemon-sims/issues/663
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::DialgaGX ||
+      !contains(after.hand, sim::Card::Oricorio) ||
+      !contains(after.hand, sim::Card::MegaDragonite)) {
+    throw std::runtime_error("Dialga-GX should start while the live Vital Dance route remains in hand.");
+  }
+}
+
+void test_oricorio_dialga_route_controls() {
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+
+  {
+    const sim::Scenario scenario{"opening-oricorio-dialga-unique-payload", sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    std::mt19937_64 rng{66301};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::State state = oricorio_dialga_opening_hand();
+    state.hand.erase(std::remove(state.hand.begin(), state.hand.end(), sim::Card::MegaDragonite),
+                     state.hand.end());
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+    sim::EngineTestAccess::choose_opening_active(engine);
+    const sim::State& after = sim::EngineTestAccess::state(engine);
+    if (!after.active || after.active->card != sim::Card::Oricorio ||
+        !contains(after.hand, sim::Card::DialgaGX)) {
+      throw std::runtime_error("Unique Dialga-GX payload value must preserve Dialga-GX in hand.");
+    }
+  }
+
+  {
+    const sim::Scenario scenario{"opening-oricorio-dialga-energy-complete", sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    std::mt19937_64 rng{66302};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::State state = oricorio_dialga_opening_hand();
+    state.hand.erase(std::remove(state.hand.begin(), state.hand.end(), sim::Card::TeamYellCheer),
+                     state.hand.end());
+    state.hand.erase(std::remove(state.hand.begin(), state.hand.end(), sim::Card::Powerglass),
+                     state.hand.end());
+    state.hand.push_back(sim::Card::Grass);
+    state.hand.push_back(sim::Card::Fire);
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+    sim::EngineTestAccess::choose_opening_active(engine);
+    const sim::State& after = sim::EngineTestAccess::state(engine);
+    if (!after.active || after.active->card != sim::Card::Oricorio ||
+        !contains(after.hand, sim::Card::DialgaGX)) {
+      throw std::runtime_error("A hand already holding both Energy types must preserve the Dialga payload route.");
+    }
+  }
+
+  {
+    const sim::Scenario scenario{"opening-oricorio-dialga-ability-lock", sim::DciProfile::StrictJit,
+                                 sim::LockMode::FullRuleBoxAbility, false, 4};
+    std::mt19937_64 rng{66303};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::EngineTestAccess::set_state(engine, oricorio_dialga_opening_hand());
+    sim::EngineTestAccess::choose_opening_active(engine);
+    const sim::State& after = sim::EngineTestAccess::state(engine);
+    if (!after.active || after.active->card != sim::Card::Oricorio ||
+        !contains(after.hand, sim::Card::DialgaGX)) {
+      throw std::runtime_error("Rule Box Ability lock must prevent preserving a dead Vital Dance route.");
+    }
+  }
+
+  {
+    const sim::Scenario scenario{"opening-oricorio-dialga-no-regi-route", sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    std::mt19937_64 rng{66304};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::State state = oricorio_dialga_opening_hand();
+    state.hand.erase(std::remove(state.hand.begin(), state.hand.end(), sim::Card::QuickBall),
+                     state.hand.end());
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+    sim::EngineTestAccess::choose_opening_active(engine);
+    const sim::State& after = sim::EngineTestAccess::state(engine);
+    if (!after.active || after.active->card != sim::Card::Oricorio ||
+        !contains(after.hand, sim::Card::DialgaGX)) {
+      throw std::runtime_error("Without the public Regidrago route, the selector must retain Dialga-GX.");
+    }
+  }
+
+  // Vital Dance requires an unlocked on-play Ability, while the redundant-payload
+  // route depends on the public hand graph rather than future deck knowledge:
+  // https://api.pokemontcg.io/v2/cards/sm2-55
+  // https://api.pokemontcg.io/v2/cards/sm5-100
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+}
+
 }  // namespace
 
 int main() {
   test_opening_choice_preserves_unique_dialga_payload();
   test_preserved_dialga_enables_turn_two_vessel_route();
   test_opening_choice_keeps_legacy_order_without_crispin_signal();
+  test_opening_choice_preserves_oricorio_for_vital_dance();
+  test_oricorio_dialga_route_controls();
   return 0;
 }

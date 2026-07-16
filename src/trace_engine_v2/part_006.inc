@@ -52,12 +52,15 @@
   bool can_play_payload_this_turn() const {
     if (!payload_window_open() || !need_payload()) return false;
     if (!strict_payload_timing()) return true;
-    // A prior-turn Regidrago V may evolve this turn. If none exists, only the
-    // K1-proven sole remaining payload is protected; K0 may still spend one of
-    // several possible payloads to establish the future Regidrago line:
+    // Strict JIT recognizes a Dragon payload only on the same player turn that
+    // creates readiness. A payload cannot advance that contract unless a
+    // Regidrago VSTAR already exists or a prior-turn Regidrago V may evolve now:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // https://www.pokemon.com/us/pokemon-tcg/rules
     // https://api.pokemontcg.io/v2/cards/swsh12-136
-    return vstar_can_exist_this_turn() || !sole_known_payload_is_in_hand();
+    // https://github.com/FlareZ123/pokemon-sims/issues/721
+    return vstar_can_exist_this_turn();
   }
 
   // This is a policy knowledge check. Before a legal deck or Prize inspection it

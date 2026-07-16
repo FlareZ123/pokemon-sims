@@ -89,6 +89,32 @@
     return true;
   }
 
+  bool play_guzma_active_promotion_route() {
+    // Guzma switches the user's Active Pokémon only if the opponent's Benched-to-
+    // Active switch was performed. The goldfish scenarios default to Unknown, so
+    // this route is legal only under an explicit Available scenario assumption:
+    // https://api.pokemontcg.io/v2/cards/sm3-115
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#opponent-actions
+    // https://github.com/FlareZ123/pokemon-sims/issues/741
+    if (scenario_.opponent_bench != OpponentBenchState::Available ||
+        !supporter_allowed() || hand_count(Card::Guzma) == 0 ||
+        hand_count(Card::TateLiza) > 0 || !state_.active ||
+        !need_active_vstar() || need_regi() || need_vstar() ||
+        need_energy() || need_payload() || !benched_vstar_promotion_ready()) {
+      return false;
+    }
+
+    Pokemon* target = best_benched_vstar_for_promotion();
+    if (target == nullptr) return false;
+    remove_one(state_.hand, Card::Guzma);
+    state_.discard.push_back(Card::Guzma);
+    state_.supporter_used = true;
+    std::swap(*state_.active, *target);
+    trace("PLAY SUPPORTER", "R-GUZMA-01; R-GAME-SUPPORTER",
+          "The explicit opponent-Bench assumption satisfied Guzma's conditional switch, promoting the complete Benched Regidrago VSTAR.");
+    return true;
+  }
+
   bool play_turo_oricorio_energy_route() {
     if (!turo_oricorio_energy_route_live()) return false;
 
@@ -159,6 +185,7 @@
     if (play_roseanne_vstar_energy_recovery()) return;
     // Evaluate Active-specific routes before the generic preferred-Regidrago axis
     // gate, which may consider a different Benched Regidrago already complete.
+    if (play_guzma_active_promotion_route()) return;
     if (play_turo_oricorio_energy_route()) return;
     if (play_turo_active_promotion_route()) return;
     if (!setup_axis_missing()) return;

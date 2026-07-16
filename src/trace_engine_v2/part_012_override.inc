@@ -138,7 +138,40 @@
                              }));
     const bool can_pay_search_cost = is_legal_cost_available(can_play_payload_this_turn(), true);
 
-    const auto item_candidates_for_current_knowledge = [this, can_pay_search_cost]() {
+    const auto held_treasure_then_quick_ball_is_payable = [this]() {
+      if (item_locked() || hand_count(Card::MysteriousTreasure) == 0 ||
+          hand_count(Card::QuickBall) > 0 || !might_be_unseen(Card::RegidragoVstar) ||
+          !might_be_unseen(Card::QuickBall)) return false;
+      const std::vector<Card> original_hand = state_.hand;
+      const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
+      const bool permit_payload = can_play_payload_this_turn();
+      const auto treasure_cost = choose_discard(permit_payload, true, true, Card::MysteriousTreasure);
+      if (!treasure_cost || !remove_one(state_.hand, Card::MysteriousTreasure) ||
+          !remove_one(state_.hand, *treasure_cost)) {
+        restore_hand();
+        return false;
+      }
+      state_.hand.push_back(Card::RegidragoVstar);
+      state_.hand.push_back(Card::QuickBall);
+      const bool payable = choose_discard(permit_payload, true, true, Card::QuickBall).has_value();
+      restore_hand();
+      return payable;
+    };
+    const bool evolvable_benched_regi = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV && pokemon.entered_turn < state_.turn;
+        });
+    const auto complementary_quick_ball_for_latias = [this, evolvable_benched_regi,
+                                                         &held_treasure_then_quick_ball_is_payable]() {
+      return need_vstar() && state_.active && state_.active->card != Card::RegidragoV &&
+             state_.active->card != Card::RegidragoVstar && evolvable_benched_regi &&
+             bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
+             hand_count(Card::LatiasEx) == 0 && !in_play(Card::LatiasEx) &&
+             might_be_unseen(Card::LatiasEx) && held_treasure_then_quick_ball_is_payable();
+    };
+
+    const auto item_candidates_for_current_knowledge =
+        [this, can_pay_search_cost, &complementary_quick_ball_for_latias]() {
       const bool live_regi_target = hand_count(Card::RegidragoV) == 0 && might_be_unseen(Card::RegidragoV);
       const bool live_vstar_target = hand_count(Card::RegidragoVstar) == 0 && might_be_unseen(Card::RegidragoVstar);
       const bool live_energy_target = (grass_needed() > 0 && might_be_unseen(Card::Grass)) ||
@@ -166,6 +199,17 @@
         add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
       }
       if (known_prized_regi_target) add_item_candidate(Card::HisuianHeavyBall, true);
+      // A held Mysterious Treasure can cover Regidrago VSTAR. Prefer the
+      // complementary Quick Ball when both printed discard costs remain payable
+      // and Latias ex is required to promote the evolved Benched attacker:
+      // https://api.pokemontcg.io/v2/cards/sv1-166
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://api.pokemontcg.io/v2/cards/swsh1-179
+      // https://api.pokemontcg.io/v2/cards/sv8-76
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // https://github.com/FlareZ123/pokemon-sims/issues/781
+      if (complementary_quick_ball_for_latias()) add_item_candidate(Card::QuickBall, true);
       if (need_vstar() && live_vstar_target) {
         add_item_candidate(Card::EvolutionIncense, true);
         add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);

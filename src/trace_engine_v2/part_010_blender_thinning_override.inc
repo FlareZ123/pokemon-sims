@@ -6,6 +6,94 @@
       return false;
     }
 
+    // Path to the Peak suppresses Abilities on Rule Box Pokémon, while Forest Seal
+    // Stone remains usable because Star Alchemy is the Tool's Ability. Treat the
+    // attached Tool as live independently of the holder's own Ability availability:
+    // https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://api.pokemontcg.io/v2/cards/swsh6-148
+    const auto live_fss_holder = [](const Pokemon& pokemon) {
+      return pokemon.tool == Tool::ForestSealStone && is_pokemon_v(pokemon.card);
+    };
+    const bool forest_seal_stone_is_live = !state_.vstar_power_used &&
+        ((state_.active && live_fss_holder(*state_.active)) ||
+         std::any_of(state_.bench.begin(), state_.bench.end(), live_fss_holder));
+
+    if (strict_payload_timing() && need_energy()) {
+      const int missing_grass = grass_needed();
+      const int missing_fire = fire_needed();
+      const int missing_energy = missing_grass + missing_fire;
+      const auto energy_available = [this](const Card energy) {
+        return deck_seen_ ? deck_count_after_search_started(energy) > 0
+                          : might_be_unseen(energy);
+      };
+      const bool grass_available = energy_available(Card::Grass);
+      const bool fire_available = energy_available(Card::Fire);
+      const bool needed_energy_available =
+          (missing_grass > 0 && grass_available) ||
+          (missing_fire > 0 && fire_available);
+      const bool held_manual_attachment = !state_.manual_energy_used &&
+          missing_energy == 1 &&
+          ((missing_grass == 1 && hand_count(Card::Grass) > 0) ||
+           (missing_fire == 1 && hand_count(Card::Fire) > 0));
+
+      const auto crispin_completes_energy_axis = [&]() {
+        if (!supporter_allowed() || !crispin_can_advance_energy_axis()) return false;
+        if (missing_grass == 1 && missing_fire == 0) {
+          return grass_available && (fire_available || !state_.manual_energy_used);
+        }
+        if (missing_grass == 0 && missing_fire == 1) {
+          return fire_available && (grass_available || !state_.manual_energy_used);
+        }
+        return missing_grass == 1 && missing_fire == 1 &&
+            !state_.manual_energy_used && grass_available && fire_available;
+      };
+      const bool held_crispin_route = hand_count(Card::Crispin) > 0 &&
+          crispin_completes_energy_axis();
+
+      const bool held_oricorio_route = !state_.manual_energy_used &&
+          missing_energy == 1 && needed_energy_available && bench_space() > 0 &&
+          hand_count(Card::Oricorio) > 0 &&
+          ability_available_for_pokemon(Card::Oricorio);
+
+      const auto vessel_cost_survives_blender = [this]() {
+        const std::vector<Card> original_hand = state_.hand;
+        if (!remove_one(state_.hand, Card::BrilliantBlender)) return false;
+        const bool payable = choose_discard(false, true, true,
+                                             Card::EarthenVessel).has_value();
+        state_.hand = original_hand;
+        return payable;
+      };
+      const bool held_vessel_route = !state_.manual_energy_used &&
+          missing_energy == 1 && needed_energy_available && !item_locked() &&
+          hand_count(Card::EarthenVessel) > 0 && vessel_cost_survives_blender();
+
+      const bool star_alchemy_energy_route = forest_seal_stone_is_live &&
+          ((!state_.manual_energy_used && missing_energy == 1 &&
+            needed_energy_available) ||
+           (hand_count(Card::Crispin) == 0 && might_be_unseen(Card::Crispin) &&
+            crispin_completes_energy_axis()));
+
+      // Strict JIT recognizes only a Dragon payload discarded during the same turn
+      // that the Active Regidrago VSTAR can pay Apex Dragon's GGF cost. Preserve the
+      // one-shot ACE SPEC after the manual attachment window is lost unless a concrete
+      // current-turn accelerator remains observable:
+      // https://api.pokemontcg.io/v2/cards/sv8-164
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://www.pokemon.com/us/pokemon-tcg/rules
+      // https://api.pokemontcg.io/v2/cards/sv7-133
+      // https://api.pokemontcg.io/v2/cards/sm2-55
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://api.pokemontcg.io/v2/cards/swsh12-156
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+      // https://github.com/FlareZ123/pokemon-sims/issues/737
+      if (!held_manual_attachment && !held_crispin_route &&
+          !held_oricorio_route && !held_vessel_route &&
+          !star_alchemy_energy_route) {
+        return false;
+      }
+    }
+
     const int supporters_in_hand = static_cast<int>(
         std::count_if(state_.hand.begin(), state_.hand.end(), is_supporter));
     const bool only_tate_supporter_held =
@@ -24,23 +112,11 @@
       return false;
     }
 
-    // Path to the Peak suppresses Abilities on Rule Box Pokémon, while Forest Seal
-    // Stone remains usable because Star Alchemy is the Tool's Ability. Treat the
-    // attached Tool as live independently of the holder's own Ability availability:
-    // https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
-    // https://api.pokemontcg.io/v2/cards/swsh12-156
-    // https://api.pokemontcg.io/v2/cards/swsh6-148
-    const auto live_fss_holder = [](const Pokemon& pokemon) {
-      return pokemon.tool == Tool::ForestSealStone && is_pokemon_v(pokemon.card);
-    };
-    const bool forest_seal_stone_is_live =
-        (state_.active && live_fss_holder(*state_.active)) ||
-        std::any_of(state_.bench.begin(), state_.bench.end(), live_fss_holder);
     const bool fss_tate_incomplete_promotion = strict_payload_timing() &&
-        !state_.vstar_power_used && supporter_allowed() && need_active_vstar() &&
+        forest_seal_stone_is_live && supporter_allowed() && need_active_vstar() &&
         !need_energy() && !benched_vstar_promotion_ready() &&
         !can_free_retreat_with_latias() && hand_count(Card::TateLiza) == 0 &&
-        might_be_unseen(Card::TateLiza) && forest_seal_stone_is_live;
+        might_be_unseen(Card::TateLiza);
     if (fss_tate_incomplete_promotion) {
       // Star Alchemy can search Tate & Liza, but the actual Benched Regidrago VSTAR
       // must already pay Apex Dragon's GGF cost before the one-shot Blender payload

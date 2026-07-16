@@ -1,0 +1,33 @@
+name: Issue 674 Simulate This
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  simulate-this-and-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel 2
+      - name: Simulate strict JIT going first
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 3 | tee build/simulate-this-1.txt
+      - name: Simulate turn-two Item lock going second
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee build/simulate-this-2.txt
+      - name: Simulate Rule Box Ability lock going second
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee build/simulate-this-3.txt
+      - name: Generate fixed-seed T2 T3 T4 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/t2_t3_matrix.csv
+      - name: Upload simulation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-674-simulation-evidence
+          path: |
+            build/simulate-this-1.txt
+            build/simulate-this-2.txt
+            build/simulate-this-3.txt
+            build/t2_t3_matrix.csv
+          if-no-files-found: error

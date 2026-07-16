@@ -105,3 +105,124 @@ jobs:
             build-sanitizers/Testing
             sanitizer-build.log
           if-no-files-found: warn
+
+  strict-jit-persistence-diagnosis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out current main simulator
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Record exact main commit
+        run: git rev-parse HEAD | tee main-commit.txt
+      - name: Build current active simulator
+        run: |
+          cmake -S . -B build-original -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-original --target regidrago_sim --parallel 2
+      - name: Reproduce current seed-3 trace
+        run: |
+          ./build-original/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 --require-ready-by 3 | tee original-trace.txt
+          grep -q "T3 | LEGACY STAR" original-trace.txt
+      - name: Prove current readiness forgets prior-turn payloads
+        run: |
+          cat > /tmp/payload_persistence_repro.cpp <<'CPP'
+          #define REGIDRAGO_SIM_NO_MAIN
+          #include "src/regidrago_sim.cpp"
+          #include <cassert>
+          #include <random>
+          namespace sim {
+          struct EngineTestAccess {
+            static State& state(Engine& engine) { return engine.state_; }
+            static bool payload_ready(Engine& engine) { return engine.payload_ready(); }
+            static bool need_payload(Engine& engine) { return engine.need_payload(); }
+          };
+          }
+          int main() {
+            using namespace sim;
+            const Scenario scenario{"strict-jit-persistence-repro", DciProfile::StrictJit, LockMode::None, false, 4};
+            std::mt19937_64 rng(3);
+            Engine engine(scenario, baseline_recipe(), rng);
+            State& state = EngineTestAccess::state(engine);
+            state.turn = 3;
+            state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+            state.discard = {Card::MegaDragonite};
+            state.discarded_this_turn.clear();
+            assert(!EngineTestAccess::payload_ready(engine));
+            assert(EngineTestAccess::need_payload(engine));
+            return 0;
+          }
+          CPP
+          g++ -std=c++20 -O2 -I. /tmp/payload_persistence_repro.cpp -o /tmp/payload_persistence_repro
+          /tmp/payload_persistence_repro
+      - name: Apply diagnostic persistence correction in workspace
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("src/trace_engine_v2/part_004.inc")
+          text = path.read_text()
+          old = '''  bool payload_ready() const {
+            // Readiness is defined exclusively by is_payload. Dipplin TWM 127 is a
+            // legal Dragon search target, while maintainer policy excludes Syrup Catcher
+            // from the A/S ready-state set: https://api.pokemontcg.io/v2/cards/sv6-127
+            if (!strict_payload_timing()) return std::any_of(state_.discard.begin(), state_.discard.end(), is_payload);
+            // A strict-JIT payload must both enter discard this turn and still be in discard
+            // at the ready check. recover_discard_to_hand removes a recovered current-turn card.
+            return std::any_of(state_.discarded_this_turn.begin(), state_.discarded_this_turn.end(), is_payload);
+          }
+'''
+          new = '''  bool payload_ready() const {
+            // Readiness is persistent zone state. Strict JIT is a discard-decision
+            // policy, not a same-turn freshness requirement.
+            return std::any_of(state_.discard.begin(), state_.discard.end(), is_payload);
+          }
+'''
+          if text.count(old) != 1:
+              raise SystemExit("payload_ready block did not match exactly once")
+          path.write_text(text.replace(old, new))
+          PY
+          git diff -- src/trace_engine_v2/part_004.inc | tee diagnostic-patch.diff
+      - name: Build diagnostically corrected simulator
+        run: |
+          cmake -S . -B build-fixed -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-fixed --target regidrago_sim --parallel 2
+      - name: Run corrected persistence fixture
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('/tmp/payload_persistence_repro.cpp')
+          text = path.read_text()
+          text = text.replace('assert(!EngineTestAccess::payload_ready(engine));', 'assert(EngineTestAccess::payload_ready(engine));')
+          text = text.replace('assert(EngineTestAccess::need_payload(engine));', 'assert(!EngineTestAccess::need_payload(engine));')
+          path.write_text(text)
+          PY
+          g++ -std=c++20 -O2 -I. /tmp/payload_persistence_repro.cpp -o /tmp/payload_persistence_fixed
+          /tmp/payload_persistence_fixed
+      - name: Rerun identical seed after persistence correction
+        run: |
+          ./build-fixed/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 --require-ready-by 3 | tee fixed-trace.txt
+          grep -q "T3 | READY" fixed-trace.txt
+          if grep -q "T3 | LEGACY STAR" fixed-trace.txt; then
+            echo "Legacy Star remained in the corrected trace"
+            exit 1
+          fi
+      - name: Run full test suite as a semantic blast-radius diagnostic
+        continue-on-error: true
+        run: |
+          cmake --build build-fixed --parallel 2
+          set +e
+          ctest --test-dir build-fixed --output-on-failure | tee fixed-ctest.txt
+          echo ${PIPESTATUS[0]} > fixed-ctest-exit-code.txt
+          exit 0
+      - name: Upload diagnosis artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: strict-jit-persistence-diagnosis
+          path: |
+            main-commit.txt
+            original-trace.txt
+            fixed-trace.txt
+            diagnostic-patch.diff
+            fixed-ctest.txt
+            fixed-ctest-exit-code.txt
+          if-no-files-found: error

@@ -2,7 +2,7 @@ name: Temporary issue 653 v2 runner
 
 on:
   pull_request:
-    types: [edited]
+    types: [edited, reopened, synchronize]
     branches: [main]
 
 permissions:

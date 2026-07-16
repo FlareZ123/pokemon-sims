@@ -23,6 +23,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Archive exact PR source for independent local validation
+        run: git ls-files -z | tar --null -T - -czf issue-719-source.tgz
+      - name: Upload exact PR source
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-719-source
+          path: issue-719-source.tgz
+          if-no-files-found: error
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build

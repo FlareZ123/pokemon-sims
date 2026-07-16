@@ -12,7 +12,7 @@ jobs:
       - name: Configure Release
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator
-        run: cmake --build build --parallel 2
+        run: cmake --build build --target regidrago_sim --parallel 2
       - name: Run focused Release regression
         # Issue and rule evidence: https://github.com/FlareZ123/pokemon-sims/issues/719
         run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/burnet_ready_turn_gate_tests.cpp -o build/burnet_ready_turn_gate_tests && ./build/burnet_ready_turn_gate_tests

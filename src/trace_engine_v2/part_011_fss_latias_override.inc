@@ -93,6 +93,32 @@
       const bool payload_present = payload_might_be_in_deck();
       const bool one_discard_cost_available =
           is_legal_cost_available(can_play_payload_this_turn(), true);
+      const bool held_payload_is_only_missing_axis = need_payload() && !need_regi() &&
+          !need_vstar() && !need_energy() && !need_active_vstar() &&
+          can_play_payload_this_turn() && !item_locked() &&
+          std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+      // A held Dragon can pay the Item's discard cost and complete strict JIT only
+      // when the Item retains a legal search target in the inspected deck:
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Trainer resolution ruling: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+      // Strict-JIT contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+      const auto held_payload_item_advances = [this, held_payload_is_only_missing_axis](const Card item) {
+        if (!held_payload_is_only_missing_axis) return false;
+        switch (item) {
+          case Card::MysteriousTreasure:
+            return std::any_of(state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic);
+          case Card::QuickBall:
+            return std::any_of(state_.deck.begin(), state_.deck.end(), is_basic);
+          case Card::EarthenVessel:
+            return deck_count_after_search_started(Card::Grass) > 0 ||
+                deck_count_after_search_started(Card::Fire) > 0;
+          default:
+            return false;
+        }
+      };
       const bool arven_has_live_chain = supporter_allowed() && !item_locked() &&
           ((need_regi() && bench_space() > 0 &&
             ((deck_count_after_search_started(Card::RegidragoV) > 0 &&
@@ -145,8 +171,9 @@
           case Card::Oricorio:
             return need_energy() && bench_space() > 0 && needed_energy_present;
           case Card::EarthenVessel:
-            return need_energy() && !item_locked() && needed_energy_present &&
-                one_discard_cost_available;
+            return (need_energy() && !item_locked() && needed_energy_present &&
+                    one_discard_cost_available) ||
+                held_payload_item_advances(Card::EarthenVessel);
           case Card::Grass:
             return grass_needed() > 0 && !state_.manual_energy_used;
           case Card::Fire:
@@ -154,14 +181,16 @@
           case Card::Arven:
             return arven_has_live_chain;
           case Card::MysteriousTreasure:
-            return !item_locked() && one_discard_cost_available &&
-                ((need_regi() && deck_count_after_search_started(Card::RegidragoV) > 0) ||
-                 (need_vstar() && deck_count_after_search_started(Card::RegidragoVstar) > 0) ||
-                 (need_active_vstar() && deck_count_after_search_started(Card::LatiasEx) > 0));
+            return (!item_locked() && one_discard_cost_available &&
+                    ((need_regi() && deck_count_after_search_started(Card::RegidragoV) > 0) ||
+                     (need_vstar() && deck_count_after_search_started(Card::RegidragoVstar) > 0) ||
+                     (need_active_vstar() && deck_count_after_search_started(Card::LatiasEx) > 0))) ||
+                held_payload_item_advances(Card::MysteriousTreasure);
           case Card::QuickBall:
-            return !item_locked() && one_discard_cost_available &&
-                ((need_regi() && deck_count_after_search_started(Card::RegidragoV) > 0) ||
-                 (need_active_vstar() && deck_count_after_search_started(Card::LatiasEx) > 0));
+            return (!item_locked() && one_discard_cost_available &&
+                    ((need_regi() && deck_count_after_search_started(Card::RegidragoV) > 0) ||
+                     (need_active_vstar() && deck_count_after_search_started(Card::LatiasEx) > 0))) ||
+                held_payload_item_advances(Card::QuickBall);
           case Card::Serena:
             return need_payload() && can_play_payload_this_turn() && supporter_allowed() &&
                 std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);

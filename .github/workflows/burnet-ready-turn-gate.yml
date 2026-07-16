@@ -20,14 +20,23 @@ jobs:
         env:
           ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
         run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=address,undefined -fno-omit-frame-pointer tests/burnet_ready_turn_gate_tests.cpp -o build/burnet_ready_turn_gate_tests_san && ./build/burnet_ready_turn_gate_tests_san
-      - name: Trace strict JIT no lock
+      - name: Regression trace - strict JIT no lock
         # Documented trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
-        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 | tee burnet-trace-no-lock.txt
-      - name: Trace turn-two Item lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 | tee burnet-trace-regression-no-lock.txt
+      - name: Regression trace - turn-two Item lock
         # Reproduces the issue's CI-derived route: https://github.com/FlareZ123/pokemon-sims/issues/719
-        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 17 | tee burnet-trace-item-lock.txt
-      - name: Trace Rule Box Ability lock
-        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-first --seed 29 | tee burnet-trace-rulebox-lock.txt
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 17 | tee burnet-trace-regression-item-lock.txt
+      - name: Regression trace - Rule Box Ability lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-first --seed 29 | tee burnet-trace-regression-rulebox-lock.txt
+      - name: Perfect-play pass 1 - strict JIT Powerglass route
+        # The trace must preserve the payload until the T3 ready turn: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 | tee burnet-trace-perfect-1.txt
+      - name: Perfect-play pass 2 - strict JIT Legacy Star route
+        # The first legal attack turn is T2 when going first: https://www.pokemon.com/us/pokemon-tcg/rules
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 | tee burnet-trace-perfect-2.txt
+      - name: Perfect-play pass 3 - matchup-flex immediate route
+        # Matchup-flex still requires current-turn payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+        run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 | tee burnet-trace-perfect-3.txt
       - name: Generate T2 and T3 matrix
         # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
         run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out burnet-t2-t3-matrix.csv

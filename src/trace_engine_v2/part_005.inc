@@ -166,6 +166,44 @@
       return;
     }
 
+    const bool no_lock_oricorio_dialga_are_only_opening_basics =
+        hand_count(Card::Oricorio) > 0 && hand_count(Card::DialgaGX) > 0 &&
+        hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&
+        hand_count(Card::MawileGX) == 0 && hand_count(Card::TapuLeleGX) == 0;
+    const bool no_lock_dialga_is_redundant_payload =
+        hand_count(Card::DialgaGX) == 1 && payloads_in_hand > 1;
+    const bool no_lock_vital_dance_has_energy_value = !both_manual_energy_types_held;
+    const bool no_lock_public_regidrago_v_route =
+        hand_count(Card::RegidragoVstar) > 0 &&
+        (hand_count(Card::QuickBall) > 0 ||
+         hand_count(Card::MysteriousTreasure) > 0 ||
+         hand_count(Card::Arven) > 0 ||
+         hand_count(Card::StevensResolve) > 0);
+
+    // Setup may start a redundant Dialga-GX so Oricorio remains in hand and can
+    // later be played onto the Bench for Vital Dance. Apply the no-lock route only
+    // under strict JIT, while another held Dragon covers payload timing, at least
+    // one GGF Energy type is missing, Regidrago VSTAR is held, and the public hand
+    // exposes Regidrago V through a direct one-discard Item, Arven, or Steven's Resolve:
+    // Setup procedure: https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Regression evidence: https://github.com/FlareZ123/pokemon-sims/issues/663
+    if (no_lock_oricorio_dialga_are_only_opening_basics &&
+        scenario_.locks == LockMode::None && scenario_.dci == DciProfile::StrictJit &&
+        no_lock_dialga_is_redundant_payload && no_lock_vital_dance_has_energy_value &&
+        no_lock_public_regidrago_v_route && remove_one(state_.hand, Card::DialgaGX)) {
+      state_.active = Pokemon{Card::DialgaGX, 0};
+      outcome_.started_regi = false;
+      return;
+    }
+
     // Oricorio's Vital Dance triggers only when it is played from hand onto the
     // Bench during the turn. When Mawile-GX is the other available opening Basic,
     // start Mawile-GX so Oricorio remains in hand for that legal setup trigger:

@@ -107,12 +107,64 @@
            (remaining_fire == 1 && fire_in_hand > 0);
   }
 
+  bool strict_jit_blender_active_axis_can_finish_this_turn() {
+    if (!strict_payload_timing() || !need_active_vstar() ||
+        !benched_vstar_promotion_ready()) {
+      return true;
+    }
+
+    const bool held_latias_route = state_.active &&
+        is_basic(state_.active->card) && hand_count(Card::LatiasEx) > 0 &&
+        !in_play(Card::LatiasEx) && bench_space() > 0 &&
+        ability_available_for_pokemon(Card::LatiasEx) && !state_.retreat_used;
+    const bool held_tate_route = supporter_allowed() &&
+        hand_count(Card::TateLiza) > 0;
+    const bool active_regi_can_evolve_ready = state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        state_.active->grass >= 2 && state_.active->fire >= 1 &&
+        (hand_count(Card::RegidragoVstar) > 0 ||
+         held_item_can_find_pending_vstar());
+
+    const auto live_fss_holder = [](const Pokemon& pokemon) {
+      return pokemon.tool == Tool::ForestSealStone &&
+             is_pokemon_v(pokemon.card);
+    };
+    const bool forest_seal_stone_is_live =
+        !state_.vstar_power_used && supporter_allowed() &&
+        ((state_.active && live_fss_holder(*state_.active)) ||
+         std::any_of(state_.bench.begin(), state_.bench.end(),
+                     live_fss_holder));
+    const bool fss_latias_route = forest_seal_stone_is_live && state_.active &&
+        is_basic(state_.active->card) && !state_.retreat_used && bench_space() > 0 &&
+        !in_play(Card::LatiasEx) && ability_available_for_pokemon(Card::LatiasEx) &&
+        might_be_unseen(Card::LatiasEx);
+    const bool fss_tate_route = forest_seal_stone_is_live &&
+        might_be_unseen(Card::TateLiza);
+
+    // Strict JIT counts Blender's Dragon only during this turn. Preserve the
+    // one-copy ACE SPEC while a powered Benched Regidrago VSTAR has no observable
+    // same-turn route to the Active Spot:
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/725
+    return can_free_retreat_with_latias() || held_latias_route ||
+           held_tate_route || active_regi_can_evolve_ready ||
+           fss_latias_route || fss_tate_route;
+  }
+
   bool play_brilliant_blender() {
     // Brilliant Blender may search for and discard up to 5 deck cards:
     // https://api.pokemontcg.io/v2/cards/sv8-164
     if (item_locked() || hand_count(Card::BrilliantBlender) == 0 ||
         !can_play_payload_this_turn() || !payload_might_be_in_deck() ||
-        !blender_energy_axis_can_finish_this_turn()) {
+        !blender_energy_axis_can_finish_this_turn() ||
+        !strict_jit_blender_active_axis_can_finish_this_turn()) {
       return false;
     }
 

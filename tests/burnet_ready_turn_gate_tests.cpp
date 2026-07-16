@@ -156,6 +156,31 @@ void test_earthen_vessel_allows_final_energy_route() {
   }
 }
 
+void test_one_bench_slot_cannot_host_latias_and_oricorio() {
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::MawileGX, 1, 0, 0, sim::Tool::None};
+  state.bench = {
+      sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None},
+      sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0, sim::Tool::None},
+      sim::Pokemon{sim::Card::DialgaGX, 1, 0, 0, sim::Tool::None},
+      sim::Pokemon{sim::Card::TapuLeleGX, 1, 0, 0, sim::Tool::None},
+  };
+  state.hand = {sim::Card::ProfessorBurnet, sim::Card::LatiasEx,
+                sim::Card::Oricorio};
+  state.deck = {sim::Card::MegaDragonite, sim::Card::Dragapult,
+                sim::Card::Fire};
+
+  // One open Bench slot cannot hold both Latias ex for the free-retreat axis and
+  // Oricorio for the final Fire Energy. Treating the two one-shot connectors as
+  // independent would create an impossible hyperconnected route:
+  // https://api.pokemontcg.io/v2/cards/sv8-76
+  // https://api.pokemontcg.io/v2/cards/sm2-55
+  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // https://github.com/FlareZ123/pokemon-sims/issues/719
+  expect_rejected(std::move(state), "single Bench-slot contention");
+}
+
 void test_latias_route_allows_benched_vstar() {
   Fixture fixture;
   sim::State state;
@@ -210,6 +235,7 @@ int main() {
     test_held_energy_allows_immediate_route();
     test_held_oricorio_allows_energy_compression();
     test_earthen_vessel_allows_final_energy_route();
+    test_one_bench_slot_cannot_host_latias_and_oricorio();
     test_latias_route_allows_benched_vstar();
     test_no_discard_control_keeps_banking_behavior();
     std::cout << "Burnet ready-turn gate tests passed\n";

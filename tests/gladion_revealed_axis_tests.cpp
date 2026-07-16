@@ -41,6 +41,7 @@ void missing_basic_beats_redundant_vstar() {
   // https://api.pokemontcg.io/v2/cards/sm4-95
   // https://api.pokemontcg.io/v2/cards/swsh12-135
   // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // https://github.com/FlareZ123/pokemon-sims/issues/780
   if (!sim::EngineTestAccess::play_gladion(engine)) throw std::runtime_error("Gladion did not resolve.");
   const sim::State& after = sim::EngineTestAccess::state(engine);

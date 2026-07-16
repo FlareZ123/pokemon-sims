@@ -161,6 +161,77 @@ void test_multiple_payloads_without_recovery_graph_keep_legacy_order() {
   }
 }
 
+void test_lock_scenarios_preserve_vital_dance_from_redundant_dialga() {
+  const sim::LockMode locks[] = {sim::LockMode::TurnTwoItem, sim::LockMode::FullItem,
+                                 sim::LockMode::FullRuleBoxAbility,
+                                 sim::LockMode::FullCombined};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  for (const sim::LockMode lock : locks) {
+    const sim::Scenario scenario{"opening-oricorio-dialga-lock", sim::DciProfile::StrictJit,
+                                 lock, false, 4};
+    std::mt19937_64 rng{674 + static_cast<unsigned>(lock)};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::State state;
+    state.hand = {sim::Card::QuickBall, sim::Card::TeamYellsCheer,
+                  sim::Card::MegaDragonite, sim::Card::DialgaGX,
+                  sim::Card::Oricorio, sim::Card::Powerglass,
+                  sim::Card::RegidragoVstar};
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+
+    // Setup may choose Dialga-GX as the opening Active. Oricorio has no Rule Box,
+    // and Vital Dance triggers only after it is played from hand onto the Bench, so
+    // preserving it is legal under every modeled Item/Rule-Box lock in this graph:
+    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+    // https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://api.pokemontcg.io/v2/cards/sm5-100
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/swsh6-148
+    // https://github.com/FlareZ123/pokemon-sims/issues/674
+    sim::EngineTestAccess::choose_opening_active(engine);
+    const sim::State& after = sim::EngineTestAccess::state(engine);
+    if (!after.active || after.active->card != sim::Card::DialgaGX ||
+        !contains(after.hand, sim::Card::Oricorio) ||
+        !contains(after.hand, sim::Card::MegaDragonite)) {
+      throw std::runtime_error(
+          "Lock scenarios should start redundant Dialga-GX and preserve Vital Dance.");
+    }
+  }
+}
+
+void test_lock_scenarios_keep_unique_dialga_payload_in_hand() {
+  const sim::LockMode locks[] = {sim::LockMode::TurnTwoItem, sim::LockMode::FullItem,
+                                 sim::LockMode::FullRuleBoxAbility,
+                                 sim::LockMode::FullCombined};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  for (const sim::LockMode lock : locks) {
+    const sim::Scenario scenario{"opening-oricorio-unique-dialga-lock",
+                                 sim::DciProfile::StrictJit, lock, false, 4};
+    std::mt19937_64 rng{684 + static_cast<unsigned>(lock)};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::State state;
+    state.hand = {sim::Card::QuickBall, sim::Card::TeamYellsCheer,
+                  sim::Card::DialgaGX, sim::Card::Oricorio,
+                  sim::Card::Powerglass, sim::Card::RegidragoVstar,
+                  sim::Card::Crispin};
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+
+    // Dialga-GX remains the only held Apex Dragon payload in this control, so DCI
+    // preservation keeps it in hand rather than consuming it as the opening Active:
+    // https://api.pokemontcg.io/v2/cards/sm5-100
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://github.com/FlareZ123/pokemon-sims/issues/674
+    sim::EngineTestAccess::choose_opening_active(engine);
+    const sim::State& after = sim::EngineTestAccess::state(engine);
+    if (!after.active || after.active->card != sim::Card::Oricorio ||
+        !contains(after.hand, sim::Card::DialgaGX)) {
+      throw std::runtime_error(
+          "A unique Dialga-GX payload should stay in hand under modeled locks.");
+    }
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -169,5 +240,7 @@ int main() {
   test_opening_choice_keeps_legacy_order_without_crispin_signal();
   test_opening_choice_preserves_dialga_with_redundant_payload_graph();
   test_multiple_payloads_without_recovery_graph_keep_legacy_order();
+  test_lock_scenarios_preserve_vital_dance_from_redundant_dialga();
+  test_lock_scenarios_keep_unique_dialga_payload_in_hand();
   return 0;
 }

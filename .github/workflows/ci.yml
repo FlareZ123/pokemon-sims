@@ -14,6 +14,8 @@ jobs:
           python-version: "3.12"
       - name: Validate card audit provenance contract
         run: python tests/card_audit_contract_tests.py
+      - name: Validate derived card audit categories
+        run: python tests/card_audit_category_contract_tests.py
       - name: Validate setup report provenance contract
         run: python tests/setup_report_contract_tests.py
 

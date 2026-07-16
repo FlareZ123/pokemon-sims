@@ -30,13 +30,24 @@ jobs:
           from pathlib import Path
 
 
-          def simulator_source_digest(repo_root: Path) -> str:
-              """Hash the exact simulator translation-unit inputs in stable path order."""
+          def simulator_policy_source_digest(repo_root: Path) -> str:
+              """Hash the exact simulation-policy inputs in stable path order."""
               # A policy source change invalidates the published fixed-seed matrix until
               # regeneration records the new digest: https://github.com/FlareZ123/pokemon-sims/issues/642
-              # The executable is composed from this source tree: https://github.com/FlareZ123/pokemon-sims/blob/main/src/regidrago_sim.cpp
+              # The translation-unit wrapper enumerates the policy includes:
+              # https://github.com/FlareZ123/pokemon-sims/blob/main/src/regidrago_sim.cpp
               source_root = repo_root / "src"
-              paths = sorted(path for path in source_root.rglob("*") if path.is_file())
+              excluded = {
+                  # part_016 contains the CLI parser, trace search, output writing, and main;
+                  # changes such as #641 do not alter aggregate trial outcomes:
+                  # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
+                  # https://github.com/FlareZ123/pokemon-sims/issues/641
+                  repo_root / "src" / "trace_engine_v2" / "part_016.inc",
+              }
+              paths = sorted(
+                  path for path in source_root.rglob("*")
+                  if path.is_file() and path not in excluded
+              )
               digest = hashlib.sha256()
               for path in paths:
                   relative = path.relative_to(repo_root).as_posix().encode("utf-8")
@@ -52,27 +63,31 @@ jobs:
 
           path = Path('scripts/regenerate_setup_baselines.py')
           text = path.read_text()
+          text = text.replace('import tempfile\n', 'import tempfile\nimport sys\n', 1)
           text = text.replace(
               'from pathlib import Path\n',
-              'from pathlib import Path\n\nfrom scripts.baseline_provenance import simulator_source_digest\n',
+              'from pathlib import Path\n\nREPO_ROOT = Path(__file__).resolve().parents[1]\nsys.path.insert(0, str(REPO_ROOT))\nfrom scripts.baseline_provenance import simulator_policy_source_digest\n',
               1,
           )
           text = text.replace(
               '        "trials": trials,\n        "traces": [],\n',
-              '        "trials": trials,\n        # Bind the generated matrix to the exact simulator inputs so later policy changes\n        # cannot leave the published probabilities stale: https://github.com/FlareZ123/pokemon-sims/issues/642\n        "simulator_source_sha256": simulator_source_digest(Path.cwd()),\n        "traces": [],\n',
+              '        "trials": trials,\n        # Bind the generated matrix to the exact policy inputs so later policy changes\n        # cannot leave the published probabilities stale: https://github.com/FlareZ123/pokemon-sims/issues/642\n        "simulator_policy_source_sha256": simulator_policy_source_digest(REPO_ROOT),\n        "traces": [],\n',
               1,
           )
           path.write_text(text)
 
           path = Path('tests/setup_report_contract_tests.py')
           text = path.read_text()
+          text = text.replace('import json\n', 'import json\nimport sys\n', 1)
           text = text.replace(
-              'from types import ModuleType\n',
-              'from types import ModuleType\n\nfrom scripts.baseline_provenance import simulator_source_digest\n',
+              'REPO_ROOT = Path(__file__).resolve().parents[1]\n',
+              'REPO_ROOT = Path(__file__).resolve().parents[1]\nsys.path.insert(0, str(REPO_ROOT))\nfrom scripts.baseline_provenance import simulator_policy_source_digest\n',
               1,
           )
           needle = '    observed_trials = {int(row["trials"]) for row in rows}\n'
-          block = '''    # The fixed-seed artifact must be regenerated whenever an executable source input changes:\n    # https://github.com/FlareZ123/pokemon-sims/issues/642\n    # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json\n    expected_source_digest = simulator_source_digest(REPO_ROOT)\n    recorded_source_digest = str(manifest.get("simulator_source_sha256", ""))\n    if recorded_source_digest != expected_source_digest:\n        raise AssertionError(\n            "Simulator source changed after the published setup baseline. Regenerate "\n            "results/simulation_results.csv and results/baseline_manifest.json before merging."\n        )\n\n'''
+          block = '''    # The fixed-seed artifact must be regenerated whenever a simulation-policy input changes:\n    # https://github.com/FlareZ123/pokemon-sims/issues/642\n    # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json\n    expected_source_digest = simulator_policy_source_digest(REPO_ROOT)\n    recorded_source_digest = str(manifest.get("simulator_policy_source_sha256", ""))\n    if recorded_source_digest != expected_source_digest:\n        raise AssertionError(\n            "Simulator policy changed after the published setup baseline. Regenerate "\n            "results/simulation_results.csv and results/baseline_manifest.json before merging."\n        )\n\n'''
+          if needle not in text:
+              raise SystemExit('setup report trial inventory insertion point was not found')
           text = text.replace(needle, block + needle, 1)
           path.write_text(text)
           PY
@@ -82,17 +97,17 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
-          from scripts.baseline_provenance import simulator_source_digest
+          from scripts.baseline_provenance import simulator_policy_source_digest
 
           path = Path('results/baseline_manifest.json')
           manifest = json.loads(path.read_text())
-          manifest['simulator_source_sha256'] = simulator_source_digest(Path.cwd())
+          manifest['simulator_policy_source_sha256'] = simulator_policy_source_digest(Path.cwd())
           path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
 
           readme = Path('results/README.md')
           text = readme.read_text()
           old = '`simulation_results.csv` is the prior 100,000-trial baseline produced with seed `20260705`. It remains useful as a historical audit artifact, but it is **not the result set for the current `fix-sims` policy**: K1 Prize-aware routing, Heavy Ball, Arven fallback, Tate & Liza draw, and Rule Box lock decisions were refined afterward. Regenerate it from the current executable before using it for deck-performance claims.'
-          new = '`simulation_results.csv` is the current 100,000-trial baseline produced with seed `20260705`. Its manifest records a SHA-256 digest of every simulator source input, and the setup-report contract rejects policy changes until the matrix is regenerated: https://github.com/FlareZ123/pokemon-sims/issues/642 and https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json.'
+          new = '`simulation_results.csv` is the current 100,000-trial baseline produced with seed `20260705`. Its manifest records a SHA-256 digest of the simulation-policy source inputs, and the setup-report contract rejects policy changes until the matrix is regenerated: https://github.com/FlareZ123/pokemon-sims/issues/642 and https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json.'
           if old not in text:
               raise SystemExit('expected stale-baseline notice was not found')
           readme.write_text(text.replace(old, new, 1))
@@ -104,5 +119,5 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add scripts/baseline_provenance.py scripts/regenerate_setup_baselines.py tests/setup_report_contract_tests.py results/simulation_results.csv results/baseline_manifest.json results/README.md docs/REPORT.md docs/TRACE_AUDIT.md README.md .github/workflows/apply-642.yml
-          git commit -m "Refresh baseline and bind it to simulator source (#642)"
+          git commit -m "Refresh baseline and bind it to simulator policy source (#642)"
           git push origin HEAD:${{ github.head_ref }}

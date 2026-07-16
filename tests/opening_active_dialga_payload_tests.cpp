@@ -225,6 +225,38 @@ void test_full_item_lock_rejects_direct_regi_item_signal() {
   }
 }
 
+void test_blender_duplicate_crispin_preserves_wonder_tag() {
+  const sim::Scenario scenario{"opening-dialga-blender-control", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{65303};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::DialgaGX,
+                sim::Card::Crispin, sim::Card::QuickBall,
+                sim::Card::MegaDragonite, sim::Card::BrilliantBlender,
+                sim::Card::Crispin};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Brilliant Blender already supplies direct payload access, and duplicate Crispin
+  // saturates the held Energy-Supporter route. Wonder Tag retains greater marginal
+  // value than preserving Dialga-GX in hand:
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/sm5-100
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // https://github.com/FlareZ123/pokemon-sims/issues/653
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::DialgaGX ||
+      !contains(after.hand, sim::Card::TapuLeleGX)) {
+    throw std::runtime_error("Blender plus duplicate Crispin should preserve Wonder Tag.");
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -235,5 +267,6 @@ int main() {
   test_multiple_payloads_without_recovery_graph_keep_legacy_order();
   test_opening_choice_preserves_dialga_with_direct_regi_route();
   test_full_item_lock_rejects_direct_regi_item_signal();
+  test_blender_duplicate_crispin_preserves_wonder_tag();
   return 0;
 }

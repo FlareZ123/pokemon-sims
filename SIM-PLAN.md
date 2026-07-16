@@ -54,7 +54,7 @@ The policy now recognizes two-step payload lines that are legal without a draw-o
 - Ultra Ball is evaluated using its actual two-card hand payment, with the dynamic DCI selector checking both discards.
 - Evolution Incense is included as a deliberately narrow evolution-axis comparator.
 
-A variant-builder defect that rejected zero-copy comparison cards was corrected. CSV values are now quoted, so comma-bearing combo labels remain machine-readable. The final data was regenerated only after the new policy, schema check, and full CTest pass.
+Historical variant-builder work is retained here as design context. The current executable does not expose a variant builder or emit deck-swap rows; it writes baseline `all_scenarios()` rows only: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L271-L283. The prior `variant_results.csv` was removed and must not support current claims: https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7.
 
 ## Simulation state
 
@@ -182,7 +182,7 @@ Dragapult ex and Mega Dragonite ex are S-tier. Dialga-GX’s Timeless-GX and His
 - `P(ready by T2)`, `P(ready by T3)`, and `P(ready by T4)`.
 - Monte Carlo standard error in percentage points for baseline scenario values.
 - Setup-tool use rates and opening Regidrago V rate.
-- Point deltas for card-swap variants against the baseline under matched seeds.
+- Baseline scenario probabilities. Matched-seed card-swap deltas remain a future extension until a current generator and result artifact are restored: https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7.
 
 ## Validation plan
 
@@ -191,7 +191,7 @@ Dragapult ex and Mega Dragonite ex are S-tier. Dialga-GX’s Timeless-GX and His
 3. Unit-test deck total and category totals.
 4. Build with warnings enabled.
 5. Run `ctest`.
-6. Smoke-test every scenario and every variant.
+6. Smoke-test every implemented baseline scenario. A future variant generator must add its own executable coverage before variant claims return: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L271-L283.
 7. Run a fixed-seed large trial count for reproducible final CSV files.
 8. Inspect any implausible result by checking timing gates, Supporter contention, and same-turn discard markers.
 9. Record known omissions before interpreting the percentages.

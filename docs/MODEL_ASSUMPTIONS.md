@@ -26,7 +26,6 @@ The fixed seed makes each report reproducible. The Monte Carlo standard error sh
 - Path-style Rule Box Ability suppression and Field Blower removal while Items are legal.
 - Item-lock restrictions.
 - Strict same-turn payload tracking.
-- Matched-seed deck swap comparisons.
 
 ## Deliberate simplifications
 
@@ -49,6 +48,10 @@ Many card effects have correct text recorded in `RULES_AND_INTERACTIONS.md`, tho
 - Channeler, recovery loops, Chaotic Swell replacement, or Professor Turo after setup.
 
 Their discrete value is still preserved in the DCI profiles and swap discussion. This prevents a speed-only model from calling a strong matchup card “worthless.”
+
+### Card-swap variants
+
+Matched-seed card-swap comparisons are currently unavailable. The active CLI emits baseline scenario rows only, and the prior variant artifact was removed after the policy rewrite: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L271-L283 and https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7. Any future deck-swap claim requires a restored variant builder, executable tests, and newly generated results.
 
 ### Policy versus future-card oracle
 
@@ -116,7 +119,7 @@ This captures the central prizing asymmetry: a recovery card can itself be prize
 
 ## Sampling and comparison method
 
-The program uses a fixed 64-bit Mersenne Twister seed. Baseline scenarios use stable derived seeds. Variant rows use matched seeds for each scenario so percentage deltas are less noisy than independent-run deltas.
+The program uses a fixed 64-bit Mersenne Twister seed. Baseline scenarios use stable derived seeds. The current executable writes only the baseline scenarios from `all_scenarios()`; it does not generate matched-seed deck-swap rows: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L271-L283. The retired `variant_results.csv` must not be reused until a current variant generator, tests, and results are restored: https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7.
 
 For a binary success count `x` over `n` trials, the displayed Monte Carlo standard error in percentage points is:
 

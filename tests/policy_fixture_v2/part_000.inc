@@ -9,12 +9,14 @@ namespace sim {
 
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
+  static void set_deck_seen(Engine& engine, const bool value) { engine.deck_seen_ = value; }
   static State& state(Engine& engine) { return engine.state_; }
   static const State& state(const Engine& engine) { return engine.state_; }
   static TrialOutcome& outcome(Engine& engine) { return engine.outcome_; }
   static bool play_gladion(Engine& engine) { return engine.play_gladion(); }
   static bool play_steven(Engine& engine) { return engine.play_steven(); }
   static bool use_fss(Engine& engine) { return engine.use_fss(); }
+  static bool use_legacy_star(Engine& engine) { return engine.use_legacy_star(); }
   static bool play_crispin(Engine& engine) { return engine.play_crispin(); }
   static bool play_lusamine(Engine& engine) { return engine.play_lusamine(); }
   static bool play_earthen_vessel(Engine& engine, bool permit_payload) { return engine.play_earthen_vessel(permit_payload); }

@@ -15,6 +15,7 @@ jobs:
         run: cmake --build build --parallel 2
       - name: Run full deterministic suite
         # Repository exact-state validation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+        # This rerun includes the corrected long-lived Engine fixture inputs from PR #744.
         run: ctest --test-dir build --output-on-failure
       - name: Run focused Blender Energy-window regression
         # Issue and governing sources: https://github.com/FlareZ123/pokemon-sims/issues/737 https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/sv7-133 https://www.pokemon.com/us/pokemon-tcg/rules

@@ -58,6 +58,15 @@ def main() -> int:
     if sum(copies for _, copies in audit.REQUESTED.values()) != 60:
         raise AssertionError("The audit request no longer represents a 60-card deck.")
 
+    # Steven's Resolve searches for up to three cards. Keep the card-audit table
+    # aligned with the supplied print instead of implying a mandatory exact fill:
+    # https://api.pokemontcg.io/v2/cards/sm7-145
+    # https://github.com/FlareZ123/pokemon-sims/issues/692
+    if "Steven’s Resolve | `sm7-145` | 1 | up to three cards, end turn" not in documented:
+        raise AssertionError("CARD_AUDIT.md must describe Steven's Resolve as an up-to-three search.")
+    if "exact three cards, end turn" in documented:
+        raise AssertionError("CARD_AUDIT.md still describes Steven's Resolve as an exact-three search.")
+
     # The raw JSON is a local reproduction artifact because its source field records the
     # caller-provided path. Documentation must not claim that file is tracked:
     # https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/audit_card_data.py#L135-L166

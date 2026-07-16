@@ -1,0 +1,42 @@
+name: Debug Audit 20260716
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  audit-current-main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Archive exact audited source
+        run: git ls-files -z | tar --null -T - -czf audited-source.tgz
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Run repository tests
+        run: ctest --test-dir build --output-on-failure
+      - name: Audit strict JIT going second seed 2
+        # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        # Earlier CI comparison established the production Steven route as the stronger visible-state choice: https://github.com/FlareZ123/pokemon-sims/pull/717
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 2 | tee build/audit_strict_jit_go_second_seed_2.txt
+      - name: Audit strict JIT going first seed 6
+        # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 | tee build/audit_strict_jit_go_first_seed_6.txt
+      - name: Audit Rule Box lock going second seed 20
+        # Rule Box lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 | tee build/audit_rulebox_lock_go_second_seed_20.txt
+      - name: Generate T2 and T3 matrix
+        # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/t2_t3_matrix.csv
+      - name: Upload audit bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-audit-20260716
+          path: |
+            audited-source.tgz
+            build/audit_*.txt
+            build/t2_t3_matrix.csv
+          if-no-files-found: error

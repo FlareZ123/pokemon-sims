@@ -1,0 +1,34 @@
+name: Blender Energy Ready-Turn Gate
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  focused-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile focused Release regression
+        run: >-
+          c++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow
+          tests/blender_energy_ready_turn_gate_tests.cpp
+          -o blender_energy_ready_turn_gate_tests
+      - name: Run focused Release regression
+        run: ./blender_energy_ready_turn_gate_tests
+
+  focused-sanitizers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile focused ASan and UBSan regression
+        run: >-
+          c++ -std=c++20 -O1 -g -Wall -Wextra -Wpedantic -Wconversion -Wshadow
+          -fsanitize=address,undefined -fno-omit-frame-pointer
+          tests/blender_energy_ready_turn_gate_tests.cpp
+          -o blender_energy_ready_turn_gate_tests_san
+      - name: Run focused ASan and UBSan regression
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: ./blender_energy_ready_turn_gate_tests_san

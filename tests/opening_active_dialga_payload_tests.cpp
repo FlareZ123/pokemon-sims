@@ -161,6 +161,94 @@ void test_multiple_payloads_without_recovery_graph_keep_legacy_order() {
   }
 }
 
+void test_redundant_one_discard_graph_preserves_dialga() {
+  const sim::Scenario scenario{"opening-dialga-redundant-items", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{65301};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::DialgaGX,
+                sim::Card::Crispin, sim::Card::MysteriousTreasure,
+                sim::Card::QuickBall, sim::Card::MegaDragonite,
+                sim::Card::ChaoticSwell};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // The two one-discard Items provide redundant public Regidrago access while
+  // Mega Dragonite ex supplies a second strict-JIT payload. With one Crispin
+  // and no direct Blender outlet, the approved route preserves Dialga-GX:
+  // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+  // https://api.pokemontcg.io/v2/cards/sm5-100
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://github.com/FlareZ123/pokemon-sims/issues/653
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::TapuLeleGX ||
+      !contains(after.hand, sim::Card::DialgaGX) ||
+      !contains(after.hand, sim::Card::MegaDragonite)) {
+    throw std::runtime_error("The approved redundant Item graph should preserve Dialga-GX.");
+  }
+}
+
+void test_full_item_lock_rejects_redundant_item_graph() {
+  const sim::Scenario scenario{"opening-dialga-redundant-items-locked", sim::DciProfile::StrictJit,
+                               sim::LockMode::FullItem, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{65302};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::DialgaGX,
+                sim::Card::Crispin, sim::Card::MysteriousTreasure,
+                sim::Card::QuickBall, sim::Card::MegaDragonite,
+                sim::Card::ChaoticSwell};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Full Item lock removes both public search routes, so Wonder Tag remains
+  // the stronger live connector:
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+  // https://github.com/FlareZ123/pokemon-sims/issues/653
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::DialgaGX ||
+      !contains(after.hand, sim::Card::TapuLeleGX)) {
+    throw std::runtime_error("Full Item lock should preserve Wonder Tag.");
+  }
+}
+
+void test_blender_duplicate_crispin_preserves_wonder_tag() {
+  const sim::Scenario scenario{"opening-dialga-blender-control", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{65303};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::DialgaGX,
+                sim::Card::Crispin, sim::Card::QuickBall,
+                sim::Card::MegaDragonite, sim::Card::BrilliantBlender,
+                sim::Card::Crispin};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Brilliant Blender already supplies direct payload access and duplicate
+  // Crispin saturates the held Energy-Supporter route. Wonder Tag therefore
+  // retains greater marginal value than preserving Dialga-GX in hand:
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // https://github.com/FlareZ123/pokemon-sims/issues/653
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::DialgaGX ||
+      !contains(after.hand, sim::Card::TapuLeleGX)) {
+    throw std::runtime_error("Blender plus duplicate Crispin should preserve Wonder Tag.");
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -169,5 +257,8 @@ int main() {
   test_opening_choice_keeps_legacy_order_without_crispin_signal();
   test_opening_choice_preserves_dialga_with_redundant_payload_graph();
   test_multiple_payloads_without_recovery_graph_keep_legacy_order();
+  test_redundant_one_discard_graph_preserves_dialga();
+  test_full_item_lock_rejects_redundant_item_graph();
+  test_blender_duplicate_crispin_preserves_wonder_tag();
   return 0;
 }

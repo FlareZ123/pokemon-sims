@@ -151,6 +151,16 @@
     for (const Card card : {Card::Arven, Card::Crispin, Card::Gladion}) {
       if (hand_count(card) >= 2) return card;
     }
+
+    // Quick Ball may discard any other card from hand. When two Tapu Lele-GX are
+    // held, discarding one preserves the same future Wonder Tag Supporter connector.
+    // Keep this behind every existing duplicate and surplus category so the fallback
+    // cannot expose a protected singleton or consume lower-DCI fuel first:
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // https://github.com/FlareZ123/pokemon-sims/issues/711
+    if (hand_count(Card::TapuLeleGX) >= 2) return Card::TapuLeleGX;
     return std::nullopt;
   }
 

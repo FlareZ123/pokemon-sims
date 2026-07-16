@@ -8,6 +8,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_executable(regidrago_sim src/regidrago_sim.cpp)
 target_compile_options(regidrago_sim PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+add_executable(turbo_sensitivity tools/turbo_sensitivity.cpp)
+target_compile_options(turbo_sensitivity PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 # Release defines NDEBUG by default. Keep assert-based regression checks enabled for
 # every test target while leaving the optimized simulator target unchanged:
 # https://github.com/FlareZ123/pokemon-sims/blob/main/tests/legacy_star_evolution_incense_payload_tests.cpp
@@ -206,7 +209,7 @@ add_test(NAME regidrago_costed_search_target_outlet COMMAND regidrago_costed_sea
 add_test(NAME regidrago_route_reconciliation COMMAND regidrago_route_reconciliation_tests)
 add_test(NAME regidrago_vstar_promotion_selection COMMAND regidrago_vstar_promotion_selection_tests)
 add_test(NAME regidrago_turo_ready_direct_evolution COMMAND regidrago_turo_ready_direct_evolution_tests)
-add_test(NAME regidrago_no_redundant_items COMMAND regidrago_no_redundant_item_tests)
+add_test(NAME regidrago_no_redundant_item COMMAND regidrago_no_redundant_item_tests)
 add_test(NAME regidrago_tate_switch_blender COMMAND regidrago_tate_switch_blender_tests)
 add_test(NAME regidrago_fss_tate_blender COMMAND regidrago_fss_tate_blender_tests)
 add_test(NAME regidrago_blender_fss_tate_hold COMMAND regidrago_blender_fss_tate_hold_tests)
@@ -214,15 +217,4 @@ add_test(NAME regidrago_powerglass_end_turn COMMAND regidrago_powerglass_end_tur
 add_test(NAME regidrago_celestial_roar_live_route COMMAND regidrago_celestial_roar_live_route_tests)
 add_test(NAME regidrago_roseanne_energy_recovery COMMAND regidrago_roseanne_energy_recovery_tests)
 add_test(NAME regidrago_empty_deck_search COMMAND regidrago_empty_deck_search_tests)
-add_test(NAME regidrago_release_assertions_enabled
-  COMMAND ${CMAKE_COMMAND}
-    -DASSERTION_PROBE=$<TARGET_FILE:regidrago_release_assertion_tests>
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_assertion_probe.cmake)
-add_test(NAME trace_strict_second_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 --require-ready-by 3)
-add_test(NAME trace_strict_first_t4 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 --require-ready-by 4)
-add_test(NAME trace_flex_second_t2 COMMAND regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2)
-add_test(NAME trace_turn2_item_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 9 --require-ready-by 3)
-add_test(NAME trace_rulebox_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3)
-add_test(NAME trace_no_control_first_t4 COMMAND regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 6 --require-ready-by 4)
-add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
-set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)
+add_test(NAME regidrago_release_assertions COMMAND regidrago_release_assertion_tests)

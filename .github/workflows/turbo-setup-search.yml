@@ -1,0 +1,86 @@
+name: Turbo Setup Search
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  snapshot-and-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Export exact merge-ref source
+        run: tar --exclude=.git -czf /tmp/turbo-source-snapshot.tar.gz .
+      - name: Upload source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: turbo-source-snapshot
+          path: /tmp/turbo-source-snapshot.tar.gz
+          if-no-files-found: error
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Validate baseline simulator
+        run: ./build/regidrago_sim --self-test
+      - name: Generate current 100,000-trial baseline
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/turbo_baseline.csv
+      - name: Upload baseline matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: turbo-baseline-matrix
+          path: build/turbo_baseline.csv
+          if-no-files-found: error
+
+  removal-sensitivity:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        start: [0, 6, 12, 18, 24, 30]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile sensitivity executable
+        run: g++ -std=c++20 -O3 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tools/turbo_sensitivity.cpp -o turbo_sensitivity
+      - name: Run matched-seed removal sensitivity shard
+        run: ./turbo_sensitivity 250 20260716 ${{ matrix.start }} $(( ${{ matrix.start }} + 6 )) > sensitivity-${{ matrix.start }}.csv
+      - name: Upload sensitivity shard
+        uses: actions/upload-artifact@v4
+        with:
+          name: turbo-sensitivity-${{ matrix.start }}
+          path: sensitivity-${{ matrix.start }}.csv
+          if-no-files-found: error
+
+  current-connector-beam:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile exact current-card beam search
+        run: g++ -std=c++20 -O3 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tools/turbo_current_search.cpp -o turbo_current_search
+      - name: Search three-swap current connector packages
+        run: ./turbo_current_search 50 50000 12 > current_connector_beam.csv
+      - name: Upload current connector beam
+        uses: actions/upload-artifact@v4
+        with:
+          name: turbo-current-connector-beam
+          path: current_connector_beam.csv
+          if-no-files-found: error
+
+  exact-finalist-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile exact external finalist runner
+        run: g++ -std=c++20 -O3 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tools/turbo_exact_finalists.cpp -o turbo_exact_finalists
+      - name: Run 100,000-trial finalist across every modeled condition
+        run: ./turbo_exact_finalists 100000 ${{ matrix.variant }} > exact-finalist-${{ matrix.variant }}.csv
+      - name: Upload exact finalist matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: turbo-exact-finalist-${{ matrix.variant }}
+          path: exact-finalist-${{ matrix.variant }}.csv
+          if-no-files-found: error

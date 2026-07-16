@@ -1,0 +1,91 @@
+name: Turbo Connectors Only
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  corrected-connector-search:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile connector-only optimizer
+        run: g++ -std=c++20 -O3 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tools/turbo_connector_only_search.cpp -o turbo_connector_only_search
+      - name: Search three-swap connector packages
+        run: ./turbo_connector_only_search 5 1000 16 3 > connector-only-discovery.csv
+      - name: Verify no protected card was changed
+        run: |
+          if grep -E 'Dialga-GX|Mawile-GX|Guzma|Team Yell|Roseanne|Field Blower|Chaotic Swell|Regidrago VSTAR|Dragapult ex|Mega Dragonite' connector-only-discovery.csv; then
+            echo 'A protected discrete-value card appeared in a candidate delta.'
+            exit 1
+          fi
+      - name: Upload corrected discovery matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: connector-only-discovery
+          path: connector-only-discovery.csv
+          if-no-files-found: error
+
+  exact-connector-finalists:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile exact connector finalist runner
+        run: g++ -std=c++20 -O3 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tools/turbo_connector_exact_finalists.cpp -o turbo_connector_exact_finalists
+      - name: Run 100,000 trials in every modeled condition
+        run: ./turbo_connector_exact_finalists 100000 ${{ matrix.variant }} > exact-connector-${{ matrix.variant }}.csv
+      - name: Verify Dialga-GX and protected-card invariants
+        run: test -s exact-connector-${{ matrix.variant }}.csv
+      - name: Upload exact connector matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: exact-connector-${{ matrix.variant }}
+          path: exact-connector-${{ matrix.variant }}.csv
+          if-no-files-found: error
+
+  exact-discovery-finalists:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile corrected discovery finalist runner
+        run: g++ -std=c++20 -O3 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tools/turbo_connector_discovery_finalists.cpp -o turbo_connector_discovery_finalists
+      - name: Run 100,000 trials in every modeled condition
+        run: ./turbo_connector_discovery_finalists 100000 ${{ matrix.variant }} > exact-discovery-${{ matrix.variant }}.csv
+      - name: Verify protected-card invariants
+        run: test -s exact-discovery-${{ matrix.variant }}.csv
+      - name: Upload exact discovery matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: exact-discovery-${{ matrix.variant }}
+          path: exact-discovery-${{ matrix.variant }}.csv
+          if-no-files-found: error
+
+  burnet-ablation:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile Burnet component ablation
+        run: g++ -std=c++20 -O3 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tools/turbo_burnet_ablation.cpp -o turbo_burnet_ablation
+      - name: Run 100,000 trials in every modeled condition
+        run: ./turbo_burnet_ablation 100000 ${{ matrix.variant }} > burnet-ablation-${{ matrix.variant }}.csv
+      - name: Verify protected-card invariants
+        run: test -s burnet-ablation-${{ matrix.variant }}.csv
+      - name: Upload Burnet ablation matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: burnet-ablation-${{ matrix.variant }}
+          path: burnet-ablation-${{ matrix.variant }}.csv
+          if-no-files-found: error

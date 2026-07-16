@@ -17,6 +17,11 @@ struct EngineTestAccess {
   static bool play_mysterious_treasure(Engine& engine, bool permit_payload) {
     return engine.play_mysterious_treasure(permit_payload);
   }
+  static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
+  static void run_turn(Engine& engine) { engine.run_turn(); }
+  static void record_ready(Engine& engine) { engine.record_ready(); }
+  static bool use_fss(Engine& engine) { return engine.use_fss(); }
+  static const TrialOutcome& outcome(const Engine& engine) { return engine.outcome_; }
 };
 
 }  // namespace sim
@@ -29,6 +34,13 @@ bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
 
 int count(const std::vector<sim::Card>& cards, const sim::Card card) {
   return static_cast<int>(std::count(cards.begin(), cards.end(), card));
+}
+
+bool benched(const sim::State& state, const sim::Card card) {
+  return std::any_of(state.bench.begin(), state.bench.end(),
+                     [card](const sim::Pokemon& pokemon) {
+                       return pokemon.card == card;
+                     });
 }
 
 void expect(const bool condition, const char* message) {
@@ -90,12 +102,137 @@ void test_oricorio_selects_a_second_legal_energy_for_follow_up_search() {
          "Mysterious Treasure should search Regidrago VSTAR after the legal Fire discard.");
 }
 
+void test_star_alchemy_preserves_burnet_with_unusable_held_payload() {
+  sim::Scenario scenario{"fss-oricorio-stranded-held-payload",
+                         sim::DciProfile::StrictJit, sim::LockMode::None, false, 4};
+  sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{621};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0,
+                              sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0,
+                              sim::Tool::ForestSealStone}};
+  state.hand = {sim::Card::ProfessorBurnet, sim::Card::MegaDragonite};
+  state.deck = {sim::Card::Crispin, sim::Card::Oricorio, sim::Card::Fire,
+                sim::Card::Dragapult};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // A Dragon in hand cannot supply Apex Dragon without a legal discard effect.
+  // Star Alchemy must search Oricorio so Vital Dance and the manual attachment solve
+  // Fire while Professor Burnet keeps the Supporter slot and discards Dragapult:
+  // Forest Seal Stone https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Oricorio https://api.pokemontcg.io/v2/cards/sm2-55
+  // Crispin https://api.pokemontcg.io/v2/cards/sv7-133
+  // Professor Burnet https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Apex Dragon https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Core turn limits https://www.pokemon.com/us/pokemon-tcg/rules
+  // Parent route https://github.com/FlareZ123/pokemon-sims/issues/187
+  sim::EngineTestAccess::run_turn(engine);
+  sim::EngineTestAccess::record_ready(engine);
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(after.vstar_power_used,
+         "The stranded-payload route should use Star Alchemy.");
+  expect(benched(after, sim::Card::Oricorio),
+         "Star Alchemy should fetch and Bench Oricorio.");
+  expect(count(after.discard, sim::Card::Crispin) == 0,
+         "Crispin must remain unused so Burnet keeps the Supporter play.");
+  expect(count(after.discard, sim::Card::ProfessorBurnet) == 1,
+         "Professor Burnet should resolve after Vital Dance.");
+  expect(count(after.discard, sim::Card::Dragapult) == 1,
+         "Professor Burnet should discard the deck payload.");
+  expect(count(after.hand, sim::Card::MegaDragonite) == 1,
+         "The unusable held payload should remain in hand.");
+  expect(after.active && after.active->fire == 1,
+         "Vital Dance and the manual attachment should complete Fire.");
+  expect(sim::EngineTestAccess::outcome(engine).first_ready_turn == 2,
+         "The corrected route should reach strict-JIT readiness on turn 2.");
+}
+
+void test_star_alchemy_keeps_crispin_with_live_held_payload_item() {
+  sim::Scenario scenario{"fss-crispin-live-held-payload-item",
+                         sim::DciProfile::StrictJit, sim::LockMode::None, false, 4};
+  sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{622};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0,
+                              sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0,
+                              sim::Tool::ForestSealStone}};
+  state.hand = {sim::Card::ProfessorBurnet, sim::Card::MegaDragonite,
+                sim::Card::EarthenVessel};
+  state.deck = {sim::Card::Crispin, sim::Card::Oricorio, sim::Card::Fire,
+                sim::Card::Dragapult};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Earthen Vessel can discard the held Dragon and still search the known Fire target.
+  // The Burnet-preservation override must therefore leave Crispin as Star Alchemy's
+  // stronger Energy connector:
+  // Earthen Vessel https://api.pokemontcg.io/v2/cards/sv4-163
+  // Crispin https://api.pokemontcg.io/v2/cards/sv7-133
+  // Forest Seal Stone https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Apex Dragon https://api.pokemontcg.io/v2/cards/swsh12-136
+  expect(sim::EngineTestAccess::use_fss(engine),
+         "Star Alchemy should resolve with a live Vessel payload outlet.");
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(count(after.hand, sim::Card::Crispin) == 1,
+         "A live held-payload Item should preserve the Crispin target.");
+  expect(count(after.deck, sim::Card::Oricorio) == 1,
+         "Oricorio should remain in deck when Burnet is unnecessary.");
+}
+
+void test_star_alchemy_keeps_crispin_with_payable_ultra_ball_payload_item() {
+  sim::Scenario scenario{"fss-crispin-live-ultra-payload-item",
+                         sim::DciProfile::StrictJit, sim::LockMode::None, false, 4};
+  sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{623};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0,
+                              sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0,
+                              sim::Tool::ForestSealStone}};
+  state.hand = {sim::Card::ProfessorBurnet, sim::Card::MegaDragonite,
+                sim::Card::UltraBall, sim::Card::Dipplin};
+  state.deck = {sim::Card::Crispin, sim::Card::Oricorio, sim::Card::Fire,
+                sim::Card::Dragapult};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Ultra Ball can discard the held Dragon plus Dipplin and has a known Pokémon
+  // target. That live Item route means Star Alchemy may select Crispin:
+  // Ultra Ball https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // Crispin https://api.pokemontcg.io/v2/cards/sv7-133
+  // Forest Seal Stone https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Apex Dragon https://api.pokemontcg.io/v2/cards/swsh12-136
+  expect(sim::EngineTestAccess::use_fss(engine),
+         "Star Alchemy should resolve with a payable Ultra Ball payload outlet.");
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(count(after.hand, sim::Card::Crispin) == 1,
+         "A payable Ultra Ball should preserve the Crispin target.");
+  expect(count(after.deck, sim::Card::Oricorio) == 1,
+         "Oricorio should remain in deck when Ultra Ball handles the payload.");
+}
+
 }  // namespace
 
 int main() {
   try {
     test_mawile_starts_active_so_oricorio_keeps_vital_dance();
     test_oricorio_selects_a_second_legal_energy_for_follow_up_search();
+    test_star_alchemy_preserves_burnet_with_unusable_held_payload();
+    test_star_alchemy_keeps_crispin_with_live_held_payload_item();
+    test_star_alchemy_keeps_crispin_with_payable_ultra_ball_payload_item();
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';
     return 1;

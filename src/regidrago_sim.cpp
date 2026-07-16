@@ -48,6 +48,7 @@
 #include "trace_engine_v2/part_empty_deck_unseen_override.inc"
 #undef begin_turn
 #include "trace_engine_v2/part_begin_turn_override.inc"
+#include "trace_engine_v2/part_tapu_copy_availability_override.inc"
 #define bench_from_hand bench_from_hand_empty_deck_original
 #define bench_oricorio_if_useful bench_oricorio_if_useful_empty_deck_original
 #define needs_oricorio_connector needs_oricorio_connector_original
@@ -77,10 +78,18 @@
 #define play_heavy_ball play_heavy_ball_prize_payload_original
 #include "trace_engine_v2/part_008b.inc"
 #undef play_heavy_ball
+// Wonder Tag is copy-specific. Preserve all existing selector controls while an
+// in-play Tapu no longer suppresses a second physical copy:
+// https://api.pokemontcg.io/v2/cards/cel25c-60_A
+// https://github.com/FlareZ123/pokemon-sims/issues/746
+#define in_play tapu_connector_copy_aware_in_play
 #include "trace_engine_v2/part_009a.inc"
+#undef in_play
 #undef play_mysterious_treasure
 #define play_quick_ball play_quick_ball_empty_deck_original
+#define in_play tapu_connector_copy_aware_in_play
 #include "trace_engine_v2/part_009b1.inc"
+#undef in_play
 #undef play_quick_ball
 #define play_ultra_ball play_ultra_ball_original
 #include "trace_engine_v2/part_009b2.inc"
@@ -104,11 +113,15 @@
 #undef play_evolution_incense
 #undef play_ultra_ball
 #define bench_tapu_if_useful bench_tapu_if_useful_empty_deck_original
+#define in_play tapu_connector_copy_aware_in_play
 #include "trace_engine_v2/part_tapu_tate_switch_override.inc"
+#undef in_play
 #undef bench_tapu_if_useful
 #define play_ultra_ball play_ultra_ball_empty_deck_original
 #define play_evolution_incense play_evolution_incense_empty_deck_original
+#define in_play tapu_connector_copy_aware_in_play
 #include "trace_engine_v2/part_search_item_overrides.inc"
+#undef in_play
 #undef play_evolution_incense
 #undef play_ultra_ball
 #include "trace_engine_v2/part_010_fss_override.inc"
@@ -175,7 +188,9 @@
 #define bench_oricorio_if_useful bench_oricorio_if_useful_target_original
 #define ultra_ball_has_legal_target ultra_ball_has_legal_target_k0_target_original
 #define play_ultra_ball play_ultra_ball_k0_target_original
+#define in_play tapu_connector_copy_aware_in_play
 #include "trace_engine_v2/part_empty_deck_search_override.inc"
+#undef in_play
 #undef play_ultra_ball
 #undef ultra_ball_has_legal_target
 #include "trace_engine_v2/part_k0_ultra_ball_target_override.inc"

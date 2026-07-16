@@ -1,0 +1,38 @@
+name: Issue 737 Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  simulate-and-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+      - name: Run focused Energy-ready-turn regression
+        run: >-
+          c++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow
+          tests/blender_energy_ready_turn_gate_tests.cpp
+          -o build/blender_energy_ready_turn_gate_tests
+          && ./build/blender_energy_ready_turn_gate_tests
+      - name: Run four independent simulate-this traces
+        run: |
+          mkdir -p validation-737
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 2 > validation-737/trace-reproduction-seed-2.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 > validation-737/trace-clean-seed-3.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 > validation-737/trace-clean-seed-6.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 > validation-737/trace-clean-seed-20.txt
+      - name: Reject the original premature Blender play
+        run: '! grep -q "T2 | PLAY ITEM | rules: R-BLENDER-01" validation-737/trace-reproduction-seed-2.txt'
+      - name: Generate 100000-trial setup matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out validation-737/t2_t3_matrix.csv
+      - name: Upload traces and matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-737-validation
+          path: validation-737
+          if-no-files-found: error

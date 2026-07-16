@@ -36,7 +36,10 @@
   }
 
   void run_turn() {
+    state_.stadium_ability_used = false;
     trace("POLICY", "P-AXIS-01", "Start: " + state_line());
+    play_carmine();
+    play_turbo_external_actions();
     play_chaotic_swell();
     play_field_blower();
     // A redundant Regidrago V must not consume the final Bench slot before the
@@ -45,19 +48,24 @@
     // https://www.pokemon.com/us/pokemon-tcg/rules
     bench_latias_for_pending_vstar_promotion();
     play_basics_from_hand();
+    play_turbo_external_actions();
     play_items_until_stable(!strict_payload_timing());
+    play_turbo_external_actions();
     attach_live_fss();
     use_fss();
     play_chaotic_swell();
     play_field_blower();
     play_basics_from_hand();
+    play_turbo_external_actions();
     play_items_until_stable(!strict_payload_timing());
+    play_turbo_external_actions();
 
     attach_manual();
     // Steven's Resolve ends the turn, so attach a live Powerglass before choosing
     // that Supporter: https://api.pokemontcg.io/v2/cards/sm7-145
     if (should_play_steven()) attach_powerglass();
     choose_supporter();
+    play_turbo_external_actions();
     if (state_.turn_ended) {
       trace("TURN END", "R-STEVEN-01 or R-RV-01", state_line());
       return;
@@ -71,6 +79,7 @@
     play_chaotic_swell();
     play_field_blower();
     play_items_until_stable(!strict_payload_timing());
+    play_turbo_external_actions();
     attach_manual();
     evolve_best_regi();
     play_basics_from_hand();
@@ -93,6 +102,7 @@
       play_field_blower();
       play_basics_from_hand();
       play_items_until_stable(true);
+      play_turbo_external_actions();
       // Legacy Star can return a Supporter from discard, including Crispin:
       // https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/sv7-133
       // A player may use one available Supporter during the turn before attacking:

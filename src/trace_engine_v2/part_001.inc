@@ -27,6 +27,7 @@
     case Card::HisuianHeavyBall: return "Hisuian Heavy Ball";
     case Card::Grass: return "Grass Energy";
     case Card::Fire: return "Fire Energy";
+    case Card::TurboBlank: return "Turbo sensitivity blank";
   }
   return "Unknown";
 }

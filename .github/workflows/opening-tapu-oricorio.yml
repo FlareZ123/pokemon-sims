@@ -1,0 +1,32 @@
+name: Opening Tapu Oricorio
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - src/trace_engine_v2/part_005.inc
+      - tests/opening_tapu_oricorio_tests.cpp
+      - .github/workflows/opening-tapu-oricorio.yml
+  push:
+    branches: [main]
+    paths:
+      - src/trace_engine_v2/part_005.inc
+      - tests/opening_tapu_oricorio_tests.cpp
+      - .github/workflows/opening-tapu-oricorio.yml
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Release fixture
+        run: |
+          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror tests/opening_tapu_oricorio_tests.cpp -o opening-tapu-oricorio
+          ./opening-tapu-oricorio
+      - name: Undefined behavior sanitizer fixture
+        run: |
+          g++ -std=c++20 -O1 -g -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -fsanitize=undefined -fno-omit-frame-pointer tests/opening_tapu_oricorio_tests.cpp -o opening-tapu-oricorio-ubsan
+          ./opening-tapu-oricorio-ubsan

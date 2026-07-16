@@ -43,10 +43,21 @@
         std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
           return is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None;
         });
+    // Lusamine spends the current turn. An unlocked Blender route needs the next
+    // turn for Arven and Star Alchemy; the Item-lock Burnet route needs one further
+    // turn to play the banked Supporter. Do not begin a chain beyond the configured
+    // simulation horizon:
+    // https://api.pokemontcg.io/v2/cards/sm4-96
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // https://github.com/FlareZ123/pokemon-sims/issues/705
     const bool fss_payload_axis = need_payload() && can_play_payload_this_turn() &&
         payload_might_be_in_deck() &&
-        ((!item_locked() && might_be_unseen(Card::BrilliantBlender)) ||
-         might_be_unseen(Card::ProfessorBurnet));
+        ((!item_locked() && state_.turn < scenario_.max_turn &&
+          might_be_unseen(Card::BrilliantBlender)) ||
+         (item_locked() && state_.turn + 2 <= scenario_.max_turn &&
+          might_be_unseen(Card::ProfessorBurnet)));
     const bool known_prized_vstar_fss_axis = prizes_known() && need_vstar() &&
         prize_count_after_reveal(Card::RegidragoVstar) > 0 && might_be_unseen(Card::Gladion);
     const bool fss_live_axis = known_prized_vstar_fss_axis ||

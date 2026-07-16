@@ -255,7 +255,15 @@ int main(int argc, char** argv) {
         sim::TraceLog trace{true, {}};
         sim::Engine engine(*scenario, deck, rng, &trace);
         const sim::TrialOutcome outcome = engine.run();
-        if (mode == CliMode::FindReady && outcome.first_ready_turn == 0) continue;
+        // A find-ready deadline narrows the successful-trace predicate. Skip late-ready
+        // seeds and continue searching, while single-trace mode still reports failure:
+        // https://github.com/FlareZ123/pokemon-sims/issues/641
+        // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        if (mode == CliMode::FindReady &&
+            (outcome.first_ready_turn == 0 ||
+             (require_ready_by > 0 && outcome.first_ready_turn > require_ready_by))) {
+          continue;
+        }
         std::cout << "\nSeed: " << candidate_seed << " | first-ready turn: " << (outcome.first_ready_turn == 0 ? std::string("not ready through T4") : std::to_string(outcome.first_ready_turn)) << '\n';
         for (const std::string& line : trace.lines) std::cout << line << '\n';
         if (require_ready_by > 0 && (outcome.first_ready_turn == 0 || outcome.first_ready_turn > require_ready_by)) {

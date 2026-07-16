@@ -12,7 +12,13 @@ An interim zero-discard Serena policy was identified during the rules audit and 
 
 ## Forest Seal Stone and Rule Box lock
 
-The simulator still labels Forest Seal Stone activation under a modeled Rule Box Ability lock as a model assumption. The audit did not locate a direct published ruling source for that precise interaction. It must not be treated as a verified tournament claim until an official ruling is added.
+Forest Seal Stone remains usable while Path to the Peak is in play. The TPCi Rules Team ruling dated 2022-11-10 explains that Star Alchemy is an Ability the attached Pokémon has access to from the Tool, rather than an Ability the Pokémon has, so Path to the Peak does not suppress it:
+
+- https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
+- https://api.pokemontcg.io/v2/cards/swsh12-156
+- https://api.pokemontcg.io/v2/cards/swsh6-148
+
+This interaction is a verified ruling and may be treated as a tournament-rules claim. The simulator's active Forest Seal Stone behavior under the modeled Path-style Rule Box Ability lock is consistent with that ruling.
 
 ## CI observability
 

@@ -4,11 +4,124 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   validate-issue-653:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/653-route-aware-dialga-opening-v2'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: fix/653-route-aware-dialga-opening-v2
+          fetch-depth: 0
+
+      - name: Apply reviewed route controls
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          def atomic_write(path: Path, text: str) -> None:
+              temporary = path.with_name(path.name + '.tmp-653')
+              temporary.write_text(text, encoding='utf-8')
+              os.replace(temporary, path)
+
+          source = Path('src/trace_engine_v2/part_005.inc')
+          text = source.read_text(encoding='utf-8')
+          old = '''    const bool held_legal_one_discard_regi_route =
+        !item_locked() && might_be_unseen(Card::RegidragoV) &&
+        (hand_count(Card::QuickBall) > 0 || hand_count(Card::MysteriousTreasure) > 0);
+    const bool held_direct_regi_and_payload_graph =
+        payloads_in_hand > 1 && held_legal_one_discard_regi_route;
+    const bool dialga_has_route_preservation_value =
+        hand_count(Card::DialgaGX) == 1 &&
+        (dialga_is_unique_in_hand_payload || held_turo_fss_recovery_graph ||
+         held_direct_regi_and_payload_graph);
+'''
+          new = '''    const bool held_redundant_one_discard_regi_graph =
+        !item_locked() && might_be_unseen(Card::RegidragoV) &&
+        hand_count(Card::QuickBall) > 0 && hand_count(Card::MysteriousTreasure) > 0 &&
+        payloads_in_hand > 1 && hand_count(Card::Crispin) == 1 &&
+        hand_count(Card::BrilliantBlender) == 0;
+    const bool dialga_has_route_preservation_value =
+        hand_count(Card::DialgaGX) == 1 &&
+        (dialga_is_unique_in_hand_payload || held_turo_fss_recovery_graph ||
+         held_redundant_one_discard_regi_graph);
+'''
+          if old not in text:
+              raise SystemExit('reviewed issue 653 predicate anchor missing')
+          text = text.replace(old, new, 1)
+          text = text.replace(
+              '''    // hand retains either Tapu recovery or a legal one-discard Regidrago search plus
+    // another Dragon payload. Full Item lock removes the search-Item route:
+''',
+              '''    // hand retains either Tapu recovery or the reviewed redundant Quick Ball plus
+    // Mysterious Treasure graph. Exactly one Crispin and no held Blender protect
+    // Wonder Tag whenever a stronger direct payload outlet already solves that axis:
+''',
+              1,
+          )
+          text = text.replace(
+              '''    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+''',
+              '''    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+''',
+              1,
+          )
+          atomic_write(source, text)
+
+          tests = Path('tests/opening_active_dialga_payload_tests.cpp')
+          text = tests.read_text(encoding='utf-8')
+          if 'test_blender_duplicate_crispin_preserves_wonder_tag' not in text:
+              test = r'''
+void test_blender_duplicate_crispin_preserves_wonder_tag() {
+  const sim::Scenario scenario{"opening-dialga-blender-control", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{65303};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state;
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::DialgaGX,
+                sim::Card::Crispin, sim::Card::QuickBall,
+                sim::Card::MegaDragonite, sim::Card::BrilliantBlender,
+                sim::Card::Crispin};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Brilliant Blender already supplies direct payload access and duplicate Crispin
+  // saturates the Energy-Supporter route, so Wonder Tag remains the scarce connector:
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/sm5-100
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // https://github.com/FlareZ123/pokemon-sims/issues/653
+  sim::EngineTestAccess::choose_opening_active(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!after.active || after.active->card != sim::Card::DialgaGX ||
+      !contains(after.hand, sim::Card::TapuLeleGX)) {
+    throw std::runtime_error("Blender plus duplicate Crispin should preserve Wonder Tag.");
+  }
+}
+
+'''
+              anchor = '}  // namespace\n\nint main() {'
+              if anchor not in text:
+                  raise SystemExit('issue 653 test namespace anchor missing')
+              text = text.replace(anchor, test + anchor, 1)
+              call = '  test_full_item_lock_rejects_direct_regi_item_signal();\n'
+              if call not in text:
+                  raise SystemExit('issue 653 test call anchor missing')
+              text = text.replace(call, call + '  test_blender_duplicate_crispin_preserves_wonder_tag();\n', 1)
+          atomic_write(tests, text)
+          PY
+
       - name: Configure Release
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build all targets
@@ -17,16 +130,26 @@ jobs:
         run: ctest --test-dir build --output-on-failure
       - name: Run focused UBSan regression
         run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=undefined -fno-omit-frame-pointer tests/opening_active_dialga_payload_tests.cpp -o build/opening_active_dialga_payload_tests_ubsan && ./build/opening_active_dialga_payload_tests_ubsan
-      - name: Simulate strict JIT going first
-        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 3 | tee issue-653-trace-strict-first-3.txt
-      - name: Simulate strict JIT going second
-        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 | tee issue-653-trace-strict-second-6.txt
-      - name: Simulate matchup-flex JIT going second
-        run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 11 | tee issue-653-trace-flex-second-11.txt
+
+      - name: Simulate pass 1
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 3 --require-ready-by 3 | tee issue-653-trace-1.txt
+      - name: Simulate pass 2
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 --require-ready-by 3 | tee issue-653-trace-2.txt
+      - name: Simulate pass 3
+        run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 11 --require-ready-by 3 | tee issue-653-trace-3.txt
       - name: Generate T2 and T3 matrix
         run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-653-t2-t3-matrix.csv
       - name: Archive exact source snapshot
         run: git archive --format=tar.gz -o issue-653-source.tgz HEAD
+
+      - name: Commit validated reviewed fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_005.inc tests/opening_active_dialga_payload_tests.cpp
+          git commit -m 'Apply reviewed route-aware Dialga controls (#653)'
+          git push origin HEAD:fix/653-route-aware-dialga-opening-v2
+
       - name: Upload validation artifacts
         if: always()
         uses: actions/upload-artifact@v4

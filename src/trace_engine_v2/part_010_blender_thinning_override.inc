@@ -122,16 +122,20 @@
     if (!benched_vstar_promotion_ready()) return true;
     if (can_free_retreat_with_latias()) return true;
 
-    // Tate & Liza may switch the powered Benched VSTAR Active before the later Item
-    // pass resolves Blender. Professor Turo's Scenario may remove a Basic Active and
-    // promote the same complete Benched VSTAR after Blender establishes the payload:
+    // Tate & Liza switches unconditionally. Professor Turo's Scenario may remove a
+    // Basic Active. Guzma completes the same promotion only when the scenario proves
+    // an eligible opposing Benched Pokémon for its printed first switch:
     // https://api.pokemontcg.io/v2/cards/sm7-148
     // https://api.pokemontcg.io/v2/cards/sv4-171
+    // https://api.pokemontcg.io/v2/cards/sm3-115
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#guzma-opponent-bench-prerequisite
     // https://www.pokemon.com/us/pokemon-tcg/rules
     const bool supporter_promotion_route = supporter_allowed() &&
         (hand_count(Card::TateLiza) > 0 ||
          (hand_count(Card::ProfessorTuro) > 0 && state_.active &&
-          is_basic(state_.active->card)));
+          is_basic(state_.active->card)) ||
+         (hand_count(Card::Guzma) > 0 &&
+          scenario_.opponent_bench == OpponentBenchState::Available));
     if (supporter_promotion_route) return true;
 
     // Star Alchemy may search Tate & Liza through a Rule Box Ability lock because the

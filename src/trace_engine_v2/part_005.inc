@@ -167,6 +167,36 @@
     throw std::runtime_error("opening hand has no Basic after mulligan validation");
   }
 
+  bool should_setup_bench_redundant_tapu() const {
+    const int held_supporters = static_cast<int>(
+        std::count_if(state_.hand.begin(), state_.hand.end(), is_supporter));
+    const bool direct_supporter_and_recovery_graph =
+        hand_count(Card::Crispin) > 0 && hand_count(Card::Gladion) > 0 &&
+        held_supporters >= 3;
+    const bool manual_energy_route_held =
+        hand_count(Card::Grass) > 0 || hand_count(Card::Fire) > 0;
+    const bool dragon_payload_held =
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    const bool opening_route_unlocked = scenario_.locks == LockMode::None;
+
+    // Setup may place an additional Basic Pokemon onto the Bench before Prize cards
+    // are set. Tapu Lele-GX's Wonder Tag does not trigger during setup, so sacrifice
+    // that later connector only when the public hand already has saturated Supporter,
+    // Energy, Prize-recovery, and Dragon-payload routes behind Active Regidrago V:
+    // Setup procedure: https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Mega Dragonite ex payload: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Lock scenarios: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-scenarios
+    // Regression: https://github.com/FlareZ123/pokemon-sims/issues/671
+    return active_is_regi_v() && scenario_.dci == DciProfile::StrictJit &&
+           opening_route_unlocked && direct_supporter_and_recovery_graph &&
+           manual_energy_route_held && dragon_payload_held;
+  }
+
   void choose_opening_bench() {
     if (bench_space() > 0 && hand_count(Card::RegidragoV) > 0 && in_play_count(Card::RegidragoV) < 2) {
       remove_one(state_.hand, Card::RegidragoV);
@@ -199,6 +229,11 @@
         latias_has_opening_bench_value) {
       remove_one(state_.hand, Card::LatiasEx);
       state_.bench.push_back(Pokemon{Card::LatiasEx, 0});
+    }
+    if (bench_space() > 0 && hand_count(Card::TapuLeleGX) > 0 &&
+        !in_play(Card::TapuLeleGX) && should_setup_bench_redundant_tapu()) {
+      remove_one(state_.hand, Card::TapuLeleGX);
+      state_.bench.push_back(Pokemon{Card::TapuLeleGX, 0});
     }
   }
 

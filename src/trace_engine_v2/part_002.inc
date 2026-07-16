@@ -3,6 +3,9 @@
     case Card::RoseannesBackup:
     case Card::ProfessorTuro:
     case Card::Carmine:
+    case Card::ProfessorsResearch:
+    case Card::Lillie:
+    case Card::AdventurersDiscovery:
       return true;
     default:
       return false;

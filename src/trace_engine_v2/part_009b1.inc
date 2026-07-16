@@ -27,7 +27,11 @@
     const bool want_latias = need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
                              !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
                              might_be_unseen(Card::LatiasEx);
-    const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 &&
+    // A setup or previously played Tapu Lele-GX does not exhaust Wonder Tag on
+    // another physical copy. might_be_unseen() proves that searchable copy:
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://github.com/FlareZ123/pokemon-sims/issues/746
+    const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && bench_space() > 0 &&
                            needs_tapu_connector() && might_be_unseen(Card::TapuLeleGX);
     const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 &&
                                  needs_oricorio_connector() && might_be_unseen(Card::Oricorio);

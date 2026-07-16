@@ -59,6 +59,22 @@
         is_legal_cost_available(can_play_payload_this_turn(), true);
     if (arven_vessel_energy_route) return Card::Arven;
 
+    // After Wonder Tag establishes K1, choose Arven for the target-legal
+    // held-payload Item bridge recognized by the preflight. A direct held Item stays
+    // preferable because it avoids spending Tapu's Bench slot and the Supporter play:
+    // Wonder Tag: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Decision priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Regression: https://github.com/FlareZ123/pokemon-sims/issues/648
+    if (!has_live_one_discard_hand_payload_line() &&
+        wonder_tag_arven_held_payload_route_available()) {
+      return Card::Arven;
+    }
+
     // Wonder Tag has now inspected the deck. Burnet can only discard cards it
     // selects from that deck, so it is not a payload connector after K1 proves
     // no modeled payload remains: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26

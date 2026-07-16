@@ -109,8 +109,21 @@
     // https://api.pokemontcg.io/v2/cards/sm4-95
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
 
+    // The active Tapu preflight wraps the original selector. Keep the wrapper's
+    // target-validation gate aligned with the new K1 Arven held-payload route, or
+    // the original selector's true result is discarded before Wonder Tag resolves:
+    // Wonder Tag: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regression: https://github.com/FlareZ123/pokemon-sims/issues/648
+    const bool live_arven_held_payload =
+        wonder_tag_arven_held_payload_route_available();
+
     return live_t1_steven || live_direct_crispin || live_arven_vessel_energy ||
-           live_burnet || live_arven_vstar || live_gladion_axis;
+           live_burnet || live_arven_vstar || live_gladion_axis ||
+           live_arven_held_payload;
   }
 
   bool needs_tapu_connector() {

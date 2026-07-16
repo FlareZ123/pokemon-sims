@@ -1,0 +1,42 @@
+name: Blender Active Promotion Gate
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-issue-725:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build Release
+        run: bash .github/scripts/capture-build.sh build build.log
+      - name: Run exact Active-axis regressions
+        # Sources: https://github.com/FlareZ123/pokemon-sims/issues/725 https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/sm7-148 https://api.pokemontcg.io/v2/cards/sv8-76 https://api.pokemontcg.io/v2/cards/swsh12-156
+        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/blender_active_promotion_gate_tests.cpp -o build/blender_active_promotion_gate_tests && ./build/blender_active_promotion_gate_tests
+      - name: Reproduce seed 29 Blender hold
+        # Trace contract and refined issue scope: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand https://github.com/FlareZ123/pokemon-sims/issues/725
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 29 | tee issue-725-seed-29.txt
+      - name: Audit strict-JIT control seed 6
+        # Ready-state definition: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#scope
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 --require-ready-by 2 | tee strict-jit-seed-6.txt
+      - name: Audit Rule Box lock control seed 20
+        # Lock specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee rulebox-seed-20.txt
+      - name: Generate T2 and T3 matrix
+        # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-725-t2-t3-matrix.csv
+      - name: Upload traces and matrix
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-725-traces-and-matrix
+          path: |
+            issue-725-seed-29.txt
+            strict-jit-seed-6.txt
+            rulebox-seed-20.txt
+            issue-725-t2-t3-matrix.csv
+            build.log
+          if-no-files-found: warn

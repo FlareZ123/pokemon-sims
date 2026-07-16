@@ -1,0 +1,37 @@
+name: Three Verified Perfect Traces
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  audit-three-traces:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Run full Release tests
+        run: ctest --test-dir build --output-on-failure
+      - name: Pass 1 - strict JIT going first
+        # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 13 --require-ready-by 2 | tee verified-pass-1-strict-first-seed-13.txt
+      - name: Pass 2 - Rule Box Ability lock going second
+        # Lock semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 44 --require-ready-by 2 | tee verified-pass-2-rulebox-second-seed-44.txt
+      - name: Pass 3 - no-discard-control going second
+        # DCI semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+        run: ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 19 --require-ready-by 2 | tee verified-pass-3-no-control-second-seed-19.txt
+      - name: Generate current T2 and T3 matrix
+        # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out verified-current-main-matrix.csv
+      - name: Upload verified traces and matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: three-verified-perfect-traces-and-matrix
+          path: |
+            verified-pass-*.txt
+            verified-current-main-matrix.csv
+          if-no-files-found: error

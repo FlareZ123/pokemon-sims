@@ -1,18 +1,18 @@
 {
   "matrix_seed": 20260705,
-  "simulator_policy_source_sha256": "a25b4d8af1da6d4822e4ae5e17137e260c05377eca2e66607a3155405439ea3e",
+  "simulator_policy_source_sha256": "57b91edd263795086094eafcad20925b4ffc61821c73ec2574c4282e9aaf6024",
   "traces": [
     {
       "deadline": 3,
-      "file": "strict_jit_go_second_seed_3.txt",
+      "file": "strict_jit_go_second_seed_2.txt",
       "scenario": "strict-jit/go-second",
-      "seed": 3
+      "seed": 2
     },
     {
       "deadline": 4,
-      "file": "strict_jit_go_first_seed_6.txt",
+      "file": "strict_jit_go_first_seed_2.txt",
       "scenario": "strict-jit/go-first",
-      "seed": 6
+      "seed": 2
     },
     {
       "deadline": 2,
@@ -34,9 +34,9 @@
     },
     {
       "deadline": 4,
-      "file": "no_discard_control_go_first_seed_1.txt",
+      "file": "no_discard_control_go_first_seed_2.txt",
       "scenario": "no-discard-control/go-first",
-      "seed": 1
+      "seed": 2
     }
   ],
   "trials": 100000

@@ -12,12 +12,12 @@ The saved traces are independent audit examples. They are not asserted to use th
 
 | Case | Command / saved trace | First ready | Validation |
 |---|---|---:|---|
-| Strict JIT, going second | `strict-jit/go-second`, seed `3` / [`strict_jit_go_second_seed_3.txt`](../results/traces/strict_jit_go_second_seed_3.txt) | T3 | Saved executable audit example reproduced from the manifest. |
-| Strict JIT, going first | `strict-jit/go-first`, seed `6` / [`strict_jit_go_first_seed_6.txt`](../results/traces/strict_jit_go_first_seed_6.txt) | T3 | Saved executable audit example reproduced from the manifest. |
+| Strict JIT, going second | `strict-jit/go-second`, seed `2` / [`strict_jit_go_second_seed_2.txt`](../results/traces/strict_jit_go_second_seed_2.txt) | T3 | Saved executable audit example reproduced from the manifest. |
+| Strict JIT, going first | `strict-jit/go-first`, seed `2` / [`strict_jit_go_first_seed_2.txt`](../results/traces/strict_jit_go_first_seed_2.txt) | T3 | Saved executable audit example reproduced from the manifest. |
 | Matchup-flex JIT, going second | `matchup-flex-jit/go-second`, seed `3` / [`matchup_flex_go_second_seed_3.txt`](../results/traces/matchup_flex_go_second_seed_3.txt) | T2 | Saved executable audit example reproduced from the manifest. |
 | Strict JIT, turn-two Item lock, second | `strict-jit-turn2-item-lock/go-second`, seed `2` / [`strict_turn2_item_lock_go_second_seed_2.txt`](../results/traces/strict_turn2_item_lock_go_second_seed_2.txt) | T3 | Saved executable audit example reproduced from the manifest. |
 | Strict JIT, Rule Box Ability lock, second | `strict-jit-rulebox-ability-lock/go-second`, seed `20` / [`strict_rulebox_lock_go_second_seed_20.txt`](../results/traces/strict_rulebox_lock_go_second_seed_20.txt) | T2 | Saved executable audit example reproduced from the manifest. |
-| No discard control, going first | `no-discard-control/go-first`, seed `1` / [`no_discard_control_go_first_seed_1.txt`](../results/traces/no_discard_control_go_first_seed_1.txt) | T4 | Saved executable audit example reproduced from the manifest. |
+| No discard control, going first | `no-discard-control/go-first`, seed `2` / [`no_discard_control_go_first_seed_2.txt`](../results/traces/no_discard_control_go_first_seed_2.txt) | T3 | Saved executable audit example reproduced from the manifest. |
 
 ## Reproduction
 

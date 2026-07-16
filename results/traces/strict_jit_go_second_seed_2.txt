@@ -1,0 +1,33 @@
+
+Seed: 2 | first-ready turn: 3
+===== SIMULATE THIS =====
+Scenario: strict-jit/go-second | DCI: strict-JIT | Locks: none
+Mulligans: 0
+Opening player-known state: Active=Regidrago V [-] | Bench=Regidrago V [-] | Hand=Mysterious Treasure, Powerglass, Regidrago V, Guzma, Tapu Lele-GX | Discard=(none)
+DEBUG ONLY: prizes=Arven, Fire Energy, Earthen Vessel, Gladion, Gladion, Hisuian Goodra VSTAR. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Professor Turo's Scenario
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [-] | Bench=Regidrago V [-] | Hand=Mysterious Treasure, Powerglass, Regidrago V, Guzma, Tapu Lele-GX, Professor Turo's Scenario | Discard=(none)
+T1 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Wonder Tag: deck inspected; Prize identities are now deducible for later decisions.
+T1 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Steven's Resolve.
+T1 | DISCARD | rules: R-MT-01 | Regidrago V (Mysterious Treasure cost)
+T1 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM | Searched a Psychic or Dragon Pokémon: Regidrago VSTAR.
+T1 | HOLD VSTAR POWER | rules: R-FSS-02; R-VSTAR-01; P-KNOWLEDGE-01; P-DCI-01 | Retained Star Alchemy because K1 proved that no searched card advances setup.
+T1 | PLAY SUPPORTER | rules: R-STEVEN-01; R-GAME-SUPPORTER | Searched up to 3 cards: Crispin, Brilliant Blender, Regidrago V. Turn ended.
+T1 | TURN END | rules: R-STEVEN-01 or R-RV-01 | Active=Regidrago V [-] | Bench=Regidrago V [-]; Tapu Lele-GX [-] | Hand=Powerglass, Guzma, Professor Turo's Scenario, Regidrago VSTAR, Crispin, Brilliant Blender, Regidrago V | Discard=Mysterious Treasure, Regidrago V, Steven's Resolve
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Mega Dragonite ex
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [-] | Bench=Regidrago V [-]; Tapu Lele-GX [-] | Hand=Powerglass, Guzma, Professor Turo's Scenario, Regidrago VSTAR, Crispin, Brilliant Blender, Regidrago V, Mega Dragonite ex | Discard=Mysterious Treasure, Regidrago V, Steven's Resolve
+T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T2 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex, Dialga-GX, Dipplin TWM 127.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GF] | Bench=Regidrago V [-]; Tapu Lele-GX [-] | Hand=Powerglass, Guzma, Professor Turo's Scenario, Regidrago V, Mega Dragonite ex | Discard=Mysterious Treasure, Regidrago V, Steven's Resolve, Crispin, Brilliant Blender, Mega Dragonite ex, Dragapult ex, Dialga-GX, Dipplin TWM 127
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Regidrago VSTAR
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago VSTAR [GF] | Bench=Regidrago V [-]; Tapu Lele-GX [-] | Hand=Powerglass, Guzma, Professor Turo's Scenario, Regidrago V, Mega Dragonite ex, Regidrago VSTAR | Discard=Mysterious Treasure, Regidrago V, Steven's Resolve, Crispin, Brilliant Blender, Mega Dragonite ex, Dragapult ex, Dialga-GX, Dipplin TWM 127
+T3 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T3 | LEGACY STAR | rules: R-RVS-01; R-VSTAR-01 | Discarded top 7: Regidrago VSTAR, Chaotic Swell, Quick Ball, Hisuian Heavy Ball, Mysterious Treasure, Tate & Liza, Path to the Peak; recovered: Brilliant Blender, Crispin.
+T3 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Dragapult ex.
+T3 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago VSTAR and put Fire Energy into hand.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Regidrago VSTAR [-]; Tapu Lele-GX [-] | Hand=Powerglass, Guzma, Professor Turo's Scenario, Regidrago V, Mega Dragonite ex, Fire Energy | Discard=Mysterious Treasure, Regidrago V, Steven's Resolve, Mega Dragonite ex, Dragapult ex, Dialga-GX, Dipplin TWM 127, Regidrago VSTAR, Chaotic Swell, Quick Ball, Hisuian Heavy Ball, Mysterious Treasure, Tate & Liza, Path to the Peak, Brilliant Blender, Dragapult ex, Crispin
+T3 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

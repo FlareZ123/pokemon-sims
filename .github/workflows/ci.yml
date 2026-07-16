@@ -35,6 +35,13 @@ jobs:
             find build/Testing -name LastTest.log -type f -print -exec cat {} \; || true
             exit "$status"
           }
+      # Execute every documented CLI mode and prove incompatible options fail before
+      # simulation or file creation:
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+      # https://github.com/FlareZ123/pokemon-sims/issues/633
+      - name: Validate CLI mode compatibility
+        run: cmake -DSIMULATOR="$PWD/build/regidrago_sim" -DTEST_DIR="$PWD/build/cli-mode-contract" -P tests/run_cli_mode_contract.cmake
       - name: Upload CTest diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -65,6 +72,10 @@ jobs:
             find build-sanitizers/Testing -name LastTest.log -type f -print -exec cat {} \; || true
             exit "$status"
           }
+      - name: Validate CLI mode compatibility under sanitizers
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+        run: cmake -DSIMULATOR="$PWD/build-sanitizers/regidrago_sim" -DTEST_DIR="$PWD/build-sanitizers/cli-mode-contract" -P tests/run_cli_mode_contract.cmake
       - name: Upload sanitizer diagnostics
         if: always()
         uses: actions/upload-artifact@v4

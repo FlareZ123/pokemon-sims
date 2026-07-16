@@ -8,6 +8,8 @@ import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 
+from baseline_provenance import simulator_source_digest
+
 TRACE_SPECS = (
     ("strict-jit/go-second", 3, "strict_jit_go_second"),
     ("strict-jit/go-first", 4, "strict_jit_go_first"),
@@ -79,6 +81,9 @@ def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, m
 
     manifest: dict[str, object] = {
         "matrix_seed": matrix_seed,
+        "simulator_source_sha256": simulator_source_digest(Path(__file__).resolve().parents[1]),
+        # Source provenance contract: https://github.com/FlareZ123/pokemon-sims/issues/642
+        # Aggregate command specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
         "trials": trials,
         "traces": [],
     }

@@ -1,0 +1,33 @@
+name: Turbo Setup Search
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  snapshot-and-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Export exact merge-ref source
+        run: tar --exclude=.git -czf turbo-source-snapshot.tar.gz .
+      - name: Upload source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: turbo-source-snapshot
+          path: turbo-source-snapshot.tar.gz
+          if-no-files-found: error
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --config Release --parallel 2
+      - name: Validate baseline simulator
+        run: ctest --test-dir build --output-on-failure
+      - name: Generate current 100,000-trial baseline
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/turbo_baseline.csv
+      - name: Upload baseline matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: turbo-baseline-matrix
+          path: build/turbo_baseline.csv
+          if-no-files-found: error

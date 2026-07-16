@@ -1,4 +1,18 @@
   bool use_fss() {
+    const auto live_fss_holder = [](const Pokemon& pokemon) {
+      return pokemon.tool == Tool::ForestSealStone && is_pokemon_v(pokemon.card);
+    };
+    const bool forest_seal_stone_is_live = !state_.vstar_power_used &&
+        ((state_.active && live_fss_holder(*state_.active)) ||
+         std::any_of(state_.bench.begin(), state_.bench.end(), live_fss_holder));
+    // Forest Seal Stone grants Star Alchemy only to the Pokemon V it is attached to.
+    // Prove that the public board contains a live holder before any FSS-specific hold
+    // trace or target evaluation can report preservation of that VSTAR Power:
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+    // https://github.com/FlareZ123/pokemon-sims/issues/727
+    if (!forest_seal_stone_is_live) return false;
+
     const bool incomplete_tate_blender_route =
         !state_.vstar_power_used && supporter_allowed() && need_active_vstar() &&
         !need_energy() && !benched_vstar_promotion_ready() && need_payload() &&
@@ -59,23 +73,15 @@
         can_free_retreat_with_latias();
 
     if (latias_solves_only_missing_axis) {
-      const auto live_holder = [](const Pokemon& pokemon) {
-        return pokemon.tool == Tool::ForestSealStone && is_pokemon_v(pokemon.card);
-      };
-      const bool forest_seal_stone_is_live =
-          (state_.active && live_holder(*state_.active)) ||
-          std::any_of(state_.bench.begin(), state_.bench.end(), live_holder);
-      if (forest_seal_stone_is_live) {
-        // Latias ex already gives the Basic Active no Retreat Cost, and retreating once
-        // during the turn can promote the complete Benched Regidrago VSTAR. Preserve
-        // the one-per-game Star Alchemy resource when that is the sole missing axis:
-        // https://api.pokemontcg.io/v2/cards/sv8-76
-        // https://www.pokemon.com/us/pokemon-tcg/rules
-        // https://api.pokemontcg.io/v2/cards/swsh12-156
-        trace("HOLD VSTAR POWER", "R-LATIAS-01; R-GAME-RETREAT; R-FSS-02; R-VSTAR-01",
-              "Latias ex already supplies the complete free-retreat route to the Benched Regidrago VSTAR.");
-        return false;
-      }
+      // Latias ex already gives the Basic Active no Retreat Cost, and retreating once
+      // during the turn can promote the complete Benched Regidrago VSTAR. Preserve
+      // the one-per-game Star Alchemy resource when that is the sole missing axis:
+      // https://api.pokemontcg.io/v2/cards/sv8-76
+      // https://www.pokemon.com/us/pokemon-tcg/rules
+      // https://api.pokemontcg.io/v2/cards/swsh12-156
+      trace("HOLD VSTAR POWER", "R-LATIAS-01; R-GAME-RETREAT; R-FSS-02; R-VSTAR-01",
+            "Latias ex already supplies the complete free-retreat route to the Benched Regidrago VSTAR.");
+      return false;
     }
 
     if (deck_seen_) {

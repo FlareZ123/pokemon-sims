@@ -18,10 +18,10 @@ jobs:
       - name: Record exact main commit
         run: git rev-parse HEAD | tee main-commit.txt
 
-      - name: Build active simulator
+      - name: Build active simulator target
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --parallel 2
+          cmake --build build --target regidrago_sim --parallel 2
 
       - name: Trace one deterministic play
         run: |

@@ -164,8 +164,16 @@
             return need_payload() && can_play_payload_this_turn() && !item_locked() &&
                 payload_present;
           case Card::ProfessorBurnet:
-            return need_payload() && can_play_payload_this_turn() && supporter_allowed() &&
-                payload_present;
+            // Arven can search Forest Seal Stone after consuming this turn's Supporter.
+            // Star Alchemy may bank Professor Burnet for the next modeled turn, where
+            // Burnet searches and discards the Dragon payload for Apex Dragon:
+            // https://api.pokemontcg.io/v2/cards/sv1-166
+            // https://api.pokemontcg.io/v2/cards/swsh12-156
+            // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+            // https://api.pokemontcg.io/v2/cards/swsh12-136
+            // https://github.com/FlareZ123/pokemon-sims/issues/705
+            return need_payload() && can_play_payload_this_turn() && payload_present &&
+                (supporter_allowed() || state_.turn < scenario_.max_turn);
           case Card::Crispin:
             return need_energy() && supporter_allowed() && crispin_can_advance_energy_axis();
           case Card::Oricorio:

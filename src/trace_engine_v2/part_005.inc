@@ -128,20 +128,21 @@
         hand_count(Card::DialgaGX) == 1 && payloads_in_hand == 1;
     const bool held_turo_fss_recovery_graph =
         hand_count(Card::ProfessorTuro) > 0 && hand_count(Card::ForestSealStone) > 0;
-    const bool held_legal_one_discard_regi_route =
+    const bool held_redundant_one_discard_regi_graph =
         !item_locked() && might_be_unseen(Card::RegidragoV) &&
-        (hand_count(Card::QuickBall) > 0 || hand_count(Card::MysteriousTreasure) > 0);
-    const bool held_direct_regi_and_payload_graph =
-        payloads_in_hand > 1 && held_legal_one_discard_regi_route;
+        hand_count(Card::QuickBall) > 0 && hand_count(Card::MysteriousTreasure) > 0 &&
+        payloads_in_hand > 1 && hand_count(Card::Crispin) == 1 &&
+        hand_count(Card::BrilliantBlender) == 0;
     const bool dialga_has_route_preservation_value =
         hand_count(Card::DialgaGX) == 1 &&
         (dialga_is_unique_in_hand_payload || held_turo_fss_recovery_graph ||
-         held_direct_regi_and_payload_graph);
+         held_redundant_one_discard_regi_graph);
 
     // Dialga-GX is a modeled Apex Dragon payload. Under strict current-turn DCI,
     // preserve it when Crispin already covers the Supporter connector and the public
-    // hand retains either Tapu recovery or a legal one-discard Regidrago search plus
-    // another Dragon payload. Full Item lock removes the search-Item route:
+    // hand retains either Tapu recovery or the reviewed redundant Quick Ball plus
+    // Mysterious Treasure graph. Exactly one Crispin and no held Blender preserve
+    // Wonder Tag whenever a stronger direct payload outlet already solves that axis:
     // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
     // https://api.pokemontcg.io/v2/cards/sm5-100
     // https://api.pokemontcg.io/v2/cards/cel25c-60_A
@@ -152,6 +153,7 @@
     // https://api.pokemontcg.io/v2/cards/sv4-171
     // https://api.pokemontcg.io/v2/cards/swsh1-179
     // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/sv8-164
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/653
     if (tapu_dialga_are_only_opening_basics && strict_payload_timing() &&

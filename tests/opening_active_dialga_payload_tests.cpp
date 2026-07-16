@@ -251,19 +251,36 @@ void test_oricorio_dialga_lock_controls() {
                                  sim::LockMode::FullRuleBoxAbility, false, 4};
     std::mt19937_64 rng{67412};
     sim::Engine engine(scenario, recipe, rng);
-    sim::State state = oricorio_dialga_lock_opening_hand();
-    state.hand.erase(std::remove(state.hand.begin(), state.hand.end(), sim::Card::TeamYellsCheer),
-                     state.hand.end());
-    state.hand.erase(std::remove(state.hand.begin(), state.hand.end(), sim::Card::Powerglass),
-                     state.hand.end());
-    state.hand.push_back(sim::Card::Grass);
-    state.hand.push_back(sim::Card::Fire);
+    sim::State state;
+    state.hand = {sim::Card::QuickBall, sim::Card::MegaDragonite,
+                  sim::Card::DialgaGX, sim::Card::Oricorio,
+                  sim::Card::Grass, sim::Card::Grass, sim::Card::Fire};
     sim::EngineTestAccess::set_state(engine, std::move(state));
     sim::EngineTestAccess::choose_opening_active(engine);
     const sim::State& after = sim::EngineTestAccess::state(engine);
     if (!after.active || after.active->card != sim::Card::Oricorio ||
         !contains(after.hand, sim::Card::DialgaGX)) {
-      throw std::runtime_error("A hand already holding both Energy types should preserve the Dialga payload route.");
+      throw std::runtime_error("A hand already holding the full GGF attack cost should preserve the Dialga payload route.");
+    }
+  }
+
+  {
+    const sim::Scenario scenario{"opening-oricorio-dialga-second-grass-needed",
+                                 sim::DciProfile::StrictJit,
+                                 sim::LockMode::FullRuleBoxAbility, false, 4};
+    std::mt19937_64 rng{67413};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::State state;
+    state.hand = {sim::Card::QuickBall, sim::Card::MegaDragonite,
+                  sim::Card::DialgaGX, sim::Card::Oricorio,
+                  sim::Card::RegidragoVstar, sim::Card::Grass,
+                  sim::Card::Fire};
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+    sim::EngineTestAccess::choose_opening_active(engine);
+    const sim::State& after = sim::EngineTestAccess::state(engine);
+    if (!after.active || after.active->card != sim::Card::DialgaGX ||
+        !contains(after.hand, sim::Card::Oricorio)) {
+      throw std::runtime_error("One Grass plus one Fire still needs Vital Dance for the second Grass.");
     }
   }
 
@@ -271,7 +288,7 @@ void test_oricorio_dialga_lock_controls() {
     const sim::Scenario scenario{"opening-oricorio-dialga-full-item-graph-control",
                                  sim::DciProfile::StrictJit,
                                  sim::LockMode::FullItem, false, 4};
-    std::mt19937_64 rng{67413};
+    std::mt19937_64 rng{67414};
     sim::Engine engine(scenario, recipe, rng);
     sim::State state = oricorio_dialga_lock_opening_hand();
     state.hand.erase(std::remove(state.hand.begin(), state.hand.end(), sim::Card::TeamYellsCheer),
@@ -290,7 +307,7 @@ void test_oricorio_dialga_lock_controls() {
     const sim::Scenario scenario{"opening-oricorio-dialga-no-item-route-control",
                                  sim::DciProfile::StrictJit,
                                  sim::LockMode::FullRuleBoxAbility, false, 4};
-    std::mt19937_64 rng{67414};
+    std::mt19937_64 rng{67415};
     sim::Engine engine(scenario, recipe, rng);
     sim::State state = oricorio_dialga_lock_opening_hand();
     state.hand.erase(std::remove(state.hand.begin(), state.hand.end(), sim::Card::QuickBall),

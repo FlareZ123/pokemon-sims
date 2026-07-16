@@ -24,12 +24,6 @@ bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
   return std::find(cards.begin(), cards.end(), card) != cards.end();
 }
 
-sim::Engine make_engine(const char* label, std::mt19937_64& rng) {
-  const sim::Scenario scenario{label, sim::DciProfile::StrictJit,
-                               sim::LockMode::None, false, 4};
-  return sim::Engine(scenario, sim::baseline_recipe(), rng);
-}
-
 void test_blender_holds_for_live_fss_tate_connector_with_incomplete_target() {
   using namespace sim;
   const Scenario scenario{"blender-fss-tate-incomplete", DciProfile::StrictJit,
@@ -116,8 +110,11 @@ void test_blender_resolves_when_no_fss_tate_connector_remains() {
 
 void test_blender_holds_after_manual_energy_window_closes() {
   using namespace sim;
+  const Scenario scenario{"blender-energy-window-closed", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
   std::mt19937_64 rng(7371);
-  Engine engine = make_engine("blender-energy-window-closed", rng);
+  Engine engine(scenario, recipe, rng);
   State& state = EngineTestAccess::state(engine);
   state.turn = 2;
   state.active = Pokemon{Card::RegidragoVstar, 1, 1, 1, Tool::None};
@@ -143,8 +140,11 @@ void test_blender_holds_after_manual_energy_window_closes() {
 
 void test_blender_resolves_with_unused_final_manual_attachment() {
   using namespace sim;
+  const Scenario scenario{"blender-energy-manual-live", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
   std::mt19937_64 rng(7372);
-  Engine engine = make_engine("blender-energy-manual-live", rng);
+  Engine engine(scenario, recipe, rng);
   State& state = EngineTestAccess::state(engine);
   state.turn = 2;
   state.active = Pokemon{Card::RegidragoVstar, 1, 1, 1, Tool::None};
@@ -166,8 +166,11 @@ void test_blender_resolves_with_unused_final_manual_attachment() {
 
 void test_blender_resolves_with_live_crispin_attachment() {
   using namespace sim;
+  const Scenario scenario{"blender-energy-crispin-live", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
   std::mt19937_64 rng(7373);
-  Engine engine = make_engine("blender-energy-crispin-live", rng);
+  Engine engine(scenario, recipe, rng);
   State& state = EngineTestAccess::state(engine);
   state.turn = 2;
   state.active = Pokemon{Card::RegidragoVstar, 1, 1, 1, Tool::None};
@@ -190,8 +193,11 @@ void test_blender_resolves_with_live_crispin_attachment() {
 
 void test_blender_holds_when_crispin_cannot_finish_two_missing_energy() {
   using namespace sim;
+  const Scenario scenario{"blender-energy-crispin-incomplete", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
   std::mt19937_64 rng(7374);
-  Engine engine = make_engine("blender-energy-crispin-incomplete", rng);
+  Engine engine(scenario, recipe, rng);
   State& state = EngineTestAccess::state(engine);
   state.turn = 2;
   state.active = Pokemon{Card::RegidragoVstar, 1, 0, 1, Tool::None};

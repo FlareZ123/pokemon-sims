@@ -1,14 +1,16 @@
 name: Apply issue 671 after Latias merge
 
 on:
-  push:
-    branches: [fix/671-opening-bench-tapu]
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: write
 
 jobs:
   apply:
+    if: github.head_ref == 'fix/671-opening-bench-tapu'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

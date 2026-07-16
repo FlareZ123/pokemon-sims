@@ -36,12 +36,20 @@ void test_fss_reveal_preserves_burnet_over_prized_energy() {
              !contains(after_supporter.discard, Card::MegaDragonite),
          "Burnet must not create an expiring strict-JIT payload before the Energy axis can finish.");
 
+  expect(EngineTestAccess::attach_manual(f.engine),
+         "The recovered Energy should complete the prior-turn Regidrago V's attack cost.");
   expect(EngineTestAccess::evolve_best_regi(f.engine),
          "The prior-turn Regidrago V should evolve after the Energy recovery Supporter resolves.");
-  expect(EngineTestAccess::attach_manual(f.engine),
-         "The recovered Energy should complete the Active Regidrago VSTAR's attack cost.");
-  expect(!EngineTestAccess::payload_ready(f.engine),
-         "The turn must remain unready until a current-turn Dragon payload is established.");
+  // Legacy Star discards the top 7 cards, so the known singleton Mega Dragonite ex
+  // becomes the same-turn Dragon payload after Gladion finishes the Energy axis:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // https://github.com/FlareZ123/pokemon-sims/issues/719
+  expect(EngineTestAccess::use_legacy_star(f.engine),
+         "Legacy Star should discard the known singleton Dragon payload in the same turn.");
+  expect(EngineTestAccess::payload_ready(f.engine),
+         "Gladion into Legacy Star should complete the strict-JIT ready state.");
 }
 
 void test_heavy_ball_oricorio_preserves_burnet_supporter() {

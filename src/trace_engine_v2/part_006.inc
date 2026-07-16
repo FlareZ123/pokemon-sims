@@ -213,6 +213,36 @@
     return second.has_value();
   }
 
+  bool wonder_tag_arven_held_payload_route_available() const {
+    // At K1, Wonder Tag may find Arven, Arven may find a one-discard Item, and that
+    // Item may discard the held Dragon only when its mandatory search retains a
+    // legal target. Arven is a Supporter and is still in deck during target choice:
+    // Wonder Tag: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Trainer resolution ruling: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+    // Strict-JIT contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+    // Regression: https://github.com/FlareZ123/pokemon-sims/issues/648
+    if (!deck_seen_ || item_locked() || !can_play_payload_this_turn() ||
+        !need_payload() || need_regi() || need_vstar() || need_energy() ||
+        need_active_vstar() || hand_count(Card::Arven) > 0 ||
+        deck_count_after_search_started(Card::Arven) == 0 ||
+        std::none_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+    const bool treasure_route = deck_count_after_search_started(Card::MysteriousTreasure) > 0 &&
+        std::any_of(state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic);
+    const bool quick_route = deck_count_after_search_started(Card::QuickBall) > 0 &&
+        std::any_of(state_.deck.begin(), state_.deck.end(), is_basic);
+    const bool vessel_route = deck_count_after_search_started(Card::EarthenVessel) > 0 &&
+        (deck_count_after_search_started(Card::Grass) > 0 ||
+         deck_count_after_search_started(Card::Fire) > 0);
+    return treasure_route || quick_route || vessel_route;
+  }
+
   bool needs_tapu_connector() {
     if (!supporter_allowed() || !ability_available_for_pokemon(Card::TapuLeleGX)) return false;
     // With only one Bench slot left, Tapu Lele-GX into Crispin consumes both the
@@ -241,11 +271,19 @@
     // https://api.pokemontcg.io/v2/cards/cel25c-60_A
     // https://api.pokemontcg.io/v2/cards/sv1-166
     const bool direct_ultra_vstar_route = payable_ultra_ball_vstar_route();
-    const bool needs_arven = need_vstar() && hand_count(Card::Arven) == 0 &&
-                             hand_count(Card::EvolutionIncense) == 0 &&
-                             hand_count(Card::MysteriousTreasure) == 0 &&
-                             !direct_ultra_vstar_route;
-    return needs_t1_steven || needs_crispin || needs_burnet || needs_arven;
+    const bool needs_arven_for_vstar = need_vstar() && hand_count(Card::Arven) == 0 &&
+                                       hand_count(Card::EvolutionIncense) == 0 &&
+                                       hand_count(Card::MysteriousTreasure) == 0 &&
+                                       !direct_ultra_vstar_route;
+    // A direct in-hand one-discard Item avoids Tapu Lele-GX's Bench cost and the
+    // Supporter play, so Wonder Tag is reserved for the known Arven-only bridge:
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    const bool needs_arven_for_held_payload = bench_space() > 0 &&
+        !has_live_one_discard_hand_payload_line() &&
+        wonder_tag_arven_held_payload_route_available();
+    return needs_t1_steven || needs_crispin || needs_burnet ||
+           needs_arven_for_vstar || needs_arven_for_held_payload;
   }
 
   bool bench_oricorio_if_useful() {

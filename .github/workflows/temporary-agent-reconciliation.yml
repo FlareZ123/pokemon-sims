@@ -89,3 +89,75 @@ jobs:
             source.tgz
             build/Testing
           if-no-files-found: warn
+
+  issue-788-observable-evidence:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'fix/788-dialga-opening-payable-search'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Run observable validation
+        shell: bash
+        run: |
+          set +e
+          mkdir -p validation-output
+          cmake -S . -B build-observable -DCMAKE_BUILD_TYPE=Release > validation-output/configure.log 2>&1
+          configure_status=$?
+          if [ "$configure_status" -eq 0 ]; then
+            cmake --build build-observable --parallel 2 > validation-output/build.log 2>&1
+            build_status=$?
+          else
+            build_status=125
+            echo "Skipped because configure failed." > validation-output/build.log
+          fi
+          if [ "$build_status" -eq 0 ]; then
+            ctest --test-dir build-observable --output-on-failure > validation-output/ctest.log 2>&1
+            ctest_status=$?
+            ./build-observable/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 3 > validation-output/trace-1.txt 2>&1
+            trace1_status=$?
+            ./build-observable/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 > validation-output/trace-2.txt 2>&1
+            trace2_status=$?
+            ./build-observable/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 11 > validation-output/trace-3.txt 2>&1
+            trace3_status=$?
+            ./build-observable/regidrago_sim --trials 100000 --seed 20260705 --out validation-output/t2-t3-matrix.csv > validation-output/matrix.log 2>&1
+            matrix_status=$?
+          else
+            ctest_status=125
+            trace1_status=125
+            trace2_status=125
+            trace3_status=125
+            matrix_status=125
+            echo "Skipped because build failed." > validation-output/ctest.log
+            echo "Skipped because build failed." > validation-output/trace-1.txt
+            echo "Skipped because build failed." > validation-output/trace-2.txt
+            echo "Skipped because build failed." > validation-output/trace-3.txt
+            echo "Skipped because build failed." > validation-output/matrix.log
+          fi
+          {
+            echo "validated_head=$(git rev-parse HEAD)"
+            echo "workflow_run=${GITHUB_RUN_ID}"
+            echo "workflow_attempt=${GITHUB_RUN_ATTEMPT}"
+            echo "configure_status=${configure_status}"
+            echo "build_status=${build_status}"
+            echo "ctest_status=${ctest_status}"
+            echo "trace1_status=${trace1_status}"
+            echo "trace2_status=${trace2_status}"
+            echo "trace3_status=${trace3_status}"
+            echo "matrix_status=${matrix_status}"
+          } > validation-output/summary.txt
+
+      - name: Publish observable evidence
+        if: always()
+        run: |
+          mkdir -p .github/validation/issue-788-observable
+          cp -a validation-output/. .github/validation/issue-788-observable/
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/validation/issue-788-observable
+          git commit -m "Record observable issue 788 CI evidence [skip ci]"
+          git push --force origin HEAD:evidence/issue-788-observable

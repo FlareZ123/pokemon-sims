@@ -1,0 +1,31 @@
+name: Debug simulate-this validation
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  simulate-this-traces:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel 2
+      - name: Pass 1 - strict JIT going second
+        # Documented readable-hand interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 | tee simulate-this-pass-1.txt
+      - name: Pass 2 - turn-two Item lock going second
+        # Scenario semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 17 | tee simulate-this-pass-2.txt
+      - name: Pass 3 - Rule Box Ability lock going first
+        # Scenario semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-first --seed 29 | tee simulate-this-pass-3.txt
+      - name: Upload traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulate-this-traces
+          path: simulate-this-pass-*.txt
+          if-no-files-found: error

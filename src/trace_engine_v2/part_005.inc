@@ -130,9 +130,17 @@
         hand_count(Card::DialgaGX) == 1 && payloads_in_hand == 1;
     const bool held_turo_fss_recovery_graph =
         hand_count(Card::ProfessorTuro) > 0 && hand_count(Card::ForestSealStone) > 0;
+    const bool payable_quick_ball_regi_route =
+        hand_count(Card::QuickBall) > 0 &&
+        (hand_count(Card::MysteriousTreasure) > 0 ||
+         choose_discard(false, true, true, Card::QuickBall).has_value());
+    const bool payable_mysterious_treasure_regi_route =
+        hand_count(Card::MysteriousTreasure) > 0 &&
+        (hand_count(Card::QuickBall) > 0 ||
+         choose_discard(false, true, true, Card::MysteriousTreasure).has_value());
     const bool held_redundant_one_discard_regi_graph =
         !item_locked() && might_be_unseen(Card::RegidragoV) &&
-        hand_count(Card::QuickBall) > 0 && hand_count(Card::MysteriousTreasure) > 0 &&
+        (payable_quick_ball_regi_route || payable_mysterious_treasure_regi_route) &&
         payloads_in_hand > 1 && hand_count(Card::Crispin) == 1 &&
         hand_count(Card::BrilliantBlender) == 0;
     const bool dialga_has_route_preservation_value =
@@ -142,9 +150,10 @@
 
     // Dialga-GX is a modeled Apex Dragon payload. Under strict current-turn DCI,
     // preserve it when Crispin already covers the Supporter connector and the public
-    // hand retains either Tapu recovery or the reviewed redundant Quick Ball plus
-    // Mysterious Treasure graph. Exactly one Crispin and no held Blender preserve
-    // Wonder Tag whenever a stronger direct payload outlet already solves that axis:
+    // hand retains either Tapu recovery or a payable Quick Ball or Mysterious
+    // Treasure route to Regidrago V. The held search card cannot pay its own cost;
+    // a distinct alternate search Item or the centralized DCI selector must provide
+    // legal fodder. Exactly one Crispin and no held Blender preserve Wonder Tag:
     // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
     // https://api.pokemontcg.io/v2/cards/sm5-100
     // https://api.pokemontcg.io/v2/cards/cel25c-60_A

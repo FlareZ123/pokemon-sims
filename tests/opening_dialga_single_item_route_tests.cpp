@@ -1,56 +1,4 @@
-import os
-from pathlib import Path
-
-
-def atomic_write(path: Path, text: str) -> None:
-    temporary = path.with_name(path.name + ".tmp-653-followup")
-    temporary.write_text(text, encoding="utf-8")
-    os.replace(temporary, path)
-
-
-source = Path("src/trace_engine_v2/part_005.inc")
-text = source.read_text(encoding="utf-8")
-if "payable_quick_ball_regi_route" not in text:
-    old = """    const bool held_redundant_one_discard_regi_graph =
-        !item_locked() && might_be_unseen(Card::RegidragoV) &&
-        hand_count(Card::QuickBall) > 0 && hand_count(Card::MysteriousTreasure) > 0 &&
-        payloads_in_hand > 1 && hand_count(Card::Crispin) == 1 &&
-        hand_count(Card::BrilliantBlender) == 0;
-"""
-    new = """    const bool payable_quick_ball_regi_route =
-        hand_count(Card::QuickBall) > 0 &&
-        (hand_count(Card::MysteriousTreasure) > 0 ||
-         choose_discard(false, true, true, Card::QuickBall).has_value());
-    const bool payable_mysterious_treasure_regi_route =
-        hand_count(Card::MysteriousTreasure) > 0 &&
-        (hand_count(Card::QuickBall) > 0 ||
-         choose_discard(false, true, true, Card::MysteriousTreasure).has_value());
-    const bool held_redundant_one_discard_regi_graph =
-        !item_locked() && might_be_unseen(Card::RegidragoV) &&
-        (payable_quick_ball_regi_route || payable_mysterious_treasure_regi_route) &&
-        payloads_in_hand > 1 && hand_count(Card::Crispin) == 1 &&
-        hand_count(Card::BrilliantBlender) == 0;
-"""
-    if old not in text:
-        raise SystemExit("issue 653 merged predicate anchor missing")
-    text = text.replace(old, new, 1)
-    text = text.replace(
-        """    // hand retains either Tapu recovery or the reviewed redundant Quick Ball plus
-    // Mysterious Treasure graph. Exactly one Crispin and no held Blender preserve
-    // Wonder Tag whenever a stronger direct payload outlet already solves that axis:
-""",
-        """    // hand retains either Tapu recovery or a payable Quick Ball or Mysterious
-    // Treasure route to Regidrago V. The held search card cannot pay its own cost;
-    // a distinct alternate search Item or the centralized DCI selector must provide
-    // legal fodder. Exactly one Crispin and no held Blender preserve Wonder Tag:
-""",
-        1,
-    )
-    atomic_write(source, text)
-
-
-test = Path("tests/opening_dialga_single_item_route_tests.cpp")
-test_text = r'''#define REGIDRAGO_SIM_NO_MAIN
+#define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
 #include <algorithm>
@@ -179,16 +127,3 @@ int main() {
   full_item_lock_rejects_payable_item_route();
   return 0;
 }
-'''
-atomic_write(test, test_text)
-
-cmake = Path("CMakeLists.txt")
-cmake_text = cmake.read_text(encoding="utf-8")
-if "regidrago_opening_dialga_single_item_route_tests" not in cmake_text:
-    cmake_text += """
-
-add_executable(regidrago_opening_dialga_single_item_route_tests tests/opening_dialga_single_item_route_tests.cpp)
-target_compile_options(regidrago_opening_dialga_single_item_route_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-add_test(NAME regidrago_opening_dialga_single_item_route COMMAND regidrago_opening_dialga_single_item_route_tests)
-"""
-    atomic_write(cmake, cmake_text)

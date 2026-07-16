@@ -6,12 +6,46 @@
 #ifndef POKEMON_SIMS_PART_014C_LATIAS_BENCH_OVERRIDE_INCLUDED
 #define POKEMON_SIMS_PART_014C_LATIAS_BENCH_OVERRIDE_INCLUDED
 
+  bool held_item_can_find_pending_vstar() {
+    if (item_locked() || !might_be_unseen(Card::RegidragoVstar)) return false;
+
+    // A held direct Pokemon-search Item can make the VSTAR available later in this
+    // turn. Reserve Latias ex before a redundant Basic fills the final Bench slot:
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    // https://github.com/FlareZ123/pokemon-sims/issues/687
+    if (hand_count(Card::EvolutionIncense) > 0) return true;
+
+    const bool permit_payload_cost = can_play_payload_this_turn();
+    if (hand_count(Card::MysteriousTreasure) > 0 &&
+        choose_discard(permit_payload_cost, true, true,
+                       Card::MysteriousTreasure).has_value()) {
+      return true;
+    }
+    if (hand_count(Card::UltraBall) == 0) return false;
+
+    const std::vector<Card> original_hand = state_.hand;
+    const auto first = choose_discard(permit_payload_cost, true, true, Card::UltraBall);
+    if (!first || !remove_one(state_.hand, *first)) {
+      state_.hand = original_hand;
+      return false;
+    }
+    const auto second = choose_discard(
+        can_play_payload_this_turn() && !is_payload(*first), true, true, Card::UltraBall);
+    state_.hand = original_hand;
+    return second.has_value();
+  }
+
   bool bench_latias_for_pending_vstar_promotion() {
     if (bench_space() != 1 || hand_count(Card::LatiasEx) == 0 ||
         in_play(Card::LatiasEx) || !ability_available_for_pokemon(Card::LatiasEx) ||
         state_.retreat_used || !state_.active || !is_basic(state_.active->card) ||
         state_.active->card == Card::RegidragoV ||
-        hand_count(Card::RegidragoVstar) == 0) {
+        (hand_count(Card::RegidragoVstar) == 0 &&
+         !held_item_can_find_pending_vstar())) {
       return false;
     }
 

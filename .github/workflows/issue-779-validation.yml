@@ -30,7 +30,7 @@ jobs:
         shell: bash
         run: |
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 3 | tee build/issue-779-seed-3.txt
-          grep -F "Steven's Resolve" build/issue-779-seed-3.txt
+          grep -F "R-STEVEN-01" build/issue-779-seed-3.txt
       - name: Audit two control traces
         run: |
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 --require-ready-by 3 | tee build/issue-779-control-1.txt

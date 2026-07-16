@@ -73,9 +73,16 @@
   }
 
   bool has_live_blender_payload_line() const {
-    // Brilliant Blender searches and discards cards from deck: https://api.pokemontcg.io/v2/cards/sv8-164
-    return !item_locked() && hand_count(Card::BrilliantBlender) > 0 && can_play_payload_this_turn() &&
-           payload_might_be_in_deck();
+    // Brilliant Blender searches and discards cards from deck. Under strict JIT,
+    // advertise the outlet only when the same turn can also finish Apex Dragon's
+    // GGF cost, so upstream selectors cannot reserve a dead payload route:
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+    // https://github.com/FlareZ123/pokemon-sims/issues/737
+    return !item_locked() && hand_count(Card::BrilliantBlender) > 0 &&
+           can_play_payload_this_turn() && payload_might_be_in_deck() &&
+           blender_energy_axis_can_finish_this_turn();
   }
 
   std::optional<Card> choose_discard(const bool permit_payload, const bool flex_fodder,

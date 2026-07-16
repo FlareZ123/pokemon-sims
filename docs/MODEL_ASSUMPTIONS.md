@@ -26,7 +26,6 @@ The fixed seed makes each report reproducible. The Monte Carlo standard error sh
 - Path-style Rule Box Ability suppression and Field Blower removal while Items are legal.
 - Item-lock restrictions.
 - Strict same-turn payload tracking.
-- Matched-seed deck swap comparisons.
 
 ## Deliberate simplifications
 
@@ -49,6 +48,10 @@ Many card effects have correct text recorded in `RULES_AND_INTERACTIONS.md`, tho
 - Channeler, recovery loops, Chaotic Swell replacement, or Professor Turo after setup.
 
 Their discrete value is still preserved in the DCI profiles and swap discussion. This prevents a speed-only model from calling a strong matchup card “worthless.”
+
+### Card-swap variants
+
+Matched-seed card-swap comparisons are currently unavailable. The active CLI emits baseline scenario rows only, and the prior variant artifact was removed after the policy rewrite: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L271-L283 and https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7. Any future deck-swap claim requires a restored variant builder, executable tests, and newly generated results.
 
 ### Policy versus future-card oracle
 
@@ -103,7 +106,7 @@ The model applies Path-to-the-Peak-style suppression to Rule Box Pokémon Abilit
 
 ### Combined lock
 
-This stacks full Item lock and Rule Box Ability lock. Field Blower remains blocked as an Item, so the Path-style suppression persists. It is a deliberately severe stress test. It should be read as a measure of the deck’s natural raw draws and Supporter-only recovery rather than as a common board state.
+This starts with full Item lock and Path-to-the-Peak-style Rule Box Ability suppression. Field Blower remains blocked as an Item. Chaotic Swell is a Stadium, so it may still be played through Item lock; when it replaces the modeled Path, Rule Box Pokémon Abilities become available for later actions and turns. The scenario is a deliberately severe stress test of raw draws, Supporter routes, and the deck’s Stadium out rather than a persistent Supporter-only lock: https://api.pokemontcg.io/v2/cards/sm12-187, https://api.pokemontcg.io/v2/cards/swsh6-148, https://www.pokemon.com/us/pokemon-tcg/rules, https://github.com/FlareZ123/pokemon-sims/issues/644.
 
 ## Prizing implementation
 
@@ -116,7 +119,7 @@ This captures the central prizing asymmetry: a recovery card can itself be prize
 
 ## Sampling and comparison method
 
-The program uses a fixed 64-bit Mersenne Twister seed. Baseline scenarios use stable derived seeds. Variant rows use matched seeds for each scenario so percentage deltas are less noisy than independent-run deltas.
+The program uses a fixed 64-bit Mersenne Twister seed. Baseline scenarios use stable derived seeds. The current executable writes only the baseline scenarios from `all_scenarios()`; it does not generate matched-seed deck-swap rows: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L271-L283. The retired `variant_results.csv` must not be reused until a current variant generator, tests, and results are restored: https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7.
 
 For a binary success count `x` over `n` trials, the displayed Monte Carlo standard error in percentage points is:
 

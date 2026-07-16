@@ -255,10 +255,20 @@ int main(int argc, char** argv) {
         sim::TraceLog trace{true, {}};
         sim::Engine engine(*scenario, deck, rng, &trace);
         const sim::TrialOutcome outcome = engine.run();
-        if (mode == CliMode::FindReady && outcome.first_ready_turn == 0) continue;
+        const bool misses_required_deadline = require_ready_by > 0 &&
+            (outcome.first_ready_turn == 0 || outcome.first_ready_turn > require_ready_by);
+        // --find-ready searches for qualifying traces. A late-ready trace fails the
+        // supplied deadline predicate and must be skipped just like a never-ready
+        // trace, while --simulate-this still reports its selected seed and exits 1:
+        // https://github.com/FlareZ123/pokemon-sims/issues/641
+        // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        if (mode == CliMode::FindReady &&
+            (outcome.first_ready_turn == 0 || misses_required_deadline)) {
+          continue;
+        }
         std::cout << "\nSeed: " << candidate_seed << " | first-ready turn: " << (outcome.first_ready_turn == 0 ? std::string("not ready through T4") : std::to_string(outcome.first_ready_turn)) << '\n';
         for (const std::string& line : trace.lines) std::cout << line << '\n';
-        if (require_ready_by > 0 && (outcome.first_ready_turn == 0 || outcome.first_ready_turn > require_ready_by)) {
+        if (misses_required_deadline) {
           std::cerr << "Trace did not reach a ready state by required turn " << require_ready_by << "\n";
           return 1;
         }

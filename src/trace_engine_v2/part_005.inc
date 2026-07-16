@@ -118,6 +118,45 @@
       return;
     }
 
+    const bool oricorio_dialga_are_only_opening_basics =
+        hand_count(Card::Oricorio) > 0 && hand_count(Card::DialgaGX) > 0 &&
+        hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&
+        hand_count(Card::MawileGX) == 0 && hand_count(Card::TapuLeleGX) == 0;
+    const int oricorio_dialga_payloads_in_hand = static_cast<int>(
+        std::count_if(state_.hand.begin(), state_.hand.end(), is_payload));
+    const bool another_payload_covers_strict_jit =
+        hand_count(Card::DialgaGX) == 1 && oricorio_dialga_payloads_in_hand > 1;
+    const bool vital_dance_has_energy_value =
+        hand_count(Card::Grass) == 0 || hand_count(Card::Fire) == 0;
+    const bool public_regidrago_connector_held =
+        hand_count(Card::QuickBall) > 0 || hand_count(Card::MysteriousTreasure) > 0 ||
+        hand_count(Card::UltraBall) > 0 || hand_count(Card::Arven) > 0 ||
+        hand_count(Card::StevensResolve) > 0;
+    const bool no_opening_lock = scenario_.locks == LockMode::None;
+
+    // Setup may start Dialga-GX so Oricorio can later enter from hand and resolve
+    // Vital Dance. Use the no-lock route when another held Dragon covers strict-JIT,
+    // at least one Energy type is missing, and the public hand already exposes a
+    // Regidrago connector through a search Item, Arven, or Steven's Resolve:
+    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
+    // https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://api.pokemontcg.io/v2/cards/sm5-100
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh9-150
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/sm7-145
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/663
+    if (oricorio_dialga_are_only_opening_basics && strict_payload_timing() &&
+        another_payload_covers_strict_jit && vital_dance_has_energy_value &&
+        public_regidrago_connector_held && no_opening_lock &&
+        remove_one(state_.hand, Card::DialgaGX)) {
+      state_.active = Pokemon{Card::DialgaGX, 0};
+      outcome_.started_regi = false;
+      return;
+    }
+
     const bool tapu_dialga_are_only_opening_basics =
         hand_count(Card::TapuLeleGX) > 0 && hand_count(Card::DialgaGX) > 0 &&
         hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&

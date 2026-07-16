@@ -6,6 +6,7 @@
 # Knowledge contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 # Earliest-ready objective: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
 # Baseline manifest: https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
+# Baseline drift issue: https://github.com/FlareZ123/pokemon-sims/issues/804
 if(NOT DEFINED SIMULATOR)
   message(FATAL_ERROR "SIMULATOR was not supplied")
 endif()
@@ -16,6 +17,12 @@ endif()
 set(REPOSITORY_ROOT "${CMAKE_CURRENT_LIST_DIR}/..")
 file(REMOVE_RECURSE "${AUDIT_OUTPUT_DIR}")
 file(MAKE_DIRECTORY "${AUDIT_OUTPUT_DIR}")
+set_property(GLOBAL PROPERTY CURRENT_MAIN_AUDIT_FAILURES "")
+
+function(record_audit_failure text)
+  get_property(existing GLOBAL PROPERTY CURRENT_MAIN_AUDIT_FAILURES)
+  set_property(GLOBAL PROPERTY CURRENT_MAIN_AUDIT_FAILURES "${existing}\n${text}")
+endfunction()
 
 function(run_and_compare_trace label scenario seed deadline expected_name)
   set(actual_path "${AUDIT_OUTPUT_DIR}/${expected_name}")
@@ -32,16 +39,15 @@ function(run_and_compare_trace label scenario seed deadline expected_name)
     file(READ "${actual_path}" actual_trace)
     message(FATAL_ERROR "${label}: trace failed with ${trace_result}\n${actual_trace}\nstderr:\n${trace_error}")
   endif()
+  file(READ "${actual_path}" actual_trace)
+  message(STATUS "${label} current-main trace:\n${actual_trace}")
   execute_process(
     COMMAND "${CMAKE_COMMAND}" -E compare_files "${actual_path}" "${expected_path}"
     RESULT_VARIABLE compare_result
   )
   if(NOT compare_result EQUAL 0)
-    file(READ "${actual_path}" actual_trace)
-    file(READ "${expected_path}" expected_trace)
-    message(FATAL_ERROR "${label}: trace drifted from the reviewed baseline\nactual:\n${actual_trace}\nexpected:\n${expected_trace}")
+    record_audit_failure("${label}: current executable differs from results/traces/${expected_name}")
   endif()
-  message(STATUS "${label}: trace matches ${expected_name}")
 endfunction()
 
 # Strict current-turn payload timing, going first.
@@ -89,14 +95,18 @@ if(sanitizer_path_marker EQUAL -1)
   if(NOT matrix_result EQUAL 0)
     message(FATAL_ERROR "canonical matrix failed with ${matrix_result}\nstderr:\n${matrix_error}")
   endif()
+  file(READ "${actual_matrix}" actual_matrix_text)
+  message(STATUS "current-main 100000-trial matrix:\n${actual_matrix_text}")
   execute_process(
     COMMAND "${CMAKE_COMMAND}" -E compare_files "${actual_matrix}" "${expected_matrix}"
     RESULT_VARIABLE matrix_compare_result
   )
   if(NOT matrix_compare_result EQUAL 0)
-    file(READ "${actual_matrix}" actual_matrix_text)
-    file(READ "${expected_matrix}" expected_matrix_text)
-    message(FATAL_ERROR "canonical matrix drifted from the reviewed baseline\nactual:\n${actual_matrix_text}\nexpected:\n${expected_matrix_text}")
+    record_audit_failure("canonical matrix differs from results/simulation_results.csv")
   endif()
-  message(STATUS "canonical 100000-trial matrix matches results/simulation_results.csv")
+endif()
+
+get_property(audit_failures GLOBAL PROPERTY CURRENT_MAIN_AUDIT_FAILURES)
+if(NOT audit_failures STREQUAL "")
+  message(FATAL_ERROR "Current-main baseline audit found drift:${audit_failures}\nSee https://github.com/FlareZ123/pokemon-sims/issues/804")
 endif()

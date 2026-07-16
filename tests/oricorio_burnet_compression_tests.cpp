@@ -17,6 +17,7 @@ struct EngineTestAccess {
   static void run_turn(Engine& engine) { engine.run_turn(); }
   static void record_ready(Engine& engine) { engine.record_ready(); }
   static void play_basics_from_hand(Engine& engine) { engine.play_basics_from_hand(); }
+  static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
 };
 
 }  // namespace sim
@@ -114,6 +115,101 @@ void test_oricorio_takes_last_bench_slot_over_tapu_for_burnet() {
   }
   if (!sim::EngineTestAccess::payload_ready(engine)) {
     throw std::runtime_error("The preserved Burnet line must satisfy strict current-turn payload timing.");
+  }
+}
+
+void test_oricorio_preserves_burnet_when_hand_payload_is_stranded() {
+  const sim::Scenario scenario{"oricorio-stranded-hand-payload", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{6161};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoV, 1},
+                 sim::Pokemon{sim::Card::LatiasEx, 1},
+                 sim::Pokemon{sim::Card::MawileGX, 1},
+                 sim::Pokemon{sim::Card::DialgaGX, 1}};
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::Oricorio,
+                sim::Card::ProfessorBurnet, sim::Card::MegaDragonite};
+  state.deck = {sim::Card::Crispin, sim::Card::Grass,
+                sim::Card::Fire, sim::Card::Dragapult};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // The held Mega Dragonite ex does not enter discard without a legal Item outlet.
+  // Vital Dance therefore supplies the final Fire while preserving Professor Burnet
+  // to discard Dragapult ex from deck during the strict-JIT ready turn:
+  // https://api.pokemontcg.io/v2/cards/sm2-55
+  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/sv6-130
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/issues/616
+  sim::EngineTestAccess::run_turn(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!benched(after, sim::Card::Oricorio) || benched(after, sim::Card::TapuLeleGX)) {
+    throw std::runtime_error("A stranded hand payload must preserve the final Bench slot for Oricorio.");
+  }
+  if (!contains(after.hand, sim::Card::MegaDragonite) ||
+      !contains(after.discard, sim::Card::Dragapult) ||
+      !contains(after.discard, sim::Card::ProfessorBurnet)) {
+    throw std::runtime_error("Burnet must discard the deck payload while the unusable hand payload remains held.");
+  }
+  if (!after.active || after.active->grass != 2 || after.active->fire != 1 ||
+      !sim::EngineTestAccess::payload_ready(engine)) {
+    throw std::runtime_error("The Oricorio and Burnet route must complete strict-JIT readiness.");
+  }
+}
+
+void test_tapu_remains_preferred_with_live_quick_ball_payload_outlet() {
+  const sim::Scenario scenario{"tapu-live-quick-ball-payload", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{6162};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoV, 1},
+                 sim::Pokemon{sim::Card::LatiasEx, 1},
+                 sim::Pokemon{sim::Card::MawileGX, 1},
+                 sim::Pokemon{sim::Card::DialgaGX, 1}};
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::Oricorio,
+                sim::Card::ProfessorBurnet, sim::Card::MegaDragonite,
+                sim::Card::QuickBall};
+  state.deck = {sim::Card::Crispin, sim::Card::Grass, sim::Card::Fire,
+                sim::Card::RegidragoV, sim::Card::Dragapult};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
+
+  // Quick Ball can legally discard the held Dragon and still search a Basic target.
+  // The payload axis therefore survives Tapu Lele-GX into Crispin, so Tapu keeps the
+  // final Bench slot and the existing shorter complete route remains selected:
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  sim::EngineTestAccess::run_turn(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!benched(after, sim::Card::TapuLeleGX) || benched(after, sim::Card::Oricorio)) {
+    throw std::runtime_error("Tapu Lele-GX should keep the final slot when Quick Ball can discard the payload.");
+  }
+  if (!contains(after.discard, sim::Card::MegaDragonite) ||
+      !contains(after.discard, sim::Card::QuickBall) ||
+      !contains(after.discard, sim::Card::Crispin)) {
+    throw std::runtime_error("Quick Ball and Crispin must complete the payload and Energy axes.");
+  }
+  if (!after.active || after.active->grass != 2 || after.active->fire != 1 ||
+      !sim::EngineTestAccess::payload_ready(engine)) {
+    throw std::runtime_error("The live Quick Ball control must remain strict-JIT ready.");
   }
 }
 
@@ -288,6 +384,8 @@ void test_preserved_oricorio_completes_the_t2_burnet_route() {
 int main() {
   test_oricorio_preserves_burnet_for_same_turn_readiness();
   test_oricorio_takes_last_bench_slot_over_tapu_for_burnet();
+  test_oricorio_preserves_burnet_when_hand_payload_is_stranded();
+  test_tapu_remains_preferred_with_live_quick_ball_payload_outlet();
   test_oricorio_takes_final_slot_over_redundant_regidrago();
   test_tapu_takes_final_slot_over_redundant_regidrago();
   test_redundant_regidrago_uses_final_slot_without_live_connector();

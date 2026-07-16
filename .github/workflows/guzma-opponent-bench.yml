@@ -1,0 +1,47 @@
+name: Guzma Opponent Bench
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-guzma-opponent-bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Run focused Release regression
+        # Issue and card-rule evidence: https://github.com/FlareZ123/pokemon-sims/issues/741 https://api.pokemontcg.io/v2/cards/sm3-115
+        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/guzma_opponent_bench_tests.cpp -o build/guzma_opponent_bench_tests && ./build/guzma_opponent_bench_tests
+      - name: Run focused ASan and UBSan regression
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=address,undefined -fno-omit-frame-pointer tests/guzma_opponent_bench_tests.cpp -o build/guzma_opponent_bench_tests_san && ./build/guzma_opponent_bench_tests_san
+      - name: Trace strict JIT going second control
+        # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 --require-ready-by 3 | tee guzma-trace-strict-second-seed-6.txt
+      - name: Trace strict JIT going first control
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 --require-ready-by 3 | tee guzma-trace-strict-first-seed-6.txt
+      - name: Trace Rule Box Ability lock control
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee guzma-trace-rulebox-second-seed-20.txt
+      - name: Generate T2 and T3 matrix
+        # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out guzma-t2-t3-matrix.csv
+      - name: Package local-validation source
+        run: tar -czf guzma-opponent-bench-source.tar.gz CMakeLists.txt src tests/guzma_opponent_bench_tests.cpp
+      - name: Upload traces, matrix, source, and focused binaries
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: guzma-opponent-bench-validation
+          path: |
+            guzma-trace-*.txt
+            guzma-t2-t3-matrix.csv
+            guzma-opponent-bench-source.tar.gz
+            build/guzma_opponent_bench_tests
+            build/guzma_opponent_bench_tests_san
+            build/regidrago_sim
+          if-no-files-found: error

@@ -136,6 +136,61 @@
            live_arven_held_payload || live_arven_communication;
   }
 
+  bool future_turn_wonder_tag_route_has_live_target() {
+    if (state_.turn != 1 || !scenario_.going_first || bench_space() <= 0 ||
+        !ability_available_for_pokemon(Card::TapuLeleGX)) {
+      return false;
+    }
+
+    // Preserve the last Bench slot for Vital Dance when Oricorio can advance the
+    // Energy axis immediately. Banking a Supporter is future value and must not
+    // displace a stronger legal current-turn connector:
+    // https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    if (bench_space() == 1 && hand_count(Card::Oricorio) > 0 &&
+        !in_play(Card::Oricorio) && needs_oricorio_connector()) {
+      return false;
+    }
+
+    const bool live_gladion_axis = prizes_known() &&
+        hand_count(Card::Gladion) == 0 && might_be_unseen(Card::Gladion) &&
+        (final_prized_energy_for_gladion().has_value() ||
+         (need_vstar() && !might_be_unseen(Card::RegidragoVstar) &&
+          known_prize(Card::RegidragoVstar)));
+
+    const bool holder_for_fss =
+        (state_.active && state_.active->card == Card::RegidragoV &&
+         state_.active->tool == Tool::None) ||
+        std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV && pokemon.tool == Tool::None;
+        });
+    const bool direct_vstar_connector = hand_count(Card::RegidragoVstar) > 0 ||
+        hand_count(Card::EvolutionIncense) > 0 ||
+        hand_count(Card::MysteriousTreasure) > 0 || payable_ultra_ball_vstar_route() ||
+        (hand_count(Card::ForestSealStone) > 0 && !state_.vstar_power_used &&
+         holder_for_fss);
+    const bool arven_has_concrete_vstar_chain =
+        might_be_unseen(Card::RegidragoVstar) &&
+        (might_be_unseen(Card::EvolutionIncense) ||
+         (!state_.vstar_power_used && holder_for_fss &&
+          might_be_unseen(Card::ForestSealStone)));
+    const bool live_arven_vstar = need_vstar() && hand_count(Card::Arven) == 0 &&
+        might_be_unseen(Card::Arven) && !direct_vstar_connector &&
+        arven_has_concrete_vstar_chain;
+
+    // Going first prohibits playing a Supporter on turn one. Wonder Tag may still
+    // search a concrete Gladion or Arven and leave it in hand for turn two:
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm4-95
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/issues/748
+    return live_gladion_axis || live_arven_vstar;
+  }
+
   bool needs_tapu_connector() {
     // With one Bench slot left, suppress Wonder Tag into Crispin when an in-hand
     // payload is stranded and Oricorio preserves Professor Burnet's only complete
@@ -151,6 +206,7 @@
     if (needs_tapu_connector_original() && original_wonder_tag_route_has_live_target()) {
       return true;
     }
+    if (future_turn_wonder_tag_route_has_live_target()) return true;
 
     // Wonder Tag can search Tate & Liza, whose switch mode immediately promotes a
     // Benched Regidrago VSTAR. Spend the Bench slot and Ability only when the actual

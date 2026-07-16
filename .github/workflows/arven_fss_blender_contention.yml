@@ -1,0 +1,78 @@
+name: Validate Arven FSS Blender Contention
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build simulator
+        run: cmake --build build --parallel 2 --target regidrago_sim
+
+      - name: Compile and run focused regression
+        # Issue and direct card/rule sources are beside every affected assertion:
+        # https://github.com/FlareZ123/pokemon-sims/issues/745
+        run: |
+          c++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
+            tests/arven_fss_blender_contention_tests.cpp -o arven_fss_blender_contention_tests
+          ./arven_fss_blender_contention_tests
+
+      - name: Run focused ASan and UBSan regression
+        # Sanitizer coverage validates the same exact-state route and controls:
+        # https://github.com/FlareZ123/pokemon-sims/issues/745
+        run: |
+          c++ -std=c++20 -O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined \
+            -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
+            tests/arven_fss_blender_contention_tests.cpp -o arven_fss_blender_contention_sanitized
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+            ./arven_fss_blender_contention_sanitized
+
+      - name: Run simulator self-test
+        run: ./build/regidrago_sim --self-test
+
+      - name: Verify issue 745 trace reaches T3
+        # Arven, Forest Seal Stone, Brilliant Blender, Regidrago VSTAR, and Latias ex:
+        # https://api.pokemontcg.io/v2/cards/sv1-166
+        # https://api.pokemontcg.io/v2/cards/swsh12-156
+        # https://api.pokemontcg.io/v2/cards/sv8-164
+        # https://api.pokemontcg.io/v2/cards/swsh12-136
+        # https://api.pokemontcg.io/v2/cards/sv8-76
+        # Core procedure rules: https://www.pokemon.com/us/pokemon-tcg/rules
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-first \
+            --seed 3 --require-ready-by 3 | tee trace-issue-745.txt
+          grep -F "Brilliant Blender, Forest Seal Stone" trace-issue-745.txt
+          grep -F "T3 | READY" trace-issue-745.txt
+
+      - name: Control trace 1 - flex JIT T2
+        # Curated trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
+        run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-control-1.txt
+
+      - name: Control trace 2 - turn-two Item lock T3
+        # Scenario semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee trace-control-2.txt
+
+      - name: Control trace 3 - Rule Box Ability lock T2
+        # Scenario semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee trace-control-3.txt
+
+      - name: Generate T2 and T3 matrix
+        # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+
+      - name: Upload validation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arven-fss-blender-contention
+          path: |
+            trace-*.txt
+            t2-t3-matrix.csv
+          if-no-files-found: error

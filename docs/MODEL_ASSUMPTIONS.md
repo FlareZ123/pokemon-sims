@@ -35,6 +35,16 @@ No opposing deck is played. The model does not execute damage, Knock Outs, prize
 
 This means the no-lock baseline is a setup goldfish. It is useful for comparing connector quality. It is not a safe prediction in a competitive game.
 
+#### Guzma opponent-Bench prerequisite
+
+Guzma’s user-side switch is conditional on successfully switching one of the opponent’s Benched Pokémon with their Active Pokémon: https://api.pokemontcg.io/v2/cards/sm3-115. The simulator represents that prerequisite with `Scenario::opponent_bench`:
+
+- `Unknown`: no opponent board is modeled, so Guzma is unavailable.
+- `Unavailable`: the scenario explicitly has no legal opposing Benched target, so Guzma is unavailable.
+- `Available`: the scenario explicitly guarantees a legal opposing Benched target, so the setup policy may resolve Guzma’s conditional self-switch.
+
+Every existing aggregate scenario defaults to `Unknown`. This preserves the setup-goldfish baseline and prevents the engine from inventing an opposing Bench. Focused tests or future matchup scenarios may opt into `Available` when that public prerequisite is part of the scenario contract. Implementation scope and regressions are tracked by https://github.com/FlareZ123/pokemon-sims/issues/741.
+
 ### Card text outside initial setup
 
 Many card effects have correct text recorded in `RULES_AND_INTERACTIONS.md`, though the current engine stops at first attack readiness. It does not resolve:

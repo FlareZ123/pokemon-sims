@@ -1,0 +1,18 @@
+name: Burnet Ready-Turn Gate
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-burnet-ready-turn-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run focused Release regression
+        # Issue and rule evidence: https://github.com/FlareZ123/pokemon-sims/issues/719
+        run: c++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/burnet_ready_turn_gate_tests.cpp -o burnet_ready_turn_gate_tests && ./burnet_ready_turn_gate_tests
+      - name: Run focused ASan and UBSan regression
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+        run: c++ -std=c++20 -O1 -g -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=address,undefined -fno-omit-frame-pointer tests/burnet_ready_turn_gate_tests.cpp -o burnet_ready_turn_gate_tests_san && ./burnet_ready_turn_gate_tests_san

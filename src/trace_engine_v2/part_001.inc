@@ -31,6 +31,12 @@
     case Card::BattleVipPass: return "Battle VIP Pass";
     case Card::PokeStop: return "PokéStop";
     case Card::Carmine: return "Carmine";
+    case Card::ProfessorsResearch: return "Professor's Research";
+    case Card::PokemonCommunication: return "Pokémon Communication";
+    case Card::Pokegear: return "Pokégear 3.0";
+    case Card::Lillie: return "Lillie";
+    case Card::NestBall: return "Nest Ball";
+    case Card::AdventurersDiscovery: return "Adventurer's Discovery";
   }
   return "Unknown";
 }

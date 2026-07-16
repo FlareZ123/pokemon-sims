@@ -119,6 +119,8 @@ jobs:
           if-no-files-found: warn
 
   audit-current-main:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -153,3 +155,17 @@ jobs:
           name: current-main-traces-and-matrix
           path: audit
           if-no-files-found: error
+      - name: Commit current-main audit evidence
+        # This writes only generated evidence to the temporary audit branch. The PR remains
+        # validation-only and closes without merge: https://github.com/FlareZ123/pokemon-sims/pull/798
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f audit
+          if git diff --cached --quiet; then
+            echo "Audit evidence is unchanged."
+          else
+            git commit -m "Record current-main audit evidence [skip ci]"
+            git push
+          fi

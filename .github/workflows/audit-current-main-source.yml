@@ -1,0 +1,30 @@
+name: Audit Current Main Source
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  source-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact pull request source
+        uses: actions/checkout@v4
+      - name: Record source identity
+        shell: bash
+        run: |
+          git rev-parse HEAD > audit-head-sha.txt
+          git status --short > audit-status.txt
+      - name: Upload exact source snapshot
+        # Repository audit workflow and source scope: https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-source
+          path: |
+            .
+            !.git
+          include-hidden-files: true
+          if-no-files-found: error

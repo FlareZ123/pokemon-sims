@@ -6,6 +6,61 @@
       return false;
     }
 
+    // Strict JIT counts only a Dragon discarded during the same turn that the
+    // Active Regidrago VSTAR reaches GGF. Preserve the one-shot ACE SPEC when a
+    // complete Benched VSTAR has no concrete same-turn route to the Active Spot:
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/725
+    const bool active_regidrago_can_evolve = state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        hand_count(Card::RegidragoVstar) > 0;
+    const bool direct_switch_supporter = supporter_allowed() &&
+        (hand_count(Card::TateLiza) > 0 || hand_count(Card::Guzma) > 0 ||
+         (hand_count(Card::ProfessorTuro) > 0 && state_.active &&
+          is_basic(state_.active->card)));
+
+    const auto live_fss_holder = [](const Pokemon& pokemon) {
+      return pokemon.tool == Tool::ForestSealStone && is_pokemon_v(pokemon.card);
+    };
+    const bool forest_seal_stone_attached =
+        (state_.active && live_fss_holder(*state_.active)) ||
+        std::any_of(state_.bench.begin(), state_.bench.end(), live_fss_holder);
+    const bool open_fss_holder =
+        (state_.active && is_pokemon_v(state_.active->card) &&
+         state_.active->tool == Tool::None) ||
+        std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
+          return is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None;
+        });
+    // Star Alchemy may search Tate & Liza, and Pokémon Tool cards can be attached
+    // through Item lock. Require the Tool to be attached or held with a legal holder:
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
+    const bool forest_seal_stone_tate_route = !state_.vstar_power_used &&
+        supporter_allowed() && might_be_unseen(Card::TateLiza) &&
+        (forest_seal_stone_attached ||
+         (hand_count(Card::ForestSealStone) > 0 && open_fss_holder));
+
+    // Tate & Liza and Guzma each switch a Benched Pokémon Active. Latias ex gives
+    // a Basic Active no Retreat Cost. Professor Turo can remove a Basic Active so
+    // the complete Benched VSTAR becomes Active. Direct evolution is also legal:
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://api.pokemontcg.io/v2/cards/sm3-115
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://api.pokemontcg.io/v2/cards/sv4-171
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    const bool same_turn_active_route = active_regidrago_can_evolve ||
+        can_free_retreat_with_latias() || direct_switch_supporter ||
+        forest_seal_stone_tate_route;
+    if (strict_payload_timing() && need_active_vstar() &&
+        benched_vstar_promotion_ready() && !same_turn_active_route) {
+      return false;
+    }
+
     const int supporters_in_hand = static_cast<int>(
         std::count_if(state_.hand.begin(), state_.hand.end(), is_supporter));
     const bool only_tate_supporter_held =
@@ -30,17 +85,11 @@
     // https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
     // https://api.pokemontcg.io/v2/cards/swsh12-156
     // https://api.pokemontcg.io/v2/cards/swsh6-148
-    const auto live_fss_holder = [](const Pokemon& pokemon) {
-      return pokemon.tool == Tool::ForestSealStone && is_pokemon_v(pokemon.card);
-    };
-    const bool forest_seal_stone_is_live =
-        (state_.active && live_fss_holder(*state_.active)) ||
-        std::any_of(state_.bench.begin(), state_.bench.end(), live_fss_holder);
     const bool fss_tate_incomplete_promotion = strict_payload_timing() &&
         !state_.vstar_power_used && supporter_allowed() && need_active_vstar() &&
         !need_energy() && !benched_vstar_promotion_ready() &&
         !can_free_retreat_with_latias() && hand_count(Card::TateLiza) == 0 &&
-        might_be_unseen(Card::TateLiza) && forest_seal_stone_is_live;
+        might_be_unseen(Card::TateLiza) && forest_seal_stone_attached;
     if (fss_tate_incomplete_promotion) {
       // Star Alchemy can search Tate & Liza, but the actual Benched Regidrago VSTAR
       // must already pay Apex Dragon's GGF cost before the one-shot Blender payload

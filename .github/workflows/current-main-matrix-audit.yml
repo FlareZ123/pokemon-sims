@@ -1,0 +1,47 @@
+name: Current Main Matrix Audit
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  matrix-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out pull-request merge ref
+        uses: actions/checkout@v4
+
+      - name: Configure Release simulator
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+
+      - name: Run three readable traces
+        shell: bash
+        run: |
+          # Readable trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Earliest-ready objective: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
+          mkdir -p audit-output
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 > audit-output/strict_jit_go_first_seed_6.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 > audit-output/matchup_flex_go_second_seed_3.txt
+          ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 1 > audit-output/no_discard_control_go_first_seed_1.txt
+
+      - name: Generate canonical T2/T3 matrix
+        shell: bash
+        run: |
+          # Aggregate command specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+          # Fixed-seed probability contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#what-the-probability-means
+          # Active baseline-drift issue: https://github.com/FlareZ123/pokemon-sims/issues/642
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-output/current_main_t2_t3_matrix.csv
+          cat audit-output/current_main_t2_t3_matrix.csv
+
+      - name: Upload traces and matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-traces-and-matrix
+          path: audit-output
+          if-no-files-found: error

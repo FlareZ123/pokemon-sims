@@ -148,32 +148,61 @@
 
     // Steven searches up to three unrestricted cards at once. Project prerequisite
     // targets before choosing later axes: https://api.pokemontcg.io/v2/cards/sm7-145
-    // Regidrago V evolves into Regidrago VSTAR, and a revealed prized evolution is
-    // bridged by Gladion: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Regidrago V evolves into Regidrago VSTAR. Gladion exchanges for exactly one
+    // Prize card, while Hisuian Heavy Ball can recover a prized Basic independently:
+    // https://api.pokemontcg.io/v2/cards/swsh12-135
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/sm4-95
-    // Repository route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Repository route priority and multi-Prize accounting:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed defect: https://github.com/FlareZ123/pokemon-sims/issues/867
+    const bool regi_in_deck = deck_count_after_search_started(Card::RegidragoV) > 0;
+    const bool vstar_in_deck = deck_count_after_search_started(Card::RegidragoVstar) > 0;
+    const bool regi_known_prized = prize_count_after_reveal(Card::RegidragoV) > 0;
+    const bool vstar_known_prized = prize_count_after_reveal(Card::RegidragoVstar) > 0;
+    const bool heavy_ball_available = hand_count(Card::HisuianHeavyBall) > 0 ||
+                                      deck_count_after_search_started(Card::HisuianHeavyBall) > 0;
+    const bool gladion_available = hand_count(Card::Gladion) > 0 ||
+                                   deck_count_after_search_started(Card::Gladion) > 0;
+    const auto reserve_if_needed = [&add_wanted, this](const Card card) {
+      if (hand_count(card) == 0) add_wanted(card);
+    };
+
     bool projected_regi_available = has_regi_v() || hand_count(Card::RegidragoV) > 0;
+    bool projected_regi_uses_gladion = false;
+    bool projected_vstar_uses_gladion = false;
     if (need_regi() && bench_space() > 0 && hand_count(Card::RegidragoV) == 0) {
-      if (deck_count_after_search_started(Card::RegidragoV) > 0) {
+      if (regi_in_deck) {
         add_wanted(Card::RegidragoV);
         projected_regi_available = true;
-      } else if (prize_count_after_reveal(Card::RegidragoV) > 0 &&
-                 deck_count_after_search_started(Card::Gladion) > 0) {
-        add_wanted(Card::Gladion);
-        projected_regi_available = true;
+      } else if (regi_known_prized && gladion_available) {
+        // One Gladion cannot recover both a prized Basic and a prized VSTAR. When
+        // both axes are prized, reserve Heavy Ball for the Basic and Gladion for the
+        // evolution. Otherwise Gladion may bridge the Basic by itself.
+        if (!vstar_in_deck && vstar_known_prized && heavy_ball_available) {
+          reserve_if_needed(Card::HisuianHeavyBall);
+          reserve_if_needed(Card::Gladion);
+          projected_regi_available = true;
+          projected_vstar_uses_gladion = true;
+        } else {
+          reserve_if_needed(Card::Gladion);
+          projected_regi_available = true;
+          projected_regi_uses_gladion = true;
+        }
       }
     }
 
     const bool projected_vstar_missing = projected_regi_available && !has_vstar() &&
                                          hand_count(Card::RegidragoVstar) == 0;
+    bool projected_vstar_direct = false;
     if (projected_vstar_missing) {
-      if (deck_count_after_search_started(Card::RegidragoVstar) > 0) {
+      if (vstar_in_deck) {
         add_wanted(Card::RegidragoVstar);
-      } else if (prize_count_after_reveal(Card::RegidragoVstar) > 0 &&
-                 deck_count_after_search_started(Card::Gladion) > 0) {
-        add_wanted(Card::Gladion);
+        projected_vstar_direct = true;
+      } else if (vstar_known_prized && gladion_available && !projected_regi_uses_gladion) {
+        reserve_if_needed(Card::Gladion);
+        projected_vstar_uses_gladion = true;
       }
     }
 
@@ -184,9 +213,7 @@
     }
 
     const bool projected_vstar_available = has_vstar() || hand_count(Card::RegidragoVstar) > 0 ||
-        std::find(wanted.begin(), wanted.end(), Card::RegidragoVstar) != wanted.end() ||
-        (prize_count_after_reveal(Card::RegidragoVstar) > 0 &&
-         std::find(wanted.begin(), wanted.end(), Card::Gladion) != wanted.end());
+        projected_vstar_direct || projected_vstar_uses_gladion;
     const bool projected_crispin_available = hand_count(Card::Crispin) > 0 ||
         std::find(wanted.begin(), wanted.end(), Card::Crispin) != wanted.end();
     const Pokemon* projected_regi = target_regi();
@@ -214,8 +241,9 @@
       add_wanted(Card::LatiasEx);
     }
 
-    if (need_payload() && payload_might_be_in_deck() && hand_count(Card::BrilliantBlender) == 0 &&
-        hand_count(Card::ProfessorBurnet) == 0 && deck_count_after_search_started(payload_outlet) > 0) {
+    if (wanted.size() < 3U && need_payload() && payload_might_be_in_deck() &&
+        hand_count(Card::BrilliantBlender) == 0 && hand_count(Card::ProfessorBurnet) == 0 &&
+        deck_count_after_search_started(payload_outlet) > 0) {
       add_wanted(payload_outlet);
     }
     for (const Card fallback : {Card::RegidragoV, Card::RegidragoVstar, Card::Gladion, Card::Crispin, payload_outlet,

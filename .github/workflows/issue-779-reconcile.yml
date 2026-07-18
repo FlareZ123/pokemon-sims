@@ -1,0 +1,50 @@
+name: Issue 779 Reconcile
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    if: github.event.pull_request.head.ref == 'fix/779-late-steven-basic-connector-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/779-late-steven-basic-connector-v2
+          fetch-depth: 0
+      - name: Merge latest main
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+      - name: Build and test
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build --output-on-failure
+      - name: Recheck focused and three traces
+        run: |
+          mkdir -p issue-779-reconcile
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror tests/late_steven_basic_connector_tests.cpp -o build/issue-779-focused
+          ./build/issue-779-focused
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-779-reconcile/trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee issue-779-reconcile/trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee issue-779-reconcile/trace-3.txt
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-779-reconcile/t2_t3_matrix.csv
+      - name: Finalize reconciliation
+        run: |
+          git rm .github/workflows/issue-779-reconcile.yml
+          git commit -m 'Reconcile late Steven fix with current main (#779)'
+          git push origin HEAD:fix/779-late-steven-basic-connector-v2
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue-779-reconcile
+          path: issue-779-reconcile
+          if-no-files-found: warn

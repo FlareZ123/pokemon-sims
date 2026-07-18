@@ -1,0 +1,29 @@
+name: Pokemon Communication Recovery Screen
+
+on:
+  pull_request:
+    paths:
+      - 'tools/pokemon_communication_recovery_screen.cpp'
+      - '.github/workflows/pokemon-communication-recovery-screen.yml'
+      - 'src/**'
+
+jobs:
+  recovery-screen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out pull-request merge ref
+        uses: actions/checkout@v4
+      - name: Build recovery screen
+        run: |
+          g++ -std=c++20 -O3 -Wall -Wextra -Wpedantic -Werror \
+            tools/pokemon_communication_recovery_screen.cpp \
+            -o pokemon_communication_recovery_screen
+      - name: Run paired recovery screen
+        run: |
+          ./pokemon_communication_recovery_screen > recovery_screen.csv
+          cat recovery_screen.csv
+      - name: Upload recovery statistics
+        uses: actions/upload-artifact@v4
+        with:
+          name: pokemon-communication-recovery-screen
+          path: recovery_screen.csv

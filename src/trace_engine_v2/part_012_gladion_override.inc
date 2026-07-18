@@ -183,16 +183,22 @@
       }
     }
 
+    const bool live_held_crispin_energy_route = need_energy() &&
+        hand_count(Card::Crispin) > 0 && crispin_can_advance_energy_axis();
+
     // A held Burnet is not a live Item-lock payload route when its own ready-turn
-    // preflight proves that Energy or Active position cannot finish. Hide only that
-    // dead connector while the original Gladion classifier evaluates the missing
-    // Prize axis, then restore the exact hand multiset after the exchange:
+    // preflight proves that Energy or Active position cannot finish. A held Crispin
+    // that can advance the missing Energy axis keeps the Supporter slot because it
+    // can complete GGF before the same evolution and Legacy Star opportunity:
     // https://api.pokemontcg.io/v2/cards/sm4-95
     // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // https://api.pokemontcg.io/v2/cards/sv7-133
     // https://www.pokemon.com/us/pokemon-tcg/rules
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
-    // https://github.com/FlareZ123/pokemon-sims/issues/719
-    if (item_locked() && need_energy() &&
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/840
+    // Otherwise hide only the dead Burnet connector while the original Gladion
+    // classifier evaluates a real missing Prize axis, then restore the hand multiset.
+    if (item_locked() && need_energy() && !live_held_crispin_energy_route &&
         hand_count(Card::ProfessorBurnet) > 0 &&
         !professor_burnet_has_live_ready_turn_route()) {
       std::vector<Card> held_dead_burnet;

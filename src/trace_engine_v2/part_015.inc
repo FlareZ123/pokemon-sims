@@ -11,6 +11,9 @@ Aggregate simulate(const Scenario& scenario, const DeckRecipe& recipe, const std
     aggregate.by2 += outcome.ready_by_2 ? 1U : 0U;
     aggregate.by3 += outcome.ready_by_3 ? 1U : 0U;
     aggregate.by4 += outcome.ready_by_4 ? 1U : 0U;
+    aggregate.by5 += outcome.ready_by_5 ? 1U : 0U;
+    aggregate.ready_on5 += outcome.first_ready_turn == 5 ? 1U : 0U;
+    aggregate.setup_failures += outcome.setup_failed ? 1U : 0U;
     aggregate.started_regi += outcome.started_regi ? 1U : 0U;
     aggregate.fss += outcome.used_fss ? 1U : 0U;
     aggregate.legacy += outcome.used_legacy_star ? 1U : 0U;
@@ -57,8 +60,11 @@ bool probability_regression_self_test() {
     if (!scenario) return false;
     const Aggregate aggregate = simulate(*scenario, deck, trials,
                                          base_seed + seed_stride * floor.scenario_index);
-    // ready_by_t3 is cumulative and must include every ready_by_t2 trial.
-    if (aggregate.by3 < aggregate.by2) return false;
+    // Readiness columns are cumulative. T5 is diagnostic; setup success still ends at T4.
+    if (aggregate.by3 < aggregate.by2 || aggregate.by4 < aggregate.by3 ||
+        aggregate.by5 < aggregate.by4) return false;
+    if (aggregate.ready_on5 != aggregate.by5 - aggregate.by4) return false;
+    if (aggregate.setup_failures != aggregate.trials - aggregate.by4) return false;
     if (pct(aggregate.by3, aggregate.trials) < floor.minimum_ready_by_t3_pct) return false;
   }
   return true;

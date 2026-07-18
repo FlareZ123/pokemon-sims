@@ -11,7 +11,7 @@ permissions:
 jobs:
   update-fixture:
     if: github.head_ref == 'feat/erikas-invitation-current-main'
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     steps:
       - name: Check out feature branch
         uses: actions/checkout@v4

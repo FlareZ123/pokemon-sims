@@ -15,7 +15,7 @@ jobs:
   validate-and-finalize:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/856-erika-rule-source-registry'
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,6 +23,7 @@ jobs:
           fetch-depth: 0
 
       - name: Reconcile current main
+        shell: bash
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
@@ -132,21 +133,20 @@ jobs:
           atomic_transform(contract, update_contract)
           PY
 
-      - name: Validate documentation contracts
+      - name: Validate card-audit contracts
         shell: bash
         run: |
           set -o pipefail
           python -m py_compile tests/card_audit_contract_tests.py 2>&1 | tee issue-856-audit/py-compile.log
           python tests/card_audit_contract_tests.py 2>&1 | tee issue-856-audit/card-audit-contract.log
           python tests/card_audit_category_contract_tests.py 2>&1 | tee issue-856-audit/card-audit-category-contract.log
-          python tests/setup_report_contract_tests.py 2>&1 | tee issue-856-audit/setup-report-contract.log
 
       - name: Verify direct source registration
         shell: bash
         run: |
           test "$(grep -c 'https://api.pokemontcg.io/v2/cards/sv3pt5-160' src/regidrago_sim.cpp)" -eq 1
           test "$(grep -c 'https://api.pokemontcg.io/v2/cards/sv3pt5-160' docs/RULE_SOURCES.md)" -eq 1
-          test "$(grep -c 'ERIKA_SOURCE_URL = "https://api.pokemontcg.io/v2/cards/sv3pt5-160"' tests/card_audit_contract_tests.py)" -eq 1
+          test "$(grep -c 'ERIKA_SOURCE_URL = \"https://api.pokemontcg.io/v2/cards/sv3pt5-160\"' tests/card_audit_contract_tests.py)" -eq 1
 
       - name: Configure and build patched Release
         run: |
@@ -171,10 +171,24 @@ jobs:
           ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-856-audit/flex_go_second_seed_3.txt
           ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 2 | tee issue-856-audit/item_lock_go_second_seed_2.txt
 
-      - name: Generate canonical T2 T3 matrix
+      - name: Regenerate source-bound setup baseline and matrix
+        shell: bash
         run: |
-          # Aggregate specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
-          ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-856-audit/t2_t3_matrix.csv
+          # Source-bound generator: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
+          # Provenance contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/baseline_provenance.py
+          # Baseline issue: https://github.com/FlareZ123/pokemon-sims/issues/642
+          python3 scripts/regenerate_setup_baselines.py \
+            --exe build/regidrago_sim \
+            --out-dir results \
+            --max-seed 5000 \
+            --trials 100000 \
+            --matrix-seed 20260705
+          python3 scripts/update_setup_docs.py --repo-root .
+          python3 tests/setup_report_contract_tests.py 2>&1 | tee issue-856-audit/setup-report-contract.log
+          python3 tests/update_setup_docs_tests.py 2>&1 | tee issue-856-audit/setup-docs-contract.log
+          cp results/simulation_results.csv issue-856-audit/t2_t3_matrix.csv
+          cp results/baseline_manifest.json issue-856-audit/baseline_manifest.json
+          cat results/simulation_results.csv
 
       - name: Build and test exact current-main baseline
         shell: bash
@@ -224,8 +238,12 @@ jobs:
       - name: Commit validated fix and remove temporary files
         shell: bash
         run: |
+          rm -f .update-setup-docs.lock .results.lock
           git rm .github/workflows/issue-856-erika-rule-source.yml .issue-856-rerun
-          git add src/regidrago_sim.cpp docs/RULE_SOURCES.md tests/card_audit_contract_tests.py
+          git add src/regidrago_sim.cpp docs/RULE_SOURCES.md tests/card_audit_contract_tests.py \
+            README.md docs/REPORT.md docs/TRACE_AUDIT.md \
+            results/baseline_manifest.json results/simulation_results.csv
+          git add -A results/traces
           git commit -m "Register Erika rule source and contract (#856)"
           git push origin HEAD:fix/856-erika-rule-source-registry
           git archive --format=zip HEAD -o issue-856-audit/issue-856-source.zip

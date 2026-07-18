@@ -7,6 +7,8 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DOC_PATH = REPO_ROOT / "docs" / "CARD_AUDIT.md"
+RULE_SOURCES_PATH = REPO_ROOT / "docs" / "RULE_SOURCES.md"
+SOURCE_WRAPPER_PATH = REPO_ROOT / "src" / "regidrago_sim.cpp"
 AUDIT_STATUS_PATH = REPO_ROOT / "docs" / "AUDIT_STATUS.md"
 CORE_INDEX_PATH = REPO_ROOT / "docs" / "OPTIMAL_POLICY_FIXTURES.md"
 TIER2_INDEX_PATH = REPO_ROOT / "docs" / "TIER2_POLICY_FIXTURES.md"
@@ -18,6 +20,7 @@ UPSTREAM_COMMIT_URL = (
     "0af6250a22495e4a3e9f60ff45fc3fedc2e0563d"
 )
 ARCHIVE_SHA256 = "3444c74e47cdb92d83ba760e9eeefa8bbaedd9d7f396068c0e1ed390a686af08"
+ERIKA_SOURCE_URL = "https://api.pokemontcg.io/v2/cards/sv3pt5-160"
 
 
 def load_audit_module():
@@ -54,6 +57,17 @@ def require_documented_count(documented: str, label: str, expected: int) -> None
 def main() -> int:
     audit = load_audit_module()
     documented = DOC_PATH.read_text(encoding="utf-8")
+    rule_sources = RULE_SOURCES_PATH.read_text(encoding="utf-8")
+    source_wrapper = SOURCE_WRAPPER_PATH.read_text(encoding="utf-8")
+
+    # Erika's printed opponent-hand condition is the source for its deliberately inert
+    # single-player treatment. Keep that exact print in both declared registries:
+    # https://api.pokemontcg.io/v2/cards/sv3pt5-160
+    # https://github.com/FlareZ123/pokemon-sims/issues/856
+    for registry_name, registry in (("docs/RULE_SOURCES.md", rule_sources),
+                                     ("src/regidrago_sim.cpp", source_wrapper)):
+        if ERIKA_SOURCE_URL not in registry:
+            raise AssertionError(f"{registry_name} must register Erika's Invitation exact print.")
 
     if sum(copies for _, copies in audit.REQUESTED.values()) != 60:
         raise AssertionError("The audit request no longer represents a 60-card deck.")

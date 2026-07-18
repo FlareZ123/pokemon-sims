@@ -109,7 +109,7 @@ jobs:
 
           baseline = failures('issue-885-audit/baseline-ctest.xml')
           patched = failures('issue-885-audit/patched-ctest.xml')
-          owned = 'regidrago_opening_bench_tapu_route'
+          owned = 'regidrago_opening_bench_tapu_route_tests'
           expected = sorted(name for name in baseline if name != owned)
           Path('issue-885-audit/baseline-failures.json').write_text(json.dumps(baseline, indent=2) + '\n', encoding='utf-8')
           Path('issue-885-audit/patched-failures.json').write_text(json.dumps(patched, indent=2) + '\n', encoding='utf-8')

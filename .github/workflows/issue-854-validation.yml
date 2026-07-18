@@ -35,19 +35,36 @@ jobs:
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --parallel 2
 
-      - name: Run focused and full suites
-        run: |
-          ./build/regidrago_lusamine_erika_fallback_tests
-          ctest --test-dir build --output-on-failure
-
-      - name: Run focused warning-clean UBSan regression
-        run: |
-          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -fsanitize=undefined -fno-omit-frame-pointer tests/lusamine_erika_fallback_tests.cpp -o build/issue-854-focused
-          ./build/issue-854-focused
-
-      - name: Run three independent simulate-this passes
+      - name: Run focused Release regression
+        shell: bash
         run: |
           mkdir -p issue-854-audit
+          set -o pipefail
+          ./build/regidrago_lusamine_erika_fallback_tests 2>&1 | tee issue-854-audit/focused-release.log
+
+      - name: Run full Release suite
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          set -o pipefail
+          ctest --test-dir build --output-on-failure 2>&1 | tee issue-854-audit/ctest.log
+          status=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$status" > issue-854-audit/ctest.status
+          exit "$status"
+
+      - name: Run focused warning-clean UBSan regression
+        shell: bash
+        run: |
+          set -o pipefail
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -fsanitize=undefined -fno-omit-frame-pointer tests/lusamine_erika_fallback_tests.cpp -o build/issue-854-focused
+          ./build/issue-854-focused 2>&1 | tee issue-854-audit/focused-ubsan.log
+
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -o pipefail
           # Trace interface and earliest-ready policy:
           # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
           # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
@@ -59,6 +76,11 @@ jobs:
         run: |
           # Aggregate specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
           ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-854-audit/t2_t3_matrix.csv
+
+      - name: Enforce full-suite result
+        run: |
+          test -f issue-854-audit/ctest.status
+          test "$(cat issue-854-audit/ctest.status)" = "0"
 
       - name: Finalize permanent branch
         run: |
@@ -74,4 +96,4 @@ jobs:
         with:
           name: issue-854-validation
           path: issue-854-audit
-          if-no-files-found: warn
+          if-no-files-found: error

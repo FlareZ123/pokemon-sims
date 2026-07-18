@@ -23,6 +23,8 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git fetch origin main
           git merge --no-edit origin/main
+      - name: Restore current-main helper retained by unrelated code
+        run: python tools/apply_issue_788_current.py
       - name: Configure Release
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build Release
@@ -51,7 +53,8 @@ jobs:
         run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-788-audit/t2_t3_matrix.csv
       - name: Finalize validated branch
         run: |
-          git rm .github/workflows/issue-788-current-main.yml
+          git rm tools/apply_issue_788_current.py .github/workflows/issue-788-current-main.yml
+          git add src/trace_engine_v2/part_005.inc
           git commit -m 'Validate payable Dialga opening routes on current main (#788)'
           git push origin HEAD:fix/788-dialga-opening-payable-search
           git archive --format=zip HEAD -o issue-788-audit/source.zip

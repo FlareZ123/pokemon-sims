@@ -31,15 +31,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Trace interface and earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Decision priorities: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-1.txt
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee trace-2.txt
           ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-3.txt
       - name: Generate canonical T2 and T3 matrix
+        # Probability contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#what-the-probability-means
         run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
       - name: Record tested source
-        run: git rev-parse HEAD > tested-head.txt
+        shell: bash
+        run: |
+          git rev-parse HEAD > tested-head.txt
+          # Exact-source audit contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#audit-status
+          git archive --format=tar.gz --output=source-under-test.tar.gz HEAD
       - name: Upload validation evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -49,6 +56,7 @@ jobs:
             trace-*.txt
             t2-t3-matrix.csv
             tested-head.txt
+            source-under-test.tar.gz
             build/Testing
           if-no-files-found: warn
 

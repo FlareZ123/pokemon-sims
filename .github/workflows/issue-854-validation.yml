@@ -1,0 +1,77 @@
+name: Issue 854 Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-finalize:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/854-lusamine-erika-fallback'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out issue branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/854-lusamine-erika-fallback
+          fetch-depth: 0
+
+      - name: Reconcile current main
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Apply permanent source changes
+        run: python tools/apply_issue_854.py
+
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Run focused and full suites
+        run: |
+          ./build/regidrago_lusamine_erika_fallback_tests
+          ctest --test-dir build --output-on-failure
+
+      - name: Run focused warning-clean UBSan regression
+        run: |
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -fsanitize=undefined -fno-omit-frame-pointer tests/lusamine_erika_fallback_tests.cpp -o build/issue-854-focused
+          ./build/issue-854-focused
+
+      - name: Run three independent simulate-this passes
+        run: |
+          mkdir -p issue-854-audit
+          # Trace interface and earliest-ready policy:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 3 | tee issue-854-audit/trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 | tee issue-854-audit/trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 11 | tee issue-854-audit/trace-3.txt
+
+      - name: Generate canonical T2 and T3 matrix
+        run: |
+          # Aggregate specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-854-audit/t2_t3_matrix.csv
+
+      - name: Finalize permanent branch
+        run: |
+          git rm tools/apply_issue_854.py .github/workflows/issue-854-validation.yml
+          git add CMakeLists.txt src/trace_engine_v2/part_014b.inc tests/lusamine_erika_fallback_tests.cpp
+          git commit -m "Allow Lusamine to recover Erika as second target (#854)"
+          git push origin HEAD:fix/854-lusamine-erika-fallback
+          git archive --format=zip HEAD -o issue-854-audit/source.zip
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-854-validation
+          path: issue-854-audit
+          if-no-files-found: warn

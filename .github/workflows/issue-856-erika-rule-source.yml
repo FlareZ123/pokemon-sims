@@ -14,7 +14,7 @@ concurrency:
 jobs:
   validate-and-finalize:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/856-erika-rule-source-registry'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
@@ -35,92 +35,118 @@ jobs:
         shell: bash
         run: |
           python - <<'PY'
+          from __future__ import annotations
+
+          import fcntl
+          import os
+          import tempfile
           from pathlib import Path
+          from typing import Callable
 
           erika_url = "https://api.pokemontcg.io/v2/cards/sv3pt5-160"
           issue_url = "https://github.com/FlareZ123/pokemon-sims/issues/856"
 
+          def atomic_transform(path: Path, transform: Callable[[str], str]) -> None:
+              with path.open("r+", encoding="utf-8") as locked:
+                  fcntl.flock(locked.fileno(), fcntl.LOCK_EX)
+                  original = locked.read()
+                  updated = transform(original)
+                  if updated == original:
+                      return
+                  with tempfile.NamedTemporaryFile(
+                      "w", encoding="utf-8", dir=path.parent, delete=False
+                  ) as temporary:
+                      temporary.write(updated)
+                      temporary.flush()
+                      os.fsync(temporary.fileno())
+                      temporary_path = Path(temporary.name)
+                  os.replace(temporary_path, path)
+
+          def replace_once(path: Path, old: str, new: str) -> None:
+              def transform(text: str) -> str:
+                  if new in text:
+                      return text
+                  if text.count(old) != 1:
+                      raise SystemExit(f"Unable to locate unique insertion point in {path}")
+                  return text.replace(old, new, 1)
+              atomic_transform(path, transform)
+
           wrapper = Path("src/regidrago_sim.cpp")
-          wrapper_text = wrapper.read_text(encoding="utf-8")
-          wrapper_needle = (
+          replace_once(
+              wrapper,
               "// Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76\n"
-              "// Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146\n"
-          )
-          wrapper_replacement = (
+              "// Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146\n",
               "// Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76\n"
               f"// Erika's Invitation: {erika_url}\n"
               f"// Confirmed source-registry fix: {issue_url}\n"
-              "// Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146\n"
+              "// Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146\n",
           )
-          if wrapper_needle not in wrapper_text:
-              raise SystemExit("Unable to locate source-wrapper registry insertion point")
-          wrapper.write_text(wrapper_text.replace(wrapper_needle, wrapper_replacement, 1), encoding="utf-8")
 
           rule_sources = Path("docs/RULE_SOURCES.md")
-          rule_text = rule_sources.read_text(encoding="utf-8")
-          rule_needle = (
+          replace_once(
+              rule_sources,
               "| Latias ex — Skyliner | https://api.pokemontcg.io/v2/cards/sv8-76 |\n"
-              "| Hisuian Heavy Ball | https://api.pokemontcg.io/v2/cards/swsh10-146 |\n"
-          )
-          rule_replacement = (
+              "| Hisuian Heavy Ball | https://api.pokemontcg.io/v2/cards/swsh10-146 |\n",
               "| Latias ex — Skyliner | https://api.pokemontcg.io/v2/cards/sv8-76 |\n"
               f"| Erika's Invitation — opponent-dependent effect is deliberately inert in the single-player model | {erika_url} |\n"
-              "| Hisuian Heavy Ball | https://api.pokemontcg.io/v2/cards/swsh10-146 |\n"
+              "| Hisuian Heavy Ball | https://api.pokemontcg.io/v2/cards/swsh10-146 |\n",
           )
-          if rule_needle not in rule_text:
-              raise SystemExit("Unable to locate exact-print registry insertion point")
-          rule_sources.write_text(rule_text.replace(rule_needle, rule_replacement, 1), encoding="utf-8")
 
           contract = Path("tests/card_audit_contract_tests.py")
-          contract_text = contract.read_text(encoding="utf-8")
-          path_needle = 'DOC_PATH = REPO_ROOT / "docs" / "CARD_AUDIT.md"\n'
-          path_replacement = (
-              'DOC_PATH = REPO_ROOT / "docs" / "CARD_AUDIT.md"\n'
-              'RULE_SOURCES_PATH = REPO_ROOT / "docs" / "RULE_SOURCES.md"\n'
-              'SOURCE_WRAPPER_PATH = REPO_ROOT / "src" / "regidrago_sim.cpp"\n'
-          )
-          if path_needle not in contract_text:
-              raise SystemExit("Unable to locate contract path insertion point")
-          contract_text = contract_text.replace(path_needle, path_replacement, 1)
-
-          constant_needle = 'ARCHIVE_SHA256 = "3444c74e47cdb92d83ba760e9eeefa8bbaedd9d7f396068c0e1ed390a686af08"\n'
-          constant_replacement = constant_needle + f'ERIKA_SOURCE_URL = "{erika_url}"\n'
-          if constant_needle not in contract_text:
-              raise SystemExit("Unable to locate contract constant insertion point")
-          contract_text = contract_text.replace(constant_needle, constant_replacement, 1)
-
-          main_needle = '    documented = DOC_PATH.read_text(encoding="utf-8")\n\n'
-          main_replacement = (
-              '    documented = DOC_PATH.read_text(encoding="utf-8")\n'
-              '    rule_sources = RULE_SOURCES_PATH.read_text(encoding="utf-8")\n'
-              '    source_wrapper = SOURCE_WRAPPER_PATH.read_text(encoding="utf-8")\n\n'
-              "    # Erika's printed opponent-hand condition is the source for its deliberately inert\n"
-              "    # single-player treatment. Keep that exact print in both declared registries:\n"
-              f"    # {erika_url}\n"
-              f"    # {issue_url}\n"
-              '    for registry_name, registry in (("docs/RULE_SOURCES.md", rule_sources),\n'
-              '                                     ("src/regidrago_sim.cpp", source_wrapper)):\n'
-              '        if ERIKA_SOURCE_URL not in registry:\n'
-              '            raise AssertionError(f"{registry_name} must register Erika\'s Invitation exact print.")\n\n'
-          )
-          if main_needle not in contract_text:
-              raise SystemExit("Unable to locate contract assertion insertion point")
-          contract.write_text(contract_text.replace(main_needle, main_replacement, 1), encoding="utf-8")
+          def update_contract(text: str) -> str:
+              if "ERIKA_SOURCE_URL" in text:
+                  return text
+              replacements = (
+                  (
+                      'DOC_PATH = REPO_ROOT / "docs" / "CARD_AUDIT.md"\n',
+                      'DOC_PATH = REPO_ROOT / "docs" / "CARD_AUDIT.md"\n'
+                      'RULE_SOURCES_PATH = REPO_ROOT / "docs" / "RULE_SOURCES.md"\n'
+                      'SOURCE_WRAPPER_PATH = REPO_ROOT / "src" / "regidrago_sim.cpp"\n',
+                  ),
+                  (
+                      'ARCHIVE_SHA256 = "3444c74e47cdb92d83ba760e9eeefa8bbaedd9d7f396068c0e1ed390a686af08"\n',
+                      'ARCHIVE_SHA256 = "3444c74e47cdb92d83ba760e9eeefa8bbaedd9d7f396068c0e1ed390a686af08"\n'
+                      f'ERIKA_SOURCE_URL = "{erika_url}"\n',
+                  ),
+                  (
+                      '    documented = DOC_PATH.read_text(encoding="utf-8")\n\n',
+                      '    documented = DOC_PATH.read_text(encoding="utf-8")\n'
+                      '    rule_sources = RULE_SOURCES_PATH.read_text(encoding="utf-8")\n'
+                      '    source_wrapper = SOURCE_WRAPPER_PATH.read_text(encoding="utf-8")\n\n'
+                      "    # Erika's printed opponent-hand condition is the source for its deliberately inert\n"
+                      "    # single-player treatment. Keep that exact print in both declared registries:\n"
+                      f"    # {erika_url}\n"
+                      f"    # {issue_url}\n"
+                      '    for registry_name, registry in (("docs/RULE_SOURCES.md", rule_sources),\n'
+                      '                                     ("src/regidrago_sim.cpp", source_wrapper)):\n'
+                      '        if ERIKA_SOURCE_URL not in registry:\n'
+                      '            raise AssertionError(f"{registry_name} must register Erika\'s Invitation exact print.")\n\n',
+                  ),
+              )
+              updated = text
+              for old, new in replacements:
+                  if updated.count(old) != 1:
+                      raise SystemExit(f"Unable to locate unique contract insertion point: {old!r}")
+                  updated = updated.replace(old, new, 1)
+              return updated
+          atomic_transform(contract, update_contract)
           PY
 
       - name: Validate documentation contracts
+        shell: bash
         run: |
-          python -m py_compile tests/card_audit_contract_tests.py
-          python tests/card_audit_contract_tests.py
-          python tests/card_audit_category_contract_tests.py
-          python tests/setup_report_contract_tests.py
+          set -o pipefail
+          python -m py_compile tests/card_audit_contract_tests.py 2>&1 | tee issue-856-audit/py-compile.log
+          python tests/card_audit_contract_tests.py 2>&1 | tee issue-856-audit/card-audit-contract.log
+          python tests/card_audit_category_contract_tests.py 2>&1 | tee issue-856-audit/card-audit-category-contract.log
+          python tests/setup_report_contract_tests.py 2>&1 | tee issue-856-audit/setup-report-contract.log
 
       - name: Verify direct source registration
         shell: bash
         run: |
           test "$(grep -c 'https://api.pokemontcg.io/v2/cards/sv3pt5-160' src/regidrago_sim.cpp)" -eq 1
           test "$(grep -c 'https://api.pokemontcg.io/v2/cards/sv3pt5-160' docs/RULE_SOURCES.md)" -eq 1
-          test "$(grep -c 'https://api.pokemontcg.io/v2/cards/sv3pt5-160' tests/card_audit_contract_tests.py)" -eq 1
+          test "$(grep -c 'ERIKA_SOURCE_URL = "https://api.pokemontcg.io/v2/cards/sv3pt5-160"' tests/card_audit_contract_tests.py)" -eq 1
 
       - name: Configure and build patched Release
         run: |
@@ -131,7 +157,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          ctest --test-dir build --output-on-failure --output-junit issue-856-audit/patched-ctest.xml 2>&1 | tee issue-856-audit/patched-ctest.log
+          ctest --test-dir build --output-on-failure --output-junit "$GITHUB_WORKSPACE/issue-856-audit/patched-ctest.xml" 2>&1 | tee issue-856-audit/patched-ctest.log
           printf '%s\n' "${PIPESTATUS[0]}" > issue-856-audit/patched-ctest.status
           exit 0
 
@@ -158,7 +184,7 @@ jobs:
           cmake -S /tmp/issue-856-baseline -B /tmp/issue-856-baseline-build -DCMAKE_BUILD_TYPE=Release
           cmake --build /tmp/issue-856-baseline-build --parallel 2
           set +e
-          ctest --test-dir /tmp/issue-856-baseline-build --output-on-failure --output-junit issue-856-audit/baseline-ctest.xml 2>&1 | tee issue-856-audit/baseline-ctest.log
+          ctest --test-dir /tmp/issue-856-baseline-build --output-on-failure --output-junit "$GITHUB_WORKSPACE/issue-856-audit/baseline-ctest.xml" 2>&1 | tee issue-856-audit/baseline-ctest.log
           printf '%s\n' "${PIPESTATUS[0]}" > issue-856-audit/baseline-ctest.status
           exit 0
 
@@ -185,6 +211,15 @@ jobs:
               raise SystemExit(f"Issue 856 changed the current-main failure set. baseline={baseline} patched={patched}")
           print(f"Current-main failure parity confirmed: {baseline}")
           PY
+
+      - name: Require validation base is still current main
+        shell: bash
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor origin/main "$(cat /tmp/issue-856-baseline-sha)"; then
+            echo "main advanced during validation; rerun against the new head."
+            exit 1
+          fi
 
       - name: Commit validated fix and remove temporary files
         shell: bash

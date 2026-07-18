@@ -329,8 +329,21 @@
     const bool needed_energy_might_remain =
         (grass_needed() > 0 && might_be_unseen(Card::Grass)) ||
         (fire_needed() > 0 && might_be_unseen(Card::Fire));
-    if (recovered.size() < 2U && need_energy() && !item_locked() && !state_.manual_energy_used &&
-        needed_energy_might_remain && count_of(state_.discard, Card::EarthenVessel) > 0) {
+    const bool immediate_vessel_energy_line = need_energy() &&
+        !state_.manual_energy_used && needed_energy_might_remain;
+    // When Powerglass is the exact end-of-turn Energy completion, Legacy Star can
+    // preserve Earthen Vessel for the first later attack turn. Vessel must retain a
+    // legal Basic Energy target after the seven-card discard:
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/944
+    const bool delayed_vessel_payload_line =
+        hold_payload_outlet_for_post_powerglass_turn() && earthen_vessel_has_legal_target();
+    if (recovered.size() < 2U && !item_locked() &&
+        (immediate_vessel_energy_line || delayed_vessel_payload_line) &&
+        count_of(state_.discard, Card::EarthenVessel) > 0) {
       const std::vector<Card> base_hand = state_.hand;
       const std::vector<Card> base_discard = state_.discard;
       const std::vector<Card> base_discarded_this_turn = state_.discarded_this_turn;

@@ -181,6 +181,10 @@ add_test(NAME regidrago_future_wonder_tag_crispin
   COMMAND ${CMAKE_COMMAND}
     -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
     -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_future_wonder_tag_crispin.cmake)
+add_test(NAME regidrago_active_tapu_paid_retreat
+  COMMAND ${CMAKE_COMMAND}
+    -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_active_tapu_paid_retreat.cmake)
 add_test(NAME regidrago_sim_self_test COMMAND regidrago_sim --self-test)
 add_test(NAME regidrago_policy_fixtures COMMAND regidrago_policy_tests)
 add_test(NAME regidrago_tier2_policy_fixtures COMMAND regidrago_tier2_tests)

@@ -1,0 +1,88 @@
+name: Issue 642 Final Baseline
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-642-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  regenerate-and-validate:
+    if: github.event.pull_request.head.ref == 'fix/642-final-baseline-v4'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/642-final-baseline-v4
+          fetch-depth: 0
+
+      - name: Reconcile final main
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Run three independent simulator audits
+        shell: bash
+        run: |
+          mkdir -p issue-642-audit
+          # Trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Reviewed trace inventory: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/TRACE_AUDIT.md#reviewed-traces
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-642-audit/trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee issue-642-audit/trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee issue-642-audit/trace-3.txt
+
+      - name: Regenerate canonical baseline bundle
+        run: |
+          # Aggregate command: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+          # Fixed-seed contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#what-the-probability-means
+          # Confirmed drift: https://github.com/FlareZ123/pokemon-sims/issues/642
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir generated-baselines --trials 100000 --matrix-seed 20260705
+
+      - name: Install regenerated artifacts
+        shell: bash
+        run: |
+          cp generated-baselines/simulation_results.csv results/simulation_results.csv
+          cp generated-baselines/baseline_manifest.json results/baseline_manifest.json
+          rm -rf results/traces
+          cp -R generated-baselines/traces results/traces
+          python scripts/update_setup_docs.py --repo-root .
+          cp results/simulation_results.csv issue-642-audit/t2_t3_matrix.csv
+          cp results/baseline_manifest.json issue-642-audit/baseline_manifest.json
+          cp docs/REPORT.md issue-642-audit/REPORT.md
+
+      - name: Run full Release suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Run provenance contract directly
+        run: python tests/setup_report_contract_tests.py
+
+      - name: Commit validated baseline and archive exact source
+        shell: bash
+        run: |
+          git rm .github/workflows/issue-642-final-baseline.yml
+          git add README.md docs/REPORT.md docs/TRACE_AUDIT.md results/README.md results/baseline_manifest.json results/simulation_results.csv
+          git add -A results/traces
+          git commit -m 'Refresh final setup baseline and provenance (#642)'
+          git push origin HEAD:fix/642-final-baseline-v4
+          git archive --format=zip HEAD -o issue-642-audit/source.zip
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-642-final-baseline
+          path: issue-642-audit
+          if-no-files-found: warn

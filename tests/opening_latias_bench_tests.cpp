@@ -15,6 +15,14 @@ struct EngineTestAccess {
 }  // namespace sim
 
 namespace {
+const sim::DeckRecipe& test_recipe() {
+  // Engine stores the recipe by reference, so this owner must outlive every test Engine:
+  // https://eel.is/c++draft/class.temporary#6.10
+  // https://github.com/FlareZ123/pokemon-sims/issues/907
+  static const sim::DeckRecipe recipe = sim::baseline_recipe();
+  return recipe;
+}
+
 bool benched(const sim::State& state, const sim::Card card) {
   return std::any_of(state.bench.begin(), state.bench.end(), [card](const sim::Pokemon& pokemon) {
     return pokemon.card == card;
@@ -25,7 +33,7 @@ void test_dense_regidrago_opening_benches_latias() {
   const sim::Scenario scenario{"opening-latias-dense-regi", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
   std::mt19937_64 rng{65701};
-  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  sim::Engine engine(scenario, test_recipe(), rng);
   sim::State state;
   state.active = sim::Pokemon{sim::Card::RegidragoV, 0};
   state.hand = {sim::Card::LatiasEx, sim::Card::Grass, sim::Card::StevensResolve,
@@ -50,7 +58,7 @@ void test_generic_regidrago_opening_preserves_latias() {
   const sim::Scenario scenario{"opening-latias-generic-control", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
   std::mt19937_64 rng{65702};
-  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  sim::Engine engine(scenario, test_recipe(), rng);
   sim::State state;
   state.active = sim::Pokemon{sim::Card::RegidragoV, 0};
   state.hand = {sim::Card::LatiasEx, sim::Card::Grass, sim::Card::Fire};
@@ -65,7 +73,7 @@ void test_rule_box_lock_rejects_latias_bench_route() {
   const sim::Scenario scenario{"opening-latias-rule-box-control", sim::DciProfile::StrictJit,
                                sim::LockMode::FullRuleBoxAbility, false, 4};
   std::mt19937_64 rng{65703};
-  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  sim::Engine engine(scenario, test_recipe(), rng);
   sim::State state;
   state.active = sim::Pokemon{sim::Card::RegidragoV, 0};
   state.hand = {sim::Card::LatiasEx, sim::Card::TateLiza};

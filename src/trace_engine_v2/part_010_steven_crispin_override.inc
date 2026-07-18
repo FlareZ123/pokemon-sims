@@ -36,17 +36,15 @@
         !ability_available_for_pokemon(Card::LatiasEx) ||
         in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
         hand_count(Card::StevensResolve) > 0 ||
-        hand_count(Card::RegidragoVstar) > 0 || hand_count(Card::Crispin) > 0 ||
+        hand_count(Card::RegidragoVstar) > 0 ||
         hand_count(Card::BrilliantBlender) == 0 ||
         hand_count(Card::Grass) == 0 || hand_count(Card::Fire) == 0 ||
         !need_vstar() || !need_energy() || !need_payload() ||
         !payload_might_be_in_deck() ||
         deck_count_after_search_started(Card::StevensResolve) == 0 ||
         deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
-        deck_count_after_search_started(Card::Crispin) == 0 ||
         deck_count_after_search_started(Card::LatiasEx) == 0 ||
-        deck_count_after_search_started(Card::Grass) == 0 ||
-        deck_count_after_search_started(Card::Fire) == 0) {
+        deck_count_after_search_started(Card::Grass) == 0) {
       return false;
     }
 
@@ -59,13 +57,12 @@
 
     // Going first prevents the turn-one Supporter play, while Wonder Tag can still
     // bank Steven's Resolve. The public Grass and Fire cover the first two manual
-    // attachments. Steven then takes Regidrago VSTAR, Crispin, and Latias ex; on T3,
-    // Crispin supplies the final GGF component, held Brilliant Blender supplies the
-    // same-turn payload, and Skyliner promotes the Benched attacker:
+    // attachments. Steven then takes Regidrago VSTAR, the third Grass Energy, and
+    // Latias ex. Held Brilliant Blender supplies the T3 payload, and Skyliner
+    // promotes the Benched attacker without consuming the T3 Supporter play:
     // https://api.pokemontcg.io/v2/cards/cel25c-60_A
     // https://api.pokemontcg.io/v2/cards/sm7-145
     // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // https://api.pokemontcg.io/v2/cards/sv7-133
     // https://api.pokemontcg.io/v2/cards/sv8-164
     // https://api.pokemontcg.io/v2/cards/sv8-76
     // https://www.pokemon.com/us/pokemon-tcg/rules
@@ -84,14 +81,9 @@
         in_play(Card::LatiasEx) || hand_count(Card::StevensResolve) == 0 ||
         hand_count(Card::BrilliantBlender) == 0 || !need_payload() ||
         !payload_might_be_in_deck() ||
-        (hand_count(Card::RegidragoVstar) == 0 &&
-         deck_count_after_search_started(Card::RegidragoVstar) == 0) ||
-        (hand_count(Card::Crispin) == 0 &&
-         deck_count_after_search_started(Card::Crispin) == 0) ||
-        (hand_count(Card::LatiasEx) == 0 &&
-         deck_count_after_search_started(Card::LatiasEx) == 0) ||
-        deck_count_after_search_started(Card::Grass) == 0 ||
-        deck_count_after_search_started(Card::Fire) == 0) {
+        deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
+        deck_count_after_search_started(Card::LatiasEx) == 0 ||
+        deck_count_after_search_started(Card::Grass) == 0) {
       return false;
     }
 
@@ -103,24 +95,31 @@
 
       int projected_grass = pokemon.grass;
       int projected_fire = pokemon.fire;
+      int grass_in_hand = hand_count(Card::Grass);
+      int fire_in_hand = hand_count(Card::Fire);
       if (!state_.manual_energy_used) {
-        if (projected_grass < 2 && hand_count(Card::Grass) > 0) {
+        if (projected_grass < 2 && grass_in_hand > 0) {
           ++projected_grass;
-        } else if (projected_fire < 1 && hand_count(Card::Fire) > 0) {
+          --grass_in_hand;
+        } else if (projected_fire < 1 && fire_in_hand > 0) {
           ++projected_fire;
+          --fire_in_hand;
         } else {
           continue;
         }
       }
 
-      if (std::max(0, 2 - projected_grass) +
-              std::max(0, 1 - projected_fire) ==
-          1) {
-        // The turn-two attachment leaves one GGF component. Steven's unrestricted
-        // three-card search reserves VSTAR, Crispin, and Latias; Crispin attaches the
-        // final component on T3 before Blender and Skyliner complete strict readiness:
+      const int remaining_grass = std::max(0, 2 - projected_grass);
+      const int remaining_fire = std::max(0, 1 - projected_fire);
+      const bool searched_grass_finishes =
+          remaining_grass == 1 && remaining_fire == 0;
+      const bool held_fire_finishes =
+          remaining_grass == 0 && remaining_fire == 1 && fire_in_hand > 0;
+      if (searched_grass_finishes || held_fire_finishes) {
+        // Steven's unrestricted three-card search reserves VSTAR, a direct Grass
+        // Energy, and Latias. This route has no Crispin or future-draw dependency and
+        // leaves the T3 Supporter play available:
         // https://api.pokemontcg.io/v2/cards/sm7-145
-        // https://api.pokemontcg.io/v2/cards/sv7-133
         // https://api.pokemontcg.io/v2/cards/swsh12-136
         // https://api.pokemontcg.io/v2/cards/sv8-164
         // https://api.pokemontcg.io/v2/cards/sv8-76
@@ -131,6 +130,36 @@
       }
     }
     return false;
+  }
+
+  bool play_banked_steven_for_known_t3_blender_route() {
+    if (!banked_steven_has_known_t3_blender_route()) return false;
+
+    remove_one(state_.hand, Card::StevensResolve);
+    state_.discard.push_back(Card::StevensResolve);
+    state_.supporter_used = true;
+    outcome_.used_steven = true;
+    record_deck_search_knowledge("Steven's Resolve");
+
+    std::vector<Card> found;
+    for (const Card target : {Card::RegidragoVstar, Card::Grass, Card::LatiasEx}) {
+      if (!move_deck_to_hand(target)) {
+        throw std::logic_error("Known banked-Steven target disappeared during legal search");
+      }
+      found.push_back(target);
+    }
+    shuffle(state_.deck);
+    state_.turn_ended = true;
+
+    // Steven searches up to three cards and ends the turn. These exact K1 targets
+    // establish the deterministic T3 Evolution, Energy, and promotion axes:
+    // https://api.pokemontcg.io/v2/cards/sm7-145
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://github.com/FlareZ123/pokemon-sims/issues/946
+    trace("PLAY SUPPORTER", "R-STEVEN-01; R-GAME-SUPPORTER",
+          "Searched up to 3 cards: " + join_cards(found) + ". Turn ended.");
+    return true;
   }
 
   Card choose_supporter_after_search_started() {

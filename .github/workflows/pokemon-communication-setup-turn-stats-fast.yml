@@ -1,0 +1,37 @@
+name: Pokémon Communication Setup Turn Statistics Fast
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  fast-statistics:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'audit/pokemon-communication-setup-turn-stats-20260718'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out pull-request merge ref
+        uses: actions/checkout@v4
+
+      - name: Build warning-clean statistics executable
+        run: >-
+          c++ -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic
+          -Wconversion -Wshadow tools/pokemon_communication_setup_turn_stats.cpp
+          -o pokemon_communication_setup_turn_stats
+
+      - name: Run two million simulated games
+        shell: bash
+        run: |
+          mkdir -p audit-output
+          ./pokemon_communication_setup_turn_stats | tee audit-output/setup_turn_statistics.csv
+          git rev-parse HEAD > audit-output/merge_ref_sha.txt
+
+      - name: Upload statistics
+        uses: actions/upload-artifact@v4
+        with:
+          name: pokemon-communication-setup-turn-statistics-fast
+          path: audit-output
+          if-no-files-found: error

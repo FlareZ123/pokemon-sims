@@ -142,39 +142,88 @@
     // Steven's Resolve reserves an outlet only where it can still find a payload.
     const Card payload_outlet = blender_available_next_turn ? Card::BrilliantBlender : Card::ProfessorBurnet;
     std::vector<Card> wanted;
-    // Regidrago V is a Basic Pokémon, so Steven's Resolve may take it before the
-    // ending turn establishes the future Bench line: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/sm7-145
+    const auto add_wanted = [&wanted](const Card card) {
+      if (std::find(wanted.begin(), wanted.end(), card) == wanted.end()) wanted.push_back(card);
+    };
+
+    // Steven searches up to three unrestricted cards at once. Project prerequisite
+    // targets before choosing later axes: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Regidrago V evolves into Regidrago VSTAR, and a revealed prized evolution is
+    // bridged by Gladion: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/sm4-95
+    // Repository route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed defect: https://github.com/FlareZ123/pokemon-sims/issues/867
+    bool projected_regi_available = has_regi_v() || hand_count(Card::RegidragoV) > 0;
     if (need_regi() && bench_space() > 0 && hand_count(Card::RegidragoV) == 0) {
       if (deck_count_after_search_started(Card::RegidragoV) > 0) {
-        wanted.push_back(Card::RegidragoV);
+        add_wanted(Card::RegidragoV);
+        projected_regi_available = true;
       } else if (prize_count_after_reveal(Card::RegidragoV) > 0 &&
                  deck_count_after_search_started(Card::Gladion) > 0) {
-        wanted.push_back(Card::Gladion);
+        add_wanted(Card::Gladion);
+        projected_regi_available = true;
       }
     }
-    if (need_vstar() && hand_count(Card::RegidragoVstar) == 0) {
+
+    const bool projected_vstar_missing = projected_regi_available && !has_vstar() &&
+                                         hand_count(Card::RegidragoVstar) == 0;
+    if (projected_vstar_missing) {
       if (deck_count_after_search_started(Card::RegidragoVstar) > 0) {
-        wanted.push_back(Card::RegidragoVstar);
+        add_wanted(Card::RegidragoVstar);
       } else if (prize_count_after_reveal(Card::RegidragoVstar) > 0 &&
                  deck_count_after_search_started(Card::Gladion) > 0) {
-        wanted.push_back(Card::Gladion);
+        add_wanted(Card::Gladion);
       }
     }
+
     // Crispin source: https://api.pokemontcg.io/v2/cards/sv7-133
     if (need_energy() && hand_count(Card::Crispin) == 0 && crispin_can_advance_energy_axis() &&
         deck_count_after_search_started(Card::Crispin) > 0) {
-      wanted.push_back(Card::Crispin);
+      add_wanted(Card::Crispin);
     }
+
+    const bool projected_vstar_available = has_vstar() || hand_count(Card::RegidragoVstar) > 0 ||
+        std::find(wanted.begin(), wanted.end(), Card::RegidragoVstar) != wanted.end() ||
+        (prize_count_after_reveal(Card::RegidragoVstar) > 0 &&
+         std::find(wanted.begin(), wanted.end(), Card::Gladion) != wanted.end());
+    const bool projected_crispin_available = hand_count(Card::Crispin) > 0 ||
+        std::find(wanted.begin(), wanted.end(), Card::Crispin) != wanted.end();
+    const Pokemon* projected_regi = target_regi();
+    const bool projected_legacy_star_payload_route = projected_vstar_available &&
+        !state_.vstar_power_used && ability_available_for_pokemon(Card::RegidragoVstar) &&
+        payload_might_be_in_deck();
+    const bool payload_route_preserved = !need_payload() ||
+        (!next_turn_item_locked && hand_count(Card::BrilliantBlender) > 0) ||
+        hand_count(Card::ProfessorBurnet) > 0 || projected_legacy_star_payload_route;
+    const bool basic_active_needs_promotion = state_.active && is_basic(state_.active->card) &&
+                                              state_.active->card != Card::RegidragoV;
+    const bool crispin_and_manual_complete_ggf = projected_regi != nullptr &&
+        projected_regi->grass >= 1 &&
+        deck_count_after_search_started(Card::Grass) > 0 &&
+        deck_count_after_search_started(Card::Fire) > 0;
+    // Latias ex gives Basic Pokémon no Retreat Cost. Once Steven's first targets
+    // establish VSTAR plus GGF behind a Basic Active, promotion outranks a redundant
+    // Pokémon fallback: https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    if (wanted.size() < 3U && projected_vstar_available && projected_crispin_available &&
+        crispin_and_manual_complete_ggf && payload_route_preserved && basic_active_needs_promotion &&
+        bench_space() > 0 && !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
+        ability_available_for_pokemon(Card::LatiasEx) &&
+        deck_count_after_search_started(Card::LatiasEx) > 0) {
+      add_wanted(Card::LatiasEx);
+    }
+
     if (need_payload() && payload_might_be_in_deck() && hand_count(Card::BrilliantBlender) == 0 &&
         hand_count(Card::ProfessorBurnet) == 0 && deck_count_after_search_started(payload_outlet) > 0) {
-      wanted.push_back(payload_outlet);
+      add_wanted(payload_outlet);
     }
     for (const Card fallback : {Card::RegidragoV, Card::RegidragoVstar, Card::Gladion, Card::Crispin, payload_outlet,
                                 Card::MysteriousTreasure, Card::EarthenVessel, Card::LatiasEx}) {
       if (wanted.size() >= 3U) break;
       if (fallback == Card::Crispin && !crispin_can_advance_energy_axis()) continue;
       if (fallback == payload_outlet && !payload_might_be_in_deck()) continue;
-      if (std::find(wanted.begin(), wanted.end(), fallback) == wanted.end()) wanted.push_back(fallback);
+      add_wanted(fallback);
     }
     std::vector<Card> found;
     for (const Card target : wanted) {

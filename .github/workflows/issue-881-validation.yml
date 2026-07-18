@@ -1,0 +1,136 @@
+name: Issue 881 Erika Deck Thinning
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-881-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-finalize:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/881-erika-deck-thinning'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out issue branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/881-erika-deck-thinning
+          fetch-depth: 0
+
+      - name: Reconcile current main
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+          git rev-parse HEAD > /tmp/issue-881-baseline-sha
+
+      - name: Apply isolated permanent changes
+        run: python scripts/apply_issue_881.py
+
+      - name: Configure and build patched Release
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          bash .github/scripts/capture-build.sh build build.log
+
+      - name: Run focused Release regression
+        run: ctest --test-dir build --output-on-failure -R '^regidrago_erika_deck_thinning$'
+
+      - name: Capture patched full suite
+        shell: bash
+        run: |
+          mkdir -p issue-881-audit
+          set +e
+          ctest --test-dir build --output-on-failure --output-junit issue-881-audit/patched-ctest.xml 2>&1 | tee issue-881-audit/patched-ctest.log
+          printf '%s\n' "${PIPESTATUS[0]}" > issue-881-audit/patched-ctest.status
+          exit 0
+
+      - name: Run focused warning-clean UBSan regression
+        shell: bash
+        run: |
+          cmake -S . -B build-ubsan -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_FLAGS='-fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -Wall -Wextra -Wpedantic -Wconversion -Wshadow' \
+            -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=undefined'
+          cmake --build build-ubsan --target regidrago_erika_deck_thinning_tests --parallel 2
+          UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ./build-ubsan/regidrago_erika_deck_thinning_tests 2>&1 | tee issue-881-audit/focused-ubsan.log
+
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -o pipefail
+          # Trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Decision priorities: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 2 | tee issue-881-audit/trace-1-turn2-item-lock-seed-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee issue-881-audit/trace-2-strict-go-first-seed-2.txt
+          ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 6 --require-ready-by 4 | tee issue-881-audit/trace-3-no-control-go-first-seed-6.txt
+
+      - name: Generate canonical T2 and T3 matrix
+        run: |
+          # Aggregate specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-881-audit/t2_t3_matrix.csv
+
+      - name: Build and test exact current-main baseline
+        shell: bash
+        run: |
+          baseline_sha="$(cat /tmp/issue-881-baseline-sha)"
+          git worktree add /tmp/issue-881-baseline "$baseline_sha"
+          cmake -S /tmp/issue-881-baseline -B /tmp/issue-881-baseline-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/issue-881-baseline-build --parallel 2
+          set +e
+          ctest --test-dir /tmp/issue-881-baseline-build --output-on-failure --output-junit issue-881-audit/baseline-ctest.xml 2>&1 | tee issue-881-audit/baseline-ctest.log
+          printf '%s\n' "${PIPESTATUS[0]}" > issue-881-audit/baseline-ctest.status
+          exit 0
+
+      - name: Require no new full-suite failures
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          import xml.etree.ElementTree as ET
+
+          def failures(path: str) -> list[str]:
+              root = ET.parse(path).getroot()
+              result = []
+              for case in root.iter('testcase'):
+                  if case.find('failure') is not None or case.find('error') is not None:
+                      result.append(case.attrib.get('name', '<unnamed>'))
+              return sorted(result)
+
+          baseline = failures('issue-881-audit/baseline-ctest.xml')
+          patched = failures('issue-881-audit/patched-ctest.xml')
+          Path('issue-881-audit/baseline-failures.json').write_text(json.dumps(baseline, indent=2) + '\n', encoding='utf-8')
+          Path('issue-881-audit/patched-failures.json').write_text(json.dumps(patched, indent=2) + '\n', encoding='utf-8')
+          if patched != baseline:
+              raise SystemExit(f'Full-suite failure set changed. baseline={baseline}, patched={patched}')
+          print(f'Baseline parity confirmed with {len(baseline)} pre-existing failing tests.')
+          PY
+
+      - name: Finalize permanent branch
+        shell: bash
+        run: |
+          git rm .github/workflows/issue-881-validation.yml scripts/apply_issue_881.py
+          git add CMakeLists.txt \
+            src/trace_engine_v2/part_010_blender_thinning_override.inc \
+            src/trace_engine_v2/part_011_burnet_thinning_override.inc \
+            tests/erika_deck_thinning_tests.cpp
+          git commit -m "Use Erika in no-control deck thinning (#881)"
+          git push origin HEAD:fix/881-erika-deck-thinning
+          git archive --format=zip HEAD -o issue-881-audit/issue-881-source.zip
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-881-validation
+          path: |
+            issue-881-audit
+            build/Testing
+            build.log
+          if-no-files-found: warn

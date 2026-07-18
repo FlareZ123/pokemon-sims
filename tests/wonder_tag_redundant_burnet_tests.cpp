@@ -13,17 +13,26 @@ struct EngineTestAccess {
   static bool original_wonder_tag_route_has_live_target(Engine& engine) {
     return engine.original_wonder_tag_route_has_live_target();
   }
+  static std::size_t recipe_size(const Engine& engine) { return engine.recipe_.size(); }
 };
 
 }  // namespace sim
 
 namespace {
 
+const sim::DeckRecipe& test_recipe() {
+  // Engine stores the recipe by reference, so this owner must outlive every test Engine:
+  // https://eel.is/c++draft/class.temporary#6.10
+  // https://github.com/FlareZ123/pokemon-sims/issues/907
+  static const sim::DeckRecipe recipe = sim::baseline_recipe();
+  return recipe;
+}
+
 sim::Engine make_engine() {
   static const sim::Scenario scenario{"issue-888", sim::DciProfile::StrictJit,
                                       sim::LockMode::None, false, 4};
   static std::mt19937_64 rng{888};
-  return sim::Engine(scenario, sim::baseline_recipe(), rng);
+  return sim::Engine(scenario, test_recipe(), rng);
 }
 
 sim::State base_state() {
@@ -37,6 +46,18 @@ sim::State base_state() {
   state.deck = {sim::Card::ProfessorBurnet, sim::Card::Dragapult,
                 sim::Card::GoodraVstar, sim::Card::Grass};
   return state;
+}
+
+void test_recipe_reference_survives_factory_return() {
+  sim::Engine engine = make_engine();
+
+  // Reading the stored recipe after the factory returns detects the former dangling
+  // reference under ASan with stack-use-after-return enabled:
+  // https://eel.is/c++draft/class.temporary#6.10
+  // https://github.com/FlareZ123/pokemon-sims/issues/907
+  if (sim::EngineTestAccess::recipe_size(engine) != sim::baseline_recipe().size()) {
+    throw std::runtime_error("The Engine recipe reference did not survive factory return.");
+  }
 }
 
 void test_held_serena_payload_makes_burnet_target_redundant() {
@@ -77,6 +98,7 @@ void test_burnet_remains_live_when_no_payload_is_held() {
 }  // namespace
 
 int main() {
+  test_recipe_reference_survives_factory_return();
   test_held_serena_payload_makes_burnet_target_redundant();
   test_burnet_remains_live_when_no_payload_is_held();
   std::cout << "Wonder Tag redundant-Burnet tests passed\n";

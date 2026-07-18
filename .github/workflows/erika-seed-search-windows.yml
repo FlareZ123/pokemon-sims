@@ -1,0 +1,27 @@
+name: Erika Fixture Seed Search Windows
+
+on:
+  pull_request:
+    paths:
+      - 'tools/erikas_invitation_fixture_seed_search.cpp'
+      - '.github/workflows/erika-seed-search-windows.yml'
+
+jobs:
+  fixture-seed-search:
+    runs-on: windows-latest
+    steps:
+      - name: Check out pull-request merge ref
+        uses: actions/checkout@v4
+      - name: Build seed search
+        shell: cmd
+        run: cl /nologo /std:c++20 /O2 /EHsc tools\erikas_invitation_fixture_seed_search.cpp /Fe:erikas_invitation_fixture_seed_search.exe
+      - name: Find replacement fixture seeds
+        shell: cmd
+        run: |
+          erikas_invitation_fixture_seed_search.exe > erikas_invitation_fixture_seeds.csv
+          type erikas_invitation_fixture_seeds.csv
+      - name: Upload fixture seeds
+        uses: actions/upload-artifact@v4
+        with:
+          name: erikas-invitation-fixture-seeds-windows
+          path: erikas_invitation_fixture_seeds.csv

@@ -1,2 +1,0 @@
-Trigger branch workflow evaluation for confirmed issue #915.
-https://github.com/FlareZ123/pokemon-sims/issues/915

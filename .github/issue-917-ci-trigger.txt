@@ -1,2 +1,0 @@
-Trigger clean CI for the final issue #917 branch.
-https://github.com/FlareZ123/pokemon-sims/issues/917

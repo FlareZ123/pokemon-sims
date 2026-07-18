@@ -255,10 +255,24 @@
     const bool no_lock_dialga_is_redundant_payload =
         hand_count(Card::DialgaGX) == 1 && payloads_in_hand > 1;
     const bool no_lock_vital_dance_has_energy_value = !both_manual_energy_types_held;
+    // A held one-discard Item is a public Regidrago V connector only when the
+    // centralized strict-DCI selector admits its mandatory cost. The card being
+    // played cannot discard itself:
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_006.inc
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://github.com/FlareZ123/pokemon-sims/issues/792
+    const bool no_lock_payable_quick_ball_route =
+        hand_count(Card::QuickBall) > 0 && might_be_unseen(Card::RegidragoV) &&
+        choose_discard(false, true, true, Card::QuickBall).has_value();
+    const bool no_lock_payable_mysterious_treasure_route =
+        hand_count(Card::MysteriousTreasure) > 0 && might_be_unseen(Card::RegidragoV) &&
+        choose_discard(false, true, true, Card::MysteriousTreasure).has_value();
     const bool no_lock_public_regidrago_v_route =
         hand_count(Card::RegidragoVstar) > 0 &&
-        (hand_count(Card::QuickBall) > 0 ||
-         hand_count(Card::MysteriousTreasure) > 0 ||
+        (no_lock_payable_quick_ball_route ||
+         no_lock_payable_mysterious_treasure_route ||
          hand_count(Card::Arven) > 0 ||
          hand_count(Card::StevensResolve) > 0);
 

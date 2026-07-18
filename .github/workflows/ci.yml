@@ -38,6 +38,10 @@ jobs:
       # Blender VSTAR-card-axis fix: https://github.com/FlareZ123/pokemon-sims/pull/931
       - name: Generate canonical T2 and T3 matrix
         run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+      - name: Regenerate source-bound setup baseline
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
       - name: Record tested source
@@ -52,6 +56,11 @@ jobs:
             t2-t3-matrix.csv
             tested-head.txt
             build/Testing
+            results/simulation_results.csv
+            results/baseline_manifest.json
+            results/traces
+            docs/REPORT.md
+            docs/TRACE_AUDIT.md
           if-no-files-found: warn
 
   sanitizers:

@@ -1,0 +1,62 @@
+name: Debug Simulation Pass 20260718
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-main-policy:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'audit/debug-sim-pass-20260718-a'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out validation branch
+        uses: actions/checkout@v4
+
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Run full Release suite
+        shell: bash
+        run: |
+          mkdir -p debug-audit
+          set -o pipefail
+          ctest --test-dir build --output-on-failure 2>&1 | tee debug-audit/ctest.log
+
+      - name: Run simulator self-test
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/regidrago_sim --self-test 2>&1 | tee debug-audit/self-test.log
+
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -o pipefail
+          # Trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Decision priorities: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 3 | tee debug-audit/trace-1-strict-go-first.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 | tee debug-audit/trace-2-turn2-item-lock.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-combined-lock/go-second --seed 11 | tee debug-audit/trace-3-combined-lock.txt
+
+      - name: Generate canonical T2 and T3 matrix
+        run: |
+          # Aggregate specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out debug-audit/t2_t3_matrix.csv
+
+      - name: Record source commit
+        run: git rev-parse HEAD > debug-audit/source-commit.txt
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-sim-pass-20260718
+          path: debug-audit
+          if-no-files-found: error

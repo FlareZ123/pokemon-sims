@@ -101,6 +101,9 @@ target_compile_options(regidrago_oricorio_full_energy_search_tests PRIVATE -Wall
 add_executable(regidrago_steven_missing_regi_tests tests/steven_missing_regi_tests.cpp)
 target_compile_options(regidrago_steven_missing_regi_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+add_executable(regidrago_steven_mysterious_treasure_dci_tests tests/steven_mysterious_treasure_dci_tests.cpp)
+target_compile_options(regidrago_steven_mysterious_treasure_dci_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 add_executable(regidrago_steven_crispin_turn2_item_lock_tests tests/steven_crispin_turn2_item_lock_tests.cpp)
 target_compile_options(regidrago_steven_crispin_turn2_item_lock_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
@@ -177,6 +180,14 @@ add_executable(regidrago_release_assertion_tests tests/release_assertion_tests.c
 target_compile_options(regidrago_release_assertion_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
 enable_testing()
+add_test(NAME regidrago_future_wonder_tag_crispin
+  COMMAND ${CMAKE_COMMAND}
+    -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_future_wonder_tag_crispin.cmake)
+add_test(NAME regidrago_active_tapu_paid_retreat
+  COMMAND ${CMAKE_COMMAND}
+    -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_active_tapu_paid_retreat.cmake)
 add_test(NAME regidrago_sim_self_test COMMAND regidrago_sim --self-test)
 add_test(NAME regidrago_policy_fixtures COMMAND regidrago_policy_tests)
 add_test(NAME regidrago_tier2_policy_fixtures COMMAND regidrago_tier2_tests)
@@ -206,6 +217,7 @@ add_test(NAME regidrago_quick_ball_ultra_cost COMMAND regidrago_quick_ball_ultra
 add_test(NAME regidrago_ultra_ball_redundant_cost COMMAND regidrago_ultra_ball_redundant_cost_tests)
 add_test(NAME regidrago_oricorio_full_energy_search COMMAND regidrago_oricorio_full_energy_search_tests)
 add_test(NAME regidrago_steven_missing_regi COMMAND regidrago_steven_missing_regi_tests)
+add_test(NAME regidrago_steven_mysterious_treasure_dci COMMAND regidrago_steven_mysterious_treasure_dci_tests)
 add_test(NAME regidrago_steven_crispin_turn2_item_lock COMMAND regidrago_steven_crispin_turn2_item_lock_tests)
 add_test(NAME regidrago_oricorio_type_sensitive_energy COMMAND regidrago_oricorio_type_sensitive_energy_tests)
 add_test(NAME regidrago_start_turn_deck_exhaustion COMMAND regidrago_start_turn_deck_exhaustion_tests)
@@ -243,7 +255,22 @@ add_test(NAME trace_no_control_first_t4 COMMAND regidrago_sim --simulate-this --
 add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
 set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)
 
+add_executable(regidrago_arven_complementary_latias_tests tests/arven_complementary_latias_route_tests.cpp)
+target_compile_options(regidrago_arven_complementary_latias_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+add_test(NAME regidrago_arven_complementary_latias COMMAND regidrago_arven_complementary_latias_tests)
+
 
 add_executable(regidrago_gladion_revealed_axis_tests tests/gladion_revealed_axis_tests.cpp)
 target_compile_options(regidrago_gladion_revealed_axis_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 add_test(NAME regidrago_gladion_revealed_axis COMMAND regidrago_gladion_revealed_axis_tests)
+
+# Exact post-exchange continuation regression for Pokémon Communication:
+# https://api.pokemontcg.io/v2/cards/sm9-152
+# https://github.com/FlareZ123/pokemon-sims/issues/808
+add_executable(regidrago_pokemon_communication_post_exchange_target_tests
+  tests/pokemon_communication_post_exchange_target_tests.cpp)
+target_compile_options(regidrago_pokemon_communication_post_exchange_target_tests
+  PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+add_test(NAME regidrago_pokemon_communication_post_exchange_targets
+  COMMAND regidrago_pokemon_communication_post_exchange_target_tests)
+

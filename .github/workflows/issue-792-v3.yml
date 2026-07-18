@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   validate-and-finalize:
-    if: github.event.pull_request.head.ref == 'fix/792-current-v3'
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/792-current-v3'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -39,7 +39,7 @@ jobs:
           cmake -S /tmp/issue-792-baseline -B /tmp/issue-792-baseline-build -DCMAKE_BUILD_TYPE=Release
           cmake --build /tmp/issue-792-baseline-build --parallel 2
           set +e
-          ctest --test-dir /tmp/issue-792-baseline-build --output-on-failure --output-junit issue-792-audit/baseline-ctest.xml 2>&1 | tee issue-792-audit/baseline-ctest.log
+          ctest --test-dir /tmp/issue-792-baseline-build --output-on-failure --output-junit "$GITHUB_WORKSPACE/issue-792-audit/baseline-ctest.xml" 2>&1 | tee issue-792-audit/baseline-ctest.log
           printf '%s\n' "${PIPESTATUS[0]}" > issue-792-audit/baseline-ctest.status
           exit 0
 
@@ -67,7 +67,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          ctest --test-dir build --output-on-failure --output-junit issue-792-audit/patched-ctest.xml 2>&1 | tee issue-792-audit/patched-ctest.log
+          ctest --test-dir build --output-on-failure --output-junit "$GITHUB_WORKSPACE/issue-792-audit/patched-ctest.xml" 2>&1 | tee issue-792-audit/patched-ctest.log
           printf '%s\n' "${PIPESTATUS[0]}" > issue-792-audit/patched-ctest.status
           exit 0
 
@@ -105,6 +105,15 @@ jobs:
           ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 2 | tee issue-792-audit/trace-2.txt
           ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee issue-792-audit/trace-3.txt
           ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-792-audit/t2_t3_matrix.csv
+
+      - name: Require validation base is still current main
+        shell: bash
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor origin/main "$(cat /tmp/issue-792-baseline-sha)"; then
+            echo "main advanced during validation; rerun against the new head."
+            exit 1
+          fi
 
       - name: Finalize permanent fix
         run: |

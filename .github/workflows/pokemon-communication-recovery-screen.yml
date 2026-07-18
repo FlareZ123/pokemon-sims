@@ -1,6 +1,13 @@
 name: Pokemon Communication Recovery Screen
 
 on:
+  push:
+    branches:
+      - 'audit/pokemon-communication-recovery-screen-20260718'
+    paths:
+      - 'tools/pokemon_communication_recovery_screen.cpp'
+      - '.github/workflows/pokemon-communication-recovery-screen.yml'
+      - 'src/**'
   pull_request:
     paths:
       - 'tools/pokemon_communication_recovery_screen.cpp'
@@ -11,7 +18,7 @@ jobs:
   recovery-screen:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out pull-request merge ref
+      - name: Check out validation ref
         uses: actions/checkout@v4
       - name: Build recovery screen
         run: |

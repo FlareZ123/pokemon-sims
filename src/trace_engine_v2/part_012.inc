@@ -212,7 +212,16 @@
     for (const Card target : {Card::RegidragoVstar, Card::RegidragoV, Card::ProfessorBurnet, Card::Crispin, Card::MegaDragonite}) {
       if (exchange(target)) return true;
     }
-    const std::array<Card, 8> lowest_impact{Card::Dipplin, Card::Grass, Card::Fire, Card::Powerglass, Card::FieldBlower, Card::ChaoticSwell, Card::PathToPeak, Card::MawileGX};
+    // Gladion must exchange itself for one revealed Prize. Erika's Invitation is
+    // the current opponent-dependent inert singleton and belongs in the deterministic
+    // low-impact fallback before an arbitrary live setup resource:
+    // https://api.pokemontcg.io/v2/cards/sm4-95
+    // https://api.pokemontcg.io/v2/cards/sv3pt5-160
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/855
+    const std::array<Card, 8> lowest_impact{Card::Dipplin, Card::Grass, Card::Fire,
+        Card::Powerglass, Card::FieldBlower, Card::ChaoticSwell, Card::PathToPeak,
+        Card::ErikasInvitation};
     auto selected = state_.prizes.begin();
     for (const Card low : lowest_impact) {
       const auto it = std::find(state_.prizes.begin(), state_.prizes.end(), low);

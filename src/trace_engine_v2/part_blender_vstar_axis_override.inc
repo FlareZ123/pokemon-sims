@@ -12,6 +12,7 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/718
+    // https://github.com/FlareZ123/pokemon-sims/pull/931
     Engine without_blender = *this;
     remove_one(without_blender.state_.hand, Card::BrilliantBlender);
 

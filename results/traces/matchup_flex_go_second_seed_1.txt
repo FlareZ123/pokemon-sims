@@ -1,6 +1,6 @@
 Seed: 1 | first-ready turn: 2 | setup result: success
 ===== SIMULATE THIS =====
-Scenario: strict-jit/go-second | DCI: strict-JIT | Locks: none
+Scenario: matchup-flex-jit/go-second | DCI: matchup-flex-JIT | Locks: none
 Mulligans: 1
 Opening player-known state: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Grass Energy, Hisuian Heavy Ball, Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127 | Discard=(none)
 DEBUG ONLY: prizes=Tate & Liza, Regidrago V, Gladion, Tapu Lele-GX, Regidrago VSTAR, Grass Energy. Policy may use them only after a legal deck or Prize inspection.

@@ -1,0 +1,46 @@
+
+Seed: 11 | first-ready turn: not ready through T4
+===== SIMULATE THIS =====
+Scenario: matchup-flex-jit/go-second | DCI: matchup-flex-JIT | Locks: none
+Mulligans: 0
+Opening player-known state: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Dipplin TWM 127, Regidrago VSTAR, Grass Energy, Mysterious Treasure, Serena, Fire Energy | Discard=(none)
+DEBUG ONLY: prizes=Quick Ball, Forest Seal Stone, Path to the Peak, Crispin, Grass Energy, Regidrago V. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Team Yell's Cheer
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Dipplin TWM 127, Regidrago VSTAR, Grass Energy, Mysterious Treasure, Serena, Fire Energy, Team Yell's Cheer | Discard=(none)
+T1 | DISCARD | rules: R-MT-01 | Dipplin TWM 127 (Mysterious Treasure cost)
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Mysterious Treasure: deck inspected; Prize identities are now deducible for later decisions.
+T1 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM | Searched a Psychic or Dragon Pokémon: Regidrago V.
+T1 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T1 | DISCARD | rules: R-SERENA-01 | Team Yell's Cheer (Serena chosen discard)
+T1 | DRAW | rules: R-GAME-DRAW | Serena: Tate & Liza
+T1 | DRAW | rules: R-GAME-DRAW | Serena: Grass Energy
+T1 | DRAW | rules: R-GAME-DRAW | Serena: Quick Ball
+T1 | PLAY SUPPORTER | rules: R-SERENA-01; R-GAME-SUPPORTER | Used Serena draw mode after discarding at least one card.
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Tapu Lele-GX [-] | Bench=Regidrago V [G] | Hand=Regidrago VSTAR, Fire Energy, Tate & Liza, Grass Energy, Quick Ball | Discard=Mysterious Treasure, Dipplin TWM 127, Serena, Team Yell's Cheer
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Steven's Resolve
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=Regidrago V [G] | Hand=Regidrago VSTAR, Fire Energy, Tate & Liza, Grass Energy, Quick Ball, Steven's Resolve | Discard=Mysterious Treasure, Dipplin TWM 127, Serena, Team Yell's Cheer
+T2 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T2 | DRAW | rules: R-GAME-DRAW | Tate & Liza: Arven
+T2 | DRAW | rules: R-GAME-DRAW | Tate & Liza: Dialga-GX
+T2 | DRAW | rules: R-GAME-DRAW | Tate & Liza: Dragapult ex
+T2 | DRAW | rules: R-GAME-DRAW | Tate & Liza: Regidrago V
+T2 | DRAW | rules: R-GAME-DRAW | Tate & Liza: Professor Burnet
+T2 | PLAY SUPPORTER | rules: R-TATE-01; R-GAME-SUPPORTER | Tate & Liza draw mode: shuffled remaining hand and drew 5.
+T2 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Tapu Lele-GX [-] | Bench=Regidrago V [GG]; Regidrago V [-] | Hand=Arven, Dialga-GX, Dragapult ex, Professor Burnet | Discard=Mysterious Treasure, Dipplin TWM 127, Serena, Team Yell's Cheer, Tate & Liza
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Mysterious Treasure
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=Regidrago V [GG]; Regidrago V [-] | Hand=Arven, Dialga-GX, Dragapult ex, Professor Burnet, Mysterious Treasure | Discard=Mysterious Treasure, Dipplin TWM 127, Serena, Team Yell's Cheer, Tate & Liza
+T3 | PLAY SUPPORTER | rules: R-ARVEN-01; R-GAME-SUPPORTER | Searched an Item and a Pokémon Tool: Quick Ball.
+T3 | DISCARD | rules: R-MT-01 | Dragapult ex (Mysterious Treasure cost)
+T3 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM | Searched a Psychic or Dragon Pokémon: Regidrago VSTAR.
+T3 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Tapu Lele-GX [-] | Bench=Regidrago VSTAR [GG]; Regidrago V [-] | Hand=Dialga-GX, Professor Burnet, Quick Ball | Discard=Mysterious Treasure, Dipplin TWM 127, Serena, Team Yell's Cheer, Tate & Liza, Arven, Mysterious Treasure, Dragapult ex
+T4 | DRAW | rules: R-GAME-DRAW | start-of-turn: Regidrago VSTAR
+T4 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=Regidrago VSTAR [GG]; Regidrago V [-] | Hand=Dialga-GX, Professor Burnet, Quick Ball, Regidrago VSTAR | Discard=Mysterious Treasure, Dipplin TWM 127, Serena, Team Yell's Cheer, Tate & Liza, Arven, Mysterious Treasure, Dragapult ex
+T4 | DISCARD | rules: R-QB-01 | Regidrago VSTAR (Quick Ball cost)
+T4 | PLAY ITEM | rules: R-QB-01; R-GAME-ITEM | Searched a Basic Pokémon: Latias ex.
+T4 | BENCH | rules: R-GAME-BENCH | Latias ex from hand.
+T4 | RETREAT | rules: R-LATIAS-01; R-GAME-RETREAT | Latias ex gives the Basic Active no Retreat Cost; promoted the best-powered Benched Regidrago VSTAR.
+T4 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GG] | Bench=Tapu Lele-GX [-]; Regidrago V [-]; Latias ex [-] | Hand=Dialga-GX, Professor Burnet | Discard=Mysterious Treasure, Dipplin TWM 127, Serena, Team Yell's Cheer, Tate & Liza, Arven, Mysterious Treasure, Dragapult ex, Quick Ball, Regidrago VSTAR

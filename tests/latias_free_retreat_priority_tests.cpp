@@ -9,8 +9,8 @@ namespace sim {
 
 struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
-  static bool promote_ready_benched_vstar(Engine& engine) {
-    return engine.promote_ready_benched_vstar();
+  static bool resolve_final_promotion_and_attachment(Engine& engine) {
+    return engine.resolve_final_promotion_and_attachment();
   }
 };
 
@@ -51,7 +51,7 @@ void test_free_latias_retreat_precedes_paid_tapu_route() {
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // https://github.com/FlareZ123/pokemon-sims/issues/905
-  assert(sim::EngineTestAccess::promote_ready_benched_vstar(engine));
+  assert(sim::EngineTestAccess::resolve_final_promotion_and_attachment(engine));
 
   const sim::State& state = sim::EngineTestAccess::state(engine);
   assert(state.active.has_value());
@@ -76,7 +76,7 @@ void test_paid_tapu_route_remains_when_latias_is_absent() {
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/issues/802
   // https://github.com/FlareZ123/pokemon-sims/issues/905
-  assert(sim::EngineTestAccess::promote_ready_benched_vstar(engine));
+  assert(sim::EngineTestAccess::resolve_final_promotion_and_attachment(engine));
 
   const sim::State& state = sim::EngineTestAccess::state(engine);
   assert(state.active.has_value());
@@ -102,7 +102,7 @@ void test_paid_tapu_route_remains_when_skyliner_is_locked() {
   // https://api.pokemontcg.io/v2/cards/cel25c-60_A
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
   // https://github.com/FlareZ123/pokemon-sims/issues/905
-  assert(sim::EngineTestAccess::promote_ready_benched_vstar(engine));
+  assert(sim::EngineTestAccess::resolve_final_promotion_and_attachment(engine));
 
   const sim::State& state = sim::EngineTestAccess::state(engine);
   assert(state.active.has_value());
@@ -113,11 +113,48 @@ void test_paid_tapu_route_remains_when_skyliner_is_locked() {
   assert(contains(state.discard, sim::Card::Fire));
 }
 
+void test_incomplete_vstar_attaches_before_free_retreat() {
+  const sim::Scenario scenario{"issue-905-attach-before-free-retreat",
+                               sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  std::mt19937_64 rng(90504);
+  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  sim::State& state = sim::EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::TapuLeleGX, 0, 0, 0,
+                              sim::Tool::None};
+  state.bench = {
+      sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 0, sim::Tool::None},
+      sim::Pokemon{sim::Card::LatiasEx, 1, 0, 0, sim::Tool::None}};
+  state.hand = {sim::Card::Fire};
+  state.discard = {sim::Card::DialgaGX};
+  state.discarded_this_turn = {sim::Card::DialgaGX};
+
+  // Skyliner supplies the later free retreat, while the incomplete VSTAR first
+  // needs the held Fire Energy attached to complete Apex Dragon's GGF cost:
+  // https://api.pokemontcg.io/v2/cards/sv8-76
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/issues/905
+  assert(sim::EngineTestAccess::resolve_final_promotion_and_attachment(engine));
+
+  assert(state.active.has_value());
+  assert(state.active->card == sim::Card::RegidragoVstar);
+  assert(state.active->grass == 2);
+  assert(state.active->fire == 1);
+  assert(state.manual_energy_used);
+  assert(state.retreat_used);
+  assert(!contains(state.hand, sim::Card::Fire));
+  assert(!contains(state.discard, sim::Card::Fire));
+}
+
 }  // namespace
 
 int main() {
   test_free_latias_retreat_precedes_paid_tapu_route();
   test_paid_tapu_route_remains_when_latias_is_absent();
   test_paid_tapu_route_remains_when_skyliner_is_locked();
+  test_incomplete_vstar_attaches_before_free_retreat();
   return 0;
 }

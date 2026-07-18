@@ -53,10 +53,24 @@
         state_.active->entered_turn < state_.turn &&
         hand_count(Card::RegidragoVstar) > 0 &&
         state_.active->grass >= 2 && state_.active->fire >= 1;
+
+    // Under Item lock, Turo may solve the Active axis one turn before Burnet solves
+    // the strict-JIT payload axis. Admit only a held, searchable Burnet line with a
+    // remaining modeled turn, so the current Supporter play has a deterministic
+    // completion rather than merely postponing the missing payload:
+    // https://api.pokemontcg.io/v2/cards/sv4-171
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://github.com/FlareZ123/pokemon-sims/issues/900
+    const bool delayed_burnet_payload_route = strict_payload_timing() && item_locked() &&
+        need_payload() && state_.turn < scenario_.max_turn &&
+        hand_count(Card::ProfessorBurnet) > 0 && payload_might_be_in_deck();
     if (!supporter_allowed() || hand_count(Card::ProfessorTuro) == 0 || !state_.active ||
         !is_basic(state_.active->card) || active_regidrago_has_ready_direct_evolution ||
-        !need_active_vstar() || need_regi() || need_vstar() || need_energy() || need_payload() ||
-        can_free_retreat_with_latias() || hand_count(Card::TateLiza) > 0) {
+        !need_active_vstar() || need_regi() || need_vstar() || need_energy() ||
+        (need_payload() && !delayed_burnet_payload_route) || can_free_retreat_with_latias() ||
+        hand_count(Card::TateLiza) > 0) {
       return false;
     }
 

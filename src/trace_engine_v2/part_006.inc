@@ -131,7 +131,14 @@
     if (hand_count(Card::Fire) > fire_needed() + 1) return Card::Fire;
 
     if (flex_fodder && scenario_.dci != DciProfile::StrictJit) {
-      for (const Card card : {Card::MawileGX, Card::Guzma, Card::Channeler, Card::FieldBlower,
+      // Erika's Invitation replaced Mawile-GX in the canonical deck. Its effect is
+      // opponent-dependent and deliberately inert in this goldfish model, so it is
+      // the current low-impact matchup-flex discard candidate:
+      // https://api.pokemontcg.io/v2/cards/sv3pt5-160
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CARD_AUDIT.md#erikas-invitation
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+      // https://github.com/FlareZ123/pokemon-sims/issues/852
+      for (const Card card : {Card::ErikasInvitation, Card::Guzma, Card::Channeler, Card::FieldBlower,
                               Card::ChaoticSwell, Card::PathToPeak, Card::TeamYellsCheer,
                               Card::RoseannesBackup, Card::Lusamine, Card::ProfessorTuro,
                               Card::Powerglass}) {

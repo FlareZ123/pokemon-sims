@@ -97,10 +97,18 @@
     // These are the remaining modeled Supporter and Stadium cards, ordered from
     // least direct setup value to the connectors retained above. The list contains
     // only legal Lusamine targets and may select a second copy where available.
-    for (const Card fallback : {Card::ChaoticSwell, Card::PathToPeak, Card::TeamYellsCheer,
-                                Card::RoseannesBackup, Card::ProfessorTuro, Card::Channeler,
-                                Card::Guzma, Card::Serena, Card::TateLiza, Card::StevensResolve,
-                                Card::Arven, Card::Crispin, Card::ProfessorBurnet, Card::Gladion}) {
+    // Erika's Invitation is a Supporter and the canonical low-impact replacement
+    // for retired Mawile-GX. Once an advancing target makes Lusamine worth playing,
+    // Erika may satisfy the printed mandatory second Supporter/Stadium recovery:
+    // https://api.pokemontcg.io/v2/cards/sm4-96
+    // https://api.pokemontcg.io/v2/cards/sv3pt5-160
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CARD_AUDIT.md#erikas-invitation
+    // https://github.com/FlareZ123/pokemon-sims/issues/854
+    for (const Card fallback : {Card::ErikasInvitation, Card::ChaoticSwell, Card::PathToPeak,
+                                Card::TeamYellsCheer, Card::RoseannesBackup, Card::ProfessorTuro,
+                                Card::Channeler, Card::Guzma, Card::Serena, Card::TateLiza,
+                                Card::StevensResolve, Card::Arven, Card::Crispin,
+                                Card::ProfessorBurnet, Card::Gladion}) {
       recover_once(fallback);
     }
     return targets;

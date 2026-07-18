@@ -120,7 +120,14 @@
          (state_.active->fire < 1 && might_be_unseen(Card::Fire)));
     if (discarded.size() < 2U && active_can_use_celestial_roar &&
         needed_energy_remains && state_.deck.size() > 3U) {
-      for (const Card card : {Card::PathToPeak, Card::MawileGX, Card::Guzma,
+      // Burnet may discard up to two cards. After the Dragon payload, remove the
+      // modeled inert Erika singleton to improve Celestial Roar's top-three Energy
+      // hit without consuming a live connector:
+      // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+      // https://api.pokemontcg.io/v2/cards/swsh12-135
+      // https://api.pokemontcg.io/v2/cards/sv3pt5-160
+      // https://github.com/FlareZ123/pokemon-sims/issues/881
+      for (const Card card : {Card::PathToPeak, Card::ErikasInvitation, Card::Guzma,
                               Card::Channeler, Card::FieldBlower,
                               Card::ChaoticSwell}) {
         if (move_deck_to_discard(card)) {

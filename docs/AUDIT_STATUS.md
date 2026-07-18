@@ -2,10 +2,10 @@
 
 ## Current source and test inventory
 
-- Core exact-state policy fixtures: **57** in `regidrago_policy_tests`. The canonical runner table is https://github.com/FlareZ123/pokemon-sims/blob/main/tests/policy_fixture_v2/part_004a.inc#L134-L191
-- Tier Two choice-differentiation fixtures: **31** in `regidrago_tier2_tests`. The canonical runner table is https://github.com/FlareZ123/pokemon-sims/blob/main/tests/tier2_parts/part_003b.inc#L40-L73
-- Deterministic scenario trace regressions: six CTest cases. The registered tests are https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt#L219-L224
-- Aggregate scenario smoke test: one CTest case. The registered test is https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt#L225-L226
+- Core exact-state policy fixtures: **57** in the `regidrago_unified_tests regidrago_policy_tests` case. The canonical runner table is https://github.com/FlareZ123/pokemon-sims/blob/main/tests/policy_fixture_v2/part_004a.inc#L134-L191
+- Tier Two choice-differentiation fixtures: **31** in the `regidrago_unified_tests regidrago_tier2_tests` case. The canonical runner table is https://github.com/FlareZ123/pokemon-sims/blob/main/tests/tier2_parts/part_003b.inc#L40-L73
+- Deterministic scenario trace regressions: six CTest cases registered in https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt
+- Aggregate scenario smoke test: one CTest case registered in https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt
 
 The detailed fixture names and executable evidence remain indexed in:
 
@@ -15,11 +15,11 @@ The detailed fixture names and executable evidence remain indexed in:
 
 ## Build and CI evidence
 
-Pull requests run the card-audit provenance contract, a Release build with the full CTest suite, and a Debug build with AddressSanitizer and UndefinedBehaviorSanitizer. The workflow definition is https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml
+Pull requests run two compiled lanes from https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml
 
-Both compiled lanes upload their CTest directories and build logs when validation succeeds or fails, so test conclusions can be checked against exact branch artifacts. The artifact configuration is https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml#L38-L46 and https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml#L68-L76
+The Release lane builds the simulator and unified tests, runs three readable `--simulate-this` audits, generates the canonical 100,000-trial matrix, and then runs the complete CTest suite. It uploads the three traces, matrix, tested commit identifier, and CTest evidence directory.
 
-The inventory counts above are checked by `tests/card_audit_contract_tests.py` against the canonical runner tables and fixture-index documents. That contract runs in CI before either compiled lane: https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml#L10-L18
+The sanitizer lane builds with AddressSanitizer and UndefinedBehaviorSanitizer, runs the complete CTest suite, and uploads its CTest evidence directory. Card-audit and documentation contracts run inside both complete CTest suites after compilation.
 
 ## Remaining explicit model boundary
 

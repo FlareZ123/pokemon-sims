@@ -22,11 +22,11 @@ The command prints the opening player-known state, debug-only prizes, every draw
 
 ```bash
 ctest --test-dir build --output-on-failure
-./build/regidrago_policy_tests
-./build/regidrago_tier2_tests
+./build/regidrago_unified_tests regidrago_policy_tests
+./build/regidrago_unified_tests regidrago_tier2_tests
 ```
 
-`regidrago_policy_tests` checks core rule and connector legality. `regidrago_tier2_tests` checks comparison states, including direct Crispin versus indirect Energy routes, Steven versus Arven, K0/K1 Gladion and Heavy Ball choices, Heavy Ball into Tapu Lele-GX Supporter chains, Forest Seal Stone conservation, Rule Box lock-aware search paths, Tate & Liza switch and draw modes, and Arven fallback selection.
+The `regidrago_policy_tests` unified case checks core rule and connector legality. The `regidrago_tier2_tests` unified case checks comparison states, including direct Crispin versus indirect Energy routes, Steven versus Arven, K0/K1 Gladion and Heavy Ball choices, Heavy Ball into Tapu Lele-GX Supporter chains, Forest Seal Stone conservation, Rule Box lock-aware search paths, Tate & Liza switch and draw modes, and Arven fallback selection.
 
 ## Run aggregate smoke test
 

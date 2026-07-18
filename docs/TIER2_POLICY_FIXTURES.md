@@ -2,7 +2,7 @@
 
 ## Canonical surface
 
-`regidrago_tier2_tests` executes **31** deterministic choice-differentiation, fast-compression, K1, and lock-aware fixtures. The runner table is the canonical inventory and order: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/tier2_parts/part_003b.inc#L40-L73
+`regidrago_unified_tests regidrago_tier2_tests` executes **31** deterministic choice-differentiation, fast-compression, K1, and lock-aware fixtures. The runner table is the canonical inventory and order: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/tier2_parts/part_003b.inc#L40-L73
 
 Each listed function constructs its exact state in the split source files under `tests/tier2_parts/`. The executable assertions and their direct rule or card URLs are authoritative.
 
@@ -51,5 +51,5 @@ Each listed function constructs its exact state in the split source files under 
 ```text
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel 2
-./build/regidrago_tier2_tests
+./build/regidrago_unified_tests regidrago_tier2_tests
 ```

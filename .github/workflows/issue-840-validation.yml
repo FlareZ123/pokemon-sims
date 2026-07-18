@@ -11,7 +11,7 @@ jobs:
   validate:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/840-crispin-before-dead-burnet-gladion'
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 50
 
     steps:
       - name: Check out issue branch
@@ -44,7 +44,16 @@ jobs:
         run: ./build/regidrago_gladion_serena_item_lock_tests
 
       - name: Run full Release suite
-        run: ctest --test-dir build --output-on-failure
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          set -o pipefail
+          ctest --test-dir build --output-on-failure 2>&1 | tee issue-840-audit/ctest.log
+          status=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$status" > issue-840-audit/ctest.status
+          exit "$status"
 
       - name: Run focused warning-clean UBSan regression
         run: |
@@ -66,6 +75,13 @@ jobs:
           # Probability contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#what-the-probability-means
           ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-840-audit/t2_t3_matrix.csv
           cat issue-840-audit/t2_t3_matrix.csv
+
+      - name: Enforce full-suite result
+        if: always()
+        shell: bash
+        run: |
+          test -f issue-840-audit/ctest.status
+          test "$(cat issue-840-audit/ctest.status)" = "0"
 
       - name: Upload validation evidence
         if: always()

@@ -14,6 +14,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.baseline_provenance import simulator_policy_source_digest
+from scripts import regenerate_setup_baselines
 
 GENERATOR_PATH = REPO_ROOT / "scripts" / "update_setup_docs.py"
 MANIFEST_PATH = REPO_ROOT / "results" / "baseline_manifest.json"
@@ -87,6 +88,49 @@ def assert_aggregate_driver_is_hashed() -> None:
             raise AssertionError("Aggregate driver changes must invalidate baseline provenance.")
 
 
+
+def assert_regeneration_removes_only_obsolete_generated_traces() -> None:
+    # Regeneration owns the canonical seed-named transcripts described by the
+    # results inventory, so obsolete generated names must not survive a new manifest:
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
+    # https://github.com/FlareZ123/pokemon-sims/issues/916
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        output_dir = Path(temporary_directory) / "results"
+        trace_dir = output_dir / "traces"
+        trace_dir.mkdir(parents=True)
+        obsolete = trace_dir / "strict_jit_go_second_seed_999.txt"
+        unrelated = trace_dir / "review_notes.txt"
+        obsolete.write_text("obsolete\n", encoding="utf-8")
+        unrelated.write_text("preserve\n", encoding="utf-8")
+
+        original_find = regenerate_setup_baselines.find_trace_seed
+        original_matrix = regenerate_setup_baselines.generate_matrix_atomic
+        try:
+            regenerate_setup_baselines.find_trace_seed = (
+                lambda executable, scenario, deadline, max_seed: (1, f"{scenario}\n")
+            )
+            regenerate_setup_baselines.generate_matrix_atomic = (
+                lambda executable, matrix_path, trials, matrix_seed:
+                    regenerate_setup_baselines.atomic_write_text(matrix_path, "matrix\n")
+            )
+            regenerate_setup_baselines.regenerate(
+                Path("unused-simulator"), output_dir, max_seed=1, trials=1, matrix_seed=1
+            )
+        finally:
+            regenerate_setup_baselines.find_trace_seed = original_find
+            regenerate_setup_baselines.generate_matrix_atomic = original_matrix
+
+        expected = {f"{stem}_seed_1.txt" for _, _, stem in regenerate_setup_baselines.TRACE_SPECS}
+        observed = {path.name for path in trace_dir.iterdir()}
+        if obsolete.exists():
+            raise AssertionError("Obsolete generator-owned traces must be removed.")
+        if not unrelated.exists():
+            raise AssertionError("Unrelated trace-directory files must be preserved.")
+        if observed != expected | {unrelated.name}:
+            raise AssertionError(f"Unexpected trace inventory after regeneration: {sorted(observed)}")
+
+
 def main() -> int:
     generator = load_generator()
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
@@ -98,6 +142,7 @@ def main() -> int:
         raise AssertionError("results/simulation_results.csv must contain the generated matrix.")
 
     assert_aggregate_driver_is_hashed()
+    assert_regeneration_removes_only_obsolete_generated_traces()
 
     # The fixed-seed artifact must be regenerated whenever any aggregate simulator
     # input changes, including the scenario loop in part_016:

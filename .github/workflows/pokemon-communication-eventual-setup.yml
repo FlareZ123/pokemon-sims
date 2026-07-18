@@ -1,0 +1,29 @@
+name: Pokemon Communication Eventual Setup Statistics
+
+on:
+  pull_request:
+    paths:
+      - 'tools/pokemon_communication_eventual_setup_audit.cpp'
+      - '.github/workflows/pokemon-communication-eventual-setup.yml'
+      - 'src/**'
+
+jobs:
+  eventual-setup-statistics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out pull-request merge ref
+        uses: actions/checkout@v4
+      - name: Build eventual setup audit
+        run: |
+          g++ -std=c++20 -O3 -Wall -Wextra -Wpedantic -Werror \
+            tools/pokemon_communication_eventual_setup_audit.cpp \
+            -o pokemon_communication_eventual_setup_audit
+      - name: Run to setup or deck-out
+        run: |
+          ./pokemon_communication_eventual_setup_audit > eventual_setup_statistics.csv
+          cat eventual_setup_statistics.csv
+      - name: Upload statistics
+        uses: actions/upload-artifact@v4
+        with:
+          name: pokemon-communication-eventual-setup-statistics
+          path: eventual_setup_statistics.csv

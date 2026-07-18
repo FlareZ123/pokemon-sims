@@ -31,6 +31,7 @@ jobs:
       - name: Archive exact source
         shell: bash
         run: |
+          # Rerun marker: current-main audit after the #823 merge.
           mkdir -p audit-output
           tar --exclude=.git --exclude=build --exclude=audit-output -czf audit-output/current-main-source.tar.gz .
 

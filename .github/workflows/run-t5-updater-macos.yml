@@ -1,0 +1,66 @@
+name: Run T5 Updater macOS
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/run-t5-updater-macos.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: run-t5-updater-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  apply-and-validate:
+    if: github.head_ref == 'feat/t5-setup-failure-horizon'
+    runs-on: macos-latest
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Extract and apply updater
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/apply-t5-setup-horizon.yml').read_text(encoding='utf-8')
+          marker = "          python3 - <<'PY'\n"
+          start = workflow.index(marker) + len(marker)
+          end = workflow.index("\n          PY", start)
+          lines = workflow[start:end].splitlines()
+          script = "\n".join(line[10:] if line.startswith("          ") else line for line in lines) + "\n"
+          Path('/tmp/apply_t5_horizon.py').write_text(script, encoding='utf-8')
+          PY
+          python3 /tmp/apply_t5_horizon.py
+
+      - name: Build simulator
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Regenerate T5 baseline and documentation
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out results/simulation_results.csv
+          python3 scripts/update_setup_docs.py --repo-root .
+
+      - name: Validate engine and documentation
+        run: |
+          ./build/regidrago_sim --self-test
+          ctest --test-dir build --output-on-failure
+          python3 tests/setup_report_contract_tests.py
+          git diff --check
+
+      - name: Commit validated change
+        run: |
+          rm .github/workflows/apply-t5-setup-horizon.yml
+          rm .github/workflows/run-t5-updater-macos.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Simulate T5 as diagnostic setup failure'
+          git push origin HEAD:${{ github.head_ref }}

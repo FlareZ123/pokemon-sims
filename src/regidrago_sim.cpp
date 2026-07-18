@@ -204,6 +204,7 @@
 #include "trace_engine_v2/part_k0_ultra_ball_target_override.inc"
 #undef bench_oricorio_if_useful
 #include "trace_engine_v2/part_oricorio_needed_energy_override.inc"
+#define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #include "trace_engine_v2/part_014c.inc"
 #undef run_turn

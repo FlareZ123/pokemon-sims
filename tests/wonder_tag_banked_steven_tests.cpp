@@ -20,8 +20,7 @@ struct EngineTestAccess {
   static bool should_play_steven(const Engine& engine) {
     return engine.should_play_steven();
   }
-  static bool attach_manual(Engine& engine) { return engine.attach_manual(); }
-  static bool play_steven(Engine& engine) { return engine.play_steven(); }
+  static void run_turn(Engine& engine) { engine.run_turn(); }
 };
 
 }  // namespace sim
@@ -60,10 +59,8 @@ sim::State turn_one_state() {
   state.deck = {
       sim::Card::StevensResolve,
       sim::Card::RegidragoVstar,
-      sim::Card::Crispin,
       sim::Card::LatiasEx,
       sim::Card::Grass,
-      sim::Card::Fire,
       sim::Card::MegaDragonite,
       sim::Card::Arven,
   };
@@ -79,10 +76,8 @@ sim::State turn_two_state() {
                 sim::Card::BrilliantBlender};
   state.deck = {
       sim::Card::RegidragoVstar,
-      sim::Card::Crispin,
       sim::Card::LatiasEx,
       sim::Card::Grass,
-      sim::Card::Fire,
       sim::Card::MegaDragonite,
       sim::Card::Arven,
   };
@@ -95,11 +90,12 @@ void wonder_tag_prefers_the_deterministic_t3_steven_route() {
   sim::EngineTestAccess::set_state(engine, turn_one_state());
 
   // Wonder Tag can bank a Supporter while the first player is prohibited from using
-  // it on turn one. Steven then searches VSTAR, Crispin, and Latias for the T3 line:
+  // it on turn one. Steven then searches VSTAR, Grass Energy, and Latias for T3. The
+  // route deliberately contains no Crispin or future-draw dependency:
   // https://api.pokemontcg.io/v2/cards/cel25c-60_A
   // https://api.pokemontcg.io/v2/cards/sm7-145
   // https://api.pokemontcg.io/v2/cards/swsh12-136
-  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://api.pokemontcg.io/v2/cards/sv8-164
   // https://api.pokemontcg.io/v2/cards/sv8-76
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/issues/946
@@ -115,31 +111,31 @@ void turn_two_steven_reserves_every_t3_axis() {
 
   expect(sim::EngineTestAccess::should_play_steven(engine),
          "The banked Steven route was not recognized before the turn-two attachment");
-  expect(sim::EngineTestAccess::attach_manual(engine),
-         "The turn-two Fire attachment was not made before Steven's Resolve");
-  expect(sim::EngineTestAccess::should_play_steven(engine),
-         "The banked Steven route disappeared after the turn-two attachment");
-  expect(sim::EngineTestAccess::play_steven(engine),
-         "Steven's Resolve did not execute the known T3 route");
+  sim::EngineTestAccess::run_turn(engine);
 
   const sim::State& state = sim::EngineTestAccess::state(engine);
-  // Steven's unrestricted three-card search must reserve the Evolution, Energy, and
-  // promotion axes while held Blender remains the strict-JIT payload outlet:
+  // The turn runner must attach Fire before Steven resolves. Steven's unrestricted
+  // search then reserves Evolution, direct Energy, and promotion while held Blender
+  // remains the strict-JIT payload outlet. No T3 Supporter is required:
   // https://api.pokemontcg.io/v2/cards/sm7-145
   // https://api.pokemontcg.io/v2/cards/swsh12-136
-  // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://api.pokemontcg.io/v2/cards/sv8-76
   // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // https://github.com/FlareZ123/pokemon-sims/issues/946
   expect(contains(state.hand, sim::Card::RegidragoVstar),
          "Steven did not reserve Regidrago VSTAR");
-  expect(contains(state.hand, sim::Card::Crispin),
-         "Steven did not reserve Crispin for the final GGF component");
+  expect(contains(state.hand, sim::Card::Grass),
+         "Steven did not reserve the direct third Grass Energy");
   expect(contains(state.hand, sim::Card::LatiasEx),
          "Steven did not reserve Latias ex for Active promotion");
+  expect(!contains(state.hand, sim::Card::Crispin),
+         "The direct route unexpectedly introduced a Crispin dependency");
   expect(contains(state.hand, sim::Card::BrilliantBlender),
          "The held Brilliant Blender payload outlet was lost");
+  expect(state.bench.front().grass == 1 && state.bench.front().fire == 1,
+         "The second public Energy was not attached before Steven");
   expect(state.turn_ended, "Steven's Resolve did not end the turn");
 }
 
@@ -185,6 +181,17 @@ void future_selector_requires_every_proven_axis() {
                sim::Card::StevensResolve,
            "Wonder Tag selected Steven without the two-turn manual Energy plan");
   }
+  {
+    Fixture fixture{sim::LockMode::None, 94610};
+    sim::Engine& engine = fixture.engine;
+    sim::State state = turn_one_state();
+    state.deck.erase(std::find(state.deck.begin(), state.deck.end(),
+                               sim::Card::Grass));
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+    expect(sim::EngineTestAccess::choose_supporter_after_search_started(engine) !=
+               sim::Card::StevensResolve,
+           "Wonder Tag selected Steven without the direct third Grass target");
+  }
 }
 
 void turn_two_route_rejects_missing_or_locked_continuations() {
@@ -214,6 +221,16 @@ void turn_two_route_rejects_missing_or_locked_continuations() {
     sim::EngineTestAccess::set_state(engine, std::move(state));
     expect(!sim::EngineTestAccess::should_play_steven(engine),
            "Steven remained live without a Latias promotion target");
+  }
+  {
+    Fixture fixture{sim::LockMode::None, 94611};
+    sim::Engine& engine = fixture.engine;
+    sim::State state = turn_two_state();
+    state.deck.erase(std::find(state.deck.begin(), state.deck.end(),
+                               sim::Card::Grass));
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+    expect(!sim::EngineTestAccess::should_play_steven(engine),
+           "Steven remained live without the direct Grass continuation");
   }
 }
 

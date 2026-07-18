@@ -289,8 +289,19 @@
 
     Engine simulated = *this;
     if (!remove_one(simulated.state_.hand, supporter_leaving_hand)) return false;
-    for (const Card restored : restored_cards) simulated.state_.deck.push_back(restored);
+    for (const Card restored : restored_cards) {
+      if (!remove_one(simulated.state_.discard, restored)) return false;
+      simulated.state_.deck.push_back(restored);
+    }
 
+    // Recovery Supporters move each selected Pokémon from discard into the deck.
+    // Preserve that exact zone transition in the preflight so K0 fixed-list
+    // accounting does not count one singleton in both public zones:
+    // Team Yell's Cheer: https://api.pokemontcg.io/v2/cards/swsh9-149
+    // Roseanne's Backup: https://api.pokemontcg.io/v2/cards/swsh9-148
+    // Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152
+    // Hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    // Regression: https://github.com/FlareZ123/pokemon-sims/issues/823
     // Recovery Supporters shuffle their selected Pokémon into the deck before the
     // held Item resolves. Evaluate the exact post-Supporter hand and restored deck,
     // rather than treating Pokémon Communication's presence as a universal search:

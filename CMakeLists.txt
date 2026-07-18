@@ -274,3 +274,11 @@ target_compile_options(regidrago_pokemon_communication_post_exchange_target_test
 add_test(NAME regidrago_pokemon_communication_post_exchange_targets
   COMMAND regidrago_pokemon_communication_post_exchange_target_tests)
 
+
+
+add_executable(regidrago_pokemon_communication_recovery_zone_tests
+  tests/pokemon_communication_recovery_zone_tests.cpp)
+target_compile_options(regidrago_pokemon_communication_recovery_zone_tests PRIVATE
+  -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+add_test(NAME regidrago_pokemon_communication_recovery_zones
+  COMMAND regidrago_pokemon_communication_recovery_zone_tests)

@@ -42,7 +42,7 @@ jobs:
         run: ctest --test-dir build --output-on-failure
 
       - name: Run focused warning-clean regression
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/late_steven_basic_connector_tests.cpp -o build/issue-779-focused && ./build/issue-779-focused
+        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror tests/late_steven_basic_connector_tests.cpp -o build/issue-779-focused && ./build/issue-779-focused
 
       - name: Run focused UBSan regression
         run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=undefined -fno-omit-frame-pointer tests/late_steven_basic_connector_tests.cpp -o build/issue-779-ubsan && ./build/issue-779-ubsan
@@ -63,7 +63,7 @@ jobs:
         shell: bash
         run: |
           git rm tools/apply_issue_779_v2.py .github/workflows/issue-779-current-main.yml
-          git add CMakeLists.txt src/regidrago_sim.cpp src/trace_engine_v2/part_010_late_steven_override.inc tests/late_steven_basic_connector_tests.cpp
+          git add CMakeLists.txt src/regidrago_sim.cpp src/trace_engine_v2/part_010_late_steven_override.inc src/trace_engine_v2/part_010_steven_crispin_override.inc tests/late_steven_basic_connector_tests.cpp
           git commit -m 'Use Steven as the only late Basic connector (#779)'
           git push origin HEAD:fix/779-late-steven-basic-connector-v2
           git archive --format=zip HEAD -o issue-779-audit/issue-779-source.zip

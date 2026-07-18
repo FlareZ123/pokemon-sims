@@ -129,6 +129,25 @@
     return true;
   }
 
+  bool resolve_final_promotion_and_attachment() {
+    // When the selected Benched VSTAR already pays GGF, Skyliner promotes it for
+    // zero before the #802 paid Tapu fallback can spend a Basic Energy. An
+    // Energy-incomplete VSTAR still receives the manual attachment before the free
+    // retreat, preserving the legal Earthen Vessel route:
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/issues/905
+    if (benched_vstar_promotion_ready() &&
+        retreat_to_benched_vstar_with_latias()) {
+      return true;
+    }
+    if (pay_tapu_retreat_to_ready_benched_vstar()) return true;
+    attach_manual();
+    return retreat_to_benched_vstar_with_latias();
+  }
+
   void run_turn() {
     trace("POLICY", "P-AXIS-01", "Start: " + state_line());
     play_chaotic_swell();
@@ -193,8 +212,7 @@
       // https://www.pokemon.com/us/pokemon-tcg/rules
       if (!state_.supporter_used && setup_axis_missing()) choose_supporter();
     }
-    if (!pay_tapu_retreat_to_ready_benched_vstar()) attach_manual();
-    retreat_to_benched_vstar_with_latias();
+    resolve_final_promotion_and_attachment();
     if (need_active_vstar() && !state_.supporter_used) play_tate_switch();
     // Attach only after the final modeled switch decision, while the intended holder
     // is known to remain Active for Powerglass's end-of-turn condition:

@@ -247,6 +247,13 @@
       for (int number = 0; number < 2; ++number) {
         const auto extra = choose_discard(false, true);
         if (!extra || is_payload(*extra)) break;
-        const bool can_cycle = *extra == Card::Dipplin || *extra == Card::MawileGX || *extra == Card::Guzma ||
+        // Serena may discard up to three cards before drawing to five. Erika's
+        // Invitation is the canonical inert replacement for retired Mawile-GX in
+        // matchup-flex cycling:
+        // https://api.pokemontcg.io/v2/cards/swsh12-164
+        // https://api.pokemontcg.io/v2/cards/sv3pt5-160
+        // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CARD_AUDIT.md#erikas-invitation
+        // https://github.com/FlareZ123/pokemon-sims/issues/852
+        const bool can_cycle = *extra == Card::Dipplin || *extra == Card::ErikasInvitation || *extra == Card::Guzma ||
                                *extra == Card::Channeler || *extra == Card::FieldBlower || *extra == Card::ChaoticSwell || *extra == Card::PathToPeak;
         if (!can_cycle) break;

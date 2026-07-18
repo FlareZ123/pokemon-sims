@@ -48,7 +48,15 @@
     // Treasure must pay its discard before the fetched payload reaches hand. A later
     // Ultra Ball route is live only when its own two-card cost remains payable:
     // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // Do not fetch a second Dragon when Serena can already discard the permitted
+    // payload held in hand. The direct route uses fewer cards and preserves the
+    // one-shot search connector:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh12-164
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/issues/889
     const bool want_payload = need_payload() && !can_jit_discard &&
+                              !has_live_serena_hand_payload_line() &&
                               has_payable_payload_outlet_after_costed_search(Card::MysteriousTreasure);
     if (!can_jit_discard && !want_regi && !want_vstar && !want_latias && !want_tapu && !want_oricorio && !want_payload) return false;
     // The Mysterious Treasure being played cannot discard itself. A distinct held

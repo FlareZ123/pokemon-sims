@@ -1,5 +1,5 @@
 
-Seed: 20 | first-ready turn: 2
+Seed: 20 | first-ready turn: 2 | setup result: success
 ===== SIMULATE THIS =====
 Scenario: strict-jit-rulebox-ability-lock/go-second | DCI: strict-JIT | Locks: full Rule Box Ability lock
 Mulligans: 1
@@ -17,10 +17,10 @@ T1 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [GG] | Bench=(none) | H
 T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Arven
 T2 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [GG] | Bench=(none) | Hand=Regidrago VSTAR, Lusamine, Regidrago VSTAR, Grass Energy, Grass Energy, Fire Energy, Arven | Discard=Earthen Vessel, Earthen Vessel, Professor Burnet, Dragapult ex
 T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
-T2 | PLAY SUPPORTER | rules: R-ARVEN-01; R-GAME-SUPPORTER | Searched an Item and a Pokémon Tool: Brilliant Blender, Forest Seal Stone.
+T2 | PLAY SUPPORTER | rules: R-ARVEN-01; R-GAME-SUPPORTER; P-COMPRESS-01 | Searched an Item and a Pokemon Tool without duplicating the VSTAR connector: Brilliant Blender, Forest Seal Stone.
 T2 | ATTACH TOOL | rules: R-FSS-01; R-GAME-TOOL | Attached Forest Seal Stone to Regidrago V.
-T2 | STAR ALCHEMY | rules: R-FSS-02; R-VSTAR-01 | Searched any card: Mysterious Treasure.
+T2 | HOLD VSTAR POWER | rules: R-FSS-02; R-VSTAR-01; P-KNOWLEDGE-01; P-DCI-01 | Retained Star Alchemy because K1 proved that no searched card advances setup.
 T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
-T2 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dipplin TWM 127.
-T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=(none) | Hand=Lusamine, Regidrago VSTAR, Grass Energy, Grass Energy, Mysterious Treasure | Discard=Earthen Vessel, Earthen Vessel, Professor Burnet, Dragapult ex, Arven, Brilliant Blender, Mega Dragonite ex, Dipplin TWM 127
+T2 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex, Dialga-GX, Dipplin TWM 127.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=(none) | Hand=Lusamine, Regidrago VSTAR, Grass Energy, Grass Energy | Discard=Earthen Vessel, Earthen Vessel, Professor Burnet, Dragapult ex, Arven, Brilliant Blender, Mega Dragonite ex, Dragapult ex, Dialga-GX, Dipplin TWM 127
 T2 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

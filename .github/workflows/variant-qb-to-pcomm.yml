@@ -1,0 +1,91 @@
+name: One-time Quick Ball to Pokémon Communication variant
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  compare-matrix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Check out variant
+        uses: actions/checkout@v4
+        with:
+          path: variant
+
+      - name: Check out current main baseline
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: baseline
+
+      - name: Configure and build both lists
+        run: |
+          cmake -S baseline -B build-baseline -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-baseline --parallel 2
+          cmake -S variant -B build-variant -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-variant --parallel 2
+
+      - name: Validate variant tests
+        run: ctest --test-dir build-variant --output-on-failure
+
+      - name: Generate matched 100,000-trial matrices
+        run: |
+          # Canonical aggregate invocation: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+          # Probability interpretation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#what-the-probability-means
+          mkdir -p comparison
+          ./build-baseline/regidrago_sim --trials 100000 --seed 20260705 --out comparison/baseline.csv
+          ./build-variant/regidrago_sim --trials 100000 --seed 20260705 --out comparison/variant.csv
+
+      - name: Compare every condition
+        run: |
+          python - <<'PY'
+          import csv
+          from pathlib import Path
+
+          baseline_path = Path('comparison/baseline.csv')
+          variant_path = Path('comparison/variant.csv')
+          output_path = Path('comparison/delta.csv')
+
+          with baseline_path.open(newline='', encoding='utf-8') as handle:
+              baseline_rows = list(csv.DictReader(handle))
+          with variant_path.open(newline='', encoding='utf-8') as handle:
+              variant_rows = list(csv.DictReader(handle))
+
+          if len(baseline_rows) != len(variant_rows):
+              raise SystemExit('Matrix row counts differ')
+
+          fields = ['scenario', 'baseline_t2', 'variant_t2', 'delta_t2_pp',
+                    'baseline_t3', 'variant_t3', 'delta_t3_pp',
+                    'baseline_t4', 'variant_t4', 'delta_t4_pp']
+          output_rows = []
+          for base, variant in zip(baseline_rows, variant_rows, strict=True):
+              if base['scenario'] != variant['scenario']:
+                  raise SystemExit(f"Scenario mismatch: {base['scenario']} vs {variant['scenario']}")
+              row = {'scenario': base['scenario']}
+              for turn in ('t2', 't3', 't4'):
+                  base_value = float(base[turn])
+                  variant_value = float(variant[turn])
+                  row[f'baseline_{turn}'] = f'{base_value:.6f}'
+                  row[f'variant_{turn}'] = f'{variant_value:.6f}'
+                  row[f'delta_{turn}_pp'] = f'{(variant_value - base_value) * 100:.4f}'
+              output_rows.append(row)
+
+          with output_path.open('w', newline='', encoding='utf-8') as handle:
+              writer = csv.DictWriter(handle, fieldnames=fields)
+              writer.writeheader()
+              writer.writerows(output_rows)
+
+          print(output_path.read_text(encoding='utf-8'))
+          PY
+
+      - name: Upload comparison
+        uses: actions/upload-artifact@v4
+        with:
+          name: quick-ball-to-pokemon-communication-comparison
+          path: comparison
+          if-no-files-found: error

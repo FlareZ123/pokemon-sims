@@ -7,49 +7,116 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: issue-792-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   validate-and-finalize:
     if: github.event.pull_request.head.ref == 'fix/792-current-v3'
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
           ref: fix/792-current-v3
           fetch-depth: 0
+
       - name: Reconcile current main
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git fetch origin main
           git merge --no-edit origin/main
+          git rev-parse HEAD > /tmp/issue-792-baseline-sha
+          mkdir -p issue-792-audit
+
+      - name: Build and record exact current-main baseline
+        shell: bash
+        run: |
+          baseline_sha="$(cat /tmp/issue-792-baseline-sha)"
+          git worktree add /tmp/issue-792-baseline "$baseline_sha"
+          cmake -S /tmp/issue-792-baseline -B /tmp/issue-792-baseline-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/issue-792-baseline-build --parallel 2
+          set +e
+          ctest --test-dir /tmp/issue-792-baseline-build --output-on-failure --output-junit issue-792-audit/baseline-ctest.xml 2>&1 | tee issue-792-audit/baseline-ctest.log
+          printf '%s\n' "${PIPESTATUS[0]}" > issue-792-audit/baseline-ctest.status
+          exit 0
+
       - name: Apply current-main composition
         run: python tools/apply_issue_792_v3.py
-      - name: Configure and build Release
+
+      - name: Configure and build patched Release
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --parallel 2
-      - name: Run full suite and focused checks
+
+      - name: Run focused Release and UBSan checks
+        shell: bash
         run: |
-          ctest --test-dir build --output-on-failure
-          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror tests/opening_oricorio_dialga_payability_tests.cpp -o build/issue-792-focused
+          ctest --test-dir build --output-on-failure -R '^regidrago_opening_oricorio_dialga_(no_lock|payability)$'
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror \
+            tests/opening_oricorio_dialga_payability_tests.cpp -o build/issue-792-focused
           ./build/issue-792-focused
-          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=undefined -fno-omit-frame-pointer tests/opening_oricorio_dialga_payability_tests.cpp -o build/issue-792-ubsan
-          ./build/issue-792-ubsan
-      - name: Run three traces and matrix
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror \
+            -fsanitize=undefined -fno-omit-frame-pointer \
+            tests/opening_oricorio_dialga_payability_tests.cpp -o build/issue-792-ubsan
+          UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ./build/issue-792-ubsan
+
+      - name: Record patched full suite
+        shell: bash
         run: |
-          mkdir -p issue-792-audit
+          set +e
+          ctest --test-dir build --output-on-failure --output-junit issue-792-audit/patched-ctest.xml 2>&1 | tee issue-792-audit/patched-ctest.log
+          printf '%s\n' "${PIPESTATUS[0]}" > issue-792-audit/patched-ctest.status
+          exit 0
+
+      - name: Require exact current-main failure parity
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          import xml.etree.ElementTree as ET
+
+          def failures(path: str) -> list[str]:
+              root = ET.parse(path).getroot()
+              return sorted(
+                  case.attrib.get('name', '<unnamed>')
+                  for case in root.iter('testcase')
+                  if case.find('failure') is not None or case.find('error') is not None
+              )
+
+          baseline = failures('issue-792-audit/baseline-ctest.xml')
+          patched = failures('issue-792-audit/patched-ctest.xml')
+          Path('issue-792-audit/baseline-failures.json').write_text(json.dumps(baseline, indent=2) + '\n', encoding='utf-8')
+          Path('issue-792-audit/patched-failures.json').write_text(json.dumps(patched, indent=2) + '\n', encoding='utf-8')
+          if patched != baseline:
+              raise SystemExit(f'Issue 792 changed an unrelated full-suite failure set. baseline={baseline} patched={patched}')
+          print(f'Current-main failure parity confirmed: {baseline}')
+          PY
+
+      - name: Run three traces and matrix
+        shell: bash
+        run: |
+          set -o pipefail
+          # Trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Decision priorities: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
           ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-792-audit/trace-1.txt
-          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee issue-792-audit/trace-2.txt
-          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee issue-792-audit/trace-3.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 2 | tee issue-792-audit/trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee issue-792-audit/trace-3.txt
           ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-792-audit/t2_t3_matrix.csv
+
       - name: Finalize permanent fix
         run: |
           git rm tools/apply_issue_792_v3.py .github/workflows/issue-792-v3.yml
-          git add CMakeLists.txt src/trace_engine_v2/part_005.inc tests/opening_oricorio_dialga_no_lock_tests.cpp tests/opening_oricorio_dialga_payability_tests.cpp
+          git add CMakeLists.txt \
+            src/trace_engine_v2/part_005.inc \
+            tests/opening_oricorio_dialga_no_lock_tests.cpp \
+            tests/opening_oricorio_dialga_payability_tests.cpp
           git commit -m 'Require payable no-lock Oricorio-Dialga routes (#792)'
           git push origin HEAD:fix/792-current-v3
           git archive --format=zip HEAD -o issue-792-audit/source.zip
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:

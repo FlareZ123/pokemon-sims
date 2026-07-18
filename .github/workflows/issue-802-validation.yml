@@ -20,6 +20,8 @@ jobs:
 
       - name: Reconcile current main
         run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git fetch origin main
           git merge --no-edit origin/main
 
@@ -62,8 +64,6 @@ jobs:
 
       - name: Commit validated source and remove temporary files
         run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git rm tools/apply_issue_802.py .github/workflows/issue-802-validation.yml
           git add CMakeLists.txt src/trace_engine_v2/part_014c_latias_bench_override.inc tests/check_active_tapu_paid_retreat.cmake
           git commit -m 'Pay Tapu Lele-GX retreat into a ready VSTAR (#802)'

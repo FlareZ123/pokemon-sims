@@ -1,0 +1,29 @@
+name: Clean issue 718 generated artifacts
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  clean:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Remove validation-only files
+        run: |
+          rm -rf build-finalize scripts/__pycache__
+          rm -f results/.simulation_results.csv.m_a_an4_.tmp.lock
+          rm .github/workflows/issue-718-clean-generated.yml
+      - name: Commit cleanup
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Remove validation-only build artifacts"
+          git push origin HEAD:${{ github.head_ref }}

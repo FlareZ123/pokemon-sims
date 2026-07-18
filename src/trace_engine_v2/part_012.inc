@@ -235,14 +235,33 @@
     return true;
   }
 
-  bool play_serena() {
+  bool play_serena(const bool allow_zero_draw_payload_completion = false) {
     if (!supporter_allowed() || hand_count(Card::Serena) == 0) return false;
-    const bool permit_payload = can_play_payload_this_turn() && std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
-    const auto first = choose_discard(permit_payload, true);
-    if (!first) return false;
+    const bool permit_payload = can_play_payload_this_turn() &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    const auto payload_it = std::find_if(state_.hand.begin(), state_.hand.end(), is_payload);
+    // The dedicated completion branch exists to put a Dragon payload in discard now.
+    // Force that printed Serena discard instead of allowing generic low-DCI fodder to
+    // consume the mandatory slot:
+    // https://api.pokemontcg.io/v2/cards/swsh12-164
+    // https://api.pokemontcg.io/v2/cards/sv6-127
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/issues/882
+    const std::optional<Card> first =
+        allow_zero_draw_payload_completion && payload_it != state_.hand.end()
+            ? std::optional<Card>{*payload_it}
+            : choose_discard(permit_payload, true);
+    if (!first || *first == Card::Serena) return false;
+
+    // Build the same deterministic discard plan without committing it. Serena draws
+    // until five only after Serena itself and at least one chosen card leave the hand:
+    // https://api.pokemontcg.io/v2/cards/swsh12-164
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/882
+    const std::vector<Card> original_hand = state_.hand;
+    std::vector<Card> planned_discards{*first};
     remove_one(state_.hand, Card::Serena);
-    state_.discard.push_back(Card::Serena);
-    discard_from_hand(*first, "Serena chosen discard", "R-SERENA-01");
+    remove_one(state_.hand, *first);
     if (scenario_.dci != DciProfile::StrictJit) {
       for (int number = 0; number < 2; ++number) {
         const auto extra = choose_discard(false, true);
@@ -256,4 +275,5 @@
         // https://github.com/FlareZ123/pokemon-sims/issues/852
         const bool can_cycle = *extra == Card::Dipplin || *extra == Card::ErikasInvitation || *extra == Card::Guzma ||
                                *extra == Card::Channeler || *extra == Card::FieldBlower || *extra == Card::ChaoticSwell || *extra == Card::PathToPeak;
-        if (!can_cycle) break;
+        if (!can_cycle || !remove_one(state_.hand, *extra)) break;
+        planned_discards.push_back(*extra);

@@ -317,7 +317,11 @@
     const bool serena_completes_only_missing_axis = need_payload() && !need_regi() && !need_vstar() &&
         !need_energy() && !need_active_vstar() && can_play_payload_this_turn() &&
         hand_count(Card::Serena) > 0 && std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
-    if (serena_completes_only_missing_axis && play_serena()) return;
+    // The dedicated route may accept zero draw because the mandatory Dragon
+    // discard itself completes the final current-turn strict-JIT axis:
+    // https://api.pokemontcg.io/v2/cards/swsh12-164
+    // https://github.com/FlareZ123/pokemon-sims/issues/882
+    if (serena_completes_only_missing_axis && play_serena(true)) return;
 
     // Roseanne's Backup can restore a known discarded Regidrago VSTAR before a
     // payable Item searches and evolves it in the same turn:

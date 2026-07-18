@@ -14,7 +14,10 @@ struct EngineTestAccess {
   static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
   static bool play_mysterious_treasure(Engine& engine) { return engine.play_mysterious_treasure(true); }
   static bool play_quick_ball(Engine& engine) { return engine.play_quick_ball(true); }
-  static bool play_serena(Engine& engine) { return engine.play_serena(); }
+  static bool play_serena(Engine& engine,
+                           const bool allow_zero_draw_payload_completion = false) {
+    return engine.play_serena(allow_zero_draw_payload_completion);
+  }
   static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
   static bool can_play_payload_this_turn(const Engine& engine) {
     return engine.can_play_payload_this_turn();
@@ -211,11 +214,14 @@ void test_serena_remains_a_live_outlet_after_a_final_card_search() {
   state.hand = {sim::Card::MysteriousTreasure, sim::Card::Serena, sim::Card::Dipplin};
   state.deck = {sim::Card::MegaDragonite};
 
-  // Serena's draw mode must discard at least one card. That discard is a real effect
-  // even when the preceding search emptied the deck, so the payload bridge stays live:
+  // Serena's draw mode must discard at least one card. This exact zero-draw
+  // resolution is retained only through the dedicated branch because discarding the
+  // fetched Mega Dragonite ex immediately completes Apex Dragon's final setup axis:
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/swsh12-164
-  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/882
   sim::DeckRecipe recipe = sim::baseline_recipe();
   std::mt19937_64 rng{235};
   sim::Engine engine(scenario, recipe, rng);
@@ -224,8 +230,8 @@ void test_serena_remains_a_live_outlet_after_a_final_card_search() {
 
   expect(sim::EngineTestAccess::play_mysterious_treasure(engine),
          "Serena must remain a valid non-search outlet after the final payload search.");
-  expect(sim::EngineTestAccess::play_serena(engine),
-         "Serena should discard the fetched payload even though no draw card remains.");
+  expect(sim::EngineTestAccess::play_serena(engine, true),
+         "The dedicated Serena completion branch should discard the fetched payload even when no draw card remains.");
   const sim::State& result = sim::EngineTestAccess::state(engine);
   expect(contains(result.discard, sim::Card::MegaDragonite) &&
              contains(result.discarded_this_turn, sim::Card::MegaDragonite),

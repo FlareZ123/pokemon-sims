@@ -179,7 +179,9 @@
 #include "trace_engine_v2/part_celestial_roar_override.inc"
 #include "trace_engine_v2/part_legacy_star_projection_provenance_override.inc"
 #define remove_one remove_one_legacy_star_projection
+#define pokemon_communication_plan pokemon_communication_plan_legacy_star_projection
 #include "trace_engine_v2/part_013_legacy_star_override.inc"
+#undef pokemon_communication_plan
 #undef remove_one
 #define play_gladion play_gladion_prize_payload_original
 #include "trace_engine_v2/part_012_gladion_override.inc"

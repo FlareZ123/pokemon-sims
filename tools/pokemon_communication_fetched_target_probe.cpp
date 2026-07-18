@@ -7,7 +7,7 @@
 
 namespace sim {
 
-struct FetchedTargetProbeAccess {
+struct EngineTestAccess {
   static void set_state(Engine& engine, State state) {
     engine.state_ = std::move(state);
   }
@@ -56,8 +56,8 @@ bool treasure_reproduction() {
   state.hand = {sim::Card::PokemonCommunication, sim::Card::MawileGX,
                 sim::Card::MysteriousTreasure};
   state.deck = {sim::Card::MegaDragonite};
-  sim::FetchedTargetProbeAccess::set_state(engine, std::move(state));
-  sim::FetchedTargetProbeAccess::set_deck_seen(engine);
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
 
   // Communication fetches the deck's only Dragon. The later Mysterious Treasure
   // would discard that fetched Dragon, leaving a known deck with no Psychic or
@@ -65,13 +65,13 @@ bool treasure_reproduction() {
   // Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
   // Trainer no-effect ruling: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
-  const auto plan = sim::FetchedTargetProbeAccess::plan(engine, true);
+  const auto plan = sim::EngineTestAccess::plan(engine, true);
   const bool planned = plan && plan->returned == sim::Card::MawileGX &&
       plan->target == sim::Card::MegaDragonite;
   const bool communication_played =
-      sim::FetchedTargetProbeAccess::play_communication(engine, true);
+      sim::EngineTestAccess::play_communication(engine, true);
   const bool treasure_played =
-      sim::FetchedTargetProbeAccess::play_treasure(engine, true);
+      sim::EngineTestAccess::play_treasure(engine, true);
   std::cout << "treasure_plan=" << planned << '\n'
             << "treasure_communication_played=" << communication_played << '\n'
             << "treasure_followup_played=" << treasure_played << '\n';
@@ -88,8 +88,8 @@ bool quick_ball_reproduction() {
   state.hand = {sim::Card::PokemonCommunication, sim::Card::Dipplin,
                 sim::Card::QuickBall};
   state.deck = {sim::Card::DialgaGX};
-  sim::FetchedTargetProbeAccess::set_state(engine, std::move(state));
-  sim::FetchedTargetProbeAccess::set_deck_seen(engine);
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine);
 
   // Communication fetches the deck's only Basic Pokémon. The later Quick Ball
   // would discard that fetched Basic, leaving only the returned Stage 1 Dipplin in
@@ -98,13 +98,13 @@ bool quick_ball_reproduction() {
   // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
   // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
   // Dipplin: https://api.pokemontcg.io/v2/cards/sv6-127
-  const auto plan = sim::FetchedTargetProbeAccess::plan(engine, true);
+  const auto plan = sim::EngineTestAccess::plan(engine, true);
   const bool planned = plan && plan->returned == sim::Card::Dipplin &&
       plan->target == sim::Card::DialgaGX;
   const bool communication_played =
-      sim::FetchedTargetProbeAccess::play_communication(engine, true);
+      sim::EngineTestAccess::play_communication(engine, true);
   const bool quick_ball_played =
-      sim::FetchedTargetProbeAccess::play_quick_ball(engine, true);
+      sim::EngineTestAccess::play_quick_ball(engine, true);
   std::cout << "quick_ball_plan=" << planned << '\n'
             << "quick_ball_communication_played=" << communication_played << '\n'
             << "quick_ball_followup_played=" << quick_ball_played << '\n';

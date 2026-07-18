@@ -42,7 +42,18 @@ jobs:
         run: ctest --test-dir build --output-on-failure
 
       - name: Run focused warning-clean regression
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror tests/opening_oricorio_dialga_lock_tests.cpp -o build/issue-674-focused && ./build/issue-674-focused
+        shell: bash
+        run: |
+          mkdir -p issue-674-audit
+          set +e
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror tests/opening_oricorio_dialga_lock_tests.cpp -o build/issue-674-focused > issue-674-audit/focused.log 2>&1
+          status=$?
+          if [ "$status" -eq 0 ]; then
+            ./build/issue-674-focused >> issue-674-audit/focused.log 2>&1
+            status=$?
+          fi
+          cat issue-674-audit/focused.log
+          exit "$status"
 
       - name: Run focused UBSan regression
         run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=undefined -fno-omit-frame-pointer tests/opening_oricorio_dialga_lock_tests.cpp -o build/issue-674-ubsan && ./build/issue-674-ubsan
@@ -50,8 +61,6 @@ jobs:
       - name: Run three independent simulate-this passes
         shell: bash
         run: |
-          mkdir -p issue-674-audit
-          # Trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
           ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-674-audit/trace-1.txt
           ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee issue-674-audit/trace-2.txt
           ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee issue-674-audit/trace-3.txt

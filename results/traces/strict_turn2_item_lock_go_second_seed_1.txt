@@ -1,6 +1,6 @@
 Seed: 1 | first-ready turn: 2 | setup result: success
 ===== SIMULATE THIS =====
-Scenario: strict-jit/go-second | DCI: strict-JIT | Locks: none
+Scenario: strict-jit-turn2-item-lock/go-second | DCI: strict-JIT | Locks: turn-two Item lock
 Mulligans: 1
 Opening player-known state: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Grass Energy, Hisuian Heavy Ball, Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127 | Discard=(none)
 DEBUG ONLY: prizes=Tate & Liza, Regidrago V, Gladion, Tapu Lele-GX, Regidrago VSTAR, Grass Energy. Policy may use them only after a legal deck or Prize inspection.
@@ -21,7 +21,7 @@ T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
 T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
 T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
 T2 | BENCH | rules: R-GAME-BENCH | Latias ex from hand.
-T2 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dialga-GX.
+T2 | LEGACY STAR | rules: R-RVS-01; R-VSTAR-01 | Discarded top 7: Quick Ball, Field Blower, Dialga-GX, Gladion, Mysterious Treasure, Grass Energy, Forest Seal Stone; recovered: Crispin.
 T2 | RETREAT | rules: R-LATIAS-01; R-GAME-RETREAT | Latias ex gives the Basic Active no Retreat Cost; promoted the best-powered Benched Regidrago VSTAR.
-T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Tapu Lele-GX [-]; Tapu Lele-GX [-]; Latias ex [-] | Hand=Professor Burnet, Dipplin TWM 127, Professor Turo's Scenario, Fire Energy | Discard=Steven's Resolve, Crispin, Brilliant Blender, Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dialga-GX
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Tapu Lele-GX [-]; Tapu Lele-GX [-]; Latias ex [-] | Hand=Professor Burnet, Brilliant Blender, Dipplin TWM 127, Professor Turo's Scenario, Fire Energy, Crispin | Discard=Steven's Resolve, Quick Ball, Field Blower, Dialga-GX, Gladion, Mysterious Treasure, Grass Energy, Forest Seal Stone
 T2 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

@@ -1,4 +1,3 @@
-
 Seed: 20 | first-ready turn: 2 | setup result: success
 ===== SIMULATE THIS =====
 Scenario: strict-jit-rulebox-ability-lock/go-second | DCI: strict-JIT | Locks: full Rule Box Ability lock

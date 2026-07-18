@@ -1,6 +1,6 @@
 {
   "matrix_seed": 20260705,
-  "simulator_policy_source_sha256": "e34c45aac1557ed7a743ed9094d2e61954d3574768a919a5101eba35a1c313f1",
+  "simulator_policy_source_sha256": "0d1eef076534f26e785de7a422f7ce0769efc91690fe1fbb98ac7b4ba8bb5c05",
   "traces": [
     {
       "deadline": 3,
@@ -16,15 +16,15 @@
     },
     {
       "deadline": 2,
-      "file": "matchup_flex_go_second_seed_3.txt",
+      "file": "matchup_flex_go_second_seed_1.txt",
       "scenario": "matchup-flex-jit/go-second",
-      "seed": 3
+      "seed": 1
     },
     {
       "deadline": 3,
-      "file": "strict_turn2_item_lock_go_second_seed_2.txt",
+      "file": "strict_turn2_item_lock_go_second_seed_1.txt",
       "scenario": "strict-jit-turn2-item-lock/go-second",
-      "seed": 2
+      "seed": 1
     },
     {
       "deadline": 3,

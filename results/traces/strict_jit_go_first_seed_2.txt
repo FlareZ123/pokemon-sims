@@ -1,4 +1,3 @@
-
 Seed: 2 | first-ready turn: 3 | setup result: success
 ===== SIMULATE THIS =====
 Scenario: strict-jit/go-first | DCI: strict-JIT | Locks: none

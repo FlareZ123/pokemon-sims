@@ -15,7 +15,7 @@ jobs:
   validate-and-finalize:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/792-current-v3'
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:
@@ -64,6 +64,23 @@ jobs:
             tests/opening_oricorio_dialga_payability_tests.cpp -o build/issue-792-ubsan
           UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ./build/issue-792-ubsan
 
+      - name: Regenerate source-bound setup evidence
+        shell: bash
+        run: |
+          # Source-bound generator: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
+          # Provenance contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/baseline_provenance.py
+          python3 scripts/regenerate_setup_baselines.py \
+            --exe build/regidrago_sim \
+            --out-dir results \
+            --max-seed 5000 \
+            --trials 100000 \
+            --matrix-seed 20260705
+          python3 scripts/update_setup_docs.py --repo-root .
+          python3 tests/setup_report_contract_tests.py
+          python3 tests/update_setup_docs_tests.py
+          cp results/simulation_results.csv issue-792-audit/t2_t3_matrix.csv
+          cp results/baseline_manifest.json issue-792-audit/baseline_manifest.json
+
       - name: Record patched full suite
         shell: bash
         run: |
@@ -96,7 +113,7 @@ jobs:
           print(f'Current-main failure parity confirmed: {baseline}')
           PY
 
-      - name: Run three traces and matrix
+      - name: Run three traces
         shell: bash
         run: |
           set -o pipefail
@@ -105,7 +122,6 @@ jobs:
           ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-792-audit/trace-1.txt
           ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 2 | tee issue-792-audit/trace-2.txt
           ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee issue-792-audit/trace-3.txt
-          ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-792-audit/t2_t3_matrix.csv
 
       - name: Require validation base is still current main
         shell: bash
@@ -119,11 +135,11 @@ jobs:
       - name: Finalize permanent fix
         shell: bash
         run: |
+          rm -f .update-setup-docs.lock .results.lock
           git rm tools/apply_issue_792_v3.py tools/apply_issue_792_unified.py .github/workflows/issue-792-v3.yml
-          git add \
-            src/trace_engine_v2/part_005.inc \
-            tests/opening_oricorio_dialga_no_lock_tests.cpp \
-            tests/opening_oricorio_dialga_payability_tests.cpp
+          git add src/trace_engine_v2/part_005.inc tests/opening_oricorio_dialga_no_lock_tests.cpp tests/opening_oricorio_dialga_payability_tests.cpp \
+            README.md docs/REPORT.md docs/TRACE_AUDIT.md results/baseline_manifest.json results/simulation_results.csv
+          git add -A results/traces
           git commit -m 'Require payable no-lock Oricorio-Dialga routes (#792)'
           git push origin HEAD:fix/792-current-v3
           git archive --format=zip HEAD -o issue-792-audit/source.zip

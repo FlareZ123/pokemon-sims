@@ -3,12 +3,18 @@ from __future__ import annotations
 import csv
 import importlib.util
 import json
+import sys
+import tempfile
 from collections import Counter
 from pathlib import Path
 from types import ModuleType
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.baseline_provenance import simulator_policy_source_digest
+
 GENERATOR_PATH = REPO_ROOT / "scripts" / "update_setup_docs.py"
 MANIFEST_PATH = REPO_ROOT / "results" / "baseline_manifest.json"
 CSV_PATH = REPO_ROOT / "results" / "simulation_results.csv"
@@ -57,6 +63,30 @@ def assert_duplicate_scenario_is_rejected(
         raise AssertionError("Duplicate scenario rows must fail the setup report provenance contract.")
 
 
+def assert_aggregate_driver_is_hashed() -> None:
+    # part_016 contains aggregate scenario ordering, seed derivation, simulate(), and
+    # CSV serialization. Mutating it must invalidate the recorded baseline digest:
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
+    # https://github.com/FlareZ123/pokemon-sims/issues/642
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        repo_root = Path(temporary_directory)
+        source_dir = repo_root / "src" / "trace_engine_v2"
+        source_dir.mkdir(parents=True)
+        (repo_root / "CMakeLists.txt").write_text(
+            "add_executable(regidrago_sim src/regidrago_sim.cpp)\n", encoding="utf-8"
+        )
+        (repo_root / "src" / "regidrago_sim.cpp").write_text(
+            '#include "trace_engine_v2/part_016.inc"\n', encoding="utf-8"
+        )
+        aggregate_driver = source_dir / "part_016.inc"
+        aggregate_driver.write_text("seed + 104729ULL * index\n", encoding="utf-8")
+        initial_digest = simulator_policy_source_digest(repo_root)
+        aggregate_driver.write_text("seed + 104723ULL * index\n", encoding="utf-8")
+        changed_digest = simulator_policy_source_digest(repo_root)
+        if initial_digest == changed_digest:
+            raise AssertionError("Aggregate driver changes must invalidate baseline provenance.")
+
+
 def main() -> int:
     generator = load_generator()
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
@@ -66,6 +96,20 @@ def main() -> int:
         fieldnames = list(reader.fieldnames or [])
     if not rows or not fieldnames:
         raise AssertionError("results/simulation_results.csv must contain the generated matrix.")
+
+    assert_aggregate_driver_is_hashed()
+
+    # The fixed-seed artifact must be regenerated whenever any aggregate simulator
+    # input changes, including the scenario loop in part_016:
+    # https://github.com/FlareZ123/pokemon-sims/issues/642
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
+    expected_source_digest = simulator_policy_source_digest(REPO_ROOT)
+    recorded_source_digest = str(manifest.get("simulator_policy_source_sha256", ""))
+    if recorded_source_digest != expected_source_digest:
+        raise AssertionError(
+            "Simulator inputs changed after the published setup baseline. Regenerate "
+            "results/simulation_results.csv and results/baseline_manifest.json before merging."
+        )
 
     # The documented aggregate command and manifest define one trial count for every row:
     # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test

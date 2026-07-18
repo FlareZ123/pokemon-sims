@@ -101,9 +101,10 @@ if(impossible_deadline_message EQUAL -1)
   message(FATAL_ERROR "find-ready-impossible-deadline: missing clear diagnostic\n${impossible_deadline_error}")
 endif()
 
-# A find-ready deadline is part of the search predicate. Seed 2 first becomes
-# ready on T3, so the search must continue to seed 6, which is ready on T2:
+# A find-ready deadline is part of the search predicate. Seeds 1 and 2 first
+# become ready on T3, so the search must continue to seed 3, which is ready on T2:
 # https://github.com/FlareZ123/pokemon-sims/issues/641
+# https://github.com/FlareZ123/pokemon-sims/issues/898
 # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
 execute_process(
   COMMAND "${SIMULATOR}" --find-ready 1 --start-seed 1
@@ -115,9 +116,9 @@ execute_process(
 if(NOT find_deadline_result EQUAL 0)
   message(FATAL_ERROR "find-ready-deadline: expected exit 0, got ${find_deadline_result}\nstdout:\n${find_deadline_output}\nstderr:\n${find_deadline_error}")
 endif()
-string(FIND "${find_deadline_output}" "Seed: 6 | first-ready turn: 2" find_seed_six)
-if(find_seed_six EQUAL -1)
-  message(FATAL_ERROR "find-ready-deadline: qualifying seed 6 was not reported\n${find_deadline_output}")
+string(FIND "${find_deadline_output}" "Seed: 3 | first-ready turn: 2" find_seed_three)
+if(find_seed_three EQUAL -1)
+  message(FATAL_ERROR "find-ready-deadline: qualifying seed 3 was not reported\n${find_deadline_output}")
 endif()
 string(FIND "${find_deadline_output}" "Seed: 2 |" find_late_seed_two)
 if(NOT find_late_seed_two EQUAL -1)

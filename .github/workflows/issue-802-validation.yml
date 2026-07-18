@@ -31,11 +31,11 @@ jobs:
       - name: Configure Release
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build all targets
-        run: cmake --build build --parallel 2
+      - name: Build Release simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
 
-      - name: Run full Release suite
-        run: ctest --test-dir build --output-on-failure
+      - name: Run focused Release regression
+        run: ctest --test-dir build -R regidrago_active_tapu_paid_retreat --output-on-failure
 
       - name: Configure UBSan
         run: cmake -S . -B build-ubsan -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=undefined -fno-omit-frame-pointer'

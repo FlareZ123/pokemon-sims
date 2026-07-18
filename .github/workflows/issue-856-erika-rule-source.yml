@@ -1,0 +1,167 @@
+name: Issue 856 Erika Rule Source
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-856-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-finalize:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/856-erika-rule-source-registry'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/856-erika-rule-source-registry
+          fetch-depth: 0
+
+      - name: Reconcile current main
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Apply isolated source-registry fix
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          erika_url = "https://api.pokemontcg.io/v2/cards/sv3pt5-160"
+          issue_url = "https://github.com/FlareZ123/pokemon-sims/issues/856"
+
+          wrapper = Path("src/regidrago_sim.cpp")
+          wrapper_text = wrapper.read_text(encoding="utf-8")
+          wrapper_needle = (
+              "// Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76\n"
+              "// Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146\n"
+          )
+          wrapper_replacement = (
+              "// Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76\n"
+              f"// Erika's Invitation: {erika_url}\n"
+              f"// Confirmed source-registry fix: {issue_url}\n"
+              "// Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146\n"
+          )
+          if wrapper_needle not in wrapper_text:
+              raise SystemExit("Unable to locate source-wrapper registry insertion point")
+          wrapper.write_text(wrapper_text.replace(wrapper_needle, wrapper_replacement, 1), encoding="utf-8")
+
+          rule_sources = Path("docs/RULE_SOURCES.md")
+          rule_text = rule_sources.read_text(encoding="utf-8")
+          rule_needle = (
+              "| Latias ex — Skyliner | https://api.pokemontcg.io/v2/cards/sv8-76 |\n"
+              "| Hisuian Heavy Ball | https://api.pokemontcg.io/v2/cards/swsh10-146 |\n"
+          )
+          rule_replacement = (
+              "| Latias ex — Skyliner | https://api.pokemontcg.io/v2/cards/sv8-76 |\n"
+              f"| Erika's Invitation — opponent-dependent effect is deliberately inert in the single-player model | {erika_url} |\n"
+              "| Hisuian Heavy Ball | https://api.pokemontcg.io/v2/cards/swsh10-146 |\n"
+          )
+          if rule_needle not in rule_text:
+              raise SystemExit("Unable to locate exact-print registry insertion point")
+          rule_sources.write_text(rule_text.replace(rule_needle, rule_replacement, 1), encoding="utf-8")
+
+          contract = Path("tests/card_audit_contract_tests.py")
+          contract_text = contract.read_text(encoding="utf-8")
+          path_needle = 'DOC_PATH = REPO_ROOT / "docs" / "CARD_AUDIT.md"\n'
+          path_replacement = (
+              'DOC_PATH = REPO_ROOT / "docs" / "CARD_AUDIT.md"\n'
+              'RULE_SOURCES_PATH = REPO_ROOT / "docs" / "RULE_SOURCES.md"\n'
+              'SOURCE_WRAPPER_PATH = REPO_ROOT / "src" / "regidrago_sim.cpp"\n'
+          )
+          if path_needle not in contract_text:
+              raise SystemExit("Unable to locate contract path insertion point")
+          contract_text = contract_text.replace(path_needle, path_replacement, 1)
+
+          constant_needle = 'ARCHIVE_SHA256 = "3444c74e47cdb92d83ba760e9eeefa8bbaedd9d7f396068c0e1ed390a686af08"\n'
+          constant_replacement = (
+              constant_needle
+              + f'ERIKA_SOURCE_URL = "{erika_url}"\n'
+          )
+          if constant_needle not in contract_text:
+              raise SystemExit("Unable to locate contract constant insertion point")
+          contract_text = contract_text.replace(constant_needle, constant_replacement, 1)
+
+          main_needle = '    documented = DOC_PATH.read_text(encoding="utf-8")\n\n'
+          main_replacement = (
+              '    documented = DOC_PATH.read_text(encoding="utf-8")\n'
+              '    rule_sources = RULE_SOURCES_PATH.read_text(encoding="utf-8")\n'
+              '    source_wrapper = SOURCE_WRAPPER_PATH.read_text(encoding="utf-8")\n\n'
+              "    # Erika's printed opponent-hand condition is the source for its deliberately inert\n"
+              "    # single-player treatment. Keep that exact print in both declared registries:\n"
+              f"    # {erika_url}\n"
+              f"    # {issue_url}\n"
+              '    for registry_name, registry in (("docs/RULE_SOURCES.md", rule_sources),\n'
+              '                                     ("src/regidrago_sim.cpp", source_wrapper)):\n'
+              '        if ERIKA_SOURCE_URL not in registry:\n'
+              '            raise AssertionError(f"{registry_name} must register Erika\'s Invitation exact print.")\n\n'
+          )
+          if main_needle not in contract_text:
+              raise SystemExit("Unable to locate contract assertion insertion point")
+          contract.write_text(contract_text.replace(main_needle, main_replacement, 1), encoding="utf-8")
+          PY
+
+      - name: Validate documentation contracts
+        run: |
+          python -m py_compile tests/card_audit_contract_tests.py
+          python tests/card_audit_contract_tests.py
+          python tests/card_audit_category_contract_tests.py
+          python tests/setup_report_contract_tests.py
+
+      - name: Verify direct source registration
+        shell: bash
+        run: |
+          test "$(grep -c 'https://api.pokemontcg.io/v2/cards/sv3pt5-160' src/regidrago_sim.cpp)" -eq 2
+          test "$(grep -c 'https://api.pokemontcg.io/v2/cards/sv3pt5-160' docs/RULE_SOURCES.md)" -eq 1
+          test "$(grep -c 'https://api.pokemontcg.io/v2/cards/sv3pt5-160' tests/card_audit_contract_tests.py)" -eq 1
+
+      - name: Configure Release build
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Release
+        run: bash .github/scripts/capture-build.sh build build.log
+
+      - name: Run full Release suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          mkdir -p issue-856-audit
+          # Trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 --require-ready-by 3 | tee issue-856-audit/strict_go_second_seed_3.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-856-audit/flex_go_second_seed_3.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee issue-856-audit/item_lock_go_second_seed_2.txt
+
+      - name: Generate canonical T2 T3 matrix
+        run: |
+          # Aggregate specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-856-audit/t2_t3_matrix.csv
+
+      - name: Commit validated fix and remove temporary workflow
+        shell: bash
+        run: |
+          git rm .github/workflows/issue-856-erika-rule-source.yml
+          git add src/regidrago_sim.cpp docs/RULE_SOURCES.md tests/card_audit_contract_tests.py
+          git commit -m "Register Erika rule source and contract (#856)"
+          git push origin HEAD:fix/856-erika-rule-source-registry
+          git archive --format=zip HEAD -o issue-856-audit/issue-856-source.zip
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-856-erika-rule-source
+          path: |
+            issue-856-audit
+            build/Testing
+            build.log
+          if-no-files-found: warn

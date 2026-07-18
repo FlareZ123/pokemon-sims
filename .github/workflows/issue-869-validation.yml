@@ -34,7 +34,7 @@ jobs:
 
       - name: Apply permanent source changes
         run: |
-          python scripts/apply_issue_869.py
+          python scripts/apply_issue_869_unified.py
           python scripts/fix_issue_869_active_turn.py
           python scripts/fix_issue_869_generated_test.py
 
@@ -44,7 +44,7 @@ jobs:
           bash .github/scripts/capture-build.sh build build.log
 
       - name: Run focused Release regression
-        run: ctest --test-dir build --output-on-failure -R '^regidrago_late_steven_t3_compression$'
+        run: ctest --test-dir build --output-on-failure -R '^regidrago_late_steven_t3_compression_tests$'
 
       - name: Capture patched full-suite result
         shell: bash
@@ -58,11 +58,11 @@ jobs:
       - name: Run focused warning-clean UBSan regression
         shell: bash
         run: |
-          cmake -S . -B build-ubsan -DCMAKE_BUILD_TYPE=Debug \
-            -DCMAKE_CXX_FLAGS='-fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -Wall -Wextra -Wpedantic -Wconversion -Wshadow' \
-            -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=undefined'
-          cmake --build build-ubsan --target regidrago_late_steven_t3_compression_tests --parallel 2
-          UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ./build-ubsan/regidrago_late_steven_t3_compression_tests 2>&1 | tee issue-869-audit/focused-ubsan.log
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror \
+            -fsanitize=undefined -fno-omit-frame-pointer \
+            tests/late_steven_t3_compression_tests.cpp -o build/issue-869-focused
+          UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+            ./build/issue-869-focused 2>&1 | tee issue-869-audit/focused-ubsan.log
 
       - name: Run three independent simulate-this passes
         shell: bash
@@ -129,9 +129,10 @@ jobs:
         run: |
           git rm .github/workflows/issue-869-validation.yml \
             scripts/apply_issue_869.py \
+            scripts/apply_issue_869_unified.py \
             scripts/fix_issue_869_active_turn.py \
             scripts/fix_issue_869_generated_test.py
-          git add CMakeLists.txt \
+          git add \
             src/trace_engine_v2/part_010_late_steven_override.inc \
             src/trace_engine_v2/part_tate_blender_attachment_override.inc \
             src/trace_engine_v2/part_010_steven_crispin_override.inc \

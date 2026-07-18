@@ -1,0 +1,62 @@
+name: Regenerate combined 942 and 944 baselines
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    if: github.head_ref == 'audit/942-944-integration'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build combined policy outside the source tree
+        run: |
+          cmake -S . -B "$RUNNER_TEMP/build" -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build "$RUNNER_TEMP/build" --parallel 2
+      - name: Run focused combined regressions
+        run: |
+          "$RUNNER_TEMP/build/regidrago_unified_tests" wonder_tag_redundant_burnet_tests
+          "$RUNNER_TEMP/build/regidrago_unified_tests" legacy_star_post_powerglass_vessel_tests
+      - name: Run three independent combined traces
+        run: |
+          "$RUNNER_TEMP/build/regidrago_sim" --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee "$RUNNER_TEMP/trace-1.txt"
+          "$RUNNER_TEMP/build/regidrago_sim" --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee "$RUNNER_TEMP/trace-2.txt"
+          "$RUNNER_TEMP/build/regidrago_sim" --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee "$RUNNER_TEMP/trace-3.txt"
+          # Trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      - name: Regenerate source-bound baselines
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe "$RUNNER_TEMP/build/regidrago_sim" --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          # Probability contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#what-the-probability-means
+      - name: Validate complete combined Release suite
+        run: ctest --test-dir "$RUNNER_TEMP/build" --parallel 4 --output-on-failure
+      - name: Commit combined generated evidence
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          git checkout origin/main -- scripts/__pycache__/baseline_provenance.cpython-312.pyc
+          git clean -fd scripts/__pycache__
+          rm .github/workflows/integration-942-944-regenerate.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add docs/REPORT.md results/baseline_manifest.json results/simulation_results.csv .github/workflows/integration-942-944-regenerate.yml
+          git commit -m "Regenerate combined issue 942 and 944 evidence"
+          git push origin "HEAD:${HEAD_REF}"
+      - name: Upload combined traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: combined-942-944-traces
+          path: ${{ runner.temp }}/trace-*.txt
+          if-no-files-found: warn

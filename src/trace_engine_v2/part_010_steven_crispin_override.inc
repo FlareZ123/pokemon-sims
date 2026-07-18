@@ -30,5 +30,6 @@
   bool should_play_steven() const {
     return (should_play_steven_original() &&
             !steven_should_yield_to_crispin_mysterious_route()) ||
-        late_steven_is_only_basic_connector();
+        late_steven_is_only_basic_connector() ||
+        late_steven_has_known_t3_compression_route();
   }

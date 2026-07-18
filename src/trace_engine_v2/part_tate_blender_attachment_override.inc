@@ -1,4 +1,24 @@
   bool attach_manual() {
+    if (late_steven_has_known_t3_compression_route() && !state_.manual_energy_used &&
+        hand_count(Card::Fire) > 0) {
+      for (Pokemon& pokemon : state_.bench) {
+        if (pokemon.card != Card::RegidragoV || pokemon.entered_turn >= state_.turn ||
+            pokemon.grass != 1 || pokemon.fire != 0) {
+          continue;
+        }
+        remove_one(state_.hand, Card::Fire);
+        ++pokemon.fire;
+        state_.manual_energy_used = true;
+        // Preserve Grass for the next turn of the exact Steven compression route:
+        // https://api.pokemontcg.io/v2/cards/sm7-145
+        // https://api.pokemontcg.io/v2/cards/swsh12-136
+        // https://api.pokemontcg.io/v2/cards/sm6-113
+        // https://github.com/FlareZ123/pokemon-sims/issues/869
+        trace("ATTACH", "R-GAME-ENERGY; R-STEVEN-01; R-RVS-01; P-DCI-01",
+              "Fire Energy manually to the prior-turn Regidrago V for the known T3 Steven route.");
+        return true;
+      }
+    }
     const int supporters_in_hand = static_cast<int>(
         std::count_if(state_.hand.begin(), state_.hand.end(), is_supporter));
     const bool only_tate_supporter_held =

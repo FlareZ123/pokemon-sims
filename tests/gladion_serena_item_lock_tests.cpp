@@ -142,11 +142,11 @@ void test_dead_crispin_preserves_critical_prized_energy_gladion() {
                 sim::Card::ProfessorBurnet, sim::Card::RegidragoVstar};
   state.prizes = {sim::Card::Fire, sim::Card::Lusamine, sim::Card::Dipplin,
                   sim::Card::MawileGX, sim::Card::Guzma, sim::Card::Powerglass};
-  state.deck = {sim::Card::Grass, sim::Card::MegaDragonite, sim::Card::Dragapult};
+  state.deck = {sim::Card::MegaDragonite, sim::Card::Dragapult};
   sim::EngineTestAccess::set_state(engine, std::move(state));
   sim::EngineTestAccess::set_deck_seen(engine);
 
-  // Crispin cannot supply the missing Fire after K1 proves no Fire remains in deck.
+  // Crispin cannot supply the missing Fire after K1 proves no Basic Energy remains.
   // Gladion must retain access to that known prized Energy axis:
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://api.pokemontcg.io/v2/cards/sm4-95

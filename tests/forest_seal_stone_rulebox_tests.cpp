@@ -181,13 +181,15 @@ void test_field_blower_removes_path_style_rule_box_lock() {
   sim::State state;
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0, sim::Tool::None};
-  state.hand = {sim::Card::FieldBlower};
+  state.hand = {sim::Card::FieldBlower, sim::Card::RegidragoVstar};
   sim::EngineTestAccess::set_state(engine, std::move(state));
 
-  // Field Blower may discard a Stadium in play. Once Path to the Peak leaves play,
-  // its Rule Box Ability suppression no longer applies:
+  // Field Blower may discard a Stadium in play. The held VSTAR can legally evolve
+  // the prior-turn Regidrago V, so removing Path unlocks its unused Legacy Star:
   // https://api.pokemontcg.io/v2/cards/sm2-125
   // https://api.pokemontcg.io/v2/cards/swsh6-148
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://www.pokemon.com/us/pokemon-tcg/rules
   if (sim::EngineTestAccess::ability_available(engine, sim::Card::TapuLeleGX)) {
     throw std::runtime_error("Wonder Tag should begin suppressed by the modeled Path lock.");
   }

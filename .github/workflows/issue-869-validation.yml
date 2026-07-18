@@ -31,6 +31,7 @@ jobs:
           git fetch origin main
           git merge --no-edit origin/main
           git rev-parse HEAD > /tmp/issue-869-baseline-sha
+          mkdir -p issue-869-audit
 
       - name: Apply permanent source changes
         run: |
@@ -44,12 +45,18 @@ jobs:
           bash .github/scripts/capture-build.sh build build.log
 
       - name: Run focused Release regression
-        run: ctest --test-dir build --output-on-failure -R '^regidrago_late_steven_t3_compression_tests$'
+        shell: bash
+        run: |
+          set -o pipefail
+          c++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror \
+            tests/late_steven_t3_compression_tests.cpp -o build/issue-869-focused-release
+          ./build/issue-869-focused-release 2>&1 | tee issue-869-audit/focused-release.log
+          ctest --test-dir build --output-on-failure -R '^regidrago_late_steven_t3_compression_tests$' \
+            2>&1 | tee issue-869-audit/focused-unified.log
 
       - name: Capture patched full-suite result
         shell: bash
         run: |
-          mkdir -p issue-869-audit
           set +e
           ctest --test-dir build --output-on-failure --output-junit "$GITHUB_WORKSPACE/issue-869-audit/patched-ctest.xml" 2>&1 | tee issue-869-audit/patched-ctest.log
           printf '%s\n' "${PIPESTATUS[0]}" > issue-869-audit/patched-ctest.status

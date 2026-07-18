@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import subprocess
 from pathlib import Path
 
 
@@ -32,29 +31,4 @@ def simulator_policy_source_digest(repo_root: Path) -> str:
         digest.update(b"\0")
         digest.update(path.read_bytes())
         digest.update(b"\0")
-    value = digest.hexdigest()
-    print(f"SIMULATOR_POLICY_SOURCE_SHA256={value}")
-
-    executable = Path.cwd() / "regidrago_sim"
-    if (repo_root / "results" / "baseline_manifest.json").is_file() and executable.is_file():
-        completed = subprocess.run(
-            [
-                str(executable),
-                "--simulate-this",
-                "--scenario",
-                "strict-jit/go-first",
-                "--seed",
-                "1",
-                "--require-ready-by",
-                "3",
-            ],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        print("ISSUE_946_TRACE_BEGIN")
-        print(completed.stdout)
-        print(completed.stderr)
-        print(f"ISSUE_946_TRACE_EXIT={completed.returncode}")
-        print("ISSUE_946_TRACE_END")
-    return value
+    return digest.hexdigest()

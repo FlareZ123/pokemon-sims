@@ -255,3 +255,14 @@ set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)
 add_executable(regidrago_gladion_revealed_axis_tests tests/gladion_revealed_axis_tests.cpp)
 target_compile_options(regidrago_gladion_revealed_axis_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 add_test(NAME regidrago_gladion_revealed_axis COMMAND regidrago_gladion_revealed_axis_tests)
+
+# Exact post-exchange continuation regression for Pokémon Communication:
+# https://api.pokemontcg.io/v2/cards/sm9-152
+# https://github.com/FlareZ123/pokemon-sims/issues/808
+add_executable(regidrago_pokemon_communication_post_exchange_target_tests
+  tests/pokemon_communication_post_exchange_target_tests.cpp)
+target_compile_options(regidrago_pokemon_communication_post_exchange_target_tests
+  PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+add_test(NAME regidrago_pokemon_communication_post_exchange_targets
+  COMMAND regidrago_pokemon_communication_post_exchange_target_tests)
+

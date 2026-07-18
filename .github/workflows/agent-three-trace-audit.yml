@@ -1,0 +1,68 @@
+name: Agent Three Trace Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'audit/20260718-agent-three-traces'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out audit branch
+        uses: actions/checkout@v4
+        with:
+          ref: audit/20260718-agent-three-traces
+          fetch-depth: 0
+
+      - name: Reconcile latest main
+        run: |
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Configure and build simulator
+        run: |
+          mkdir -p agent-audit
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2 --target regidrago_sim
+
+      - name: Trace 1 matchup-flex turn-two readiness
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee agent-audit/trace-1-matchup-flex-seed-3.txt
+          # Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+
+      - name: Trace 2 turn-two Item-lock readiness
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 2 | tee agent-audit/trace-2-item-lock-seed-2.txt
+          # Lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
+
+      - name: Trace 3 Rule Box-lock readiness
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee agent-audit/trace-3-rulebox-seed-20.txt
+          # Readable-hand contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+
+      - name: Generate canonical matrix
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out agent-audit/t2_t3_matrix.csv
+          # Probability definition: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#what-the-probability-means
+
+      - name: Archive exact reconciled source
+        run: git archive --format=zip HEAD -o agent-audit/source.zip
+
+      - name: Upload audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-three-trace-audit
+          path: agent-audit
+          if-no-files-found: error

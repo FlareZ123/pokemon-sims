@@ -129,6 +129,18 @@
     return true;
   }
 
+  bool promote_ready_benched_vstar() {
+    // Skyliner already makes the Basic Active's Retreat Cost zero. Resolve that
+    // route before the #802 fallback so the same promotion does not spend a Basic
+    // Energy or the turn's manual attachment:
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/issues/905
+    if (retreat_to_benched_vstar_with_latias()) return true;
+    return pay_tapu_retreat_to_ready_benched_vstar();
+  }
+
   void run_turn() {
     trace("POLICY", "P-AXIS-01", "Start: " + state_line());
     play_chaotic_swell();
@@ -193,17 +205,7 @@
       // https://www.pokemon.com/us/pokemon-tcg/rules
       if (!state_.supporter_used && setup_axis_missing()) choose_supporter();
     }
-    // Skyliner already makes the Basic Active's Retreat Cost zero. Resolve that
-    // route before the #802 fallback so the same promotion does not spend a Basic
-    // Energy or the turn's manual attachment:
-    // https://api.pokemontcg.io/v2/cards/sv8-76
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
-    // https://www.pokemon.com/us/pokemon-tcg/rules
-    // https://github.com/FlareZ123/pokemon-sims/issues/905
-    if (!retreat_to_benched_vstar_with_latias() &&
-        !pay_tapu_retreat_to_ready_benched_vstar()) {
-      attach_manual();
-    }
+    if (!promote_ready_benched_vstar()) attach_manual();
     if (need_active_vstar() && !state_.supporter_used) play_tate_switch();
     // Attach only after the final modeled switch decision, while the intended holder
     // is known to remain Active for Powerglass's end-of-turn condition:

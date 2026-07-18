@@ -29,7 +29,6 @@ T3 | DISCARD | rules: R-QB-01 | Dipplin TWM 127 (Quick Ball cost)
 T3 | PLAY ITEM | rules: R-QB-01; R-GAME-ITEM | Searched a Basic Pokémon: Latias ex.
 T3 | BENCH | rules: R-GAME-BENCH | Latias ex from hand.
 T3 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dialga-GX.
-T3 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Tapu Lele-GX for its Retreat Cost.
-T3 | RETREAT | rules: R-GAME-RETREAT | Paid Tapu Lele-GX's one-Energy Retreat Cost and promoted the ready Benched Regidrago VSTAR.
-T3 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Tapu Lele-GX [-]; Tapu Lele-GX [-]; Regidrago V [-]; Latias ex [-] | Hand=Professor Burnet, Professor Turo's Scenario | Discard=Steven's Resolve, Crispin, Quick Ball, Dipplin TWM 127, Brilliant Blender, Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dialga-GX, Fire Energy
+T3 | RETREAT | rules: R-LATIAS-01; R-GAME-RETREAT | Latias ex gives the Basic Active no Retreat Cost; promoted the best-powered Benched Regidrago VSTAR.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Tapu Lele-GX [-]; Tapu Lele-GX [-]; Regidrago V [-]; Latias ex [-] | Hand=Professor Burnet, Professor Turo's Scenario, Fire Energy | Discard=Steven's Resolve, Crispin, Quick Ball, Dipplin TWM 127, Brilliant Blender, Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dialga-GX
 T3 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

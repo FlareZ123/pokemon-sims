@@ -39,8 +39,10 @@ jobs:
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
       - name: Record tested source
+        if: always()
         run: git rev-parse HEAD > tested-head.txt
       - name: Archive exact tested source
+        if: always()
         run: git archive --format=zip --output=source.zip HEAD
       - name: Upload validation evidence
         if: always()

@@ -50,8 +50,10 @@ jobs:
           # Aggregate specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
           ./build/regidrago_sim --trials 100000 --seed 20260705 --out debug-audit/t2_t3_matrix.csv
 
-      - name: Record source commit
-        run: git rev-parse HEAD > debug-audit/source-commit.txt
+      - name: Record exact tested source
+        run: |
+          git rev-parse HEAD > debug-audit/source-commit.txt
+          git archive --format=zip HEAD -o debug-audit/source.zip
 
       - name: Upload validation evidence
         if: always()

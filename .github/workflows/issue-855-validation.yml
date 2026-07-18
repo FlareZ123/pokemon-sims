@@ -11,7 +11,7 @@ jobs:
   validate:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/855-erika-gladion-fallback'
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     steps:
       - name: Check out issue branch
@@ -27,20 +27,31 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git fetch origin main
           git merge --no-edit origin/main
+          mkdir -p issue-855-audit
+
+      - name: Configure baseline Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build baseline repository
+        run: cmake --build build --parallel 2
+
+      - name: Record current-main baseline suite
+        shell: bash
+        run: |
+          set +e
+          set -o pipefail
+          ctest --test-dir build --output-on-failure 2>&1 | tee issue-855-audit/baseline-ctest.log
+          printf '%s\n' "${PIPESTATUS[0]}" > issue-855-audit/baseline-ctest-status.txt
+          exit 0
 
       - name: Apply permanent issue fix
         run: python3 scripts/apply_issue_855.py
 
       - name: Archive exact patched source
         shell: bash
-        run: |
-          mkdir -p issue-855-audit
-          tar --exclude=.git --exclude=build --exclude=issue-855-audit -czf issue-855-audit/source.tar.gz .
+        run: tar --exclude=.git --exclude=build --exclude=issue-855-audit -czf issue-855-audit/source.tar.gz .
 
-      - name: Configure Release
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-
-      - name: Build repository
+      - name: Build patched repository
         run: cmake --build build --parallel 2
 
       - name: Run focused regression
@@ -53,11 +64,37 @@ jobs:
             tests/gladion_erika_low_impact_tests.cpp -o build/issue-855-focused
           ./build/issue-855-focused
 
-      - name: Run full Release suite
+      - name: Record patched full Release suite
         shell: bash
         run: |
+          set +e
           set -o pipefail
-          ctest --test-dir build --output-on-failure 2>&1 | tee issue-855-audit/ctest.log
+          ctest --test-dir build --output-on-failure 2>&1 | tee issue-855-audit/patched-ctest.log
+          printf '%s\n' "${PIPESTATUS[0]}" > issue-855-audit/patched-ctest-status.txt
+          exit 0
+
+      - name: Prove no full-suite regression
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          def failures(path: str) -> list[str]:
+              text = Path(path).read_text(encoding="utf-8")
+              marker = "The following tests FAILED:"
+              if marker not in text:
+                  return []
+              section = text.split(marker, 1)[1]
+              return sorted(re.findall(r"^\s*\d+ - ([^ ]+) \(", section, re.MULTILINE))
+
+          baseline = failures("issue-855-audit/baseline-ctest.log")
+          patched = failures("issue-855-audit/patched-ctest.log")
+          print(f"baseline failures: {baseline}")
+          print(f"patched failures: {patched}")
+          if patched != baseline:
+              raise SystemExit("Issue 855 changed the current-main CTest failure set.")
+          PY
 
       - name: Run three independent simulate-this passes
         shell: bash

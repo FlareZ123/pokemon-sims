@@ -35,6 +35,7 @@ jobs:
       - name: Apply permanent source changes
         run: |
           python scripts/apply_issue_869.py
+          python scripts/fix_issue_869_active_turn.py
           python scripts/fix_issue_869_generated_test.py
 
       - name: Configure and build patched Release
@@ -117,12 +118,15 @@ jobs:
       - name: Finalize permanent branch
         shell: bash
         run: |
-          git rm .github/workflows/issue-869-validation.yml scripts/apply_issue_869.py scripts/fix_issue_869_generated_test.py
+          git rm .github/workflows/issue-869-validation.yml \
+            scripts/apply_issue_869.py \
+            scripts/fix_issue_869_active_turn.py \
+            scripts/fix_issue_869_generated_test.py
           git add CMakeLists.txt \
             src/trace_engine_v2/part_010_late_steven_override.inc \
             src/trace_engine_v2/part_tate_blender_attachment_override.inc \
             src/trace_engine_v2/part_010_steven_crispin_override.inc \
-            src/trace_engine_v2/part_014c.inc \
+            src/trace_engine_v2/part_014c_latias_bench_override.inc \
             src/trace_engine_v2/part_011.inc \
             tests/late_steven_t3_compression_tests.cpp
           git commit -m 'Use late Steven for the known T3 compression route (#869)'

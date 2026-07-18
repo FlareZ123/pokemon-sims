@@ -1,0 +1,183 @@
+[  0%] Building CXX object CMakeFiles/regidrago_sim.dir/src/regidrago_sim.cpp.o
+[  1%] Building CXX object CMakeFiles/regidrago_policy_tests.dir/tests/regidrago_policy_tests.cpp.o
+[  2%] Linking CXX executable regidrago_sim
+[  2%] Built target regidrago_sim
+[  2%] Building CXX object CMakeFiles/regidrago_tier2_tests.dir/tests/regidrago_tier2_tests.cpp.o
+[  3%] Linking CXX executable regidrago_policy_tests
+[  3%] Built target regidrago_policy_tests
+[  4%] Building CXX object CMakeFiles/regidrago_fss_rulebox_tests.dir/tests/forest_seal_stone_rulebox_tests.cpp.o
+[  5%] Linking CXX executable regidrago_tier2_tests
+[  5%] Built target regidrago_tier2_tests
+[  6%] Building CXX object CMakeFiles/regidrago_fss_crispin_priority_tests.dir/tests/fss_crispin_priority_tests.cpp.o
+[  7%] Linking CXX executable regidrago_fss_rulebox_tests
+[  7%] Built target regidrago_fss_rulebox_tests
+[  8%] Building CXX object CMakeFiles/regidrago_arven_fss_rulebox_tests.dir/tests/arven_fss_rulebox_tests.cpp.o
+[  8%] Linking CXX executable regidrago_fss_crispin_priority_tests
+[  8%] Built target regidrago_fss_crispin_priority_tests
+[  9%] Building CXX object CMakeFiles/regidrago_known_dead_payload_tests.dir/tests/known_dead_payload_tests.cpp.o
+[ 10%] Linking CXX executable regidrago_arven_fss_rulebox_tests
+[ 10%] Built target regidrago_arven_fss_rulebox_tests
+[ 10%] Building CXX object CMakeFiles/regidrago_ultra_ball_tapu_tests.dir/tests/ultra_ball_tapu_connector_tests.cpp.o
+[ 11%] Linking CXX executable regidrago_known_dead_payload_tests
+[ 11%] Built target regidrago_known_dead_payload_tests
+[ 12%] Building CXX object CMakeFiles/regidrago_wonder_tag_dead_burnet_tests.dir/tests/wonder_tag_known_dead_burnet_tests.cpp.o
+[ 13%] Linking CXX executable regidrago_ultra_ball_tapu_tests
+[ 13%] Built target regidrago_ultra_ball_tapu_tests
+[ 14%] Building CXX object CMakeFiles/regidrago_oricorio_burnet_tests.dir/tests/oricorio_burnet_compression_tests.cpp.o
+[ 15%] Linking CXX executable regidrago_wonder_tag_dead_burnet_tests
+[ 15%] Built target regidrago_wonder_tag_dead_burnet_tests
+[ 16%] Building CXX object CMakeFiles/regidrago_opening_dialga_payload_tests.dir/tests/opening_active_dialga_payload_tests.cpp.o
+[ 17%] Linking CXX executable regidrago_oricorio_burnet_tests
+[ 17%] Built target regidrago_oricorio_burnet_tests
+[ 18%] Building CXX object CMakeFiles/regidrago_opening_oricorio_dialga_no_lock_tests.dir/tests/opening_oricorio_dialga_no_lock_tests.cpp.o
+[ 18%] Linking CXX executable regidrago_opening_dialga_payload_tests
+[ 18%] Built target regidrago_opening_dialga_payload_tests
+[ 18%] Building CXX object CMakeFiles/regidrago_late_item_supporter_tests.dir/tests/late_item_supporter_tests.cpp.o
+[ 19%] Linking CXX executable regidrago_opening_oricorio_dialga_no_lock_tests
+[ 19%] Built target regidrago_opening_oricorio_dialga_no_lock_tests
+[ 20%] Building CXX object CMakeFiles/regidrago_lusamine_arven_item_lock_tests.dir/tests/lusamine_arven_item_lock_tests.cpp.o
+[ 21%] Linking CXX executable regidrago_late_item_supporter_tests
+[ 21%] Built target regidrago_late_item_supporter_tests
+[ 22%] Building CXX object CMakeFiles/regidrago_serena_mandatory_discard_tests.dir/tests/serena_mandatory_discard_tests.cpp.o
+[ 22%] Linking CXX executable regidrago_lusamine_arven_item_lock_tests
+[ 22%] Built target regidrago_lusamine_arven_item_lock_tests
+[ 23%] Building CXX object CMakeFiles/regidrago_gladion_unpayable_search_tests.dir/tests/gladion_unpayable_search_tests.cpp.o
+[ 24%] Linking CXX executable regidrago_serena_mandatory_discard_tests
+[ 24%] Built target regidrago_serena_mandatory_discard_tests
+[ 25%] Building CXX object CMakeFiles/regidrago_gladion_mysterious_ultra_cost_tests.dir/tests/gladion_mysterious_treasure_ultra_cost_tests.cpp.o
+[ 26%] Linking CXX executable regidrago_gladion_unpayable_search_tests
+[ 26%] Built target regidrago_gladion_unpayable_search_tests
+[ 26%] Building CXX object CMakeFiles/regidrago_gladion_serena_item_lock_tests.dir/tests/gladion_serena_item_lock_tests.cpp.o
+[ 27%] Linking CXX executable regidrago_gladion_mysterious_ultra_cost_tests
+[ 27%] Built target regidrago_gladion_mysterious_ultra_cost_tests
+[ 28%] Building CXX object CMakeFiles/regidrago_crispin_one_type_manual_attachment_tests.dir/tests/crispin_one_type_manual_attachment_tests.cpp.o
+[ 29%] Linking CXX executable regidrago_gladion_serena_item_lock_tests
+[ 29%] Built target regidrago_gladion_serena_item_lock_tests
+[ 30%] Building CXX object CMakeFiles/regidrago_tapu_gladion_prize_tests.dir/tests/tapu_gladion_prize_fallback_tests.cpp.o
+[ 31%] Linking CXX executable regidrago_crispin_one_type_manual_attachment_tests
+[ 31%] Built target regidrago_crispin_one_type_manual_attachment_tests
+[ 32%] Building CXX object CMakeFiles/regidrago_evolution_incense_payload_tests.dir/tests/evolution_incense_payload_tests.cpp.o
+[ 32%] Linking CXX executable regidrago_tapu_gladion_prize_tests
+[ 32%] Built target regidrago_tapu_gladion_prize_tests
+[ 33%] Building CXX object CMakeFiles/regidrago_arven_heavy_ball_prize_tests.dir/tests/arven_heavy_ball_prize_tests.cpp.o
+[ 34%] Linking CXX executable regidrago_evolution_incense_payload_tests
+[ 34%] Built target regidrago_evolution_incense_payload_tests
+[ 35%] Building CXX object CMakeFiles/regidrago_duplicate_quick_ball_tests.dir/tests/duplicate_quick_ball_cost_tests.cpp.o
+[ 35%] Linking CXX executable regidrago_arven_heavy_ball_prize_tests
+[ 35%] Built target regidrago_arven_heavy_ball_prize_tests
+[ 36%] Building CXX object CMakeFiles/regidrago_duplicate_mysterious_treasure_tests.dir/tests/duplicate_mysterious_treasure_cost_tests.cpp.o
+[ 37%] Linking CXX executable regidrago_duplicate_quick_ball_tests
+[ 37%] Built target regidrago_duplicate_quick_ball_tests
+[ 37%] Building CXX object CMakeFiles/regidrago_duplicate_earthen_vessel_tests.dir/tests/duplicate_earthen_vessel_cost_tests.cpp.o
+[ 38%] Linking CXX executable regidrago_duplicate_mysterious_treasure_tests
+[ 38%] Built target regidrago_duplicate_mysterious_treasure_tests
+[ 39%] Building CXX object CMakeFiles/regidrago_quick_ball_ultra_cost_tests.dir/tests/quick_ball_ultra_ball_cost_tests.cpp.o
+[ 40%] Linking CXX executable regidrago_duplicate_earthen_vessel_tests
+[ 40%] Built target regidrago_duplicate_earthen_vessel_tests
+[ 41%] Building CXX object CMakeFiles/regidrago_ultra_ball_redundant_cost_tests.dir/tests/ultra_ball_redundant_cost_tests.cpp.o
+[ 41%] Linking CXX executable regidrago_quick_ball_ultra_cost_tests
+[ 41%] Built target regidrago_quick_ball_ultra_cost_tests
+[ 41%] Building CXX object CMakeFiles/regidrago_oricorio_full_energy_search_tests.dir/tests/oricorio_full_energy_search_tests.cpp.o
+[ 42%] Linking CXX executable regidrago_ultra_ball_redundant_cost_tests
+[ 42%] Built target regidrago_ultra_ball_redundant_cost_tests
+[ 43%] Building CXX object CMakeFiles/regidrago_steven_missing_regi_tests.dir/tests/steven_missing_regi_tests.cpp.o
+[ 44%] Linking CXX executable regidrago_oricorio_full_energy_search_tests
+[ 44%] Built target regidrago_oricorio_full_energy_search_tests
+[ 45%] Building CXX object CMakeFiles/regidrago_late_steven_basic_connector_tests.dir/tests/late_steven_basic_connector_tests.cpp.o
+[ 46%] Linking CXX executable regidrago_steven_missing_regi_tests
+[ 46%] Built target regidrago_steven_missing_regi_tests
+[ 47%] Building CXX object CMakeFiles/regidrago_steven_mysterious_treasure_dci_tests.dir/tests/steven_mysterious_treasure_dci_tests.cpp.o
+[ 48%] Linking CXX executable regidrago_late_steven_basic_connector_tests
+[ 48%] Built target regidrago_late_steven_basic_connector_tests
+[ 49%] Building CXX object CMakeFiles/regidrago_steven_crispin_turn2_item_lock_tests.dir/tests/steven_crispin_turn2_item_lock_tests.cpp.o
+[ 50%] Linking CXX executable regidrago_steven_mysterious_treasure_dci_tests
+[ 50%] Built target regidrago_steven_mysterious_treasure_dci_tests
+[ 51%] Building CXX object CMakeFiles/regidrago_oricorio_type_sensitive_energy_tests.dir/tests/oricorio_type_sensitive_energy_tests.cpp.o
+[ 51%] Linking CXX executable regidrago_steven_crispin_turn2_item_lock_tests
+[ 51%] Built target regidrago_steven_crispin_turn2_item_lock_tests
+[ 52%] Building CXX object CMakeFiles/regidrago_start_turn_deck_exhaustion_tests.dir/tests/start_turn_deck_exhaustion_tests.cpp.o
+[ 53%] Linking CXX executable regidrago_oricorio_type_sensitive_energy_tests
+[ 53%] Built target regidrago_oricorio_type_sensitive_energy_tests
+[ 54%] Building CXX object CMakeFiles/regidrago_full_turn_order_tests.dir/tests/full_turn_order_tests.cpp.o
+[ 55%] Linking CXX executable regidrago_start_turn_deck_exhaustion_tests
+[ 55%] Built target regidrago_start_turn_deck_exhaustion_tests
+[ 56%] Building CXX object CMakeFiles/regidrago_legacy_star_latias_recovery_tests.dir/tests/legacy_star_latias_recovery_tests.cpp.o
+[ 56%] Linking CXX executable regidrago_full_turn_order_tests
+[ 56%] Built target regidrago_full_turn_order_tests
+[ 57%] Building CXX object CMakeFiles/regidrago_legacy_star_evolution_incense_payload_tests.dir/tests/legacy_star_evolution_incense_payload_tests.cpp.o
+[ 58%] Linking CXX executable regidrago_legacy_star_latias_recovery_tests
+[ 58%] Built target regidrago_legacy_star_latias_recovery_tests
+[ 59%] Building CXX object CMakeFiles/regidrago_legacy_star_vessel_payload_cost_tests.dir/tests/legacy_star_vessel_payload_cost_tests.cpp.o
+[ 59%] Linking CXX executable regidrago_legacy_star_evolution_incense_payload_tests
+[ 59%] Built target regidrago_legacy_star_evolution_incense_payload_tests
+[ 60%] Building CXX object CMakeFiles/regidrago_team_yell_latias_recovery_tests.dir/tests/team_yell_latias_recovery_tests.cpp.o
+[ 61%] Linking CXX executable regidrago_legacy_star_vessel_payload_cost_tests
+[ 61%] Built target regidrago_legacy_star_vessel_payload_cost_tests
+[ 62%] Building CXX object CMakeFiles/regidrago_benched_vstar_recovery_tests.dir/tests/benched_vstar_recovery_tests.cpp.o
+[ 63%] Linking CXX executable regidrago_team_yell_latias_recovery_tests
+[ 63%] Built target regidrago_team_yell_latias_recovery_tests
+[ 64%] Building CXX object CMakeFiles/regidrago_mysterious_treasure_payload_continuation_tests.dir/tests/mysterious_treasure_payload_continuation_tests.cpp.o
+[ 65%] Linking CXX executable regidrago_benched_vstar_recovery_tests
+[ 65%] Built target regidrago_benched_vstar_recovery_tests
+[ 66%] Building CXX object CMakeFiles/regidrago_costed_search_target_outlet_tests.dir/tests/costed_search_target_outlet_tests.cpp.o
+[ 67%] Linking CXX executable regidrago_mysterious_treasure_payload_continuation_tests
+[ 67%] Built target regidrago_mysterious_treasure_payload_continuation_tests
+[ 68%] Building CXX object CMakeFiles/regidrago_route_reconciliation_tests.dir/tests/route_reconciliation_tests.cpp.o
+[ 69%] Linking CXX executable regidrago_costed_search_target_outlet_tests
+[ 69%] Built target regidrago_costed_search_target_outlet_tests
+[ 70%] Building CXX object CMakeFiles/regidrago_vstar_promotion_selection_tests.dir/tests/vstar_promotion_selection_tests.cpp.o
+[ 71%] Linking CXX executable regidrago_route_reconciliation_tests
+[ 71%] Built target regidrago_route_reconciliation_tests
+[ 72%] Building CXX object CMakeFiles/regidrago_turo_ready_direct_evolution_tests.dir/tests/turo_ready_direct_evolution_tests.cpp.o
+[ 73%] Linking CXX executable regidrago_vstar_promotion_selection_tests
+[ 73%] Built target regidrago_vstar_promotion_selection_tests
+[ 74%] Building CXX object CMakeFiles/regidrago_no_redundant_item_tests.dir/tests/no_redundant_item_tests.cpp.o
+[ 75%] Linking CXX executable regidrago_turo_ready_direct_evolution_tests
+[ 75%] Built target regidrago_turo_ready_direct_evolution_tests
+[ 76%] Building CXX object CMakeFiles/regidrago_tate_switch_blender_tests.dir/tests/tate_switch_blender_payload_tests.cpp.o
+[ 77%] Linking CXX executable regidrago_no_redundant_item_tests
+[ 77%] Built target regidrago_no_redundant_item_tests
+[ 78%] Building CXX object CMakeFiles/regidrago_fss_tate_blender_tests.dir/tests/fss_tate_blender_payload_tests.cpp.o
+[ 79%] Linking CXX executable regidrago_tate_switch_blender_tests
+[ 79%] Built target regidrago_tate_switch_blender_tests
+[ 80%] Building CXX object CMakeFiles/regidrago_blender_fss_tate_hold_tests.dir/tests/blender_fss_tate_hold_tests.cpp.o
+[ 81%] Linking CXX executable regidrago_fss_tate_blender_tests
+[ 81%] Built target regidrago_fss_tate_blender_tests
+[ 82%] Building CXX object CMakeFiles/regidrago_powerglass_end_turn_tests.dir/tests/powerglass_end_turn_tests.cpp.o
+[ 83%] Linking CXX executable regidrago_blender_fss_tate_hold_tests
+[ 83%] Built target regidrago_blender_fss_tate_hold_tests
+[ 84%] Building CXX object CMakeFiles/regidrago_celestial_roar_live_route_tests.dir/tests/celestial_roar_live_route_tests.cpp.o
+[ 85%] Linking CXX executable regidrago_powerglass_end_turn_tests
+[ 85%] Built target regidrago_powerglass_end_turn_tests
+[ 86%] Building CXX object CMakeFiles/regidrago_roseanne_energy_recovery_tests.dir/tests/roseanne_energy_recovery_tests.cpp.o
+[ 86%] Linking CXX executable regidrago_celestial_roar_live_route_tests
+[ 86%] Built target regidrago_celestial_roar_live_route_tests
+[ 86%] Building CXX object CMakeFiles/regidrago_empty_deck_search_tests.dir/tests/empty_deck_search_tests.cpp.o
+[ 87%] Linking CXX executable regidrago_roseanne_energy_recovery_tests
+[ 87%] Built target regidrago_roseanne_energy_recovery_tests
+[ 88%] Building CXX object CMakeFiles/regidrago_pokemon_communication_tests.dir/tests/pokemon_communication_tests.cpp.o
+[ 89%] Linking CXX executable regidrago_empty_deck_search_tests
+[ 89%] Built target regidrago_empty_deck_search_tests
+[ 90%] Building CXX object CMakeFiles/regidrago_pokemon_communication_duplicate_tapu_tests.dir/tests/pokemon_communication_duplicate_tapu_tests.cpp.o
+[ 90%] Linking CXX executable regidrago_pokemon_communication_tests
+[ 90%] Built target regidrago_pokemon_communication_tests
+[ 91%] Building CXX object CMakeFiles/regidrago_release_assertion_tests.dir/tests/release_assertion_tests.cpp.o
+[ 92%] Linking CXX executable regidrago_release_assertion_tests
+[ 92%] Built target regidrago_release_assertion_tests
+[ 92%] Building CXX object CMakeFiles/regidrago_arven_complementary_latias_tests.dir/tests/arven_complementary_latias_route_tests.cpp.o
+[ 93%] Linking CXX executable regidrago_pokemon_communication_duplicate_tapu_tests
+[ 93%] Built target regidrago_pokemon_communication_duplicate_tapu_tests
+[ 94%] Building CXX object CMakeFiles/regidrago_gladion_revealed_axis_tests.dir/tests/gladion_revealed_axis_tests.cpp.o
+[ 95%] Linking CXX executable regidrago_arven_complementary_latias_tests
+[ 95%] Built target regidrago_arven_complementary_latias_tests
+[ 95%] Building CXX object CMakeFiles/regidrago_pokemon_communication_post_exchange_target_tests.dir/tests/pokemon_communication_post_exchange_target_tests.cpp.o
+[ 96%] Linking CXX executable regidrago_gladion_revealed_axis_tests
+[ 96%] Built target regidrago_gladion_revealed_axis_tests
+[ 97%] Building CXX object CMakeFiles/regidrago_pokemon_communication_recovery_zone_tests.dir/tests/pokemon_communication_recovery_zone_tests.cpp.o
+[ 98%] Linking CXX executable regidrago_pokemon_communication_post_exchange_target_tests
+[ 98%] Built target regidrago_pokemon_communication_post_exchange_target_tests
+[ 98%] Building CXX object CMakeFiles/regidrago_roseanne_pokemon_communication_zone_tests.dir/tests/roseanne_pokemon_communication_zone_tests.cpp.o
+[ 99%] Linking CXX executable regidrago_pokemon_communication_recovery_zone_tests
+[ 99%] Built target regidrago_pokemon_communication_recovery_zone_tests
+[100%] Linking CXX executable regidrago_roseanne_pokemon_communication_zone_tests
+[100%] Built target regidrago_roseanne_pokemon_communication_zone_tests

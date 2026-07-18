@@ -1,0 +1,146 @@
+Internal ctest changing into directory: /home/runner/work/pokemon-sims/pokemon-sims/build-observable
+Test project /home/runner/work/pokemon-sims/pokemon-sims/build-observable
+      Start  1: regidrago_future_wonder_tag_crispin
+ 1/70 Test  #1: regidrago_future_wonder_tag_crispin .....................   Passed    0.01 sec
+      Start  2: regidrago_active_tapu_paid_retreat
+ 2/70 Test  #2: regidrago_active_tapu_paid_retreat ......................   Passed    0.00 sec
+      Start  3: regidrago_sim_self_test
+ 3/70 Test  #3: regidrago_sim_self_test .................................   Passed    0.28 sec
+      Start  4: regidrago_policy_fixtures
+ 4/70 Test  #4: regidrago_policy_fixtures ...............................   Passed    0.00 sec
+      Start  5: regidrago_tier2_policy_fixtures
+ 5/70 Test  #5: regidrago_tier2_policy_fixtures .........................   Passed    0.00 sec
+      Start  6: regidrago_fss_rulebox
+ 6/70 Test  #6: regidrago_fss_rulebox ...................................   Passed    0.00 sec
+      Start  7: regidrago_fss_crispin_priority
+ 7/70 Test  #7: regidrago_fss_crispin_priority ..........................   Passed    0.00 sec
+      Start  8: regidrago_arven_fss_rulebox
+ 8/70 Test  #8: regidrago_arven_fss_rulebox .............................   Passed    0.00 sec
+      Start  9: regidrago_known_dead_payload
+ 9/70 Test  #9: regidrago_known_dead_payload ............................   Passed    0.00 sec
+      Start 10: regidrago_ultra_ball_tapu
+10/70 Test #10: regidrago_ultra_ball_tapu ...............................   Passed    0.00 sec
+      Start 11: regidrago_wonder_tag_dead_burnet
+11/70 Test #11: regidrago_wonder_tag_dead_burnet ........................   Passed    0.00 sec
+      Start 12: regidrago_oricorio_burnet
+12/70 Test #12: regidrago_oricorio_burnet ...............................   Passed    0.00 sec
+      Start 13: regidrago_opening_dialga_payload
+13/70 Test #13: regidrago_opening_dialga_payload ........................   Passed    0.00 sec
+      Start 14: regidrago_opening_oricorio_dialga_no_lock
+14/70 Test #14: regidrago_opening_oricorio_dialga_no_lock ...............   Passed    0.00 sec
+      Start 15: regidrago_late_item_supporter
+15/70 Test #15: regidrago_late_item_supporter ...........................   Passed    0.00 sec
+      Start 16: regidrago_lusamine_arven_item_lock
+16/70 Test #16: regidrago_lusamine_arven_item_lock ......................   Passed    0.00 sec
+      Start 17: regidrago_serena_mandatory_discard
+17/70 Test #17: regidrago_serena_mandatory_discard ......................   Passed    0.00 sec
+      Start 18: regidrago_gladion_unpayable_search
+18/70 Test #18: regidrago_gladion_unpayable_search ......................   Passed    0.00 sec
+      Start 19: regidrago_gladion_mysterious_ultra_cost
+19/70 Test #19: regidrago_gladion_mysterious_ultra_cost .................   Passed    0.00 sec
+      Start 20: regidrago_gladion_serena_item_lock
+20/70 Test #20: regidrago_gladion_serena_item_lock ......................   Passed    0.00 sec
+      Start 21: regidrago_crispin_one_type_manual_attachment
+21/70 Test #21: regidrago_crispin_one_type_manual_attachment ............   Passed    0.00 sec
+      Start 22: regidrago_tapu_gladion_prize
+22/70 Test #22: regidrago_tapu_gladion_prize ............................   Passed    0.00 sec
+      Start 23: regidrago_evolution_incense_payload
+23/70 Test #23: regidrago_evolution_incense_payload .....................   Passed    0.00 sec
+      Start 24: regidrago_arven_heavy_ball_prize
+24/70 Test #24: regidrago_arven_heavy_ball_prize ........................   Passed    0.00 sec
+      Start 25: regidrago_duplicate_quick_ball
+25/70 Test #25: regidrago_duplicate_quick_ball ..........................   Passed    0.00 sec
+      Start 26: regidrago_duplicate_mysterious_treasure
+26/70 Test #26: regidrago_duplicate_mysterious_treasure .................   Passed    0.00 sec
+      Start 27: regidrago_duplicate_earthen_vessel
+27/70 Test #27: regidrago_duplicate_earthen_vessel ......................   Passed    0.00 sec
+      Start 28: regidrago_quick_ball_ultra_cost
+28/70 Test #28: regidrago_quick_ball_ultra_cost .........................   Passed    0.00 sec
+      Start 29: regidrago_ultra_ball_redundant_cost
+29/70 Test #29: regidrago_ultra_ball_redundant_cost .....................   Passed    0.00 sec
+      Start 30: regidrago_oricorio_full_energy_search
+30/70 Test #30: regidrago_oricorio_full_energy_search ...................   Passed    0.00 sec
+      Start 31: regidrago_steven_missing_regi
+31/70 Test #31: regidrago_steven_missing_regi ...........................   Passed    0.00 sec
+      Start 32: regidrago_late_steven_basic_connector
+32/70 Test #32: regidrago_late_steven_basic_connector ...................   Passed    0.00 sec
+      Start 33: regidrago_steven_mysterious_treasure_dci
+33/70 Test #33: regidrago_steven_mysterious_treasure_dci ................   Passed    0.00 sec
+      Start 34: regidrago_steven_crispin_turn2_item_lock
+34/70 Test #34: regidrago_steven_crispin_turn2_item_lock ................   Passed    0.00 sec
+      Start 35: regidrago_oricorio_type_sensitive_energy
+35/70 Test #35: regidrago_oricorio_type_sensitive_energy ................   Passed    0.00 sec
+      Start 36: regidrago_start_turn_deck_exhaustion
+36/70 Test #36: regidrago_start_turn_deck_exhaustion ....................   Passed    0.00 sec
+      Start 37: regidrago_full_turn_order
+37/70 Test #37: regidrago_full_turn_order ...............................   Passed    0.00 sec
+      Start 38: regidrago_legacy_star_latias_recovery
+38/70 Test #38: regidrago_legacy_star_latias_recovery ...................   Passed    0.00 sec
+      Start 39: regidrago_legacy_star_evolution_incense_payload
+39/70 Test #39: regidrago_legacy_star_evolution_incense_payload .........   Passed    0.00 sec
+      Start 40: regidrago_legacy_star_vessel_payload_cost
+40/70 Test #40: regidrago_legacy_star_vessel_payload_cost ...............   Passed    0.00 sec
+      Start 41: regidrago_team_yell_latias_recovery
+41/70 Test #41: regidrago_team_yell_latias_recovery .....................   Passed    0.00 sec
+      Start 42: regidrago_benched_vstar_recovery
+42/70 Test #42: regidrago_benched_vstar_recovery ........................   Passed    0.00 sec
+      Start 43: regidrago_mysterious_treasure_payload_continuation
+43/70 Test #43: regidrago_mysterious_treasure_payload_continuation ......   Passed    0.00 sec
+      Start 44: regidrago_costed_search_target_outlet
+44/70 Test #44: regidrago_costed_search_target_outlet ...................   Passed    0.00 sec
+      Start 45: regidrago_route_reconciliation
+45/70 Test #45: regidrago_route_reconciliation ..........................   Passed    0.00 sec
+      Start 46: regidrago_vstar_promotion_selection
+46/70 Test #46: regidrago_vstar_promotion_selection .....................   Passed    0.00 sec
+      Start 47: regidrago_turo_ready_direct_evolution
+47/70 Test #47: regidrago_turo_ready_direct_evolution ...................   Passed    0.00 sec
+      Start 48: regidrago_no_redundant_items
+48/70 Test #48: regidrago_no_redundant_items ............................   Passed    0.00 sec
+      Start 49: regidrago_tate_switch_blender
+49/70 Test #49: regidrago_tate_switch_blender ...........................   Passed    0.00 sec
+      Start 50: regidrago_fss_tate_blender
+50/70 Test #50: regidrago_fss_tate_blender ..............................   Passed    0.00 sec
+      Start 51: regidrago_blender_fss_tate_hold
+51/70 Test #51: regidrago_blender_fss_tate_hold .........................   Passed    0.00 sec
+      Start 52: regidrago_powerglass_end_turn
+52/70 Test #52: regidrago_powerglass_end_turn ...........................   Passed    0.00 sec
+      Start 53: regidrago_celestial_roar_live_route
+53/70 Test #53: regidrago_celestial_roar_live_route .....................   Passed    0.00 sec
+      Start 54: regidrago_roseanne_energy_recovery
+54/70 Test #54: regidrago_roseanne_energy_recovery ......................   Passed    0.00 sec
+      Start 55: regidrago_empty_deck_search
+55/70 Test #55: regidrago_empty_deck_search .............................   Passed    0.00 sec
+      Start 56: regidrago_pokemon_communication
+56/70 Test #56: regidrago_pokemon_communication .........................   Passed    0.01 sec
+      Start 57: regidrago_pokemon_communication_duplicate_tapu
+57/70 Test #57: regidrago_pokemon_communication_duplicate_tapu ..........   Passed    0.00 sec
+      Start 58: regidrago_release_assertions_enabled
+58/70 Test #58: regidrago_release_assertions_enabled ....................   Passed    0.08 sec
+      Start 59: trace_strict_second_t3
+59/70 Test #59: trace_strict_second_t3 ..................................   Passed    0.00 sec
+      Start 60: trace_strict_first_t4
+60/70 Test #60: trace_strict_first_t4 ...................................   Passed    0.00 sec
+      Start 61: trace_flex_second_t2
+61/70 Test #61: trace_flex_second_t2 ....................................   Passed    0.00 sec
+      Start 62: trace_turn2_item_lock_t3
+62/70 Test #62: trace_turn2_item_lock_t3 ................................   Passed    0.00 sec
+      Start 63: trace_rulebox_lock_t3
+63/70 Test #63: trace_rulebox_lock_t3 ...................................   Passed    0.00 sec
+      Start 64: trace_no_control_first_t4
+64/70 Test #64: trace_no_control_first_t4 ...............................   Passed    0.00 sec
+      Start 65: regidrago_sim_matrix_smoke
+65/70 Test #65: regidrago_sim_matrix_smoke ..............................   Passed    0.06 sec
+      Start 66: regidrago_arven_complementary_latias
+66/70 Test #66: regidrago_arven_complementary_latias ....................   Passed    0.00 sec
+      Start 67: regidrago_gladion_revealed_axis
+67/70 Test #67: regidrago_gladion_revealed_axis .........................   Passed    0.00 sec
+      Start 68: regidrago_pokemon_communication_post_exchange_targets
+68/70 Test #68: regidrago_pokemon_communication_post_exchange_targets ...   Passed    0.00 sec
+      Start 69: regidrago_pokemon_communication_recovery_zones
+69/70 Test #69: regidrago_pokemon_communication_recovery_zones ..........   Passed    0.00 sec
+      Start 70: regidrago_roseanne_pokemon_communication_zones
+70/70 Test #70: regidrago_roseanne_pokemon_communication_zones ..........   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 70
+
+Total Test time (real) =   0.63 sec

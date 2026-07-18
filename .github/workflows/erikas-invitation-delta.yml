@@ -5,18 +5,22 @@ on:
     paths:
       - 'src/trace_engine_v2/part_000.inc'
       - 'src/trace_engine_v2/part_001.inc'
+      - 'data/decklist.json'
+      - 'scripts/audit_card_data.py'
+      - 'tests/card_audit_category_contract_tests.py'
+      - 'docs/CARD_AUDIT.md'
       - 'tools/erikas_invitation_delta.cpp'
       - '.github/workflows/erikas-invitation-delta.yml'
 
 jobs:
   delta-audit:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - name: Check out pull-request merge ref
         uses: actions/checkout@v4
       - name: Build paired delta audit
         run: |
-          g++ -std=c++20 -O3 -Wall -Wextra -Wpedantic -Werror \
+          clang++ -std=c++20 -O3 -Wall -Wextra -Wpedantic -Werror \
             tools/erikas_invitation_delta.cpp \
             -o erikas_invitation_delta
       - name: Run paired Erika versus Mawile comparison
@@ -28,3 +32,20 @@ jobs:
         with:
           name: erikas-invitation-delta
           path: erikas_invitation_delta.csv
+
+  focused-regression:
+    runs-on: macos-latest
+    steps:
+      - name: Check out pull-request merge ref
+        uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel 3
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Validate card audit contracts
+        run: |
+          python3 tests/card_audit_contract_tests.py
+          python3 tests/card_audit_category_contract_tests.py
+          python3 tests/setup_report_contract_tests.py

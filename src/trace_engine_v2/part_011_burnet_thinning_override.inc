@@ -31,7 +31,16 @@
         });
     const bool vstar_exists_or_evolvable =
         has_vstar() || active_regi_can_evolve || benched_regi_can_evolve;
-    if (!strict_payload_timing() || !vstar_exists_or_evolvable) return true;
+    // Strict JIT accepts Burnet only when the searched payload can belong to a
+    // same-turn Regidrago VSTAR ready route. Preserve earlier payload banking in
+    // no-discard-control:
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+    // https://github.com/FlareZ123/pokemon-sims/issues/797
+    if (!strict_payload_timing()) return true;
+    if (!vstar_exists_or_evolvable) return false;
 
     const bool benched_vstar_can_exist =
         benched_vstar_exists || benched_regi_can_evolve;

@@ -43,17 +43,19 @@
       return false;
     }
     for (const Card returned : pokemon_communication_pokemon()) {
-      if (returned == target || returned == Card::TapuLeleGX ||
-          hand_count(returned) == 0 ||
+      if (returned == target || hand_count(returned) == 0 ||
+          (returned == Card::TapuLeleGX && hand_count(returned) == 1) ||
           !pokemon_communication_target_available_after_return(target, returned)) {
         continue;
       }
-      // Direct Item routing must preserve a live Wonder Tag Pokémon. Passing true
-      // for the Supporter-used scoring mode prevents recursive Tapu valuation while
-      // the explicit skip above protects the card itself:
+      // Preserve a singleton Tapu Lele-GX as its live Wonder Tag connector, while
+      // admitting one copy when a second held copy preserves that same role. The
+      // shared score already assigns every duplicated Pokémon the lowest marginal
+      // exchange cost before card-specific protection:
       // https://api.pokemontcg.io/v2/cards/sm9-152
       // https://api.pokemontcg.io/v2/cards/cel25c-60_A
-      // https://github.com/FlareZ123/pokemon-sims/issues/701
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // https://github.com/FlareZ123/pokemon-sims/issues/807
       if (pokemon_communication_return_score(returned, true) < 800) return true;
     }
     return false;

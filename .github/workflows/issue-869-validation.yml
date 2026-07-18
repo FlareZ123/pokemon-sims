@@ -33,7 +33,9 @@ jobs:
           git rev-parse HEAD > /tmp/issue-869-baseline-sha
 
       - name: Apply permanent source changes
-        run: python scripts/apply_issue_869.py
+        run: |
+          python scripts/apply_issue_869.py
+          python scripts/fix_issue_869_generated_test.py
 
       - name: Configure and build patched Release
         run: |
@@ -115,7 +117,7 @@ jobs:
       - name: Finalize permanent branch
         shell: bash
         run: |
-          git rm .github/workflows/issue-869-validation.yml scripts/apply_issue_869.py
+          git rm .github/workflows/issue-869-validation.yml scripts/apply_issue_869.py scripts/fix_issue_869_generated_test.py
           git add CMakeLists.txt \
             src/trace_engine_v2/part_010_late_steven_override.inc \
             src/trace_engine_v2/part_tate_blender_attachment_override.inc \

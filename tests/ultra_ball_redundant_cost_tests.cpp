@@ -159,13 +159,16 @@ void test_k1_ultra_ball_payload_cost_remains_legal_with_a_pokemon_target() {
   state.turn = 2;
   state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1};
   state.hand = {Card::UltraBall, Card::MegaDragonite, Card::Dipplin};
-  state.deck = {Card::MawileGX};
+  // Regidrago V is a current modeled Basic Pokémon, so the known Ultra Ball
+  // search remains legal after its two-card requirement is paid:
+  // https://api.pokemontcg.io/v2/cards/swsh12-135
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://github.com/FlareZ123/pokemon-sims/issues/866
+  state.deck = {Card::RegidragoV};
   EngineTestAccess::set_deck_seen(engine);
 
-  // Mawile-GX is a Pokémon, so the known Ultra Ball search remains legal after its
-  // two-card requirement is paid: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
   assert(EngineTestAccess::play_ultra_ball(engine, true));
-  assert(std::count(state.hand.begin(), state.hand.end(), Card::MawileGX) == 1);
+  assert(std::count(state.hand.begin(), state.hand.end(), Card::RegidragoV) == 1);
   assert(std::count(state.discard.begin(), state.discard.end(), Card::MegaDragonite) == 1);
   assert(std::count(state.discard.begin(), state.discard.end(), Card::Dipplin) == 1);
   assert(std::count(state.discard.begin(), state.discard.end(), Card::UltraBall) == 1);

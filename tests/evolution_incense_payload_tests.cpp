@@ -140,7 +140,12 @@ void test_evolution_incense_uses_duplicate_incense_for_ultra_ball_cost() {
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
   state.hand = {sim::Card::EvolutionIncense, sim::Card::EvolutionIncense, sim::Card::UltraBall};
-  state.deck = {sim::Card::MegaDragonite, sim::Card::MawileGX};
+  // Regidrago V is a current modeled Pokémon target, so Ultra Ball still has
+  // a legal post-cost search effect in both duplicate- and single-Incense controls:
+  // https://api.pokemontcg.io/v2/cards/swsh12-135
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://github.com/FlareZ123/pokemon-sims/issues/866
+  state.deck = {sim::Card::MegaDragonite, sim::Card::RegidragoV};
   sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
   sim::EngineTestAccess::set_deck_seen(fixture.engine);
 
@@ -174,7 +179,12 @@ void test_evolution_incense_rejects_unpayable_single_incense_ultra_ball_route() 
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
   state.hand = {sim::Card::EvolutionIncense, sim::Card::UltraBall};
-  state.deck = {sim::Card::MegaDragonite, sim::Card::MawileGX};
+  // Regidrago V is a current modeled Pokémon target, so Ultra Ball still has
+  // a legal post-cost search effect in both duplicate- and single-Incense controls:
+  // https://api.pokemontcg.io/v2/cards/swsh12-135
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://github.com/FlareZ123/pokemon-sims/issues/866
+  state.deck = {sim::Card::MegaDragonite, sim::Card::RegidragoV};
   sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
   sim::EngineTestAccess::set_deck_seen(fixture.engine);
 

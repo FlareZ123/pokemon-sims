@@ -179,16 +179,92 @@
         might_be_unseen(Card::Arven) && !direct_vstar_connector &&
         arven_has_concrete_vstar_chain;
 
+    const auto future_crispin_completes_ggf = [&]() {
+      if (!need_energy() || state_.manual_energy_used ||
+          hand_count(Card::Crispin) > 0 || !might_be_unseen(Card::Crispin) ||
+          !might_be_unseen(Card::Grass) || !might_be_unseen(Card::Fire)) {
+        return false;
+      }
+
+      const int initial_grass_needed = grass_needed();
+      const int initial_fire_needed = fire_needed();
+      const int held_grass = hand_count(Card::Grass);
+      const int held_fire = hand_count(Card::Fire);
+
+      const auto completes_after_current_manual = [&](const int current_manual) {
+        int remaining_grass = initial_grass_needed;
+        int remaining_fire = initial_fire_needed;
+        int grass_in_hand = held_grass;
+        int fire_in_hand = held_fire;
+
+        if (current_manual == 1) {
+          if (remaining_grass <= 0 || grass_in_hand <= 0) return false;
+          --remaining_grass;
+          --grass_in_hand;
+        } else if (current_manual == 2) {
+          if (remaining_fire <= 0 || fire_in_hand <= 0) return false;
+          --remaining_fire;
+          --fire_in_hand;
+        }
+
+        const auto completes_after_crispin = [&](const bool attach_grass) {
+          int grass_after_crispin = remaining_grass;
+          int fire_after_crispin = remaining_fire;
+          int grass_available_for_manual = grass_in_hand;
+          int fire_available_for_manual = fire_in_hand;
+
+          if (attach_grass) {
+            if (grass_after_crispin <= 0) return false;
+            --grass_after_crispin;
+            ++fire_available_for_manual;
+          } else {
+            if (fire_after_crispin <= 0) return false;
+            --fire_after_crispin;
+            ++grass_available_for_manual;
+          }
+
+          if (grass_after_crispin == 0 && fire_after_crispin == 0) return true;
+          if (grass_after_crispin == 1 && fire_after_crispin == 0) {
+            return grass_available_for_manual > 0;
+          }
+          if (grass_after_crispin == 0 && fire_after_crispin == 1) {
+            return fire_available_for_manual > 0;
+          }
+          return false;
+        };
+
+        return completes_after_crispin(true) || completes_after_crispin(false);
+      };
+
+      // Wonder Tag may bank Crispin on the first player's opening turn. Enumerate
+      // the unused current manual attachment, Crispin's different-type search and
+      // attachment, and the next turn's manual attachment. This admits the route
+      // only when those public resources complete GGF without Vital Dance or Star
+      // Alchemy:
+      // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // https://api.pokemontcg.io/v2/cards/sv7-133
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://www.pokemon.com/us/pokemon-tcg/rules
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // https://github.com/FlareZ123/pokemon-sims/issues/809
+      return completes_after_current_manual(0) ||
+             completes_after_current_manual(1) ||
+             completes_after_current_manual(2);
+    };
+    const bool live_crispin_energy = future_crispin_completes_ggf();
+
     // Going first prohibits playing a Supporter on turn one. Wonder Tag may still
-    // search a concrete Gladion or Arven and leave it in hand for turn two:
+    // search a concrete Gladion, Arven, or Crispin and leave it in hand for turn two:
     // https://api.pokemontcg.io/v2/cards/cel25c-60_A
     // https://api.pokemontcg.io/v2/cards/sm4-95
     // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/sv7-133
     // https://api.pokemontcg.io/v2/cards/swsh12-156
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://www.pokemon.com/us/pokemon-tcg/rules
     // https://github.com/FlareZ123/pokemon-sims/issues/748
-    return live_gladion_axis || live_arven_vstar;
+    // https://github.com/FlareZ123/pokemon-sims/issues/809
+    return live_gladion_axis || live_arven_vstar || live_crispin_energy;
   }
 
   bool needs_tapu_connector() {

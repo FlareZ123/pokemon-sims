@@ -170,6 +170,9 @@ target_compile_options(regidrago_empty_deck_search_tests PRIVATE -Wall -Wextra -
 add_executable(regidrago_pokemon_communication_tests tests/pokemon_communication_tests.cpp)
 target_compile_options(regidrago_pokemon_communication_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+add_executable(regidrago_pokemon_communication_duplicate_tapu_tests tests/pokemon_communication_duplicate_tapu_tests.cpp)
+target_compile_options(regidrago_pokemon_communication_duplicate_tapu_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 add_executable(regidrago_release_assertion_tests tests/release_assertion_tests.cpp)
 target_compile_options(regidrago_release_assertion_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
@@ -226,6 +229,7 @@ add_test(NAME regidrago_celestial_roar_live_route COMMAND regidrago_celestial_ro
 add_test(NAME regidrago_roseanne_energy_recovery COMMAND regidrago_roseanne_energy_recovery_tests)
 add_test(NAME regidrago_empty_deck_search COMMAND regidrago_empty_deck_search_tests)
 add_test(NAME regidrago_pokemon_communication COMMAND regidrago_pokemon_communication_tests)
+add_test(NAME regidrago_pokemon_communication_duplicate_tapu COMMAND regidrago_pokemon_communication_duplicate_tapu_tests)
 add_test(NAME regidrago_release_assertions_enabled
   COMMAND ${CMAKE_COMMAND}
     -DASSERTION_PROBE=$<TARGET_FILE:regidrago_release_assertion_tests>

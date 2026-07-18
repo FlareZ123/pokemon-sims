@@ -69,7 +69,10 @@ jobs:
         run: cmake --build build-sanitizers --parallel 2
       - name: Run complete sanitizer suite
         env:
-          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          # Detect the reference-parameter lifetime failure covered by issue #907:
+          # https://eel.is/c++draft/class.temporary#6.10
+          # https://github.com/FlareZ123/pokemon-sims/issues/907
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
           UBSAN_OPTIONS: halt_on_error=1
         run: ctest --test-dir build-sanitizers --parallel 2 --output-on-failure
       - name: Upload sanitizer diagnostics

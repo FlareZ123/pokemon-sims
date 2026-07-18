@@ -122,7 +122,7 @@
     if (direct_gladion_route) return true;
 
     // Existing recovery policies already prove the complete post-Supporter search
-    // costs and exact K1 zone transitions. A copied Engine avoids mutating the real
+    // costs and exact K1 zone transitions. Copied Engines avoid mutating the real
     // hand, deck, discard, Supporter slot, or RNG while those routes are checked:
     // https://api.pokemontcg.io/v2/cards/swsh9-149
     // https://api.pokemontcg.io/v2/cards/swsh9-148
@@ -130,10 +130,10 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_team_yell_vstar_override.inc
     // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_roseanne_multimode_override.inc
     // https://github.com/FlareZ123/pokemon-sims/issues/718
-    Engine recovery = without_blender;
-    if (recovery.play_team_yell_vstar_recovery()) return true;
-    recovery = without_blender;
-    if (recovery.play_roseanne_vstar_energy_recovery()) return true;
+    Engine team_yell_recovery = without_blender;
+    if (team_yell_recovery.play_team_yell_vstar_recovery()) return true;
+    Engine roseanne_recovery = without_blender;
+    if (roseanne_recovery.play_roseanne_vstar_energy_recovery()) return true;
 
     return false;
   }

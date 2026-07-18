@@ -1,0 +1,119 @@
+name: Issue 854 Latest Main Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  validate-latest-main:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/854-lusamine-erika-fallback'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out permanent issue branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/854-lusamine-erika-fallback
+          fetch-depth: 0
+
+      - name: Reconcile latest main
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Configure and build patched Release
+        run: |
+          mkdir -p issue-854-latest-audit
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Run focused Release and UBSan regressions
+        run: |
+          ./build/regidrago_lusamine_erika_fallback_tests | tee issue-854-latest-audit/focused-release.log
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -fsanitize=undefined -fno-omit-frame-pointer tests/lusamine_erika_fallback_tests.cpp -o build/issue-854-focused
+          ./build/issue-854-focused | tee issue-854-latest-audit/focused-ubsan.log
+
+      - name: Run patched full suite
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          set -o pipefail
+          ctest --test-dir build --output-on-failure 2>&1 | tee issue-854-latest-audit/ctest-patched.log
+          status=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$status" > issue-854-latest-audit/ctest-patched.status
+          exit "$status"
+
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -o pipefail
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 3 | tee issue-854-latest-audit/trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 | tee issue-854-latest-audit/trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 11 | tee issue-854-latest-audit/trace-3.txt
+
+      - name: Generate canonical matrix
+        run: |
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-854-latest-audit/t2_t3_matrix.csv
+
+      - name: Reproduce latest-main baseline suite
+        continue-on-error: true
+        shell: bash
+        run: |
+          git checkout origin/main -- CMakeLists.txt src/trace_engine_v2/part_014b.inc
+          cmake -S . -B build-baseline -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-baseline --parallel 2
+          set +e
+          set -o pipefail
+          ctest --test-dir build-baseline --output-on-failure 2>&1 | tee issue-854-latest-audit/ctest-baseline.log
+          status=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$status" > issue-854-latest-audit/ctest-baseline.status
+          git checkout HEAD -- CMakeLists.txt src/trace_engine_v2/part_014b.inc
+          exit "$status"
+
+      - name: Verify identical failure set
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          def failures(path: str) -> set[str]:
+              result: set[str] = set()
+              for line in Path(path).read_text(encoding="utf-8").splitlines():
+                  match = re.match(r"\s*\d+\s+-\s+(\S+)\s+\(", line)
+                  if match:
+                      result.add(match.group(1))
+              return result
+
+          patched = failures("issue-854-latest-audit/ctest-patched.log")
+          baseline = failures("issue-854-latest-audit/ctest-baseline.log")
+          if patched != baseline:
+              raise SystemExit(f"patched={sorted(patched)} baseline={sorted(baseline)}")
+          print(f"identical baseline failure set: {sorted(patched)}")
+          PY
+
+      - name: Finalize latest-main branch
+        run: |
+          git rm .github/workflows/issue-854-latest-main-validation.yml
+          git commit -m "Reconcile issue 854 with latest main"
+          git push origin HEAD:fix/854-lusamine-erika-fallback
+          git archive --format=zip HEAD -o issue-854-latest-audit/source.zip
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-854-latest-main-validation
+          path: issue-854-latest-audit
+          if-no-files-found: error

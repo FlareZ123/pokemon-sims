@@ -46,11 +46,14 @@ FACTORY_NEW = """struct EngineFixture {
 // for the entire fixture instead of returning an Engine bound to stack locals:
 // https://github.com/FlareZ123/pokemon-sims/issues/869
 """
-ENGINE_OLD = "  sim::Engine engine = make_engine("
-ENGINE_NEW = "  EngineFixture fixture("
-ERROR_OLD = '    throw std::runtime_error("Steven did not preserve the exact T3 route");\n'
-ERROR_NEW = """    throw std::runtime_error(
+FIRST_ERROR_OLD = '    throw std::runtime_error("Steven did not preserve the exact T3 route");\n'
+FIRST_ERROR_NEW = """    throw std::runtime_error(
         "Steven did not preserve the exact T3 route: " +
+        sim::EngineTestAccess::state_line(engine));
+"""
+READY_ERROR_OLD = '    throw std::runtime_error("confirmed Steven route did not reach readiness on T3");\n'
+READY_ERROR_NEW = """    throw std::runtime_error(
+        "confirmed Steven route did not reach readiness on T3: " +
         sim::EngineTestAccess::state_line(engine));
 """
 MAIN_OLD = """int main() {
@@ -82,7 +85,8 @@ with PATH.open("r+", encoding="utf-8") as locked:
         (READY_OLD, READY_NEW, "readiness helper"),
         (INCLUDE_OLD, INCLUDE_NEW, "iostream include"),
         (FACTORY_OLD, FACTORY_NEW, "owning Engine fixture"),
-        (ERROR_OLD, ERROR_NEW, "Steven route assertion"),
+        (FIRST_ERROR_OLD, FIRST_ERROR_NEW, "Steven route assertion"),
+        (READY_ERROR_OLD, READY_ERROR_NEW, "T3 readiness assertion"),
         (MAIN_OLD, MAIN_NEW, "test main"),
     )
     updated = text

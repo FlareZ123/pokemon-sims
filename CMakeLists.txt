@@ -5,299 +5,87 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+function(regidrago_warnings target)
+  if(MSVC)
+    target_compile_options(${target} PRIVATE /W4)
+  else()
+    target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+  endif()
+endfunction()
+
 add_executable(regidrago_sim src/regidrago_sim.cpp)
-target_compile_options(regidrago_sim PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+regidrago_warnings(regidrago_sim)
 
-# Release defines NDEBUG by default. Keep assert-based regression checks enabled for
-# every test target while leaving the optimized simulator target unchanged:
-# https://github.com/FlareZ123/pokemon-sims/blob/main/tests/legacy_star_evolution_incense_payload_tests.cpp
-# https://cmake.org/cmake/help/latest/command/add_compile_options.html
-add_compile_options(
-  $<$<CXX_COMPILER_ID:MSVC>:/UNDEBUG>
-  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-UNDEBUG>
-)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+file(GLOB_RECURSE REGIDRAGO_TEST_INPUTS CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.inc")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/tests/generate_unified_tests.py"
+  ${REGIDRAGO_TEST_INPUTS})
+set(REGIDRAGO_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+set(REGIDRAGO_GENERATED_CPP "${REGIDRAGO_GENERATED_DIR}/regidrago_unified_tests.cpp")
+set(REGIDRAGO_GENERATED_CASES "${REGIDRAGO_GENERATED_DIR}/regidrago_unified_cases.cmake")
+file(MAKE_DIRECTORY "${REGIDRAGO_GENERATED_DIR}")
+execute_process(
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/generate_unified_tests.py"
+          --source-root "${CMAKE_CURRENT_SOURCE_DIR}"
+          --output-cpp "${REGIDRAGO_GENERATED_CPP}"
+          --output-cmake "${REGIDRAGO_GENERATED_CASES}"
+  RESULT_VARIABLE REGIDRAGO_GENERATOR_STATUS
+  OUTPUT_VARIABLE REGIDRAGO_GENERATOR_OUTPUT
+  ERROR_VARIABLE REGIDRAGO_GENERATOR_ERROR)
+if(NOT REGIDRAGO_GENERATOR_STATUS EQUAL 0)
+  message(FATAL_ERROR "Unified test generation failed:\n${REGIDRAGO_GENERATOR_OUTPUT}\n${REGIDRAGO_GENERATOR_ERROR}")
+endif()
+include("${REGIDRAGO_GENERATED_CASES}")
 
-add_executable(regidrago_policy_tests tests/regidrago_policy_tests.cpp)
-target_compile_options(regidrago_policy_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_tier2_tests tests/regidrago_tier2_tests.cpp)
-target_compile_options(regidrago_tier2_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_fss_rulebox_tests tests/forest_seal_stone_rulebox_tests.cpp)
-target_compile_options(regidrago_fss_rulebox_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_fss_crispin_priority_tests tests/fss_crispin_priority_tests.cpp)
-target_compile_options(regidrago_fss_crispin_priority_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_arven_fss_rulebox_tests tests/arven_fss_rulebox_tests.cpp)
-target_compile_options(regidrago_arven_fss_rulebox_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_known_dead_payload_tests tests/known_dead_payload_tests.cpp)
-target_compile_options(regidrago_known_dead_payload_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_ultra_ball_tapu_tests tests/ultra_ball_tapu_connector_tests.cpp)
-target_compile_options(regidrago_ultra_ball_tapu_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_wonder_tag_dead_burnet_tests tests/wonder_tag_known_dead_burnet_tests.cpp)
-target_compile_options(regidrago_wonder_tag_dead_burnet_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_oricorio_burnet_tests tests/oricorio_burnet_compression_tests.cpp)
-target_compile_options(regidrago_oricorio_burnet_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_opening_dialga_payload_tests tests/opening_active_dialga_payload_tests.cpp)
-target_compile_options(regidrago_opening_dialga_payload_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_opening_oricorio_dialga_no_lock_tests tests/opening_oricorio_dialga_no_lock_tests.cpp)
-target_compile_options(regidrago_opening_oricorio_dialga_no_lock_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_late_item_supporter_tests tests/late_item_supporter_tests.cpp)
-target_compile_options(regidrago_late_item_supporter_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_lusamine_arven_item_lock_tests tests/lusamine_arven_item_lock_tests.cpp)
-target_compile_options(regidrago_lusamine_arven_item_lock_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_serena_mandatory_discard_tests tests/serena_mandatory_discard_tests.cpp)
-target_compile_options(regidrago_serena_mandatory_discard_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_gladion_unpayable_search_tests tests/gladion_unpayable_search_tests.cpp)
-target_compile_options(regidrago_gladion_unpayable_search_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_gladion_mysterious_ultra_cost_tests tests/gladion_mysterious_treasure_ultra_cost_tests.cpp)
-target_compile_options(regidrago_gladion_mysterious_ultra_cost_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_gladion_serena_item_lock_tests tests/gladion_serena_item_lock_tests.cpp)
-target_compile_options(regidrago_gladion_serena_item_lock_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_crispin_one_type_manual_attachment_tests tests/crispin_one_type_manual_attachment_tests.cpp)
-target_compile_options(regidrago_crispin_one_type_manual_attachment_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_tapu_gladion_prize_tests tests/tapu_gladion_prize_fallback_tests.cpp)
-target_compile_options(regidrago_tapu_gladion_prize_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-# Gladion low-impact Prize fallback regression: https://github.com/FlareZ123/pokemon-sims/issues/855
-add_executable(regidrago_gladion_erika_low_impact_tests tests/gladion_erika_low_impact_tests.cpp)
-target_compile_options(regidrago_gladion_erika_low_impact_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_evolution_incense_payload_tests tests/evolution_incense_payload_tests.cpp)
-target_compile_options(regidrago_evolution_incense_payload_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_arven_heavy_ball_prize_tests tests/arven_heavy_ball_prize_tests.cpp)
-target_compile_options(regidrago_arven_heavy_ball_prize_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_duplicate_quick_ball_tests tests/duplicate_quick_ball_cost_tests.cpp)
-target_compile_options(regidrago_duplicate_quick_ball_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_duplicate_mysterious_treasure_tests tests/duplicate_mysterious_treasure_cost_tests.cpp)
-target_compile_options(regidrago_duplicate_mysterious_treasure_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_duplicate_earthen_vessel_tests tests/duplicate_earthen_vessel_cost_tests.cpp)
-target_compile_options(regidrago_duplicate_earthen_vessel_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_quick_ball_ultra_cost_tests tests/quick_ball_ultra_ball_cost_tests.cpp)
-target_compile_options(regidrago_quick_ball_ultra_cost_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_ultra_ball_redundant_cost_tests tests/ultra_ball_redundant_cost_tests.cpp)
-target_compile_options(regidrago_ultra_ball_redundant_cost_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_oricorio_full_energy_search_tests tests/oricorio_full_energy_search_tests.cpp)
-target_compile_options(regidrago_oricorio_full_energy_search_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_steven_missing_regi_tests tests/steven_missing_regi_tests.cpp)
-target_compile_options(regidrago_steven_missing_regi_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_late_steven_basic_connector_tests tests/late_steven_basic_connector_tests.cpp)
-target_compile_options(regidrago_late_steven_basic_connector_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_steven_mysterious_treasure_dci_tests tests/steven_mysterious_treasure_dci_tests.cpp)
-target_compile_options(regidrago_steven_mysterious_treasure_dci_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_steven_crispin_turn2_item_lock_tests tests/steven_crispin_turn2_item_lock_tests.cpp)
-target_compile_options(regidrago_steven_crispin_turn2_item_lock_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_oricorio_type_sensitive_energy_tests tests/oricorio_type_sensitive_energy_tests.cpp)
-target_compile_options(regidrago_oricorio_type_sensitive_energy_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_start_turn_deck_exhaustion_tests tests/start_turn_deck_exhaustion_tests.cpp)
-target_compile_options(regidrago_start_turn_deck_exhaustion_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_full_turn_order_tests tests/full_turn_order_tests.cpp)
-target_compile_options(regidrago_full_turn_order_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_legacy_star_latias_recovery_tests tests/legacy_star_latias_recovery_tests.cpp)
-target_compile_options(regidrago_legacy_star_latias_recovery_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_legacy_star_evolution_incense_payload_tests tests/legacy_star_evolution_incense_payload_tests.cpp)
-target_compile_options(regidrago_legacy_star_evolution_incense_payload_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_legacy_star_vessel_payload_cost_tests tests/legacy_star_vessel_payload_cost_tests.cpp)
-target_compile_options(regidrago_legacy_star_vessel_payload_cost_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_team_yell_latias_recovery_tests tests/team_yell_latias_recovery_tests.cpp)
-target_compile_options(regidrago_team_yell_latias_recovery_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_benched_vstar_recovery_tests tests/benched_vstar_recovery_tests.cpp)
-target_compile_options(regidrago_benched_vstar_recovery_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_mysterious_treasure_payload_continuation_tests tests/mysterious_treasure_payload_continuation_tests.cpp)
-target_compile_options(regidrago_mysterious_treasure_payload_continuation_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_costed_search_target_outlet_tests tests/costed_search_target_outlet_tests.cpp)
-target_compile_options(regidrago_costed_search_target_outlet_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_route_reconciliation_tests tests/route_reconciliation_tests.cpp)
-target_compile_options(regidrago_route_reconciliation_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_vstar_promotion_selection_tests tests/vstar_promotion_selection_tests.cpp)
-target_compile_options(regidrago_vstar_promotion_selection_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_turo_ready_direct_evolution_tests tests/turo_ready_direct_evolution_tests.cpp)
-target_compile_options(regidrago_turo_ready_direct_evolution_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_no_redundant_item_tests tests/no_redundant_item_tests.cpp)
-target_compile_options(regidrago_no_redundant_item_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_tate_switch_blender_tests tests/tate_switch_blender_payload_tests.cpp)
-target_compile_options(regidrago_tate_switch_blender_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_fss_tate_blender_tests tests/fss_tate_blender_payload_tests.cpp)
-target_compile_options(regidrago_fss_tate_blender_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_blender_fss_tate_hold_tests tests/blender_fss_tate_hold_tests.cpp)
-target_compile_options(regidrago_blender_fss_tate_hold_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_powerglass_end_turn_tests tests/powerglass_end_turn_tests.cpp)
-target_compile_options(regidrago_powerglass_end_turn_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_celestial_roar_live_route_tests tests/celestial_roar_live_route_tests.cpp)
-target_compile_options(regidrago_celestial_roar_live_route_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_roseanne_energy_recovery_tests tests/roseanne_energy_recovery_tests.cpp)
-target_compile_options(regidrago_roseanne_energy_recovery_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_empty_deck_search_tests tests/empty_deck_search_tests.cpp)
-target_compile_options(regidrago_empty_deck_search_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_pokemon_communication_tests tests/pokemon_communication_tests.cpp)
-target_compile_options(regidrago_pokemon_communication_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-
-add_executable(regidrago_pokemon_communication_duplicate_tapu_tests tests/pokemon_communication_duplicate_tapu_tests.cpp)
-target_compile_options(regidrago_pokemon_communication_duplicate_tapu_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+add_executable(regidrago_unified_tests "${REGIDRAGO_GENERATED_CPP}")
+target_include_directories(regidrago_unified_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+regidrago_warnings(regidrago_unified_tests)
+# The test runner validates behavior rather than optimized throughput. Keeping it at
+# O0 turns 79 repeated simulator compilations into one short compile while the user-
+# facing simulator remains optimized by the selected build type:
+# https://cmake.org/cmake/help/latest/command/target_compile_options.html
+if(MSVC)
+  target_compile_options(regidrago_unified_tests PRIVATE /Od /UNDEBUG)
+else()
+  target_compile_options(regidrago_unified_tests PRIVATE -O0 -UNDEBUG)
+endif()
 
 add_executable(regidrago_release_assertion_tests tests/release_assertion_tests.cpp)
-target_compile_options(regidrago_release_assertion_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+regidrago_warnings(regidrago_release_assertion_tests)
+if(MSVC)
+  target_compile_options(regidrago_release_assertion_tests PRIVATE /UNDEBUG)
+else()
+  target_compile_options(regidrago_release_assertion_tests PRIVATE -UNDEBUG)
+endif()
 
 enable_testing()
-add_test(NAME regidrago_future_wonder_tag_crispin
-  COMMAND ${CMAKE_COMMAND}
-    -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_future_wonder_tag_crispin.cmake)
-add_test(NAME regidrago_active_tapu_paid_retreat
-  COMMAND ${CMAKE_COMMAND}
-    -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_active_tapu_paid_retreat.cmake)
+foreach(case_name IN LISTS REGIDRAGO_UNIFIED_CASES)
+  add_test(NAME "regidrago_${case_name}" COMMAND regidrago_unified_tests "${case_name}")
+endforeach()
+
 add_test(NAME regidrago_sim_self_test COMMAND regidrago_sim --self-test)
-add_test(NAME regidrago_policy_fixtures COMMAND regidrago_policy_tests)
-add_test(NAME regidrago_tier2_policy_fixtures COMMAND regidrago_tier2_tests)
-add_test(NAME regidrago_fss_rulebox COMMAND regidrago_fss_rulebox_tests)
-add_test(NAME regidrago_fss_crispin_priority COMMAND regidrago_fss_crispin_priority_tests)
-add_test(NAME regidrago_arven_fss_rulebox COMMAND regidrago_arven_fss_rulebox_tests)
-add_test(NAME regidrago_known_dead_payload COMMAND regidrago_known_dead_payload_tests)
-add_test(NAME regidrago_ultra_ball_tapu COMMAND regidrago_ultra_ball_tapu_tests)
-add_test(NAME regidrago_wonder_tag_dead_burnet COMMAND regidrago_wonder_tag_dead_burnet_tests)
-add_test(NAME regidrago_oricorio_burnet COMMAND regidrago_oricorio_burnet_tests)
-add_test(NAME regidrago_opening_dialga_payload COMMAND regidrago_opening_dialga_payload_tests)
-add_test(NAME regidrago_opening_oricorio_dialga_no_lock COMMAND regidrago_opening_oricorio_dialga_no_lock_tests)
-add_test(NAME regidrago_late_item_supporter COMMAND regidrago_late_item_supporter_tests)
-add_test(NAME regidrago_lusamine_arven_item_lock COMMAND regidrago_lusamine_arven_item_lock_tests)
-add_test(NAME regidrago_serena_mandatory_discard COMMAND regidrago_serena_mandatory_discard_tests)
-add_test(NAME regidrago_gladion_unpayable_search COMMAND regidrago_gladion_unpayable_search_tests)
-add_test(NAME regidrago_gladion_mysterious_ultra_cost COMMAND regidrago_gladion_mysterious_ultra_cost_tests)
-add_test(NAME regidrago_gladion_serena_item_lock COMMAND regidrago_gladion_serena_item_lock_tests)
-add_test(NAME regidrago_crispin_one_type_manual_attachment COMMAND regidrago_crispin_one_type_manual_attachment_tests)
-add_test(NAME regidrago_tapu_gladion_prize COMMAND regidrago_tapu_gladion_prize_tests)
-add_test(NAME regidrago_gladion_erika_low_impact COMMAND regidrago_gladion_erika_low_impact_tests)
-add_test(NAME regidrago_evolution_incense_payload COMMAND regidrago_evolution_incense_payload_tests)
-add_test(NAME regidrago_arven_heavy_ball_prize COMMAND regidrago_arven_heavy_ball_prize_tests)
-add_test(NAME regidrago_duplicate_quick_ball COMMAND regidrago_duplicate_quick_ball_tests)
-add_test(NAME regidrago_duplicate_mysterious_treasure COMMAND regidrago_duplicate_mysterious_treasure_tests)
-add_test(NAME regidrago_duplicate_earthen_vessel COMMAND regidrago_duplicate_earthen_vessel_tests)
-add_test(NAME regidrago_quick_ball_ultra_cost COMMAND regidrago_quick_ball_ultra_cost_tests)
-add_test(NAME regidrago_ultra_ball_redundant_cost COMMAND regidrago_ultra_ball_redundant_cost_tests)
-add_test(NAME regidrago_oricorio_full_energy_search COMMAND regidrago_oricorio_full_energy_search_tests)
-add_test(NAME regidrago_steven_missing_regi COMMAND regidrago_steven_missing_regi_tests)
-add_test(NAME regidrago_late_steven_basic_connector COMMAND regidrago_late_steven_basic_connector_tests)
-add_test(NAME regidrago_steven_mysterious_treasure_dci COMMAND regidrago_steven_mysterious_treasure_dci_tests)
-add_test(NAME regidrago_steven_crispin_turn2_item_lock COMMAND regidrago_steven_crispin_turn2_item_lock_tests)
-add_test(NAME regidrago_oricorio_type_sensitive_energy COMMAND regidrago_oricorio_type_sensitive_energy_tests)
-add_test(NAME regidrago_start_turn_deck_exhaustion COMMAND regidrago_start_turn_deck_exhaustion_tests)
-add_test(NAME regidrago_full_turn_order COMMAND regidrago_full_turn_order_tests)
-add_test(NAME regidrago_legacy_star_latias_recovery COMMAND regidrago_legacy_star_latias_recovery_tests)
-add_test(NAME regidrago_legacy_star_evolution_incense_payload COMMAND regidrago_legacy_star_evolution_incense_payload_tests)
-add_test(NAME regidrago_legacy_star_vessel_payload_cost COMMAND regidrago_legacy_star_vessel_payload_cost_tests)
-add_test(NAME regidrago_team_yell_latias_recovery COMMAND regidrago_team_yell_latias_recovery_tests)
-add_test(NAME regidrago_benched_vstar_recovery COMMAND regidrago_benched_vstar_recovery_tests)
-add_test(NAME regidrago_mysterious_treasure_payload_continuation COMMAND regidrago_mysterious_treasure_payload_continuation_tests)
-add_test(NAME regidrago_costed_search_target_outlet COMMAND regidrago_costed_search_target_outlet_tests)
-add_test(NAME regidrago_route_reconciliation COMMAND regidrago_route_reconciliation_tests)
-add_test(NAME regidrago_vstar_promotion_selection COMMAND regidrago_vstar_promotion_selection_tests)
-add_test(NAME regidrago_turo_ready_direct_evolution COMMAND regidrago_turo_ready_direct_evolution_tests)
-add_test(NAME regidrago_no_redundant_items COMMAND regidrago_no_redundant_item_tests)
-add_test(NAME regidrago_tate_switch_blender COMMAND regidrago_tate_switch_blender_tests)
-add_test(NAME regidrago_fss_tate_blender COMMAND regidrago_fss_tate_blender_tests)
-add_test(NAME regidrago_blender_fss_tate_hold COMMAND regidrago_blender_fss_tate_hold_tests)
-add_test(NAME regidrago_powerglass_end_turn COMMAND regidrago_powerglass_end_turn_tests)
-add_test(NAME regidrago_celestial_roar_live_route COMMAND regidrago_celestial_roar_live_route_tests)
-add_test(NAME regidrago_roseanne_energy_recovery COMMAND regidrago_roseanne_energy_recovery_tests)
-add_test(NAME regidrago_empty_deck_search COMMAND regidrago_empty_deck_search_tests)
-add_test(NAME regidrago_pokemon_communication COMMAND regidrago_pokemon_communication_tests)
-add_test(NAME regidrago_pokemon_communication_duplicate_tapu COMMAND regidrago_pokemon_communication_duplicate_tapu_tests)
 add_test(NAME regidrago_release_assertions_enabled
   COMMAND ${CMAKE_COMMAND}
     -DASSERTION_PROBE=$<TARGET_FILE:regidrago_release_assertion_tests>
     -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_assertion_probe.cmake)
+add_test(NAME regidrago_cli_mode_contract
+  COMMAND ${CMAKE_COMMAND}
+    -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
+    -DTEST_DIR=${CMAKE_CURRENT_BINARY_DIR}/cli-mode-contract
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_cli_mode_contract.cmake)
+
 add_test(NAME trace_strict_second_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3)
 add_test(NAME trace_strict_first_t4 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4)
 add_test(NAME trace_flex_second_t2 COMMAND regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2)
 add_test(NAME trace_turn2_item_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 1 --require-ready-by 3)
-add_test(NAME trace_rulebox_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 1 --require-ready-by 3)
 add_test(NAME trace_no_control_first_t4 COMMAND regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 6 --require-ready-by 4)
 add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
 set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)
 
-add_executable(regidrago_arven_complementary_latias_tests tests/arven_complementary_latias_route_tests.cpp)
-target_compile_options(regidrago_arven_complementary_latias_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-add_test(NAME regidrago_arven_complementary_latias COMMAND regidrago_arven_complementary_latias_tests)
-
-
-add_executable(regidrago_gladion_revealed_axis_tests tests/gladion_revealed_axis_tests.cpp)
-target_compile_options(regidrago_gladion_revealed_axis_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-add_test(NAME regidrago_gladion_revealed_axis COMMAND regidrago_gladion_revealed_axis_tests)
-
-# Exact post-exchange continuation regression for Pokémon Communication:
-# https://api.pokemontcg.io/v2/cards/sm9-152
-# https://github.com/FlareZ123/pokemon-sims/issues/808
-add_executable(regidrago_pokemon_communication_post_exchange_target_tests
-  tests/pokemon_communication_post_exchange_target_tests.cpp)
-target_compile_options(regidrago_pokemon_communication_post_exchange_target_tests
-  PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-add_test(NAME regidrago_pokemon_communication_post_exchange_targets
-  COMMAND regidrago_pokemon_communication_post_exchange_target_tests)
-
-add_executable(regidrago_pokemon_communication_recovery_zone_tests
-  tests/pokemon_communication_recovery_zone_tests.cpp)
-target_compile_options(regidrago_pokemon_communication_recovery_zone_tests PRIVATE
-  -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-add_test(NAME regidrago_pokemon_communication_recovery_zones
-  COMMAND regidrago_pokemon_communication_recovery_zone_tests)
-
-# Roseanne's Backup -> Pokémon Communication -> Earthen Vessel regression:
-# https://api.pokemontcg.io/v2/cards/swsh9-148
-# https://api.pokemontcg.io/v2/cards/sm9-152
-# https://api.pokemontcg.io/v2/cards/sv4-163
-# https://github.com/FlareZ123/pokemon-sims/issues/837
-add_executable(regidrago_roseanne_pokemon_communication_zone_tests
-  tests/roseanne_pokemon_communication_zone_tests.cpp)
-target_compile_options(regidrago_roseanne_pokemon_communication_zone_tests
-  PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-add_test(NAME regidrago_roseanne_pokemon_communication_zones
-  COMMAND regidrago_roseanne_pokemon_communication_zone_tests)
+add_test(NAME card_audit_contract COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/card_audit_contract_tests.py")
+add_test(NAME card_audit_category_contract COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/card_audit_category_contract_tests.py")
+add_test(NAME setup_report_contract COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/setup_report_contract_tests.py")
+add_test(NAME setup_docs_generator_contract COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/update_setup_docs_tests.py")

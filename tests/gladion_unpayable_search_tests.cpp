@@ -95,15 +95,17 @@ void test_blind_gladion_holds_for_payable_ultra_ball() {
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::LatiasEx, 0};
   state.hand = {sim::Card::Gladion, sim::Card::UltraBall,
-                sim::Card::MawileGX, sim::Card::Guzma};
+                sim::Card::ErikasInvitation, sim::Card::Guzma};
   state.deck = {sim::Card::RegidragoV};
   state.prizes = {sim::Card::Grass, sim::Card::Fire, sim::Card::Dipplin};
   sim::EngineTestAccess::set_state(engine, std::move(state));
 
-  // Matchup-flex policy permits the two visible matchup cards as legal costs, so
-  // Ultra Ball can directly search Regidrago V and Gladion should be preserved:
+  // Matchup-flex policy permits Erika's Invitation and Guzma as the two visible
+  // low-impact costs, so Ultra Ball can search Regidrago V and preserve Gladion:
   // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://api.pokemontcg.io/v2/cards/sv3pt5-160
   // https://api.pokemontcg.io/v2/cards/sm4-95
+  // https://github.com/FlareZ123/pokemon-sims/issues/852
   if (sim::EngineTestAccess::play_gladion(engine)) {
     throw std::runtime_error("Gladion should be held while a payable Ultra Ball can find Regidrago V.");
   }

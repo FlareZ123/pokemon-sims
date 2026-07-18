@@ -57,7 +57,10 @@
 #define needs_oricorio_connector needs_oricorio_connector_original
 #define needs_tapu_connector needs_tapu_connector_original
 #define bench_tapu_if_useful bench_tapu_if_useful_original
+#define recover_discard_to_hand recover_discard_to_hand_name_only_original
 #include "trace_engine_v2/part_006.inc"
+#undef recover_discard_to_hand
+#include "trace_engine_v2/part_discard_recovery_provenance_override.inc"
 #undef bench_tapu_if_useful
 #undef needs_tapu_connector
 #undef needs_oricorio_connector

@@ -59,9 +59,7 @@ bool treasure_reproduction() {
   sim::EngineTestAccess::set_state(engine, std::move(state));
   sim::EngineTestAccess::set_deck_seen(engine);
 
-  // Communication fetches the deck's only Dragon. The later Mysterious Treasure
-  // would discard that fetched Dragon, leaving a known deck with no Psychic or
-  // Dragon target and therefore cannot legally be played:
+  // Diagnostic sources:
   // Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
   // Trainer no-effect ruling: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
@@ -91,9 +89,7 @@ bool quick_ball_reproduction() {
   sim::EngineTestAccess::set_state(engine, std::move(state));
   sim::EngineTestAccess::set_deck_seen(engine);
 
-  // Communication fetches the deck's only Basic Pokémon. The later Quick Ball
-  // would discard that fetched Basic, leaving only the returned Stage 1 Dipplin in
-  // the known deck and therefore has no legal Basic target:
+  // Diagnostic sources:
   // Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152
   // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
   // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
@@ -114,5 +110,7 @@ bool quick_ball_reproduction() {
 }  // namespace
 
 int main() {
-  return treasure_reproduction() && quick_ball_reproduction() ? 0 : 1;
+  const bool treasure = treasure_reproduction();
+  const bool quick_ball = quick_ball_reproduction();
+  return treasure && quick_ball ? 0 : 1;
 }

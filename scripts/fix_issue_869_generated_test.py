@@ -6,8 +6,8 @@ import tempfile
 from pathlib import Path
 
 PATH = Path("tests/late_steven_t3_compression_tests.cpp")
-OLD = "  static bool ready(const Engine& engine) { return engine.ready(); }\n"
-NEW = """  static bool ready(const Engine& engine) {
+READY_OLD = "  static bool ready(const Engine& engine) { return engine.ready(); }\n"
+READY_NEW = """  static bool ready(const Engine& engine) {
     const State& state = engine.state_;
     return state.turn >= 2 && engine.active_is_vstar() &&
         state.active->grass >= 2 && state.active->fire >= 1 && engine.payload_ready();
@@ -16,6 +16,38 @@ NEW = """  static bool ready(const Engine& engine) {
     return engine.state_line();
   }
 """
+INCLUDE_OLD = """#include <algorithm>
+#include <stdexcept>
+"""
+INCLUDE_NEW = """#include <algorithm>
+#include <iostream>
+#include <stdexcept>
+"""
+FACTORY_OLD = """sim::Engine make_engine(const std::uint64_t seed) {
+  const sim::Scenario scenario{"issue-869-late-steven-t3", sim::DciProfile::MatchupFlexJit,
+                               sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{seed};
+  return sim::Engine{scenario, recipe, rng};
+}
+"""
+FACTORY_NEW = """struct EngineFixture {
+  sim::Scenario scenario{"issue-869-late-steven-t3", sim::DciProfile::MatchupFlexJit,
+                         sim::LockMode::None, false, 4};
+  sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng;
+  sim::Engine engine;
+
+  explicit EngineFixture(const std::uint64_t seed)
+      : rng(seed), engine(scenario, recipe, rng) {}
+};
+
+// Engine stores references to Scenario, DeckRecipe, and RNG. Keep those owners alive
+// for the entire fixture instead of returning an Engine bound to stack locals:
+// https://github.com/FlareZ123/pokemon-sims/issues/869
+"""
+ENGINE_OLD = "  sim::Engine engine = make_engine("
+ENGINE_NEW = "  EngineFixture fixture("
 ERROR_OLD = '    throw std::runtime_error("Steven did not preserve the exact T3 route");\n'
 ERROR_NEW = """    throw std::runtime_error(
         "Steven did not preserve the exact T3 route: " +
@@ -46,15 +78,26 @@ MAIN_NEW = """int main() {
 with PATH.open("r+", encoding="utf-8") as locked:
     fcntl.flock(locked.fileno(), fcntl.LOCK_EX)
     text = locked.read()
-    if OLD not in text:
-        raise SystemExit("Unable to find generated readiness helper")
-    updated = text.replace(OLD, NEW, 1)
-    if ERROR_OLD not in updated:
-        raise SystemExit("Unable to find generated Steven route assertion")
-    updated = updated.replace(ERROR_OLD, ERROR_NEW, 1)
-    if MAIN_OLD not in updated:
-        raise SystemExit("Unable to find generated Steven test main")
-    updated = updated.replace(MAIN_OLD, MAIN_NEW, 1)
+    replacements = (
+        (READY_OLD, READY_NEW, "readiness helper"),
+        (INCLUDE_OLD, INCLUDE_NEW, "iostream include"),
+        (FACTORY_OLD, FACTORY_NEW, "owning Engine fixture"),
+        (ERROR_OLD, ERROR_NEW, "Steven route assertion"),
+        (MAIN_OLD, MAIN_NEW, "test main"),
+    )
+    updated = text
+    for old, new, label in replacements:
+        if updated.count(old) != 1:
+            raise SystemExit(f"Unable to find generated {label}")
+        updated = updated.replace(old, new, 1)
+
+    for seed in ("869", "8691", "8692"):
+        old = f"  sim::Engine engine = make_engine({seed});\n"
+        new = f"  EngineFixture fixture({seed});\n  sim::Engine& engine = fixture.engine;\n"
+        if updated.count(old) != 1:
+            raise SystemExit(f"Unable to find generated Engine construction for seed {seed}")
+        updated = updated.replace(old, new, 1)
+
     with tempfile.NamedTemporaryFile(
         "w", encoding="utf-8", dir=PATH.parent, delete=False
     ) as temporary:

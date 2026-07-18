@@ -43,9 +43,21 @@ jobs:
       - name: Build
         run: cmake --build build --parallel 3
       - name: Test
-        run: ctest --test-dir build --output-on-failure
+        shell: bash
+        run: |
+          set -o pipefail
+          ctest --test-dir build --output-on-failure | tee ctest.log
       - name: Validate card audit contracts
         run: |
           python3 tests/card_audit_contract_tests.py
           python3 tests/card_audit_category_contract_tests.py
           python3 tests/setup_report_contract_tests.py
+      - name: Upload regression diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: erikas-invitation-regression-diagnostics
+          path: |
+            ctest.log
+            build/Testing
+          if-no-files-found: warn

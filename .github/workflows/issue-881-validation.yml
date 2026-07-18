@@ -70,6 +70,25 @@ jobs:
             tests/erika_deck_thinning_tests.cpp -o build/issue-881-focused
           UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ./build/issue-881-focused
 
+      - name: Regenerate source-bound setup baseline
+        shell: bash
+        run: |
+          # Source-bound generator: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
+          # Provenance contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/baseline_provenance.py
+          # Baseline issue: https://github.com/FlareZ123/pokemon-sims/issues/642
+          python3 scripts/regenerate_setup_baselines.py \
+            --exe build/regidrago_sim \
+            --out-dir results \
+            --max-seed 5000 \
+            --trials 100000 \
+            --matrix-seed 20260705
+          python3 scripts/update_setup_docs.py --repo-root .
+          python3 tests/setup_report_contract_tests.py
+          python3 tests/update_setup_docs_tests.py
+          cp results/simulation_results.csv issue-881-audit/t2_t3_matrix.csv
+          cp results/baseline_manifest.json issue-881-audit/baseline_manifest.json
+          cat results/simulation_results.csv
+
       - name: Record patched full Release suite
         shell: bash
         run: |
@@ -121,25 +140,6 @@ jobs:
             | tee issue-881-audit/trace-2-matchup-flex-second-seed-3.txt
           ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 \
             | tee issue-881-audit/trace-3-rulebox-second-seed-20.txt
-
-      - name: Regenerate source-bound setup baseline
-        shell: bash
-        run: |
-          # Source-bound generator: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
-          # Provenance contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/baseline_provenance.py
-          # Baseline issue: https://github.com/FlareZ123/pokemon-sims/issues/642
-          python3 scripts/regenerate_setup_baselines.py \
-            --exe build/regidrago_sim \
-            --out-dir results \
-            --max-seed 5000 \
-            --trials 100000 \
-            --matrix-seed 20260705
-          python3 scripts/update_setup_docs.py --repo-root .
-          python3 tests/setup_report_contract_tests.py
-          python3 tests/update_setup_docs_tests.py
-          cp results/simulation_results.csv issue-881-audit/t2_t3_matrix.csv
-          cp results/baseline_manifest.json issue-881-audit/baseline_manifest.json
-          cat results/simulation_results.csv
 
       - name: Require validation base is still current main
         shell: bash

@@ -125,6 +125,7 @@
 
   bool play_steven() {
     if (!supporter_allowed() || hand_count(Card::StevensResolve) == 0 || !should_play_steven()) return false;
+    const bool known_t3_compression = late_steven_has_known_t3_compression_route();
     remove_one(state_.hand, Card::StevensResolve);
     state_.discard.push_back(Card::StevensResolve);
     state_.supporter_used = true;
@@ -142,6 +143,18 @@
     // Steven's Resolve reserves an outlet only where it can still find a payload.
     const Card payload_outlet = blender_available_next_turn ? Card::BrilliantBlender : Card::ProfessorBurnet;
     std::vector<Card> wanted;
+    if (known_t3_compression) {
+      // These exact K1 targets complete the confirmed T3 route; generic fallbacks may
+      // append later, but Steven resolves only the first three targets in this order:
+      // https://api.pokemontcg.io/v2/cards/sm7-145
+      // https://api.pokemontcg.io/v2/cards/sv8-76
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://api.pokemontcg.io/v2/cards/me2pt5-152
+      // https://github.com/FlareZ123/pokemon-sims/issues/869
+      wanted.push_back(Card::LatiasEx);
+      wanted.push_back(Card::MysteriousTreasure);
+      wanted.push_back(Card::MegaDragonite);
+    }
     // Regidrago V is a Basic Pokémon, so Steven's Resolve may take it before the
     // ending turn establishes the future Bench line: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/sm7-145
     if (need_regi() && bench_space() > 0 && hand_count(Card::RegidragoV) == 0) {

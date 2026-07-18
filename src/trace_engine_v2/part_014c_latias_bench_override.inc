@@ -152,12 +152,38 @@
     trace("POLICY", "P-AXIS-01", "Start: " + state_line());
     play_chaotic_swell();
     play_field_blower();
+    // Resolve the proven K1 Steven route before generic Items can consume Quick Ball
+    // and erase the public-state predicate. Steven searches any three cards and ends
+    // the turn, so attaching Fire and evolving the prior-turn Regidrago V first banks
+    // the exact Latias ex, Mysterious Treasure, and Mega Dragonite ex continuation:
+    // https://api.pokemontcg.io/v2/cards/sm7-145
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/869
+    if (late_steven_has_known_t3_compression_route()) {
+      attach_manual();
+      evolve_best_regi();
+      choose_supporter();
+      if (state_.turn_ended) {
+        trace("TURN END", "R-STEVEN-01", state_line());
+        return;
+      }
+    }
     // A redundant Regidrago V must not consume the final Bench slot before the
     // immediately live Latias ex promotion route:
     // https://api.pokemontcg.io/v2/cards/sv8-76
     // https://www.pokemon.com/us/pokemon-tcg/rules
     bench_latias_for_pending_vstar_promotion();
     play_basics_from_hand();
+    // Preserve the exact #869 Mysterious Treasure payload outlet before a generic
+    // Supporter route can shuffle it away:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://github.com/FlareZ123/pokemon-sims/issues/869
+    play_known_steven_t3_payload_outlet();
     play_items_until_stable(!strict_payload_timing());
     attach_live_fss();
     use_fss();

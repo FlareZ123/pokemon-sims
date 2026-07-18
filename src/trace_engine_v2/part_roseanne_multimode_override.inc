@@ -18,8 +18,28 @@
       }
       Engine simulated = *this;
       if (!remove_one(simulated.state_.hand, Card::RoseannesBackup)) return false;
-      simulated.state_.deck.push_back(Card::RegidragoVstar);
-      simulated.state_.deck.push_back(needed_energy);
+      const auto restore_to_simulated_deck = [&simulated](const Card card) {
+        if (!remove_one(simulated.state_.discard, card)) return false;
+        const auto turn_it = std::find(simulated.state_.discarded_this_turn.begin(),
+                                       simulated.state_.discarded_this_turn.end(), card);
+        if (turn_it != simulated.state_.discarded_this_turn.end()) {
+          simulated.state_.discarded_this_turn.erase(turn_it);
+        }
+        simulated.state_.deck.push_back(card);
+        return true;
+      };
+      // Roseanne's Backup moves each selected card from discard into the deck.
+      // Mirror that exact zone transition before Pokémon Communication and Earthen
+      // Vessel preflight so K0 fixed-list accounting cannot count one copy twice:
+      // https://api.pokemontcg.io/v2/cards/swsh9-148
+      // https://api.pokemontcg.io/v2/cards/sm9-152
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+      // https://github.com/FlareZ123/pokemon-sims/issues/837
+      if (!restore_to_simulated_deck(Card::RegidragoVstar) ||
+          !restore_to_simulated_deck(needed_energy)) {
+        return false;
+      }
       const auto plan = simulated.pokemon_communication_plan(false, true, true);
       if (!plan || plan->target != Card::RegidragoVstar ||
           !simulated.resolve_pokemon_communication(plan->returned, plan->target)) {

@@ -81,6 +81,13 @@ add_test(NAME trace_strict_second_t3 COMMAND regidrago_sim --simulate-this --sce
 add_test(NAME trace_strict_first_t4 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4)
 add_test(NAME trace_flex_second_t2 COMMAND regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2)
 add_test(NAME trace_turn2_item_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 1 --require-ready-by 3)
+# The confirmed strict-DCI regression must use the direct turn-one VSTAR search and
+# reach readiness on turn two before scheduled Item lock removes search Items:
+# https://api.pokemontcg.io/v2/cards/sm6-113
+# https://api.pokemontcg.io/v2/cards/swsh12-136
+# https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+# https://github.com/FlareZ123/pokemon-sims/issues/925
+add_test(NAME trace_issue_925_turn2_item_lock_seed25 COMMAND regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2)
 # The source-bound audit manifest includes this Rule Box Ability lock scenario in
 # the six-trace inventory, so CTest must enforce its ready-by deadline as well:
 # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json

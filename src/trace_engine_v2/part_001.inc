@@ -20,6 +20,7 @@
     case Card::TeamYellsCheer: return "Team Yell's Cheer";
     case Card::RoseannesBackup: return "Roseanne's Backup";
     case Card::ProfessorTuro: return "Professor Turo's Scenario";
+    case Card::ErikasInvitation: return "Erika's Invitation";
     case Card::ForestSealStone: return "Forest Seal Stone";
     case Card::Powerglass: return "Powerglass";
     case Card::FieldBlower: return "Field Blower";
@@ -131,3 +132,4 @@ constexpr bool is_supporter(const Card card) {
     case Card::Guzma:
     case Card::Channeler:
     case Card::Gladion:
+    case Card::ErikasInvitation:

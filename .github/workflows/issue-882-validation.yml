@@ -1,0 +1,141 @@
+name: Issue 882 Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-finalize:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/882-serena-zero-draw'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out issue branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/882-serena-zero-draw
+          fetch-depth: 0
+
+      - name: Reconcile current main
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Apply Serena policy fix
+        run: python tools/apply_issue_882.py
+
+      - name: Configure and build patched Release
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Run focused Release regression
+        shell: bash
+        run: |
+          mkdir -p issue-882-audit
+          set -o pipefail
+          ./build/regidrago_serena_zero_draw_tests 2>&1 | tee issue-882-audit/focused-release.log
+
+      - name: Run focused warning-clean UBSan regression
+        shell: bash
+        run: |
+          set -o pipefail
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -fsanitize=undefined -fno-omit-frame-pointer tests/serena_zero_draw_tests.cpp -o build/issue-882-focused
+          ./build/issue-882-focused 2>&1 | tee issue-882-audit/focused-ubsan.log
+
+      - name: Run patched full Release suite
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          set -o pipefail
+          ctest --test-dir build --output-on-failure 2>&1 | tee issue-882-audit/ctest-patched.log
+          status=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$status" > issue-882-audit/ctest-patched.status
+          exit "$status"
+
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -o pipefail
+          # Trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Optimal-play policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 3 | tee issue-882-audit/trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 | tee issue-882-audit/trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-combined-lock/go-second --seed 11 | tee issue-882-audit/trace-3.txt
+
+      - name: Verify combined-lock trace preserves zero-draw resources
+        run: |
+          if grep -q "Dipplin TWM 127 (Serena chosen discard)" issue-882-audit/trace-3.txt; then
+            echo "Serena still spent Dipplin for a zero-draw fallback" >&2
+            exit 1
+          fi
+
+      - name: Generate canonical T2 and T3 matrix
+        run: |
+          # Aggregate specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-882-audit/t2_t3_matrix.csv
+
+      - name: Reproduce current-main baseline suite
+        continue-on-error: true
+        shell: bash
+        run: |
+          git checkout origin/main -- CMakeLists.txt src/trace_engine_v2/part_012.inc src/trace_engine_v2/part_013.inc src/trace_engine_v2/part_014b.inc
+          cmake -S . -B build-baseline -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-baseline --parallel 2
+          set +e
+          set -o pipefail
+          ctest --test-dir build-baseline --output-on-failure 2>&1 | tee issue-882-audit/ctest-baseline.log
+          status=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$status" > issue-882-audit/ctest-baseline.status
+          python tools/apply_issue_882.py
+          exit "$status"
+
+      - name: Verify no new full-suite failures
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          def failures(path: str) -> set[str]:
+              found: set[str] = set()
+              for line in Path(path).read_text(encoding="utf-8").splitlines():
+                  match = re.match(r"\s*\d+\s+-\s+(\S+)\s+\(", line)
+                  if match:
+                      found.add(match.group(1))
+              return found
+
+          patched = failures("issue-882-audit/ctest-patched.log")
+          baseline = failures("issue-882-audit/ctest-baseline.log")
+          if patched != baseline:
+              raise SystemExit(
+                  "issue 882 changed the unrelated full-suite failure set: "
+                  f"patched={sorted(patched)} baseline={sorted(baseline)}"
+              )
+          print(f"identical unrelated failure set: {sorted(patched)}")
+          PY
+
+      - name: Finalize permanent branch
+        run: |
+          git rm tools/apply_issue_882.py .github/workflows/issue-882-validation.yml
+          git add CMakeLists.txt src/trace_engine_v2/part_012.inc src/trace_engine_v2/part_013.inc src/trace_engine_v2/part_014b.inc tests/serena_zero_draw_tests.cpp
+          git commit -m "Reject dominated zero-draw Serena fallback (#882)"
+          git push origin HEAD:fix/882-serena-zero-draw
+          git archive --format=zip HEAD -o issue-882-audit/source.zip
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-882-validation
+          path: issue-882-audit
+          if-no-files-found: error

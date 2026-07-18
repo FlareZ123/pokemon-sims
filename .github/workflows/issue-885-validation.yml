@@ -92,7 +92,7 @@ jobs:
           printf '%s\n' "${PIPESTATUS[0]}" > issue-885-audit/baseline-ctest.status
           exit 0
 
-      - name: Require no new full-suite failures
+      - name: Require only the owned regression to disappear
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -109,11 +109,15 @@ jobs:
 
           baseline = failures('issue-885-audit/baseline-ctest.xml')
           patched = failures('issue-885-audit/patched-ctest.xml')
+          owned = 'regidrago_opening_bench_tapu_route'
+          expected = sorted(name for name in baseline if name != owned)
           Path('issue-885-audit/baseline-failures.json').write_text(json.dumps(baseline, indent=2) + '\n', encoding='utf-8')
           Path('issue-885-audit/patched-failures.json').write_text(json.dumps(patched, indent=2) + '\n', encoding='utf-8')
-          if patched != baseline:
-              raise SystemExit(f'Full-suite failure set changed. baseline={baseline}, patched={patched}')
-          print(f'Baseline parity confirmed with {len(baseline)} pre-existing failing tests.')
+          if owned not in baseline:
+              raise SystemExit(f'Current main no longer contains the owned failing regression: {owned}')
+          if patched != expected:
+              raise SystemExit(f'Unexpected full-suite delta. expected={expected}, patched={patched}')
+          print(f'Only the owned failure was removed: {owned}.')
           PY
 
       - name: Require validation base is still current main

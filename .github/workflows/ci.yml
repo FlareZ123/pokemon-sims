@@ -40,6 +40,8 @@ jobs:
         run: ctest --test-dir build --parallel 4 --output-on-failure
       - name: Record tested source
         run: git rev-parse HEAD > tested-head.txt
+      - name: Archive exact tested source
+        run: git archive --format=zip --output=source.zip HEAD
       - name: Upload validation evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -49,6 +51,7 @@ jobs:
             trace-*.txt
             t2-t3-matrix.csv
             tested-head.txt
+            source.zip
             build/Testing
           if-no-files-found: warn
 

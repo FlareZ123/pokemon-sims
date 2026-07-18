@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
@@ -20,129 +20,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Apply confirmed issue 916 fix
-        if: github.head_ref == 'bug/916-clean-obsolete-traces'
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          root = Path.cwd()
-          script = root / "scripts/regenerate_setup_baselines.py"
-          text = script.read_text(encoding="utf-8")
-          text = text.replace("import os\nimport subprocess", "import os\nimport re\nimport subprocess", 1)
-          text = text.replace(
-              '    for scenario, deadline, stem in TRACE_SPECS:\n',
-              '    expected_trace_files: set[str] = set()\n'
-              '    for scenario, deadline, stem in TRACE_SPECS:\n',
-              1,
-          )
-          text = text.replace(
-              '        file_name = f"{stem}_seed_{seed}.txt"\n'
-              '        atomic_write_text(trace_dir / file_name, trace)\n',
-              '        file_name = f"{stem}_seed_{seed}.txt"\n'
-              '        expected_trace_files.add(file_name)\n'
-              '        atomic_write_text(trace_dir / file_name, trace)\n',
-              1,
-          )
-          cleanup = '''    generated_stems = "|".join(re.escape(stem) for _, _, stem in TRACE_SPECS)
-              generated_trace_name = re.compile(rf"(?:{generated_stems})_seed_[0-9]+\\.txt")
-              for trace_path in trace_dir.iterdir():
-                  # Only canonical generator-owned trace names may be removed. This keeps
-                  # unrelated review notes while reconciling the directory to the new manifest:
-                  # https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md
-                  # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
-                  # https://github.com/FlareZ123/pokemon-sims/issues/916
-                  if (trace_path.is_file() and generated_trace_name.fullmatch(trace_path.name) and
-                          trace_path.name not in expected_trace_files):
-                      trace_path.unlink()
-
-              '''
-          text = text.replace(
-              '    generate_matrix_atomic(executable, output_dir / "simulation_results.csv", trials, matrix_seed)\n',
-              cleanup + 'generate_matrix_atomic(executable, output_dir / "simulation_results.csv", trials, matrix_seed)\n',
-              1,
-          )
-          script.write_text(text, encoding="utf-8")
-
-          test = root / "tests/setup_report_contract_tests.py"
-          text = test.read_text(encoding="utf-8")
-          text = text.replace(
-              'from scripts.baseline_provenance import simulator_policy_source_digest\n',
-              'from scripts.baseline_provenance import simulator_policy_source_digest\n'
-              'from scripts import regenerate_setup_baselines\n',
-              1,
-          )
-          regression = '''
-
-          def assert_regeneration_removes_only_obsolete_generated_traces() -> None:
-              # Regeneration owns the canonical seed-named transcripts described by the
-              # results inventory, so obsolete generated names must not survive a new manifest:
-              # https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md
-              # https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
-              # https://github.com/FlareZ123/pokemon-sims/issues/916
-              with tempfile.TemporaryDirectory() as temporary_directory:
-                  output_dir = Path(temporary_directory) / "results"
-                  trace_dir = output_dir / "traces"
-                  trace_dir.mkdir(parents=True)
-                  obsolete = trace_dir / "strict_jit_go_second_seed_999.txt"
-                  unrelated = trace_dir / "review_notes.txt"
-                  obsolete.write_text("obsolete\\n", encoding="utf-8")
-                  unrelated.write_text("preserve\\n", encoding="utf-8")
-
-                  original_find = regenerate_setup_baselines.find_trace_seed
-                  original_matrix = regenerate_setup_baselines.generate_matrix_atomic
-                  try:
-                      regenerate_setup_baselines.find_trace_seed = (
-                          lambda executable, scenario, deadline, max_seed: (1, f"{scenario}\\n")
-                      )
-                      regenerate_setup_baselines.generate_matrix_atomic = (
-                          lambda executable, matrix_path, trials, matrix_seed:
-                              regenerate_setup_baselines.atomic_write_text(matrix_path, "matrix\\n")
-                      )
-                      regenerate_setup_baselines.regenerate(
-                          Path("unused-simulator"), output_dir, max_seed=1, trials=1, matrix_seed=1
-                      )
-                  finally:
-                      regenerate_setup_baselines.find_trace_seed = original_find
-                      regenerate_setup_baselines.generate_matrix_atomic = original_matrix
-
-                  expected = {f"{stem}_seed_1.txt" for _, _, stem in regenerate_setup_baselines.TRACE_SPECS}
-                  observed = {path.name for path in trace_dir.iterdir()}
-                  if obsolete.exists():
-                      raise AssertionError("Obsolete generator-owned traces must be removed.")
-                  if not unrelated.exists():
-                      raise AssertionError("Unrelated trace-directory files must be preserved.")
-                  if observed != expected | {unrelated.name}:
-                      raise AssertionError(f"Unexpected trace inventory after regeneration: {sorted(observed)}")
-          '''
-          text = text.replace('\ndef main() -> int:\n', regression + '\n\ndef main() -> int:\n', 1)
-          text = text.replace(
-              '    assert_aggregate_driver_is_hashed()\n',
-              '    assert_aggregate_driver_is_hashed()\n'
-              '    assert_regeneration_removes_only_obsolete_generated_traces()\n',
-              1,
-          )
-          test.write_text(text, encoding="utf-8")
-
-          for relative_path in (
-              "results/traces/strict_jit_go_first_seed_6.txt",
-              "results/traces/strict_jit_go_second_seed_3.txt",
-          ):
-              (root / relative_path).unlink(missing_ok=True)
-          PY
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add -A scripts/regenerate_setup_baselines.py tests/setup_report_contract_tests.py results/traces
-          if ! git diff --cached --quiet; then
-            git commit -m "Remove obsolete generated traces (#916)"
-            git push origin HEAD:${{ github.head_ref }}
-          fi
       - name: Configure Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator and unified tests

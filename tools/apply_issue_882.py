@@ -48,7 +48,18 @@ def main() -> None:
     if (!supporter_allowed() || hand_count(Card::Serena) == 0) return false;
     const bool permit_payload = can_play_payload_this_turn() &&
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
-    const auto first = choose_discard(permit_payload, true);
+    const auto payload_it = std::find_if(state_.hand.begin(), state_.hand.end(), is_payload);
+    // The dedicated completion branch exists to put a Dragon payload in discard now.
+    // Force that printed Serena discard instead of allowing generic low-DCI fodder to
+    // consume the mandatory slot:
+    // https://api.pokemontcg.io/v2/cards/swsh12-164
+    // https://api.pokemontcg.io/v2/cards/sv6-127
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/issues/882
+    const std::optional<Card> first =
+        allow_zero_draw_payload_completion && payload_it != state_.hand.end()
+            ? std::optional<Card>{*payload_it}
+            : choose_discard(permit_payload, true);
     if (!first || *first == Card::Serena) return false;
 
     // Build the same deterministic discard plan without committing it. Serena draws

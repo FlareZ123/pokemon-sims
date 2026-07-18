@@ -25,13 +25,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      # BEGIN TEMPORARY ISSUE 915 APPLIER
       - name: Apply confirmed issue 915 fix
         if: github.head_ref == 'bug/915-erika-before-fire'
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
+          import base64
           import json
           import sys
 
@@ -66,146 +66,8 @@ jobs:
                   raise SystemExit("issue-915 selector insertion point was not found")
               source.write_text(text.replace(needle, replacement, 1), encoding="utf-8")
 
-          test = root / "tests/steven_matchup_erika_route_tests.cpp"
-          test.write_text(r'''#define REGIDRAGO_SIM_NO_MAIN
-#include "../src/regidrago_sim.cpp"
-
-#include <algorithm>
-#include <stdexcept>
-
-namespace sim {
-struct EngineTestAccess {
-  static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
-  static const State& state(const Engine& engine) { return engine.state_; }
-  static bool play_mysterious_treasure(Engine& engine) {
-    return engine.play_mysterious_treasure(false);
-  }
-};
-}  // namespace sim
-
-namespace {
-void expect(const bool condition, const char* message) {
-  if (!condition) throw std::runtime_error(message);
-}
-
-bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
-  return std::find(cards.begin(), cards.end(), card) != cards.end();
-}
-
-struct Fixture {
-  sim::Scenario scenario;
-  sim::DeckRecipe recipe;
-  std::mt19937_64 rng;
-  sim::Engine engine;
-
-  explicit Fixture(const sim::DciProfile dci)
-      : scenario{"issue-915", dci, sim::LockMode::None, false, 4},
-        recipe(sim::baseline_recipe()), rng(915), engine(scenario, recipe, rng) {}
-};
-
-sim::State matchup_route_state() {
-  sim::State state;
-  state.turn = 1;
-  state.active = sim::Pokemon{sim::Card::LatiasEx, 0};
-  state.hand = {sim::Card::StevensResolve, sim::Card::RoseannesBackup,
-                sim::Card::MysteriousTreasure, sim::Card::Serena,
-                sim::Card::Fire, sim::Card::ErikasInvitation, sim::Card::Grass};
-  state.deck = {sim::Card::RegidragoV, sim::Card::RegidragoVstar,
-                sim::Card::Crispin, sim::Card::BrilliantBlender,
-                sim::Card::Grass, sim::Card::Fire,
-                sim::Card::MegaDragonite};
-  return state;
-}
-
-void test_matchup_flex_route_discards_erika_and_preserves_fire() {
-  Fixture fixture(sim::DciProfile::MatchupFlexJit);
-  sim::EngineTestAccess::set_state(fixture.engine, matchup_route_state());
-
-  // Erika's Invitation is inert in this goldfish model and is the documented
-  // low-impact matchup-flex cost. Mysterious Treasure can pay with Erika while
-  // preserving Fire for the same Steven/Crispin turn-two route:
-  // https://api.pokemontcg.io/v2/cards/sv3pt5-160
-  // https://api.pokemontcg.io/v2/cards/sm6-113
-  // https://api.pokemontcg.io/v2/cards/sm7-145
-  // https://api.pokemontcg.io/v2/cards/sv7-133
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CARD_AUDIT.md#erikas-invitation
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-  // https://github.com/FlareZ123/pokemon-sims/issues/915
-  expect(sim::EngineTestAccess::play_mysterious_treasure(fixture.engine),
-         "The matchup-flex route should make Mysterious Treasure playable.");
-  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
-  expect(contains(after.discard, sim::Card::ErikasInvitation),
-         "Matchup-flex must discard Erika before the route-conditioned Fire fallback.");
-  expect(contains(after.hand, sim::Card::Fire),
-         "The lower-DCI Erika cost must preserve the public Fire Energy.");
-  expect(contains(after.hand, sim::Card::Grass),
-         "Grass must remain for the turn-one manual attachment.");
-  expect(contains(after.hand, sim::Card::RegidragoV),
-         "Mysterious Treasure should still search Regidrago V.");
-}
-
-void test_strict_jit_retains_fire_route() {
-  Fixture fixture(sim::DciProfile::StrictJit);
-  sim::EngineTestAccess::set_state(fixture.engine, matchup_route_state());
-  expect(sim::EngineTestAccess::play_mysterious_treasure(fixture.engine),
-         "Strict JIT should retain the confirmed Fire-funded route.");
-  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
-  expect(contains(after.discard, sim::Card::Fire),
-         "Strict JIT must still use Fire for the issue-775 route.");
-  expect(contains(after.hand, sim::Card::ErikasInvitation),
-         "Strict JIT must keep the singleton matchup card protected.");
-}
-
-void test_matchup_flex_controls() {
-  {
-    Fixture fixture(sim::DciProfile::MatchupFlexJit);
-    sim::State state = matchup_route_state();
-    state.hand.erase(std::remove(state.hand.begin(), state.hand.end(),
-                                 sim::Card::ErikasInvitation), state.hand.end());
-    sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
-    expect(sim::EngineTestAccess::play_mysterious_treasure(fixture.engine),
-           "The route should fall back to Fire when Erika is absent.");
-    expect(contains(sim::EngineTestAccess::state(fixture.engine).discard, sim::Card::Fire),
-           "Absent Erika must preserve the existing Fire fallback.");
-  }
-  {
-    Fixture fixture(sim::DciProfile::MatchupFlexJit);
-    sim::State state = matchup_route_state();
-    state.hand.erase(std::remove(state.hand.begin(), state.hand.end(), sim::Card::Fire),
-                     state.hand.end());
-    sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
-    expect(sim::EngineTestAccess::play_mysterious_treasure(fixture.engine),
-           "Generic matchup-flex Erika discard remains legal without public Fire.");
-    expect(contains(sim::EngineTestAccess::state(fixture.engine).discard,
-                    sim::Card::ErikasInvitation),
-           "Without Fire, Erika should still be selected by the generic flex table.");
-  }
-  {
-    Fixture fixture(sim::DciProfile::MatchupFlexJit);
-    sim::State state = matchup_route_state();
-    state.deck.erase(std::remove(state.deck.begin(), state.deck.end(), sim::Card::Crispin),
-                     state.deck.end());
-    state.discard.push_back(sim::Card::Crispin);
-    state.discard.push_back(sim::Card::Crispin);
-    sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
-    expect(sim::EngineTestAccess::play_mysterious_treasure(fixture.engine),
-           "Erika remains generic matchup-flex fuel when the Steven route is unavailable.");
-    const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
-    expect(contains(after.discard, sim::Card::ErikasInvitation),
-           "An unavailable route component must not force the Fire-specific override.");
-    expect(contains(after.hand, sim::Card::Fire),
-           "The generic low-DCI cost should still preserve Fire.");
-  }
-}
-}  // namespace
-
-int main() {
-  test_matchup_flex_route_discards_erika_and_preserves_fire();
-  test_strict_jit_retains_fire_route();
-  test_matchup_flex_controls();
-  return 0;
-}
-''', encoding="utf-8")
+          encoded_test = "I2RlZmluZSBSRUdJRFJBR09fU0lNX05PX01BSU4KI2luY2x1ZGUgIi4uL3NyYy9yZWdpZHJhZ29fc2ltLmNwcCIKCiNpbmNsdWRlIDxhbGdvcml0aG0+CiNpbmNsdWRlIDxzdGRleGNlcHQ+CgpuYW1lc3BhY2Ugc2ltIHsKc3RydWN0IEVuZ2luZVRlc3RBY2Nlc3MgewogIHN0YXRpYyB2b2lkIHNldF9zdGF0ZShFbmdpbmUmIGVuZ2luZSwgU3RhdGUgc3RhdGUpIHsgZW5naW5lLnN0YXRlXyA9IHN0ZDo6bW92ZShzdGF0ZSk7IH0KICBzdGF0aWMgY29uc3QgU3RhdGUmIHN0YXRlKGNvbnN0IEVuZ2luZSYgZW5naW5lKSB7IHJldHVybiBlbmdpbmUuc3RhdGVfOyB9CiAgc3RhdGljIGJvb2wgcGxheV9teXN0ZXJpb3VzX3RyZWFzdXJlKEVuZ2luZSYgZW5naW5lKSB7CiAgICByZXR1cm4gZW5naW5lLnBsYXlfbXlzdGVyaW91c190cmVhc3VyZShmYWxzZSk7CiAgfQp9Owp9ICAvLyBuYW1lc3BhY2Ugc2ltCgpuYW1lc3BhY2Ugewp2b2lkIGV4cGVjdChjb25zdCBib29sIGNvbmRpdGlvbiwgY29uc3QgY2hhciogbWVzc2FnZSkgewogIGlmICghY29uZGl0aW9uKSB0aHJvdyBzdGQ6OnJ1bnRpbWVfZXJyb3IobWVzc2FnZSk7Cn0KCmJvb2wgY29udGFpbnMoY29uc3Qgc3RkOjp2ZWN0b3I8c2ltOjpDYXJkPiYgY2FyZHMsIGNvbnN0IHNpbTo6Q2FyZCBjYXJkKSB7CiAgcmV0dXJuIHN0ZDo6ZmluZChjYXJkcy5iZWdpbigpLCBjYXJkcy5lbmQoKSwgY2FyZCkgIT0gY2FyZHMuZW5kKCk7Cn0KCnN0cnVjdCBGaXh0dXJlIHsKICBzaW06OlNjZW5hcmlvIHNjZW5hcmlvOwogIHNpbTo6RGVja1JlY2lwZSByZWNpcGU7CiAgc3RkOjptdDE5OTM3XzY0IHJuZzsKICBzaW06OkVuZ2luZSBlbmdpbmU7CgogIGV4cGxpY2l0IEZpeHR1cmUoY29uc3Qgc2ltOjpEY2lQcm9maWxlIGRjaSkKICAgICAgOiBzY2VuYXJpb3siaXNzdWUtOTE1IiwgZGNpLCBzaW06OkxvY2tNb2RlOjpOb25lLCBmYWxzZSwgNH0sCiAgICAgICAgcmVjaXBlKHNpbTo6YmFzZWxpbmVfcmVjaXBlKCkpLCBybmcoOTE1KSwgZW5naW5lKHNjZW5hcmlvLCByZWNpcGUsIHJuZykge30KfTsKCnNpbTo6U3RhdGUgbWF0Y2h1cF9yb3V0ZV9zdGF0ZSgpIHsKICBzaW06OlN0YXRlIHN0YXRlOwogIHN0YXRlLnR1cm4gPSAxOwogIHN0YXRlLmFjdGl2ZSA9IHNpbTo6UG9rZW1vbntzaW06OkNhcmQ6OkxhdGlhc0V4LCAwfTsKICBzdGF0ZS5oYW5kID0ge3NpbTo6Q2FyZDo6U3RldmVuc1Jlc29sdmUsIHNpbTo6Q2FyZDo6Um9zZWFubmVzQmFja3VwLAogICAgICAgICAgICAgICAgc2ltOjpDYXJkOjpNeXN0ZXJpb3VzVHJlYXN1cmUsIHNpbTo6Q2FyZDo6U2VyZW5hLAogICAgICAgICAgICAgICAgc2ltOjpDYXJkOjpGaXJlLCBzaW06OkNhcmQ6OkVyaWthc0ludml0YXRpb24sIHNpbTo6Q2FyZDo6R3Jhc3N9OwogIHN0YXRlLmRlY2sgPSB7c2ltOjpDYXJkOjpSZWdpZHJhZ29WLCBzaW06OkNhcmQ6OlJlZ2lkcmFnb1ZzdGFyLAogICAgICAgICAgICAgICAgc2ltOjpDYXJkOjpDcmlzcGluLCBzaW06OkNhcmQ6OkJyaWxsaWFudEJsZW5kZXIsCiAgICAgICAgICAgICAgICBzaW06OkNhcmQ6OkdyYXNzLCBzaW06OkNhcmQ6OkZpcmUsCiAgICAgICAgICAgICAgICBzaW06OkNhcmQ6Ok1lZ2FEcmFnb25pdGV9OwogIHJldHVybiBzdGF0ZTsKfQoKdm9pZCB0ZXN0X21hdGNodXBfZmxleF9yb3V0ZV9kaXNjYXJkc19lcmlrYV9hbmRfcHJlc2VydmVzX2ZpcmUoKSB7CiAgRml4dHVyZSBmaXh0dXJlKHNpbTo6RGNpUHJvZmlsZTo6TWF0Y2h1cEZsZXhKaXQpOwogIHNpbTo6RW5naW5lVGVzdEFjY2Vzczo6c2V0X3N0YXRlKGZpeHR1cmUuZW5naW5lLCBtYXRjaHVwX3JvdXRlX3N0YXRlKCkpOwoKICAvLyBFcmlrYSdzIEludml0YXRpb24gaXMgaW5lcnQgaW4gdGhpcyBnb2xkZmlzaCBtb2RlbCBhbmQgaXMgdGhlIGRvY3VtZW50ZWQKICAvLyBsb3ctaW1wYWN0IG1hdGNodXAtZmxleCBjb3N0LiBNeXN0ZXJpb3VzIFRyZWFzdXJlIGNhbiBwYXkgd2l0aCBFcmlrYSB3aGlsZQogIC8vIHByZXNlcnZpbmcgRmlyZSBmb3IgdGhlIHNhbWUgU3RldmVuL0NyaXNwaW4gdHVybi10d28gcm91dGU6CiAgLy8gaHR0cHM6Ly9hcGkucG9rZW1vbnRjZy5pby92Mi9jYXJkcy9zdjNwdDUtMTYwCiAgLy8gaHR0cHM6Ly9hcGkucG9rZW1vbnRjZy5pby92Mi9jYXJkcy9zbTYtMTEzCiAgLy8gaHR0cHM6Ly9hcGkucG9rZW1vbnRjZy5pby92Mi9jYXJkcy9zbTctMTQ1CiAgLy8gaHR0cHM6Ly9hcGkucG9rZW1vbnRjZy5pby92Mi9jYXJkcy9zdjctMTMzCiAgLy8gaHR0cHM6Ly9naXRodWIuY29tL0ZsYXJlWjEyMy9wb2tlbW9uLXNpbXMvYmxvYi9tYWluL2RvY3MvQ0FSRF9BVURJVC5tZCNlcmlrYXMtaW52aXRhdGlvbgogIC8vIGh0dHBzOi8vZ2l0aHViLmNvbS9GbGFyZVoxMjMvcG9rZW1vbi1zaW1zL2Jsb2IvbWFpbi9kb2NzL01PREVMX0FTU1VNUFRJT05TLm1kI2RjaS1pbXBsZW1lbnRhdGlvbgogIC8vIGh0dHBzOi8vZ2l0aHViLmNvbS9GbGFyZVoxMjMvcG9rZW1vbi1zaW1zL2lzc3Vlcy85MTUKICBleHBlY3Qoc2ltOjpFbmdpbmVUZXN0QWNjZXNzOjpwbGF5X215c3RlcmlvdXNfdHJlYXN1cmUoZml4dHVyZS5lbmdpbmUpLAogICAgICAgICAiVGhlIG1hdGNodXAtZmxleCByb3V0ZSBzaG91bGQgbWFrZSBNeXN0ZXJpb3VzIFRyZWFzdXJlIHBsYXlhYmxlLiIpOwogIGNvbnN0IHNpbTo6U3RhdGUmIGFmdGVyID0gc2ltOjpFbmdpbmVUZXN0QWNjZXNzOjpzdGF0ZShmaXh0dXJlLmVuZ2luZSk7CiAgZXhwZWN0KGNvbnRhaW5zKGFmdGVyLmRpc2NhcmQsIHNpbTo6Q2FyZDo6RXJpa2FzSW52aXRhdGlvbiksCiAgICAgICAgICJNYXRjaHVwLWZsZXggbXVzdCBkaXNjYXJkIEVyaWthIGJlZm9yZSB0aGUgcm91dGUtY29uZGl0aW9uZWQgRmlyZSBmYWxsYmFjay4iKTsKICBleHBlY3QoY29udGFpbnMoYWZ0ZXIuaGFuZCwgc2ltOjpDYXJkOjpGaXJlKSwKICAgICAgICAgIlRoZSBsb3dlci1EQ0kgRXJpa2EgY29zdCBtdXN0IHByZXNlcnZlIHRoZSBwdWJsaWMgRmlyZSBFbmVyZ3kuIik7CiAgZXhwZWN0KGNvbnRhaW5zKGFmdGVyLmhhbmQsIHNpbTo6Q2FyZDo6R3Jhc3MpLAogICAgICAgICAiR3Jhc3MgbXVzdCByZW1haW4gZm9yIHRoZSB0dXJuLW9uZSBtYW51YWwgYXR0YWNobWVudC4iKTsKICBleHBlY3QoY29udGFpbnMoYWZ0ZXIuaGFuZCwgc2ltOjpDYXJkOjpSZWdpZHJhZ29WKSwKICAgICAgICAgIk15c3RlcmlvdXMgVHJlYXN1cmUgc2hvdWxkIHN0aWxsIHNlYXJjaCBSZWdpZHJhZ28gVi4iKTsKfQoKdm9pZCB0ZXN0X3N0cmljdF9qaXRfcmV0YWluc19maXJlX3JvdXRlKCkgewogIEZpeHR1cmUgZml4dHVyZShzaW06OkRjaVByb2ZpbGU6OlN0cmljdEppdCk7CiAgc2ltOjpFbmdpbmVUZXN0QWNjZXNzOjpzZXRfc3RhdGUoZml4dHVyZS5lbmdpbmUsIG1hdGNodXBfcm91dGVfc3RhdGUoKSk7CiAgZXhwZWN0KHNpbTo6RW5naW5lVGVzdEFjY2Vzczo6cGxheV9teXN0ZXJpb3VzX3RyZWFzdXJlKGZpeHR1cmUuZW5naW5lKSwKICAgICAgICAgIlN0cmljdCBKSVQgc2hvdWxkIHJldGFpbiB0aGUgY29uZmlybWVkIEZpcmUtZnVuZGVkIHJvdXRlLiIpOwogIGNvbnN0IHNpbTo6U3RhdGUmIGFmdGVyID0gc2ltOjpFbmdpbmVUZXN0QWNjZXNzOjpzdGF0ZShmaXh0dXJlLmVuZ2luZSk7CiAgZXhwZWN0KGNvbnRhaW5zKGFmdGVyLmRpc2NhcmQsIHNpbTo6Q2FyZDo6RmlyZSksCiAgICAgICAgICJTdHJpY3QgSklUIG11c3Qgc3RpbGwgdXNlIEZpcmUgZm9yIHRoZSBpc3N1ZS03NzUgcm91dGUuIik7CiAgZXhwZWN0KGNvbnRhaW5zKGFmdGVyLmhhbmQsIHNpbTo6Q2FyZDo6RXJpa2FzSW52aXRhdGlvbiksCiAgICAgICAgICJTdHJpY3QgSklUIG11c3Qga2VlcCB0aGUgc2luZ2xldG9uIG1hdGNodXAgY2FyZCBwcm90ZWN0ZWQuIik7Cn0KCnZvaWQgdGVzdF9tYXRjaHVwX2ZsZXhfY29udHJvbHMoKSB7CiAgewogICAgRml4dHVyZSBmaXh0dXJlKHNpbTo6RGNpUHJvZmlsZTo6TWF0Y2h1cEZsZXhKaXQpOwogICAgc2ltOjpTdGF0ZSBzdGF0ZSA9IG1hdGNodXBfcm91dGVfc3RhdGUoKTsKICAgIHN0YXRlLmhhbmQuZXJhc2Uoc3RkOjpyZW1vdmUoc3RhdGUuaGFuZC5iZWdpbigpLCBzdGF0ZS5oYW5kLmVuZCgpLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBzaW06OkNhcmQ6OkVyaWthc0ludml0YXRpb24pLCBzdGF0ZS5oYW5kLmVuZCgpKTsKICAgIHNpbTo6RW5naW5lVGVzdEFjY2Vzczo6c2V0X3N0YXRlKGZpeHR1cmUuZW5naW5lLCBzdGQ6Om1vdmUoc3RhdGUpKTsKICAgIGV4cGVjdChzaW06OkVuZ2luZVRlc3RBY2Nlc3M6OnBsYXlfbXlzdGVyaW91c190cmVhc3VyZShmaXh0dXJlLmVuZ2luZSksCiAgICAgICAgICAgIlRoZSByb3V0ZSBzaG91bGQgZmFsbCBiYWNrIHRvIEZpcmUgd2hlbiBFcmlrYSBpcyBhYnNlbnQuIik7CiAgICBleHBlY3QoY29udGFpbnMoc2ltOjpFbmdpbmVUZXN0QWNjZXNzOjpzdGF0ZShmaXh0dXJlLmVuZ2luZSkuZGlzY2FyZCwgc2ltOjpDYXJkOjpGaXJlKSwKICAgICAgICAgICAiQWJzZW50IEVyaWthIG11c3QgcHJlc2VydmUgdGhlIGV4aXN0aW5nIEZpcmUgZmFsbGJhY2suIik7CiAgfQogIHsKICAgIEZpeHR1cmUgZml4dHVyZShzaW06OkRjaVByb2ZpbGU6Ok1hdGNodXBGbGV4Sml0KTsKICAgIHNpbTo6U3RhdGUgc3RhdGUgPSBtYXRjaHVwX3JvdXRlX3N0YXRlKCk7CiAgICBzdGF0ZS5oYW5kLmVyYXNlKHN0ZDo6cmVtb3ZlKHN0YXRlLmhhbmQuYmVnaW4oKSwgc3RhdGUuaGFuZC5lbmQoKSwgc2ltOjpDYXJkOjpGaXJlKSwKICAgICAgICAgICAgICAgICAgICAgc3RhdGUuaGFuZC5lbmQoKSk7CiAgICBzaW06OkVuZ2luZVRlc3RBY2Nlc3M6OnNldF9zdGF0ZShmaXh0dXJlLmVuZ2luZSwgc3RkOjptb3ZlKHN0YXRlKSk7CiAgICBleHBlY3Qoc2ltOjpFbmdpbmVUZXN0QWNjZXNzOjpwbGF5X215c3RlcmlvdXNfdHJlYXN1cmUoZml4dHVyZS5lbmdpbmUpLAogICAgICAgICAgICJHZW5lcmljIG1hdGNodXAtZmxleCBFcmlrYSBkaXNjYXJkIHJlbWFpbnMgbGVnYWwgd2l0aG91dCBwdWJsaWMgRmlyZS4iKTsKICAgIGV4cGVjdChjb250YWlucyhzaW06OkVuZ2luZVRlc3RBY2Nlc3M6OnN0YXRlKGZpeHR1cmUuZW5naW5lKS5kaXNjYXJkLAogICAgICAgICAgICAgICAgICAgIHNpbTo6Q2FyZDo6RXJpa2FzSW52aXRhdGlvbiksCiAgICAgICAgICAgIldpdGhvdXQgRmlyZSwgRXJpa2Egc2hvdWxkIHN0aWxsIGJlIHNlbGVjdGVkIGJ5IHRoZSBnZW5lcmljIGZsZXggdGFibGUuIik7CiAgfQogIHsKICAgIEZpeHR1cmUgZml4dHVyZShzaW06OkRjaVByb2ZpbGU6Ok1hdGNodXBGbGV4Sml0KTsKICAgIHNpbTo6U3RhdGUgc3RhdGUgPSBtYXRjaHVwX3JvdXRlX3N0YXRlKCk7CiAgICBzdGF0ZS5kZWNrLmVyYXNlKHN0ZDo6cmVtb3ZlKHN0YXRlLmRlY2suYmVnaW4oKSwgc3RhdGUuZGVjay5lbmQoKSwgc2ltOjpDYXJkOjpDcmlzcGluKSwKICAgICAgICAgICAgICAgICAgICAgc3RhdGUuZGVjay5lbmQoKSk7CiAgICBzdGF0ZS5kaXNjYXJkLnB1c2hfYmFjayhzaW06OkNhcmQ6OkNyaXNwaW4pOwogICAgc3RhdGUuZGlzY2FyZC5wdXNoX2JhY2soc2ltOjpDYXJkOjpDcmlzcGluKTsKICAgIHNpbTo6RW5naW5lVGVzdEFjY2Vzczo6c2V0X3N0YXRlKGZpeHR1cmUuZW5naW5lLCBzdGQ6Om1vdmUoc3RhdGUpKTsKICAgIGV4cGVjdChzaW06OkVuZ2luZVRlc3RBY2Nlc3M6OnBsYXlfbXlzdGVyaW91c190cmVhc3VyZShmaXh0dXJlLmVuZ2luZSksCiAgICAgICAgICAgIkVyaWthIHJlbWFpbnMgZ2VuZXJpYyBtYXRjaHVwLWZsZXggZnVlbCB3aGVuIHRoZSBTdGV2ZW4gcm91dGUgaXMgdW5hdmFpbGFibGUuIik7CiAgICBjb25zdCBzaW06OlN0YXRlJiBhZnRlciA9IHNpbTo6RW5naW5lVGVzdEFjY2Vzczo6c3RhdGUoZml4dHVyZS5lbmdpbmUpOwogICAgZXhwZWN0KGNvbnRhaW5zKGFmdGVyLmRpc2NhcmQsIHNpbTo6Q2FyZDo6RXJpa2FzSW52aXRhdGlvbiksCiAgICAgICAgICAgIkFuIHVuYXZhaWxhYmxlIHJvdXRlIGNvbXBvbmVudCBtdXN0IG5vdCBmb3JjZSB0aGUgRmlyZS1zcGVjaWZpYyBvdmVycmlkZS4iKTsKICAgIGV4cGVjdChjb250YWlucyhhZnRlci5oYW5kLCBzaW06OkNhcmQ6OkZpcmUpLAogICAgICAgICAgICJUaGUgZ2VuZXJpYyBsb3ctRENJIGNvc3Qgc2hvdWxkIHN0aWxsIHByZXNlcnZlIEZpcmUuIik7CiAgfQp9Cn0gIC8vIG5hbWVzcGFjZQoKaW50IG1haW4oKSB7CiAgdGVzdF9tYXRjaHVwX2ZsZXhfcm91dGVfZGlzY2FyZHNfZXJpa2FfYW5kX3ByZXNlcnZlc19maXJlKCk7CiAgdGVzdF9zdHJpY3Rfaml0X3JldGFpbnNfZmlyZV9yb3V0ZSgpOwogIHRlc3RfbWF0Y2h1cF9mbGV4X2NvbnRyb2xzKCk7CiAgcmV0dXJuIDA7Cn0K"
+          (root / "tests/steven_matchup_erika_route_tests.cpp").write_bytes(base64.b64decode(encoded_test))
 
           sys.path.insert(0, str(root))
           from scripts.baseline_provenance import simulator_policy_source_digest
@@ -213,21 +75,14 @@ int main() {
           manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
           manifest["simulator_policy_source_sha256"] = simulator_policy_source_digest(root)
           manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-          ci = root / ".github/workflows/ci.yml"
-          ci_text = ci.read_text(encoding="utf-8")
-          start = ci_text.index("      # BEGIN TEMPORARY ISSUE 915 APPLIER\n")
-          end = ci_text.index("      # END TEMPORARY ISSUE 915 APPLIER\n") + len("      # END TEMPORARY ISSUE 915 APPLIER\n")
-          ci.write_text(ci_text[:start] + ci_text[end:].replace("contents: write", "contents: read", 1), encoding="utf-8")
-          (root / ".github/workflows/apply-915.yml").unlink(missing_ok=True)
-          (root / ".github/issue-915-trigger.txt").unlink(missing_ok=True)
           PY
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add -A
-          git commit -m "Prefer matchup-flex Erika before Fire (#915)"
-          git push origin HEAD:${{ github.head_ref }}
-      # END TEMPORARY ISSUE 915 APPLIER
+          git add src/trace_engine_v2/part_006.inc tests/steven_matchup_erika_route_tests.cpp results/baseline_manifest.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Prefer matchup-flex Erika before Fire (#915)"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
       - name: Configure Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator and unified tests

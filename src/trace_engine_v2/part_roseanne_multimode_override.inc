@@ -17,9 +17,24 @@
         return false;
       }
       Engine simulated = *this;
-      if (!remove_one(simulated.state_.hand, Card::RoseannesBackup)) return false;
+      if (!remove_one(simulated.state_.hand, Card::RoseannesBackup) ||
+          !remove_one(simulated.state_.discard, Card::RegidragoVstar) ||
+          !remove_one(simulated.state_.discard, needed_energy)) {
+        return false;
+      }
       simulated.state_.deck.push_back(Card::RegidragoVstar);
       simulated.state_.deck.push_back(needed_energy);
+      simulated.state_.discard.push_back(Card::RoseannesBackup);
+      simulated.state_.supporter_used = true;
+      // Roseanne's Backup moves each selected card from discard into the deck. Keep
+      // the copied zones exact before Pokémon Communication evaluates the restored
+      // VSTAR and before Earthen Vessel reserves a separate discard cost:
+      // https://api.pokemontcg.io/v2/cards/swsh9-148
+      // https://api.pokemontcg.io/v2/cards/sm9-152
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+      // https://github.com/FlareZ123/pokemon-sims/issues/837
       const auto plan = simulated.pokemon_communication_plan(false, true, true);
       if (!plan || plan->target != Card::RegidragoVstar ||
           !simulated.resolve_pokemon_communication(plan->returned, plan->target)) {

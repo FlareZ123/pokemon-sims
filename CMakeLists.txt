@@ -284,3 +284,15 @@ target_compile_options(regidrago_pokemon_communication_recovery_zone_tests PRIVA
   -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 add_test(NAME regidrago_pokemon_communication_recovery_zones
   COMMAND regidrago_pokemon_communication_recovery_zone_tests)
+
+# Roseanne's Backup -> Pokémon Communication -> Earthen Vessel regression:
+# https://api.pokemontcg.io/v2/cards/swsh9-148
+# https://api.pokemontcg.io/v2/cards/sm9-152
+# https://api.pokemontcg.io/v2/cards/sv4-163
+# https://github.com/FlareZ123/pokemon-sims/issues/837
+add_executable(regidrago_roseanne_pokemon_communication_zone_tests
+  tests/roseanne_pokemon_communication_zone_tests.cpp)
+target_compile_options(regidrago_roseanne_pokemon_communication_zone_tests
+  PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+add_test(NAME regidrago_roseanne_pokemon_communication_zones
+  COMMAND regidrago_roseanne_pokemon_communication_zone_tests)

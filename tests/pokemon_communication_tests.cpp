@@ -115,13 +115,13 @@ void test_baseline_recipe_is_unchanged() {
 
 void test_variant_recipe_supports_communication_without_changing_baseline() {
   sim::DeckRecipe recipe = sim::baseline_recipe();
-  auto mawile = std::find_if(recipe.begin(), recipe.end(), [](const auto& entry) {
-    return entry.first == sim::Card::MawileGX;
+  auto erika = std::find_if(recipe.begin(), recipe.end(), [](const auto& entry) {
+    return entry.first == sim::Card::ErikasInvitation;
   });
-  if (mawile == recipe.end() || mawile->second != 1) {
+  if (erika == recipe.end() || erika->second != 1) {
     throw std::runtime_error("The variant fixture could not identify its one-card swap.");
   }
-  recipe.erase(mawile);
+  recipe.erase(erika);
   recipe.emplace_back(sim::Card::PokemonCommunication, 1);
 
   int total = 0;

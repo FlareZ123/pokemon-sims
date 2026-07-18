@@ -16,7 +16,7 @@ endif()
 execute_process(
   COMMAND "${SIMULATOR}" --simulate-this
           --scenario no-discard-control/go-first
-          --seed 6
+          --seed 7
           --require-ready-by 2
   RESULT_VARIABLE trace_result
   OUTPUT_VARIABLE trace

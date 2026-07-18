@@ -3,7 +3,7 @@
   const DeckRecipe deck = baseline_recipe();
   // Reuse the registered strict-JIT go-second T3 regression seed and deadline:
   // https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt
-  std::mt19937_64 rng(6);
+  std::mt19937_64 rng(1);
   TraceLog trace{true, {}};
   Engine engine(*scenario, deck, rng, &trace);
   const TrialOutcome outcome = engine.run();

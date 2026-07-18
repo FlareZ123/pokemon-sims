@@ -1,0 +1,44 @@
+name: Refresh issue 718 final provenance
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build outside the repository
+        run: |
+          cmake -S . -B /tmp/pokemon-sims-issue-718 -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/pokemon-sims-issue-718 --parallel 2
+      - name: Regenerate source-bound evidence
+        run: |
+          python scripts/regenerate_setup_baselines.py \
+            --exe /tmp/pokemon-sims-issue-718/regidrago_sim \
+            --out-dir results \
+            --max-seed 5000 \
+            --trials 100000 \
+            --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python tests/setup_report_contract_tests.py
+          ctest --test-dir /tmp/pokemon-sims-issue-718 --output-on-failure --parallel 2
+      - name: Commit final provenance
+        run: |
+          rm .github/workflows/issue-718-refresh-final-provenance.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add docs/REPORT.md docs/TRACE_AUDIT.md results/baseline_manifest.json results/simulation_results.csv results/traces
+          git add -u .github/workflows/issue-718-refresh-final-provenance.yml
+          git commit -m "Refresh final issue 718 source provenance"
+          git push origin HEAD:${{ github.head_ref }}

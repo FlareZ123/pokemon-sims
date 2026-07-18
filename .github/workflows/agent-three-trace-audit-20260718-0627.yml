@@ -1,0 +1,80 @@
+name: Agent Three Trace Audit 20260718 0627
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'audit/20260718-0627-three-traces'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out audit branch
+        uses: actions/checkout@v4
+        with:
+          ref: audit/20260718-0627-three-traces
+          fetch-depth: 0
+
+      - name: Reconcile latest main
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Configure and build full Release suite
+        run: |
+          mkdir -p agent-audit
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Capture full test-suite state
+        shell: bash
+        run: |
+          set +e
+          set -o pipefail
+          ctest --test-dir build --output-on-failure | tee agent-audit/ctest-release.txt
+          test_status=${PIPESTATUS[0]}
+          echo "${test_status}" > agent-audit/ctest-release-status.txt
+          exit 0
+
+      - name: Trace 1 matchup-flex turn-two readiness
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee agent-audit/trace-1-matchup-flex-seed-3.txt
+          # Earliest complete legal route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+
+      - name: Trace 2 turn-two Item-lock readiness
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 2 | tee agent-audit/trace-2-item-lock-seed-2.txt
+          # Scenario lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+
+      - name: Trace 3 Rule Box Ability-lock readiness
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee agent-audit/trace-3-rulebox-seed-20.txt
+          # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+
+      - name: Generate canonical T2/T3 matrix
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out agent-audit/t2_t3_matrix.csv
+          # Probability contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#what-the-probability-means
+
+      - name: Archive exact reconciled source
+        run: git archive --format=zip HEAD -o agent-audit/source.zip
+
+      - name: Upload audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-three-trace-audit-20260718-0627
+          path: agent-audit
+          if-no-files-found: error

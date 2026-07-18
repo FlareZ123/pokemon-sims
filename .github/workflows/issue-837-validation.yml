@@ -43,16 +43,18 @@ jobs:
           ./build/issue-837-ubsan | tee issue-837-audit/ubsan.log
 
       # Three independent readable-hand audits required by the repository workflow.
+      # These exact examples are registered as reviewed traces:
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/TRACE_AUDIT.md#reviewed-traces
       # Commands: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
       # Hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
       # Confirmed issue: https://github.com/FlareZ123/pokemon-sims/issues/837
-      - name: Run three independent simulate-this passes
+      - name: Run three independent reviewed simulate-this passes
         run: |
           ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 \
             | tee issue-837-audit/trace-1.txt
-          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 9 --require-ready-by 3 \
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 --require-ready-by 3 \
             | tee issue-837-audit/trace-2.txt
-          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 \
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 \
             | tee issue-837-audit/trace-3.txt
 
       # Canonical aggregate command and fixed seed:

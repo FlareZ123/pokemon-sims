@@ -1,3 +1,4 @@
+
 Seed: 1 | first-ready turn: 4 | setup result: success
 ===== SIMULATE THIS =====
 Scenario: no-discard-control/go-first | DCI: no-discard-control | Locks: none

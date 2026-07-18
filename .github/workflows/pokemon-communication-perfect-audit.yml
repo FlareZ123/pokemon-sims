@@ -1,0 +1,68 @@
+name: Pokémon Communication Perfect-Play Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  communication-audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'audit/pokemon-communication-perfect-20260717'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out pull-request merge ref
+        uses: actions/checkout@v4
+
+      - name: Configure Release build
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build repository
+        run: cmake --build build --parallel 2
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Run focused Pokémon Communication regressions
+        run: |
+          ./build/regidrago_pokemon_communication_tests
+          ./build/regidrago_pokemon_communication_duplicate_tapu_tests
+
+      - name: Build lifetime-correct post-exchange diagnostic
+        run: c++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tools/pokemon_communication_post_exchange_probe.cpp -o build/pokemon_communication_post_exchange_probe
+
+      - name: Reproduce issue 808 without dangling references
+        run: ./build/pokemon_communication_post_exchange_probe | tee build/pokemon-communication-post-exchange.txt
+
+      - name: Run three independent perfect-play traces
+        shell: bash
+        run: |
+          # Trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Earliest-ready objective: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 --require-ready-by 3 | tee build/communication-trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee build/communication-trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee build/communication-trace-3.txt
+
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/pokemon-communication-setup-matrix.csv
+
+      - name: Archive exact audited source
+        run: git archive --format=zip HEAD -o build/pokemon-communication-source.zip
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pokemon-communication-perfect-audit
+          path: |
+            build/pokemon-communication-post-exchange.txt
+            build/communication-trace-1.txt
+            build/communication-trace-2.txt
+            build/communication-trace-3.txt
+            build/pokemon-communication-setup-matrix.csv
+            build/pokemon-communication-source.zip
+            build/Testing
+          if-no-files-found: warn

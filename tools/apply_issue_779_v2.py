@@ -27,9 +27,23 @@ def main() -> None:
         os.write(descriptor, str(os.getpid()).encode("ascii"))
 
         source = Path("src/regidrago_sim.cpp")
-        source_anchor = '#include "trace_engine_v2/part_pokemon_communication.inc"\n#include "trace_engine_v2/part_010_fss_override.inc"\n'
-        source_replacement = '#include "trace_engine_v2/part_pokemon_communication.inc"\n#include "trace_engine_v2/part_010_late_steven_override.inc"\n#include "trace_engine_v2/part_010_fss_override.inc"\n'
+        source_anchor = '#include "trace_engine_v2/part_010_steven_crispin_override.inc"\n'
+        source_replacement = '#include "trace_engine_v2/part_010_late_steven_override.inc"\n#include "trace_engine_v2/part_010_steven_crispin_override.inc"\n'
         replace_once(source, source_anchor, source_replacement)
+
+        steven_policy = Path("src/trace_engine_v2/part_010_steven_crispin_override.inc")
+        policy_anchor = '''  bool should_play_steven() const {
+    return should_play_steven_original() &&
+        !steven_should_yield_to_crispin_mysterious_route();
+  }
+'''
+        policy_replacement = '''  bool should_play_steven() const {
+    return (should_play_steven_original() &&
+            !steven_should_yield_to_crispin_mysterious_route()) ||
+        late_steven_is_only_basic_connector();
+  }
+'''
+        replace_once(steven_policy, policy_anchor, policy_replacement)
 
         cmake = Path("CMakeLists.txt")
         target_anchor = "add_executable(regidrago_steven_missing_regi_tests tests/steven_missing_regi_tests.cpp)\ntarget_compile_options(regidrago_steven_missing_regi_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)\n"

@@ -1,0 +1,76 @@
+name: Issue 840 Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/840-crispin-before-dead-burnet-gladion'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+
+    steps:
+      - name: Check out issue branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/840-crispin-before-dead-burnet-gladion
+          fetch-depth: 0
+
+      - name: Reconcile current main
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Archive exact source
+        shell: bash
+        run: |
+          mkdir -p issue-840-audit
+          tar --exclude=.git --exclude=build --exclude=issue-840-audit -czf issue-840-audit/source.tar.gz .
+
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build repository
+        run: cmake --build build --parallel 2
+
+      - name: Run focused regression
+        run: ./build/regidrago_gladion_serena_item_lock_tests
+
+      - name: Run full Release suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Run focused warning-clean UBSan regression
+        run: |
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -fsanitize=undefined -fno-omit-frame-pointer tests/gladion_serena_item_lock_tests.cpp -o build/issue-840-focused
+          ./build/issue-840-focused
+
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          # Trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Earliest-ready objective: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 9 --require-ready-by 3 | tee issue-840-audit/trace-1-item-lock-seed-9.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-840-audit/trace-2-flex-seed-3.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee issue-840-audit/trace-3-rulebox-seed-20.txt
+
+      - name: Generate canonical T2 and T3 matrix
+        shell: bash
+        run: |
+          # Probability contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#what-the-probability-means
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-840-audit/t2_t3_matrix.csv
+          cat issue-840-audit/t2_t3_matrix.csv
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-840-validation
+          path: issue-840-audit
+          if-no-files-found: error

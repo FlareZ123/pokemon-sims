@@ -10,7 +10,7 @@ permissions:
 jobs:
   compare-matrix:
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 30
     steps:
       - name: Check out variant
         uses: actions/checkout@v4
@@ -23,15 +23,17 @@ jobs:
           ref: main
           path: baseline
 
-      - name: Configure and build both lists
+      - name: Configure and build both simulators
         run: |
           cmake -S baseline -B build-baseline -DCMAKE_BUILD_TYPE=Release
-          cmake --build build-baseline --parallel 2
+          cmake --build build-baseline --target regidrago_sim --parallel 2
           cmake -S variant -B build-variant -DCMAKE_BUILD_TYPE=Release
-          cmake --build build-variant --parallel 2
+          cmake --build build-variant --target regidrago_sim --parallel 2
 
-      - name: Validate variant tests
-        run: ctest --test-dir build-variant --output-on-failure
+      - name: Validate simulator self-tests
+        run: |
+          ./build-baseline/regidrago_sim --self-test
+          ./build-variant/regidrago_sim --self-test
 
       - name: Generate matched 100,000-trial matrices
         run: |

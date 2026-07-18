@@ -92,11 +92,9 @@ def main() -> None:
         replace_once(source, old_call, new_call)
 
         cmake = Path("CMakeLists.txt")
-        old_cmake = '''enable_testing()
-add_test(NAME regidrago_sim_self_test COMMAND regidrago_sim --self-test)
+        old_cmake = '''add_test(NAME regidrago_sim_self_test COMMAND regidrago_sim --self-test)
 '''
-        new_cmake = '''enable_testing()
-add_test(NAME regidrago_active_tapu_paid_retreat
+        new_cmake = '''add_test(NAME regidrago_active_tapu_paid_retreat
   COMMAND ${CMAKE_COMMAND}
     -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
     -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_active_tapu_paid_retreat.cmake)

@@ -33,7 +33,7 @@ The corpus audit changed the implementation details in several important ways.
 3. Crispin searches for up to two Basic Energy cards of different types, places one in hand, and attaches the other. The modeled accelerator is therefore one Grass plus one Fire, with the manual attachment satisfying the remaining Apex requirement.
 4. Forest Seal Stone is used while attached to Regidrago V. The model consumes the game-wide VSTAR Power resource and does not allow a later Legacy Star in the same simulation.
 5. Latias ex’s Skyliner gives Basic Pokémon in play no Retreat Cost. The simulator uses it only to move an already-benched Regidrago VSTAR Active through a legal zero-cost retreat from the current Basic Active.
-6. Dipplin TWM 127 is a Stage 1 Dragon. It cannot be an opening Basic or bench target in this list. It remains a discardable Dragon payload/tech card.
+6. Dipplin TWM 127 is a Stage 1 Dragon. It cannot be an opening Basic or bench target in this list. It remains a legal Dragon search target and a discardable dead Stage 1 tech card. It is excluded from the A/S payload set.
 
 ### Revision 2, rules checkpoint
 

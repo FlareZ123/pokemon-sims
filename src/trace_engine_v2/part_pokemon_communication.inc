@@ -135,7 +135,11 @@
       const bool communication_is_held,
       const bool supporter_will_be_used) {
     const std::vector<Card> original_hand = state_.hand;
-    const auto restore = [this, &original_hand]() { state_.hand = original_hand; };
+    const std::vector<Card> original_deck = state_.deck;
+    const auto restore = [this, &original_hand, &original_deck]() {
+      state_.hand = original_hand;
+      state_.deck = original_deck;
+    };
     if (!communication_is_held) state_.hand.push_back(Card::PokemonCommunication);
     if (!remove_one(state_.hand, Card::PokemonCommunication) ||
         !remove_one(state_.hand, returned)) {
@@ -143,15 +147,26 @@
       return false;
     }
     state_.hand.push_back(fetched);
+    if (prizes_known()) {
+      if (!remove_one(state_.deck, fetched)) {
+        restore();
+        return false;
+      }
+      state_.deck.push_back(returned);
+    }
 
-    // Pokémon Communication returns one Pokémon before the later search. That
-    // returned card is a guaranteed target for a subsequent search Item only when it
-    // belongs to that Item's printed target class:
+    // At K1 the searched Pokémon leaves the known deck before the later Item, while
+    // the returned Pokémon enters it. At K0, fixed-list accounting derives the same
+    // public transition from the exact post-Communication hand without inspecting
+    // the hidden deck. Evaluate the later target class against that state:
     // Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Known no-effect Trainer ruling: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+    // Hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    // Regression: https://github.com/FlareZ123/pokemon-sims/issues/808
     const bool mysterious_target = is_dragon_or_psychic(returned) ||
         std::any_of(recipe_.begin(), recipe_.end(), [this](const auto& entry) {
           return is_dragon_or_psychic(entry.first) &&

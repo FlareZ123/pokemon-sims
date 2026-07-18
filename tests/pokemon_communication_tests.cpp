@@ -990,6 +990,62 @@ void test_gladion_does_not_recover_communication_using_itself_as_cost() {
   }
 }
 
+void test_payload_route_rejects_fetched_only_mysterious_treasure_target() {
+  Fixture fixture("communication-treasure-fetched-only-target");
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1,
+                              sim::Tool::None};
+  state.hand = {sim::Card::PokemonCommunication, sim::Card::MawileGX,
+                sim::Card::MysteriousTreasure};
+  state.deck = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(fixture.engine, state);
+  sim::EngineTestAccess::set_deck_seen(fixture.engine);
+
+  // Mega Dragonite ex leaves the known deck during Pokémon Communication. Mawile-GX
+  // then becomes the only deck card, so Mysterious Treasure would have no Psychic or
+  // Dragon target after discarding the fetched payload. Reject the one-shot bridge
+  // before spending it:
+  // https://api.pokemontcg.io/v2/cards/sm9-152
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+  // https://github.com/FlareZ123/pokemon-sims/issues/808
+  if (sim::EngineTestAccess::play_pokemon_communication(fixture.engine, true) ||
+      sim::EngineTestAccess::state(fixture.engine).hand != state.hand ||
+      sim::EngineTestAccess::state(fixture.engine).deck != state.deck) {
+    throw std::runtime_error(
+        "Communication must reject the known targetless Treasure continuation.");
+  }
+}
+
+void test_payload_route_rejects_fetched_only_quick_ball_target() {
+  Fixture fixture("communication-quick-ball-fetched-only-target");
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1,
+                              sim::Tool::None};
+  state.hand = {sim::Card::PokemonCommunication, sim::Card::Dipplin,
+                sim::Card::QuickBall};
+  state.deck = {sim::Card::DialgaGX};
+  sim::EngineTestAccess::set_state(fixture.engine, state);
+  sim::EngineTestAccess::set_deck_seen(fixture.engine);
+
+  // Dialga-GX leaves the known deck during Pokémon Communication. The returned
+  // Stage 1 Dipplin cannot satisfy Quick Ball's Basic target requirement after the
+  // fetched Dialga-GX pays the discard cost:
+  // https://api.pokemontcg.io/v2/cards/sm9-152
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/sm5-100
+  // https://api.pokemontcg.io/v2/cards/sv6-127
+  // https://github.com/FlareZ123/pokemon-sims/issues/808
+  if (sim::EngineTestAccess::play_pokemon_communication(fixture.engine, true) ||
+      sim::EngineTestAccess::state(fixture.engine).hand != state.hand ||
+      sim::EngineTestAccess::state(fixture.engine).deck != state.deck) {
+    throw std::runtime_error(
+        "Communication must reject the known targetless Quick Ball continuation.");
+  }
+}
+
 void test_payload_route_accepts_a_different_mysterious_treasure_target() {
   Fixture fixture("communication-treasure-alternate-target");
   sim::State state;
@@ -1081,6 +1137,8 @@ int main() {
   test_arven_does_not_count_itself_as_ultra_ball_fodder();
   test_wonder_tag_arven_plan_consumes_tapu_and_bench_space();
   test_gladion_does_not_recover_communication_using_itself_as_cost();
+  test_payload_route_rejects_fetched_only_mysterious_treasure_target();
+  test_payload_route_rejects_fetched_only_quick_ball_target();
   test_payload_route_accepts_a_different_mysterious_treasure_target();
   test_payload_route_accepts_a_different_quick_ball_target();
   return 0;

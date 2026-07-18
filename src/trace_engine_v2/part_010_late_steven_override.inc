@@ -81,7 +81,3 @@
     // https://github.com/FlareZ123/pokemon-sims/issues/779
     return !unused_fss_route && !has_faster_current_turn_regidrago_v_route();
   }
-
-  bool should_play_steven() const {
-    return should_play_steven_original() || late_steven_is_only_basic_connector();
-  }

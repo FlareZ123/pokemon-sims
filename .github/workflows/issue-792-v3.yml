@@ -28,8 +28,8 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git fetch origin main
+          git rev-parse origin/main > /tmp/issue-792-baseline-sha
           git merge --no-edit origin/main
-          git rev-parse HEAD > /tmp/issue-792-baseline-sha
           mkdir -p issue-792-audit
 
       - name: Build and record exact current-main baseline
@@ -127,7 +127,7 @@ jobs:
         shell: bash
         run: |
           git fetch origin main
-          if ! git merge-base --is-ancestor origin/main "$(cat /tmp/issue-792-baseline-sha)"; then
+          if [ "$(git rev-parse origin/main)" != "$(cat /tmp/issue-792-baseline-sha)" ]; then
             echo "main advanced during validation; rerun against the new head."
             exit 1
           fi

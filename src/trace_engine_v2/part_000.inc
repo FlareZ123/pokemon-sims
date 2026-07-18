@@ -61,6 +61,7 @@ enum class Card : std::uint8_t {
   TeamYellsCheer,
   RoseannesBackup,
   ProfessorTuro,
+  ErikasInvitation,
   ForestSealStone,
   Powerglass,
   FieldBlower,
@@ -74,7 +75,7 @@ enum class Card : std::uint8_t {
 constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
     {Card::RegidragoV, 4},        {Card::RegidragoVstar, 3}, {Card::Dragapult, 2},
     {Card::MegaDragonite, 2},     {Card::DialgaGX, 1},       {Card::GoodraVstar, 1},
-    {Card::TapuLeleGX, 2},        {Card::LatiasEx, 1},       {Card::MawileGX, 1},
+    {Card::TapuLeleGX, 2},        {Card::LatiasEx, 1},       {Card::ErikasInvitation, 1},
     {Card::Oricorio, 1},          {Card::Dipplin, 1},        {Card::BrilliantBlender, 1},
     {Card::MysteriousTreasure, 4},{Card::QuickBall, 3},      {Card::EarthenVessel, 2},
     {Card::Arven, 2},             {Card::Crispin, 2},        {Card::ProfessorBurnet, 1},

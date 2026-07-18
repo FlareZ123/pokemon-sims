@@ -1,0 +1,30 @@
+name: Erika's Invitation Delta
+
+on:
+  pull_request:
+    paths:
+      - 'src/trace_engine_v2/part_000.inc'
+      - 'src/trace_engine_v2/part_001.inc'
+      - 'tools/erikas_invitation_delta.cpp'
+      - '.github/workflows/erikas-invitation-delta.yml'
+
+jobs:
+  delta-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out pull-request merge ref
+        uses: actions/checkout@v4
+      - name: Build paired delta audit
+        run: |
+          g++ -std=c++20 -O3 -Wall -Wextra -Wpedantic -Werror \
+            tools/erikas_invitation_delta.cpp \
+            -o erikas_invitation_delta
+      - name: Run paired Erika versus Mawile comparison
+        run: |
+          ./erikas_invitation_delta > erikas_invitation_delta.csv
+          cat erikas_invitation_delta.csv
+      - name: Upload delta statistics
+        uses: actions/upload-artifact@v4
+        with:
+          name: erikas-invitation-delta
+          path: erikas_invitation_delta.csv

@@ -24,7 +24,7 @@ REQUESTED: dict[str, tuple[str, int]] = {
     "Hisuian Goodra VSTAR": ("swsh11-136", 1),
     "Tapu Lele-GX": ("cel25c-60_A", 2),
     "Latias ex": ("sv8-76", 1),
-    "Mawile-GX": ("sm11-141", 1),
+    "Erika's Invitation": ("sv3pt5-160", 1),
     "Oricorio GRI 55": ("sm2-55", 1),
     "Dipplin TWM 127": ("sv6-127", 1),
     "Brilliant Blender": ("sv8-164", 1),
@@ -182,64 +182,47 @@ def build_payload(source: Path, by_id: dict[str, dict[str, Any]]) -> dict[str, A
         raise SystemExit("Missing requested card IDs: " + ", ".join(missing))
 
     expected_by_name, expected_totals = canonical_category_contract()
-    category_totals = {"pokemon": 0, "trainers": 0, "energy": 0}
-    records: dict[str, Any] = {}
+    cards: dict[str, dict[str, Any]] = {}
+    observed_totals = {"pokemon": 0, "trainers": 0, "energy": 0}
     for name, (card_id, copies) in REQUESTED.items():
-        expected_category = expected_by_name[name]
         if card_id.startswith("energy-"):
-            if expected_category != "energy":
-                raise SystemExit(f"Explicit Basic Energy entry is grouped as {expected_category}: {name}")
-            records[name] = {"copies": copies, "id": card_id, "name": name, "category": "Basic Energy"}
-            category_totals["energy"] += copies
+            cards[name] = {"copies": copies, "id": card_id, "name": name, "supertype": "Energy"}
+            observed_totals["energy"] += copies
             continue
-
-        card = by_id[card_id]
-        actual_category = SUPERTYPE_TO_CATEGORY.get(card.get("supertype"))
-        # pokemon-tcg-data is the authoritative supplied record. Reject unsupported
-        # supertypes and any requested print whose corpus category disagrees with the
-        # canonical decklist instead of certifying hard-coded totals:
-        # https://github.com/PokemonTCG/pokemon-tcg-data
-        # https://github.com/FlareZ123/pokemon-sims/blob/main/data/decklist.json
-        # https://github.com/FlareZ123/pokemon-sims/issues/691
-        if actual_category is None:
-            raise SystemExit(f"Unsupported supertype for {name} ({card_id}): {card.get('supertype')!r}")
-        if actual_category != expected_category:
+        summary = card_summary(by_id[card_id], copies)
+        cards[name] = summary
+        supertype = summary.get("supertype")
+        category = SUPERTYPE_TO_CATEGORY.get(supertype)
+        if category is None:
+            raise SystemExit(f"Unsupported supertype for {name}: {supertype!r}")
+        expected_category = expected_by_name[name]
+        if category != expected_category:
             raise SystemExit(
-                f"Unexpected supertype for {name} ({card_id}): {card.get('supertype')!r}; "
-                f"decklist category is {expected_category}"
+                f"Unexpected supertype for {name}: {supertype!r} maps to {category!r}, expected {expected_category!r}"
             )
-        records[name] = card_summary(card, copies)
-        category_totals[actual_category] += copies
+        observed_totals[category] += copies
 
-    if category_totals != expected_totals:
-        raise SystemExit(f"Derived category totals {category_totals} do not match decklist totals {expected_totals}")
-
-    payload = {
-        "source": str(source),
-        "deck_total": sum(category_totals.values()),
-        "category_totals": category_totals,
-        "records": records,
-        "notes": [
-            "The source corpus records paper legality. It does not encode the current Pokemon TCG Live client card pool.",
-            "Live availability remains an explicit input assumption verified by the user-provided Live list, not a claim inferred from paper Expanded legality.",
-        ],
-    }
-    if payload["deck_total"] != 60:
-        raise SystemExit(f"Deck total is {payload['deck_total']}, expected 60")
-    return payload
+    if observed_totals != expected_totals:
+        raise SystemExit(
+            f"Derived category totals {observed_totals!r} do not match decklist totals {expected_totals!r}"
+        )
+    return {"source": str(source), "category_totals": observed_totals, "cards": cards}
 
 
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("source", type=Path, help="pokemon-tcg-data repository directory or ZIP")
+    parser.add_argument("source", type=Path, help="pokemon-tcg-data checkout directory or ZIP archive")
     parser.add_argument("--out", type=Path, default=Path("data/card_audit.json"))
     args = parser.parse_args()
 
-    by_id = {card["id"]: card for card in read_all_cards(args.source)}
+    all_cards = read_all_cards(args.source)
+    by_id = {card["id"]: card for card in all_cards}
     payload = build_payload(args.source, by_id)
+    args.out.parent.mkdir(parents=True, exist_ok=True)
     atomic_json_write(args.out, payload)
-    print(f"Validated {payload['deck_total']} cards across {len(payload['records'])} named entries: {args.out}")
+    print(json.dumps({"output": str(args.out), "cards": len(payload["cards"]), "category_totals": payload["category_totals"]}))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

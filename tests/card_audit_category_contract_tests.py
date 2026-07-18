@@ -53,7 +53,7 @@ def main() -> int:
     # https://github.com/FlareZ123/pokemon-sims/blob/main/data/decklist.json
     # https://github.com/FlareZ123/pokemon-sims/issues/691
     payload = audit.build_payload(Path("fixture.zip"), cards)
-    if payload["category_totals"] != {"pokemon": 19, "trainers": 32, "energy": 9}:
+    if payload["category_totals"] != {"pokemon": 18, "trainers": 33, "energy": 9}:
         raise AssertionError(f"Unexpected derived category totals: {payload['category_totals']}")
 
     mutated = copy.deepcopy(cards)

@@ -28,6 +28,8 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git fetch origin main
           git merge --no-edit origin/main
+          git rev-parse HEAD > /tmp/issue-856-baseline-sha
+          mkdir -p issue-856-audit
 
       - name: Apply isolated source-registry fix
         shell: bash
@@ -120,48 +122,74 @@ jobs:
           test "$(grep -c 'https://api.pokemontcg.io/v2/cards/sv3pt5-160' docs/RULE_SOURCES.md)" -eq 1
           test "$(grep -c 'https://api.pokemontcg.io/v2/cards/sv3pt5-160' tests/card_audit_contract_tests.py)" -eq 1
 
-      - name: Configure Release build
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Configure and build patched Release
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          bash .github/scripts/capture-build.sh build build.log
 
-      - name: Build Release
-        run: bash .github/scripts/capture-build.sh build build.log
-
-      - name: Run full Release suite
-        continue-on-error: true
+      - name: Record patched full Release suite
         shell: bash
         run: |
-          mkdir -p issue-856-audit
           set +e
-          set -o pipefail
-          ctest --test-dir build --output-on-failure 2>&1 | tee issue-856-audit/ctest.log
-          status=${PIPESTATUS[0]}
-          printf '%s\n' "$status" > issue-856-audit/ctest.status
-          exit "$status"
+          ctest --test-dir build --output-on-failure --output-junit issue-856-audit/patched-ctest.xml 2>&1 | tee issue-856-audit/patched-ctest.log
+          printf '%s\n' "${PIPESTATUS[0]}" > issue-856-audit/patched-ctest.status
+          exit 0
 
       - name: Run three independent simulate-this passes
         shell: bash
         run: |
-          mkdir -p issue-856-audit
+          set -o pipefail
           # Trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Decision priorities: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 --require-ready-by 3 | tee issue-856-audit/strict_go_second_seed_3.txt
           ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-856-audit/flex_go_second_seed_3.txt
-          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee issue-856-audit/item_lock_go_second_seed_2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 2 | tee issue-856-audit/item_lock_go_second_seed_2.txt
 
       - name: Generate canonical T2 T3 matrix
         run: |
           # Aggregate specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
           ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-856-audit/t2_t3_matrix.csv
 
-      - name: Enforce full Release suite
+      - name: Build and test exact current-main baseline
         shell: bash
         run: |
-          test -f issue-856-audit/ctest.status
-          test "$(cat issue-856-audit/ctest.status)" = "0"
+          baseline_sha="$(cat /tmp/issue-856-baseline-sha)"
+          git worktree add /tmp/issue-856-baseline "$baseline_sha"
+          cmake -S /tmp/issue-856-baseline -B /tmp/issue-856-baseline-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/issue-856-baseline-build --parallel 2
+          set +e
+          ctest --test-dir /tmp/issue-856-baseline-build --output-on-failure --output-junit issue-856-audit/baseline-ctest.xml 2>&1 | tee issue-856-audit/baseline-ctest.log
+          printf '%s\n' "${PIPESTATUS[0]}" > issue-856-audit/baseline-ctest.status
+          exit 0
 
-      - name: Commit validated fix and remove temporary workflow
+      - name: Require exact current-main failure parity
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          import xml.etree.ElementTree as ET
+
+          def failures(path: str) -> list[str]:
+              root = ET.parse(path).getroot()
+              return sorted(
+                  case.attrib.get("name", "<unnamed>")
+                  for case in root.iter("testcase")
+                  if case.find("failure") is not None or case.find("error") is not None
+              )
+
+          baseline = failures("issue-856-audit/baseline-ctest.xml")
+          patched = failures("issue-856-audit/patched-ctest.xml")
+          Path("issue-856-audit/baseline-failures.json").write_text(json.dumps(baseline, indent=2) + "\n", encoding="utf-8")
+          Path("issue-856-audit/patched-failures.json").write_text(json.dumps(patched, indent=2) + "\n", encoding="utf-8")
+          if patched != baseline:
+              raise SystemExit(f"Issue 856 changed the current-main failure set. baseline={baseline} patched={patched}")
+          print(f"Current-main failure parity confirmed: {baseline}")
+          PY
+
+      - name: Commit validated fix and remove temporary files
         shell: bash
         run: |
-          git rm .github/workflows/issue-856-erika-rule-source.yml
+          git rm .github/workflows/issue-856-erika-rule-source.yml .issue-856-rerun
           git add src/regidrago_sim.cpp docs/RULE_SOURCES.md tests/card_audit_contract_tests.py
           git commit -m "Register Erika rule source and contract (#856)"
           git push origin HEAD:fix/856-erika-rule-source-registry

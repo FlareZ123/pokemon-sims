@@ -27,6 +27,7 @@ jobs:
           mkdir -p issue-869-diagnostic
           python scripts/apply_issue_869_unified.py
           python scripts/fix_issue_869_active_turn.py
+          python scripts/fix_issue_869_payload_outlet.py
           python scripts/fix_issue_869_generated_test.py
       - name: Run ASan and UBSan fixture
         shell: bash

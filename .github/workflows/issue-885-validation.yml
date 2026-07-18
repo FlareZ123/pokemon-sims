@@ -57,7 +57,9 @@ jobs:
         shell: bash
         run: |
           set +e
-          ctest --test-dir build --output-on-failure --output-junit issue-885-audit/patched-ctest.xml 2>&1 | tee issue-885-audit/patched-ctest.log
+          ctest --test-dir build --output-on-failure \
+            --output-junit "$GITHUB_WORKSPACE/issue-885-audit/patched-ctest.xml" \
+            2>&1 | tee issue-885-audit/patched-ctest.log
           printf '%s\n' "${PIPESTATUS[0]}" > issue-885-audit/patched-ctest.status
           exit 0
 
@@ -84,7 +86,9 @@ jobs:
           cmake -S /tmp/issue-885-baseline -B /tmp/issue-885-baseline-build -DCMAKE_BUILD_TYPE=Release
           cmake --build /tmp/issue-885-baseline-build --parallel 2
           set +e
-          ctest --test-dir /tmp/issue-885-baseline-build --output-on-failure --output-junit issue-885-audit/baseline-ctest.xml 2>&1 | tee issue-885-audit/baseline-ctest.log
+          ctest --test-dir /tmp/issue-885-baseline-build --output-on-failure \
+            --output-junit "$GITHUB_WORKSPACE/issue-885-audit/baseline-ctest.xml" \
+            2>&1 | tee issue-885-audit/baseline-ctest.log
           printf '%s\n' "${PIPESTATUS[0]}" > issue-885-audit/baseline-ctest.status
           exit 0
 
@@ -111,6 +115,15 @@ jobs:
               raise SystemExit(f'Full-suite failure set changed. baseline={baseline}, patched={patched}')
           print(f'Baseline parity confirmed with {len(baseline)} pre-existing failing tests.')
           PY
+
+      - name: Require validation base is still current main
+        shell: bash
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor origin/main "$(cat /tmp/issue-885-baseline-sha)"; then
+            echo "main advanced during validation; rerun against the new head."
+            exit 1
+          fi
 
       - name: Finalize permanent branch
         shell: bash

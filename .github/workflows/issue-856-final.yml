@@ -1,4 +1,5 @@
 name: Issue 856 Final Validation
+# Revalidate after merged source-bound baseline updates.
 
 on:
   pull_request:

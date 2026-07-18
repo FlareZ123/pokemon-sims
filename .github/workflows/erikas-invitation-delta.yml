@@ -10,6 +10,7 @@ on:
       - 'tests/card_audit_category_contract_tests.py'
       - 'docs/CARD_AUDIT.md'
       - 'tools/erikas_invitation_delta.cpp'
+      - 'tools/erikas_invitation_fixture_seed_search.cpp'
       - '.github/workflows/erikas-invitation-delta.yml'
 
 jobs:
@@ -32,6 +33,26 @@ jobs:
         with:
           name: erikas-invitation-delta
           path: erikas_invitation_delta.csv
+
+  fixture-seed-search:
+    runs-on: macos-latest
+    steps:
+      - name: Check out pull-request merge ref
+        uses: actions/checkout@v4
+      - name: Build seed search
+        run: |
+          clang++ -std=c++20 -O3 -Wall -Wextra -Wpedantic -Werror \
+            tools/erikas_invitation_fixture_seed_search.cpp \
+            -o erikas_invitation_fixture_seed_search
+      - name: Find replacement fixture seeds
+        run: |
+          ./erikas_invitation_fixture_seed_search > erikas_invitation_fixture_seeds.csv
+          cat erikas_invitation_fixture_seeds.csv
+      - name: Upload fixture seeds
+        uses: actions/upload-artifact@v4
+        with:
+          name: erikas-invitation-fixture-seeds
+          path: erikas_invitation_fixture_seeds.csv
 
   focused-regression:
     runs-on: macos-latest

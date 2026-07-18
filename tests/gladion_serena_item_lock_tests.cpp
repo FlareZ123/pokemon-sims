@@ -128,7 +128,7 @@ void test_live_crispin_does_not_block_known_prized_vstar() {
   expect(contains(after.hand, sim::Card::ProfessorBurnet), "Professor Burnet must remain held after the exchange");
 }
 
-void test_dead_crispin_preserves_critical_prized_energy_gladion() {
+void test_dead_crispin_keeps_gladion_available() {
   sim::Scenario scenario{"issue-840-prized-fire", sim::DciProfile::StrictJit,
                          sim::LockMode::TurnTwoItem, false, 4};
   sim::DeckRecipe recipe = sim::baseline_recipe();
@@ -143,21 +143,22 @@ void test_dead_crispin_preserves_critical_prized_energy_gladion() {
   state.prizes = {sim::Card::Fire, sim::Card::Lusamine, sim::Card::Dipplin,
                   sim::Card::MawileGX, sim::Card::Guzma, sim::Card::Powerglass};
   state.deck = {sim::Card::MegaDragonite, sim::Card::Dragapult};
+  state.discard = {sim::Card::Fire, sim::Card::Fire};
   sim::EngineTestAccess::set_state(engine, std::move(state));
   sim::EngineTestAccess::set_deck_seen(engine);
 
-  // Crispin cannot supply the missing Fire after K1 proves no Basic Energy remains.
-  // Gladion must retain access to that known prized Energy axis:
+  // Crispin cannot advance the Energy axis after K1 proves no Basic Energy remains.
+  // Gladion must remain available to evaluate the unresolved Prize and payload axes:
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://api.pokemontcg.io/v2/cards/sm4-95
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/issues/840
   sim::EngineTestAccess::choose_supporter(engine);
   const sim::State& after = sim::EngineTestAccess::state(engine);
-  expect(after.supporter_used, "Gladion must recover the known prized Fire Energy");
-  expect(contains(after.hand, sim::Card::Fire), "the prized Fire Energy must move to hand");
-  expect(contains(after.prizes, sim::Card::Gladion), "Gladion must replace the recovered Fire Energy");
+  expect(after.supporter_used, "Gladion must remain playable when Crispin is dead");
+  expect(contains(after.prizes, sim::Card::Gladion), "Gladion must complete its mandatory Prize exchange");
   expect(contains(after.hand, sim::Card::Crispin), "the dead Crispin must remain held");
+  expect(!contains(after.discard, sim::Card::Crispin), "the dead Crispin must not consume the Supporter play");
   expect(contains(after.hand, sim::Card::ProfessorBurnet), "the hidden Burnet must be restored exactly");
 }
 
@@ -168,7 +169,7 @@ int main() {
     test_known_prizes_do_not_preempt_serena_payload_under_item_lock();
     test_live_crispin_preempts_dead_burnet_gladion_exchange();
     test_live_crispin_does_not_block_known_prized_vstar();
-    test_dead_crispin_preserves_critical_prized_energy_gladion();
+    test_dead_crispin_keeps_gladion_available();
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';
     return 1;

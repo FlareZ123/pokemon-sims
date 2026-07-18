@@ -1,4 +1,4 @@
-name: Update Erika Communication Fixture
+name: Update Erika Fixtures
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  update-fixture:
+  update-fixtures:
     if: github.head_ref == 'feat/erikas-invitation-current-main'
     runs-on: macos-15-intel
     steps:
@@ -18,29 +18,67 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
-      - name: Replace retired baseline singleton in fixture
+      - name: Update deterministic fixtures
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          path = Path('tests/pokemon_communication_tests.cpp')
-          text = path.read_text(encoding='utf-8')
           replacements = {
-              'auto mawile = std::find_if': 'auto erika = std::find_if',
-              'entry.first == sim::Card::MawileGX': 'entry.first == sim::Card::ErikasInvitation',
-              'mawile == recipe.end() || mawile->second != 1': 'erika == recipe.end() || erika->second != 1',
-              'recipe.erase(mawile);': 'recipe.erase(erika);',
+              Path('tests/pokemon_communication_tests.cpp'): {
+                  'auto mawile = std::find_if': 'auto erika = std::find_if',
+                  'entry.first == sim::Card::MawileGX': 'entry.first == sim::Card::ErikasInvitation',
+                  'mawile == recipe.end() || mawile->second != 1': 'erika == recipe.end() || erika->second != 1',
+                  'recipe.erase(mawile);': 'recipe.erase(erika);',
+              },
+              Path('tests/check_future_wonder_tag_crispin.cmake'): {
+                  '--seed 6': '--seed 7',
+              },
+              Path('tests/check_active_tapu_paid_retreat.cmake'): {
+                  '--seed 1': '--seed 6',
+              },
+              Path('CMakeLists.txt'): {
+                  'trace_strict_second_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 --require-ready-by 3':
+                      'trace_strict_second_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3',
+                  'trace_strict_first_t4 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 --require-ready-by 4':
+                      'trace_strict_first_t4 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4',
+                  'trace_turn2_item_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 9 --require-ready-by 3':
+                      'trace_turn2_item_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 1 --require-ready-by 3',
+                  'trace_rulebox_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3':
+                      'trace_rulebox_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 1 --require-ready-by 3',
+              },
+              Path('src/trace_engine_v2/part_016.inc'): {
+                  'std::mt19937_64 rng(6);': 'std::mt19937_64 rng(1);',
+              },
           }
-          for old, new in replacements.items():
-              if text.count(old) != 1:
-                  raise SystemExit(f'Expected exactly one fixture occurrence: {old}')
-              text = text.replace(old, new)
-          path.write_text(text, encoding='utf-8')
+
+          changed = []
+          for path, mapping in replacements.items():
+              text = path.read_text(encoding='utf-8')
+              original = text
+              for old, new in mapping.items():
+                  occurrences = text.count(old)
+                  if occurrences == 1:
+                      text = text.replace(old, new)
+                  elif occurrences == 0 and new in text:
+                      continue
+                  else:
+                      raise SystemExit(f'{path}: expected one occurrence of {old!r}, found {occurrences}')
+              if text != original:
+                  path.write_text(text, encoding='utf-8')
+                  changed.append(str(path))
+          print('Updated:', ', '.join(changed) if changed else '(already current)')
           PY
-      - name: Commit fixture update
+      - name: Commit fixture updates
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add tests/pokemon_communication_tests.cpp
-          git commit -m "Update Communication fixture for Erika baseline"
-          git push origin HEAD:${{ github.head_ref }}
+          git add tests/pokemon_communication_tests.cpp \
+                  tests/check_future_wonder_tag_crispin.cmake \
+                  tests/check_active_tapu_paid_retreat.cmake \
+                  CMakeLists.txt src/trace_engine_v2/part_016.inc
+          if git diff --cached --quiet; then
+            echo 'Fixtures were already updated.'
+          else
+            git commit -m "Update deterministic fixtures for Erika baseline"
+            git push origin HEAD:${{ github.head_ref }}
+          fi

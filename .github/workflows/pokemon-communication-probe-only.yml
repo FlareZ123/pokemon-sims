@@ -1,0 +1,34 @@
+name: Pokémon Communication Probe Only
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out pull-request merge ref
+        uses: actions/checkout@v4
+
+      - name: Build probes
+        run: |
+          c++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tools/pokemon_communication_duplicate_tapu_probe.cpp -o pokemon_communication_duplicate_tapu_probe
+          c++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tools/pokemon_communication_fetched_target_probe.cpp -o pokemon_communication_fetched_target_probe
+
+      - name: Capture diagnostics
+        shell: bash
+        run: |
+          mkdir -p audit-output
+          ./pokemon_communication_duplicate_tapu_probe | tee audit-output/duplicate_tapu_route_probe.txt
+          ./pokemon_communication_fetched_target_probe | tee audit-output/fetched_target_continuation_probe.txt || true
+
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: pokemon-communication-probe-diagnostics
+          path: audit-output
+          if-no-files-found: error

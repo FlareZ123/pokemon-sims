@@ -80,8 +80,38 @@
     return true;
   }
 
+  bool hold_payload_outlet_for_post_powerglass_turn() const {
+    if (!strict_payload_timing() || item_locked() || !need_payload() || !need_energy() ||
+        state_.turn >= scenario_.max_turn || !state_.manual_energy_used || !state_.active ||
+        state_.active->card != Card::RegidragoVstar || state_.active->tool != Tool::None ||
+        hand_count(Card::Powerglass) == 0 ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    const int active_grass_needed = std::max(0, 2 - state_.active->grass);
+    const int active_fire_needed = std::max(0, 1 - state_.active->fire);
+    // Powerglass resolves after the attack step. Preserve a one-discard payload
+    // outlet for the next turn only when its Active holder lacks exactly one Energy
+    // and that Energy is already in discard:
+    // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://github.com/FlareZ123/pokemon-sims/issues/944
+    return active_grass_needed + active_fire_needed == 1 &&
+        ((active_grass_needed == 1 && count_of(state_.discard, Card::Grass) > 0) ||
+         (active_fire_needed == 1 && count_of(state_.discard, Card::Fire) > 0));
+  }
+
   bool play_earthen_vessel(const bool permit_payload) {
     if (item_locked() || hand_count(Card::EarthenVessel) == 0) return false;
+    // Do not discard the held Dragon before Powerglass completes GGF after the attack
+    // step. The recovered Vessel remains live on the first post-Powerglass turn:
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/issues/944
+    if (permit_payload && hold_payload_outlet_for_post_powerglass_turn()) return false;
     // Once a different current-turn Dragon already satisfies strict-JIT, another
     // modeled Dragon remains a legal Earthen Vessel cost and adds an Apex Dragon option:
     // https://api.pokemontcg.io/v2/cards/sv4-163

@@ -55,16 +55,19 @@ def main() -> None:
     // https://github.com/FlareZ123/pokemon-sims/issues/802
     if (payment == Card::Grass) {
       ++state_.active->grass;
-      --state_.active->grass;
     } else {
       ++state_.active->fire;
-      --state_.active->fire;
     }
     state_.manual_energy_used = true;
     trace("ATTACH", "R-GAME-ENERGY",
           std::string(name(payment)) +
               " manually to Tapu Lele-GX for its Retreat Cost.");
 
+    if (payment == Card::Grass) {
+      --state_.active->grass;
+    } else {
+      --state_.active->fire;
+    }
     state_.discard.push_back(payment);
     std::swap(*state_.active, *target);
     state_.retreat_used = true;

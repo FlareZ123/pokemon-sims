@@ -19,7 +19,7 @@ struct Scenario {
   DciProfile dci{DciProfile::StrictJit};
   LockMode locks{LockMode::None};
   bool going_first{true};
-  int max_turn{4};
+  int max_turn{5};
   // Guzma's self-switch is conditional on successfully switching an opposing
   // Benched Pokémon. Existing goldfish scenarios cannot prove that prerequisite:
   // https://api.pokemontcg.io/v2/cards/sm3-115
@@ -58,7 +58,9 @@ struct TrialOutcome {
   bool ready_by_2{false};
   bool ready_by_3{false};
   bool ready_by_4{false};
+  bool ready_by_5{false};
   int first_ready_turn{0};
+  bool setup_failed{false};
   int mulligans{0};
   bool started_regi{false};
   bool used_fss{false};
@@ -72,6 +74,9 @@ struct Aggregate {
   std::uint64_t by2{0};
   std::uint64_t by3{0};
   std::uint64_t by4{0};
+  std::uint64_t by5{0};
+  std::uint64_t ready_on5{0};
+  std::uint64_t setup_failures{0};
   std::uint64_t started_regi{0};
   std::uint64_t fss{0};
   std::uint64_t legacy{0};

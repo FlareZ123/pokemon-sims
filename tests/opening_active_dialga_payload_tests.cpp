@@ -171,12 +171,13 @@ void test_opening_choice_preserves_dialga_with_direct_regi_route() {
   state.hand = {sim::Card::TapuLeleGX, sim::Card::DialgaGX,
                 sim::Card::Crispin, sim::Card::MysteriousTreasure,
                 sim::Card::QuickBall, sim::Card::MegaDragonite,
-                sim::Card::ChaoticSwell};
+                sim::Card::Dipplin};
   sim::EngineTestAccess::set_state(engine, std::move(state));
 
-  // Setup may choose either Basic. The held one-discard Items already expose
-  // Regidrago V, Crispin covers the Supporter route, and Mega Dragonite ex provides
-  // a second Dragon payload, so Tapu Lele-GX has lower marginal connector value:
+  // Dipplin TWM 127 cannot enter play in this model because the deck has no Applin,
+  // so the centralized strict-DCI selector admits it as the one-discard Item cost.
+  // The resulting Quick Ball or Mysterious Treasure route exposes Regidrago V while
+  // Crispin covers the Supporter axis and Mega Dragonite ex remains a second payload:
   // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
   // https://api.pokemontcg.io/v2/cards/sm5-100
   // https://api.pokemontcg.io/v2/cards/cel25c-60_A
@@ -184,7 +185,9 @@ void test_opening_choice_preserves_dialga_with_direct_regi_route() {
   // https://api.pokemontcg.io/v2/cards/swsh1-179
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/sv6-127
   // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // https://github.com/FlareZ123/pokemon-sims/issues/653
   sim::EngineTestAccess::choose_opening_active(engine);
@@ -192,7 +195,7 @@ void test_opening_choice_preserves_dialga_with_direct_regi_route() {
   if (!after.active || after.active->card != sim::Card::TapuLeleGX ||
       !contains(after.hand, sim::Card::DialgaGX) ||
       !contains(after.hand, sim::Card::MegaDragonite)) {
-    throw std::runtime_error("Tapu Lele-GX should start when a held one-discard Item exposes Regidrago V.");
+    throw std::runtime_error("Tapu Lele-GX should start when a payable one-discard Item exposes Regidrago V.");
   }
 }
 

@@ -1,3 +1,15 @@
+  bool has_live_serena_hand_payload_line() const {
+    // A held Serena plus a permitted Dragon payload is already a direct current-turn
+    // discard route. Preserve it instead of spending another search and discard to
+    // fetch a duplicate payload:
+    // https://api.pokemontcg.io/v2/cards/swsh12-164
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    return supporter_allowed() && can_play_payload_this_turn() &&
+           hand_count(Card::Serena) > 0 &&
+           std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+  }
+
   bool has_live_one_discard_hand_payload_line() const {
     // Each modeled one-discard outlet must begin a deck search after paying its cost.
     // An empty deck makes that promised post-Tate payload route unavailable:

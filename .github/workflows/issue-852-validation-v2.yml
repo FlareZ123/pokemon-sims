@@ -1,0 +1,323 @@
+name: Issue 852 Erika Flex Discard Validation V2
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-852-v2-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/852-erika-flex-discard-serena'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/852-erika-flex-discard-serena
+          fetch-depth: 0
+
+      - name: Reconcile current main
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Apply approved fix and permanent regressions
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from textwrap import dedent
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              target = Path(path)
+              text = target.read_text(encoding='utf-8')
+              if text.count(old) != 1:
+                  raise SystemExit(f'{path}: replacement anchor count was {text.count(old)}, expected 1')
+              target.write_text(text.replace(old, new), encoding='utf-8')
+
+          replace_once(
+              'src/trace_engine_v2/part_006.inc',
+              '    if (flex_fodder && scenario_.dci != DciProfile::StrictJit) {\n',
+              dedent('''\
+                  // Erika's Invitation depends on the opponent's hand and Bench, which this
+                  // single-player goldfish model deliberately does not represent. Matchup-flex may
+                  // spend it as the current low-impact replacement for retired Mawile-GX:
+                  // https://api.pokemontcg.io/v2/cards/sv3pt5-160
+                  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+                  // https://github.com/FlareZ123/pokemon-sims/issues/852
+                  if (flex_fodder && scenario_.dci != DciProfile::StrictJit) {
+              '''),
+          )
+          replace_once(
+              'src/trace_engine_v2/part_006.inc',
+              'Card::MawileGX, Card::Guzma',
+              'Card::ErikasInvitation, Card::Guzma',
+          )
+
+          replace_once(
+              'src/trace_engine_v2/part_012.inc',
+              '        const bool can_cycle = *extra == Card::Dipplin || *extra == Card::MawileGX || *extra == Card::Guzma ||\n',
+              dedent('''\
+                      // Serena may discard up to three cards before drawing to five. Erika's
+                      // Invitation is the current opponent-dependent inert slot in this goldfish model:
+                      // https://api.pokemontcg.io/v2/cards/swsh12-164
+                      // https://api.pokemontcg.io/v2/cards/sv3pt5-160
+                      // https://github.com/FlareZ123/pokemon-sims/issues/852
+                      const bool can_cycle = *extra == Card::Dipplin || *extra == Card::ErikasInvitation || *extra == Card::Guzma ||
+              '''),
+          )
+
+          Path('tests/erika_flex_discard_serena_tests.cpp').write_text(
+              dedent(r'''\
+                  #define REGIDRAGO_SIM_NO_MAIN
+                  #include "../src/regidrago_sim.cpp"
+
+                  #include <algorithm>
+                  #include <optional>
+                  #include <random>
+                  #include <stdexcept>
+                  #include <utility>
+                  #include <vector>
+
+                  namespace sim {
+                  struct EngineTestAccess {
+                    static State& state(Engine& engine) { return engine.state_; }
+                    static std::optional<Card> choose_discard(
+                        Engine& engine, const bool permit_payload, const bool flex_fodder,
+                        const bool allow_heavy_ball = true,
+                        const std::optional<Card> excluded_from_cost = std::nullopt) {
+                      return engine.choose_discard(
+                          permit_payload, flex_fodder, allow_heavy_ball, excluded_from_cost);
+                    }
+                    static bool play_serena(Engine& engine) { return engine.play_serena(); }
+                  };
+                  }  // namespace sim
+
+                  namespace {
+
+                  bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
+                    return std::find(cards.begin(), cards.end(), card) != cards.end();
+                  }
+
+                  sim::State base_state() {
+                    sim::State state;
+                    state.turn = 2;
+                    state.active = sim::Pokemon{
+                        sim::Card::RegidragoV, 1, 0, 0, sim::Tool::None};
+                    state.deck = {
+                        sim::Card::Grass, sim::Card::Fire, sim::Card::Grass,
+                        sim::Card::Fire, sim::Card::Grass, sim::Card::Fire};
+                    return state;
+                  }
+
+                  void matchup_flex_uses_erika_for_quick_ball_cost() {
+                    sim::Scenario scenario{
+                        "issue-852-flex-cost", sim::DciProfile::MatchupFlexJit,
+                        sim::LockMode::None, false, 4};
+                    sim::DeckRecipe recipe = sim::baseline_recipe();
+                    std::mt19937_64 rng{85201};
+                    sim::Engine engine{scenario, recipe, rng};
+                    sim::State state = base_state();
+                    state.hand = {
+                        sim::Card::QuickBall, sim::Card::ErikasInvitation,
+                        sim::Card::RegidragoVstar};
+                    sim::EngineTestAccess::state(engine) = std::move(state);
+
+                    // Quick Ball discards another hand card. Matchup-flex may spend the
+                    // opponent-dependent Erika while retaining protected route pieces:
+                    // https://api.pokemontcg.io/v2/cards/swsh1-179
+                    // https://api.pokemontcg.io/v2/cards/sv3pt5-160
+                    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+                    // https://github.com/FlareZ123/pokemon-sims/issues/852
+                    const auto cost = sim::EngineTestAccess::choose_discard(
+                        engine, false, true, true, sim::Card::QuickBall);
+                    if (!cost || *cost != sim::Card::ErikasInvitation) {
+                      throw std::runtime_error(
+                          "matchup-flex did not admit Erika as Quick Ball cost");
+                    }
+                  }
+
+                  void strict_jit_preserves_erika_for_quick_ball_cost() {
+                    sim::Scenario scenario{
+                        "issue-852-strict-cost", sim::DciProfile::StrictJit,
+                        sim::LockMode::None, false, 4};
+                    sim::DeckRecipe recipe = sim::baseline_recipe();
+                    std::mt19937_64 rng{85202};
+                    sim::Engine engine{scenario, recipe, rng};
+                    sim::State state = base_state();
+                    state.hand = {
+                        sim::Card::QuickBall, sim::Card::ErikasInvitation,
+                        sim::Card::RegidragoVstar};
+                    sim::EngineTestAccess::state(engine) = std::move(state);
+
+                    // Strict-JIT keeps matchup-dependent singleton fodder outside its
+                    // discard-cost set:
+                    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+                    // https://github.com/FlareZ123/pokemon-sims/issues/852
+                    const auto cost = sim::EngineTestAccess::choose_discard(
+                        engine, false, true, true, sim::Card::QuickBall);
+                    if (cost) {
+                      throw std::runtime_error(
+                          "strict-JIT incorrectly admitted Erika as Quick Ball cost");
+                    }
+                  }
+
+                  sim::State serena_state() {
+                    sim::State state = base_state();
+                    state.hand = {
+                        sim::Card::Serena, sim::Card::Dipplin,
+                        sim::Card::ErikasInvitation, sim::Card::RegidragoVstar,
+                        sim::Card::Arven, sim::Card::Crispin, sim::Card::Gladion};
+                    return state;
+                  }
+
+                  void matchup_flex_serena_cycles_erika() {
+                    sim::Scenario scenario{
+                        "issue-852-flex-serena", sim::DciProfile::MatchupFlexJit,
+                        sim::LockMode::None, false, 4};
+                    sim::DeckRecipe recipe = sim::baseline_recipe();
+                    std::mt19937_64 rng{85203};
+                    sim::Engine engine{scenario, recipe, rng};
+                    sim::EngineTestAccess::state(engine) = serena_state();
+
+                    // Serena first discards dead Dipplin, then may use Erika as its
+                    // optional second low-impact discard before drawing to five:
+                    // https://api.pokemontcg.io/v2/cards/swsh12-164
+                    // https://api.pokemontcg.io/v2/cards/sv3pt5-160
+                    // https://github.com/FlareZ123/pokemon-sims/issues/852
+                    if (!sim::EngineTestAccess::play_serena(engine)) {
+                      throw std::runtime_error("matchup-flex Serena was rejected");
+                    }
+                    const sim::State& after = sim::EngineTestAccess::state(engine);
+                    if (!after.supporter_used ||
+                        !contains(after.discard, sim::Card::Serena) ||
+                        !contains(after.discard, sim::Card::Dipplin) ||
+                        !contains(after.discard, sim::Card::ErikasInvitation) ||
+                        contains(after.hand, sim::Card::ErikasInvitation) ||
+                        after.hand.size() != 5U) {
+                      throw std::runtime_error(
+                          "matchup-flex Serena did not cycle Erika before drawing");
+                    }
+                  }
+
+                  void strict_jit_serena_preserves_erika() {
+                    sim::Scenario scenario{
+                        "issue-852-strict-serena", sim::DciProfile::StrictJit,
+                        sim::LockMode::None, false, 4};
+                    sim::DeckRecipe recipe = sim::baseline_recipe();
+                    std::mt19937_64 rng{85204};
+                    sim::Engine engine{scenario, recipe, rng};
+                    sim::EngineTestAccess::state(engine) = serena_state();
+
+                    if (!sim::EngineTestAccess::play_serena(engine)) {
+                      throw std::runtime_error("strict-JIT Serena was rejected");
+                    }
+                    const sim::State& after = sim::EngineTestAccess::state(engine);
+                    if (!contains(after.discard, sim::Card::Dipplin) ||
+                        contains(after.discard, sim::Card::ErikasInvitation) ||
+                        !contains(after.hand, sim::Card::ErikasInvitation)) {
+                      throw std::runtime_error(
+                          "strict-JIT Serena incorrectly cycled Erika");
+                    }
+                  }
+
+                  }  // namespace
+
+                  int main() {
+                    matchup_flex_uses_erika_for_quick_ball_cost();
+                    strict_jit_preserves_erika_for_quick_ball_cost();
+                    matchup_flex_serena_cycles_erika();
+                    strict_jit_serena_preserves_erika();
+                    return 0;
+                  }
+              '''),
+              encoding='utf-8',
+          )
+
+          cmake = Path('CMakeLists.txt')
+          text = cmake.read_text(encoding='utf-8')
+          marker = 'regidrago_erika_flex_discard_serena_tests'
+          if marker in text:
+              raise SystemExit('issue 852 CMake target already exists')
+          text += dedent('''\
+
+              add_executable(regidrago_erika_flex_discard_serena_tests tests/erika_flex_discard_serena_tests.cpp)
+              target_compile_options(regidrago_erika_flex_discard_serena_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+              add_test(NAME regidrago_erika_flex_discard_serena COMMAND regidrago_erika_flex_discard_serena_tests)
+          ''')
+          cmake.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Verify scope and direct sources
+        shell: bash
+        run: |
+          git diff --check
+          grep -F 'Card::ErikasInvitation, Card::Guzma' src/trace_engine_v2/part_006.inc
+          grep -F 'Card::Dipplin || *extra == Card::ErikasInvitation' src/trace_engine_v2/part_012.inc
+          grep -F 'https://api.pokemontcg.io/v2/cards/sv3pt5-160' src/trace_engine_v2/part_006.inc src/trace_engine_v2/part_012.inc tests/erika_flex_discard_serena_tests.cpp
+          grep -F 'https://github.com/FlareZ123/pokemon-sims/issues/852' src/trace_engine_v2/part_006.inc src/trace_engine_v2/part_012.inc tests/erika_flex_discard_serena_tests.cpp
+
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Release
+        run: cmake --build build --parallel 2
+
+      - name: Run focused regression
+        run: ./build/regidrago_erika_flex_discard_serena_tests
+
+      - name: Run full Release suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Run warning-clean UBSan focused regression
+        run: |
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror \
+            -fsanitize=undefined -fno-omit-frame-pointer \
+            tests/erika_flex_discard_serena_tests.cpp -o build/issue-852-focused
+          ./build/issue-852-focused
+
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p issue-852-audit
+          # Trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-852-audit/trace-1-flex-second-seed-3.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee issue-852-audit/trace-2-item-lock-second-seed-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee issue-852-audit/trace-3-rulebox-second-seed-20.txt
+
+      - name: Generate canonical T2 and T3 matrix
+        shell: bash
+        run: |
+          # Aggregate specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-852-audit/t2-t3-matrix.csv
+          cat issue-852-audit/t2-t3-matrix.csv
+
+      - name: Commit validated fix and remove temporary workflows
+        shell: bash
+        run: |
+          git rm .github/workflows/issue-852-validation-v2.yml
+          git rm -f .github/workflows/issue-852-validation.yml
+          git add CMakeLists.txt src/trace_engine_v2/part_006.inc src/trace_engine_v2/part_012.inc tests/erika_flex_discard_serena_tests.cpp
+          git commit -m "Use Erika as matchup-flex discard fodder (#852)"
+          git push origin HEAD:fix/852-erika-flex-discard-serena
+          git archive --format=zip HEAD -o issue-852-audit/source.zip
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-852-validation-v2
+          path: |
+            issue-852-audit
+            build/Testing
+          if-no-files-found: warn

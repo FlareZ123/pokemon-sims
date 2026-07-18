@@ -1,0 +1,94 @@
+name: Issue 856 Final Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-856-final-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-finalize:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/856-erika-rule-source-registry'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/856-erika-rule-source-registry
+          fetch-depth: 0
+      - name: Reconcile current main
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+          git rev-parse HEAD > /tmp/baseline-sha
+          mkdir -p audit
+      - name: Build exact baseline
+        run: |
+          git worktree add /tmp/baseline "$(cat /tmp/baseline-sha)"
+          cmake -S /tmp/baseline -B /tmp/baseline-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/baseline-build --parallel 2
+          set +e
+          ctest --test-dir /tmp/baseline-build --output-on-failure --output-junit "$GITHUB_WORKSPACE/audit/baseline.xml"
+          exit 0
+      - name: Apply and validate source registry
+        run: |
+          python scripts/apply_issue_856.py
+          python tests/card_audit_contract_tests.py
+          python tests/card_audit_category_contract_tests.py
+          test "$(grep -c 'https://api.pokemontcg.io/v2/cards/sv3pt5-160' src/regidrago_sim.cpp)" -eq 1
+          test "$(grep -c 'https://api.pokemontcg.io/v2/cards/sv3pt5-160' docs/RULE_SOURCES.md)" -eq 1
+      - name: Build patched source
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Three simulate-this audits
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 --require-ready-by 3 | tee audit/trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee audit/trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 2 | tee audit/trace-3.txt
+      - name: Regenerate source-bound evidence
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python tests/setup_report_contract_tests.py
+          python tests/update_setup_docs_tests.py
+          cp results/simulation_results.csv audit/t2_t3_matrix.csv
+      - name: Full-suite parity
+        run: |
+          set +e
+          ctest --test-dir build --output-on-failure --output-junit "$GITHUB_WORKSPACE/audit/patched.xml"
+          set -e
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          def failures(path):
+              root = ET.parse(path).getroot()
+              return sorted(c.attrib.get('name', '<unnamed>') for c in root.iter('testcase') if c.find('failure') is not None or c.find('error') is not None)
+          baseline = failures('audit/baseline.xml')
+          patched = failures('audit/patched.xml')
+          if patched != baseline:
+              raise SystemExit(f'failure set changed: baseline={baseline} patched={patched}')
+          print(f'failure parity: {patched}')
+          PY
+      - name: Finalize current-main branch
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor origin/main "$(cat /tmp/baseline-sha)"
+          rm -f .update-setup-docs.lock .results.lock
+          git rm .github/workflows/issue-856-final.yml .github/workflows/issue-856-erika-rule-source.yml scripts/apply_issue_856.py .issue-856-rerun
+          git add src/regidrago_sim.cpp docs/RULE_SOURCES.md tests/card_audit_contract_tests.py README.md docs/REPORT.md docs/TRACE_AUDIT.md results/baseline_manifest.json results/simulation_results.csv
+          git add -A results/traces
+          git commit -m 'Register Erika rule source and contract (#856)'
+          git push origin HEAD:fix/856-erika-rule-source-registry
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue-856-final
+          path: audit
+          if-no-files-found: warn

@@ -310,3 +310,11 @@
     state_.hand.push_back(card);
     return true;
   }
+
+  bool move_deck_to_discard(const Card card) {
+    record_deck_search_knowledge("search effect");
+    if (!remove_one(state_.deck, card)) return false;
+    state_.discard.push_back(card);
+    state_.discarded_this_turn.push_back(card);
+    return true;
+  }

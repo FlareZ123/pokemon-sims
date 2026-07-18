@@ -49,7 +49,7 @@ jobs:
           exit 0
 
       - name: Apply permanent issue fix
-        run: python3 scripts/apply_issue_881.py
+        run: python3 scripts/apply_issue_881_unified.py
 
       - name: Archive exact patched source
         shell: bash
@@ -61,7 +61,7 @@ jobs:
           cmake --build build --parallel 2
 
       - name: Run focused Release regression
-        run: ./build/regidrago_erika_deck_thinning_tests
+        run: ctest --test-dir build --output-on-failure -R '^regidrago_erika_deck_thinning_tests$'
 
       - name: Run warning-clean UBSan regression
         run: |
@@ -156,15 +156,15 @@ jobs:
         shell: bash
         run: |
           rm -f .issue-881.lock .update-setup-docs.lock .results.lock .issue-881-rerun
-          rm -f .github/workflows/issue-881-validation.yml scripts/apply_issue_881.py
-          git add CMakeLists.txt \
+          rm -f .github/workflows/issue-881-validation.yml scripts/apply_issue_881.py scripts/apply_issue_881_unified.py
+          git add \
             src/trace_engine_v2/part_010_blender_thinning_override.inc \
             src/trace_engine_v2/part_011_burnet_thinning_override.inc \
             tests/erika_deck_thinning_tests.cpp \
             README.md docs/REPORT.md docs/TRACE_AUDIT.md \
             results/baseline_manifest.json results/simulation_results.csv
           git add -A results/traces
-          git add -u .github/workflows/issue-881-validation.yml scripts/apply_issue_881.py .issue-881-rerun
+          git add -u .github/workflows/issue-881-validation.yml scripts/apply_issue_881.py scripts/apply_issue_881_unified.py .issue-881-rerun
           if git diff --cached --quiet; then
             echo "No permanent changes to commit."
           else

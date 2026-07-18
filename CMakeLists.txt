@@ -77,6 +77,10 @@ target_compile_options(regidrago_crispin_one_type_manual_attachment_tests PRIVAT
 add_executable(regidrago_tapu_gladion_prize_tests tests/tapu_gladion_prize_fallback_tests.cpp)
 target_compile_options(regidrago_tapu_gladion_prize_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+# Gladion low-impact Prize fallback regression: https://github.com/FlareZ123/pokemon-sims/issues/855
+add_executable(regidrago_gladion_erika_low_impact_tests tests/gladion_erika_low_impact_tests.cpp)
+target_compile_options(regidrago_gladion_erika_low_impact_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 add_executable(regidrago_evolution_incense_payload_tests tests/evolution_incense_payload_tests.cpp)
 target_compile_options(regidrago_evolution_incense_payload_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
@@ -215,6 +219,7 @@ add_test(NAME regidrago_gladion_mysterious_ultra_cost COMMAND regidrago_gladion_
 add_test(NAME regidrago_gladion_serena_item_lock COMMAND regidrago_gladion_serena_item_lock_tests)
 add_test(NAME regidrago_crispin_one_type_manual_attachment COMMAND regidrago_crispin_one_type_manual_attachment_tests)
 add_test(NAME regidrago_tapu_gladion_prize COMMAND regidrago_tapu_gladion_prize_tests)
+add_test(NAME regidrago_gladion_erika_low_impact COMMAND regidrago_gladion_erika_low_impact_tests)
 add_test(NAME regidrago_evolution_incense_payload COMMAND regidrago_evolution_incense_payload_tests)
 add_test(NAME regidrago_arven_heavy_ball_prize COMMAND regidrago_arven_heavy_ball_prize_tests)
 add_test(NAME regidrago_duplicate_quick_ball COMMAND regidrago_duplicate_quick_ball_tests)

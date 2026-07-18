@@ -14,9 +14,9 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
       - name: Package exact PR head
-        run: tar --exclude=.git --exclude=issue-718-source-snapshot.tar.gz -czf issue-718-source-snapshot.tar.gz .
+        run: tar --exclude=.git -czf /tmp/issue-718-source-snapshot.tar.gz .
       - uses: actions/upload-artifact@v4
         with:
           name: issue-718-source-${{ github.event.pull_request.head.sha }}
-          path: issue-718-source-snapshot.tar.gz
+          path: /tmp/issue-718-source-snapshot.tar.gz
           if-no-files-found: error

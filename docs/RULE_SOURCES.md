@@ -27,6 +27,7 @@ The API records are card-text sources. They do not replace official tournament r
 | Tapu Lele-GX — Wonder Tag | https://api.pokemontcg.io/v2/cards/cel25c-60_A |
 | Oricorio GRI 55 — Vital Dance | https://api.pokemontcg.io/v2/cards/sm2-55 |
 | Latias ex — Skyliner | https://api.pokemontcg.io/v2/cards/sv8-76 |
+| Erika's Invitation — opponent-dependent effect is deliberately inert in the single-player model | https://api.pokemontcg.io/v2/cards/sv3pt5-160 |
 | Hisuian Heavy Ball | https://api.pokemontcg.io/v2/cards/swsh10-146 |
 | Mysterious Treasure | https://api.pokemontcg.io/v2/cards/sm6-113 |
 | Quick Ball | https://api.pokemontcg.io/v2/cards/swsh1-179 |

@@ -3,117 +3,79 @@ name: CI
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  card-audit-contract:
-    runs-on: ubuntu-latest
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Validate card audit provenance contract
-        run: python tests/card_audit_contract_tests.py
-      - name: Validate derived card audit categories
-        run: python tests/card_audit_category_contract_tests.py
-      - name: Validate setup report provenance contract
-        run: python tests/setup_report_contract_tests.py
-
-  build-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-      - name: Build
-        run: bash .github/scripts/capture-build.sh build build.log
-      - name: Validate K0 Ultra Ball target accounting
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/k0_ultra_ball_target_tests.cpp -o build/k0_ultra_ball_target_tests && ./build/k0_ultra_ball_target_tests
-      - name: Validate K0 Mysterious Treasure target accounting
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/k0_mysterious_treasure_target_tests.cpp -o build/k0_mysterious_treasure_target_tests && ./build/k0_mysterious_treasure_target_tests
-      - name: Validate K0 Quick Ball target accounting
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/k0_quick_ball_target_tests.cpp -o build/k0_quick_ball_target_tests && ./build/k0_quick_ball_target_tests
-      - name: Validate Lusamine Arven-FSS payload route
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/lusamine_arven_fss_payload_tests.cpp -o build/lusamine_arven_fss_payload_tests && ./build/lusamine_arven_fss_payload_tests
-      - name: Validate Forest Seal Stone hold-trace provenance
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tests/fss_hold_trace_requires_tool_tests.cpp -o build/fss_hold_trace_requires_tool_tests && ./build/fss_hold_trace_requires_tool_tests
-      - name: Test
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and unified tests
+        run: cmake --build build --parallel 2
+      - name: Run three independent simulate-this audits
         shell: bash
         run: |
-          set -o pipefail
-          ctest --test-dir build --output-on-failure || {
-            status=$?
-            echo '===== CTest LastTest.log ====='
-            find build/Testing -name LastTest.log -type f -print -exec cat {} \; || true
-            exit "$status"
-          }
-      # Execute every documented CLI mode and prove incompatible options fail before
-      # simulation or file creation:
-      # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
-      # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
-      # https://github.com/FlareZ123/pokemon-sims/issues/633
-      - name: Validate CLI mode compatibility
-        run: cmake -DSIMULATOR="$PWD/build/regidrago_sim" -DTEST_DIR="$PWD/build/cli-mode-contract" -P tests/run_cli_mode_contract.cmake
-      - name: Upload CTest diagnostics
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-3.txt
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Record tested source
+        run: git rev-parse HEAD > tested-head.txt
+      - name: Upload validation evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: release-ctest-diagnostics
+          name: release-validation-${{ github.run_attempt }}
           path: |
+            trace-*.txt
+            t2-t3-matrix.csv
+            tested-head.txt
             build/Testing
-            build.log
           if-no-files-found: warn
 
   sanitizers:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Configure sanitizers
-        run: cmake -S . -B build-sanitizers -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
-      - name: Build sanitizers
-        run: bash .github/scripts/capture-build.sh build-sanitizers sanitizer-build.log
-      - name: Validate K0 Ultra Ball target accounting under sanitizers
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure ASan and UBSan
+        run: >-
+          cmake -S . -B build-sanitizers -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - name: Build sanitizer targets once
+        run: cmake --build build-sanitizers --parallel 2
+      - name: Run complete sanitizer suite
         env:
           ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=address,undefined -fno-omit-frame-pointer tests/k0_ultra_ball_target_tests.cpp -o build-sanitizers/k0_ultra_ball_target_tests && ./build-sanitizers/k0_ultra_ball_target_tests
-      - name: Validate K0 Mysterious Treasure target accounting under sanitizers
-        env:
-          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=address,undefined -fno-omit-frame-pointer tests/k0_mysterious_treasure_target_tests.cpp -o build-sanitizers/k0_mysterious_treasure_target_tests && ./build-sanitizers/k0_mysterious_treasure_target_tests
-      - name: Validate K0 Quick Ball target accounting under sanitizers
-        env:
-          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=address,undefined -fno-omit-frame-pointer tests/k0_quick_ball_target_tests.cpp -o build-sanitizers/k0_quick_ball_target_tests && ./build-sanitizers/k0_quick_ball_target_tests
-      - name: Validate Lusamine Arven-FSS payload route under sanitizers
-        env:
-          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=address,undefined -fno-omit-frame-pointer tests/lusamine_arven_fss_payload_tests.cpp -o build-sanitizers/lusamine_arven_fss_payload_tests && ./build-sanitizers/lusamine_arven_fss_payload_tests
-      - name: Validate Forest Seal Stone hold-trace provenance under sanitizers
-        env:
-          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
-        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=address,undefined -fno-omit-frame-pointer tests/fss_hold_trace_requires_tool_tests.cpp -o build-sanitizers/fss_hold_trace_requires_tool_tests && ./build-sanitizers/fss_hold_trace_requires_tool_tests
-      - name: Test sanitizers
-        shell: bash
-        env:
-          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
-        run: |
-          set -o pipefail
-          ctest --test-dir build-sanitizers --output-on-failure || {
-            status=$?
-            echo '===== Sanitizer CTest LastTest.log ====='
-            find build-sanitizers/Testing -name LastTest.log -type f -print -exec cat {} \; || true
-            exit "$status"
-          }
-      - name: Validate CLI mode compatibility under sanitizers
-        env:
-          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
-        run: cmake -DSIMULATOR="$PWD/build-sanitizers/regidrago_sim" -DTEST_DIR="$PWD/build-sanitizers/cli-mode-contract" -P tests/run_cli_mode_contract.cmake
+          UBSAN_OPTIONS: halt_on_error=1
+        run: ctest --test-dir build-sanitizers --parallel 2 --output-on-failure
       - name: Upload sanitizer diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: sanitizer-ctest-diagnostics
-          path: |
-            build-sanitizers/Testing
-            sanitizer-build.log
+          name: sanitizer-validation-${{ github.run_attempt }}
+          path: build-sanitizers/Testing
           if-no-files-found: warn

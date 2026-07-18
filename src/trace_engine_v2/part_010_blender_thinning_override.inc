@@ -260,7 +260,14 @@
         setup_axis_missing() &&
         (tate_refresh_available || serena_refresh_available);
     if (thin_before_refresh) {
-      for (const Card card : {Card::PathToPeak, Card::MawileGX, Card::Guzma,
+      // Erika's Invitation replaced retired Mawile-GX in the canonical recipe and is
+      // opponent-dependent in this goldfish model. Use spare legal Blender capacity
+      // to remove it before the same-turn refresh:
+      // https://api.pokemontcg.io/v2/cards/sv8-164
+      // https://api.pokemontcg.io/v2/cards/sv3pt5-160
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CARD_AUDIT.md#erikas-invitation
+      // https://github.com/FlareZ123/pokemon-sims/issues/881
+      for (const Card card : {Card::PathToPeak, Card::ErikasInvitation, Card::Guzma,
                               Card::Channeler, Card::FieldBlower,
                               Card::ChaoticSwell}) {
         if (discarded.size() >= 5U) break;

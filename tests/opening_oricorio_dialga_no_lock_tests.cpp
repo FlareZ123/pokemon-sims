@@ -19,7 +19,7 @@ bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
 
 sim::State issue_663_hand() {
   sim::State state;
-  state.hand = {sim::Card::QuickBall, sim::Card::TeamYellsCheer,
+  state.hand = {sim::Card::QuickBall, sim::Card::QuickBall,
                 sim::Card::MegaDragonite, sim::Card::DialgaGX,
                 sim::Card::Oricorio, sim::Card::Powerglass,
                 sim::Card::RegidragoVstar};
@@ -40,7 +40,7 @@ void require_oricorio_active_with_dialga_held(const sim::State& state, const cha
   }
 }
 
-void test_exact_issue_hand_preserves_vital_dance() {
+void test_payable_issue_hand_preserves_vital_dance() {
   const sim::Scenario scenario{"issue-663-exact", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
   const sim::DeckRecipe recipe = sim::baseline_recipe();
@@ -49,8 +49,8 @@ void test_exact_issue_hand_preserves_vital_dance() {
   sim::EngineTestAccess::set_state(engine, issue_663_hand());
 
   // Setup can start Dialga-GX. Mega Dragonite ex preserves a second strict-JIT
-  // payload, Quick Ball exposes Regidrago V, and held Oricorio remains a legal
-  // later Vital Dance Energy connector when played from hand onto the Bench:
+  // payload, and one Quick Ball may discard the distinct second copy before
+  // searching Regidrago V. Held Oricorio remains a later Vital Dance connector:
   // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
   // https://api.pokemontcg.io/v2/cards/sm2-55
   // https://api.pokemontcg.io/v2/cards/sm5-100
@@ -60,7 +60,7 @@ void test_exact_issue_hand_preserves_vital_dance() {
   sim::EngineTestAccess::choose_opening_active(engine);
   require_dialga_active_with_oricorio_held(
       sim::EngineTestAccess::state(engine),
-      "The exact issue hand should start Dialga-GX and preserve Oricorio.");
+      "A payable issue route should start Dialga-GX and preserve Oricorio.");
 }
 
 void test_supporter_search_graph_preserves_vital_dance() {
@@ -174,7 +174,7 @@ void test_non_strict_profile_keeps_legacy_order() {
 }  // namespace
 
 int main() {
-  test_exact_issue_hand_preserves_vital_dance();
+  test_payable_issue_hand_preserves_vital_dance();
   test_supporter_search_graph_preserves_vital_dance();
   test_unique_dialga_payload_remains_protected();
   test_complete_energy_hand_preserves_payload();

@@ -140,6 +140,43 @@ void test_steven_uses_gladion_when_all_vstars_are_prized() {
          "Steven should retain the Energy connector beside the Prize bridge.");
 }
 
+void test_steven_separates_prized_basic_and_vstar_bridges() {
+  // Gladion exchanges for exactly one Prize card. When both the Basic and every
+  // VSTAR copy are known prized, Steven must reserve Hisuian Heavy Ball for the
+  // Basic and Gladion for the evolution instead of treating one Supporter as two
+  // independent recoveries:
+  // https://api.pokemontcg.io/v2/cards/sm7-145
+  // https://api.pokemontcg.io/v2/cards/swsh10-146
+  // https://api.pokemontcg.io/v2/cards/sm4-95
+  // https://api.pokemontcg.io/v2/cards/swsh12-135
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/867
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  const sim::Scenario test_scenario = scenario();
+  std::mt19937_64 rng{8676};
+  sim::Engine engine(test_scenario, recipe, rng);
+  sim::State state = missing_regi_state({sim::Card::StevensResolve});
+  state.deck.erase(std::remove(state.deck.begin(), state.deck.end(), sim::Card::RegidragoV),
+                   state.deck.end());
+  state.deck.push_back(sim::Card::HisuianHeavyBall);
+  state.deck.push_back(sim::Card::Gladion);
+  state.prizes = {sim::Card::RegidragoV, sim::Card::RegidragoVstar,
+                  sim::Card::RegidragoVstar, sim::Card::RegidragoVstar};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  expect(sim::EngineTestAccess::play_steven(engine),
+         "Steven should preserve two independent bridges for two prized axes.");
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(contains(after.hand, sim::Card::HisuianHeavyBall),
+         "Steven should reserve Heavy Ball for the prized Basic Regidrago V.");
+  expect(contains(after.hand, sim::Card::Gladion),
+         "Steven should reserve Gladion separately for the prized Regidrago VSTAR.");
+  expect(contains(after.hand, sim::Card::Crispin),
+         "Steven should use the third target on the Energy connector.");
+  expect(!contains(after.hand, sim::Card::BrilliantBlender),
+         "A generic payload outlet must not displace either required Prize bridge.");
+}
+
 sim::State projected_latias_state() {
   sim::State state;
   state.turn = 1;
@@ -228,6 +265,7 @@ int main() {
     test_wonder_tag_fetches_steven_for_missing_regidrago();
     test_steven_projects_searchable_vstar_after_searching_basic();
     test_steven_uses_gladion_when_all_vstars_are_prized();
+    test_steven_separates_prized_basic_and_vstar_bridges();
     test_steven_projects_latias_after_vstar_and_crispin();
     test_steven_does_not_target_locked_latias();
     test_steven_preserves_payload_outlet_before_latias();

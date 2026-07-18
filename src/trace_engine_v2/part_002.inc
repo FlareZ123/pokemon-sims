@@ -19,7 +19,7 @@ struct Scenario {
   DciProfile dci{DciProfile::StrictJit};
   LockMode locks{LockMode::None};
   bool going_first{true};
-  int max_turn{5};
+  int max_turn{4};
   // Guzma's self-switch is conditional on successfully switching an opposing
   // Benched Pokémon. Existing goldfish scenarios cannot prove that prerequisite:
   // https://api.pokemontcg.io/v2/cards/sm3-115

@@ -1,5 +1,5 @@
 
-Seed: 2 | first-ready turn: 3
+Seed: 2 | first-ready turn: 2 | setup result: success
 ===== SIMULATE THIS =====
 Scenario: strict-jit-turn2-item-lock/go-second | DCI: strict-JIT | Locks: turn-two Item lock
 Mulligans: 0
@@ -10,21 +10,17 @@ T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Professor Turo's Scenario
 T1 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [-] | Bench=Regidrago V [-] | Hand=Mysterious Treasure, Powerglass, Regidrago V, Guzma, Tapu Lele-GX, Professor Turo's Scenario | Discard=(none)
 T1 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
 T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Wonder Tag: deck inspected; Prize identities are now deducible for later decisions.
-T1 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Steven's Resolve.
+T1 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Crispin.
 T1 | DISCARD | rules: R-MT-01 | Regidrago V (Mysterious Treasure cost)
 T1 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM | Searched a Psychic or Dragon Pokémon: Regidrago VSTAR.
-T1 | PLAY SUPPORTER | rules: R-STEVEN-01; R-GAME-SUPPORTER | Searched up to 3 cards: Crispin, Professor Burnet, Regidrago V. Turn ended.
-T1 | TURN END | rules: R-STEVEN-01 or R-RV-01 | Active=Regidrago V [-] | Bench=Regidrago V [-]; Tapu Lele-GX [-] | Hand=Powerglass, Guzma, Professor Turo's Scenario, Regidrago VSTAR, Crispin, Professor Burnet, Regidrago V | Discard=Mysterious Treasure, Regidrago V, Steven's Resolve
-T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Mega Dragonite ex
-T2 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [-] | Bench=Regidrago V [-]; Tapu Lele-GX [-] | Hand=Powerglass, Guzma, Professor Turo's Scenario, Regidrago VSTAR, Crispin, Professor Burnet, Regidrago V, Mega Dragonite ex | Discard=Mysterious Treasure, Regidrago V, Steven's Resolve
-T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
-T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T1 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T1 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T1 | ATTACK | rules: R-RV-01; R-GAME-ATTACK | Regidrago V used Celestial Roar; processed top 3: Field Blower, Regidrago VSTAR, Mysterious Treasure; attached Energy: (none); remaining discarded: Field Blower, Regidrago VSTAR, Mysterious Treasure.
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [GF] | Bench=Regidrago V [-]; Tapu Lele-GX [-] | Hand=Powerglass, Guzma, Professor Turo's Scenario, Regidrago VSTAR | Discard=Mysterious Treasure, Regidrago V, Crispin, Field Blower, Regidrago VSTAR, Mysterious Treasure
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Brilliant Blender
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [GF] | Bench=Regidrago V [-]; Tapu Lele-GX [-] | Hand=Powerglass, Guzma, Professor Turo's Scenario, Regidrago VSTAR, Brilliant Blender | Discard=Mysterious Treasure, Regidrago V, Crispin, Field Blower, Regidrago VSTAR, Mysterious Treasure
 T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
-T2 | LEGACY STAR | rules: R-RVS-01; R-VSTAR-01 | Discarded top 7: Dialga-GX, Grass Energy, Dragapult ex, Roseanne's Backup, Quick Ball, Lusamine, Arven; recovered: Grass Energy, Crispin.
-T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GF] | Bench=Regidrago V [-]; Tapu Lele-GX [-] | Hand=Powerglass, Guzma, Professor Turo's Scenario, Professor Burnet, Regidrago V, Mega Dragonite ex, Grass Energy, Crispin | Discard=Mysterious Treasure, Regidrago V, Steven's Resolve, Dialga-GX, Dragapult ex, Roseanne's Backup, Quick Ball, Lusamine, Arven
-T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Tapu Lele-GX
-T3 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago VSTAR [GF] | Bench=Regidrago V [-]; Tapu Lele-GX [-] | Hand=Powerglass, Guzma, Professor Turo's Scenario, Professor Burnet, Regidrago V, Mega Dragonite ex, Grass Energy, Crispin, Tapu Lele-GX | Discard=Mysterious Treasure, Regidrago V, Steven's Resolve, Dialga-GX, Dragapult ex, Roseanne's Backup, Quick Ball, Lusamine, Arven
-T3 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago VSTAR.
-T3 | PLAY SUPPORTER | rules: R-BURNET-01; R-GAME-SUPPORTER; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dipplin TWM 127.
-T3 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Regidrago V [-]; Tapu Lele-GX [-] | Hand=Powerglass, Guzma, Professor Turo's Scenario, Regidrago V, Mega Dragonite ex, Crispin, Tapu Lele-GX | Discard=Mysterious Treasure, Regidrago V, Steven's Resolve, Dialga-GX, Dragapult ex, Roseanne's Backup, Quick Ball, Lusamine, Arven, Professor Burnet, Mega Dragonite ex, Dipplin TWM 127
-T3 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.
+T2 | LEGACY STAR | rules: R-RVS-01; R-VSTAR-01 | Discarded top 7: Chaotic Swell, Mysterious Treasure, Tapu Lele-GX, Hisuian Heavy Ball, Mega Dragonite ex, Dipplin TWM 127, Dialga-GX; recovered: Crispin.
+T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago VSTAR and put Fire Energy into hand.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Regidrago V [-]; Tapu Lele-GX [-] | Hand=Powerglass, Guzma, Professor Turo's Scenario, Brilliant Blender, Fire Energy | Discard=Mysterious Treasure, Regidrago V, Field Blower, Regidrago VSTAR, Mysterious Treasure, Chaotic Swell, Mysterious Treasure, Tapu Lele-GX, Hisuian Heavy Ball, Mega Dragonite ex, Dipplin TWM 127, Dialga-GX, Crispin
+T2 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

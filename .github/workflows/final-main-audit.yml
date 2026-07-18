@@ -1,0 +1,65 @@
+name: Final Current Main Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: final-main-audit-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'audit/final-main-58c95'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build every target
+        run: cmake --build build --parallel 2
+
+      - name: Run full Release suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Run merged issue 837 regression directly
+        run: ./build/regidrago_roseanne_pokemon_communication_zone_tests
+
+      # Reviewed trace specifications:
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/TRACE_AUDIT.md#reviewed-traces
+      # Readable-hand command:
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      - name: Run three individual reviewed simulate-this audits
+        run: |
+          mkdir -p final-main-audit
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 \
+            | tee final-main-audit/trace-1-matchup-flex-second.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 --require-ready-by 3 \
+            | tee final-main-audit/trace-2-strict-first.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 \
+            | tee final-main-audit/trace-3-rulebox-second.txt
+
+      # Canonical aggregate command and probability definition:
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#what-the-probability-means
+      - name: Generate canonical T2 T3 probability matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out final-main-audit/t2_t3_matrix.csv
+
+      - name: Record source commits
+        run: |
+          git rev-parse HEAD | tee final-main-audit/checked_out_commit.txt
+          git rev-parse HEAD^1 | tee final-main-audit/current_main_parent.txt
+
+      - name: Upload final audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-current-main-audit
+          path: final-main-audit
+          if-no-files-found: warn

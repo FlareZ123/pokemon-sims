@@ -1,0 +1,184 @@
+name: Issue 852 Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/852-erika-flex-discard-tables'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+
+    steps:
+      - name: Check out issue branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/852-erika-flex-discard-tables
+          fetch-depth: 0
+
+      - name: Reconcile main and apply exact fix
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main fix/852-erika-flex-discard-tables
+          git merge --no-edit origin/main
+          python3 - <<'PY'
+          from pathlib import Path
+          import fcntl
+          import os
+          import tempfile
+
+          def replace_once(path_text: str, old: str, new: str) -> None:
+              path = Path(path_text)
+              lock_path = path.with_suffix(path.suffix + ".lock")
+              with lock_path.open("w", encoding="utf-8") as lock:
+                  fcntl.flock(lock, fcntl.LOCK_EX)
+                  text = path.read_text(encoding="utf-8")
+                  if new in text:
+                      return
+                  if text.count(old) != 1:
+                      raise RuntimeError(f"expected one replacement in {path}, found {text.count(old)}")
+                  updated = text.replace(old, new, 1)
+                  fd, temp_name = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".", suffix=".tmp")
+                  try:
+                      with os.fdopen(fd, "w", encoding="utf-8", newline="") as temp:
+                          temp.write(updated)
+                          temp.flush()
+                          os.fsync(temp.fileno())
+                      os.replace(temp_name, path)
+                  finally:
+                      if os.path.exists(temp_name):
+                          os.unlink(temp_name)
+
+          replace_once(
+              "src/trace_engine_v2/part_006.inc",
+              """    if (flex_fodder && scenario_.dci != DciProfile::StrictJit) {\n      for (const Card card : {Card::MawileGX, Card::Guzma, Card::Channeler, Card::FieldBlower,\n                              Card::ChaoticSwell, Card::PathToPeak, Card::TeamYellsCheer,\n                              Card::RoseannesBackup, Card::Lusamine, Card::ProfessorTuro,\n                              Card::Powerglass}) {\n""",
+              """    if (flex_fodder && scenario_.dci != DciProfile::StrictJit) {\n      // Erika's Invitation is opponent-dependent and deliberately inert in this\n      // single-player model, so matchup-flex may use it as the low-impact replacement\n      // for the retired Mawile-GX slot:\n      // https://api.pokemontcg.io/v2/cards/sv3pt5-160\n      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CARD_AUDIT.md#erikas-invitation\n      // https://github.com/FlareZ123/pokemon-sims/issues/852\n      for (const Card card : {Card::ErikasInvitation, Card::Guzma, Card::Channeler, Card::FieldBlower,\n                              Card::ChaoticSwell, Card::PathToPeak, Card::TeamYellsCheer,\n                              Card::RoseannesBackup, Card::Lusamine, Card::ProfessorTuro,\n                              Card::Powerglass}) {\n""",
+          )
+          replace_once(
+              "src/trace_engine_v2/part_012.inc",
+              """        const bool can_cycle = *extra == Card::Dipplin || *extra == Card::MawileGX || *extra == Card::Guzma ||\n                               *extra == Card::Channeler || *extra == Card::FieldBlower || *extra == Card::ChaoticSwell || *extra == Card::PathToPeak;\n""",
+              """        // Serena may discard up to three cards before drawing to five. Erika's\n        // Invitation is the inert matchup-flex replacement for retired Mawile-GX:\n        // https://api.pokemontcg.io/v2/cards/swsh12-164\n        // https://api.pokemontcg.io/v2/cards/sv3pt5-160\n        // https://github.com/FlareZ123/pokemon-sims/issues/852\n        const bool can_cycle = *extra == Card::Dipplin || *extra == Card::ErikasInvitation || *extra == Card::Guzma ||\n                               *extra == Card::Channeler || *extra == Card::FieldBlower || *extra == Card::ChaoticSwell || *extra == Card::PathToPeak;\n""",
+          )
+          replace_once(
+              "tests/serena_mandatory_discard_tests.cpp",
+              """  static bool play_serena(Engine& engine) { return engine.play_serena(); }\n""",
+              """  static bool play_serena(Engine& engine) { return engine.play_serena(); }\n  static std::optional<Card> choose_discard(Engine& engine, const bool permit_payload,\n                                             const bool flex_fodder) {\n    return engine.choose_discard(permit_payload, flex_fodder);\n  }\n""",
+          )
+          replace_once(
+              "tests/serena_mandatory_discard_tests.cpp",
+              """\n}  // namespace\n\nint main() {\n""",
+              """
+void test_matchup_flex_selects_erika_as_low_impact_cost() {
+  using namespace sim;
+  const Scenario scenario{"issue-852-flex-erika-cost", DciProfile::MatchupFlex,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(85201);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+  state.hand = {Card::ErikasInvitation};
+
+  // Erika's Invitation depends on the opponent's hand and is deliberately inert in
+  // the goldfish model, making it legal low-impact matchup-flex discard fuel:
+  // https://api.pokemontcg.io/v2/cards/sv3pt5-160
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CARD_AUDIT.md#erikas-invitation
+  // https://github.com/FlareZ123/pokemon-sims/issues/852
+  const std::optional<Card> selected =
+      EngineTestAccess::choose_discard(engine, false, true);
+  assert(selected && *selected == Card::ErikasInvitation);
+}
+
+void test_serena_cycles_erika_after_mandatory_discard() {
+  using namespace sim;
+  const Scenario scenario{"issue-852-serena-erika-cycle", DciProfile::MatchupFlex,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(85202);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+  state.hand = {Card::Serena, Card::Dipplin, Card::ErikasInvitation};
+  state.deck = {Card::Grass, Card::Fire, Card::Arven, Card::Crispin, Card::Gladion};
+
+  // Serena first pays its mandatory discard with Dipplin, then matchup-flex may
+  // include inert Erika among the optional discards before drawing to five:
+  // https://api.pokemontcg.io/v2/cards/swsh12-164
+  // https://api.pokemontcg.io/v2/cards/sv3pt5-160
+  // https://github.com/FlareZ123/pokemon-sims/issues/852
+  assert(EngineTestAccess::play_serena(engine));
+  assert(std::count(state.discard.begin(), state.discard.end(), Card::Dipplin) == 1);
+  assert(std::count(state.discard.begin(), state.discard.end(), Card::ErikasInvitation) == 1);
+  assert(std::count(state.hand.begin(), state.hand.end(), Card::ErikasInvitation) == 0);
+}
+
+}  // namespace
+
+int main() {
+""",
+          )
+          replace_once(
+              "tests/serena_mandatory_discard_tests.cpp",
+              """  test_spent_supporter_slot_disables_serena_payload_continuation();\n  return 0;\n""",
+              """  test_spent_supporter_slot_disables_serena_payload_continuation();\n  test_matchup_flex_selects_erika_as_low_impact_cost();\n  test_serena_cycles_erika_after_mandatory_discard();\n  return 0;\n""",
+          )
+          PY
+          git diff --check
+          git add src/trace_engine_v2/part_006.inc src/trace_engine_v2/part_012.inc tests/serena_mandatory_discard_tests.cpp
+          if ! git diff --cached --quiet; then
+            git commit -m "Use Erika in matchup-flex discard tables (#852)"
+          fi
+          git push origin HEAD:fix/852-erika-flex-discard-tables
+
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build focused target and simulator
+        run: cmake --build build --parallel 2 --target regidrago_serena_mandatory_discard_tests regidrago_sim
+
+      - name: Run focused regression
+        run: ./build/regidrago_serena_mandatory_discard_tests
+
+      - name: Run warning-clean UBSan regression
+        run: |
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -fsanitize=undefined -fno-omit-frame-pointer tests/serena_mandatory_discard_tests.cpp -o build/issue-852-focused
+          ./build/issue-852-focused
+
+      - name: Build and run full Release suite
+        shell: bash
+        run: |
+          cmake --build build --parallel 2
+          ctest --test-dir build --output-on-failure | tee issue-852-ctest.log
+
+      - name: Run three simulator audits
+        shell: bash
+        run: |
+          mkdir -p issue-852-audit
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-852-audit/trace-1-flex-seed-3.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 2 | tee issue-852-audit/trace-2-item-lock-seed-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee issue-852-audit/trace-3-rulebox-seed-20.txt
+
+      - name: Generate canonical matrix
+        shell: bash
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-852-audit/t2_t3_matrix.csv
+          cat issue-852-audit/t2_t3_matrix.csv
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-852-validation
+          path: |
+            issue-852-audit
+            issue-852-ctest.log
+          if-no-files-found: warn

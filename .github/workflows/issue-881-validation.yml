@@ -141,10 +141,21 @@ jobs:
           cp results/baseline_manifest.json issue-881-audit/baseline_manifest.json
           cat results/simulation_results.csv
 
+      - name: Require validation base is still current main
+        shell: bash
+        run: |
+          # Prevent a source-bound matrix from landing after a newer simulator merge:
+          # https://github.com/FlareZ123/pokemon-sims/issues/880
+          git fetch origin main
+          if ! git merge-base --is-ancestor origin/main "$(cat /tmp/issue-881-baseline-sha)"; then
+            echo "main advanced during validation; rerun against the new head."
+            exit 1
+          fi
+
       - name: Commit permanent validated files
         shell: bash
         run: |
-          rm -f .issue-881.lock .update-setup-docs.lock .results.lock
+          rm -f .issue-881.lock .update-setup-docs.lock .results.lock .issue-881-rerun
           rm -f .github/workflows/issue-881-validation.yml scripts/apply_issue_881.py
           git add CMakeLists.txt \
             src/trace_engine_v2/part_010_blender_thinning_override.inc \
@@ -153,7 +164,7 @@ jobs:
             README.md docs/REPORT.md docs/TRACE_AUDIT.md \
             results/baseline_manifest.json results/simulation_results.csv
           git add -A results/traces
-          git add -u .github/workflows/issue-881-validation.yml scripts/apply_issue_881.py
+          git add -u .github/workflows/issue-881-validation.yml scripts/apply_issue_881.py .issue-881-rerun
           if git diff --cached --quiet; then
             echo "No permanent changes to commit."
           else

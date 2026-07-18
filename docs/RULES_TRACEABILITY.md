@@ -71,6 +71,7 @@ The card text was checked against the supplied `pokemon-tcg-data` corpus. Identi
 | `P-COMPRESS-01` | `play_heavy_ball` | Under Item lock, when a manual attachment can finish the only missing Energy and Professor Burnet in hand is the live payload bridge, prize Oricorio is selected over prize Tapu Lele-GX so Burnet retains the Supporter slot. |
 | `P-DCI-01` | `choose_discard`, Blender/Burnet/Serena selection | Dead Dipplin is disposable because the 60-card list contains no Applin. Matchup-flex additionally permits a documented set of matchup cards as discard fodder. |
 | `P-JIT-01` | `strict_payload_timing`, `payload_ready`, `can_play_payload_this_turn` | Strict and matchup-flex profiles require a payload to enter discard in the turn that produces the ready state. No-discard-control permits earlier banking. |
+| `P-T5-FAIL-01` | `Engine::run`, aggregate result writer | Readiness through T4 is setup success. An unresolved game continues through T5 for diagnosis, but any game that needs T5 remains classified as a setup loss, including first readiness on T5. |
 | `P-FUTURE-01` | `lusamine_recovery_targets`, `play_lusamine` | Lusamine is a delayed recovery line. It does not preempt a live direct connector, and it is selected only when recovered Supporter or Stadium cards can repair future setup axes. Source for the recovery effect: https://api.pokemontcg.io/v2/cards/sm4-96 |
 
 ## Trace contract

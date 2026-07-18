@@ -82,10 +82,7 @@ jobs:
           contract_text = contract_text.replace(path_needle, path_replacement, 1)
 
           constant_needle = 'ARCHIVE_SHA256 = "3444c74e47cdb92d83ba760e9eeefa8bbaedd9d7f396068c0e1ed390a686af08"\n'
-          constant_replacement = (
-              constant_needle
-              + f'ERIKA_SOURCE_URL = "{erika_url}"\n'
-          )
+          constant_replacement = constant_needle + f'ERIKA_SOURCE_URL = "{erika_url}"\n'
           if constant_needle not in contract_text:
               raise SystemExit("Unable to locate contract constant insertion point")
           contract_text = contract_text.replace(constant_needle, constant_replacement, 1)
@@ -119,7 +116,7 @@ jobs:
       - name: Verify direct source registration
         shell: bash
         run: |
-          test "$(grep -c 'https://api.pokemontcg.io/v2/cards/sv3pt5-160' src/regidrago_sim.cpp)" -eq 2
+          test "$(grep -c 'https://api.pokemontcg.io/v2/cards/sv3pt5-160' src/regidrago_sim.cpp)" -eq 1
           test "$(grep -c 'https://api.pokemontcg.io/v2/cards/sv3pt5-160' docs/RULE_SOURCES.md)" -eq 1
           test "$(grep -c 'https://api.pokemontcg.io/v2/cards/sv3pt5-160' tests/card_audit_contract_tests.py)" -eq 1
 

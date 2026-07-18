@@ -37,7 +37,13 @@ jobs:
           cat issue-788-audit/build.log
           exit "$status"
       - name: Run full Release suite
-        run: ctest --test-dir build --output-on-failure
+        shell: bash
+        run: |
+          set +e
+          ctest --test-dir build --output-on-failure > issue-788-audit/ctest.log 2>&1
+          status=$?
+          cat issue-788-audit/ctest.log
+          exit "$status"
       - name: Run focused Werror and UBSan regressions
         run: |
           c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror tests/opening_active_dialga_payload_tests.cpp -o build/issue-788-focused

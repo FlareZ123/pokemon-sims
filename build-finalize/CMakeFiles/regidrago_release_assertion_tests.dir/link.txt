@@ -1,1 +1,0 @@
-/usr/bin/c++ -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/regidrago_release_assertion_tests.dir/link.d CMakeFiles/regidrago_release_assertion_tests.dir/tests/release_assertion_tests.cpp.o -o regidrago_release_assertion_tests

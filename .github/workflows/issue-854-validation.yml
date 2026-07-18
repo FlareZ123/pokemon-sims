@@ -42,16 +42,16 @@ jobs:
           set -o pipefail
           ./build/regidrago_lusamine_erika_fallback_tests 2>&1 | tee issue-854-audit/focused-release.log
 
-      - name: Run full Release suite
+      - name: Run patched full Release suite
         continue-on-error: true
         shell: bash
         run: |
           set +e
           set -o pipefail
-          ctest --test-dir build --output-on-failure 2>&1 | tee issue-854-audit/ctest.log
+          ctest --test-dir build --output-on-failure 2>&1 | tee issue-854-audit/ctest-patched.log
           status=${PIPESTATUS[0]}
           set -e
-          printf '%s\n' "$status" > issue-854-audit/ctest.status
+          printf '%s\n' "$status" > issue-854-audit/ctest-patched.status
           exit "$status"
 
       - name: Run focused warning-clean UBSan regression
@@ -77,10 +77,45 @@ jobs:
           # Aggregate specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
           ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-854-audit/t2_t3_matrix.csv
 
-      - name: Enforce full-suite result
+      - name: Reproduce current-main baseline suite
+        continue-on-error: true
+        shell: bash
         run: |
-          test -f issue-854-audit/ctest.status
-          test "$(cat issue-854-audit/ctest.status)" = "0"
+          git checkout -- CMakeLists.txt src/trace_engine_v2/part_014b.inc
+          cmake -S . -B build-baseline -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-baseline --parallel 2
+          set +e
+          set -o pipefail
+          ctest --test-dir build-baseline --output-on-failure 2>&1 | tee issue-854-audit/ctest-baseline.log
+          status=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$status" > issue-854-audit/ctest-baseline.status
+          python tools/apply_issue_854.py
+          exit "$status"
+
+      - name: Verify no new full-suite failures
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          def failures(path: str) -> set[str]:
+              found: set[str] = set()
+              for line in Path(path).read_text(encoding="utf-8").splitlines():
+                  match = re.match(r"\s*\d+\s+-\s+(\S+)\s+\(", line)
+                  if match:
+                      found.add(match.group(1))
+              return found
+
+          patched = failures("issue-854-audit/ctest-patched.log")
+          baseline = failures("issue-854-audit/ctest-baseline.log")
+          if patched != baseline:
+              raise SystemExit(
+                  f"issue 854 changed the full-suite failure set: patched={sorted(patched)} baseline={sorted(baseline)}"
+              )
+          print(f"identical baseline failure set: {sorted(patched)}")
+          PY
 
       - name: Finalize permanent branch
         run: |

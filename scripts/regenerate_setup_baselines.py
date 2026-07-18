@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -121,9 +122,11 @@ def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, m
         "traces": [],
     }
 
+    expected_trace_files: set[str] = set()
     for scenario, deadline, stem in TRACE_SPECS:
         seed, trace = find_trace_seed(executable, scenario, deadline, max_seed)
         file_name = f"{stem}_seed_{seed}.txt"
+        expected_trace_files.add(file_name)
         atomic_write_text(trace_dir / file_name, trace)
         manifest["traces"].append(
             {
@@ -133,6 +136,18 @@ def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, m
                 "file": file_name,
             }
         )
+
+    generated_stems = "|".join(re.escape(stem) for _, _, stem in TRACE_SPECS)
+    generated_trace_name = re.compile(rf"(?:{generated_stems})_seed_[0-9]+\.txt")
+    for trace_path in trace_dir.iterdir():
+        # Only canonical generator-owned trace names may be removed. This keeps
+        # unrelated review notes while reconciling the directory to the new manifest:
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
+        # https://github.com/FlareZ123/pokemon-sims/issues/916
+        if (trace_path.is_file() and generated_trace_name.fullmatch(trace_path.name) and
+                trace_path.name not in expected_trace_files):
+            trace_path.unlink()
 
     generate_matrix_atomic(executable, output_dir / "simulation_results.csv", trials, matrix_seed)
     atomic_write_text(

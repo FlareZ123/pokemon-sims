@@ -23,6 +23,7 @@ jobs:
           fetch-depth: 0
 
       - name: Reconcile current main
+        shell: bash
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
@@ -44,7 +45,7 @@ jobs:
           exit 0
 
       - name: Apply current-main composition
-        run: python tools/apply_issue_792_v3.py
+        run: python tools/apply_issue_792_unified.py
 
       - name: Configure and build patched Release
         run: |
@@ -54,7 +55,7 @@ jobs:
       - name: Run focused Release and UBSan checks
         shell: bash
         run: |
-          ctest --test-dir build --output-on-failure -R '^regidrago_opening_oricorio_dialga_(no_lock|payability)$'
+          ctest --test-dir build --output-on-failure -R '^regidrago_opening_oricorio_dialga_(no_lock|payability)_tests$'
           c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror \
             tests/opening_oricorio_dialga_payability_tests.cpp -o build/issue-792-focused
           ./build/issue-792-focused
@@ -116,9 +117,10 @@ jobs:
           fi
 
       - name: Finalize permanent fix
+        shell: bash
         run: |
-          git rm tools/apply_issue_792_v3.py .github/workflows/issue-792-v3.yml
-          git add CMakeLists.txt \
+          git rm tools/apply_issue_792_v3.py tools/apply_issue_792_unified.py .github/workflows/issue-792-v3.yml
+          git add \
             src/trace_engine_v2/part_005.inc \
             tests/opening_oricorio_dialga_no_lock_tests.cpp \
             tests/opening_oricorio_dialga_payability_tests.cpp

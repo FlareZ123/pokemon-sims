@@ -1,0 +1,46 @@
+name: Materialize issue 944 fix
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.head_ref == 'bug/944-post-powerglass-vessel-outlet'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Apply the reviewed issue patch
+        run: |
+          git apply --check .github/issue-944.patch
+          git apply .github/issue-944.patch
+      - name: Build and run focused regression
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ./build/regidrago_unified_tests legacy_star_post_powerglass_vessel_tests
+      - name: Regenerate source-bound baselines
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+      - name: Validate the complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Commit the materialized fix and generated evidence
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          rm .github/issue-944.patch .github/workflows/issue-944-materialize.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Preserve the post-Powerglass Vessel outlet"
+          git push origin "HEAD:${HEAD_REF}"

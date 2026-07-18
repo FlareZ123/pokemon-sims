@@ -87,17 +87,25 @@
     // https://www.pokemon.com/us/pokemon-tcg/rules
 
     // Burnet is an indirect payload bridge. Do not spend Tapu Lele-GX, a Bench
-    // slot, and Wonder Tag when Serena can already discard the permitted Dragon
-    // held in hand for the same current-turn Apex Dragon axis:
+    // slot, and Wonder Tag when a held Supporter or target-legal discard Item can
+    // already discard the permitted Dragon for the same current-turn payload axis:
     // https://api.pokemontcg.io/v2/cards/cel25c-60_A
     // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // https://api.pokemontcg.io/v2/cards/swsh12-164
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/888
+    // https://github.com/FlareZ123/pokemon-sims/issues/942
+    const bool live_hand_payload_item = has_live_one_discard_hand_payload_line() ||
+        has_live_ultra_ball_hand_payload_line();
     const bool live_burnet = can_play_payload_this_turn() &&
         payload_might_be_in_deck() && hand_count(Card::ProfessorBurnet) == 0 &&
         !has_live_blender_payload_line() && !has_live_serena_hand_payload_line() &&
-        might_be_unseen(Card::ProfessorBurnet);
+        !live_hand_payload_item && might_be_unseen(Card::ProfessorBurnet);
     // Professor Burnet searches and discards up to 2 deck cards:
     // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
 

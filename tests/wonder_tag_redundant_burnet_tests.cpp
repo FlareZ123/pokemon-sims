@@ -79,6 +79,82 @@ void test_held_serena_payload_makes_burnet_target_redundant() {
   }
 }
 
+sim::State held_item_state(const sim::Card item) {
+  sim::State state;
+  state.turn = 3;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::None};
+  state.hand = {sim::Card::TapuLeleGX, item, sim::Card::MegaDragonite};
+  state.deck = {sim::Card::ProfessorBurnet, sim::Card::Grass,
+                sim::Card::Dragapult, sim::Card::RegidragoV};
+  return state;
+}
+
+void test_held_one_discard_item_makes_burnet_target_redundant() {
+  for (const sim::Card item : {sim::Card::MysteriousTreasure,
+                               sim::Card::QuickBall,
+                               sim::Card::EarthenVessel}) {
+    sim::Engine engine = make_engine();
+    sim::EngineTestAccess::set_state(engine, held_item_state(item));
+    sim::EngineTestAccess::set_deck_seen(engine, true);
+
+    // Each Item can discard the held Mega Dragonite ex and has a known legal search
+    // target. Wonder Tag into Burnet would spend a Bench slot and Supporter connector
+    // without advancing another setup axis:
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/942
+    if (sim::EngineTestAccess::original_wonder_tag_route_has_live_target(engine)) {
+      throw std::runtime_error(
+          "Wonder Tag treated redundant Burnet as live beside a direct one-discard Item.");
+    }
+  }
+}
+
+void test_payable_ultra_ball_makes_burnet_target_redundant() {
+  sim::Engine engine = make_engine();
+  sim::State state = held_item_state(sim::Card::UltraBall);
+  state.hand.push_back(sim::Card::Dipplin);
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(engine, true);
+
+  // Ultra Ball can discard Mega Dragonite ex plus Dipplin and search a known Pokémon.
+  // Its exact two-other-card cost therefore makes the indirect Burnet target redundant:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://github.com/FlareZ123/pokemon-sims/issues/942
+  if (sim::EngineTestAccess::original_wonder_tag_route_has_live_target(engine)) {
+    throw std::runtime_error("Wonder Tag ignored a payable Ultra Ball payload route.");
+  }
+}
+
+void test_dead_or_unpayable_item_keeps_burnet_live() {
+  {
+    sim::Engine engine = make_engine();
+    sim::State state = held_item_state(sim::Card::EarthenVessel);
+    state.deck = {sim::Card::ProfessorBurnet, sim::Card::Dragapult};
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+    sim::EngineTestAccess::set_deck_seen(engine, true);
+    if (!sim::EngineTestAccess::original_wonder_tag_route_has_live_target(engine)) {
+      throw std::runtime_error("A K1-dead Earthen Vessel should not suppress Burnet.");
+    }
+  }
+  {
+    sim::Engine engine = make_engine();
+    sim::EngineTestAccess::set_state(engine, held_item_state(sim::Card::UltraBall));
+    sim::EngineTestAccess::set_deck_seen(engine, true);
+    if (!sim::EngineTestAccess::original_wonder_tag_route_has_live_target(engine)) {
+      throw std::runtime_error("An Ultra Ball missing its second cost should not suppress Burnet.");
+    }
+  }
+}
+
 void test_burnet_remains_live_when_no_payload_is_held() {
   sim::Engine engine = make_engine();
   sim::State state = base_state();
@@ -100,6 +176,9 @@ void test_burnet_remains_live_when_no_payload_is_held() {
 int main() {
   test_recipe_reference_survives_factory_return();
   test_held_serena_payload_makes_burnet_target_redundant();
+  test_held_one_discard_item_makes_burnet_target_redundant();
+  test_payable_ultra_ball_makes_burnet_target_redundant();
+  test_dead_or_unpayable_item_keeps_burnet_live();
   test_burnet_remains_live_when_no_payload_is_held();
   std::cout << "Wonder Tag redundant-Burnet tests passed\n";
 }

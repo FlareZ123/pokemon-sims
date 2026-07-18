@@ -2,7 +2,7 @@
 
 ## Canonical surface
 
-`regidrago_policy_tests` executes **57** deterministic exact-state fixtures. The runner table is the canonical inventory and order: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/policy_fixture_v2/part_004a.inc#L134-L191
+`regidrago_unified_tests regidrago_policy_tests` executes **57** deterministic exact-state fixtures. The runner table is the canonical inventory and order: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/policy_fixture_v2/part_004a.inc#L134-L191
 
 Each listed function constructs its hand, board, deck, Prize, discard, lock, expected action, and expected resulting state in the adjacent split source files under `tests/policy_fixture_v2/`. The executable assertions and their direct rule or card URLs are authoritative when a historical function identifier is awkward or stale.
 
@@ -77,5 +77,5 @@ Each listed function constructs its hand, board, deck, Prize, discard, lock, exp
 ```text
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel 2
-./build/regidrago_policy_tests
+./build/regidrago_unified_tests regidrago_policy_tests
 ```

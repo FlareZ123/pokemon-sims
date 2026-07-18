@@ -23,7 +23,63 @@ def ctest_trace_cases(cmake_text: str) -> dict[str, tuple[int, int]]:
     return cases
 
 
+
+
+def documented_build_targets(markdown: str) -> set[str]:
+    return set(re.findall(r"\./build/([A-Za-z0-9_-]+)", markdown))
+
+
+def cmake_executable_targets(cmake_text: str) -> set[str]:
+    return set(re.findall(r"add_executable\(\s*([A-Za-z0-9_-]+)", cmake_text))
+
+
+def assert_documented_build_commands_exist() -> None:
+    # Every documented ./build command must name a current CMake executable target:
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt
+    # https://github.com/FlareZ123/pokemon-sims/issues/917
+    cmake_text = (REPO_ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
+    targets = cmake_executable_targets(cmake_text)
+    referenced: set[str] = set()
+    for path in [REPO_ROOT / "README.md", *(REPO_ROOT / "docs").rglob("*.md")]:
+        referenced.update(documented_build_targets(path.read_text(encoding="utf-8")))
+    missing = sorted(referenced - targets)
+    if missing:
+        raise AssertionError(f"Documented build commands name absent targets: {missing}")
+
+
+def assert_same_repository_line_anchors_resolve() -> None:
+    # Direct source links must not request lines beyond their current repository files:
+    # https://github.com/FlareZ123/pokemon-sims
+    # https://github.com/FlareZ123/pokemon-sims/issues/917
+    pattern = re.compile(
+        r"https://github\.com/FlareZ123/pokemon-sims/blob/main/([^#\s)]+)#L(\d+)(?:-L(\d+))?"
+    )
+    suffixes = {".md", ".py", ".cpp", ".inc", ".cmake", ".txt", ".yml", ".yaml"}
+    failures: list[str] = []
+    for path in REPO_ROOT.rglob("*"):
+        if not path.is_file() or path.suffix not in suffixes:
+            continue
+        if any(part in {".git", "build", "build-sanitizers"} for part in path.parts):
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for match in pattern.finditer(text):
+            target = REPO_ROOT / match.group(1)
+            requested = max(int(match.group(2)), int(match.group(3) or match.group(2)))
+            if not target.is_file():
+                failures.append(f"{path.relative_to(REPO_ROOT)}: missing {match.group(1)}")
+                continue
+            line_count = len(target.read_text(encoding="utf-8", errors="replace").splitlines())
+            if requested > line_count:
+                failures.append(
+                    f"{path.relative_to(REPO_ROOT)}: {match.group(1)} requests L{requested}, EOF L{line_count}"
+                )
+    if failures:
+        raise AssertionError("Broken same-repository line anchors: " + "; ".join(failures))
+
+
 def main() -> int:
+    assert_documented_build_commands_exist()
+    assert_same_repository_line_anchors_resolve()
     manifest = json.loads(
         (REPO_ROOT / "results" / "baseline_manifest.json").read_text(encoding="utf-8")
     )
@@ -57,7 +113,7 @@ def main() -> int:
         # The generated audit must preserve the boundary between saved examples and
         # separately registered CTest cases when their seeds differ:
         # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
-        # https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt#L217-L223
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt
         subprocess.run(
             [
                 sys.executable,

@@ -8,9 +8,9 @@ This branch corrects material card-rule, hidden-information, policy, and traceab
 
 1. `--simulate-this` deterministic hand traces.
 2. `docs/RULES_TRACEABILITY.md` and `docs/RULES_REVERIFICATION.md`, separating card text/core procedure from policy decisions.
-3. `regidrago_policy_tests`, a 28-case exact-state fixture suite documented in `docs/OPTIMAL_POLICY_FIXTURES.md`.
+3. `regidrago_unified_tests regidrago_policy_tests`, a 57-case exact-state fixture suite documented in `docs/OPTIMAL_POLICY_FIXTURES.md`.
 
-`main` remains unchanged.
+The current `main` branch contains these audited repairs.
 
 ## Recent fixture-driven repairs
 
@@ -21,7 +21,7 @@ This branch corrects material card-rule, hidden-information, policy, and traceab
 
 ## Validation
 
-The exact staged source was compiled and tested locally in Release and AddressSanitizer/UndefinedBehaviorSanitizer configurations. Each matrix passed nine CTest targets: self-test, exact-state fixture suite, six deterministic traces, and aggregate smoke test. The recorded fixture output is in `results/policy_fixture_test_output.txt`.
+The exact staged source was compiled and tested locally in Release and AddressSanitizer/UndefinedBehaviorSanitizer configurations. The current CI runs the complete unified CTest inventory, six deterministic trace regressions, the aggregate smoke test, and sanitizer coverage. The recorded fixture output is in `results/policy_fixture_test_output.txt`.
 
 ## Scope boundary
 

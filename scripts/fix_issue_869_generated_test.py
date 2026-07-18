@@ -12,6 +12,14 @@ NEW = """  static bool ready(const Engine& engine) {
     return state.turn >= 2 && engine.active_is_vstar() &&
         state.active->grass >= 2 && state.active->fire >= 1 && engine.payload_ready();
   }
+  static std::string state_line(const Engine& engine) {
+    return engine.state_line();
+  }
+"""
+ERROR_OLD = '    throw std::runtime_error("Steven did not preserve the exact T3 route");\n'
+ERROR_NEW = """    throw std::runtime_error(
+        "Steven did not preserve the exact T3 route: " +
+        sim::EngineTestAccess::state_line(engine));
 """
 
 with PATH.open("r+", encoding="utf-8") as locked:
@@ -20,6 +28,9 @@ with PATH.open("r+", encoding="utf-8") as locked:
     if OLD not in text:
         raise SystemExit("Unable to find generated readiness helper")
     updated = text.replace(OLD, NEW, 1)
+    if ERROR_OLD not in updated:
+        raise SystemExit("Unable to find generated Steven route assertion")
+    updated = updated.replace(ERROR_OLD, ERROR_NEW, 1)
     with tempfile.NamedTemporaryFile(
         "w", encoding="utf-8", dir=PATH.parent, delete=False
     ) as temporary:

@@ -44,7 +44,7 @@ jobs:
         run: |
           set +e
           set -o pipefail
-          ctest --test-dir build-baseline --output-on-failure --output-junit issue-881-audit/baseline-ctest.xml 2>&1 | tee issue-881-audit/baseline-ctest.log
+          ctest --test-dir build-baseline --output-on-failure --output-junit "$GITHUB_WORKSPACE/issue-881-audit/baseline-ctest.xml" 2>&1 | tee issue-881-audit/baseline-ctest.log
           printf '%s\n' "${PIPESTATUS[0]}" > issue-881-audit/baseline-ctest.status
           exit 0
 
@@ -75,7 +75,7 @@ jobs:
         run: |
           set +e
           set -o pipefail
-          ctest --test-dir build --output-on-failure --output-junit issue-881-audit/patched-ctest.xml 2>&1 | tee issue-881-audit/patched-ctest.log
+          ctest --test-dir build --output-on-failure --output-junit "$GITHUB_WORKSPACE/issue-881-audit/patched-ctest.xml" 2>&1 | tee issue-881-audit/patched-ctest.log
           printf '%s\n' "${PIPESTATUS[0]}" > issue-881-audit/patched-ctest.status
           exit 0
 

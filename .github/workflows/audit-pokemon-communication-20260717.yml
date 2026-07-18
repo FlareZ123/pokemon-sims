@@ -1,0 +1,54 @@
+name: Pokémon Communication Audit
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  communication-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Check out pull-request merge ref
+        uses: actions/checkout@v4
+
+      - name: Configure Release build
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build full repository
+        run: cmake --build build --parallel 2
+
+      - name: Run full test suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Run focused Pokémon Communication regression
+        run: ./build/regidrago_pokemon_communication_tests
+
+      - name: Run three independent readable traces
+        shell: bash
+        run: |
+          # Trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Earliest-ready objective: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
+          mkdir -p audit-output
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 6 --require-ready-by 3 | tee audit-output/strict_jit_go_second_seed_6.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee audit-output/matchup_flex_go_second_seed_3.txt
+          ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 6 --require-ready-by 4 | tee audit-output/no_discard_control_go_first_seed_6.txt
+
+      - name: Build Communication variant audit
+        run: c++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tools/pokemon_communication_variant_audit.cpp -o build/pokemon_communication_variant_audit
+
+      - name: Generate matched-seed probability matrix
+        shell: bash
+        run: |
+          # Team Up card text: https://api.pokemontcg.io/v2/cards/sm9-152
+          # Probability contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#what-the-probability-means
+          ./build/pokemon_communication_variant_audit | tee audit-output/pokemon_communication_variant_matrix.csv
+
+      - name: Upload audit outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: pokemon-communication-audit
+          path: audit-output
+          if-no-files-found: error

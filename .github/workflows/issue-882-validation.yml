@@ -7,11 +7,15 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: issue-882-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   validate-and-finalize:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/882-serena-zero-draw'
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     steps:
       - name: Check out issue branch
@@ -21,14 +25,17 @@ jobs:
           fetch-depth: 0
 
       - name: Reconcile current main
+        shell: bash
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git fetch origin main
           git merge --no-edit origin/main
+          git rev-parse HEAD > /tmp/issue-882-baseline-sha
+          mkdir -p issue-882-audit
 
       - name: Apply Serena policy fix
-        run: python tools/apply_issue_882.py
+        run: python tools/apply_issue_882_unified.py
 
       - name: Configure and build patched Release
         run: |
@@ -38,28 +45,30 @@ jobs:
       - name: Run focused Release regression
         shell: bash
         run: |
-          mkdir -p issue-882-audit
           set -o pipefail
-          ./build/regidrago_serena_zero_draw_tests 2>&1 | tee issue-882-audit/focused-release.log
+          ctest --test-dir build --output-on-failure -R '^regidrago_serena_zero_draw_tests$' \
+            2>&1 | tee issue-882-audit/focused-release.log
 
       - name: Run focused warning-clean UBSan regression
         shell: bash
         run: |
           set -o pipefail
-          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -fsanitize=undefined -fno-omit-frame-pointer tests/serena_zero_draw_tests.cpp -o build/issue-882-focused
-          ./build/issue-882-focused 2>&1 | tee issue-882-audit/focused-ubsan.log
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror \
+            -fsanitize=undefined -fno-omit-frame-pointer \
+            tests/serena_zero_draw_tests.cpp -o build/issue-882-focused
+          UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+            ./build/issue-882-focused 2>&1 | tee issue-882-audit/focused-ubsan.log
 
-      - name: Run patched full Release suite
-        continue-on-error: true
+      - name: Record patched full Release suite
         shell: bash
         run: |
           set +e
           set -o pipefail
-          ctest --test-dir build --output-on-failure 2>&1 | tee issue-882-audit/ctest-patched.log
-          status=${PIPESTATUS[0]}
-          set -e
-          printf '%s\n' "$status" > issue-882-audit/ctest-patched.status
-          exit "$status"
+          ctest --test-dir build --output-on-failure \
+            --output-junit "$GITHUB_WORKSPACE/issue-882-audit/patched-ctest.xml" \
+            2>&1 | tee issue-882-audit/ctest-patched.log
+          printf '%s\n' "${PIPESTATUS[0]}" > issue-882-audit/ctest-patched.status
+          exit 0
 
       - name: Run three independent simulate-this passes
         shell: bash
@@ -83,51 +92,66 @@ jobs:
           # Aggregate specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
           ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-882-audit/t2_t3_matrix.csv
 
-      - name: Reproduce current-main baseline suite
-        continue-on-error: true
+      - name: Build and test exact current-main baseline
         shell: bash
         run: |
-          git checkout origin/main -- CMakeLists.txt src/trace_engine_v2/part_012.inc src/trace_engine_v2/part_013.inc src/trace_engine_v2/part_014b.inc
-          cmake -S . -B build-baseline -DCMAKE_BUILD_TYPE=Release
-          cmake --build build-baseline --parallel 2
+          baseline_sha="$(cat /tmp/issue-882-baseline-sha)"
+          git worktree add /tmp/issue-882-baseline "$baseline_sha"
+          cmake -S /tmp/issue-882-baseline -B /tmp/issue-882-baseline-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/issue-882-baseline-build --parallel 2
           set +e
-          set -o pipefail
-          ctest --test-dir build-baseline --output-on-failure 2>&1 | tee issue-882-audit/ctest-baseline.log
-          status=${PIPESTATUS[0]}
-          set -e
-          printf '%s\n' "$status" > issue-882-audit/ctest-baseline.status
-          python tools/apply_issue_882.py
-          exit "$status"
+          ctest --test-dir /tmp/issue-882-baseline-build --output-on-failure \
+            --output-junit "$GITHUB_WORKSPACE/issue-882-audit/baseline-ctest.xml" \
+            2>&1 | tee issue-882-audit/ctest-baseline.log
+          printf '%s\n' "${PIPESTATUS[0]}" > issue-882-audit/ctest-baseline.status
+          exit 0
 
       - name: Verify no new full-suite failures
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import re
+          import json
+          import xml.etree.ElementTree as ET
 
-          def failures(path: str) -> set[str]:
-              found: set[str] = set()
-              for line in Path(path).read_text(encoding="utf-8").splitlines():
-                  match = re.match(r"\s*\d+\s+-\s+(\S+)\s+\(", line)
-                  if match:
-                      found.add(match.group(1))
-              return found
+          def failures(path: str) -> list[str]:
+              root = ET.parse(path).getroot()
+              return sorted(
+                  case.attrib.get("name", "<unnamed>")
+                  for case in root.iter("testcase")
+                  if case.find("failure") is not None or case.find("error") is not None
+              )
 
-          patched = failures("issue-882-audit/ctest-patched.log")
-          baseline = failures("issue-882-audit/ctest-baseline.log")
+          patched = failures("issue-882-audit/patched-ctest.xml")
+          baseline = failures("issue-882-audit/baseline-ctest.xml")
+          Path("issue-882-audit/patched-failures.json").write_text(
+              json.dumps(patched, indent=2) + "\n", encoding="utf-8"
+          )
+          Path("issue-882-audit/baseline-failures.json").write_text(
+              json.dumps(baseline, indent=2) + "\n", encoding="utf-8"
+          )
           if patched != baseline:
               raise SystemExit(
                   "issue 882 changed the unrelated full-suite failure set: "
-                  f"patched={sorted(patched)} baseline={sorted(baseline)}"
+                  f"patched={patched} baseline={baseline}"
               )
-          print(f"identical unrelated failure set: {sorted(patched)}")
+          print(f"identical unrelated failure set: {patched}")
           PY
 
-      - name: Finalize permanent branch
+      - name: Require validation base is still current main
+        shell: bash
         run: |
-          git rm tools/apply_issue_882.py .github/workflows/issue-882-validation.yml
-          git add CMakeLists.txt src/trace_engine_v2/part_012.inc src/trace_engine_v2/part_013.inc src/trace_engine_v2/part_014b.inc tests/serena_zero_draw_tests.cpp
+          git fetch origin main
+          if ! git merge-base --is-ancestor origin/main "$(cat /tmp/issue-882-baseline-sha)"; then
+            echo "main advanced during validation; rerun against the new head."
+            exit 1
+          fi
+
+      - name: Finalize permanent branch
+        shell: bash
+        run: |
+          git rm tools/apply_issue_882.py tools/apply_issue_882_unified.py .github/workflows/issue-882-validation.yml
+          git add src/trace_engine_v2/part_012.inc src/trace_engine_v2/part_013.inc src/trace_engine_v2/part_014b.inc tests/serena_zero_draw_tests.cpp
           git commit -m "Reject dominated zero-draw Serena fallback (#882)"
           git push origin HEAD:fix/882-serena-zero-draw
           git archive --format=zip HEAD -o issue-882-audit/source.zip

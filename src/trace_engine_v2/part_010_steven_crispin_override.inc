@@ -27,9 +27,152 @@
         crispin_can_advance_energy_axis();
   }
 
+  bool wonder_tag_can_bank_steven_for_known_t3_blender_route() const {
+    if (state_.turn != 1 || !scenario_.going_first ||
+        scenario_.dci != DciProfile::StrictJit ||
+        scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
+        !deck_seen_ || state_.manual_energy_used || !state_.active ||
+        state_.active->card != Card::TapuLeleGX || bench_space() == 0 ||
+        !ability_available_for_pokemon(Card::LatiasEx) ||
+        in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
+        hand_count(Card::StevensResolve) > 0 ||
+        hand_count(Card::RegidragoVstar) > 0 ||
+        hand_count(Card::BrilliantBlender) == 0 ||
+        hand_count(Card::Grass) == 0 || hand_count(Card::Fire) == 0 ||
+        !need_vstar() || !need_energy() || !need_payload() ||
+        !payload_might_be_in_deck() ||
+        deck_count_after_search_started(Card::StevensResolve) == 0 ||
+        deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
+        deck_count_after_search_started(Card::LatiasEx) == 0 ||
+        deck_count_after_search_started(Card::Grass) == 0) {
+      return false;
+    }
+
+    const bool fresh_benched_regidrago = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV &&
+              pokemon.entered_turn <= state_.turn &&
+              pokemon.grass == 0 && pokemon.fire == 0;
+        });
+
+    // Going first prevents the turn-one Supporter play, while Wonder Tag can still
+    // bank Steven's Resolve. The public Grass and Fire cover the first two manual
+    // attachments. Steven then takes Regidrago VSTAR, the third Grass Energy, and
+    // Latias ex. Held Brilliant Blender supplies the T3 payload, and Skyliner
+    // promotes the Benched attacker without consuming the T3 Supporter play:
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm7-145
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/946
+    return fresh_benched_regidrago;
+  }
+
+  bool banked_steven_has_known_t3_blender_route() const {
+    if (state_.turn != 2 || !scenario_.going_first ||
+        scenario_.dci != DciProfile::StrictJit ||
+        scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
+        !supporter_allowed() || !deck_seen_ || !state_.active ||
+        state_.active->card != Card::TapuLeleGX || state_.retreat_used ||
+        bench_space() == 0 || !ability_available_for_pokemon(Card::LatiasEx) ||
+        in_play(Card::LatiasEx) || hand_count(Card::StevensResolve) == 0 ||
+        hand_count(Card::BrilliantBlender) == 0 || !need_payload() ||
+        !payload_might_be_in_deck() ||
+        deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
+        deck_count_after_search_started(Card::LatiasEx) == 0 ||
+        deck_count_after_search_started(Card::Grass) == 0) {
+      return false;
+    }
+
+    for (const Pokemon& pokemon : state_.bench) {
+      if (pokemon.card != Card::RegidragoV ||
+          pokemon.entered_turn >= state_.turn) {
+        continue;
+      }
+
+      int projected_grass = pokemon.grass;
+      int projected_fire = pokemon.fire;
+      int grass_in_hand = hand_count(Card::Grass);
+      int fire_in_hand = hand_count(Card::Fire);
+      if (!state_.manual_energy_used) {
+        if (projected_grass < 2 && grass_in_hand > 0) {
+          ++projected_grass;
+          --grass_in_hand;
+        } else if (projected_fire < 1 && fire_in_hand > 0) {
+          ++projected_fire;
+          --fire_in_hand;
+        } else {
+          continue;
+        }
+      }
+
+      const int remaining_grass = std::max(0, 2 - projected_grass);
+      const int remaining_fire = std::max(0, 1 - projected_fire);
+      const bool searched_grass_finishes =
+          remaining_grass == 1 && remaining_fire == 0;
+      const bool held_fire_finishes =
+          remaining_grass == 0 && remaining_fire == 1 && fire_in_hand > 0;
+      if (searched_grass_finishes || held_fire_finishes) {
+        // Steven's unrestricted three-card search reserves VSTAR, a direct Grass
+        // Energy, and Latias. This route has no Crispin or future-draw dependency and
+        // leaves the T3 Supporter play available:
+        // https://api.pokemontcg.io/v2/cards/sm7-145
+        // https://api.pokemontcg.io/v2/cards/swsh12-136
+        // https://api.pokemontcg.io/v2/cards/sv8-164
+        // https://api.pokemontcg.io/v2/cards/sv8-76
+        // https://www.pokemon.com/us/pokemon-tcg/rules
+        // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+        // https://github.com/FlareZ123/pokemon-sims/issues/946
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool play_banked_steven_for_known_t3_blender_route() {
+    if (!banked_steven_has_known_t3_blender_route()) return false;
+
+    remove_one(state_.hand, Card::StevensResolve);
+    state_.discard.push_back(Card::StevensResolve);
+    state_.supporter_used = true;
+    outcome_.used_steven = true;
+    record_deck_search_knowledge("Steven's Resolve");
+
+    std::vector<Card> found;
+    for (const Card target : {Card::RegidragoVstar, Card::Grass, Card::LatiasEx}) {
+      if (!move_deck_to_hand(target)) {
+        throw std::logic_error("Known banked-Steven target disappeared during legal search");
+      }
+      found.push_back(target);
+    }
+    shuffle(state_.deck);
+    state_.turn_ended = true;
+
+    // Steven searches up to three cards and ends the turn. These exact K1 targets
+    // establish the deterministic T3 Evolution, Energy, and promotion axes:
+    // https://api.pokemontcg.io/v2/cards/sm7-145
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://github.com/FlareZ123/pokemon-sims/issues/946
+    trace("PLAY SUPPORTER", "R-STEVEN-01; R-GAME-SUPPORTER",
+          "Searched up to 3 cards: " + join_cards(found) + ". Turn ended.");
+    return true;
+  }
+
+  Card choose_supporter_after_search_started() {
+    if (wonder_tag_can_bank_steven_for_known_t3_blender_route()) {
+      return Card::StevensResolve;
+    }
+    return static_cast<const Engine&>(*this).choose_supporter_after_search_started();
+  }
+
   bool should_play_steven() const {
     return (should_play_steven_original() &&
             !steven_should_yield_to_crispin_mysterious_route()) ||
         late_steven_is_only_basic_connector() ||
-        late_steven_has_known_t3_compression_route();
+        late_steven_has_known_t3_compression_route() ||
+        banked_steven_has_known_t3_blender_route();
   }

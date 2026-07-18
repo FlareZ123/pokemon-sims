@@ -189,15 +189,19 @@ target_compile_options(regidrago_pokemon_communication_duplicate_tapu_tests PRIV
 add_executable(regidrago_release_assertion_tests tests/release_assertion_tests.cpp)
 target_compile_options(regidrago_release_assertion_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
+# Stable exact-state route contracts replace shuffled-seed assertions whose
+# prerequisite states drifted with the canonical recipe and action policy:
+# https://github.com/FlareZ123/pokemon-sims/issues/875
+add_executable(regidrago_stable_route_contract_tests tests/stable_route_contract_tests.cpp)
+target_compile_options(regidrago_stable_route_contract_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
 enable_testing()
-add_test(NAME regidrago_future_wonder_tag_crispin
-  COMMAND ${CMAKE_COMMAND}
-    -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_future_wonder_tag_crispin.cmake)
-add_test(NAME regidrago_active_tapu_paid_retreat
-  COMMAND ${CMAKE_COMMAND}
-    -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_active_tapu_paid_retreat.cmake)
+# Exact public-state contracts for Wonder Tag banking, paid retreat, and
+# Rule Box Ability lock semantics:
+# https://github.com/FlareZ123/pokemon-sims/issues/809
+# https://github.com/FlareZ123/pokemon-sims/issues/802
+# https://github.com/FlareZ123/pokemon-sims/issues/875
+add_test(NAME regidrago_stable_route_contracts COMMAND regidrago_stable_route_contract_tests)
 add_test(NAME regidrago_sim_self_test COMMAND regidrago_sim --self-test)
 add_test(NAME regidrago_policy_fixtures COMMAND regidrago_policy_tests)
 add_test(NAME regidrago_tier2_policy_fixtures COMMAND regidrago_tier2_tests)
@@ -263,7 +267,6 @@ add_test(NAME trace_strict_second_t3 COMMAND regidrago_sim --simulate-this --sce
 add_test(NAME trace_strict_first_t4 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4)
 add_test(NAME trace_flex_second_t2 COMMAND regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2)
 add_test(NAME trace_turn2_item_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 1 --require-ready-by 3)
-add_test(NAME trace_rulebox_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 1 --require-ready-by 3)
 add_test(NAME trace_no_control_first_t4 COMMAND regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 6 --require-ready-by 4)
 add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
 set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)

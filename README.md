@@ -34,6 +34,12 @@ ctest --test-dir build --output-on-failure
 ./build/regidrago_sim --trials 100000 --seed 20260705 --out results/simulation_results.csv
 ```
 
+## T5 horizon and setup-loss rule
+
+Standard scenarios stop early when they become ready through T4. Games still unresolved after T4 continue through T5 for diagnostic recovery data. Reaching T5 is classified as a setup loss even when the deck first becomes ready during that turn.
+
+Aggregate CSV output separates cumulative `ready_by_t5_pct`, T5-only `ready_on_t5_pct`, and the benchmark `setup_failure_pct`. The failure percentage is the complement of readiness through T4. A T5 recovery remains inside that failure count.
+
 ## Scope
 
 A ready state means:

@@ -34,10 +34,12 @@ jobs:
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-1.txt
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee trace-2.txt
           ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-3.txt
-      # The issue #718 PR refreshes and validates the source-bound matrix after the
-      # Blender VSTAR-card-axis fix: https://github.com/FlareZ123/pokemon-sims/pull/931
       - name: Generate canonical T2 and T3 matrix
         run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+      - name: Regenerate source-bound setup baseline
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
       - name: Record tested source
@@ -52,6 +54,11 @@ jobs:
             t2-t3-matrix.csv
             tested-head.txt
             build/Testing
+            results/simulation_results.csv
+            results/baseline_manifest.json
+            results/traces
+            docs/REPORT.md
+            docs/TRACE_AUDIT.md
           if-no-files-found: warn
 
   sanitizers:
@@ -71,9 +78,6 @@ jobs:
         run: cmake --build build-sanitizers --parallel 2
       - name: Run complete sanitizer suite
         env:
-          # Detect the reference-parameter lifetime failure covered by issue #907:
-          # https://eel.is/c++draft/class.temporary#6.10
-          # https://github.com/FlareZ123/pokemon-sims/issues/907
           ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
           UBSAN_OPTIONS: halt_on_error=1
         run: ctest --test-dir build-sanitizers --parallel 2 --output-on-failure

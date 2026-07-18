@@ -9,7 +9,9 @@ namespace sim {
 
 struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
-  static void run_turn(Engine& engine) { engine.run_turn(); }
+  static bool promote_ready_benched_vstar(Engine& engine) {
+    return engine.promote_ready_benched_vstar();
+  }
 };
 
 }  // namespace sim
@@ -18,12 +20,6 @@ namespace {
 
 bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
   return std::find(cards.begin(), cards.end(), card) != cards.end();
-}
-
-sim::Engine make_engine(const sim::LockMode lock, std::mt19937_64& rng) {
-  const sim::Scenario scenario{"issue-905-latias-retreat-priority",
-                               sim::DciProfile::NoDiscardControl, lock, true, 4};
-  return sim::Engine(scenario, sim::baseline_recipe(), rng);
 }
 
 void set_ready_tapu_state(sim::Engine& engine, const bool include_latias) {
@@ -41,8 +37,11 @@ void set_ready_tapu_state(sim::Engine& engine, const bool include_latias) {
 }
 
 void test_free_latias_retreat_precedes_paid_tapu_route() {
+  const sim::Scenario scenario{"issue-905-latias-free-retreat",
+                               sim::DciProfile::NoDiscardControl,
+                               sim::LockMode::None, true, 4};
   std::mt19937_64 rng(90501);
-  sim::Engine engine = make_engine(sim::LockMode::None, rng);
+  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
   set_ready_tapu_state(engine, true);
 
   // Latias ex makes the Basic Active Tapu Lele-GX's Retreat Cost zero. The free
@@ -52,7 +51,7 @@ void test_free_latias_retreat_precedes_paid_tapu_route() {
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // https://github.com/FlareZ123/pokemon-sims/issues/905
-  sim::EngineTestAccess::run_turn(engine);
+  assert(sim::EngineTestAccess::promote_ready_benched_vstar(engine));
 
   const sim::State& state = sim::EngineTestAccess::state(engine);
   assert(state.active.has_value());
@@ -64,8 +63,11 @@ void test_free_latias_retreat_precedes_paid_tapu_route() {
 }
 
 void test_paid_tapu_route_remains_when_latias_is_absent() {
+  const sim::Scenario scenario{"issue-905-paid-retreat-no-latias",
+                               sim::DciProfile::NoDiscardControl,
+                               sim::LockMode::None, true, 4};
   std::mt19937_64 rng(90502);
-  sim::Engine engine = make_engine(sim::LockMode::None, rng);
+  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
   set_ready_tapu_state(engine, false);
 
   // Without Skyliner in play, Tapu Lele-GX still needs its printed one-Colorless
@@ -74,7 +76,7 @@ void test_paid_tapu_route_remains_when_latias_is_absent() {
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/issues/802
   // https://github.com/FlareZ123/pokemon-sims/issues/905
-  sim::EngineTestAccess::run_turn(engine);
+  assert(sim::EngineTestAccess::promote_ready_benched_vstar(engine));
 
   const sim::State& state = sim::EngineTestAccess::state(engine);
   assert(state.active.has_value());
@@ -86,8 +88,11 @@ void test_paid_tapu_route_remains_when_latias_is_absent() {
 }
 
 void test_paid_tapu_route_remains_when_skyliner_is_locked() {
+  const sim::Scenario scenario{"issue-905-paid-retreat-ability-lock",
+                               sim::DciProfile::NoDiscardControl,
+                               sim::LockMode::FullRuleBoxAbility, true, 4};
   std::mt19937_64 rng(90503);
-  sim::Engine engine = make_engine(sim::LockMode::FullRuleBoxAbility, rng);
+  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
   set_ready_tapu_state(engine, true);
 
   // The modeled Rule Box Ability lock suppresses Latias ex's Skyliner. The free
@@ -97,7 +102,7 @@ void test_paid_tapu_route_remains_when_skyliner_is_locked() {
   // https://api.pokemontcg.io/v2/cards/cel25c-60_A
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
   // https://github.com/FlareZ123/pokemon-sims/issues/905
-  sim::EngineTestAccess::run_turn(engine);
+  assert(sim::EngineTestAccess::promote_ready_benched_vstar(engine));
 
   const sim::State& state = sim::EngineTestAccess::state(engine);
   assert(state.active.has_value());

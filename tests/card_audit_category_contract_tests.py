@@ -7,6 +7,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_PATH = REPO_ROOT / "scripts" / "audit_card_data.py"
+SIM_PLAN_PATH = REPO_ROOT / "SIM-PLAN.md"
 
 
 def load_audit_module():
@@ -55,6 +56,23 @@ def main() -> int:
     payload = audit.build_payload(Path("fixture.zip"), cards)
     if payload["category_totals"] != {"pokemon": 18, "trainers": 33, "energy": 9}:
         raise AssertionError(f"Unexpected derived category totals: {payload['category_totals']}")
+
+    # The validation plan must use the category totals derived from the canonical
+    # decklist and corpus-backed audit instead of preserving historical constants:
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/data/decklist.json
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/audit_card_data.py
+    # https://github.com/FlareZ123/pokemon-sims/issues/929
+    totals = payload["category_totals"]
+    expected_plan_requirement = (
+        f"Assert {totals['pokemon']} Pokémon, {totals['trainers']} Trainers, "
+        f"{totals['energy']} Energy, and 60 total cards"
+    )
+    validation_plan = SIM_PLAN_PATH.read_text(encoding="utf-8")
+    if expected_plan_requirement not in validation_plan:
+        raise AssertionError(
+            "SIM-PLAN.md category requirement does not match the canonical decklist: "
+            f"{expected_plan_requirement}"
+        )
 
     mutated = copy.deepcopy(cards)
     mutated["swsh12-135"]["supertype"] = "Trainer"

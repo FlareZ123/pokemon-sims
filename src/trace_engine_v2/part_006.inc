@@ -78,9 +78,35 @@
            payload_might_be_in_deck();
   }
 
+  bool can_spend_redundant_payload_for_locked_vstar_search() const {
+    const int held_payloads = static_cast<int>(std::count_if(
+        state_.hand.begin(), state_.hand.end(), is_payload));
+    const bool burnet_outlet = hand_count(Card::ProfessorBurnet) > 0 &&
+        payload_might_be_in_deck();
+    const bool serena_outlet = hand_count(Card::Serena) > 0;
+
+    // Before a scheduled turn-two Item lock, a direct Pokémon search may spend one
+    // redundant Dragon payload to secure Regidrago VSTAR while another payload stays
+    // protected and a Supporter-based strict-JIT outlet survives the lock. Ordinary
+    // low-DCI costs remain preferred; callers use this only as a fallback:
+    // Mysterious Treasure https://api.pokemontcg.io/v2/cards/sm6-113
+    // Ultra Ball https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // Regidrago VSTAR https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Professor Burnet https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Serena https://api.pokemontcg.io/v2/cards/swsh12-164
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // https://github.com/FlareZ123/pokemon-sims/issues/925
+    return scenario_.dci == DciProfile::StrictJit &&
+           scenario_.locks == LockMode::TurnTwoItem && state_.turn == 1 &&
+           !need_regi() && need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
+           might_be_unseen(Card::RegidragoVstar) && held_payloads >= 2 &&
+           (burnet_outlet || serena_outlet);
+  }
+
   std::optional<Card> choose_discard(const bool permit_payload, const bool flex_fodder,
                                      const bool allow_heavy_ball = true,
-                                     const std::optional<Card> excluded_from_cost = std::nullopt) const {
+                                     const std::optional<Card> excluded_from_cost = std::nullopt,
+                                     const bool allow_redundant_payload = false) const {
     // P-DCI-STRICT and P-DCI-FLEX, documented in RULES_TRACEABILITY.md.
     const auto has_discardable_copy = [this, excluded_from_cost](const Card card) {
       const int excluded = excluded_from_cost && *excluded_from_cost == card ? 1 : 0;
@@ -89,6 +115,15 @@
     if (permit_payload) {
       for (const Card card : {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::DialgaGX}) {
         if (hand_count(card) > 0) return card;
+      }
+    }
+    if (allow_redundant_payload) {
+      const int held_payloads = static_cast<int>(std::count_if(
+          state_.hand.begin(), state_.hand.end(), is_payload));
+      if (held_payloads >= 2) {
+        for (const Card card : {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::DialgaGX}) {
+          if (hand_count(card) > 0) return card;
+        }
       }
     }
 
@@ -222,6 +257,27 @@
     return choose_discard(permit_payload, flex_fodder).has_value();
   }
 
+  std::optional<std::array<Card, 2>> redundant_payload_ultra_ball_vstar_costs() {
+    if (!can_spend_redundant_payload_for_locked_vstar_search()) return std::nullopt;
+    const std::vector<Card> original_hand = state_.hand;
+    const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
+
+    // Ultra Ball needs two other cards. Spend exactly one redundant payload, then
+    // require a separate ordinary DCI-legal cost so one payload remains protected:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/issues/925
+    const auto payload = choose_discard(false, true, true, Card::UltraBall, true);
+    if (!payload || !is_payload(*payload) || !remove_one(state_.hand, *payload)) {
+      restore_hand();
+      return std::nullopt;
+    }
+    const auto ordinary = choose_discard(false, true, true, Card::UltraBall);
+    restore_hand();
+    if (!ordinary) return std::nullopt;
+    return std::array<Card, 2>{*payload, *ordinary};
+  }
+
   bool oricorio_preserves_burnet_supporter_slot() const {
     const bool exactly_one_energy_missing = grass_needed() + fire_needed() == 1;
     const bool needed_energy_might_be_in_deck =
@@ -267,14 +323,15 @@
     // Reserve the Ultra Ball being played. Two distinct remaining copies may pay
     // its two-other-card cost: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     const auto first = choose_discard(permit_payload, true, true, Card::UltraBall);
-    if (!first || !remove_one(state_.hand, *first)) {
+    if (first && remove_one(state_.hand, *first)) {
+      const auto second = choose_discard(can_play_payload_this_turn() && !is_payload(*first),
+                                         true, true, Card::UltraBall);
       restore_hand();
-      return false;
+      if (second) return true;
+    } else {
+      restore_hand();
     }
-    const auto second = choose_discard(can_play_payload_this_turn() && !is_payload(*first),
-                                       true, true, Card::UltraBall);
-    restore_hand();
-    return second.has_value();
+    return redundant_payload_ultra_ball_vstar_costs().has_value();
   }
 
   bool wonder_tag_arven_held_payload_route_available() const {
@@ -366,4 +423,3 @@
     return bench_from_hand(Card::TapuLeleGX, true);
   }
 
-  void resolve_entry_ability(const Card card) {

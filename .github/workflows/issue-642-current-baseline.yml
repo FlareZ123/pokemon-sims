@@ -1,0 +1,90 @@
+name: Issue 642 Current Baseline
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-642-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  regenerate-and-validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/642-current-baseline-provenance-v3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/642-current-baseline-provenance-v3
+          fetch-depth: 0
+
+      - name: Reconcile current main
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Configure Release build
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build repository
+        run: cmake --build build --parallel 2
+
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          mkdir -p issue-642-audit
+          # Trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Reviewed trace inventory: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/TRACE_AUDIT.md#reviewed-traces
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-642-audit/matchup_flex_go_second_seed_3.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee issue-642-audit/strict_turn2_item_lock_go_second_seed_2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee issue-642-audit/strict_rulebox_lock_go_second_seed_20.txt
+
+      - name: Regenerate canonical baseline bundle
+        run: |
+          # Aggregate command: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+          # Fixed-seed contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#what-the-probability-means
+          # Confirmed drift: https://github.com/FlareZ123/pokemon-sims/issues/642
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir generated-baselines --trials 100000 --matrix-seed 20260705
+
+      - name: Install regenerated artifacts
+        shell: bash
+        run: |
+          cp generated-baselines/simulation_results.csv results/simulation_results.csv
+          cp generated-baselines/baseline_manifest.json results/baseline_manifest.json
+          rm -rf results/traces
+          cp -R generated-baselines/traces results/traces
+          python scripts/update_setup_docs.py --repo-root .
+
+      - name: Run full Release suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Run provenance contract directly
+        run: python tests/setup_report_contract_tests.py
+
+      - name: Commit validated baseline and remove temporary workflow
+        shell: bash
+        run: |
+          git rm .github/workflows/issue-642-current-baseline.yml
+          git add README.md docs/REPORT.md docs/TRACE_AUDIT.md results/README.md results/baseline_manifest.json results/simulation_results.csv
+          git add -A results/traces
+          git commit -m 'Refresh current-main setup baseline and provenance (#642)'
+          git push origin HEAD:fix/642-current-baseline-provenance-v3
+          git archive --format=zip HEAD -o issue-642-audit/issue-642-source.zip
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-642-current-baseline
+          path: |
+            issue-642-audit
+            results/simulation_results.csv
+            results/baseline_manifest.json
+            docs/REPORT.md
+          if-no-files-found: warn

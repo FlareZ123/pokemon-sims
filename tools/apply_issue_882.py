@@ -118,7 +118,7 @@ def main() -> None:
 
     const bool would_draw = state_.hand.size() < 5U && !state_.deck.empty();
     const bool completes_payload_now = allow_zero_draw_payload_completion &&
-        is_payload(*first) && can_play_payload_this_turn();
+        is_payload(*first) && permit_payload;
     state_.hand = original_hand;
     if (!would_draw && !completes_payload_now) {
       // A legal zero-draw resolution is strategically dominated when its discard

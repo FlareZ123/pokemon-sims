@@ -1,0 +1,73 @@
+name: Audit Merged Issue 837
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: audit-837-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'audit/837-post-merge-validation'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure merged main source
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build every target
+        run: cmake --build build --parallel 2
+
+      - name: Run full Release suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Run merged issue 837 regression directly
+        run: ./build/regidrago_roseanne_pokemon_communication_zone_tests
+
+      - name: Run warning-clean and UBSan issue 837 regression
+        run: |
+          mkdir -p audit-837
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror \
+            tests/roseanne_pokemon_communication_zone_tests.cpp -o build/audit-837-werror
+          ./build/audit-837-werror | tee audit-837/focused-werror.log
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
+            -fsanitize=undefined -fno-omit-frame-pointer \
+            tests/roseanne_pokemon_communication_zone_tests.cpp -o build/audit-837-ubsan
+          ./build/audit-837-ubsan | tee audit-837/focused-ubsan.log
+
+      # Exact reviewed trace examples:
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/TRACE_AUDIT.md#reviewed-traces
+      # Readable-hand command specification:
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      - name: Run three individual reviewed simulate-this audits
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 \
+            | tee audit-837/trace-1-matchup-flex-second.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 --require-ready-by 3 \
+            | tee audit-837/trace-2-strict-first.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 \
+            | tee audit-837/trace-3-rulebox-second.txt
+
+      # Canonical aggregate source and probability definition:
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#what-the-probability-means
+      - name: Generate canonical T2 T3 probability matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-837/t2_t3_matrix.csv
+
+      - name: Record audited main commit
+        run: git rev-parse HEAD | tee audit-837/audited_commit.txt
+
+      - name: Upload post-merge audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-837-post-merge
+          path: audit-837
+          if-no-files-found: warn

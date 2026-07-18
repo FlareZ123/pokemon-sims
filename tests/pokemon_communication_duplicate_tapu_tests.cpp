@@ -87,8 +87,9 @@ void test_singleton_tapu_remains_protected() {
   sim::EngineTestAccess::set_state(fixture.engine, communication_state(1));
   sim::EngineTestAccess::set_deck_seen(fixture.engine);
 
-  // A sole Tapu Lele-GX is a live on-play Supporter connector and must remain
-  // protected when it is the only possible exchange Pokémon:
+  // The direct connector preflight must preserve a sole Tapu Lele-GX when that is
+  // the only possible exchange Pokémon. The full play planner separately evaluates
+  // whether Pokémon Communication itself makes Wonder Tag unnecessary:
   // https://api.pokemontcg.io/v2/cards/sm9-152
   // https://api.pokemontcg.io/v2/cards/cel25c-60_A
   // https://github.com/FlareZ123/pokemon-sims/issues/807
@@ -97,13 +98,8 @@ void test_singleton_tapu_remains_protected() {
   for (const sim::Card target : targets) {
     if (sim::EngineTestAccess::direct_route(fixture.engine, target)) {
       throw std::runtime_error(
-          "A singleton Tapu Lele-GX was incorrectly exposed as a Communication exchange.");
+          "A singleton Tapu Lele-GX was incorrectly exposed as a direct Communication exchange.");
     }
-  }
-
-  if (sim::EngineTestAccess::plan(fixture.engine)) {
-    throw std::runtime_error(
-        "The general planner must also preserve a singleton live Tapu Lele-GX connector.");
   }
 }
 

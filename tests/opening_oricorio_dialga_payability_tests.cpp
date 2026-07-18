@@ -32,8 +32,8 @@ void expect_dialga_active(const sim::State& state, const char* message) {
 }
 
 sim::Engine make_engine(sim::State state, std::mt19937_64& rng) {
-  const sim::Scenario scenario{"issue-792", sim::DciProfile::StrictJit,
-                               sim::LockMode::None, true, 4};
+  static const sim::Scenario scenario{"issue-792", sim::DciProfile::StrictJit,
+                                      sim::LockMode::None, true, 4};
   static const sim::DeckRecipe recipe = sim::baseline_recipe();
   sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, std::move(state));

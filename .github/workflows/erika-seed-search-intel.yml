@@ -1,0 +1,28 @@
+name: Erika Fixture Seed Search Intel
+
+on:
+  pull_request:
+    paths:
+      - 'tools/erikas_invitation_fixture_seed_search.cpp'
+      - '.github/workflows/erika-seed-search-intel.yml'
+
+jobs:
+  fixture-seed-search:
+    runs-on: macos-15-intel
+    steps:
+      - name: Check out pull-request merge ref
+        uses: actions/checkout@v4
+      - name: Build seed search
+        run: |
+          clang++ -std=c++20 -O3 -Wall -Wextra -Wpedantic -Werror \
+            tools/erikas_invitation_fixture_seed_search.cpp \
+            -o erikas_invitation_fixture_seed_search
+      - name: Find replacement fixture seeds
+        run: |
+          ./erikas_invitation_fixture_seed_search > erikas_invitation_fixture_seeds.csv
+          cat erikas_invitation_fixture_seeds.csv
+      - name: Upload fixture seeds
+        uses: actions/upload-artifact@v4
+        with:
+          name: erikas-invitation-fixture-seeds-intel
+          path: erikas_invitation_fixture_seeds.csv

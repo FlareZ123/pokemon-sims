@@ -1,0 +1,158 @@
+name: Issue 854 Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/854-lusamine-erika-fallback-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+
+    steps:
+      - name: Check out issue branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/854-lusamine-erika-fallback-v2
+          fetch-depth: 0
+
+      - name: Reconcile main and apply exact fix
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main fix/854-lusamine-erika-fallback-v2
+          git merge --no-edit origin/main
+          python3 - <<'PY'
+          from pathlib import Path
+          import fcntl
+          import os
+          import tempfile
+
+          def replace_once(path_text: str, old: str, new: str) -> None:
+              path = Path(path_text)
+              lock_path = path.with_suffix(path.suffix + ".lock")
+              with lock_path.open("w", encoding="utf-8") as lock:
+                  fcntl.flock(lock, fcntl.LOCK_EX)
+                  text = path.read_text(encoding="utf-8")
+                  if new in text:
+                      return
+                  if text.count(old) != 1:
+                      raise RuntimeError(f"expected one replacement in {path}, found {text.count(old)}")
+                  updated = text.replace(old, new, 1)
+                  fd, temp_name = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".", suffix=".tmp")
+                  try:
+                      with os.fdopen(fd, "w", encoding="utf-8", newline="") as temp:
+                          temp.write(updated)
+                          temp.flush()
+                          os.fsync(temp.fileno())
+                      os.replace(temp_name, path)
+                  finally:
+                      if os.path.exists(temp_name):
+                          os.unlink(temp_name)
+
+          replace_once(
+              "src/trace_engine_v2/part_014b.inc",
+              """    // These are the remaining modeled Supporter and Stadium cards, ordered from\n    // least direct setup value to the connectors retained above. The list contains\n    // only legal Lusamine targets and may select a second copy where available.\n    for (const Card fallback : {Card::ChaoticSwell, Card::PathToPeak, Card::TeamYellsCheer,\n""",
+              """    // These are the remaining modeled Supporter and Stadium cards, ordered from\n    // least direct setup value to the connectors retained above. Erika's Invitation\n    // is opponent-dependent and deliberately inert in this goldfish model, making it\n    // the lowest-impact legal second target when one advancing target is already set:\n    // https://api.pokemontcg.io/v2/cards/sm4-96\n    // https://api.pokemontcg.io/v2/cards/sv3pt5-160\n    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CARD_AUDIT.md#erikas-invitation\n    // https://github.com/FlareZ123/pokemon-sims/issues/854\n    // The list may select a second copy where available.\n    for (const Card fallback : {Card::ErikasInvitation, Card::ChaoticSwell, Card::PathToPeak, Card::TeamYellsCheer,\n""",
+          )
+          replace_once(
+              "tests/lusamine_arven_item_lock_tests.cpp",
+              """\n}  // namespace\n\nint main() {\n""",
+              """
+void test_lusamine_recovers_burnet_and_erika_as_mandatory_pair() {
+  using namespace sim;
+  const Scenario scenario{"issue-854-lusamine-erika", DciProfile::StrictJit,
+                          LockMode::None, false, 4};
+  const DeckRecipe recipe = baseline_recipe();
+  std::mt19937_64 rng(85401);
+  Engine engine(scenario, recipe, rng);
+  State& state = EngineTestAccess::state(engine);
+
+  state.turn = 2;
+  state.active = Pokemon{Card::RegidragoVstar, 1, 2, 1, Tool::None};
+  state.hand = {Card::Lusamine};
+  state.discard = {Card::ProfessorBurnet, Card::ErikasInvitation};
+
+  // Lusamine requires exactly two Supporter and/or Stadium cards. Professor Burnet
+  // advances the missing payload axis, while inert Erika is the legal mandatory
+  // second target in the public discard pile:
+  // https://api.pokemontcg.io/v2/cards/sm4-96
+  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // https://api.pokemontcg.io/v2/cards/sv3pt5-160
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CARD_AUDIT.md#erikas-invitation
+  // https://github.com/FlareZ123/pokemon-sims/issues/854
+  assert(EngineTestAccess::play_lusamine(engine));
+  assert(state.supporter_used);
+  assert(std::count(state.hand.begin(), state.hand.end(), Card::ProfessorBurnet) == 1);
+  assert(std::count(state.hand.begin(), state.hand.end(), Card::ErikasInvitation) == 1);
+  assert(std::count(state.discard.begin(), state.discard.end(), Card::Lusamine) == 1);
+  assert(std::count(state.discard.begin(), state.discard.end(), Card::ProfessorBurnet) == 0);
+  assert(std::count(state.discard.begin(), state.discard.end(), Card::ErikasInvitation) == 0);
+}
+
+}  // namespace
+
+int main() {
+""",
+          )
+          replace_once(
+              "tests/lusamine_arven_item_lock_tests.cpp",
+              """  test_roseanne_holds_without_a_payable_post_recovery_search();\n  return 0;\n""",
+              """  test_roseanne_holds_without_a_payable_post_recovery_search();\n  test_lusamine_recovers_burnet_and_erika_as_mandatory_pair();\n  return 0;\n""",
+          )
+          PY
+          git diff --check
+          git add src/trace_engine_v2/part_014b.inc tests/lusamine_arven_item_lock_tests.cpp
+          if ! git diff --cached --quiet; then
+            git commit -m "Allow Lusamine to recover Erika as second target (#854)"
+          fi
+          git push origin HEAD:fix/854-lusamine-erika-fallback-v2
+
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build focused target and simulator
+        run: cmake --build build --parallel 2 --target regidrago_lusamine_arven_item_lock_tests regidrago_sim
+
+      - name: Run focused regression
+        run: ./build/regidrago_lusamine_arven_item_lock_tests
+
+      - name: Run warning-clean UBSan regression
+        run: |
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -fsanitize=undefined -fno-omit-frame-pointer tests/lusamine_arven_item_lock_tests.cpp -o build/issue-854-focused
+          ./build/issue-854-focused
+
+      - name: Build and run full Release suite
+        shell: bash
+        run: |
+          cmake --build build --parallel 2
+          ctest --test-dir build --output-on-failure | tee issue-854-ctest.log
+
+      - name: Run three simulator audits
+        shell: bash
+        run: |
+          mkdir -p issue-854-audit
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-854-audit/trace-1-flex-seed-3.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 2 | tee issue-854-audit/trace-2-item-lock-seed-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee issue-854-audit/trace-3-rulebox-seed-20.txt
+
+      - name: Generate canonical matrix
+        shell: bash
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-854-audit/t2_t3_matrix.csv
+          cat issue-854-audit/t2_t3_matrix.csv
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-854-validation
+          path: |
+            issue-854-audit
+            issue-854-ctest.log
+          if-no-files-found: warn

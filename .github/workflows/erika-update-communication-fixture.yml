@@ -25,23 +25,17 @@ jobs:
 
           path = Path('tests/pokemon_communication_tests.cpp')
           text = path.read_text(encoding='utf-8')
-          old = '''  auto mawile = std::find_if(recipe.begin(), recipe.end(), [](const auto& entry) {
-              return entry.first == sim::Card::MawileGX;
-            });
-            if (mawile == recipe.end() || mawile->second != 1) {
-              throw std::runtime_error("The variant fixture could not identify its one-card swap.");
-            }
-            recipe.erase(mawile);'''.replace('          ', '')
-          new = '''  auto erika = std::find_if(recipe.begin(), recipe.end(), [](const auto& entry) {
-              return entry.first == sim::Card::ErikasInvitation;
-            });
-            if (erika == recipe.end() || erika->second != 1) {
-              throw std::runtime_error("The variant fixture could not identify its one-card swap.");
-            }
-            recipe.erase(erika);'''.replace('          ', '')
-          if text.count(old) != 1:
-              raise SystemExit('Expected exactly one Mawile Communication fixture block')
-          path.write_text(text.replace(old, new), encoding='utf-8')
+          replacements = {
+              'auto mawile = std::find_if': 'auto erika = std::find_if',
+              'entry.first == sim::Card::MawileGX': 'entry.first == sim::Card::ErikasInvitation',
+              'mawile == recipe.end() || mawile->second != 1': 'erika == recipe.end() || erika->second != 1',
+              'recipe.erase(mawile);': 'recipe.erase(erika);',
+          }
+          for old, new in replacements.items():
+              if text.count(old) != 1:
+                  raise SystemExit(f'Expected exactly one fixture occurrence: {old}')
+              text = text.replace(old, new)
+          path.write_text(text, encoding='utf-8')
           PY
       - name: Commit fixture update
         run: |

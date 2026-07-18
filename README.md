@@ -49,4 +49,4 @@ A ready state means:
 3. A modeled Dragon payload in discard: Dragapult ex, Mega Dragonite ex, Dialga-GX, or Hisuian Goodra VSTAR.
 4. In strict and matchup-flex profiles, that payload entered discard in the current player turn and remains in discard at the ready check.
 
-See `docs/RULES_TRACEABILITY.md`, `docs/RULES_REVERIFICATION.md`, `docs/RULE_SOURCES.md`, `docs/POLICY_DECISIONS.md`, `docs/OPTIMAL_POLICY_FIXTURES.md`, `docs/TIER2_POLICY_FIXTURES.md`, `docs/TRACE_AUDIT.md`, `docs/MODEL_ASSUMPTIONS.md`, and `docs/REPORT.md`.
+See `docs/T5_FAILURE_POLICY.md`, `docs/RULES_TRACEABILITY.md`, `docs/RULES_REVERIFICATION.md`, `docs/RULE_SOURCES.md`, `docs/POLICY_DECISIONS.md`, `docs/OPTIMAL_POLICY_FIXTURES.md`, `docs/TIER2_POLICY_FIXTURES.md`, `docs/TRACE_AUDIT.md`, `docs/MODEL_ASSUMPTIONS.md`, and `docs/REPORT.md`.

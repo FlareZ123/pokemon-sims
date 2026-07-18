@@ -29,6 +29,15 @@ class Engine {
       if (outcome_.first_ready_turn != 0) break;
       resolve_powerglass_end_turn();
     }
+    if (scenario_.max_turn >= 5) {
+      outcome_.setup_failed = !outcome_.ready_by_4;
+      if (outcome_.setup_failed) {
+        const std::string detail = outcome_.first_ready_turn == 5
+            ? "First reached readiness on T5. T5 is diagnostic, so the game remains a setup loss."
+            : "Did not reach readiness by the end of T4. The game is classified as a setup loss.";
+        trace("SETUP FAILURE", "P-T5-FAIL-01", detail);
+      }
+    }
     return outcome_;
   }
 

@@ -47,19 +47,22 @@ jobs:
           printf '%s\n' "${PIPESTATUS[0]}" > issue-882-audit/ctest-baseline.status
           exit 0
 
-      - name: Apply Serena policy fix
-        run: python tools/apply_issue_882_unified.py
+      - name: Apply Serena policy fix and aligned payload contract
+        run: |
+          python tools/apply_issue_882_unified.py
+          python tools/fix_issue_882_payload_completion_contract.py
 
       - name: Configure and build patched Release
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --parallel 2
 
-      - name: Run focused Release regression
+      - name: Run focused Release regressions
         shell: bash
         run: |
           set -o pipefail
-          ctest --test-dir build --output-on-failure -R '^regidrago_serena_zero_draw_tests$' \
+          ctest --test-dir build --output-on-failure \
+            -R '^regidrago_(serena_zero_draw|mysterious_treasure_payload_continuation)_tests$' \
             2>&1 | tee issue-882-audit/focused-release.log
 
       - name: Run focused warning-clean UBSan regression
@@ -155,8 +158,11 @@ jobs:
         shell: bash
         run: |
           rm -f .issue-882.lock .update-setup-docs.lock .results.lock
-          git rm tools/apply_issue_882.py tools/apply_issue_882_unified.py .github/workflows/issue-882-validation.yml
-          git add src/trace_engine_v2/part_012.inc src/trace_engine_v2/part_013.inc src/trace_engine_v2/part_014b.inc tests/serena_zero_draw_tests.cpp \
+          git rm tools/apply_issue_882.py tools/apply_issue_882_unified.py \
+            tools/fix_issue_882_payload_completion_contract.py \
+            .github/workflows/issue-882-validation.yml
+          git add src/trace_engine_v2/part_012.inc src/trace_engine_v2/part_013.inc src/trace_engine_v2/part_014b.inc \
+            tests/serena_zero_draw_tests.cpp tests/mysterious_treasure_payload_continuation_tests.cpp \
             README.md docs/REPORT.md docs/TRACE_AUDIT.md results/baseline_manifest.json results/simulation_results.csv
           git add -A results/traces
           git commit -m "Reject dominated zero-draw Serena fallback (#882)"

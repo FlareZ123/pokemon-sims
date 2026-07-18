@@ -14,6 +14,13 @@ jobs:
       - name: Check out pull-request merge ref
         uses: actions/checkout@v4
 
+      - name: Archive exact merge-ref source
+        shell: bash
+        run: |
+          mkdir -p audit-output
+          tar --exclude=.git --exclude=build --exclude=audit-output -czf /tmp/current-turn-source.tar.gz .
+          mv /tmp/current-turn-source.tar.gz audit-output/current-turn-source.tar.gz
+
       - name: Configure Release build
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 
@@ -26,7 +33,6 @@ jobs:
       - name: Run three reviewed simulate-this passes
         shell: bash
         run: |
-          mkdir -p audit-output
           # Reviewed trace inventory: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/TRACE_AUDIT.md#reviewed-traces
           # Earliest-ready objective: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
           ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee audit-output/matchup_flex_go_second_seed_3.txt

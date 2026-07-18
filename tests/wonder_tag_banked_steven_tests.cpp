@@ -28,17 +28,26 @@ struct EngineTestAccess {
 
 namespace {
 
+struct Fixture {
+  sim::Scenario scenario;
+  sim::DeckRecipe recipe;
+  std::mt19937_64 rng;
+  sim::Engine engine;
+
+  explicit Fixture(const sim::LockMode locks, const std::uint64_t seed)
+      : scenario{"issue-946-banked-steven", sim::DciProfile::StrictJit,
+                 locks, true, 4},
+        recipe{sim::baseline_recipe()},
+        rng{seed},
+        engine{scenario, recipe, rng} {}
+};
+
 void expect(const bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);
 }
 
 bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
   return std::find(cards.begin(), cards.end(), card) != cards.end();
-}
-
-sim::Scenario strict_first_scenario(const sim::LockMode locks = sim::LockMode::None) {
-  return sim::Scenario{"issue-946-banked-steven", sim::DciProfile::StrictJit,
-                       locks, true, 4};
 }
 
 sim::State turn_one_state() {
@@ -80,15 +89,9 @@ sim::State turn_two_state() {
   return state;
 }
 
-sim::Engine make_engine(const sim::Scenario& scenario, const std::uint64_t seed) {
-  static sim::DeckRecipe recipe = sim::baseline_recipe();
-  static std::mt19937_64 rng;
-  rng.seed(seed);
-  return sim::Engine(scenario, recipe, rng);
-}
-
 void wonder_tag_prefers_the_deterministic_t3_steven_route() {
-  auto engine = make_engine(strict_first_scenario(), 94601);
+  Fixture fixture{sim::LockMode::None, 94601};
+  sim::Engine& engine = fixture.engine;
   sim::EngineTestAccess::set_state(engine, turn_one_state());
 
   // Wonder Tag can bank a Supporter while the first player is prohibited from using
@@ -106,7 +109,8 @@ void wonder_tag_prefers_the_deterministic_t3_steven_route() {
 }
 
 void turn_two_steven_reserves_every_t3_axis() {
-  auto engine = make_engine(strict_first_scenario(), 94602);
+  Fixture fixture{sim::LockMode::None, 94602};
+  sim::Engine& engine = fixture.engine;
   sim::EngineTestAccess::set_state(engine, turn_two_state());
 
   expect(sim::EngineTestAccess::should_play_steven(engine),
@@ -141,7 +145,8 @@ void turn_two_steven_reserves_every_t3_axis() {
 
 void future_selector_requires_every_proven_axis() {
   {
-    auto engine = make_engine(strict_first_scenario(), 94603);
+    Fixture fixture{sim::LockMode::None, 94603};
+    sim::Engine& engine = fixture.engine;
     sim::State state = turn_one_state();
     state.hand.erase(std::find(state.hand.begin(), state.hand.end(),
                                sim::Card::BrilliantBlender));
@@ -151,15 +156,16 @@ void future_selector_requires_every_proven_axis() {
            "Wonder Tag selected Steven without the held Blender outlet");
   }
   {
-    auto engine = make_engine(strict_first_scenario(sim::LockMode::TurnTwoItem),
-                              94604);
+    Fixture fixture{sim::LockMode::TurnTwoItem, 94604};
+    sim::Engine& engine = fixture.engine;
     sim::EngineTestAccess::set_state(engine, turn_one_state());
     expect(sim::EngineTestAccess::choose_supporter_after_search_started(engine) !=
                sim::Card::StevensResolve,
            "Wonder Tag selected Steven through the scheduled Item lock");
   }
   {
-    auto engine = make_engine(strict_first_scenario(), 94605);
+    Fixture fixture{sim::LockMode::None, 94605};
+    sim::Engine& engine = fixture.engine;
     sim::State state = turn_one_state();
     state.deck.erase(std::find(state.deck.begin(), state.deck.end(),
                                sim::Card::LatiasEx));
@@ -169,7 +175,8 @@ void future_selector_requires_every_proven_axis() {
            "Wonder Tag selected Steven without a Latias promotion target");
   }
   {
-    auto engine = make_engine(strict_first_scenario(), 94606);
+    Fixture fixture{sim::LockMode::None, 94606};
+    sim::Engine& engine = fixture.engine;
     sim::State state = turn_one_state();
     state.hand.erase(std::find(state.hand.begin(), state.hand.end(),
                                sim::Card::Fire));
@@ -182,7 +189,8 @@ void future_selector_requires_every_proven_axis() {
 
 void turn_two_route_rejects_missing_or_locked_continuations() {
   {
-    auto engine = make_engine(strict_first_scenario(), 94607);
+    Fixture fixture{sim::LockMode::None, 94607};
+    sim::Engine& engine = fixture.engine;
     sim::State state = turn_two_state();
     state.hand.erase(std::find(state.hand.begin(), state.hand.end(),
                                sim::Card::BrilliantBlender));
@@ -191,14 +199,15 @@ void turn_two_route_rejects_missing_or_locked_continuations() {
            "Steven remained live without the held Blender continuation");
   }
   {
-    auto engine = make_engine(strict_first_scenario(sim::LockMode::TurnTwoItem),
-                              94608);
+    Fixture fixture{sim::LockMode::TurnTwoItem, 94608};
+    sim::Engine& engine = fixture.engine;
     sim::EngineTestAccess::set_state(engine, turn_two_state());
     expect(!sim::EngineTestAccess::should_play_steven(engine),
            "Steven remained live after scheduled Item lock removed Blender");
   }
   {
-    auto engine = make_engine(strict_first_scenario(), 94609);
+    Fixture fixture{sim::LockMode::None, 94609};
+    sim::Engine& engine = fixture.engine;
     sim::State state = turn_two_state();
     state.deck.erase(std::find(state.deck.begin(), state.deck.end(),
                                sim::Card::LatiasEx));

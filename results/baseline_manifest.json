@@ -1,6 +1,6 @@
 {
   "matrix_seed": 20260705,
-  "simulator_policy_source_sha256": "6f1d8c39850d382e5ba9ed57e96ddd16a0a0abef66ed97f6947f7fb320d3c5f6",
+  "simulator_policy_source_sha256": "0d466cd13436166a3e3ad1ef1cbb5cc3660565ec3497a4679aedb7f2e0214ed1",
   "traces": [
     {
       "deadline": 3,
@@ -10,9 +10,9 @@
     },
     {
       "deadline": 4,
-      "file": "strict_jit_go_first_seed_2.txt",
+      "file": "strict_jit_go_first_seed_1.txt",
       "scenario": "strict-jit/go-first",
-      "seed": 2
+      "seed": 1
     },
     {
       "deadline": 2,

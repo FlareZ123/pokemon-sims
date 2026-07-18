@@ -1,0 +1,33 @@
+
+Seed: 1 | first-ready turn: 4 | setup result: success
+===== SIMULATE THIS =====
+Scenario: strict-jit/go-first | DCI: strict-JIT | Locks: none
+Mulligans: 1
+Opening player-known state: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Grass Energy, Hisuian Heavy Ball, Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127 | Discard=(none)
+DEBUG ONLY: prizes=Tate & Liza, Regidrago V, Gladion, Tapu Lele-GX, Regidrago VSTAR, Grass Energy. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Regidrago V
+T1 | TURN START | rules: R-GAME-FIRST-TURN | Going first: drew for the turn; no Supporter or attack is permitted.
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Grass Energy, Hisuian Heavy Ball, Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127, Regidrago V | Discard=(none)
+T1 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T1 | PLAY ITEM | rules: R-HEAVYBALL-01; R-GAME-ITEM; P-KNOWLEDGE-01; P-COMPRESS-01 | Looked at Prize cards and exchanged Heavy Ball for Tapu Lele-GX.
+T1 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Wonder Tag: deck inspected; Prize identities are now deducible for later decisions.
+T1 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Crispin.
+T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Tapu Lele-GX [-] | Bench=Regidrago V [G]; Tapu Lele-GX [-] | Hand=Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127, Crispin | Discard=(none)
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Grass Energy
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=Regidrago V [G]; Tapu Lele-GX [-] | Hand=Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127, Crispin, Grass Energy | Discard=(none)
+T2 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Fire Energy and Grass Energy; attached Fire Energy to Regidrago V and put Grass Energy into hand.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Tapu Lele-GX [-] | Bench=Regidrago V [GGF]; Tapu Lele-GX [-] | Hand=Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127, Grass Energy | Discard=Crispin
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Regidrago VSTAR
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=Regidrago V [GGF]; Tapu Lele-GX [-] | Hand=Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127, Grass Energy, Regidrago VSTAR | Discard=Crispin
+T3 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Tapu Lele-GX [-] | Bench=Regidrago VSTAR [GGF]; Tapu Lele-GX [-] | Hand=Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127, Grass Energy | Discard=Crispin
+T4 | DRAW | rules: R-GAME-DRAW | start-of-turn: Professor Turo's Scenario
+T4 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=Regidrago VSTAR [GGF]; Tapu Lele-GX [-] | Hand=Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127, Grass Energy, Professor Turo's Scenario | Discard=Crispin
+T4 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dialga-GX.
+T4 | PLAY SUPPORTER | rules: R-GAME-SUPPORTER | Professor Turo returned the Basic Active Pokémon and promoted the complete Benched Regidrago VSTAR.
+T4 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Tapu Lele-GX [-] | Hand=Professor Burnet, Fire Energy, Dipplin TWM 127, Grass Energy, Tapu Lele-GX | Discard=Crispin, Brilliant Blender, Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dialga-GX, Professor Turo's Scenario
+T4 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

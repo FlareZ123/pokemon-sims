@@ -282,21 +282,24 @@ void test_strict_jit_keeps_payload_live_for_prior_turn_regidrago() {
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::LatiasEx, 1};
   state.bench = {sim::Pokemon{sim::Card::RegidragoV, 1}};
-  state.hand = {sim::Card::BrilliantBlender};
+  state.hand = {sim::Card::BrilliantBlender, sim::Card::RegidragoVstar};
   state.deck = {sim::Card::MegaDragonite};
   sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
 
-  // A prior-turn Regidrago V may evolve during the current turn, so the narrow
-  // VSTAR-existence gate must preserve the live same-turn Blender payload route:
+  // A prior-turn Regidrago V plus the held Regidrago VSTAR card completes the
+  // current-turn evolution axis, so the #721 existence control remains live after
+  // #718 adds the separate card-access boundary:
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://api.pokemontcg.io/v2/cards/sv8-164
   // https://github.com/FlareZ123/pokemon-sims/issues/721
+  // https://github.com/FlareZ123/pokemon-sims/issues/718
   if (!sim::EngineTestAccess::vstar_can_exist_this_turn(fixture.engine) ||
       !sim::EngineTestAccess::can_play_payload_this_turn(fixture.engine) ||
       !sim::EngineTestAccess::has_live_blender_payload_line(fixture.engine) ||
       !sim::EngineTestAccess::play_brilliant_blender(fixture.engine)) {
-    throw std::runtime_error("A prior-turn Regidrago V must keep the strict-JIT payload route live.");
+    throw std::runtime_error(
+        "A prior-turn Regidrago V with its held VSTAR card must keep the strict-JIT payload route live.");
   }
 
   const sim::State& after = sim::EngineTestAccess::state(fixture.engine);

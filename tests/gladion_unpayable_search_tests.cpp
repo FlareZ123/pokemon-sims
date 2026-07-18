@@ -152,7 +152,12 @@ void test_item_locked_forest_seal_stone_finds_burnet_for_payload() {
   sim::State state;
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::RegidragoV, 1};
-  state.hand = {sim::Card::ForestSealStone};
+  // The held VSTAR gives the prior-turn Regidrago V a same-turn evolution route,
+  // so strict-JIT Burnet may bank a payload after Star Alchemy finds it:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/issues/797
+  state.hand = {sim::Card::ForestSealStone, sim::Card::RegidragoVstar};
   state.deck = {sim::Card::ProfessorBurnet, sim::Card::MegaDragonite};
   sim::EngineTestAccess::set_state(engine, state);
 

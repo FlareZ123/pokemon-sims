@@ -127,7 +127,16 @@ jobs:
         run: bash .github/scripts/capture-build.sh build build.log
 
       - name: Run full Release suite
-        run: ctest --test-dir build --output-on-failure
+        continue-on-error: true
+        shell: bash
+        run: |
+          mkdir -p issue-856-audit
+          set +e
+          set -o pipefail
+          ctest --test-dir build --output-on-failure 2>&1 | tee issue-856-audit/ctest.log
+          status=${PIPESTATUS[0]}
+          printf '%s\n' "$status" > issue-856-audit/ctest.status
+          exit "$status"
 
       - name: Run three independent simulate-this passes
         shell: bash
@@ -142,6 +151,12 @@ jobs:
         run: |
           # Aggregate specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
           ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-856-audit/t2_t3_matrix.csv
+
+      - name: Enforce full Release suite
+        shell: bash
+        run: |
+          test -f issue-856-audit/ctest.status
+          test "$(cat issue-856-audit/ctest.status)" = "0"
 
       - name: Commit validated fix and remove temporary workflow
         shell: bash

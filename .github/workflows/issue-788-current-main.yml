@@ -26,7 +26,14 @@ jobs:
       - name: Configure Release
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build Release
-        run: cmake --build build --parallel 2
+        shell: bash
+        run: |
+          mkdir -p issue-788-audit
+          set +e
+          cmake --build build --parallel 2 > issue-788-audit/build.log 2>&1
+          status=$?
+          cat issue-788-audit/build.log
+          exit "$status"
       - name: Run full Release suite
         run: ctest --test-dir build --output-on-failure
       - name: Run focused Werror and UBSan regressions
@@ -37,7 +44,6 @@ jobs:
           ./build/issue-788-ubsan
       - name: Run three simulator audits
         run: |
-          mkdir -p issue-788-audit
           ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-788-audit/trace-1.txt
           ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee issue-788-audit/trace-2.txt
           ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee issue-788-audit/trace-3.txt

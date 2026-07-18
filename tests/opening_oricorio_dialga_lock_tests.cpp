@@ -27,12 +27,35 @@ sim::State issue_hand() {
   return state;
 }
 
+const sim::Scenario& scenario_for(const sim::LockMode lock) {
+  static const sim::Scenario none{"issue-674-none", sim::DciProfile::StrictJit,
+                                  sim::LockMode::None, false, 4};
+  static const sim::Scenario turn_two_item{
+      "issue-674-turn-two-item", sim::DciProfile::StrictJit,
+      sim::LockMode::TurnTwoItem, false, 4};
+  static const sim::Scenario rule_box{
+      "issue-674-rule-box", sim::DciProfile::StrictJit,
+      sim::LockMode::FullRuleBoxAbility, false, 4};
+  static const sim::Scenario full_item{
+      "issue-674-full-item", sim::DciProfile::StrictJit,
+      sim::LockMode::FullItem, false, 4};
+  static const sim::Scenario combined{
+      "issue-674-combined", sim::DciProfile::StrictJit,
+      sim::LockMode::FullCombined, false, 4};
+  switch (lock) {
+    case sim::LockMode::None: return none;
+    case sim::LockMode::TurnTwoItem: return turn_two_item;
+    case sim::LockMode::FullRuleBoxAbility: return rule_box;
+    case sim::LockMode::FullItem: return full_item;
+    case sim::LockMode::FullCombined: return combined;
+  }
+  throw std::runtime_error("Unsupported lock mode in issue 674 fixture.");
+}
+
 sim::Engine make_engine(const sim::LockMode lock, sim::State state,
                         std::mt19937_64& rng) {
-  const sim::Scenario scenario{"issue-674", sim::DciProfile::StrictJit,
-                               lock, false, 4};
   static const sim::DeckRecipe recipe = sim::baseline_recipe();
-  sim::Engine engine(scenario, recipe, rng);
+  sim::Engine engine(scenario_for(lock), recipe, rng);
   sim::EngineTestAccess::set_state(engine, std::move(state));
   return engine;
 }

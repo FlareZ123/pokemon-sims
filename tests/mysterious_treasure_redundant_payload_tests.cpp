@@ -25,8 +25,8 @@ bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
 }
 
 sim::Engine make_engine() {
-  const sim::Scenario scenario{"issue-889", sim::DciProfile::StrictJit,
-                               sim::LockMode::None, false, 4};
+  static const sim::Scenario scenario{"issue-889", sim::DciProfile::StrictJit,
+                                      sim::LockMode::None, false, 4};
   static std::mt19937_64 rng{889};
   return sim::Engine(scenario, sim::baseline_recipe(), rng);
 }

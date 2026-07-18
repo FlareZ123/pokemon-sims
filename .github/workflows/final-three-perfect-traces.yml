@@ -1,0 +1,64 @@
+name: Final Three Perfect Traces
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'audit/final-three-perfect-traces'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out audit branch
+        uses: actions/checkout@v4
+        with:
+          ref: audit/final-three-perfect-traces
+          fetch-depth: 0
+
+      - name: Reconcile latest main
+        run: |
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Configure and build simulator
+        run: |
+          mkdir -p final-trace-audit
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2 --target regidrago_sim
+
+      - name: Trace 1 matchup-flex turn-two readiness
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee final-trace-audit/trace-1-matchup-flex-seed-3.txt
+
+      - name: Trace 2 turn-two Item-lock readiness
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 2 | tee final-trace-audit/trace-2-item-lock-seed-2.txt
+
+      - name: Trace 3 Rule Box-lock readiness
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee final-trace-audit/trace-3-rulebox-seed-20.txt
+
+      - name: Generate current canonical matrix
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out final-trace-audit/t2_t3_matrix.csv
+
+      - name: Archive exact source
+        run: git archive --format=zip HEAD -o final-trace-audit/source.zip
+
+      - name: Upload trace evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-three-perfect-traces
+          path: final-trace-audit
+          if-no-files-found: error

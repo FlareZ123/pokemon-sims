@@ -1,0 +1,73 @@
+name: Issue 837 Roseanne Recovery Zones
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: issue-837-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/837-roseanne-multimode-zones'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build repository
+        run: cmake --build build --parallel 2
+
+      - name: Run full Release suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Run focused warning-clean regression
+        run: |
+          mkdir -p issue-837-audit
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror \
+            tests/roseanne_energy_recovery_tests.cpp -o build/issue-837-focused
+          ./build/issue-837-focused | tee issue-837-audit/focused.log
+
+      - name: Run focused UBSan regression
+        run: |
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
+            -fsanitize=undefined -fno-omit-frame-pointer \
+            tests/roseanne_energy_recovery_tests.cpp -o build/issue-837-ubsan
+          ./build/issue-837-ubsan | tee issue-837-audit/ubsan.log
+
+      # Three independent readable-hand audits required by the repository workflow.
+      # Commands: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      # Hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+      # Confirmed issue: https://github.com/FlareZ123/pokemon-sims/issues/837
+      - name: Run three independent simulate-this passes
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 \
+            | tee issue-837-audit/trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 9 --require-ready-by 3 \
+            | tee issue-837-audit/trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 \
+            | tee issue-837-audit/trace-3.txt
+
+      # Canonical aggregate command and fixed seed:
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#what-the-probability-means
+      - name: Generate canonical T2 T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-837-audit/t2_t3_matrix.csv
+
+      - name: Export exact source snapshot
+        run: git archive --format=zip HEAD -o issue-837-audit/issue-837-source.zip
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-837-validation
+          path: issue-837-audit
+          if-no-files-found: warn

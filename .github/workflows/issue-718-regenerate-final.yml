@@ -1,0 +1,46 @@
+name: Regenerate issue 718 final baseline
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build outside the repository tree
+        run: |
+          cmake -S . -B /tmp/issue718-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/issue718-build --parallel 2
+      - name: Regenerate exact-source baseline
+        run: |
+          python scripts/regenerate_setup_baselines.py \
+            --exe /tmp/issue718-build/regidrago_sim \
+            --out-dir results \
+            --max-seed 5000 \
+            --trials 100000 \
+            --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+      - name: Validate complete Release suite
+        run: |
+          python tests/setup_report_contract_tests.py
+          ctest --test-dir /tmp/issue718-build --output-on-failure --parallel 2
+      - name: Commit exact-source baseline
+        run: |
+          git clean -fd scripts/__pycache__ results
+          rm .github/workflows/issue-718-regenerate-final.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Regenerate baseline from final issue 718 source"
+          git push origin HEAD:${{ github.head_ref }}

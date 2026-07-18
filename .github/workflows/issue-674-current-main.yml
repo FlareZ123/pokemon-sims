@@ -1,0 +1,77 @@
+name: Issue 674 Current Main
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-674-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-finalize:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/674-oricorio-dialga-locks-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/674-oricorio-dialga-locks-v2
+          fetch-depth: 0
+
+      - name: Reconcile current main
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Apply current-main composition
+        run: python tools/apply_issue_674_v2.py
+
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build repository
+        run: cmake --build build --parallel 2
+
+      - name: Run full Release suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Run focused warning-clean regression
+        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror tests/opening_oricorio_dialga_lock_tests.cpp -o build/issue-674-focused && ./build/issue-674-focused
+
+      - name: Run focused UBSan regression
+        run: c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=undefined -fno-omit-frame-pointer tests/opening_oricorio_dialga_lock_tests.cpp -o build/issue-674-ubsan && ./build/issue-674-ubsan
+
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          mkdir -p issue-674-audit
+          # Trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-674-audit/trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee issue-674-audit/trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee issue-674-audit/trace-3.txt
+
+      - name: Generate canonical T2/T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-674-audit/t2_t3_matrix.csv
+
+      - name: Commit permanent fix and archive source
+        shell: bash
+        run: |
+          git rm tools/apply_issue_674_v2.py .github/workflows/issue-674-current-main.yml
+          git add CMakeLists.txt src/trace_engine_v2/part_005.inc tests/opening_oricorio_dialga_lock_tests.cpp
+          git commit -m 'Preserve Oricorio under approved lock graphs (#674)'
+          git push origin HEAD:fix/674-oricorio-dialga-locks-v2
+          git archive --format=zip HEAD -o issue-674-audit/issue-674-source.zip
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-674-current-main
+          path: issue-674-audit
+          if-no-files-found: warn

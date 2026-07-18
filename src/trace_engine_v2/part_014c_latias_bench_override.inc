@@ -6,6 +6,13 @@
 #ifndef POKEMON_SIMS_PART_014C_LATIAS_BENCH_OVERRIDE_INCLUDED
 #define POKEMON_SIMS_PART_014C_LATIAS_BENCH_OVERRIDE_INCLUDED
 
+// part_014c.inc composes this fragment while Engine remains open. Replace the
+// macro-renamed legacy Field Blower policy at the same valid member boundary:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc#L168-L179
+// https://github.com/FlareZ123/pokemon-sims/issues/791
+#undef play_field_blower
+#include "part_014c_field_blower_override.inc"
+
   bool held_item_can_find_pending_vstar() {
     if (item_locked() || !might_be_unseen(Card::RegidragoVstar)) return false;
 

@@ -42,7 +42,10 @@ jobs:
           ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-807-output/setup-matrix.csv
           cat issue-807-output/setup-matrix.csv
 
-      - name: Upload traces and matrix
+      - name: Export exact source snapshot
+        run: git archive --format=zip --output=issue-807-output/source.zip HEAD
+
+      - name: Upload traces, matrix, and source
         uses: actions/upload-artifact@v4
         with:
           name: issue-807-pokemon-communication-validation

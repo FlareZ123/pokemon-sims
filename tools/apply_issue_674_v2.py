@@ -80,8 +80,8 @@ def main() -> None:
         replace_once(source, anchor, replacement)
 
         cmake = Path("CMakeLists.txt")
-        target_anchor = '''add_executable(regidrago_opening_active_dialga_payload_tests tests/opening_active_dialga_payload_tests.cpp)
-target_compile_options(regidrago_opening_active_dialga_payload_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+        target_anchor = '''add_executable(regidrago_opening_dialga_payload_tests tests/opening_active_dialga_payload_tests.cpp)
+target_compile_options(regidrago_opening_dialga_payload_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 '''
         target_replacement = target_anchor + '''
 add_executable(regidrago_opening_oricorio_dialga_lock_tests tests/opening_oricorio_dialga_lock_tests.cpp)
@@ -89,7 +89,7 @@ target_compile_options(regidrago_opening_oricorio_dialga_lock_tests PRIVATE -Wal
 '''
         replace_once(cmake, target_anchor, target_replacement)
 
-        test_anchor = "add_test(NAME regidrago_opening_active_dialga_payload COMMAND regidrago_opening_active_dialga_payload_tests)\n"
+        test_anchor = "add_test(NAME regidrago_opening_dialga_payload COMMAND regidrago_opening_dialga_payload_tests)\n"
         test_replacement = test_anchor + "add_test(NAME regidrago_opening_oricorio_dialga_lock COMMAND regidrago_opening_oricorio_dialga_lock_tests)\n"
         replace_once(cmake, test_anchor, test_replacement)
     finally:

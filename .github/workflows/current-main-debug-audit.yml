@@ -14,8 +14,19 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Check out pull-request merge ref
+      - name: Check out audit branch
         uses: actions/checkout@v4
+        with:
+          ref: audit/20260717-current-main-sim-matrix
+          fetch-depth: 0
+
+      - name: Reconcile latest main
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
 
       - name: Archive exact source
         shell: bash

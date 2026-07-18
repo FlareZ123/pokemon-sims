@@ -57,7 +57,9 @@
 #define needs_oricorio_connector needs_oricorio_connector_original
 #define needs_tapu_connector needs_tapu_connector_original
 #define bench_tapu_if_useful bench_tapu_if_useful_original
+#define recover_discard_to_hand recover_discard_to_hand_name_only_original
 #include "trace_engine_v2/part_006.inc"
+#undef recover_discard_to_hand
 #undef bench_tapu_if_useful
 #undef needs_tapu_connector
 #undef needs_oricorio_connector
@@ -75,6 +77,7 @@
 // this member-function override may be included:
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_007.inc#L169-L172
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_008a.inc#L1-L18
+#include "trace_engine_v2/part_discard_recovery_provenance_override.inc"
 #include "trace_engine_v2/part_tate_blender_attachment_override.inc"
 #include "trace_engine_v2/part_tate_blender_tate_override.inc"
 #define play_mysterious_treasure play_mysterious_treasure_empty_deck_original

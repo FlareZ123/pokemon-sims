@@ -75,6 +75,53 @@
     return bench_from_hand(Card::LatiasEx, false);
   }
 
+  bool pay_tapu_retreat_to_ready_benched_vstar() {
+    if (!need_active_vstar() || need_energy() || need_payload() ||
+        state_.retreat_used || state_.manual_energy_used || !state_.active ||
+        state_.active->card != Card::TapuLeleGX) {
+      return false;
+    }
+
+    Pokemon* target = best_benched_vstar_for_promotion();
+    if (target == nullptr || target->grass < 2 || target->fire < 1) return false;
+
+    const Card payment = hand_count(Card::Grass) > 0 ? Card::Grass : Card::Fire;
+    if (hand_count(payment) == 0 || !remove_one(state_.hand, payment)) return false;
+
+    // Tapu Lele-GX has a one-Colorless Retreat Cost, so either modeled Basic
+    // Energy may be attached for the turn and immediately discarded to promote an
+    // already-GGF Regidrago VSTAR. Restrict this route to states where Energy and
+    // payload axes are already complete, preserving the attachment for setup when
+    // the Benched VSTAR still needs it:
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/802
+    if (payment == Card::Grass) {
+      ++state_.active->grass;
+    } else {
+      ++state_.active->fire;
+    }
+    state_.manual_energy_used = true;
+    trace("ATTACH", "R-GAME-ENERGY",
+          std::string(name(payment)) +
+              " manually to Tapu Lele-GX for its Retreat Cost.");
+
+    if (payment == Card::Grass) {
+      --state_.active->grass;
+    } else {
+      --state_.active->fire;
+    }
+    state_.discard.push_back(payment);
+    std::swap(*state_.active, *target);
+    state_.retreat_used = true;
+    trace("RETREAT", "R-GAME-RETREAT",
+          "Paid Tapu Lele-GX's one-Energy Retreat Cost and promoted the ready "
+          "Benched Regidrago VSTAR.");
+    return true;
+  }
+
   void run_turn() {
     trace("POLICY", "P-AXIS-01", "Start: " + state_line());
     play_chaotic_swell();
@@ -139,7 +186,7 @@
       // https://www.pokemon.com/us/pokemon-tcg/rules
       if (!state_.supporter_used && setup_axis_missing()) choose_supporter();
     }
-    attach_manual();
+    if (!pay_tapu_retreat_to_ready_benched_vstar()) attach_manual();
     retreat_to_benched_vstar_with_latias();
     if (need_active_vstar() && !state_.supporter_used) play_tate_switch();
     // Attach only after the final modeled switch decision, while the intended holder

@@ -177,7 +177,10 @@
 #undef use_fss
 #undef use_celestial_roar
 #include "trace_engine_v2/part_celestial_roar_override.inc"
+#include "trace_engine_v2/part_legacy_star_projection_provenance_override.inc"
+#define remove_one remove_one_legacy_star_projection
 #include "trace_engine_v2/part_013_legacy_star_override.inc"
+#undef remove_one
 #define play_gladion play_gladion_prize_payload_original
 #include "trace_engine_v2/part_012_gladion_override.inc"
 #undef play_gladion

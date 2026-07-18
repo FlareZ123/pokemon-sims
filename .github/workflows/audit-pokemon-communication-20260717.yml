@@ -36,6 +36,13 @@ jobs:
           ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee audit-output/matchup_flex_go_second_seed_3.txt
           ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 6 --require-ready-by 4 | tee audit-output/no_discard_control_go_first_seed_6.txt
 
+      - name: Build duplicate Tapu route probe
+        run: c++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tools/pokemon_communication_duplicate_tapu_probe.cpp -o build/pokemon_communication_duplicate_tapu_probe
+
+      - name: Reproduce duplicate Tapu route disagreement
+        shell: bash
+        run: ./build/pokemon_communication_duplicate_tapu_probe | tee audit-output/duplicate_tapu_route_probe.txt
+
       - name: Build Communication variant audit
         run: c++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow tools/pokemon_communication_variant_audit.cpp -o build/pokemon_communication_variant_audit
 

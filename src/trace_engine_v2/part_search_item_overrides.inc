@@ -170,92 +170,102 @@
     // The Ultra Ball being played cannot pay its own cost. Two other Ultra Ball
     // copies are legal first and second cost cards when all three copies are held:
     // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-    const auto first = choose_discard(can_jit_discard, true, true, Card::UltraBall);
-    if (!first) return false;
-    if (!remove_one(state_.hand, *first)) throw std::logic_error("Ultra Ball first discard cost disappeared");
-    // The Ultra Ball currently being played cannot pay its own two-card cost, while
-    // a distinct remaining Ultra Ball can. Preserve that distinction in the second
-    // selection: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-    const bool remaining_incense_is_ready_now_second_cost = is_payload(*first) && need_payload() &&
-        !need_regi() && !need_vstar() && !need_energy() && !need_active_vstar() &&
-        hand_count(Card::EvolutionIncense) > 0;
-    // After Evolution Incense has fetched the sole missing Dragon payload, its
-    // surviving duplicate is another card and may pay Ultra Ball's second cost:
-    // https://api.pokemontcg.io/v2/cards/swsh1-163
-    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // When payload is the sole missing axis at K1, one distinct singleton search
-    // Item may pay Ultra Ball's second cost if another remains to discard the fetched
-    // Dragon. Require a second deck card so the surviving search can still begin:
-    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-    // https://api.pokemontcg.io/v2/cards/sm6-113
-    // https://api.pokemontcg.io/v2/cards/swsh1-179
-    // https://api.pokemontcg.io/v2/cards/sv4-163
-    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    const bool payload_is_only_missing_axis = want_payload && !need_regi() &&
-        !need_vstar() && !need_energy() && !need_active_vstar();
-    std::optional<Card> cross_singleton_search_cost;
-    if (payload_is_only_missing_axis && deck_seen_ && state_.deck.size() > 1U) {
-      std::optional<Card> planned_payload;
-      for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
-                                 Card::GoodraVstar, Card::DialgaGX}) {
-        if (deck_count_after_search_started(payload) > 0) {
-          planned_payload = payload;
-          break;
-        }
-      }
-      const auto remains_after_payload_search = [this, planned_payload](const Card card) {
-        const int removed = planned_payload && *planned_payload == card ? 1 : 0;
-        return deck_count_after_search_started(card) > removed;
-      };
-      const bool mysterious_has_target = std::any_of(
-          state_.deck.begin(), state_.deck.end(),
-          [planned_payload, &remains_after_payload_search](const Card card) {
-            return (!planned_payload || card != *planned_payload ||
-                    remains_after_payload_search(card)) && is_dragon_or_psychic(card);
-          });
-      const bool quick_has_target = std::any_of(
-          state_.deck.begin(), state_.deck.end(),
-          [planned_payload, &remains_after_payload_search](const Card card) {
-            return (!planned_payload || card != *planned_payload ||
-                    remains_after_payload_search(card)) && is_basic(card);
-          });
-      const bool vessel_has_target = remains_after_payload_search(Card::Grass) ||
-          remains_after_payload_search(Card::Fire);
-      const std::array<std::pair<Card, bool>, 3> outlets{{
-          {Card::MysteriousTreasure, mysterious_has_target},
-          {Card::QuickBall, quick_has_target},
-          {Card::EarthenVessel, vessel_has_target},
-      }};
-      std::optional<Card> survivor;
-      for (const bool require_live_target : {true, false}) {
-        for (const auto& [outlet, has_target] : outlets) {
-          if (hand_count(outlet) > 0 && (!require_live_target || has_target)) {
-            survivor = outlet;
+    std::optional<Card> first =
+        choose_discard(can_jit_discard, true, true, Card::UltraBall);
+    std::optional<Card> second;
+    if (first && remove_one(state_.hand, *first)) {
+      // The Ultra Ball currently being played cannot pay its own two-card cost, while
+      // a distinct remaining Ultra Ball can. Preserve that distinction in the second
+      // selection: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+      const bool remaining_incense_is_ready_now_second_cost = is_payload(*first) && need_payload() &&
+          !need_regi() && !need_vstar() && !need_energy() && !need_active_vstar() &&
+          hand_count(Card::EvolutionIncense) > 0;
+      // After Evolution Incense has fetched the sole missing Dragon payload, its
+      // surviving duplicate is another card and may pay Ultra Ball's second cost:
+      // https://api.pokemontcg.io/v2/cards/swsh1-163
+      // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // When payload is the sole missing axis at K1, one distinct singleton search
+      // Item may pay Ultra Ball's second cost if another remains to discard the fetched
+      // Dragon. Require a second deck card so the surviving search can still begin:
+      // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://api.pokemontcg.io/v2/cards/swsh1-179
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      const bool payload_is_only_missing_axis = want_payload && !need_regi() &&
+          !need_vstar() && !need_energy() && !need_active_vstar();
+      std::optional<Card> cross_singleton_search_cost;
+      if (payload_is_only_missing_axis && deck_seen_ && state_.deck.size() > 1U) {
+        std::optional<Card> planned_payload;
+        for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
+                                   Card::GoodraVstar, Card::DialgaGX}) {
+          if (deck_count_after_search_started(payload) > 0) {
+            planned_payload = payload;
             break;
           }
         }
-        if (survivor) break;
-      }
-      if (survivor) {
-        for (const auto& outlet_info : outlets) {
-          const Card outlet = outlet_info.first;
-          if (outlet != *survivor && hand_count(outlet) > 0) {
-            cross_singleton_search_cost = outlet;
-            break;
+        const auto remains_after_payload_search = [this, planned_payload](const Card card) {
+          const int removed = planned_payload && *planned_payload == card ? 1 : 0;
+          return deck_count_after_search_started(card) > removed;
+        };
+        const bool mysterious_has_target = std::any_of(
+            state_.deck.begin(), state_.deck.end(),
+            [planned_payload, &remains_after_payload_search](const Card card) {
+              return (!planned_payload || card != *planned_payload ||
+                      remains_after_payload_search(card)) && is_dragon_or_psychic(card);
+            });
+        const bool quick_has_target = std::any_of(
+            state_.deck.begin(), state_.deck.end(),
+            [planned_payload, &remains_after_payload_search](const Card card) {
+              return (!planned_payload || card != *planned_payload ||
+                      remains_after_payload_search(card)) && is_basic(card);
+            });
+        const bool vessel_has_target = remains_after_payload_search(Card::Grass) ||
+            remains_after_payload_search(Card::Fire);
+        const std::array<std::pair<Card, bool>, 3> outlets{{
+            {Card::MysteriousTreasure, mysterious_has_target},
+            {Card::QuickBall, quick_has_target},
+            {Card::EarthenVessel, vessel_has_target},
+        }};
+        std::optional<Card> survivor;
+        for (const bool require_live_target : {true, false}) {
+          for (const auto& [outlet, has_target] : outlets) {
+            if (hand_count(outlet) > 0 && (!require_live_target || has_target)) {
+              survivor = outlet;
+              break;
+            }
+          }
+          if (survivor) break;
+        }
+        if (survivor) {
+          for (const auto& outlet_info : outlets) {
+            const Card outlet = outlet_info.first;
+            if (outlet != *survivor && hand_count(outlet) > 0) {
+              cross_singleton_search_cost = outlet;
+              break;
+            }
           }
         }
+      }
+      second = remaining_incense_is_ready_now_second_cost
+          ? std::optional<Card>{Card::EvolutionIncense}
+          : cross_singleton_search_cost
+              ? cross_singleton_search_cost
+              : choose_discard(permit_payload && can_play_payload_this_turn() && !is_payload(*first),
+                               true, true, Card::UltraBall);
+      state_.hand.push_back(*first);
+    }
+
+    if ((!first || !second) && want_vstar) {
+      const auto redundant_costs = redundant_payload_ultra_ball_vstar_costs();
+      if (redundant_costs) {
+        first = (*redundant_costs)[0];
+        second = (*redundant_costs)[1];
       }
     }
-    const std::optional<Card> second = remaining_incense_is_ready_now_second_cost
-        ? std::optional<Card>{Card::EvolutionIncense}
-        : cross_singleton_search_cost
-            ? cross_singleton_search_cost
-            : choose_discard(permit_payload && can_play_payload_this_turn() && !is_payload(*first),
-                             true, true, Card::UltraBall);
-    state_.hand.push_back(*first);
-    if (!second) return false;
+    if (!first || !second) return false;
 
     remove_one(state_.hand, Card::UltraBall);
     state_.discard.push_back(Card::UltraBall);

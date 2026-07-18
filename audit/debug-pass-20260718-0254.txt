@@ -1,0 +1,5 @@
+Repository-wide debug audit trigger.
+
+This branch intentionally changes no simulator, policy, test, rule, or generated-result source. Its only purpose is to trigger the current main-branch CI contract, which runs three independent --simulate-this traces, the canonical 100,000-trial T2/T3 matrix, the complete Release suite, and the complete ASan/UBSan suite.
+
+Audited base: 5997ab9e7c6cef38d99037ce66916962099a96d7

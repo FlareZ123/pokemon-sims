@@ -70,11 +70,12 @@ jobs:
                   raise SystemExit(f"Scenario mismatch: {base['scenario']} vs {variant['scenario']}")
               row = {'scenario': base['scenario']}
               for turn in ('t2', 't3', 't4'):
-                  base_value = float(base[turn])
-                  variant_value = float(variant[turn])
-                  row[f'baseline_{turn}'] = f'{base_value:.6f}'
-                  row[f'variant_{turn}'] = f'{variant_value:.6f}'
-                  row[f'delta_{turn}_pp'] = f'{(variant_value - base_value) * 100:.4f}'
+                  source_key = f'ready_by_{turn}_pct'
+                  base_value = float(base[source_key])
+                  variant_value = float(variant[source_key])
+                  row[f'baseline_{turn}'] = f'{base_value:.3f}'
+                  row[f'variant_{turn}'] = f'{variant_value:.3f}'
+                  row[f'delta_{turn}_pp'] = f'{variant_value - base_value:+.3f}'
               output_rows.append(row)
 
           with output_path.open('w', newline='', encoding='utf-8') as handle:

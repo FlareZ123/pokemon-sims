@@ -172,6 +172,25 @@
         return;
       }
     }
+    // The banked going-first route must resolve before generic actions can consume
+    // Blender or alter its K1 continuation. Attach the second public Energy, then let
+    // Steven search VSTAR, the direct third Grass, and Latias. Steven ends T2, while
+    // the T3 Supporter slot remains unused for any later discrete-value action:
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm7-145
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/946
+    if (banked_steven_has_known_t3_blender_route()) {
+      attach_manual();
+      if (play_banked_steven_for_known_t3_blender_route()) {
+        trace("TURN END", "R-STEVEN-01", state_line());
+        return;
+      }
+    }
     // A redundant Regidrago V must not consume the final Bench slot before the
     // immediately live Latias ex promotion route:
     // https://api.pokemontcg.io/v2/cards/sv8-76

@@ -135,7 +135,11 @@
       const bool communication_is_held,
       const bool supporter_will_be_used) {
     const std::vector<Card> original_hand = state_.hand;
-    const auto restore = [this, &original_hand]() { state_.hand = original_hand; };
+    const std::vector<Card> original_deck = state_.deck;
+    const auto restore = [this, &original_hand, &original_deck]() {
+      state_.hand = original_hand;
+      state_.deck = original_deck;
+    };
     if (!communication_is_held) state_.hand.push_back(Card::PokemonCommunication);
     if (!remove_one(state_.hand, Card::PokemonCommunication) ||
         !remove_one(state_.hand, returned)) {
@@ -143,6 +147,22 @@
       return false;
     }
     state_.hand.push_back(fetched);
+
+    // At K1, evaluate every continuation against the exact deck after Pokémon
+    // Communication puts the returned Pokémon in and removes the fetched Pokémon.
+    // K0 deliberately keeps using fixed-list public-zone accounting, so this
+    // preflight never reads the hidden physical deck before a legal inspection:
+    // https://api.pokemontcg.io/v2/cards/sm9-152
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    // https://github.com/FlareZ123/pokemon-sims/issues/808
+    if (deck_seen_ || prizes_revealed_) {
+      if (!remove_one(state_.deck, fetched)) {
+        restore();
+        return false;
+      }
+      state_.deck.push_back(returned);
+    }
 
     // Pokémon Communication returns one Pokémon before the later search. That
     // returned card is a guaranteed target for a subsequent search Item only when it

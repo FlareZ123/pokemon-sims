@@ -33,18 +33,25 @@
         is_basic(state_.active->card) && state_.active->card != Card::RegidragoV &&
         prior_turn_benched_regi;
 
-    // Legacy Star is a Rule Box Pokémon Ability. Preserve Field Blower whenever
-    // the VSTAR Power remains unused and at least one setup axis is unresolved;
-    // the existing Legacy Star selector still decides whether the exact recovery
-    // or discard-seven route is worth using after Path is removed:
+    // Legacy Star is a Rule Box Pokémon Ability. Remove Path when an unused VSTAR
+    // Power is already in play, or when an established Regidrago V can still evolve
+    // into an available VSTAR while setup remains unresolved. The exact Legacy Star
+    // selector still decides whether its recovery or discard-seven route is worth
+    // using after Path leaves play:
+    // https://api.pokemontcg.io/v2/cards/swsh12-135
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/swsh6-148
+    // https://www.pokemon.com/us/pokemon-tcg/rules
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    const bool legacy_star_route = !state_.vstar_power_used && has_vstar() &&
-        setup_axis_missing();
+    const bool unresolved_setup = setup_axis_missing();
+    const bool in_play_legacy_star_route = !state_.vstar_power_used && has_vstar() &&
+        unresolved_setup;
+    const bool future_legacy_star_route = !state_.vstar_power_used &&
+        active_is_regi_v() && unresolved_setup &&
+        (hand_count(Card::RegidragoVstar) > 0 || might_be_unseen(Card::RegidragoVstar));
 
     return wonder_tag_route || in_play_skyliner_route || held_skyliner_route ||
-           legacy_star_route;
+           in_play_legacy_star_route || future_legacy_star_route;
   }
 
   bool play_field_blower() {

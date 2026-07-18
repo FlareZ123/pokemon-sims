@@ -104,6 +104,7 @@
 #undef should_play_steven
 #undef attach_fss
 #undef fss_target_after_search_started
+#include "trace_engine_v2/part_010_late_steven_override.inc"
 #include "trace_engine_v2/part_010_steven_crispin_override.inc"
 #undef play_brilliant_blender
 // The thinning policy remains the implementation wrapped by the later empty-deck

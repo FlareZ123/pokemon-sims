@@ -6,8 +6,8 @@ The supplied list contains exactly 60 cards:
 
 | Group | Count |
 |---|---:|
-| Pokémon | 19 |
-| Trainers | 32 |
+| Pokémon | 18 |
+| Trainers | 33 |
 | Basic Energy | 9 |
 | **Total** | **60** |
 
@@ -25,7 +25,6 @@ The raw audit is generated locally at `data/card_audit.json` and is intentionall
 | Hisuian Goodra VSTAR | `swsh11-136` | 1 | Dragon VSTAR, Rolling Iron |
 | Tapu Lele-GX | `cel25c-60_A` | 2 | Basic Psychic GX, Wonder Tag |
 | Latias ex | `sv8-76` | 1 | Basic Psychic ex, Skyliner |
-| Mawile-GX | `sm11-141` | 1 | Basic Metal GX, Captivating Wink |
 | Oricorio GRI 55 | `sm2-55` | 1 | Basic Psychic, Vital Dance |
 | Dipplin TWM 127 | `sv6-127` | 1 | Stage 1 Dragon, Syrup Catcher |
 | Brilliant Blender | `sv8-164` | 1 | ACE SPEC, deck-discard up to five |
@@ -45,6 +44,7 @@ The raw audit is generated locally at `data/card_audit.json` and is intentionall
 | Team Yell’s Cheer | `swsh9-149` | 1 | Pokémon/Supporter deck recovery |
 | Roseanne’s Backup | `swsh9-148` | 1 | selected category recovery |
 | Professor Turo’s Scenario | `sv4-171` | 1 | return a Pokémon in play to hand |
+| Erika’s Invitation | `sv3pt5-160` | 1 | opponent-hand Basic placement and forced promotion |
 | Forest Seal Stone | `swsh12-156` | 1 | Tool VSTAR Power, any card search |
 | Powerglass | `sv6pt5-63` | 1 | after-attack Basic Energy recovery |
 | Field Blower | `sm2-125` | 1 | discard up to two Tools/Stadiums |
@@ -62,7 +62,11 @@ The supplied corpus has this effect: search the deck for up to five cards and di
 
 ### Mysterious Treasure
 
-The effect discards one hand card, then searches for a **Psychic or Dragon** Pokémon. This makes it an adaptive Regidrago V, Regidrago VSTAR, Tapu Lele-GX, Latias ex, Oricorio, payload, and Dipplin connector. It cannot retrieve Mawile-GX.
+The effect discards one hand card, then searches for a **Psychic or Dragon** Pokémon. This makes it an adaptive Regidrago V, Regidrago VSTAR, Tapu Lele-GX, Latias ex, Oricorio, payload, and Dipplin connector.
+
+### Erika’s Invitation
+
+Erika’s Invitation requires the opponent to reveal their hand, requires a Basic Pokémon in that hand, places that Pokémon on the opposing Bench, and then promotes it. The goldfish simulator does not model an opponent hand or opponent-controlled setup decisions, so the card is classified as a Supporter but its effect is deliberately inert. It remains a legal hand card and changes opening mulligan odds because it replaces a Basic Pokémon.
 
 ### Crispin
 

@@ -13,7 +13,7 @@ The model is deliberately a single-player setup model. It does not claim to reso
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel 2
-./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 3 --require-ready-by 3
+./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3
 ```
 
 The command prints the opening player-known state, debug-only prizes, every draw, card cost, search, attachment, evolution, retreat, VSTAR Power, attack, and ready-state check. The debug Prize list is never read by policy before a legal reveal/search effect.
@@ -34,6 +34,12 @@ ctest --test-dir build --output-on-failure
 ./build/regidrago_sim --trials 100000 --seed 20260705 --out results/simulation_results.csv
 ```
 
+## T5 horizon and setup-loss rule
+
+Standard scenarios stop early when they become ready through T4. Games still unresolved after T4 continue through T5 for diagnostic recovery data. Reaching T5 is classified as a setup loss even when the deck first becomes ready during that turn.
+
+Aggregate CSV output separates cumulative `ready_by_t5_pct`, T5-only `ready_on_t5_pct`, and the benchmark `setup_failure_pct`. The failure percentage is the complement of readiness through T4. A T5 recovery remains inside that failure count.
+
 ## Scope
 
 A ready state means:
@@ -43,4 +49,4 @@ A ready state means:
 3. A modeled Dragon payload in discard: Dragapult ex, Mega Dragonite ex, Dialga-GX, or Hisuian Goodra VSTAR.
 4. In strict and matchup-flex profiles, that payload entered discard in the current player turn and remains in discard at the ready check.
 
-See `docs/RULES_TRACEABILITY.md`, `docs/RULES_REVERIFICATION.md`, `docs/RULE_SOURCES.md`, `docs/POLICY_DECISIONS.md`, `docs/OPTIMAL_POLICY_FIXTURES.md`, `docs/TIER2_POLICY_FIXTURES.md`, `docs/TRACE_AUDIT.md`, `docs/MODEL_ASSUMPTIONS.md`, and `docs/REPORT.md`.
+See `docs/T5_FAILURE_POLICY.md`, `docs/RULES_TRACEABILITY.md`, `docs/RULES_REVERIFICATION.md`, `docs/RULE_SOURCES.md`, `docs/POLICY_DECISIONS.md`, `docs/OPTIMAL_POLICY_FIXTURES.md`, `docs/TIER2_POLICY_FIXTURES.md`, `docs/TRACE_AUDIT.md`, `docs/MODEL_ASSUMPTIONS.md`, and `docs/REPORT.md`.

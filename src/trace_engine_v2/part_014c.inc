@@ -173,6 +173,7 @@
     if (state_.turn <= 2) outcome_.ready_by_2 = true;
     if (state_.turn <= 3) outcome_.ready_by_3 = true;
     if (state_.turn <= 4) outcome_.ready_by_4 = true;
+    if (state_.turn <= 5) outcome_.ready_by_5 = true;
   }
 
   // The original run_turn() above is macro-renamed by the active composition. End
@@ -189,13 +190,13 @@ std::vector<Scenario> all_scenarios() {
   std::vector<Scenario> result;
   for (const bool first : {true, false}) {
     const std::string seat = first ? "go-first" : "go-second";
-    result.push_back({"strict-jit/" + seat, DciProfile::StrictJit, LockMode::None, first, 4});
-    result.push_back({"matchup-flex-jit/" + seat, DciProfile::MatchupFlexJit, LockMode::None, first, 4});
-    result.push_back({"no-discard-control/" + seat, DciProfile::NoDiscardControl, LockMode::None, first, 4});
-    result.push_back({"strict-jit-turn2-item-lock/" + seat, DciProfile::StrictJit, LockMode::TurnTwoItem, first, 4});
-    result.push_back({"strict-jit-full-item-lock/" + seat, DciProfile::StrictJit, LockMode::FullItem, first, 4});
-    result.push_back({"strict-jit-rulebox-ability-lock/" + seat, DciProfile::StrictJit, LockMode::FullRuleBoxAbility, first, 4});
-    result.push_back({"strict-jit-combined-lock/" + seat, DciProfile::StrictJit, LockMode::FullCombined, first, 4});
+    result.push_back({"strict-jit/" + seat, DciProfile::StrictJit, LockMode::None, first, 5});
+    result.push_back({"matchup-flex-jit/" + seat, DciProfile::MatchupFlexJit, LockMode::None, first, 5});
+    result.push_back({"no-discard-control/" + seat, DciProfile::NoDiscardControl, LockMode::None, first, 5});
+    result.push_back({"strict-jit-turn2-item-lock/" + seat, DciProfile::StrictJit, LockMode::TurnTwoItem, first, 5});
+    result.push_back({"strict-jit-full-item-lock/" + seat, DciProfile::StrictJit, LockMode::FullItem, first, 5});
+    result.push_back({"strict-jit-rulebox-ability-lock/" + seat, DciProfile::StrictJit, LockMode::FullRuleBoxAbility, first, 5});
+    result.push_back({"strict-jit-combined-lock/" + seat, DciProfile::StrictJit, LockMode::FullCombined, first, 5});
   }
   return result;
 }

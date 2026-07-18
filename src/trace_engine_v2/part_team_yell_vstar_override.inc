@@ -97,15 +97,60 @@
       // https://github.com/FlareZ123/pokemon-sims/issues/701
       if (payload_already_ready && hand_count(Card::PokemonCommunication) > 0) {
         Engine simulated = *this;
+        simulated.state_.hand = original_hand;
+        const auto restore_in_simulation = [&simulated](const Card card) {
+          if (!remove_one(simulated.state_.discard, card)) return false;
+          const auto turn_it = std::find(simulated.state_.discarded_this_turn.begin(),
+                                         simulated.state_.discarded_this_turn.end(), card);
+          if (turn_it != simulated.state_.discarded_this_turn.end()) {
+            simulated.state_.discarded_this_turn.erase(turn_it);
+          }
+          simulated.state_.deck.push_back(card);
+          return true;
+        };
         if (remove_one(simulated.state_.hand, Card::TeamYellsCheer) &&
-            remove_one(simulated.state_.hand, Card::EvolutionIncense)) {
-          simulated.state_.deck.push_back(Card::RegidragoVstar);
-          simulated.state_.deck.push_back(Card::LatiasEx);
+            remove_one(simulated.state_.hand, Card::EvolutionIncense) &&
+            restore_in_simulation(Card::RegidragoVstar) &&
+            restore_in_simulation(Card::LatiasEx)) {
+          simulated.state_.discard.push_back(Card::TeamYellsCheer);
+          simulated.state_.discard.push_back(Card::EvolutionIncense);
+          simulated.state_.supporter_used = true;
+          // Team Yell's Cheer moves both selected Pokémon from discard into the deck.
+          // Evolution Incense then inspects that exact deck and moves the restored VSTAR
+          // to hand before Pokémon Communication exchanges a separate held Pokémon for
+          // the restored Latias ex:
+          // https://api.pokemontcg.io/v2/cards/swsh9-149
+          // https://api.pokemontcg.io/v2/cards/swsh1-163
+          // https://api.pokemontcg.io/v2/cards/sm9-152
+          // https://api.pokemontcg.io/v2/cards/sv8-76
+          // https://api.pokemontcg.io/v2/cards/swsh12-136
+          // https://github.com/FlareZ123/pokemon-sims/issues/835
+          simulated.deck_seen_ = true;
           if (simulated.move_deck_to_hand(Card::RegidragoVstar)) {
-            const auto plan = simulated.pokemon_communication_plan(false, true, true);
-            if (plan && plan->target == Card::LatiasEx) {
-              restore_hand();
-              return true;
+            const auto evolution_target = std::find_if(
+                simulated.state_.bench.begin(), simulated.state_.bench.end(),
+                [&simulated](const Pokemon& pokemon) {
+                  return pokemon.card == Card::RegidragoV &&
+                         pokemon.entered_turn < simulated.state_.turn;
+                });
+            if (evolution_target != simulated.state_.bench.end() &&
+                remove_one(simulated.state_.hand, Card::RegidragoVstar)) {
+              // Evolution Incense puts the restored VSTAR into hand. Evolve the
+              // prior-turn Benched Regidrago V in the copied state before asking the
+              // general Pokémon Communication planner whether Latias ex completes
+              // the active-position axis:
+              // https://api.pokemontcg.io/v2/cards/swsh1-163
+              // https://api.pokemontcg.io/v2/cards/swsh12-136
+              // https://api.pokemontcg.io/v2/cards/sm9-152
+              // https://api.pokemontcg.io/v2/cards/sv8-76
+              // https://www.pokemon.com/us/pokemon-tcg/rules
+              // https://github.com/FlareZ123/pokemon-sims/issues/835
+              evolution_target->card = Card::RegidragoVstar;
+              const auto plan = simulated.pokemon_communication_plan(false, true, true);
+              if (plan && plan->target == Card::LatiasEx) {
+                restore_hand();
+                return true;
+              }
             }
           }
         }

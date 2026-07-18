@@ -3,7 +3,7 @@
   const DeckRecipe deck = baseline_recipe();
   // Reuse the registered strict-JIT go-second T3 regression seed and deadline:
   // https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt
-  std::mt19937_64 rng(6);
+  std::mt19937_64 rng(1);
   TraceLog trace{true, {}};
   Engine engine(*scenario, deck, rng, &trace);
   const TrialOutcome outcome = engine.run();
@@ -50,13 +50,13 @@ std::optional<std::uint64_t> parse_positive_count(const std::string& text) {
 
 std::optional<int> parse_ready_deadline(const std::string& text) {
   const auto parsed = parse_positive_count(text);
-  // Trace scenarios model readiness only through turn 4. A deadline must select one
+  // Trace scenarios model unresolved games through turn 5. A deadline must select one
   // of those positive modeled turns instead of becoming a sentinel that disables
   // the later check:
   // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L20-L33
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
   // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
-  if (!parsed || *parsed > 4) return std::nullopt;
+  if (!parsed || *parsed > 5) return std::nullopt;
   return static_cast<int>(*parsed);
 }
 
@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
     } else if (arg == "--require-ready-by" && i + 1 < argc) {
       const auto parsed_deadline = parse_ready_deadline(argv[++i]);
       if (!parsed_deadline) {
-        std::cerr << "--require-ready-by must be an integer from 1 through 4\n";
+        std::cerr << "--require-ready-by must be an integer from 1 through 5\n";
         return 2;
       }
       require_ready_by = *parsed_deadline;
@@ -197,7 +197,7 @@ int main(int argc, char** argv) {
     // The active readiness contract cannot be met before turn 2. Rejecting the
     // impossible search deadline here preserves turn 1 as a finite single-trace
     // assertion while preventing an unbounded find-ready search:
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc#L168-L177
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc#L168-L178
     // https://github.com/FlareZ123/pokemon-sims/issues/683
     if (deadline_supplied && require_ready_by == 1) {
       std::cerr << "--require-ready-by 1 cannot be satisfied in find-ready mode; readiness begins on turn 2\n";
@@ -226,11 +226,11 @@ int main(int argc, char** argv) {
     // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L20-L33
     // https://github.com/FlareZ123/pokemon-sims/issues/626
     const auto turn_one = parse_ready_deadline("1");
-    const auto turn_four = parse_ready_deadline("4");
+    const auto turn_five = parse_ready_deadline("5");
     const bool deadline_parser_ok = turn_one && *turn_one == 1 &&
-        turn_four && *turn_four == 4 && !parse_ready_deadline("0") &&
+        turn_five && *turn_five == 5 && !parse_ready_deadline("0") &&
         !parse_ready_deadline("-1") && !parse_ready_deadline("+1") &&
-        !parse_ready_deadline("5") && !parse_ready_deadline("") &&
+        !parse_ready_deadline("6") && !parse_ready_deadline("") &&
         !parse_ready_deadline("18446744073709551616");
     // Zero and the full uint64_t range are valid deterministic seeds. Signed,
     // malformed, whitespace-prefixed, and overflowing spellings are rejected:
@@ -274,7 +274,12 @@ int main(int argc, char** argv) {
         const bool find_ready_miss = mode == CliMode::FindReady &&
             (outcome.first_ready_turn == 0 || misses_required_deadline);
         if (!find_ready_miss) {
-          std::cout << "\nSeed: " << candidate_seed << " | first-ready turn: " << (outcome.first_ready_turn == 0 ? std::string("not ready through T4") : std::to_string(outcome.first_ready_turn)) << '\n';
+          const std::string ready_summary = outcome.first_ready_turn == 0
+              ? "not ready through T5"
+              : std::to_string(outcome.first_ready_turn);
+          const std::string setup_result = outcome.setup_failed ? "failure" : "success";
+          std::cout << "\nSeed: " << candidate_seed << " | first-ready turn: "
+                    << ready_summary << " | setup result: " << setup_result << '\n';
           for (const std::string& line : trace.lines) std::cout << line << '\n';
           if (misses_required_deadline) {
             std::cerr << "Trace did not reach a ready state by required turn " << require_ready_by << "\n";
@@ -297,14 +302,17 @@ int main(int argc, char** argv) {
     }
 
     std::ostringstream csv;
-    csv << "scenario,trials,ready_by_t2_pct,ready_by_t2_se_pp,ready_by_t3_pct,ready_by_t3_se_pp,ready_by_t4_pct,ready_by_t4_se_pp,started_regi_pct,fss_used_pct,legacy_star_used_pct,steven_used_pct,blender_used_pct,mean_mulligans\n";
+    csv << "scenario,trials,ready_by_t2_pct,ready_by_t2_se_pp,ready_by_t3_pct,ready_by_t3_se_pp,ready_by_t4_pct,ready_by_t4_se_pp,ready_by_t5_pct,ready_by_t5_se_pp,ready_on_t5_pct,ready_on_t5_se_pp,setup_failure_pct,setup_failure_se_pp,started_regi_pct,fss_used_pct,legacy_star_used_pct,steven_used_pct,blender_used_pct,mean_mulligans\n";
     const std::vector<sim::Scenario> scenarios = sim::all_scenarios();
     for (std::size_t index = 0; index < scenarios.size(); ++index) {
       const sim::Scenario& scenario = scenarios[index];
       const sim::Aggregate a = sim::simulate(scenario, deck, trials, seed + 104729ULL * index);
       csv << '"' << scenario.label << "\"," << a.trials << ',' << sim::pct(a.by2, a.trials) << ',' << sim::standard_error_pp(a.by2, a.trials) << ','
           << sim::pct(a.by3, a.trials) << ',' << sim::standard_error_pp(a.by3, a.trials) << ',' << sim::pct(a.by4, a.trials) << ','
-          << sim::standard_error_pp(a.by4, a.trials) << ',' << sim::pct(a.started_regi, a.trials) << ',' << sim::pct(a.fss, a.trials) << ','
+          << sim::standard_error_pp(a.by4, a.trials) << ',' << sim::pct(a.by5, a.trials) << ',' << sim::standard_error_pp(a.by5, a.trials) << ','
+          << sim::pct(a.ready_on5, a.trials) << ',' << sim::standard_error_pp(a.ready_on5, a.trials) << ','
+          << sim::pct(a.setup_failures, a.trials) << ',' << sim::standard_error_pp(a.setup_failures, a.trials) << ','
+          << sim::pct(a.started_regi, a.trials) << ',' << sim::pct(a.fss, a.trials) << ','
           << sim::pct(a.legacy, a.trials) << ',' << sim::pct(a.steven, a.trials) << ',' << sim::pct(a.blender, a.trials) << ','
           << (a.total_mulligans / static_cast<double>(a.trials)) << '\n';
     }

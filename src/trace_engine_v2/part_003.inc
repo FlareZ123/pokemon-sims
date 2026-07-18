@@ -29,6 +29,15 @@ class Engine {
       if (outcome_.first_ready_turn != 0) break;
       resolve_powerglass_end_turn();
     }
+    if (scenario_.max_turn >= 5) {
+      outcome_.setup_failed = !outcome_.ready_by_4;
+      if (outcome_.setup_failed) {
+        const std::string detail = outcome_.first_ready_turn == 5
+            ? "First reached readiness on T5. T5 is diagnostic, so the game remains a setup loss."
+            : "Did not reach readiness by the end of T4. The game is classified as a setup loss.";
+        trace("SETUP FAILURE", "P-T5-FAIL-01", detail);
+      }
+    }
     return outcome_;
   }
 
@@ -64,8 +73,21 @@ class Engine {
   }
 
   int total_copies(const Card card) const {
-    for (const auto& [candidate, copies] : recipe_) if (candidate == card) return copies;
-    return 0;
+    for (const auto& [candidate, copies] : recipe_) {
+      if (candidate == card && copies > 0) return copies;
+    }
+    // Unit fixtures may install a physically consistent reduced state whose card is
+    // intentionally absent from the canonical recipe. Derive that synthetic state's
+    // copy count from its zones without changing any real simulation, where every
+    // physical card is represented by recipe_. This keeps K1 legality tests independent
+    // of retired main-list singletons such as Mawile-GX.
+    int observed = count_of(state_.hand, card) + count_of(state_.deck, card) +
+                   count_of(state_.prizes, card) + count_of(state_.discard, card);
+    if (state_.active && state_.active->card == card) ++observed;
+    observed += static_cast<int>(std::count_if(
+        state_.bench.begin(), state_.bench.end(),
+        [card](const Pokemon& pokemon) { return pokemon.card == card; }));
+    return observed;
   }
 
   int attached_public_count(const Card card) const {

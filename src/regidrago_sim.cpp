@@ -10,6 +10,8 @@
 // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
 // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
 // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+// Erika's Invitation: https://api.pokemontcg.io/v2/cards/sv3pt5-160
+// Confirmed source-registry fix: https://github.com/FlareZ123/pokemon-sims/issues/856
 // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
 // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
 // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179

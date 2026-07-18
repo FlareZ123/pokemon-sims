@@ -4,9 +4,15 @@ import argparse
 import json
 import os
 import subprocess
+import sys
 import tempfile
 from contextlib import contextmanager
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.baseline_provenance import simulator_policy_source_digest
 
 TRACE_SPECS = (
     ("strict-jit/go-second", 3, "strict_jit_go_second"),
@@ -72,6 +78,33 @@ def find_trace_seed(executable: Path, scenario: str, deadline: int, max_seed: in
     )
 
 
+def generate_matrix_atomic(executable: Path, matrix_path: Path, trials: int, matrix_seed: int) -> None:
+    matrix_path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{matrix_path.name}.", suffix=".tmp", dir=matrix_path.parent
+    )
+    os.close(descriptor)
+    temporary_path = Path(temporary_name)
+    try:
+        # This is the repository's canonical fixed-seed aggregate command:
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        # https://github.com/FlareZ123/pokemon-sims/issues/642
+        run(
+            [
+                str(executable),
+                "--trials",
+                str(trials),
+                "--seed",
+                str(matrix_seed),
+                "--out",
+                str(temporary_path),
+            ]
+        )
+        os.replace(temporary_path, matrix_path)
+    finally:
+        temporary_path.unlink(missing_ok=True)
+
+
 def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, matrix_seed: int) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     trace_dir = output_dir / "traces"
@@ -80,6 +113,11 @@ def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, m
     manifest: dict[str, object] = {
         "matrix_seed": matrix_seed,
         "trials": trials,
+        # Bind the published matrix to every aggregate simulator input, including
+        # part_016's scenario loop and seed derivation:
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
+        # https://github.com/FlareZ123/pokemon-sims/issues/642
+        "simulator_policy_source_sha256": simulator_policy_source_digest(REPO_ROOT),
         "traces": [],
     }
 
@@ -96,19 +134,7 @@ def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, m
             }
         )
 
-    matrix_path = output_dir / "simulation_results.csv"
-    run(
-        [
-            str(executable),
-            "--trials",
-            str(trials),
-            "--seed",
-            str(matrix_seed),
-            "--out",
-            str(matrix_path),
-        ]
-    )
-
+    generate_matrix_atomic(executable, output_dir / "simulation_results.csv", trials, matrix_seed)
     atomic_write_text(
         output_dir / "baseline_manifest.json",
         json.dumps(manifest, indent=2, sort_keys=True) + "\n",

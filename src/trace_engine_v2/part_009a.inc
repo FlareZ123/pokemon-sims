@@ -63,7 +63,16 @@
     // Ultra Ball remains a legal card from hand for Treasure's discard cost, even
     // when that Ultra Ball is not itself payable because it needs two other cards:
     // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-    const auto cost = choose_discard(can_jit_discard, true, true, Card::MysteriousTreasure);
+    std::optional<Card> cost =
+        choose_discard(can_jit_discard, true, true, Card::MysteriousTreasure);
+    if (!cost && want_vstar && can_spend_redundant_payload_for_locked_vstar_search()) {
+      // Mysterious Treasure may discard any one card. This fallback spends one
+      // redundant payload only after every ordinary strict-DCI cost has failed:
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://github.com/FlareZ123/pokemon-sims/issues/925
+      cost = choose_discard(false, true, true, Card::MysteriousTreasure, true);
+    }
     if (!cost) return false;
 
     remove_one(state_.hand, Card::MysteriousTreasure);

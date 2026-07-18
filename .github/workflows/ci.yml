@@ -40,6 +40,12 @@ jobs:
         run: ctest --test-dir build --parallel 4 --output-on-failure
       - name: Record tested source
         run: git rev-parse HEAD > tested-head.txt
+      - name: Archive exact tested source
+        # Preserve the exact CI-tested tree for static analysis and local replay:
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#what-the-probability-means
+        run: git archive --format=tar.gz --output=tested-source.tar.gz HEAD
       - name: Upload validation evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -49,6 +55,7 @@ jobs:
             trace-*.txt
             t2-t3-matrix.csv
             tested-head.txt
+            tested-source.tar.gz
             build/Testing
           if-no-files-found: warn
 

@@ -308,3 +308,11 @@ target_compile_options(regidrago_roseanne_pokemon_communication_zone_tests
   PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 add_test(NAME regidrago_roseanne_pokemon_communication_zones
   COMMAND regidrago_roseanne_pokemon_communication_zone_tests)
+
+
+add_executable(regidrago_opening_oricorio_dialga_lock_route_tests
+  tests/opening_oricorio_dialga_lock_route_tests.cpp)
+target_compile_options(regidrago_opening_oricorio_dialga_lock_route_tests PRIVATE
+  -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+add_test(NAME regidrago_opening_oricorio_dialga_lock_route
+  COMMAND regidrago_opening_oricorio_dialga_lock_route_tests)

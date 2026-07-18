@@ -79,6 +79,12 @@ add_test(NAME regidrago_cli_mode_contract
 
 add_test(NAME trace_strict_second_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3)
 add_test(NAME trace_strict_first_t4 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4)
+# A prior-turn GGF Regidrago V must hold the one-use Blender until the VSTAR
+# card and Active-position axes can complete, producing the verified T4 route:
+# https://api.pokemontcg.io/v2/cards/sv8-164
+# https://api.pokemontcg.io/v2/cards/swsh12-136
+# https://github.com/FlareZ123/pokemon-sims/issues/718
+add_test(NAME trace_issue_718_strict_first_seed1 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 1 --require-ready-by 4)
 add_test(NAME trace_flex_second_t2 COMMAND regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2)
 add_test(NAME trace_turn2_item_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 1 --require-ready-by 3)
 # The confirmed strict-DCI regression must use the direct turn-one VSTAR search and

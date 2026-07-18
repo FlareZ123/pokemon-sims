@@ -120,12 +120,12 @@ sim::TrialOutcome run_seed_one_conditioned_policy(const bool use_opening_bench_s
   return sim::EngineTestAccess::outcome(engine);
 }
 
-void test_seed_one_downstream_policy_regression() {
+void test_seed_one_downstream_policy_characterization() {
   // Matched seed 1 holds the shuffled 53-card remainder, six Prize cards, and all
-  // downstream choices constant. The hidden continuation now reaches T3 while Tapu
-  // remains in hand and T4 after setup placement. Setup-Benching cannot trigger Wonder
-  // Tag, so this deterministic contract records both outcomes without requiring the
-  // slower historical branch or changing the public-state opening selector:
+  // downstream choices constant. Holding Tapu reaches T3 through Wonder Tag. After
+  // #718 removes the invalid early Blender spend, the setup-Benched route has no live
+  // VSTAR-card connector and remains unready through the T4 fixture deadline. Issue
+  // #932 owns the distinct opening-selector correction:
   // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
   // https://api.pokemontcg.io/v2/cards/cel25c-60_A
   // https://api.pokemontcg.io/v2/cards/sv7-133
@@ -134,11 +134,13 @@ void test_seed_one_downstream_policy_regression() {
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // https://github.com/FlareZ123/pokemon-sims/issues/671
   // https://github.com/FlareZ123/pokemon-sims/issues/885
+  // https://github.com/FlareZ123/pokemon-sims/issues/718
+  // https://github.com/FlareZ123/pokemon-sims/issues/932
   const sim::TrialOutcome held_tapu = run_seed_one_conditioned_policy(false);
   const sim::TrialOutcome setup_benched_tapu = run_seed_one_conditioned_policy(true);
-  if (held_tapu.first_ready_turn != 3 || setup_benched_tapu.first_ready_turn != 4) {
+  if (held_tapu.first_ready_turn != 3 || setup_benched_tapu.first_ready_turn != 0) {
     throw std::runtime_error(
-        "Matched seed 1 should reach T3 with held Tapu and T4 with setup-Benched Tapu.");
+        "Matched seed 1 should reach T3 with held Tapu and remain unready through T4 after setup placement.");
   }
 }
 
@@ -212,7 +214,7 @@ void test_opening_tapu_bench_controls() {
 
 int main() {
   test_approved_opening_setup_benches_redundant_tapu();
-  test_seed_one_downstream_policy_regression();
+  test_seed_one_downstream_policy_characterization();
   test_opening_tapu_bench_controls();
   return 0;
 }

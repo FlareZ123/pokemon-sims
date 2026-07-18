@@ -73,10 +73,17 @@
   }
 
   bool has_live_blender_payload_line() const {
-    // Brilliant Blender searches and discards cards from deck: https://api.pokemontcg.io/v2/cards/sv8-164
-    return !item_locked() && hand_count(Card::BrilliantBlender) > 0 && can_play_payload_this_turn() &&
-           payload_might_be_in_deck();
-  }
+  // A strict-JIT Blender route is live only when its one-use deck discard can
+  // accompany a current-turn Regidrago VSTAR card route. Higher-level Supporter,
+  // switching, and attachment selectors must use the same boundary as the action:
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+  // https://github.com/FlareZ123/pokemon-sims/issues/718
+  return !item_locked() && hand_count(Card::BrilliantBlender) > 0 &&
+         can_play_payload_this_turn() && payload_might_be_in_deck() &&
+         blender_vstar_card_axis_can_finish_this_turn();
+}
 
   bool can_spend_redundant_payload_for_locked_vstar_search() const {
     const int held_payloads = static_cast<int>(std::count_if(

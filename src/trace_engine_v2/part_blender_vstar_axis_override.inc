@@ -1,4 +1,4 @@
-  bool blender_vstar_card_axis_can_finish_this_turn() {
+  bool blender_vstar_card_axis_can_finish_this_turn() const {
     if (!strict_payload_timing() || !need_vstar()) return true;
     if (hand_count(Card::RegidragoVstar) > 0) return true;
 

@@ -1,0 +1,52 @@
+name: Update Erika Communication Fixture
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/erika-update-communication-fixture.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update-fixture:
+    if: github.head_ref == 'feat/erikas-invitation-current-main'
+    runs-on: macos-latest
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Replace retired baseline singleton in fixture
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('tests/pokemon_communication_tests.cpp')
+          text = path.read_text(encoding='utf-8')
+          old = '''  auto mawile = std::find_if(recipe.begin(), recipe.end(), [](const auto& entry) {
+              return entry.first == sim::Card::MawileGX;
+            });
+            if (mawile == recipe.end() || mawile->second != 1) {
+              throw std::runtime_error("The variant fixture could not identify its one-card swap.");
+            }
+            recipe.erase(mawile);'''.replace('          ', '')
+          new = '''  auto erika = std::find_if(recipe.begin(), recipe.end(), [](const auto& entry) {
+              return entry.first == sim::Card::ErikasInvitation;
+            });
+            if (erika == recipe.end() || erika->second != 1) {
+              throw std::runtime_error("The variant fixture could not identify its one-card swap.");
+            }
+            recipe.erase(erika);'''.replace('          ', '')
+          if text.count(old) != 1:
+              raise SystemExit('Expected exactly one Mawile Communication fixture block')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+      - name: Commit fixture update
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tests/pokemon_communication_tests.cpp
+          git commit -m "Update Communication fixture for Erika baseline"
+          git push origin HEAD:${{ github.head_ref }}

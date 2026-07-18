@@ -1,0 +1,54 @@
+name: Pokémon Communication Setup Turn Statistics
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  setup-turn-statistics:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'audit/pokemon-communication-setup-turn-stats-20260718'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Check out pull-request merge ref
+        uses: actions/checkout@v4
+
+      - name: Configure Release build
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build repository
+        run: cmake --build build --parallel 2
+
+      - name: Run full test suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Run focused Pokémon Communication regression
+        run: ./build/regidrago_pokemon_communication_tests
+
+      - name: Build setup-turn audit
+        run: >-
+          c++ -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic
+          -Wconversion -Wshadow tools/pokemon_communication_setup_turn_stats.cpp
+          -o build/pokemon_communication_setup_turn_stats
+
+      - name: Run two million simulated games
+        shell: bash
+        run: |
+          mkdir -p audit-output
+          ./build/pokemon_communication_setup_turn_stats | tee audit-output/setup_turn_statistics.csv
+
+      - name: Record source revision
+        shell: bash
+        run: |
+          git rev-parse HEAD > audit-output/merge_ref_sha.txt
+          git status --short > audit-output/git_status.txt
+
+      - name: Upload statistics
+        uses: actions/upload-artifact@v4
+        with:
+          name: pokemon-communication-setup-turn-statistics
+          path: audit-output
+          if-no-files-found: error

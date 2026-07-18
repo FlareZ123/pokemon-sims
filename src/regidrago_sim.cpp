@@ -55,12 +55,15 @@
 #define needs_oricorio_connector needs_oricorio_connector_original
 #define needs_tapu_connector needs_tapu_connector_original
 #define bench_tapu_if_useful bench_tapu_if_useful_original
+#define choose_discard choose_discard_original
 #include "trace_engine_v2/part_006.inc"
+#undef choose_discard
 #undef bench_tapu_if_useful
 #undef needs_tapu_connector
 #undef needs_oricorio_connector
 #undef bench_oricorio_if_useful
 #undef bench_from_hand
+#include "trace_engine_v2/part_006_steven_treasure_dci_override.inc"
 #define attach_manual attach_manual_tate_blender_original
 #include "trace_engine_v2/part_007.inc"
 #undef attach_manual

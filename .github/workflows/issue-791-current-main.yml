@@ -1,0 +1,60 @@
+name: Issue 791 Current Main
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-finalize:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/791-hold-redundant-field-blower'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/791-hold-redundant-field-blower
+          fetch-depth: 0
+      - name: Reconcile current main
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build Release
+        run: cmake --build build --parallel 2
+      - name: Run full Release suite
+        run: ctest --test-dir build --output-on-failure
+      - name: Run focused Werror and UBSan regressions
+        run: |
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror tests/forest_seal_stone_rulebox_tests.cpp -o build/issue-791-fss
+          ./build/issue-791-fss
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror tests/no_redundant_item_tests.cpp -o build/issue-791-items
+          ./build/issue-791-items
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -fsanitize=undefined -fno-omit-frame-pointer tests/forest_seal_stone_rulebox_tests.cpp -o build/issue-791-ubsan
+          ./build/issue-791-ubsan
+      - name: Run three simulator audits
+        run: |
+          mkdir -p issue-791-audit
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-791-audit/trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 2 --require-ready-by 3 | tee issue-791-audit/trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee issue-791-audit/trace-3.txt
+      - name: Generate matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-791-audit/t2_t3_matrix.csv
+      - name: Finalize validated branch
+        run: |
+          git rm .github/workflows/issue-791-current-main.yml
+          git commit -m 'Validate Field Blower route gating on current main (#791)'
+          git push origin HEAD:fix/791-hold-redundant-field-blower
+          git archive --format=zip HEAD -o issue-791-audit/source.zip
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-791-current-main
+          path: issue-791-audit
+          if-no-files-found: warn

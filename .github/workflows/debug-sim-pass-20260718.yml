@@ -22,12 +22,17 @@ jobs:
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --parallel 2
 
-      - name: Run full Release suite
+      - name: Run full Release suite and preserve failures
+        continue-on-error: true
         shell: bash
         run: |
           mkdir -p debug-audit
+          set +e
           set -o pipefail
           ctest --test-dir build --output-on-failure 2>&1 | tee debug-audit/ctest.log
+          status=${PIPESTATUS[0]}
+          printf '%s\n' "$status" > debug-audit/ctest.status
+          exit "$status"
 
       - name: Run simulator self-test
         shell: bash

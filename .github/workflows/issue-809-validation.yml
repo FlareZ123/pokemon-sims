@@ -20,6 +20,8 @@ jobs:
 
       - name: Reconcile current main
         run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git fetch origin main
           git merge --no-edit origin/main
 
@@ -62,8 +64,6 @@ jobs:
 
       - name: Commit validated source and remove temporary files
         run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git rm tools/apply_issue_809.py .github/workflows/issue-809-validation.yml
           git add CMakeLists.txt src/trace_engine_v2/part_tapu_tate_switch_override.inc tests/check_future_wonder_tag_crispin.cmake
           git commit -m 'Bank a concrete turn-two Crispin route with Wonder Tag (#809)'

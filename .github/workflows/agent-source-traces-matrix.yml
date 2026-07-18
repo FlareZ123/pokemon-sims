@@ -1,0 +1,49 @@
+name: Agent Source, Traces, and Matrix Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  source-traces-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Release
+        run: cmake --build build --parallel 2
+
+      - name: Run strict-JIT going-first trace
+        # Trace specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#test-surfaces
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 6 --require-ready-by 4 | tee build/trace-strict-first.txt
+
+      - name: Run matchup-flex going-second trace
+        # Strict/matchup-flex JIT definition: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+        run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 4 | tee build/trace-flex-second.txt
+
+      - name: Run no-discard-control going-first trace
+        # DCI profiles: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+        run: ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 1 | tee build/trace-no-control-first.txt
+
+      - name: Generate canonical setup matrix
+        # Reproducible baseline command: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out build/t2_t3_matrix.csv
+
+      - name: Archive current source snapshot
+        # Repository scope and audit surfaces: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#audit-status
+        run: tar --exclude=.git --exclude=build -czf build/pokemon-sims-source.tgz .
+
+      - name: Upload audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-source-traces-matrix
+          path: |
+            build/trace-strict-first.txt
+            build/trace-flex-second.txt
+            build/trace-no-control-first.txt
+            build/t2_t3_matrix.csv
+            build/pokemon-sims-source.tgz
+          if-no-files-found: error

@@ -16,7 +16,7 @@ original_replace_once = legacy.replace_once
 
 
 def unified_replace_once(path: Path, old: str, new: str) -> None:
-    if path == ROOT / "CMakeLists.txt":
+    if path.name == "CMakeLists.txt":
         # Current main discovers each tests/*.cpp source through the unified runner:
         # https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt#L21-L47
         # https://github.com/FlareZ123/pokemon-sims/blob/main/tests/generate_unified_tests.py#L109-L139

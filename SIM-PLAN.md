@@ -187,7 +187,7 @@ Dragapult ex and Mega Dragonite ex are S-tier. Dialga-GX’s Timeless-GX and His
 ## Validation plan
 
 1. Audit all exact requested card IDs against the supplied corpus.
-2. Assert 19 Pokémon, 32 Trainers, 9 Energy, and 60 total cards.
+2. Assert 18 Pokémon, 33 Trainers, 9 Energy, and 60 total cards, derived from the canonical decklist and card-audit contract: https://github.com/FlareZ123/pokemon-sims/blob/main/data/decklist.json https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/audit_card_data.py
 3. Unit-test deck total and category totals.
 4. Build with warnings enabled.
 5. Run `ctest`.

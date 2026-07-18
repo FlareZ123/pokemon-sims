@@ -1,4 +1,3 @@
-        discard_from_hand(*extra, "Serena optional discard", "R-SERENA-01");
       }
     }
     // Serena permits up to three discards in every DCI profile. In strict JIT,
@@ -7,9 +6,32 @@
     if (scenario_.dci == DciProfile::StrictJit) {
       for (int number = 0; number < 2; ++number) {
         const auto extra = choose_discard(false, true);
-        if (!extra || is_payload(*extra)) break;
-        discard_from_hand(*extra, "Serena optional discard", "R-SERENA-01");
+        if (!extra || is_payload(*extra) || !remove_one(state_.hand, *extra)) break;
+        planned_discards.push_back(*extra);
       }
+    }
+
+    const bool would_draw = state_.hand.size() < 5U && !state_.deck.empty();
+    const bool completes_payload_now = allow_zero_draw_payload_completion &&
+        is_payload(*first) && permit_payload;
+    state_.hand = original_hand;
+    if (!would_draw && !completes_payload_now) {
+      // A legal zero-draw resolution is strategically dominated when its discard
+      // does not complete the current-turn strict-JIT payload axis:
+      // https://api.pokemontcg.io/v2/cards/swsh12-164
+      // https://api.pokemontcg.io/v2/cards/sv6-127
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#discard-capability-index-dci
+      // https://github.com/FlareZ123/pokemon-sims/issues/882
+      return false;
+    }
+
+    remove_one(state_.hand, Card::Serena);
+    state_.discard.push_back(Card::Serena);
+    for (std::size_t index = 0; index < planned_discards.size(); ++index) {
+      discard_from_hand(planned_discards[index],
+                        index == 0U ? "Serena chosen discard" : "Serena optional discard",
+                        "R-SERENA-01");
     }
     state_.supporter_used = true;
     while (state_.hand.size() < 5U && !state_.deck.empty()) draw_card("Serena");

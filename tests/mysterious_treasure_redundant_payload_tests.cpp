@@ -87,7 +87,7 @@ void test_serena_without_held_payload_keeps_search_live() {
   // for the surviving Serena outlet:
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/swsh12-164
-  // https://api.pokemontcg.io/v2/cards/sv8-130
+  // https://api.pokemontcg.io/v2/cards/sv6-130
   if (!sim::EngineTestAccess::play_mysterious_treasure(engine, false)) {
     throw std::runtime_error("The missing-payload control should keep the search live.");
   }

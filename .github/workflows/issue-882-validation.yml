@@ -15,8 +15,7 @@ jobs:
   validate-and-finalize:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/882-serena-zero-draw'
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
-
+    timeout-minutes: 120
     steps:
       - name: Check out issue branch
         uses: actions/checkout@v4
@@ -33,6 +32,20 @@ jobs:
           git merge --no-edit origin/main
           git rev-parse HEAD > /tmp/issue-882-baseline-sha
           mkdir -p issue-882-audit
+
+      - name: Build and record exact current-main baseline
+        shell: bash
+        run: |
+          baseline_sha="$(cat /tmp/issue-882-baseline-sha)"
+          git worktree add /tmp/issue-882-baseline "$baseline_sha"
+          cmake -S /tmp/issue-882-baseline -B /tmp/issue-882-baseline-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/issue-882-baseline-build --parallel 2
+          set +e
+          ctest --test-dir /tmp/issue-882-baseline-build --output-on-failure \
+            --output-junit "$GITHUB_WORKSPACE/issue-882-audit/baseline-ctest.xml" \
+            2>&1 | tee issue-882-audit/ctest-baseline.log
+          printf '%s\n' "${PIPESTATUS[0]}" > issue-882-audit/ctest-baseline.status
+          exit 0
 
       - name: Apply Serena policy fix
         run: python tools/apply_issue_882_unified.py
@@ -58,6 +71,23 @@ jobs:
             tests/serena_zero_draw_tests.cpp -o build/issue-882-focused
           UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
             ./build/issue-882-focused 2>&1 | tee issue-882-audit/focused-ubsan.log
+
+      - name: Regenerate source-bound setup evidence
+        shell: bash
+        run: |
+          # Source-bound generator: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
+          # Provenance contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/baseline_provenance.py
+          python3 scripts/regenerate_setup_baselines.py \
+            --exe build/regidrago_sim \
+            --out-dir results \
+            --max-seed 5000 \
+            --trials 100000 \
+            --matrix-seed 20260705
+          python3 scripts/update_setup_docs.py --repo-root .
+          python3 tests/setup_report_contract_tests.py
+          python3 tests/update_setup_docs_tests.py
+          cp results/simulation_results.csv issue-882-audit/t2_t3_matrix.csv
+          cp results/baseline_manifest.json issue-882-audit/baseline_manifest.json
 
       - name: Record patched full Release suite
         shell: bash
@@ -87,25 +117,6 @@ jobs:
             exit 1
           fi
 
-      - name: Generate canonical T2 and T3 matrix
-        run: |
-          # Aggregate specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
-          ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-882-audit/t2_t3_matrix.csv
-
-      - name: Build and test exact current-main baseline
-        shell: bash
-        run: |
-          baseline_sha="$(cat /tmp/issue-882-baseline-sha)"
-          git worktree add /tmp/issue-882-baseline "$baseline_sha"
-          cmake -S /tmp/issue-882-baseline -B /tmp/issue-882-baseline-build -DCMAKE_BUILD_TYPE=Release
-          cmake --build /tmp/issue-882-baseline-build --parallel 2
-          set +e
-          ctest --test-dir /tmp/issue-882-baseline-build --output-on-failure \
-            --output-junit "$GITHUB_WORKSPACE/issue-882-audit/baseline-ctest.xml" \
-            2>&1 | tee issue-882-audit/ctest-baseline.log
-          printf '%s\n' "${PIPESTATUS[0]}" > issue-882-audit/ctest-baseline.status
-          exit 0
-
       - name: Verify no new full-suite failures
         shell: bash
         run: |
@@ -124,18 +135,11 @@ jobs:
 
           patched = failures("issue-882-audit/patched-ctest.xml")
           baseline = failures("issue-882-audit/baseline-ctest.xml")
-          Path("issue-882-audit/patched-failures.json").write_text(
-              json.dumps(patched, indent=2) + "\n", encoding="utf-8"
-          )
-          Path("issue-882-audit/baseline-failures.json").write_text(
-              json.dumps(baseline, indent=2) + "\n", encoding="utf-8"
-          )
+          Path("issue-882-audit/patched-failures.json").write_text(json.dumps(patched, indent=2) + "\n", encoding="utf-8")
+          Path("issue-882-audit/baseline-failures.json").write_text(json.dumps(baseline, indent=2) + "\n", encoding="utf-8")
           if patched != baseline:
-              raise SystemExit(
-                  "issue 882 changed the unrelated full-suite failure set: "
-                  f"patched={patched} baseline={baseline}"
-              )
-          print(f"identical unrelated failure set: {patched}")
+              raise SystemExit(f"issue 882 changed the full-suite failure set: patched={patched} baseline={baseline}")
+          print(f"identical failure set: {patched}")
           PY
 
       - name: Require validation base is still current main
@@ -150,8 +154,11 @@ jobs:
       - name: Finalize permanent branch
         shell: bash
         run: |
+          rm -f .issue-882.lock .update-setup-docs.lock .results.lock
           git rm tools/apply_issue_882.py tools/apply_issue_882_unified.py .github/workflows/issue-882-validation.yml
-          git add src/trace_engine_v2/part_012.inc src/trace_engine_v2/part_013.inc src/trace_engine_v2/part_014b.inc tests/serena_zero_draw_tests.cpp
+          git add src/trace_engine_v2/part_012.inc src/trace_engine_v2/part_013.inc src/trace_engine_v2/part_014b.inc tests/serena_zero_draw_tests.cpp \
+            README.md docs/REPORT.md docs/TRACE_AUDIT.md results/baseline_manifest.json results/simulation_results.csv
+          git add -A results/traces
           git commit -m "Reject dominated zero-draw Serena fallback (#882)"
           git push origin HEAD:fix/882-serena-zero-draw
           git archive --format=zip HEAD -o issue-882-audit/source.zip

@@ -13,6 +13,9 @@ struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
   static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
   static void run_turn(Engine& engine) { engine.run_turn(); }
+  static bool play_roseanne_vstar_energy_recovery(Engine& engine) {
+    return engine.play_roseanne_vstar_energy_recovery();
+  }
 };
 
 }  // namespace sim
@@ -23,8 +26,116 @@ bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
   return std::find(cards.begin(), cards.end(), card) != cards.end();
 }
 
+int count_card(const std::vector<sim::Card>& cards, const sim::Card card) {
+  return static_cast<int>(std::count(cards.begin(), cards.end(), card));
+}
+
 void expect(const bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);
+}
+
+sim::State roseanne_communication_multimode_state() {
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 0, sim::Tool::None};
+  state.hand = {sim::Card::RoseannesBackup, sim::Card::PokemonCommunication,
+                sim::Card::Dipplin, sim::Card::EarthenVessel,
+                sim::Card::Arven, sim::Card::Arven};
+  state.deck = {sim::Card::Grass};
+  state.discard = {sim::Card::RegidragoVstar, sim::Card::RegidragoVstar,
+                   sim::Card::RegidragoVstar, sim::Card::Fire,
+                   sim::Card::Fire, sim::Card::Fire,
+                   sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::RegidragoVstar,
+                               sim::Card::Fire,
+                               sim::Card::MegaDragonite};
+  state.vstar_power_used = true;
+  return state;
+}
+
+void test_roseanne_communication_multimode_moves_targets_between_zones_at_k0_and_k1() {
+  for (int knowledge = 0; knowledge < 2; ++knowledge) {
+    const sim::Scenario scenario{"issue-837-roseanne-communication-zones",
+                                 sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    const sim::DeckRecipe recipe = sim::baseline_recipe();
+    std::mt19937_64 rng{83700U + static_cast<unsigned>(knowledge)};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::EngineTestAccess::set_state(engine, roseanne_communication_multimode_state());
+    if (knowledge == 1) sim::EngineTestAccess::set_deck_seen(engine);
+
+    // Roseanne's Backup moves the selected Pokémon and Basic Energy from discard
+    // into the deck before Pokémon Communication and Earthen Vessel resolve. The
+    // preflight must use that same exact K0/K1 zone state and remove recovered cards
+    // from current-turn discard tracking:
+    // https://api.pokemontcg.io/v2/cards/swsh9-148
+    // https://api.pokemontcg.io/v2/cards/sm9-152
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    // https://github.com/FlareZ123/pokemon-sims/issues/837
+    expect(sim::EngineTestAccess::play_roseanne_vstar_energy_recovery(engine),
+           "The combined Roseanne, Communication, and Vessel route should be payable");
+
+    const sim::State& after = sim::EngineTestAccess::state(engine);
+    expect(after.supporter_used && contains(after.discard, sim::Card::RoseannesBackup),
+           "Roseanne's Backup should be the consumed Supporter");
+    expect(count_card(after.discard, sim::Card::RegidragoVstar) == 2 &&
+               count_card(after.deck, sim::Card::RegidragoVstar) == 1,
+           "One Regidrago VSTAR must move from discard into the deck");
+    expect(count_card(after.discard, sim::Card::Fire) == 2 &&
+               count_card(after.deck, sim::Card::Fire) == 1,
+           "One Fire Energy must move from discard into the deck");
+    expect(!contains(after.discarded_this_turn, sim::Card::RegidragoVstar) &&
+               !contains(after.discarded_this_turn, sim::Card::Fire) &&
+               contains(after.discarded_this_turn, sim::Card::MegaDragonite),
+           "Recovered cards must leave same-turn discard tracking while the payload remains");
+  }
+}
+
+void test_roseanne_communication_multimode_rejects_locked_or_unpayable_routes() {
+  {
+    const sim::Scenario scenario{"issue-837-item-lock-control",
+                                 sim::DciProfile::StrictJit,
+                                 sim::LockMode::FullItem, false, 4};
+    const sim::DeckRecipe recipe = sim::baseline_recipe();
+    std::mt19937_64 rng{83710};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::EngineTestAccess::set_state(engine, roseanne_communication_multimode_state());
+
+    // Pokémon Communication and Earthen Vessel are Items and cannot supply this
+    // continuation while the modeled full Item lock applies:
+    // https://api.pokemontcg.io/v2/cards/sm9-152
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-scenarios
+    expect(!sim::EngineTestAccess::play_roseanne_vstar_energy_recovery(engine),
+           "The Communication and Vessel route must stay unavailable under Item lock");
+    expect(!sim::EngineTestAccess::state(engine).supporter_used,
+           "A rejected locked route must preserve the Supporter");
+  }
+  {
+    const sim::Scenario scenario{"issue-837-vessel-cost-control",
+                                 sim::DciProfile::StrictJit,
+                                 sim::LockMode::None, false, 4};
+    const sim::DeckRecipe recipe = sim::baseline_recipe();
+    std::mt19937_64 rng{83711};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::State state = roseanne_communication_multimode_state();
+    const auto extra_arven = std::find(state.hand.begin(), state.hand.end(), sim::Card::Arven);
+    state.hand.erase(extra_arven);
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+
+    // After Pokémon Communication returns Dipplin and fetches Regidrago VSTAR,
+    // Earthen Vessel still needs a distinct policy-legal other card to discard. One
+    // protected Arven cannot be counted as a duplicated Supporter cost:
+    // https://api.pokemontcg.io/v2/cards/sm9-152
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    expect(!sim::EngineTestAccess::play_roseanne_vstar_energy_recovery(engine),
+           "The route must be rejected without a distinct Vessel cost");
+    expect(!sim::EngineTestAccess::state(engine).supporter_used,
+           "An unpayable route must preserve Roseanne's Backup");
+  }
 }
 
 void test_roseanne_restores_missing_fire_for_same_turn_vessel_attachment() {
@@ -280,6 +391,8 @@ void test_roseanne_energy_route_still_requires_a_distinct_vessel_cost() {
 
 int main() {
   try {
+    test_roseanne_communication_multimode_moves_targets_between_zones_at_k0_and_k1();
+    test_roseanne_communication_multimode_rejects_locked_or_unpayable_routes();
     test_roseanne_restores_missing_fire_for_same_turn_vessel_attachment();
     test_roseanne_restores_vstar_and_energy_in_one_supporter_play();
     test_roseanne_multimode_uses_payload_as_vessel_cost();

@@ -34,10 +34,10 @@
         prior_turn_benched_regi;
 
     // Legacy Star is a Rule Box Pokémon Ability. Remove Path when an unused VSTAR
-    // Power is already in play, or when an established Regidrago V can still evolve
-    // into an available VSTAR while setup remains unresolved. The exact Legacy Star
-    // selector still decides whether its recovery or discard-seven route is worth
-    // using after Path leaves play:
+    // Power is already in play, or when a prior-turn Regidrago V has the held VSTAR
+    // needed to evolve this turn while setup remains unresolved. The exact Legacy
+    // Star selector still decides whether its recovery or discard-seven route is
+    // worth using after Path leaves play:
     // https://api.pokemontcg.io/v2/cards/swsh12-135
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/swsh6-148
@@ -46,9 +46,11 @@
     const bool unresolved_setup = setup_axis_missing();
     const bool in_play_legacy_star_route = !state_.vstar_power_used && has_vstar() &&
         unresolved_setup;
+    const bool prior_turn_active_regi = active_is_regi_v() && state_.active &&
+        state_.active->entered_turn < state_.turn;
     const bool future_legacy_star_route = !state_.vstar_power_used &&
-        active_is_regi_v() && unresolved_setup &&
-        (hand_count(Card::RegidragoVstar) > 0 || might_be_unseen(Card::RegidragoVstar));
+        prior_turn_active_regi && unresolved_setup &&
+        hand_count(Card::RegidragoVstar) > 0;
 
     return wonder_tag_route || in_play_skyliner_route || held_skyliner_route ||
            in_play_legacy_star_route || future_legacy_star_route;

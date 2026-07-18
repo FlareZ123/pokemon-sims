@@ -20,6 +20,14 @@ struct EngineTestAccess {
 
 namespace {
 
+const sim::DeckRecipe& test_recipe() {
+  // Engine stores the recipe by reference, so this owner must outlive every test Engine:
+  // https://eel.is/c++draft/class.temporary#6.10
+  // https://github.com/FlareZ123/pokemon-sims/issues/907
+  static const sim::DeckRecipe recipe = sim::baseline_recipe();
+  return recipe;
+}
+
 bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
   return std::find(cards.begin(), cards.end(), card) != cards.end();
 }
@@ -28,7 +36,7 @@ sim::Engine make_engine() {
   static const sim::Scenario scenario{"issue-889", sim::DciProfile::StrictJit,
                                       sim::LockMode::None, false, 4};
   static std::mt19937_64 rng{889};
-  return sim::Engine(scenario, sim::baseline_recipe(), rng);
+  return sim::Engine(scenario, test_recipe(), rng);
 }
 
 sim::State base_state() {

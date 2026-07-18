@@ -32,6 +32,14 @@ bool has(const std::vector<sim::Card>& cards, const sim::Card card) {
   return std::find(cards.begin(), cards.end(), card) != cards.end();
 }
 
+const sim::DeckRecipe& test_recipe() {
+  // Engine stores the recipe by reference, so this owner must outlive every test Engine:
+  // https://eel.is/c++draft/class.temporary#6.10
+  // https://github.com/FlareZ123/pokemon-sims/issues/907
+  static const sim::DeckRecipe recipe = sim::baseline_recipe();
+  return recipe;
+}
+
 sim::State base_state() {
   sim::State state;
   state.turn = 3;
@@ -48,7 +56,7 @@ void test_splits_vstar_and_payload_connectors() {
   const sim::Scenario scenario{"arven-fss-blender-contention", sim::DciProfile::NoDiscardControl,
                                sim::LockMode::None, false, 4};
   std::mt19937_64 rng(74501);
-  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  sim::Engine engine(scenario, test_recipe(), rng);
   sim::EngineTestAccess::set_state(engine, base_state());
 
   // Arven can take Brilliant Blender plus Forest Seal Stone. Star Alchemy then
@@ -76,7 +84,7 @@ void test_preserves_vstar_search_without_active_route() {
   const sim::Scenario scenario{"arven-no-active-route", sim::DciProfile::NoDiscardControl,
                                sim::LockMode::None, false, 4};
   std::mt19937_64 rng(74502);
-  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  sim::Engine engine(scenario, test_recipe(), rng);
   sim::State state = base_state();
   state.active = sim::Pokemon{sim::Card::Oricorio, 0, 0, 0};
   sim::EngineTestAccess::set_state(engine, std::move(state));
@@ -94,7 +102,7 @@ void test_preserves_vstar_search_for_new_regidrago() {
   const sim::Scenario scenario{"arven-new-regi", sim::DciProfile::NoDiscardControl,
                                sim::LockMode::None, false, 4};
   std::mt19937_64 rng(74503);
-  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  sim::Engine engine(scenario, test_recipe(), rng);
   sim::State state = base_state();
   state.bench.front().entered_turn = 3;
   sim::EngineTestAccess::set_state(engine, std::move(state));
@@ -111,7 +119,7 @@ void test_preserves_energy_axis_priority() {
   const sim::Scenario scenario{"arven-energy-incomplete", sim::DciProfile::NoDiscardControl,
                                sim::LockMode::None, false, 4};
   std::mt19937_64 rng(74504);
-  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  sim::Engine engine(scenario, test_recipe(), rng);
   sim::State state = base_state();
   state.bench.front().grass = 1;
   sim::EngineTestAccess::set_state(engine, std::move(state));

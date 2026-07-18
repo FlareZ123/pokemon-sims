@@ -18,6 +18,14 @@ struct EngineTestAccess {
 
 namespace {
 
+const sim::DeckRecipe& test_recipe() {
+  // Engine stores the recipe by reference, so this owner must outlive every test Engine:
+  // https://eel.is/c++draft/class.temporary#6.10
+  // https://github.com/FlareZ123/pokemon-sims/issues/907
+  static const sim::DeckRecipe recipe = sim::baseline_recipe();
+  return recipe;
+}
+
 bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
   return std::find(cards.begin(), cards.end(), card) != cards.end();
 }
@@ -41,7 +49,7 @@ void test_free_latias_retreat_precedes_paid_tapu_route() {
                                sim::DciProfile::NoDiscardControl,
                                sim::LockMode::None, true, 4};
   std::mt19937_64 rng(90501);
-  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  sim::Engine engine(scenario, test_recipe(), rng);
   set_ready_tapu_state(engine, true);
 
   // Latias ex makes the Basic Active Tapu Lele-GX's Retreat Cost zero. The free
@@ -67,7 +75,7 @@ void test_paid_tapu_route_remains_when_latias_is_absent() {
                                sim::DciProfile::NoDiscardControl,
                                sim::LockMode::None, true, 4};
   std::mt19937_64 rng(90502);
-  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  sim::Engine engine(scenario, test_recipe(), rng);
   set_ready_tapu_state(engine, false);
 
   // Without Skyliner in play, Tapu Lele-GX still needs its printed one-Colorless
@@ -92,7 +100,7 @@ void test_paid_tapu_route_remains_when_skyliner_is_locked() {
                                sim::DciProfile::NoDiscardControl,
                                sim::LockMode::FullRuleBoxAbility, true, 4};
   std::mt19937_64 rng(90503);
-  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  sim::Engine engine(scenario, test_recipe(), rng);
   set_ready_tapu_state(engine, true);
 
   // The modeled Rule Box Ability lock suppresses Latias ex's Skyliner. The free
@@ -118,7 +126,7 @@ void test_incomplete_vstar_attaches_before_free_retreat() {
                                sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
   std::mt19937_64 rng(90504);
-  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  sim::Engine engine(scenario, test_recipe(), rng);
   sim::State& state = sim::EngineTestAccess::state(engine);
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::TapuLeleGX, 0, 0, 0,

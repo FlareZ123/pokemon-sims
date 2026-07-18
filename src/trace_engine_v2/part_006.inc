@@ -107,6 +107,22 @@
         might_be_unseen(Card::RegidragoV) && might_be_unseen(Card::RegidragoVstar) &&
         might_be_unseen(Card::Crispin) && might_be_unseen(Card::BrilliantBlender) &&
         might_be_unseen(Card::Grass) && might_be_unseen(Card::Fire);
+    if (setup_before_steven_route && flex_fodder &&
+        scenario_.dci == DciProfile::MatchupFlexJit &&
+        has_discardable_copy(Card::ErikasInvitation)) {
+      // Erika's Invitation is the canonical low-impact matchup-flex cost. Using it
+      // preserves the public Fire Energy while the same Mysterious Treasure,
+      // Steven's Resolve, Crispin, Latias ex, and Brilliant Blender route still
+      // reaches the identical turn-two ready state:
+      // https://api.pokemontcg.io/v2/cards/sv3pt5-160
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://api.pokemontcg.io/v2/cards/sm7-145
+      // https://api.pokemontcg.io/v2/cards/sv7-133
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+      // https://github.com/FlareZ123/pokemon-sims/issues/915
+      return Card::ErikasInvitation;
+    }
     if (setup_before_steven_route) {
       // Spending the public Fire Energy lets Mysterious Treasure establish
       // Regidrago V before Steven's Resolve ends turn one. Grass remains for the

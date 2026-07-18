@@ -7,6 +7,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: quick-ball-to-pokemon-communication-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   compare-matrix:
     runs-on: ubuntu-24.04

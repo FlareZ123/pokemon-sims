@@ -24,8 +24,18 @@
     const bool known_no_basic_prize = prizes_known() &&
         std::none_of(state_.prizes.begin(), state_.prizes.end(), is_basic);
     if (known_no_basic_prize) {
-      trace("HOLD ITEM", "R-HEAVYBALL-01; P-KNOWLEDGE-01",
+      // The printed effect has no Basic target after K1 inspection. Retain Heavy Ball
+      // as a legal discard-cost resource and emit the no-op policy decision once for
+      // each equivalent state, even when fixed-point stabilization queries it again:
+      // https://api.pokemontcg.io/v2/cards/swsh10-146
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      // https://github.com/FlareZ123/pokemon-sims/issues/1007
+      if (trace_ != nullptr) {
+        trace_->add_policy_once(
+            state_, "issue-1007-heavy-ball-known-no-basic", state_.turn,
+            "HOLD ITEM", "R-HEAVYBALL-01; P-KNOWLEDGE-01",
             "Known Prize cards contain no Basic Pokemon; retained Heavy Ball as a legal discard cost.");
+      }
       return false;
     }
 

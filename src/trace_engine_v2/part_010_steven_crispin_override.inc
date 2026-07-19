@@ -1,3 +1,100 @@
+  bool issue_1022_banked_route_{false};
+
+  bool wonder_tag_can_bank_steven_for_known_t4_fss_route() const {
+    if (state_.turn != 1 || !scenario_.going_first ||
+        scenario_.dci != DciProfile::StrictJit ||
+        scenario_.locks != LockMode::None || scenario_.max_turn < 4 ||
+        !deck_seen_ || state_.manual_energy_used || !state_.active ||
+        state_.active->card != Card::Oricorio || state_.retreat_used ||
+        bench_space() <= 0 || !need_regi() ||
+        hand_count(Card::RegidragoV) > 0 || in_play(Card::RegidragoV) ||
+        hand_count(Card::StevensResolve) > 0 ||
+        hand_count(Card::Arven) == 0 ||
+        hand_count(Card::BrilliantBlender) == 0 ||
+        hand_count(Card::Grass) == 0 ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) ||
+        state_.vstar_power_used ||
+        !ability_available_for_pokemon(Card::RegidragoVstar)) {
+      return false;
+    }
+
+    // Wonder Tag has established K1. Steven can reserve the missing Basic, Crispin,
+    // and the second Grass Energy. The held opening Grass pays Oricorio's Retreat
+    // Cost, Crispin plus the searched Grass establish GG on T3, and held Arven finds
+    // Forest Seal Stone on T4 so Star Alchemy can supply the known VSTAR before
+    // Brilliant Blender creates the strict-JIT payload:
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Core turn, attachment, evolution, Tool, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1022
+    return deck_count_after_search_started(Card::StevensResolve) > 0 &&
+        deck_count_after_search_started(Card::RegidragoV) > 0 &&
+        deck_count_after_search_started(Card::Crispin) > 0 &&
+        deck_count_after_search_started(Card::Grass) > 0 &&
+        deck_count_after_search_started(Card::Fire) > 0 &&
+        deck_count_after_search_started(Card::ForestSealStone) > 0 &&
+        deck_count_after_search_started(Card::RegidragoVstar) > 0;
+  }
+
+  bool banked_steven_has_known_t4_fss_route() const {
+    return issue_1022_banked_route_ && state_.turn == 2 &&
+        scenario_.going_first && scenario_.dci == DciProfile::StrictJit &&
+        scenario_.locks == LockMode::None && scenario_.max_turn >= 4 &&
+        supporter_allowed() && deck_seen_ && state_.active &&
+        state_.active->card == Card::Oricorio && state_.active->grass >= 1 &&
+        !state_.manual_energy_used && !state_.retreat_used && need_regi() &&
+        hand_count(Card::StevensResolve) > 0 &&
+        hand_count(Card::Arven) > 0 && hand_count(Card::BrilliantBlender) > 0 &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
+        hand_count(Card::RegidragoV) +
+                deck_count_after_search_started(Card::RegidragoV) > 0 &&
+        hand_count(Card::Crispin) +
+                deck_count_after_search_started(Card::Crispin) > 0 &&
+        hand_count(Card::Grass) +
+                deck_count_after_search_started(Card::Grass) > 0 &&
+        deck_count_after_search_started(Card::Fire) > 0 &&
+        deck_count_after_search_started(Card::ForestSealStone) > 0 &&
+        hand_count(Card::RegidragoVstar) +
+                deck_count_after_search_started(Card::RegidragoVstar) > 0;
+  }
+
+  bool play_banked_steven_for_known_t4_fss_route() {
+    if (!banked_steven_has_known_t4_fss_route()) return false;
+
+    remove_one(state_.hand, Card::StevensResolve);
+    state_.discard.push_back(Card::StevensResolve);
+    state_.supporter_used = true;
+    outcome_.used_steven = true;
+    record_deck_search_knowledge("Steven's Resolve");
+    std::vector<Card> found;
+    for (const Card target : {Card::RegidragoV, Card::Crispin, Card::Grass}) {
+      if (hand_count(target) > 0) continue;
+      if (!move_deck_to_hand(target)) {
+        throw std::logic_error("Known T4 Steven-FSS target disappeared");
+      }
+      found.push_back(target);
+    }
+    shuffle(state_.deck);
+    state_.turn_ended = true;
+
+    // These exact three targets preserve held Arven and Blender for T4 while
+    // establishing the Basic and Energy package on T3:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1022
+    trace("PLAY SUPPORTER", "R-STEVEN-01; R-GAME-SUPPORTER; P-COMPRESS-01",
+          "Searched the T4 Steven-FSS package: " + join_cards(found) +
+              ". Turn ended.");
+    return true;
+  }
+
   bool steven_should_yield_to_crispin_mysterious_route() const {
     const bool exact_lock_window = scenario_.locks == LockMode::TurnTwoItem &&
         state_.turn == 1 && !scenario_.going_first && !item_locked();
@@ -225,6 +322,18 @@
   }
 
   Card choose_supporter_after_search_started() {
+    if (wonder_tag_can_bank_steven_for_known_t4_fss_route()) {
+      issue_1022_banked_route_ = true;
+      // Wonder Tag may bank a Supporter on the first player's opening turn even
+      // though that Supporter cannot be played until T2. Select the complete Steven
+      // package instead of Crispin, whose Energy effect is unusable while the Basic
+      // Regidrago axis remains unresolved:
+      // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1022
+      return Card::StevensResolve;
+    }
     if (wonder_tag_can_bank_steven_for_known_t3_blender_route() ||
         (late_steven_vstar_vessel_route_available() &&
          deck_count_after_search_started(Card::StevensResolve) > 0)) {

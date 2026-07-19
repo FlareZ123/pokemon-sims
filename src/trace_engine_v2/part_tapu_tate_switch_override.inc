@@ -233,7 +233,8 @@ bool held_banked_steven_has_known_t3_active_regi_route() const {
       !deck_seen_ || !state_.manual_energy_used || !state_.active ||
       state_.active->card != Card::RegidragoV ||
       hand_count(Card::StevensResolve) == 0 ||
-      hand_count(Card::Grass) == 0 || hand_count(Card::Fire) == 0 ||
+      !((!state_.manual_energy_used && hand_count(Card::Grass) >= 2 && hand_count(Card::Fire) > 0) ||
+        (state_.manual_energy_used && hand_count(Card::Grass) > 0 && hand_count(Card::Fire) > 0)) ||
       !need_vstar() || !need_energy() || !need_payload() ||
       !payload_might_be_in_deck()) {
     return false;

@@ -40,7 +40,9 @@ jobs:
           cat ci-audit-matrix.csv
 
       - name: Package exact audit source
-        run: tar --exclude=.git --exclude=build --exclude=repo-source.tar.gz -czf repo-source.tar.gz .
+        run: |
+          tar --exclude=.git --exclude=build -czf /tmp/repo-source.tar.gz .
+          cp /tmp/repo-source.tar.gz repo-source.tar.gz
 
       - name: Upload audit outputs
         uses: actions/upload-artifact@v7

@@ -40,7 +40,8 @@ jobs:
         # Matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
       - name: Package exact source
         run: |
-          tar --exclude=.git --exclude=build -czf repo-source.tar.gz .
+          tar --exclude=.git --exclude=build --exclude=repo-source.tar.gz -czf /tmp/repo-source.tar.gz .
+          cp /tmp/repo-source.tar.gz repo-source.tar.gz
           git rev-parse HEAD > tested-head.txt
       - name: Upload audit evidence
         uses: actions/upload-artifact@v4

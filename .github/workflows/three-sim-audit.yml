@@ -1,0 +1,51 @@
+name: Three simulate-this audit
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --parallel 2
+
+      - name: Run complete test suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Simulate strict go-second seed 1
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-strict-second-seed1.txt
+
+      - name: Simulate strict go-first seed 43
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 3 | tee trace-strict-first-seed43.txt
+
+      - name: Simulate turn-two Item lock seed 25
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee trace-item-lock-seed25.txt
+
+      - name: Generate T2/T3 setup matrix
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out ci-audit-matrix.csv
+          cat ci-audit-matrix.csv
+
+      - name: Upload audit outputs
+        uses: actions/upload-artifact@v7
+        with:
+          name: three-sim-audit
+          path: |
+            trace-strict-second-seed1.txt
+            trace-strict-first-seed43.txt
+            trace-item-lock-seed25.txt
+            ci-audit-matrix.csv
+          if-no-files-found: error

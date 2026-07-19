@@ -1,11 +1,20 @@
   bool blender_energy_axis_can_finish_this_turn() {
-    if (!strict_payload_timing() || !state_.active ||
-        state_.active->card != Card::RegidragoVstar) {
-      return true;
-    }
+    if (!strict_payload_timing()) return true;
 
-    const int grass_missing = std::max(0, 2 - state_.active->grass);
-    const int fire_missing = std::max(0, 1 - state_.active->fire);
+    const Pokemon* target = target_regi();
+    if (target == nullptr || target->card != Card::RegidragoVstar) return true;
+
+    // Evaluate the intended attacker even while a Basic support Pokémon is Active.
+    // A Latias ex promotion route solves only the Retreat axis; the selected Benched
+    // Regidrago VSTAR must still be able to reach Apex Dragon's GGF cost before a
+    // strict-JIT Brilliant Blender payload expires:
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+    // https://github.com/FlareZ123/pokemon-sims/issues/1031
+    const int grass_missing = std::max(0, 2 - target->grass);
+    const int fire_missing = std::max(0, 1 - target->fire);
     const int energy_missing = grass_missing + fire_missing;
     if (energy_missing == 0) return true;
 
@@ -19,9 +28,6 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/737
-    const Pokemon* target = target_regi();
-    if (target != &*state_.active) return false;
-
     const bool manual_attachment_available = !state_.manual_energy_used;
     const bool one_energy_missing = energy_missing == 1;
     const Card final_energy = grass_missing > 0 ? Card::Grass : Card::Fire;

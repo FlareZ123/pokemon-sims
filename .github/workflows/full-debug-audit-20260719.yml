@@ -1,0 +1,91 @@
+name: Full debug audit 20260719
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Configure Release build
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Release binaries
+        run: cmake --build build --parallel 2
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Pass 1 - strict go-second
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-pass-1.txt
+        # Trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+
+      - name: Pass 2 - strict go-first
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 3 | tee trace-pass-2.txt
+        # Regression source: https://github.com/FlareZ123/pokemon-sims/issues/964
+
+      - name: Pass 3 - Rule Box Ability lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee trace-pass-3.txt
+        # Lock regression source: https://github.com/FlareZ123/pokemon-sims/issues/917
+
+      - name: Additional pass - matchup-flex go-second
+        run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-pass-4.txt
+
+      - name: Additional pass - turn-two Item lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 1 --require-ready-by 3 | tee trace-pass-5.txt
+
+      - name: Additional pass - no-discard-control go-first
+        run: ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 6 --require-ready-by 4 | tee trace-pass-6.txt
+
+      - name: Generate canonical T2 and T3 setup matrix
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out ci-audit-matrix.csv
+          cat ci-audit-matrix.csv
+        # Matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+
+      - name: Scan 1,200 deterministic traces for unused one-shot search targets
+        shell: bash
+        run: |
+          mkdir -p suspicious-traces
+          : > suspicious-summary.txt
+          for scenario in strict-jit/go-first strict-jit/go-second matchup-flex-jit/go-first matchup-flex-jit/go-second no-discard-control/go-first no-discard-control/go-second; do
+            safe_name="${scenario//\//_}"
+            for seed in $(seq 1 200); do
+              trace="suspicious-traces/${safe_name}-${seed}.txt"
+              ./build/regidrago_sim --simulate-this --scenario "$scenario" --seed "$seed" > "$trace"
+              if python3 -c 'import pathlib,re,sys; p=pathlib.Path(sys.argv[1]); lines=p.read_text().splitlines(); bad=[]; search=re.compile(r"(?:WONDER TAG|STAR ALCHEMY) \\| searched (.+)$"); ready=next((i for i,x in enumerate(lines) if " | READY" in x),len(lines)); [(bad.append((i,m.group(1))) if sum(m.group(1) in x for x in lines[i+1:ready])==0 else None) for i,x in enumerate(lines[:ready]) if (m:=search.search(x))]; sys.exit(0 if bad else 1)' "$trace"; then
+                echo "$scenario seed $seed" >> suspicious-summary.txt
+              else
+                rm "$trace"
+              fi
+            done
+          done
+          cat suspicious-summary.txt
+        # Scarce-connector policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+
+      - name: Package exact tested source
+        run: |
+          tar --exclude=.git --exclude=build -czf /tmp/repo-source.tar.gz .
+          cp /tmp/repo-source.tar.gz repo-source.tar.gz
+
+      - name: Upload audit evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: full-debug-audit-20260719
+          path: |
+            trace-pass-*.txt
+            ci-audit-matrix.csv
+            suspicious-summary.txt
+            suspicious-traces/
+            repo-source.tar.gz
+            build/regidrago_sim
+          if-no-files-found: error

@@ -1,0 +1,81 @@
+name: Agent Current-Main Debug Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agent-current-main-debug-audit-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and unified tests
+        run: cmake --build build --parallel 2
+      - name: Run independent simulate-this audit 1
+        run: |
+          # Trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee trace-audit-1.txt
+      - name: Run independent simulate-this audit 2
+        run: |
+          # Evolution, attachment, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 3 | tee trace-audit-2.txt
+      - name: Run independent simulate-this audit 3
+        run: |
+          # DCI implementation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+          # Matchup-flex readiness contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#scope
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-audit-3.txt
+      - name: Capture confirmed regression traces
+        run: |
+          # Steven's Resolve route: https://github.com/FlareZ123/pokemon-sims/issues/952 https://api.pokemontcg.io/v2/cards/sm7-145
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee issue-952.txt
+          # Quick Ball route: https://github.com/FlareZ123/pokemon-sims/issues/953 https://api.pokemontcg.io/v2/cards/swsh1-179
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 19 --require-ready-by 3 | tee issue-953.txt
+          # Earthen Vessel route remains a claimed open issue until its branch lands:
+          # https://github.com/FlareZ123/pokemon-sims/issues/954
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 42 | tee issue-954.txt
+      - name: Generate canonical T2 and T3 matrix
+        run: |
+          # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Archive exact tested source
+        run: |
+          git rev-parse HEAD > tested-head.txt
+          git archive --format=tar.gz --output=tested-source.tar.gz HEAD
+      - name: Upload exact audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-current-main-debug-audit-${{ github.run_attempt }}
+          path: |
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+            trace-audit-*.txt
+            issue-*.txt
+            t2-t3-matrix.csv
+            tested-head.txt
+            tested-source.tar.gz
+          if-no-files-found: error
+      - name: Require every confirmed regression deadline
+        run: |
+          # Strict-JIT Earthen Vessel must preserve the payload outlet until the VSTAR-card turn:
+          # https://github.com/FlareZ123/pokemon-sims/issues/954
+          grep -q "T3 | READY" issue-954.txt

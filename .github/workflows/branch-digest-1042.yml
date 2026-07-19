@@ -1,0 +1,26 @@
+name: Branch digest 1042
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  digest:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compute simulator source digest
+        run: |
+          python -c "from pathlib import Path; from scripts.baseline_provenance import simulator_policy_source_digest; print(simulator_policy_source_digest(Path('.')))" | tee actual-digest.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: branch-digest-1042
+          path: actual-digest.txt
+          if-no-files-found: error

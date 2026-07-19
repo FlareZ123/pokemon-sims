@@ -45,8 +45,9 @@ sim::State live_route_state() {
 
 sim::Card target_for(sim::State state, const sim::LockMode lock = sim::LockMode::None) {
   const sim::DeckRecipe recipe = sim::baseline_recipe();
+  const sim::Scenario selected = scenario(lock);
   std::mt19937_64 rng{976};
-  sim::Engine engine(scenario(lock), recipe, rng);
+  sim::Engine engine(selected, recipe, rng);
   sim::EngineTestAccess::set_state(engine, std::move(state));
   sim::EngineTestAccess::set_deck_seen(engine);
   return sim::EngineTestAccess::fss_target(engine);

@@ -146,6 +146,16 @@ add_test(NAME trace_issue_1085_fss_crispin_next_turn
   COMMAND ${CMAKE_COMMAND}
     -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
     -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_issue_1085_fss_crispin_next_turn.cmake)
+# Wonder Tag must select Serena when a held manual attachment completes GGF and
+# Serena can establish the strict-JIT payload without spending Legacy Star:
+# https://api.pokemontcg.io/v2/cards/cel25c-60_A
+# https://api.pokemontcg.io/v2/cards/swsh12-164
+# https://api.pokemontcg.io/v2/cards/swsh12-136
+# https://github.com/FlareZ123/pokemon-sims/issues/1086
+add_test(NAME trace_issue_1086_wonder_tag_serena_payload
+  COMMAND ${CMAKE_COMMAND}
+    -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_issue_1086_wonder_tag_serena_payload.cmake)
 add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
 set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)
 

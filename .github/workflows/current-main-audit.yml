@@ -1,0 +1,49 @@
+name: Current main audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel 2
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Run three independent simulate-this traces
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 85 --require-ready-by 4 | tee trace-3.txt
+      - name: Generate current T2/T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+      - name: Package exact source
+        run: |
+          tar --exclude=.git --exclude=build -czf /tmp/repo-source.tar.gz .
+          cp /tmp/repo-source.tar.gz repo-source.tar.gz
+          git rev-parse HEAD > tested-head.txt
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-audit
+          path: |
+            trace-*.txt
+            t2-t3-matrix.csv
+            repo-source.tar.gz
+            tested-head.txt
+            build/regidrago_sim
+            build/regidrago_unified_tests
+          if-no-files-found: error

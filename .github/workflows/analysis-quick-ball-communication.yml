@@ -17,6 +17,8 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -81,6 +83,7 @@ jobs:
           git diff "${{ github.event.pull_request.base.sha }}...HEAD" > analysis-results/analysis.patch
 
       - name: Upload comparison evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: quick-ball-to-communication-${{ github.run_attempt }}

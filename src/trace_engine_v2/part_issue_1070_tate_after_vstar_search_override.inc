@@ -2,7 +2,7 @@
     if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 ||
         hand_count(Card::RegidragoVstar) == 0 ||
         hand_count(Card::BrilliantBlender) == 0 || item_locked() ||
-        !need_active_vstar() || !need_payload() ||
+        !need_active_vstar() || !strict_payload_timing() ||
         !payload_might_be_in_deck() || can_free_retreat_with_latias()) {
       return false;
     }
@@ -20,14 +20,15 @@
       // Star Alchemy has already placed Regidrago VSTAR in hand. Preserve Tate & Liza
       // through the current fixed-point pass so the prior-turn GGF Basic evolves first;
       // Tate's switch mode then promotes it and the held Brilliant Blender supplies the
-      // strict-JIT payload. Draw mode would shuffle every deterministic route piece:
+      // current-turn JIT payload. A payload discarded on an earlier turn does not
+      // satisfy strict or matchup-flex JIT timing:
       // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
       // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
       // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
       // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
       // Supporter, evolution, switching, and Item procedure: https://www.pokemon.com/us/pokemon-tcg/rules
       // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-      // Strict-JIT payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+      // Strict and matchup-flex JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
       // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1070
       if (trace_ != nullptr) {
         trace_->add_policy_once(

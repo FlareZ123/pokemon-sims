@@ -15,8 +15,18 @@
     // is_payload is the A/S readiness set. Dipplin is a legal Dragon search
     // target, while maintainer policy keeps it out of payload-discard routing:
     // https://api.pokemontcg.io/v2/cards/sv6-127
+    // A strict-JIT Treasure payload cost must share the turn in which the Active
+    // Regidrago VSTAR can finish Apex Dragon's GGF Energy cost. Preserve the
+    // one-discard outlet when the Energy axis cannot complete until a later turn:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/951
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
-                                 std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+                                  blender_energy_axis_can_finish_this_turn() &&
+                                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
     // Mysterious Treasure searches for a Psychic or Dragon Pokémon. At K0, a target
     // remains plausible only when a fixed-list copy is not accounted for in public
     // zones. At K1, the inspected deck is checked exactly before paying the cost:

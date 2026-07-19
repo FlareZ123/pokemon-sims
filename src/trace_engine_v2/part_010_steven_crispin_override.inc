@@ -192,6 +192,38 @@
            deck_count_after_search_started(Card::Fire) > 0;
   }
 
+  std::optional<Card> late_steven_payload_treasure_bridge_payload() const {
+    if (!deck_seen_ || state_.turn < 2 || state_.turn >= scenario_.max_turn ||
+        scenario_.locks != LockMode::None || !supporter_allowed() || item_locked() ||
+        !state_.active || state_.active->card != Card::RegidragoVstar ||
+        state_.active->grass < 2 || state_.active->fire < 1 ||
+        !need_payload() || hand_count(Card::StevensResolve) == 0 ||
+        hand_count(Card::MysteriousTreasure) == 0 ||
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return std::nullopt;
+    }
+
+    const int treasure_targets = static_cast<int>(std::count_if(
+        state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic));
+    if (treasure_targets < 2) return std::nullopt;
+
+    // Steven may search a Dragon payload into hand, end the current turn, and leave
+    // a second Psychic or Dragon Pokemon in deck. On the following turn the held
+    // Mysterious Treasure legally discards that searched payload before finding the
+    // remaining target, so the payload enters discard on the exact JIT ready turn:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Supporter, Item, and attack-cost procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // JIT and earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1023
+    for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
+                               Card::DialgaGX, Card::GoodraVstar}) {
+      if (deck_count_after_search_started(payload) > 0) return payload;
+    }
+    return std::nullopt;
+  }
+
   Card choose_supporter_after_search_started() {
     if (wonder_tag_can_bank_steven_for_known_t3_blender_route() ||
         (late_steven_vstar_vessel_route_available() &&
@@ -268,5 +300,6 @@
         late_steven_has_known_t3_compression_route() ||
         banked_steven_has_known_t3_blender_route() ||
         late_steven_has_active_regidrago_t3_blender_route() ||
-        late_steven_vstar_vessel_route_available();
+        late_steven_vstar_vessel_route_available() ||
+        late_steven_payload_treasure_bridge_payload().has_value();
   }

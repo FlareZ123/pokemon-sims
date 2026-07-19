@@ -1,0 +1,33 @@
+name: Apply issue 1017 patch
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/agent-patches/issue-1017.patch'
+      - '.github/workflows/agent-apply-issue-1017.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Apply validated patch
+        shell: bash
+        run: |
+          git apply --check .github/agent-patches/issue-1017.patch
+          git apply .github/agent-patches/issue-1017.patch
+          rm .github/agent-patches/issue-1017.patch
+          rm .github/workflows/agent-apply-issue-1017.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix late Steven VSTAR-Vessel routes (#1017)"
+          git push origin HEAD:${{ github.head_ref }}

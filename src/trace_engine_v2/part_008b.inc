@@ -4,8 +4,18 @@
     const bool known_no_basic_prize = prizes_known() &&
         std::none_of(state_.prizes.begin(), state_.prizes.end(), is_basic);
     if (known_no_basic_prize) {
-      trace("HOLD ITEM", "R-HEAVYBALL-01; P-KNOWLEDGE-01",
+      // Hisuian Heavy Ball remains a legal held discard-cost resource after K1 proves
+      // that no Basic Pokémon is in the Prize cards. Stabilization may re-evaluate this
+      // unchanged no-op state, so expose one decision per exact state:
+      // https://api.pokemontcg.io/v2/cards/swsh10-146
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      // https://github.com/FlareZ123/pokemon-sims/issues/1007
+      if (trace_ != nullptr) {
+        trace_->add_policy_once(
+            state_, "issue-1007-heavy-ball-known-no-basic", state_.turn,
+            "HOLD ITEM", "R-HEAVYBALL-01; P-KNOWLEDGE-01",
             "Known Prize cards contain no Basic Pokemon; retained Heavy Ball as a legal discard cost.");
+      }
       return false;
     }
 
@@ -25,9 +35,9 @@
         (grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
         (fire_needed() == 1 && might_be_unseen(Card::Fire));
     const bool payload_still_in_deck = might_be_unseen(Card::MegaDragonite) ||
-                                        might_be_unseen(Card::Dragapult) ||
-                                        might_be_unseen(Card::GoodraVstar) ||
-                                        might_be_unseen(Card::DialgaGX);
+                                         might_be_unseen(Card::Dragapult) ||
+                                         might_be_unseen(Card::GoodraVstar) ||
+                                         might_be_unseen(Card::DialgaGX);
     // P-COMPRESS-01: with one missing Energy and Professor Burnet as the live
     // current-turn payload Supporter, Oricorio plus a manual attachment preserves
     // the Supporter slot. Tapu Lele-GX -> Crispin would consume it instead.

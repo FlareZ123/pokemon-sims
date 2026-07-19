@@ -1,3 +1,36 @@
+  bool held_payload_completes_current_turn_without_gladion() const {
+    if (!supporter_allowed() || !prizes_known() || !need_payload() ||
+        !can_play_payload_this_turn() ||
+        std::none_of(state_.hand.begin(), state_.hand.end(), is_payload) ||
+        !prize_payload_one_discard_outlet_has_legal_target()) {
+      return false;
+    }
+
+    // Project the rest of the exact public turn after reserving the Supporter play.
+    // A held permitted Dragon must pay a legally targeted one-discard Item and the
+    // remaining held resources must still complete Active VSTAR, GGF, and payload:
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Supporter, Item, attachment, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest complete-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1056
+    std::mt19937_64 shadow_rng = rng_;
+    Engine projected(scenario_, recipe_, shadow_rng);
+    projected.state_ = state_;
+    projected.deck_seen_ = deck_seen_;
+    projected.prizes_revealed_ = prizes_revealed_;
+    projected.state_.supporter_used = true;
+    projected.run_turn();
+
+    return projected.active_is_vstar() && projected.state_.active->grass >= 2 &&
+        projected.state_.active->fire >= 1 && projected.payload_ready();
+  }
+
   bool known_gladion_turo_t4_promotion_route() const {
     if (!prizes_known() || state_.turn != 1 || scenario_.going_first ||
         scenario_.dci != DciProfile::StrictJit ||
@@ -23,6 +56,23 @@
   }
 
   bool play_gladion() {
+    if (held_payload_completes_current_turn_without_gladion()) {
+      // The held Dragon and legal one-discard Item already reach the same earliest
+      // ready state. Preserve Gladion, the Supporter play, and Prize configuration:
+      // https://api.pokemontcg.io/v2/cards/sm4-95
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://api.pokemontcg.io/v2/cards/swsh1-179
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://github.com/FlareZ123/pokemon-sims/issues/1056
+      if (trace_ != nullptr) {
+        trace_->add_policy_once(
+            state_, "issue-1056-held-live-payload", state_.turn,
+            "HOLD SUPPORTER", "R-GLADION-01; P-DCI-01; P-COMPRESS-01",
+            "Retained Gladion because a held Dragon and legal one-discard Item already complete the current-turn ready route.");
+      }
+      return false;
+    }
+
     if (!known_gladion_turo_t4_promotion_route()) {
       return play_gladion_issue1030_original();
     }

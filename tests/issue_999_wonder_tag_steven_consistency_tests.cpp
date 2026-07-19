@@ -92,16 +92,18 @@ void test_proven_faster_crispin_mysterious_route_still_wins() {
   state.turn = 1;
   state.active = sim::Pokemon{sim::Card::RegidragoV, 0};
   state.hand = {sim::Card::StevensResolve, sim::Card::MysteriousTreasure,
-                sim::Card::ErikasInvitation, sim::Card::Grass};
+                sim::Card::Dipplin, sim::Card::Grass};
   state.deck = {sim::Card::RegidragoVstar, sim::Card::Crispin,
                 sim::Card::Grass, sim::Card::Fire,
                 sim::Card::MegaDragonite};
   sim::EngineTestAccess::set_state(engine, std::move(state), true);
 
-  // The existing #774 exception remains authoritative when Mysterious Treasure and
-  // Crispin create the faster route before scheduled Item lock:
+  // Dipplin has no legal evolution route in this deck and is the strict-DCI search
+  // cost that keeps the established Mysterious Treasure plus Crispin line payable:
+  // https://api.pokemontcg.io/v2/cards/sv6-127
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
   // https://github.com/FlareZ123/pokemon-sims/issues/774
   // https://github.com/FlareZ123/pokemon-sims/issues/999
   expect(!sim::EngineTestAccess::should_play_steven(engine),

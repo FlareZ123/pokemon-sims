@@ -42,14 +42,6 @@
     // Direct current-turn axes first. A recovered Basic cannot be an immediate
     // connector when the Bench is full, although it remains valid future fodder.
     if (need_regi() && can_bench_recovered_basic && prized(Card::RegidragoV)) selected = Card::RegidragoV;
-    else if (needs_pineco_connector() && prized(Card::Pineco)) {
-      // Hisuian Heavy Ball may recover any Basic Pokémon from the Prize cards.
-      // Pineco is the Basic half of the isolated Forretress ex combo fixture:
-      // https://api.pokemontcg.io/v2/cards/swsh10-146
-      // https://api.pokemontcg.io/v2/cards/sv4pt5-1
-      // https://github.com/FlareZ123/pokemon-sims/issues/972
-      selected = Card::Pineco;
-    }
     else if (oricorio_preserves_burnet && prized(Card::Oricorio)) selected = Card::Oricorio;
     else if (can_bench_recovered_basic && needs_tapu_connector() && prized(Card::TapuLeleGX)) selected = Card::TapuLeleGX;
     else if (can_bench_recovered_basic && needs_oricorio_connector() && prized(Card::Oricorio)) selected = Card::Oricorio;
@@ -76,7 +68,7 @@
 
     // Prefer future connectors whose abilities can function in this scenario.
     if (selected == Card::HisuianHeavyBall) {
-      for (const Card candidate : {Card::RegidragoV, Card::Pineco, Card::Oricorio, Card::TapuLeleGX,
+      for (const Card candidate : {Card::RegidragoV, Card::Oricorio, Card::TapuLeleGX,
                                    Card::LatiasEx, Card::DialgaGX, Card::MawileGX}) {
         if ((candidate == Card::TapuLeleGX || candidate == Card::LatiasEx) &&
             !ability_available_for_pokemon(candidate)) continue;
@@ -87,7 +79,7 @@
     // If all functional connector choices are absent, still take any Basic as
     // future legal discard fodder rather than leave it prized.
     if (selected == Card::HisuianHeavyBall) {
-      for (const Card candidate : {Card::RegidragoV, Card::Pineco, Card::TapuLeleGX, Card::Oricorio,
+      for (const Card candidate : {Card::RegidragoV, Card::TapuLeleGX, Card::Oricorio,
                                    Card::LatiasEx, Card::DialgaGX, Card::MawileGX}) {
         if (prized(candidate)) { selected = candidate; break; }
       }

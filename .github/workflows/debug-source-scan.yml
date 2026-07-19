@@ -59,7 +59,7 @@ jobs:
         run: |
           set -euo pipefail
           git rev-parse HEAD > tested-head.txt
-          tar -czf source-tree.tar.gz .github CMakeLists.txt README.md docs results src tests
+          git archive --format=tar.gz --output=source-tree.tar.gz HEAD
       - name: Upload audit evidence
         if: always()
         uses: actions/upload-artifact@v4

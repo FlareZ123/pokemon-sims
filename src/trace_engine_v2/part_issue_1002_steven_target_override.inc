@@ -1,6 +1,47 @@
+  bool steven_zero_energy_latias_vessel_candidate() const {
+    if (!deck_seen_ || !supporter_allowed() || hand_count(Card::StevensResolve) == 0 ||
+        scenario_.dci != DciProfile::StrictJit || scenario_.locks != LockMode::None ||
+        state_.turn + 2 > scenario_.max_turn || !state_.active ||
+        !is_basic(state_.active->card) || state_.active->card == Card::RegidragoV ||
+        in_play(Card::LatiasEx) || bench_space() == 0 ||
+        !ability_available_for_pokemon(Card::LatiasEx) ||
+        hand_count(Card::LatiasEx) > 0 || hand_count(Card::EarthenVessel) > 0 ||
+        hand_count(Card::RegidragoVstar) == 0 ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    const Pokemon* setup_regi = target_regi();
+    if (setup_regi == nullptr || setup_regi->card != Card::RegidragoV ||
+        setup_regi->grass != 0 || setup_regi->fire != 0) {
+      return false;
+    }
+
+    // Steven may search any three cards. K1 proves the complete two-turn route only
+    // when Crispin, Latias ex, Earthen Vessel, two Grass Energy, and one Fire Energy
+    // remain in deck. Two remaining Basic Energy cards preserve Vessel's legal T3
+    // search after the intervening draw, including when that draw is the last Grass:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core turn, attachment, evolution, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1 and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/1009
+    return deck_count_after_search_started(Card::Crispin) > 0 &&
+        deck_count_after_search_started(Card::LatiasEx) > 0 &&
+        deck_count_after_search_started(Card::EarthenVessel) > 0 &&
+        deck_count_after_search_started(Card::Grass) >= 2 &&
+        deck_count_after_search_started(Card::Fire) >= 1;
+  }
+
   bool play_steven() {
     const int regi_before = hand_count(Card::RegidragoV);
+    const int vstar_before = hand_count(Card::RegidragoVstar);
     const int crispin_before = hand_count(Card::Crispin);
+    const int latias_before = hand_count(Card::LatiasEx);
+    const int vessel_before = hand_count(Card::EarthenVessel);
     const int gladion_before = hand_count(Card::Gladion);
     const bool all_vstar_copies_held =
         hand_count(Card::RegidragoVstar) == total_copies(Card::RegidragoVstar);
@@ -8,13 +49,64 @@
         is_basic(state_.active->card) &&
         state_.active->card != Card::RegidragoV &&
         !in_play(Card::LatiasEx);
+    const bool zero_energy_latias_vessel_candidate =
+        steven_zero_energy_latias_vessel_candidate();
 
     const bool played = play_steven_issue1002_empty_deck_original();
     if (!played) return false;
 
     const int regi_found = hand_count(Card::RegidragoV) - regi_before;
+    const int vstar_found = hand_count(Card::RegidragoVstar) - vstar_before;
     const int crispin_found = hand_count(Card::Crispin) - crispin_before;
+    const int latias_found = hand_count(Card::LatiasEx) - latias_before;
+    const int vessel_found = hand_count(Card::EarthenVessel) - vessel_before;
     const int gladion_found = hand_count(Card::Gladion) - gladion_before;
+
+    auto latias_in_deck = std::find(state_.deck.begin(), state_.deck.end(), Card::LatiasEx);
+    auto vessel_in_deck =
+        std::find(state_.deck.begin(), state_.deck.end(), Card::EarthenVessel);
+    const bool generic_fallback_displaced_complete_route =
+        zero_energy_latias_vessel_candidate && regi_found == 1 && vstar_found == 1 &&
+        crispin_found == 1 && latias_found == 0 && vessel_found == 0 &&
+        latias_in_deck != state_.deck.end() && vessel_in_deck != state_.deck.end();
+
+    if (generic_fallback_displaced_complete_route) {
+      // With the zero-Energy Regidrago V already in play, a VSTAR and Dragon payload
+      // already held, and a non-Regidrago Basic Active, Crispin + Latias ex + Earthen
+      // Vessel is the shortest complete observable route. Crispin and the manual
+      // attachment establish GF on T2; Latias supplies free Retreat; T3 Vessel
+      // discards the held Dragon, searches the final Grass, and preserves strict JIT:
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+      // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/1009
+      if (!remove_one(state_.hand, Card::RegidragoV) ||
+          !remove_one(state_.hand, Card::RegidragoVstar)) {
+        throw std::logic_error("Redundant Steven fallback targets disappeared");
+      }
+      *latias_in_deck = Card::RegidragoV;
+      *vessel_in_deck = Card::RegidragoVstar;
+      state_.hand.push_back(Card::LatiasEx);
+      state_.hand.push_back(Card::EarthenVessel);
+
+      // The delegated Steven resolution already randomized the remaining deck. Swap
+      // only selected identities in place, preserving deck size and random order:
+      // https://api.pokemontcg.io/v2/cards/sm7-145
+      // https://github.com/FlareZ123/pokemon-sims/issues/1009
+      if (trace_ != nullptr && trace_->enabled && !trace_->lines.empty() &&
+          trace_->lines.back().find("PLAY SUPPORTER") != std::string::npos &&
+          trace_->lines.back().find("Searched up to 3 cards") != std::string::npos) {
+        trace_->lines.pop_back();
+      }
+      trace("PLAY SUPPORTER", "R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
+            "Searched up to 3 cards: Crispin, Latias ex, Earthen Vessel. Turn ended.");
+      return true;
+    }
+
     const auto gladion_in_deck =
         std::find(state_.deck.begin(), state_.deck.end(), Card::Gladion);
     const bool known_prized_latias_bridge = prizes_known() &&

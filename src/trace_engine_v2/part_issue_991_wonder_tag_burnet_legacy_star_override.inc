@@ -180,6 +180,34 @@
     return held_crispin_completes_ggf || held_gladion_has_known_axis;
   }
 
+  bool wonder_tag_duplicate_held_gladion_has_no_marginal_route() const {
+    if (!deck_seen_ || !prizes_known() || !supporter_allowed() ||
+        hand_count(Card::TapuLeleGX) == 0 ||
+        hand_count(Card::Gladion) == 0 ||
+        deck_count_after_search_started(Card::Gladion) == 0) {
+      return false;
+    }
+
+    const bool prized_regi = need_regi() &&
+        deck_count_after_search_started(Card::RegidragoV) == 0 &&
+        prize_count_after_reveal(Card::RegidragoV) > 0;
+    const bool prized_vstar = need_vstar() &&
+        deck_count_after_search_started(Card::RegidragoVstar) == 0 &&
+        prize_count_after_reveal(Card::RegidragoVstar) > 0;
+    const bool prized_final_energy =
+        final_prized_energy_for_gladion().has_value();
+
+    // Wonder Tag would select Gladion for the same known Prize axis that the held
+    // copy already resolves. A duplicate Gladion cannot create a second Supporter
+    // action this turn, so preserve Tapu Lele-GX and its Bench slot:
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // One Supporter per turn: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1039
+    return prized_regi || prized_vstar || prized_final_energy;
+  }
+
   void trace_tapu_hold_once(std::string_view key, std::string_view rules,
                             std::string_view detail) {
     // Fixed-point stabilization may re-query the same legal retention decision.
@@ -195,6 +223,13 @@
   }
 
   bool bench_tapu_if_useful() {
+    if (wonder_tag_duplicate_held_gladion_has_no_marginal_route()) {
+      trace_tapu_hold_once(
+          "issue-1039-duplicate-held-gladion",
+          "R-TAPU-01; R-GAME-SUPPORTER; P-CONNECTOR-01; P-KNOWLEDGE-01",
+          "Retained the second Tapu because held Gladion already resolves the same known Prize route.");
+      return false;
+    }
     if (wonder_tag_duplicate_held_crispin_has_no_marginal_route()) {
       trace_tapu_hold_once(
           "issue-1038-duplicate-held-crispin",

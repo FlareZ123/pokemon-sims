@@ -51,6 +51,18 @@ jobs:
         # Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
         # Confirmed report: https://github.com/FlareZ123/pokemon-sims/issues/999
 
+      - name: Reproduce duplicate Steven target candidate
+        shell: bash
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 455 | tee trace-steven-duplicate-target.txt
+          grep -F "PLAY SUPPORTER" trace-steven-duplicate-target.txt | grep -F "Regidrago V, Crispin, Crispin"
+          grep -F "DEBUG ONLY: prizes=" trace-steven-duplicate-target.txt | grep -F "Latias ex"
+          grep -F "SETUP FAILURE" trace-steven-duplicate-target.txt
+        # Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+        # Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+        # Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+        # Prior simultaneous-target deduplication specification: https://github.com/FlareZ123/pokemon-sims/issues/867
+
       - name: Generate canonical T2 and T3 matrix
         run: |
           ./build/regidrago_sim --trials 100000 --seed 20260705 --out post-994-matrix.csv
@@ -79,7 +91,7 @@ jobs:
           results = []
 
           for scenario in scenarios:
-              for seed in range(1, 201):
+              for seed in range(1, 501):
                   trace = subprocess.run(
                       [str(binary), "--simulate-this", "--scenario", scenario, "--seed", str(seed)],
                       check=True,
@@ -105,7 +117,7 @@ jobs:
 
           pathlib.Path("unused-search-summary.txt").write_text("\n".join(results) + ("\n" if results else ""))
           print(f"unused one-shot targets: {len(results)}")
-          for row in results[:200]:
+          for row in results[:300]:
               print(row)
           PY
           python3 /tmp/scan_unused.py
@@ -113,7 +125,8 @@ jobs:
 
       - name: Package exact tested source
         run: |
-          tar --exclude=.git --exclude=build -czf repo-source.tar.gz .
+          tar --exclude=.git --exclude=build --exclude=repo-source.tar.gz -czf /tmp/repo-source.tar.gz .
+          cp /tmp/repo-source.tar.gz repo-source.tar.gz
 
       - name: Upload audit evidence
         uses: actions/upload-artifact@v7
@@ -122,6 +135,7 @@ jobs:
           path: |
             trace-pass-*.txt
             trace-issue-999.txt
+            trace-steven-duplicate-target.txt
             post-994-matrix.csv
             unused-search-summary.txt
             repo-source.tar.gz

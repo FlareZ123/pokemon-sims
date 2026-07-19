@@ -44,6 +44,46 @@
     return vstar_can_exist && vstar_can_be_active;
   }
 
+  bool fss_should_hold_for_complete_quick_ball_route() const {
+    const bool powered_prior_turn_regi = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV &&
+              pokemon.entered_turn < state_.turn && pokemon.grass >= 2 &&
+              pokemon.fire >= 1;
+        });
+    const bool held_payload =
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+
+    // Arven has already consumed the Supporter play in this exact K1 window. A held
+    // VSTAR, Quick Ball plus Dragon cost, deck-resident Latias ex, and the completed
+    // GGF Regidrago line solve evolution, strict-JIT payload, and Active position.
+    // The held one-copy Blender confirms a second complete payload route, so searching
+    // an unusable Burnet loses the once-per-game Star Alchemy without advancing setup.
+    // The VSTAR-card and Active-position axes are already represented by held VSTAR,
+    // the prior-turn Benched Regidrago V, and the Latias route. Their generic missing-
+    // axis helpers therefore read false before those held cards resolve:
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/979
+    return deck_seen_ && !supporter_allowed() && !item_locked() &&
+        !state_.retreat_used && can_play_payload_this_turn() &&
+        need_payload() && !need_energy() && powered_prior_turn_regi &&
+        bench_space() > 0 && state_.active && is_basic(state_.active->card) &&
+        ability_available_for_pokemon(Card::LatiasEx) && !in_play(Card::LatiasEx) &&
+        deck_count_after_search_started(Card::LatiasEx) > 0 &&
+        hand_count(Card::RegidragoVstar) > 0 && hand_count(Card::QuickBall) > 0 &&
+        held_payload && hand_count(Card::BrilliantBlender) > 0 &&
+        deck_count_after_search_started(Card::BrilliantBlender) == 0;
+  }
+
   Card fss_target_after_search_started() const {
     // Star Alchemy can search Tate & Liza to promote a GGF-complete Benched
     // Regidrago VSTAR. A payable held one-discard Item can establish the strict-JIT
@@ -63,6 +103,16 @@
         has_live_one_discard_hand_payload_line() &&
         deck_count_after_search_started(Card::TateLiza) > 0;
     if (tate_held_payload_route) return Card::TateLiza;
+
+    if (fss_should_hold_for_complete_quick_ball_route()) {
+      // Brilliant Blender is already held and is a singleton. Returning that absent
+      // K1 target lets the active Forest Seal Stone guard retain Star Alchemy because
+      // no searched card is needed to advance the complete current-turn route:
+      // https://api.pokemontcg.io/v2/cards/sv8-164
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_011_fss_latias_override.inc#L89-L100
+      // https://github.com/FlareZ123/pokemon-sims/issues/979
+      return Card::BrilliantBlender;
+    }
 
     if (fss_should_take_crispin_over_redundant_blender()) return Card::Crispin;
 

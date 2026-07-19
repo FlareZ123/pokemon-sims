@@ -38,6 +38,33 @@
     // a legal turn-one setup connector: https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/swsh12-135
     if (state_.turn == 1 && !scenario_.going_first && should_play_steven() &&
         deck_count_after_search_started(Card::StevensResolve) > 0) return Card::StevensResolve;
+
+    const bool held_manual_completes_energy = !state_.manual_energy_used &&
+        ((grass_needed() == 1 && fire_needed() == 0 && hand_count(Card::Grass) > 0) ||
+         (grass_needed() == 0 && fire_needed() == 1 && hand_count(Card::Fire) > 0));
+    const bool current_turn_active_vstar_route = active_is_vstar() ||
+        (state_.active && state_.active->card == Card::RegidragoV &&
+         state_.active->entered_turn < state_.turn && hand_count(Card::RegidragoVstar) > 0);
+    const bool held_payload =
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    // Serena's draw mode may discard a held Dragon payload. When one held Basic
+    // Energy and the unused manual attachment already complete GGF, Wonder Tag must
+    // select that deterministic current-turn payload Supporter before an unused
+    // Crispin Energy connector. This preserves the once-per-game Legacy Star:
+    // Wonder Tag: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Regidrago VSTAR and Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Supporter, evolution, and manual attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Strict-JIT payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1086
+    const bool serena_completes_current_turn_route = strict_payload_timing() &&
+        supporter_allowed() && need_payload() && can_play_payload_this_turn() &&
+        held_manual_completes_energy && current_turn_active_vstar_route && held_payload &&
+        deck_count_after_search_started(Card::Serena) > 0;
+    if (serena_completes_current_turn_route) return Card::Serena;
+
     // Crispin source: https://api.pokemontcg.io/v2/cards/sv7-133
     // Do not choose it after K1 if the inspected deck contains no needed Energy.
     if (need_energy() && crispin_can_advance_energy_axis() && deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin;

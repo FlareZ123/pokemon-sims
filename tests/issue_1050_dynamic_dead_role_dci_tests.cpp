@@ -7,7 +7,7 @@
 
 namespace sim { struct EngineTestAccess {}; }
 
-// Re-run this exact regression after synchronizing the branch with current main.
+// Final-head regression after synchronizing the branch with current main.
 int main() {
   const auto scenario = sim::scenario_by_label("no-discard-control/go-first");
   if (!scenario) throw std::runtime_error("Missing no-discard-control/go-first scenario");

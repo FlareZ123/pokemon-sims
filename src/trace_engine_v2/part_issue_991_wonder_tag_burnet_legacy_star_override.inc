@@ -62,6 +62,29 @@
     return crispin_and_manual_complete_ggf;
   }
 
+  bool wonder_tag_gladion_is_redundant_with_held_manual_energy() const {
+    if (!deck_seen_ || !supporter_allowed() || state_.manual_energy_used ||
+        hand_count(Card::TapuLeleGX) == 0 || hand_count(Card::Gladion) > 0 ||
+        !might_be_unseen(Card::Gladion)) {
+      return false;
+    }
+
+    const std::optional<Card> prized_energy = final_prized_energy_for_gladion();
+
+    // Gladion exchanges itself for a Prize card. When the exact Prize-target type
+    // is already held and the unused manual attachment completes GGF, another Tapu
+    // Lele-GX and Wonder Tag consume a card, Bench slot, and one-shot Ability without
+    // advancing any setup axis:
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Turn procedure and manual attachment: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/992
+    return prized_energy && hand_count(*prized_energy) > 0;
+  }
+
   bool bench_tapu_if_useful() {
     if (wonder_tag_burnet_is_redundant_with_legacy_star_route()) {
       // Keep the second Tapu Lele-GX in hand after Quick Ball has legally searched
@@ -71,6 +94,16 @@
       // https://github.com/FlareZ123/pokemon-sims/issues/991
       trace("HOLD TAPU LELE-GX", "R-TAPU-01; P-DCI-01; P-KNOWLEDGE-01",
             "Retained the second Tapu because held Crispin, evolution, manual attachment, and Legacy Star already complete setup.");
+      return false;
+    }
+    if (wonder_tag_gladion_is_redundant_with_held_manual_energy()) {
+      // Preserve Tapu Lele-GX and Wonder Tag because the held Prize-target Energy
+      // already completes the final axis through the legal manual attachment:
+      // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // https://api.pokemontcg.io/v2/cards/sm4-95
+      // https://github.com/FlareZ123/pokemon-sims/issues/992
+      trace("HOLD TAPU LELE-GX", "R-TAPU-01; P-KNOWLEDGE-01; P-DCI-01",
+            "Retained Tapu because the held needed Energy and manual attachment already complete setup.");
       return false;
     }
     return bench_tapu_if_useful_issue_991_original();

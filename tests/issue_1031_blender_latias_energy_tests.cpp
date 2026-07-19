@@ -23,13 +23,13 @@ struct EngineTestAccess {
 
 namespace {
 
-sim::Engine make_engine() {
-  const sim::Scenario scenario{"issue-1031", sim::DciProfile::StrictJit,
-                               sim::LockMode::None, false, 4};
-  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+struct Fixture {
+  sim::Scenario scenario{"issue-1031", sim::DciProfile::StrictJit,
+                         sim::LockMode::None, false, 4};
+  sim::DeckRecipe recipe{sim::baseline_recipe()};
   std::mt19937_64 rng{1031};
-  return sim::Engine{scenario, recipe, rng};
-}
+  sim::Engine engine{scenario, recipe, rng};
+};
 
 sim::State latias_promotion_state() {
   sim::State state;
@@ -44,10 +44,10 @@ sim::State latias_promotion_state() {
 }
 
 void test_energy_incomplete_target_holds_blender() {
-  sim::Engine engine = make_engine();
+  Fixture fixture;
   sim::State state = latias_promotion_state();
   state.manual_energy_used = true;
-  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
 
   // Skyliner solves the Basic Active's Retreat Cost, while the selected Benched
   // Regidrago VSTAR still lacks Grass. The one-use ACE SPEC must remain held until
@@ -56,22 +56,22 @@ void test_energy_incomplete_target_holds_blender() {
   // https://api.pokemontcg.io/v2/cards/sv8-164
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/issues/1031
-  if (sim::EngineTestAccess::play_blender(engine)) {
+  if (sim::EngineTestAccess::play_blender(fixture.engine)) {
     throw std::runtime_error("Blender spent before the promoted VSTAR could reach GGF");
   }
-  if (std::find(sim::EngineTestAccess::state(engine).hand.begin(),
-                sim::EngineTestAccess::state(engine).hand.end(),
+  if (std::find(sim::EngineTestAccess::state(fixture.engine).hand.begin(),
+                sim::EngineTestAccess::state(fixture.engine).hand.end(),
                 sim::Card::BrilliantBlender) ==
-      sim::EngineTestAccess::state(engine).hand.end()) {
+      sim::EngineTestAccess::state(fixture.engine).hand.end()) {
     throw std::runtime_error("Rejected route did not preserve Brilliant Blender");
   }
 }
 
 void test_final_manual_energy_keeps_route_live() {
-  sim::Engine engine = make_engine();
+  Fixture fixture;
   sim::State state = latias_promotion_state();
   state.hand.push_back(sim::Card::Grass);
-  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
 
   // The unused manual attachment can supply the final Grass before Skyliner promotes
   // the attacker, so Blender remains a productive same-turn payload outlet:
@@ -80,7 +80,7 @@ void test_final_manual_energy_keeps_route_live() {
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/issues/1031
-  if (!sim::EngineTestAccess::play_blender(engine)) {
+  if (!sim::EngineTestAccess::play_blender(fixture.engine)) {
     throw std::runtime_error("Legal Latias plus final-Energy route was rejected");
   }
 }

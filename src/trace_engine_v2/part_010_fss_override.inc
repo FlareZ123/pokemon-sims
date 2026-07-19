@@ -85,6 +85,24 @@
   }
 
   Card fss_target_after_search_started() const {
+    // Star Alchemy may search any card. When the Regidrago card and Active axes
+    // are already solved, it can directly expose the missing half of the isolated
+    // Pineco -> Forretress ex Energy connector:
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://api.pokemontcg.io/v2/cards/sv4pt5-1
+    // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // https://github.com/FlareZ123/pokemon-sims/issues/972
+    const bool combo_is_energy_axis_only = forretress_combo_enabled() &&
+        need_energy() && !need_regi() && !need_vstar() && !need_active_vstar();
+    if (combo_is_energy_axis_only && needs_forretress_connector() &&
+        deck_count_after_search_started(Card::ForretressEx) > 0) {
+      return Card::ForretressEx;
+    }
+    if (combo_is_energy_axis_only && needs_pineco_connector() &&
+        deck_count_after_search_started(Card::Pineco) > 0) {
+      return Card::Pineco;
+    }
+
     // Star Alchemy can search Tate & Liza to promote a GGF-complete Benched
     // Regidrago VSTAR. A payable held one-discard Item can establish the strict-JIT
     // payload afterward, provided Tate leaves at least one card for that Item's

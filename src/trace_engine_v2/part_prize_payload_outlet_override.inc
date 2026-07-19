@@ -62,6 +62,13 @@
 
     if (need_regi() && can_bench_recovered_basic && prized(Card::RegidragoV)) {
       selected = Card::RegidragoV;
+    } else if (needs_pineco_connector() && prized(Card::Pineco)) {
+      // Hisuian Heavy Ball may recover any Basic Pokémon from the Prize cards.
+      // Pineco is the Basic half of the isolated Forretress ex combo fixture:
+      // https://api.pokemontcg.io/v2/cards/swsh10-146
+      // https://api.pokemontcg.io/v2/cards/sv4pt5-1
+      // https://github.com/FlareZ123/pokemon-sims/issues/972
+      selected = Card::Pineco;
     } else if (oricorio_preserves_burnet && prized(Card::Oricorio)) {
       selected = Card::Oricorio;
     } else if (can_bench_recovered_basic && needs_tapu_connector() && prized(Card::TapuLeleGX)) {
@@ -88,8 +95,9 @@
 
     const bool avoid_stranded_dialga = payload_is_only_missing_axis && !live_payload_outlet;
     if (selected == Card::HisuianHeavyBall) {
-      for (const Card candidate : {Card::RegidragoV, Card::Oricorio, Card::TapuLeleGX,
-                                   Card::LatiasEx, Card::DialgaGX, Card::MawileGX}) {
+      for (const Card candidate : {Card::RegidragoV, Card::Pineco, Card::Oricorio,
+                                   Card::TapuLeleGX, Card::LatiasEx,
+                                   Card::DialgaGX, Card::MawileGX}) {
         if (candidate == Card::DialgaGX && avoid_stranded_dialga) continue;
         if ((candidate == Card::TapuLeleGX || candidate == Card::LatiasEx) &&
             !ability_available_for_pokemon(candidate)) continue;
@@ -101,8 +109,9 @@
     }
 
     if (selected == Card::HisuianHeavyBall) {
-      for (const Card candidate : {Card::RegidragoV, Card::TapuLeleGX, Card::Oricorio,
-                                   Card::LatiasEx, Card::DialgaGX, Card::MawileGX}) {
+      for (const Card candidate : {Card::RegidragoV, Card::Pineco,
+                                   Card::TapuLeleGX, Card::Oricorio, Card::LatiasEx,
+                                   Card::DialgaGX, Card::MawileGX}) {
         if (candidate == Card::DialgaGX && avoid_stranded_dialga) continue;
         if (prized(candidate)) {
           selected = candidate;
@@ -187,6 +196,56 @@
       }
       if (!state_.prizes.empty()) return exchange(state_.prizes.front());
       throw std::logic_error("Gladion resolved with no Prize card to exchange");
+    }
+    const bool heavy_ball_can_recover_pineco = !item_locked() &&
+        hand_count(Card::HisuianHeavyBall) > 0;
+    const bool pineco_half_missing = forretress_combo_enabled() && has_any_regi() &&
+        need_energy() && bench_space() > 0 && hand_count(Card::Pineco) == 0 &&
+        in_play_count(Card::Pineco) == 0 &&
+        in_play_count(Card::ForretressEx) == 0 &&
+        ability_available_for_pokemon(Card::ForretressEx);
+    const bool forretress_half_missing = forretress_combo_enabled() && need_energy() &&
+        in_play_count(Card::Pineco) > 0 &&
+        in_play_count(Card::ForretressEx) == 0 &&
+        hand_count(Card::ForretressEx) == 0 &&
+        ability_available_for_pokemon(Card::ForretressEx);
+    std::optional<Card> combo_prize_target;
+    if (supporter_allowed() && hand_count(Card::Gladion) > 0 && prizes_known()) {
+      if (forretress_half_missing &&
+          prize_count_after_reveal(Card::ForretressEx) > 0) {
+        combo_prize_target = Card::ForretressEx;
+      } else if (pineco_half_missing && !heavy_ball_can_recover_pineco &&
+                 prize_count_after_reveal(Card::Pineco) > 0) {
+        combo_prize_target = Card::Pineco;
+      }
+    }
+    if (combo_prize_target) {
+      // Gladion may exchange itself for any selected face-down Prize card. The
+      // known prized combo half directly restores the Pineco -> Forretress ex
+      // connector, while a live Hisuian Heavy Ball preserves the Supporter play
+      // for Pineco because Heavy Ball can recover that Basic independently:
+      // https://api.pokemontcg.io/v2/cards/sm4-95
+      // https://api.pokemontcg.io/v2/cards/swsh10-146
+      // https://api.pokemontcg.io/v2/cards/sv4pt5-1
+      // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+      // https://github.com/FlareZ123/pokemon-sims/issues/972
+      remove_one(state_.hand, Card::Gladion);
+      state_.supporter_used = true;
+      prizes_revealed_ = true;
+      const auto prize = std::find(state_.prizes.begin(), state_.prizes.end(),
+                                   *combo_prize_target);
+      if (prize == state_.prizes.end()) {
+        throw std::logic_error("Known prized Forretress combo card disappeared");
+      }
+      *prize = Card::Gladion;
+      state_.hand.push_back(*combo_prize_target);
+      shuffle(state_.prizes);
+      trace("PLAY SUPPORTER",
+            "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; R-FORRETRESS-01",
+            "Exchanged Gladion for " +
+                std::string(name(*combo_prize_target)) +
+                " to restore the Forretress ex Energy connector.");
+      return true;
     }
 
     const bool dead_prize_payload_route = prizes_known() && need_payload() &&

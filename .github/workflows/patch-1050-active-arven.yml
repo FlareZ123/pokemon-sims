@@ -1,0 +1,65 @@
+name: Patch issue 1050 active Arven gate
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'bug/1050-dynamic-dead-role-dci'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Apply final-Energy exception at active Arven gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          source = Path('src/trace_engine_v2/part_012_override.inc')
+          text = source.read_text(encoding='utf-8')
+          old = '    const bool can_pay_search_cost = is_legal_cost_available(can_play_payload_this_turn(), true);\n'
+          new = '''    const bool final_energy_vessel_dead_role_cost =
+        scenario_.dci == DciProfile::NoDiscardControl &&
+        !state_.manual_energy_used && state_.active &&
+        state_.active->card == Card::RegidragoVstar && !need_payload() &&
+        grass_needed() + fire_needed() == 1 &&
+        ((grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
+         (fire_needed() == 1 && might_be_unseen(Card::Fire))) &&
+        (hand_count(Card::QuickBall) > 0 ||
+         hand_count(Card::StevensResolve) > 0 ||
+         hand_count(Card::LatiasEx) > 0 ||
+         hand_count(Card::Gladion) > 0);
+    // This is the active Arven admission boundary after all wrapper layering.
+    // Earthen Vessel enters hand only after Arven resolves, so project that exact
+    // post-search hand and admit one dynamically dead setup role as its legal cost:
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Manual attachment: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Dynamic DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1050
+    const bool can_pay_search_cost =
+        is_legal_cost_available(can_play_payload_this_turn(), true) ||
+        final_energy_vessel_dead_role_cost;
+'''
+          if text.count(old) != 1:
+              raise SystemExit(f'active Arven cost anchor count: {text.count(old)}')
+          source.write_text(text.replace(old, new, 1), encoding='utf-8')
+          Path('.github/workflows/patch-1050-active-arven.yml').unlink()
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git diff --cached --check
+          git commit -m "Admit final-Energy Vessel at active Arven gate (#1050)"
+          git push origin HEAD:${{ github.head_ref }}

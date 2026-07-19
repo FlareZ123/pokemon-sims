@@ -82,6 +82,14 @@
   }
 
   bool play_steven() {
+    // A held Arven can complete the current turn through Forest Seal Stone and
+    // Brilliant Blender, so do not enter any Steven route that ends the turn:
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1067
+    if (held_arven_fss_blender_finish_available()) return false;
     if (play_known_turo_t4_steven_route()) return true;
     return play_steven_issue1030_original();
   }

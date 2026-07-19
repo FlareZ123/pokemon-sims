@@ -166,8 +166,15 @@
                  (need_vstar() && prize_count_after_reveal(Card::RegidragoVstar) > 0) ||
                  final_prized_energy_for_gladion().has_value());
           case Card::LatiasEx:
-            return need_active_vstar() && bench_space() > 0 &&
-                ability_available_for_pokemon(Card::LatiasEx);
+            // The issue-1068 route proves Latias advances the complete promotion,
+            // Energy, Evolution, and strict-JIT payload chain even though Skyliner is
+            // unavailable until Latias enters play:
+            // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+            // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+            // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1068
+            return fss_latias_vessel_promotion_route_available() ||
+                (need_active_vstar() && bench_space() > 0 &&
+                 ability_available_for_pokemon(Card::LatiasEx));
           case Card::TateLiza:
             return need_active_vstar() && supporter_allowed();
           case Card::BrilliantBlender:

@@ -7,7 +7,7 @@
 
 namespace sim { struct EngineTestAccess {}; }
 
-// Final CI regression after the Arven preflight and DCI changes.
+// Final PR-head CI regression for the Arven preflight and DCI changes.
 int main() {
   const auto scenario = sim::scenario_by_label("no-discard-control/go-first");
   if (!scenario) throw std::runtime_error("Missing no-discard-control/go-first scenario");

@@ -83,6 +83,47 @@
       return false;
     }
 
+    // A known prized Arven is the deterministic next-turn connector when the Active
+    // Regidrago V already carries GGF and the inspected deck contains the complete
+    // Arven -> Brilliant Blender + Forest Seal Stone -> Regidrago VSTAR route.
+    // Gladion exchanges itself for a selected Prize: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Arven searches one Item and one Pokémon Tool: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Forest Seal Stone's Star Alchemy searches any card: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Brilliant Blender supplies the same-turn Dragon payload: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR evolves from Regidrago V and Apex Dragon costs GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Evolution and one-Supporter-per-turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest deterministic complete-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/969
+    const bool prized_arven_next_turn_completion =
+        prizes_known() && !direct_missing_pokemon_prized &&
+        prize_count_after_reveal(Card::Arven) > 0 && hand_count(Card::Arven) == 0 &&
+        state_.turn < scenario_.max_turn && !item_locked() &&
+        scenario_.locks != LockMode::TurnTwoItem && !rule_box_abilities_locked() &&
+        !state_.vstar_power_used && state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->grass >= 2 && state_.active->fire >= 1 &&
+        state_.active->tool == Tool::None && need_vstar() && need_payload() &&
+        deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
+        deck_count_after_search_started(Card::ForestSealStone) > 0 &&
+        deck_count_after_search_started(Card::BrilliantBlender) > 0 &&
+        payload_might_be_in_deck();
+    if (prized_arven_next_turn_completion) {
+      remove_one(state_.hand, Card::Gladion);
+      state_.supporter_used = true;
+      prizes_revealed_ = true;
+      const auto prize = std::find(state_.prizes.begin(), state_.prizes.end(), Card::Arven);
+      if (prize == state_.prizes.end()) {
+        throw std::logic_error("Known prized Arven disappeared");
+      }
+      *prize = Card::Gladion;
+      state_.hand.push_back(Card::Arven);
+      shuffle(state_.prizes);
+      trace("PLAY SUPPORTER",
+            "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
+            "Exchanged Gladion for Arven to guarantee the next-turn Forest Seal Stone and Brilliant Blender route.");
+      return true;
+    }
+
     if (need_vstar() && hand_count(Card::RegidragoVstar) == 0) {
       // Mysterious Treasure needs one other card from hand. Reserve the copy being
       // played so a distinct Ultra Ball remains a legal one-card discard cost:

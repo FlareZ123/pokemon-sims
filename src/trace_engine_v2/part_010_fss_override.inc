@@ -84,6 +84,66 @@
         deck_count_after_search_started(Card::BrilliantBlender) == 0;
   }
 
+  bool fss_should_hold_for_observable_complete_route() const {
+    if (!deck_seen_ || state_.vstar_power_used) return false;
+
+    // Project the remainder of the current turn with Star Alchemy unavailable and
+    // with an isolated RNG copy. The shadow begins from the exact public K1 state,
+    // so every paid search, discard, evolution, attachment, and promotion must remain
+    // legal without adding the selector's proposed target:
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1 and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Strict JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/990
+    std::mt19937_64 shadow_rng = rng_;
+    Engine projected(scenario_, recipe_, shadow_rng);
+    projected.state_ = state_;
+    projected.deck_seen_ = deck_seen_;
+    projected.prizes_revealed_ = prizes_revealed_;
+    projected.state_.vstar_power_used = true;
+    const auto entry_connector_count = [](const State& candidate) {
+      const auto is_entry_connector = [](const Card card) {
+        return card == Card::TapuLeleGX || card == Card::Oricorio;
+      };
+      const std::size_t active_count = candidate.active &&
+              is_entry_connector(candidate.active->card)
+          ? 1U
+          : 0U;
+      return active_count + static_cast<std::size_t>(std::count_if(
+          candidate.bench.begin(), candidate.bench.end(),
+          [is_entry_connector](const Pokemon& pokemon) {
+            return is_entry_connector(pokemon.card);
+          }));
+    };
+    const std::size_t current_entry_connector_count =
+        entry_connector_count(state_);
+    projected.run_turn();
+
+    // Preserve established direct Star Alchemy routes when the shadow would replace
+    // that one-shot resource by Bench-spending a new entry-Ability connector. Tapu
+    // Lele-GX consumes Wonder Tag and exposes a two-Prize support Pokémon. Oricorio
+    // consumes Vital Dance and a Bench slot. Those are alternative scarce routes,
+    // rather than proof that the held non-connector cards complete every axis:
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Existing direct Crispin route: https://github.com/FlareZ123/pokemon-sims/issues/976
+    // Existing Oricorio compression route: https://github.com/FlareZ123/pokemon-sims/issues/187
+    const bool spends_additional_entry_connector =
+        entry_connector_count(projected.state_) > current_entry_connector_count;
+
+    return !spends_additional_entry_connector && projected.active_is_vstar() &&
+        projected.state_.active->grass >= 2 &&
+        projected.state_.active->fire >= 1 && projected.payload_ready();
+  }
+
   Card fss_target_after_search_started() const {
     // Star Alchemy can search Tate & Liza to promote a GGF-complete Benched
     // Regidrago VSTAR. A payable held one-discard Item can establish the strict-JIT

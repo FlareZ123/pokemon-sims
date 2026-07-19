@@ -1,5 +1,20 @@
       if (bench_oricorio_if_useful()) return true;
       if (play_pokemon_communication(permit_payload)) return true;
+      #include "part_014a_issue_962_eligibility.inc"
+      #include "part_014a_issue_962_projection.inc"
+      #include "part_014a_issue_962_decision.inc"
+
+      // Prefer the higher-connectivity Quick Ball route only when cost-aware
+      // projections prove Tapu Lele-GX -> Wonder Tag -> Crispin preserves both
+      // paid Items while Earthen Vessel-first exhausts Quick Ball's legal cost:
+      // https://api.pokemontcg.io/v2/cards/swsh1-179
+      // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // https://api.pokemontcg.io/v2/cards/sv7-133
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // https://github.com/FlareZ123/pokemon-sims/issues/962
+      if (quick_ball_tapu_crispin_route_should_precede_vessel() &&
+          play_quick_ball(permit_payload)) return true;
       if (play_earthen_vessel(permit_payload)) return true;
       if (play_quick_ball(permit_payload)) return true;
       if (play_mysterious_treasure(permit_payload)) return true;

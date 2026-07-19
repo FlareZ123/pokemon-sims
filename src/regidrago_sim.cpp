@@ -123,10 +123,16 @@
 #undef play_evolution_incense
 #undef play_ultra_ball
 #define bench_tapu_if_useful bench_tapu_if_useful_empty_deck_original
+#define wonder_tag_crispin_is_redundant_with_held_complete_route \
+  wonder_tag_crispin_is_redundant_with_held_complete_route_issue980_original
+#define needs_tapu_connector needs_tapu_connector_issue989_original
 #define in_play tapu_connector_copy_aware_in_play
 #include "trace_engine_v2/part_tapu_tate_switch_override.inc"
 #undef in_play
+#undef needs_tapu_connector
+#undef wonder_tag_crispin_is_redundant_with_held_complete_route
 #undef bench_tapu_if_useful
+#include "trace_engine_v2/part_issue_989_wonder_tag_complete_route_override.inc"
 #define play_ultra_ball play_ultra_ball_empty_deck_original
 #define play_evolution_incense play_evolution_incense_empty_deck_original
 #define in_play tapu_connector_copy_aware_in_play
@@ -209,9 +215,12 @@
 #define play_ultra_ball play_ultra_ball_k0_target_original
 #define play_brilliant_blender play_brilliant_blender_vstar_axis_original
 #define play_earthen_vessel play_earthen_vessel_vstar_window_original
+#define bench_tapu_if_useful bench_tapu_if_useful_issue989_empty_deck_original
 #define in_play tapu_connector_copy_aware_in_play
 #include "trace_engine_v2/part_empty_deck_search_override.inc"
 #undef in_play
+#undef bench_tapu_if_useful
+#include "trace_engine_v2/part_issue_989_empty_deck_tapu_override.inc"
 #undef play_earthen_vessel
 #undef play_brilliant_blender
 #undef play_ultra_ball

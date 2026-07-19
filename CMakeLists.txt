@@ -95,6 +95,14 @@ add_test(NAME trace_turn2_item_lock_t3 COMMAND regidrago_sim --simulate-this --s
 # https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
 # https://github.com/FlareZ123/pokemon-sims/issues/925
 add_test(NAME trace_issue_925_turn2_item_lock_seed25 COMMAND regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2)
+# Issue #989 preserves the same earliest ready turns while skipping unused Wonder Tag -> Crispin.
+# https://github.com/FlareZ123/pokemon-sims/issues/989
+# https://api.pokemontcg.io/v2/cards/cel25c-60_A
+# https://api.pokemontcg.io/v2/cards/sv7-133
+# https://www.pokemon.com/us/pokemon-tcg/rules
+add_test(NAME trace_issue_989_item_lock_seed25 COMMAND regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2)
+add_test(NAME trace_issue_989_strict_first_seed107 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 107 --require-ready-by 3)
+add_test(NAME trace_issue_989_strict_first_seed122 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 122 --require-ready-by 4)
 # Quick Ball must precede Earthen Vessel only when Tapu Lele-GX into Crispin
 # compresses the Energy axis and every separate discard cost remains payable:
 # https://api.pokemontcg.io/v2/cards/swsh1-179

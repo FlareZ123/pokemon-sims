@@ -191,8 +191,53 @@
     return true;
   }
 
+  bool tate_draw_has_held_non_supporter_completion() const {
+    if (!supporter_allowed() || !deck_seen_ || hand_count(Card::TateLiza) == 0 ||
+        !setup_axis_missing()) {
+      return false;
+    }
+
+    // Remove Tate & Liza from the shadow hand and reserve the Supporter play. The
+    // exact public remainder of the turn must still complete Active VSTAR, GGF, and
+    // the ready-turn payload through held non-Supporter cards:
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Supporter, Item, evolution, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1 and earliest complete-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1057
+    std::mt19937_64 shadow_rng = rng_;
+    Engine projected(scenario_, recipe_, shadow_rng);
+    projected.state_ = state_;
+    projected.deck_seen_ = deck_seen_;
+    projected.prizes_revealed_ = prizes_revealed_;
+    while (remove_one(projected.state_.hand, Card::TateLiza)) {
+    }
+    projected.state_.supporter_used = true;
+    projected.run_turn();
+
+    return projected.active_is_vstar() && projected.state_.active->grass >= 2 &&
+        projected.state_.active->fire >= 1 && projected.payload_ready();
+  }
+
   void choose_supporter() {
     if (!supporter_allowed()) return;
+    if (tate_draw_has_held_non_supporter_completion()) {
+      // Shuffling the held Item, Evolution, Energy, or payload cards would replace a
+      // deterministic current-turn finish with a weaker random route. Preserve Tate:
+      // https://api.pokemontcg.io/v2/cards/sm7-148
+      // https://api.pokemontcg.io/v2/cards/sv8-164
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://github.com/FlareZ123/pokemon-sims/issues/1057
+      if (trace_ != nullptr) {
+        trace_->add_policy_once(
+            state_, "issue-1057-held-non-supporter-route", state_.turn,
+            "HOLD SUPPORTER", "R-TATE-01; P-KNOWLEDGE-01; P-COMPRESS-01",
+            "Retained Tate & Liza because held non-Supporter cards already complete the current-turn ready route.");
+      }
+      return;
+    }
     // Roseanne's Backup may choose its Pokémon and Energy modes together, so resolve
     // that two-axis route before single-axis recovery policies:
     // https://api.pokemontcg.io/v2/cards/swsh9-148

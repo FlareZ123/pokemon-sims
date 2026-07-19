@@ -98,6 +98,10 @@ jobs:
       # Blender VSTAR-card-axis fix: https://github.com/FlareZ123/pokemon-sims/pull/931
       - name: Generate canonical T2 and T3 matrix
         run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+      - name: Record simulator policy source digest
+        run: >-
+          python -c "from pathlib import Path; from scripts.baseline_provenance import simulator_policy_source_digest; print(simulator_policy_source_digest(Path('.').resolve()))"
+          | tee simulator-policy-source-sha256.txt
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
       - name: Record tested source
@@ -110,6 +114,7 @@ jobs:
           path: |
             trace-*.txt
             t2-t3-matrix.csv
+            simulator-policy-source-sha256.txt
             tested-head.txt
             build/regidrago_sim
             build/regidrago_unified_tests

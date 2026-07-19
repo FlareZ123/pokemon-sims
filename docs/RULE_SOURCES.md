@@ -55,6 +55,18 @@ The API records are card-text sources. They do not replace official tournament r
 | Dragon Dialga-GX payload model | https://api.pokemontcg.io/v2/cards/sm5-100 |
 | Hisuian Goodra VSTAR payload model | https://api.pokemontcg.io/v2/cards/swsh11-136 |
 
+## Recent policy-fix traceability
+
+| Issue | Policy boundary | Direct sources | Implementation |
+|---|---|---|---|
+| https://github.com/FlareZ123/pokemon-sims/issues/1067 | Prefer the current-turn Arven, Forest Seal Stone, Regidrago VSTAR, and Brilliant Blender finish over Steven's Resolve ending the turn | https://api.pokemontcg.io/v2/cards/sv1-166, https://api.pokemontcg.io/v2/cards/swsh12-156, https://api.pokemontcg.io/v2/cards/swsh12-136, https://api.pokemontcg.io/v2/cards/sv8-164, https://api.pokemontcg.io/v2/cards/sm7-145 | `part_issue_1067_arven_before_late_steven_override.inc`, `part_issue_1030_steven_turo_override.inc` |
+| https://github.com/FlareZ123/pokemon-sims/issues/1068 | Allocate Star Alchemy to Latias ex when Earthen Vessel covers the final Energy and payload cost | https://api.pokemontcg.io/v2/cards/swsh12-156, https://api.pokemontcg.io/v2/cards/sv8-76, https://api.pokemontcg.io/v2/cards/sv4-163, https://api.pokemontcg.io/v2/cards/swsh12-136 | `part_issue_1071_fss_oricorio_treasure_decomposition_override.inc`, `part_011_fss_latias_override.inc` |
+| https://github.com/FlareZ123/pokemon-sims/issues/1069 | Admit Legacy Star when one resolution must supply both the manual-attachment Energy and the strict-JIT payload | https://api.pokemontcg.io/v2/cards/swsh12-136, https://api.pokemontcg.io/v2/cards/sv8-164 | `part_issue_1069_legacy_star_combined_energy_payload_override.inc` |
+| https://github.com/FlareZ123/pokemon-sims/issues/1070 | Preserve Tate & Liza switch mode after Star Alchemy searches the VSTAR for a prepared Benched Basic | https://api.pokemontcg.io/v2/cards/sm7-148, https://api.pokemontcg.io/v2/cards/swsh12-156, https://api.pokemontcg.io/v2/cards/swsh12-136, https://api.pokemontcg.io/v2/cards/sv8-164 | `part_issue_1070_tate_after_vstar_search_override.inc`, `part_tate_blender_tate_override.inc` |
+| https://github.com/FlareZ123/pokemon-sims/issues/1071 | Let Mysterious Treasure cover the VSTAR axis while Star Alchemy covers Oricorio and Vital Dance Energy | https://api.pokemontcg.io/v2/cards/swsh12-156, https://api.pokemontcg.io/v2/cards/sm6-113, https://api.pokemontcg.io/v2/cards/sm2-55, https://api.pokemontcg.io/v2/cards/swsh12-136, https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 | `part_issue_1071_fss_oricorio_treasure_decomposition_override.inc` |
+
+All five boundaries also cite the official turn, Trainer, evolution, attachment, Ability, and Retreat procedures at https://www.pokemon.com/us/pokemon-tcg/rules and the repository's earliest-complete-route and strict-JIT specifications in `POLICY_DECISIONS.md` and `MODEL_ASSUMPTIONS.md`.
+
 ## Verified versus modeled interactions
 
 - Direct card-text mechanics in this table are validated against the supplied card corpus and the linked exact-print record.

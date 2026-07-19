@@ -186,9 +186,12 @@
 #include "trace_engine_v2/part_legacy_star_projection_provenance_override.inc"
 #define remove_one remove_one_legacy_star_projection
 #define pokemon_communication_plan pokemon_communication_plan_legacy_star_projection
+#define use_legacy_star use_legacy_star_issue1016_original
 #include "trace_engine_v2/part_013_legacy_star_override.inc"
+#undef use_legacy_star
 #undef pokemon_communication_plan
 #undef remove_one
+#include "trace_engine_v2/part_issue_1016_legacy_star_quick_ball_override.inc"
 #define play_gladion play_gladion_prize_payload_original
 #include "trace_engine_v2/part_012_gladion_override.inc"
 #undef play_gladion

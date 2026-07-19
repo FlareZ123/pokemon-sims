@@ -1,3 +1,63 @@
+  bool wonder_tag_is_redundant_with_held_crispin_legacy_star_route() const {
+    if (deck_seen_ || !supporter_allowed() || state_.manual_energy_used ||
+        state_.vstar_power_used || !need_energy() || has_vstar() ||
+        !need_payload() || need_regi() || hand_count(Card::TapuLeleGX) == 0 ||
+        hand_count(Card::Crispin) == 0 ||
+        hand_count(Card::RegidragoVstar) == 0 || !state_.active ||
+        state_.active->card != Card::RegidragoV ||
+        state_.active->entered_turn >= state_.turn ||
+        !ability_available_for_pokemon(Card::RegidragoVstar) ||
+        !payload_might_be_in_deck()) {
+      return false;
+    }
+
+    const bool grass_available = might_be_unseen(Card::Grass);
+    const bool fire_available = might_be_unseen(Card::Fire);
+    int grass_remaining = grass_needed();
+    int fire_remaining = fire_needed();
+    int grass_in_hand = hand_count(Card::Grass);
+    int fire_in_hand = hand_count(Card::Fire);
+
+    if (grass_available && fire_available) {
+      // The modeled Crispin route attaches a currently needed type, preferring
+      // Grass while Grass is still required, and puts the other type into hand:
+      // https://api.pokemontcg.io/v2/cards/sv7-133
+      const Card attached = grass_remaining > 0 ? Card::Grass : Card::Fire;
+      if (attached == Card::Grass) {
+        grass_remaining = std::max(0, grass_remaining - 1);
+        ++fire_in_hand;
+      } else {
+        fire_remaining = std::max(0, fire_remaining - 1);
+        ++grass_in_hand;
+      }
+    } else if (grass_available) {
+      ++grass_in_hand;
+    } else if (fire_available) {
+      ++fire_in_hand;
+    } else {
+      return false;
+    }
+
+    const bool crispin_and_manual_complete_ggf =
+        (grass_remaining == 0 && fire_remaining == 0) ||
+        (grass_remaining == 1 && fire_remaining == 0 && grass_in_hand > 0) ||
+        (grass_remaining == 0 && fire_remaining == 1 && fire_in_hand > 0);
+
+    // At K0, held Crispin plus the unused manual attachment can complete GGF.
+    // The prior-turn Active Regidrago V can then evolve into the held VSTAR and
+    // use Legacy Star for the strict-JIT payload axis. Wonder Tag is optional,
+    // so searching a duplicate Crispin would spend Tapu Lele-GX, its Bench slot,
+    // and its one-shot Ability without advancing the shortest observable route:
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Regidrago VSTAR and Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1016
+    return crispin_and_manual_complete_ggf;
+  }
+
   bool wonder_tag_crispin_is_redundant_with_held_complete_route() const {
     if (wonder_tag_crispin_is_redundant_with_held_complete_route_issue980_original()) {
       return true;
@@ -73,6 +133,16 @@
     // https://github.com/FlareZ123/pokemon-sims/issues/616
     if (bench_space() == 1 && hand_count(Card::Oricorio) > 0 &&
         !in_play(Card::Oricorio) && oricorio_preserves_burnet_with_current_hand()) {
+      return false;
+    }
+
+    // This shared connector gate controls both a held Tapu Lele-GX and search Items
+    // considering Tapu as their Basic target. Rejecting the redundant route here
+    // prevents the needless Wonder Tag and the needless Quick Ball cost/search:
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1016
+    if (wonder_tag_is_redundant_with_held_crispin_legacy_star_route()) {
       return false;
     }
 

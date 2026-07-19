@@ -11,7 +11,7 @@
 namespace sim {
 struct EngineTestAccess {
   static void emit_tapu_hold(Engine& engine, std::string_view key,
-                             std::string_view rules, std::string_view detail) {
+                              std::string_view rules, std::string_view detail) {
     engine.trace_tapu_hold_once(key, rules, detail);
   }
 
@@ -54,17 +54,19 @@ sim::TraceLog run_trace(const sim::Scenario& scenario, const std::uint64_t seed)
   return trace;
 }
 
-void test_seed_136_legacy_route_emits_once() {
+void test_seed_136_direct_route_emits_no_tapu_hold() {
   const sim::Scenario scenario{"strict-jit/go-first", sim::DciProfile::StrictJit,
                                sim::LockMode::None, true, 5};
   const sim::TraceLog trace = run_trace(scenario, 136);
 
-  // Tapu Lele-GX and the retained Legacy Star route:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
-  // https://api.pokemontcg.io/v2/cards/swsh12-136
-  // https://github.com/FlareZ123/pokemon-sims/issues/1004
-  expect(detail_count(trace, kLegacyDetail) == 1U,
-         "Seed 136 must emit one unchanged-state Legacy Star Tapu hold.");
+  // The stronger preflight keeps the first Tapu Lele-GX in hand, so the older
+  // unchanged-state hold for a searched second copy is no longer reached:
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Prior trace contract: https://github.com/FlareZ123/pokemon-sims/issues/1004
+  // Superseding route fix: https://github.com/FlareZ123/pokemon-sims/issues/1016
+  expect(detail_count(trace, kLegacyDetail) == 0U,
+         "Seed 136 must skip the obsolete second-Tapu hold event.");
 }
 
 void test_seed_143_arven_route_emits_once() {
@@ -98,7 +100,7 @@ void test_seed_80_gladion_route_emits_once() {
 }
 
 void expect_state_change_reemits(std::string_view key, std::string_view rules,
-                                 std::string_view detail) {
+                                  std::string_view detail) {
   const sim::Scenario scenario{"issue-1004", sim::DciProfile::StrictJit,
                                sim::LockMode::None, true, 5};
   const sim::DeckRecipe recipe = sim::baseline_recipe();
@@ -138,7 +140,7 @@ void test_each_route_reemits_after_state_change() {
 
 int main() {
   try {
-    test_seed_136_legacy_route_emits_once();
+    test_seed_136_direct_route_emits_no_tapu_hold();
     test_seed_143_arven_route_emits_once();
     test_seed_80_gladion_route_emits_once();
     test_each_route_reemits_after_state_change();

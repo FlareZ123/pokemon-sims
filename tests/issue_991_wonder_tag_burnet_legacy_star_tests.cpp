@@ -93,7 +93,7 @@ void test_fresh_regidrago_keeps_burnet_live() {
          "Burnet must remain live when Regidrago V cannot evolve this turn.");
 }
 
-void test_full_trace_skips_second_wonder_tag() {
+void test_full_trace_skips_redundant_wonder_tag() {
   const sim::Scenario scenario{"strict-jit/go-first", sim::DciProfile::StrictJit,
                                sim::LockMode::None, true, 4};
   const sim::DeckRecipe recipe = sim::baseline_recipe();
@@ -106,12 +106,16 @@ void test_full_trace_skips_second_wonder_tag() {
         return pokemon.card == sim::Card::TapuLeleGX;
       }));
 
-  // Exact current-main witness from the confirmed issue:
-  // https://github.com/FlareZ123/pokemon-sims/issues/991
+  // Issue #1016 strengthens the earlier #991 suppression by rejecting the first
+  // optional Wonder Tag before the duplicate Burnet route can be considered:
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Earlier confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/991
+  // Superseding route fix: https://github.com/FlareZ123/pokemon-sims/issues/1016
   expect(outcome.first_ready_turn == 2,
          "The corrected route must preserve turn-two readiness.");
-  expect(tapu_in_play == 1,
-         "The redundant second Tapu Lele-GX must remain out of play.");
+  expect(tapu_in_play == 0,
+         "Every redundant Tapu Lele-GX must remain out of play on seed 136.");
   expect(std::find(state.hand.begin(), state.hand.end(),
                    sim::Card::ProfessorBurnet) == state.hand.end(),
          "Unused Professor Burnet must not be searched into hand.");
@@ -125,7 +129,7 @@ int main() {
     test_missing_crispin_keeps_burnet_live();
     test_used_vstar_power_keeps_burnet_live();
     test_fresh_regidrago_keeps_burnet_live();
-    test_full_trace_skips_second_wonder_tag();
+    test_full_trace_skips_redundant_wonder_tag();
     std::cout << "Issue 991 Wonder Tag Burnet tests passed\n";
     return 0;
   } catch (const std::exception& error) {

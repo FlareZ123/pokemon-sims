@@ -1,6 +1,6 @@
 {
   "matrix_seed": 20260705,
-  "simulator_policy_source_sha256": "bf19de70365d20e4e433dd6952999a7302513609c601745f616bfb121a9c6773",
+  "simulator_policy_source_sha256": "3b4af2b06c12003848dacce94707308c156a3da5bf4a6362347d8a8a4b757d6c",
   "traces": [
     {
       "deadline": 3,

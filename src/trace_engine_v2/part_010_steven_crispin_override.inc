@@ -204,8 +204,27 @@
   }
 
   bool should_play_steven() const {
+    const bool wonder_tag_admission_remains_productive =
+        wonder_tag_selected_steven_this_turn_ && state_.turn == 1 &&
+        !scenario_.going_first && supporter_allowed() &&
+        hand_count(Card::StevensResolve) > 0 && setup_axis_missing() &&
+        !steven_should_yield_to_crispin_mysterious_route();
+
+    // Wonder Tag legally chose Steven before later Item and Bench actions changed the
+    // mutable axis count. Steven still banks up to three future setup cards and ends a
+    // turn that cannot produce a ready Regidrago VSTAR because a newly played Basic
+    // cannot evolve that turn. Preserve that admission unless the proven #774 faster
+    // current route is now live or every setup axis is already complete:
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Regidrago VSTAR evolution: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/999
     return (should_play_steven_original() &&
             !steven_should_yield_to_crispin_mysterious_route()) ||
+        wonder_tag_admission_remains_productive ||
         late_steven_is_only_basic_connector() ||
         late_steven_has_known_t3_compression_route() ||
         banked_steven_has_known_t3_blender_route() ||

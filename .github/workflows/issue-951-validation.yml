@@ -13,7 +13,15 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator and tests
         run: cmake --build build --parallel 2
-      - name: Run repository tests
+      - name: Regenerate source-bound setup baseline
+        # Canonical generator and fixed-seed aggregate specification:
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+        run: python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+      - name: Regenerate setup reports
+        # Generated-doc contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/update_setup_docs.py
+        run: python scripts/update_setup_docs.py --repo-root .
+      - name: Run repository tests against regenerated baseline
         run: ctest --test-dir build --output-on-failure
       - name: Trace Treasure Energy-window reproduction
         # Treasure, GGF, turn sequence, strict-JIT policy, and issue:
@@ -29,10 +37,7 @@ jobs:
       - name: Trace matchup-flex baseline control
         # DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
         run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee flex-control-trace.txt
-      - name: Generate T2 and T3 setup matrix
-        # Aggregate specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
-        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
-      - name: Upload trace and matrix evidence
+      - name: Upload regenerated baseline and trace evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -41,5 +46,10 @@ jobs:
             issue-951-trace.txt
             strict-control-trace.txt
             flex-control-trace.txt
-            t2-t3-matrix.csv
+            results/baseline_manifest.json
+            results/simulation_results.csv
+            results/traces
+            docs/REPORT.md
+            docs/TRACE_AUDIT.md
+            README.md
           if-no-files-found: error

@@ -1,0 +1,127 @@
+name: Current Main Review
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run three independent optimal-play traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Quick Ball, Wonder Tag, Crispin, and the normal turn procedure establish the exact earliest T3 route:
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/cel25c-60_A
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 104 --require-ready-by 3 | tee trace-optimal-104.txt
+          grep -q "Searched a Basic Pokémon: Tapu Lele-GX" trace-optimal-104.txt
+          grep -q "WONDER TAG.*Crispin" trace-optimal-104.txt
+          grep -q "T3 | READY" trace-optimal-104.txt
+
+          # Celestial Roar can attach Energy after the going-second T1 attack, and Legacy Star supplies the T2 payload:
+          # https://api.pokemontcg.io/v2/cards/swsh12-135
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 160 --require-ready-by 2 | tee trace-optimal-160.txt
+          grep -q "T1 | ATTACK.*Celestial Roar.*Fire Energy" trace-optimal-160.txt
+          grep -q "T2 | LEGACY STAR.*Mega Dragonite ex" trace-optimal-160.txt
+          grep -q "T2 | READY" trace-optimal-160.txt
+
+          # Under scheduled Item lock, held Items are unavailable and Legacy Star remains the live strict-JIT payload route:
+          # https://api.pokemontcg.io/v2/cards/swsh12-135
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 83 --require-ready-by 3 | tee trace-optimal-83.txt
+          grep -q "T1 | ATTACK.*Celestial Roar.*Fire Energy" trace-optimal-83.txt
+          grep -q "T3 | LEGACY STAR.*Mega Dragonite ex" trace-optimal-83.txt
+          grep -q "T3 | READY" trace-optimal-83.txt
+      - name: Reproduce pending policy reports
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Forest Seal Stone should preserve scarce one-shot value when a held Treasure plus Dragon already supplies strict-JIT payload:
+          # https://api.pokemontcg.io/v2/cards/swsh12-156
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sv6-130
+          # https://github.com/FlareZ123/pokemon-sims/issues/976
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 3 | tee trace-bug-976.txt
+          grep -q "STAR ALCHEMY.*Brilliant Blender" trace-bug-976.txt
+          grep -q "DISCARD.*Dragapult ex.*Mysterious Treasure cost" trace-bug-976.txt
+          grep -q "T3 | READY" trace-bug-976.txt
+
+          # Steven searches up to three cards; held Fire and Quick Ball plus Dragapult already cover the next-turn Energy and payload axes:
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/sv6-130
+          # https://github.com/FlareZ123/pokemon-sims/issues/978
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee trace-bug-978.txt
+          grep -q "Steven's Resolve.*Regidrago VSTAR, Crispin, Brilliant Blender" trace-bug-978.txt
+          grep -q "T3 | READY" trace-bug-978.txt
+
+          # A Supporter fetched by Star Alchemy cannot be played after Arven used the turn's Supporter play:
+          # https://api.pokemontcg.io/v2/cards/sv1-166
+          # https://api.pokemontcg.io/v2/cards/swsh12-156
+          # https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # https://github.com/FlareZ123/pokemon-sims/issues/979
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 85 --require-ready-by 4 | tee trace-bug-979.txt
+          grep -q "PLAY SUPPORTER.*Arven" trace-bug-979.txt
+          grep -q "STAR ALCHEMY.*Professor Burnet" trace-bug-979.txt
+          grep -q "T4 | READY" trace-bug-979.txt
+
+          # Wonder Tag consumes a Bench slot and on-play connector even though held Fire and Treasure already complete every T3 axis:
+          # https://api.pokemontcg.io/v2/cards/cel25c-60_A
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://github.com/FlareZ123/pokemon-sims/issues/980
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 331 --require-ready-by 3 | tee trace-bug-980.txt
+          grep -q "BENCH.*Tapu Lele-GX" trace-bug-980.txt
+          grep -q "WONDER TAG.*Crispin" trace-bug-980.txt
+          grep -q "T3 | READY" trace-bug-980.txt
+
+          # The current Gladion selector has an unconditional two-type deck gate even though Crispin may search one Basic Energy:
+          # https://api.pokemontcg.io/v2/cards/sm4-95
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://github.com/FlareZ123/pokemon-sims/issues/977
+          grep -q "deck_count_after_search_started(Card::Grass) > 0" src/trace_engine_v2/part_012.inc
+          grep -q "deck_count_after_search_started(Card::Fire) > 0" src/trace_engine_v2/part_012.inc
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Generate canonical T2 T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit-results
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-results/simulation_results.csv
+      - name: Package current source and evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > tested-head.txt
+          git archive --format=tar.gz --output=source-tree.tar.gz HEAD
+      - name: Upload review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-review-${{ github.run_attempt }}
+          path: |
+            trace-*.txt
+            tested-head.txt
+            source-tree.tar.gz
+            audit-results/simulation_results.csv
+            build/Testing
+          if-no-files-found: error

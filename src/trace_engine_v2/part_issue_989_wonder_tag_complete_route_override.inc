@@ -65,3 +65,43 @@
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/989
     return held_payload_route;
   }
+
+  bool needs_tapu_connector() {
+    // Preserve the existing Oricorio last-slot protection before the broader
+    // complete-route suppression:
+    // https://github.com/FlareZ123/pokemon-sims/issues/180
+    // https://github.com/FlareZ123/pokemon-sims/issues/616
+    if (bench_space() == 1 && hand_count(Card::Oricorio) > 0 &&
+        !in_play(Card::Oricorio) && oricorio_preserves_burnet_with_current_hand()) {
+      return false;
+    }
+
+    if (wonder_tag_crispin_is_redundant_with_held_complete_route()) {
+      return false;
+    }
+
+    if (needs_tapu_connector_original() && original_wonder_tag_route_has_live_target()) {
+      return true;
+    }
+    if (future_turn_wonder_tag_route_has_live_target()) return true;
+
+    // Wonder Tag into Tate & Liza remains live only when the promoted Benched VSTAR
+    // already pays GGF and the held payload Item retains a legal post-search target:
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    const bool payload_axis_completable = !need_payload() ||
+        (state_.deck.size() > 1U && has_live_one_discard_hand_payload_line());
+    const bool direct_communication_latias_route = need_active_vstar() &&
+        pokemon_communication_has_direct_target_route(Card::LatiasEx);
+    const bool tate_completes_active_axis = need_active_vstar() &&
+        benched_vstar_promotion_ready() && payload_axis_completable &&
+        !can_free_retreat_with_latias() && !direct_communication_latias_route &&
+        hand_count(Card::TateLiza) == 0 && might_be_unseen(Card::TateLiza);
+    return supporter_allowed() && ability_available_for_pokemon(Card::TapuLeleGX) &&
+           tate_completes_active_axis;
+  }

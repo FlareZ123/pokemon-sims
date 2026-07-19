@@ -1,0 +1,36 @@
+name: Issue 952 Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-active-regi-steven:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run behavioral tests before baseline refresh
+        # The source-bound report is regenerated separately by the repository baseline workflow.
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/tests/setup_report_contract_tests.py
+        run: ctest --test-dir build --output-on-failure -E setup_report_contract
+      - name: Trace Active-Regidrago late Steven reproduction
+        # Steven, Regidrago VSTAR, Blender, evolution/attachment rules, policy, and issue:
+        # https://api.pokemontcg.io/v2/cards/sm7-145
+        # https://api.pokemontcg.io/v2/cards/swsh12-136
+        # https://api.pokemontcg.io/v2/cards/sv8-164
+        # https://www.pokemon.com/us/pokemon-tcg/rules
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+        # https://github.com/FlareZ123/pokemon-sims/issues/952
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee issue-952-trace.txt
+      - name: Verify deterministic Steven package
+        run: grep -q "Searched up to 3 cards: Regidrago VSTAR, Crispin, Brilliant Blender" issue-952-trace.txt
+      - name: Upload focused trace
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-952-validation
+          path: issue-952-trace.txt
+          if-no-files-found: error

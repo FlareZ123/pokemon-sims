@@ -3,8 +3,18 @@
 
   bool play_quick_ball(const bool permit_payload) {
     if (item_locked() || hand_count(Card::QuickBall) == 0) return false;
+    // A strict-JIT Quick Ball payload cost is useful only when the Regidrago VSTAR
+    // card axis can finish in the same turn. Quick Ball searches only Basic Pokémon,
+    // so it cannot repair a missing VSTAR card after spending the held Dragon:
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/953
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
-                                 std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+                                  blender_vstar_card_axis_can_finish_this_turn() &&
+                                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
     // Quick Ball searches for a Basic Pokémon. At K0, a target remains plausible only
     // when a fixed-list Basic copy is not accounted for in public zones. At K1, the
     // inspected deck is checked exactly before paying the discard requirement:
@@ -30,7 +40,7 @@
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 &&
                            needs_tapu_connector() && might_be_unseen(Card::TapuLeleGX);
     const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 &&
-                                 needs_oricorio_connector() && might_be_unseen(Card::Oricorio);
+                                  needs_oricorio_connector() && might_be_unseen(Card::Oricorio);
     // Quick Ball searches only a Basic Pokémon. Dialga-GX is the only modeled
     // Dragon payload that is Basic; Mega Dragonite ex and Dragapult ex are Stage 2,
     // and Hisuian Goodra VSTAR is a VSTAR Evolution Pokémon:

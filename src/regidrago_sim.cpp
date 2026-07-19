@@ -220,7 +220,10 @@
 #include "trace_engine_v2/part_empty_deck_search_override.inc"
 #undef in_play
 #undef bench_tapu_if_useful
+#define bench_tapu_if_useful bench_tapu_if_useful_issue_991_original
 #include "trace_engine_v2/part_issue_989_empty_deck_tapu_override.inc"
+#undef bench_tapu_if_useful
+#include "trace_engine_v2/part_issue_991_wonder_tag_burnet_legacy_star_override.inc"
 #undef play_earthen_vessel
 #undef play_brilliant_blender
 #undef play_ultra_ball

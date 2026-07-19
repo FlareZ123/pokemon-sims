@@ -128,11 +128,27 @@ void write_atomic(const std::filesystem::path& output, const std::string& conten
 #endif
 }
 
+// Definitions for the test-variant Pineco -> Forretress ex connector package.
+// The declarations live near the beginning of Engine so every split policy part
+// can call them, while this complete namespace-level boundary keeps the source
+// composition valid: https://github.com/FlareZ123/pokemon-sims/issues/972
+#include "part_forretress_ex_combo.inc"
+
 bool self_test() {
   if (!probability_regression_self_test()) return false;
   const int total = std::accumulate(kDeckRecipe.begin(), kDeckRecipe.end(), 0, [](const int sum, const auto& entry) { return sum + entry.second; });
   if (total != 60) return false;
   if (!is_basic(Card::RegidragoV) || is_basic(Card::RegidragoVstar)) return false;
+  // Pineco is the Basic and Forretress ex is its Stage 1 Rule Box evolution:
+  // https://api.pokemontcg.io/v2/cards/sv4pt5-1
+  // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  // https://github.com/FlareZ123/pokemon-sims/issues/972
+  if (!is_basic(Card::Pineco) || is_basic(Card::ForretressEx) ||
+      !is_pokemon(Card::Pineco) || !is_pokemon(Card::ForretressEx) ||
+      is_rule_box_pokemon(Card::Pineco) ||
+      !is_rule_box_pokemon(Card::ForretressEx)) {
+    return false;
+  }
   if (!is_dragon_or_psychic(Card::RegidragoVstar) || !is_payload(Card::MegaDragonite) || is_payload(Card::Dipplin)) return false;
   if (is_rule_box_pokemon(Card::Oricorio)) return false;
   if (!is_rule_box_pokemon(Card::TapuLeleGX)) return false;

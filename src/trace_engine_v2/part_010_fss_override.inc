@@ -1,3 +1,49 @@
+  bool fss_should_take_crispin_over_redundant_blender() const {
+    if (!deck_seen_ || !need_energy() || !supporter_allowed() ||
+        state_.manual_energy_used || !crispin_can_advance_energy_axis() ||
+        deck_count_after_search_started(Card::Crispin) == 0 ||
+        !has_live_one_discard_hand_payload_line()) {
+      return false;
+    }
+
+    const bool held_manual_already_completes_energy =
+        (grass_needed() == 1 && fire_needed() == 0 && hand_count(Card::Grass) > 0) ||
+        (grass_needed() == 0 && fire_needed() == 1 && hand_count(Card::Fire) > 0);
+    if (held_manual_already_completes_energy) return false;
+
+    const bool grass_available = deck_count_after_search_started(Card::Grass) > 0;
+    const bool fire_available = deck_count_after_search_started(Card::Fire) > 0;
+    const bool crispin_completes_energy =
+        (grass_needed() == 1 && fire_needed() == 0 && grass_available) ||
+        (grass_needed() == 0 && fire_needed() == 1 && fire_available) ||
+        (grass_needed() == 1 && fire_needed() == 1 && grass_available && fire_available);
+    if (!crispin_completes_energy) return false;
+
+    const Pokemon* regi = target_regi();
+    const bool vstar_can_exist = regi != nullptr &&
+        (regi->card == Card::RegidragoVstar ||
+         (regi->card == Card::RegidragoV && regi->entered_turn < state_.turn &&
+          hand_count(Card::RegidragoVstar) > 0));
+    const bool vstar_can_be_active = state_.active &&
+        (state_.active->card == Card::RegidragoV ||
+         state_.active->card == Card::RegidragoVstar ||
+         can_free_retreat_with_latias());
+
+    // A held target-legal one-discard Item can put the Dragon payload into discard
+    // during the ready turn. When Crispin plus the unused manual attachment also
+    // completes GGF, Star Alchemy should search the direct Energy connector instead
+    // of the unused one-copy ACE SPEC:
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/976
+    return vstar_can_exist && vstar_can_be_active;
+  }
+
   Card fss_target_after_search_started() const {
     // Star Alchemy can search Tate & Liza to promote a GGF-complete Benched
     // Regidrago VSTAR. A payable held one-discard Item can establish the strict-JIT
@@ -17,6 +63,8 @@
         has_live_one_discard_hand_payload_line() &&
         deck_count_after_search_started(Card::TateLiza) > 0;
     if (tate_held_payload_route) return Card::TateLiza;
+
+    if (fss_should_take_crispin_over_redundant_blender()) return Card::Crispin;
 
     const Card original = fss_target_after_search_started_original();
 

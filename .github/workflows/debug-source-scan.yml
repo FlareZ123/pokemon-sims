@@ -1,0 +1,73 @@
+name: Debug Source Scan
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run three targeted simulate-this audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Steven's Resolve searches up to 3 cards, Regidrago VSTAR evolves from Regidrago V, and Apex Dragon costs GGF:
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # https://github.com/FlareZ123/pokemon-sims/issues/952
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee audit-trace-58.txt
+          grep -q "Searched up to 3 cards: Regidrago VSTAR, Crispin, Brilliant Blender" audit-trace-58.txt
+          grep -q "T3 | READY" audit-trace-58.txt
+
+          # Quick Ball can establish Tapu Lele-GX, Wonder Tag can select Crispin, and Crispin advances the GGF Energy axis:
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/cel25c-60_A
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # https://github.com/FlareZ123/pokemon-sims/issues/962
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 104 --require-ready-by 3 | tee audit-trace-104.txt
+          grep -q "Searched a Basic Pokémon: Tapu Lele-GX" audit-trace-104.txt
+          grep -q "WONDER TAG.*Searched and revealed Crispin" audit-trace-104.txt
+          grep -q "T3 | READY" audit-trace-104.txt
+
+          # Quick Ball discards 1 card to search a Basic, and a duplicate VSTAR is legal only when another copy remains for evolution:
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/swsh12-135
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # https://github.com/FlareZ123/pokemon-sims/issues/964
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 3 | tee audit-trace-43.txt
+          grep -q "DISCARD.*Regidrago VSTAR (Quick Ball cost)" audit-trace-43.txt
+          grep -q "Searched a Basic Pokémon: Regidrago V" audit-trace-43.txt
+          grep -q "T3 | READY" audit-trace-43.txt
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Package checked-out source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > tested-head.txt
+          tar -czf source-tree.tar.gz .github CMakeLists.txt README.md docs results src tests
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-source-scan-${{ github.run_attempt }}
+          path: |
+            audit-trace-*.txt
+            tested-head.txt
+            source-tree.tar.gz
+            build/Testing
+          if-no-files-found: error

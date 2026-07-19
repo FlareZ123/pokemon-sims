@@ -84,9 +84,12 @@ void test_four_full_trace_routes_hold_star_alchemy() {
   expect_trace_holds_star_alchemy(
       sim::Scenario{"strict-jit/go-second", sim::DciProfile::StrictJit,
                     sim::LockMode::None, false, 4}, 22, 2);
+  // Current main's intervening connector fixes move this exact witness from T3 to T4;
+  // the issue-990 policy still preserves Star Alchemy without delaying readiness:
+  // https://github.com/FlareZ123/pokemon-sims/issues/990
   expect_trace_holds_star_alchemy(
       sim::Scenario{"strict-jit/go-second", sim::DciProfile::StrictJit,
-                    sim::LockMode::None, false, 4}, 31, 3);
+                    sim::LockMode::None, false, 4}, 31, 4);
   expect_trace_holds_star_alchemy(
       sim::Scenario{"matchup-flex-jit/go-first", sim::DciProfile::MatchupFlexJit,
                     sim::LockMode::None, true, 5}, 85, 4);

@@ -126,6 +126,16 @@ add_test(NAME trace_issue_964_strict_first_seed43 COMMAND regidrago_sim --simula
 # https://github.com/FlareZ123/pokemon-sims/issues/917
 add_test(NAME trace_rulebox_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3)
 add_test(NAME trace_no_control_first_t4 COMMAND regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 6 --require-ready-by 4)
+# Seed 19 must hold the random top-three attack when held Fire already guarantees
+# the last GGF attachment, while multi-Energy and no-discard-control routes stay live:
+# https://api.pokemontcg.io/v2/cards/swsh12-135
+# https://api.pokemontcg.io/v2/cards/swsh12-136
+# https://www.pokemon.com/us/pokemon-tcg/rules
+# https://github.com/FlareZ123/pokemon-sims/issues/1079
+add_test(NAME trace_issue_1079_celestial_roar_hold
+  COMMAND ${CMAKE_COMMAND}
+    -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_issue_1079_celestial_roar_hold.cmake)
 add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
 set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)
 

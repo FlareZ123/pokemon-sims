@@ -110,7 +110,9 @@
 #undef attach_fss
 #undef fss_target_after_search_started
 #include "trace_engine_v2/part_010_late_steven_override.inc"
+#define should_play_steven should_play_steven_issue1030_original
 #include "trace_engine_v2/part_010_steven_crispin_override.inc"
+#undef should_play_steven
 #undef play_brilliant_blender
 // The thinning policy remains the implementation wrapped by the later empty-deck
 // guard, while the legacy part_010 implementation stays dormant:
@@ -195,7 +197,10 @@
 #define play_gladion play_gladion_prize_payload_original
 #include "trace_engine_v2/part_012_gladion_override.inc"
 #undef play_gladion
+#define play_gladion play_gladion_issue1030_original
 #include "trace_engine_v2/part_prize_payload_outlet_override.inc"
+#undef play_gladion
+#include "trace_engine_v2/part_issue_1030_gladion_turo_override.inc"
 #define play_arven play_arven_powerglass_original
 #include "trace_engine_v2/part_012_override.inc"
 #undef play_arven
@@ -225,7 +230,10 @@
 #undef play_steven
 #undef in_play
 #undef bench_tapu_if_useful
+#define play_steven play_steven_issue1030_original
 #include "trace_engine_v2/part_issue_1002_steven_target_override.inc"
+#undef play_steven
+#include "trace_engine_v2/part_issue_1030_steven_turo_override.inc"
 #define bench_tapu_if_useful bench_tapu_if_useful_issue_991_original
 #include "trace_engine_v2/part_issue_989_empty_deck_tapu_override.inc"
 #undef bench_tapu_if_useful

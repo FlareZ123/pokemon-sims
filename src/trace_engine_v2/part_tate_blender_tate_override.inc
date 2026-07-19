@@ -99,6 +99,18 @@
   }
 
   bool play_tate_draw() {
+    if (tate_switch_after_held_vstar_evolution_route()) {
+      // Star Alchemy has already searched Regidrago VSTAR. Keep Tate's switch mode
+      // while the fixed-point policy evolves the prior-turn GGF Benched Basic:
+      // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+      // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1070
+      trace("HOLD SUPPORTER", "R-TATE-01; R-RVS-01; P-COMPRESS-01",
+            "Retained Tate & Liza until the held Regidrago VSTAR evolves the prepared Benched Basic.");
+      return false;
+    }
     if (preserve_incomplete_tate_blender_line()) {
       trace("HOLD SUPPORTER", "R-TATE-01; R-BLENDER-01; R-RVS-01; P-DCI-01",
             "Retained Tate & Liza and Brilliant Blender instead of shuffling the incomplete promotion route.");

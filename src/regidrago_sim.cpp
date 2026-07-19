@@ -223,7 +223,10 @@
 #include "trace_engine_v2/part_team_yell_vstar_override.inc"
 #undef choose_supporter
 #include "trace_engine_v2/part_roseanne_multimode_override.inc"
+#define choose_supporter choose_supporter_issue1070_original
 #include "trace_engine_v2/part_turo_oricorio_override.inc"
+#undef choose_supporter
+#include "trace_engine_v2/part_issue_1070_tate_after_vstar_search_override.inc"
 #define bench_oricorio_if_useful bench_oricorio_if_useful_target_original
 #define ultra_ball_has_legal_target ultra_ball_has_legal_target_k0_target_original
 #define play_ultra_ball play_ultra_ball_k0_target_original

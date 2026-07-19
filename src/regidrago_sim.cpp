@@ -193,7 +193,10 @@
 #undef use_legacy_star
 #undef pokemon_communication_plan
 #undef remove_one
+#define use_legacy_star use_legacy_star_issue1069_original
 #include "trace_engine_v2/part_issue_1016_legacy_star_quick_ball_override.inc"
+#undef use_legacy_star
+#include "trace_engine_v2/part_issue_1069_legacy_star_combined_energy_payload_override.inc"
 #define play_gladion play_gladion_prize_payload_original
 #include "trace_engine_v2/part_012_gladion_override.inc"
 #undef play_gladion

@@ -322,6 +322,16 @@
   }
 
   Card choose_supporter_after_search_started() {
+
+if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
+  // Prefer the complete Steven package over Crispin, which powers the
+  // Basic but leaves both Evolution and strict-JIT payload unresolved:
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm7-145
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://github.com/FlareZ123/pokemon-sims/issues/1049
+  return Card::StevensResolve;
+}
     if (wonder_tag_can_bank_steven_for_known_t4_fss_route()) {
       issue_1022_banked_route_ = true;
       // Wonder Tag may bank a Supporter on the first player's opening turn even
@@ -408,6 +418,18 @@
         late_steven_is_only_basic_connector() ||
         late_steven_has_known_t3_compression_route() ||
         banked_steven_has_known_t3_blender_route() ||
+
+(state_.turn == 2 && scenario_.going_first &&
+ scenario_.dci == DciProfile::MatchupFlexJit &&
+ scenario_.locks == LockMode::None && supporter_allowed() &&
+ state_.active && state_.active->card == Card::RegidragoV &&
+ state_.active->entered_turn < state_.turn &&
+ hand_count(Card::StevensResolve) > 0 && need_vstar() &&
+ need_payload() && payload_might_be_in_deck() &&
+ deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
+ deck_count_after_search_started(Card::BrilliantBlender) > 0 &&
+ ((grass_needed() == 1 && fire_needed() == 0 && hand_count(Card::Grass) > 0) ||
+  (grass_needed() == 0 && fire_needed() == 1 && hand_count(Card::Fire) > 0))) ||
         late_steven_has_active_regidrago_t3_blender_route() ||
         late_steven_vstar_vessel_route_available() ||
         late_steven_payload_treasure_bridge_payload().has_value();

@@ -220,8 +220,17 @@
         }
       }();
       if (!target_present || !target_advances_axis) {
-        trace("HOLD VSTAR POWER", "R-FSS-02; R-VSTAR-01; P-KNOWLEDGE-01; P-DCI-01",
+        // Star Alchemy remains unused, so repeated stabilization must not expose the
+        // same K1 retention decision more than once for an equivalent state:
+        // https://api.pokemontcg.io/v2/cards/swsh12-156
+        // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        // https://github.com/FlareZ123/pokemon-sims/issues/1010
+        if (trace_ != nullptr) {
+          trace_->add_policy_once(
+              state_, "issue-1010-fss-k1-no-advancing-target", state_.turn,
+              "HOLD VSTAR POWER", "R-FSS-02; R-VSTAR-01; P-KNOWLEDGE-01; P-DCI-01",
               "Retained Star Alchemy because K1 proved that no searched card advances setup.");
+        }
         return false;
       }
     }

@@ -18,6 +18,10 @@ struct EngineTestAccess {
   static bool play_heavy_ball(Engine& engine) {
     return engine.play_heavy_ball();
   }
+
+  static void add_to_hand(Engine& engine, const Card card) {
+    engine.state_.hand.push_back(card);
+  }
 };
 }  // namespace sim
 
@@ -82,7 +86,7 @@ void test_state_change_allows_a_new_hold_event() {
   expect(heavy_ball_hold_count(trace) == 1U,
          "An unchanged exact state must emit one hold event.");
 
-  engine.state_.hand.push_back(sim::Card::Grass);
+  sim::EngineTestAccess::add_to_hand(engine, sim::Card::Grass);
   expect(!sim::EngineTestAccess::play_heavy_ball(engine),
          "Heavy Ball must remain held after the relevant state changes.");
   expect(heavy_ball_hold_count(trace) == 2U,

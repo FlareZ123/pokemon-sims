@@ -124,6 +124,62 @@
     return held_manual_completes_energy;
   }
 
+  bool wonder_tag_duplicate_held_crispin_has_no_marginal_route() const {
+    if (!deck_seen_ || !supporter_allowed() ||
+        hand_count(Card::TapuLeleGX) == 0 ||
+        hand_count(Card::Crispin) == 0 ||
+        deck_count_after_search_started(Card::Crispin) == 0 ||
+        !need_energy() || !crispin_can_advance_energy_axis() ||
+        !prizes_known()) {
+      return false;
+    }
+
+    int grass_remaining = grass_needed();
+    int fire_remaining = fire_needed();
+    int grass_in_hand = hand_count(Card::Grass);
+    int fire_in_hand = hand_count(Card::Fire);
+    const bool grass_available = deck_count_after_search_started(Card::Grass) > 0;
+    const bool fire_available = deck_count_after_search_started(Card::Fire) > 0;
+    if (grass_available && fire_available) {
+      if (grass_remaining > 0) {
+        --grass_remaining;
+        ++fire_in_hand;
+      } else if (fire_remaining > 0) {
+        --fire_remaining;
+        ++grass_in_hand;
+      }
+    } else if (grass_available) {
+      ++grass_in_hand;
+    } else if (fire_available) {
+      ++fire_in_hand;
+    }
+    if (!state_.manual_energy_used && grass_remaining + fire_remaining == 1) {
+      if (grass_remaining == 1 && grass_in_hand > 0) --grass_remaining;
+      if (fire_remaining == 1 && fire_in_hand > 0) --fire_remaining;
+    }
+    const bool held_crispin_completes_ggf =
+        grass_remaining == 0 && fire_remaining == 0;
+
+    const bool held_gladion_has_known_axis = hand_count(Card::Gladion) > 0 &&
+        ((need_regi() && bench_space() > 0 &&
+          prize_count_after_reveal(Card::RegidragoV) > 0) ||
+         (need_vstar() && prize_count_after_reveal(Card::RegidragoVstar) > 0) ||
+         prize_count_after_reveal(Card::Grass) > 0 ||
+         prize_count_after_reveal(Card::Fire) > 0);
+
+    // Wonder Tag searches one Supporter, and only one Supporter may be played this
+    // turn. When a held Gladion has a known Prize route and Crispin is already held,
+    // searching a second Crispin cannot improve the current Supporter action and the
+    // first copy remains available for the next Energy turn:
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // One Supporter per turn: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1038
+    return held_crispin_completes_ggf || held_gladion_has_known_axis;
+  }
+
   void trace_tapu_hold_once(std::string_view key, std::string_view rules,
                             std::string_view detail) {
     // Fixed-point stabilization may re-query the same legal retention decision.
@@ -139,6 +195,13 @@
   }
 
   bool bench_tapu_if_useful() {
+    if (wonder_tag_duplicate_held_crispin_has_no_marginal_route()) {
+      trace_tapu_hold_once(
+          "issue-1038-duplicate-held-crispin",
+          "R-TAPU-01; R-GAME-SUPPORTER; P-CONNECTOR-01; P-KNOWLEDGE-01",
+          "Retained the second Tapu because held Crispin already completes the Energy route or remains available after the known Gladion Prize route.");
+      return false;
+    }
     if (wonder_tag_burnet_is_redundant_with_legacy_star_route()) {
       // Keep the second Tapu Lele-GX in hand after Quick Ball has legally searched
       // and shuffled. Every setup axis already has a shorter observable route:

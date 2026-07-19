@@ -184,6 +184,14 @@
 #include "part_014c_latias_bench_override.inc"
 };
 
+// Pineco and Forretress ex are supported through test-only variant recipes. The
+// qualified definitions live after Engine closes so the canonical sample deck and
+// matrix rows remain unchanged:
+// https://api.pokemontcg.io/v2/cards/sv4pt5-1
+// https://api.pokemontcg.io/v2/cards/sv4pt5-2
+// https://github.com/FlareZ123/pokemon-sims/issues/972
+#include "part_forretress_ex_combo.inc"
+
 DeckRecipe baseline_recipe() { return DeckRecipe(kDeckRecipe.begin(), kDeckRecipe.end()); }
 
 std::vector<Scenario> all_scenarios() {

@@ -8,6 +8,12 @@ This repository contains a rules-mapped simulator, deterministic `simulate-this`
 
 The model is deliberately a single-player setup model. It does not claim to resolve every Expanded card or any opponent-dependent game state.
 
+## Supported cards beyond the sample deck
+
+The engine intentionally implements some cards that are absent from the canonical sample deck in [`data/decklist.json`](data/decklist.json). Those source-bound card identities, rules, and search connectors let isolated regression fixtures test cross-card combinations while the simulator grows toward broader deck support. They must not be removed merely because the current sample 60 does not contain them.
+
+Variant recipes used for these checks belong in tests only. They must not add rows to the normal CLI scenario matrix, change `baseline_recipe()`, or be written into canonical aggregate results. Pineco and Forretress ex are one such test-only 2-2 line: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://github.com/FlareZ123/pokemon-sims/issues/972.
+
 ## Run one readable hand
 
 ```bash

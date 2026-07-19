@@ -1,0 +1,54 @@
+name: Agent debug audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Readable-hand contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Earliest legal route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee audit-trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee audit-trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee audit-trace-3.txt
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure | tee audit-ctest.txt
+      - name: Generate canonical matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-matrix.csv
+      - name: Capture exact tested source
+        run: |
+          git rev-parse HEAD | tee audit-tested-head.txt
+          git archive --format=tar.gz --output=exact-tested-source.tar.gz HEAD
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-debug-audit-${{ github.run_attempt }}
+          path: |
+            audit-trace-*.txt
+            audit-ctest.txt
+            audit-matrix.csv
+            audit-tested-head.txt
+            exact-tested-source.tar.gz
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+          if-no-files-found: error

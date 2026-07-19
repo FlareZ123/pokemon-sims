@@ -77,8 +77,41 @@
     return true;
   }
 
+  bool play_late_steven_payload_treasure_bridge() {
+    const std::optional<Card> payload =
+        late_steven_payload_treasure_bridge_payload();
+    if (!payload) return false;
+
+    remove_one(state_.hand, Card::StevensResolve);
+    state_.discard.push_back(Card::StevensResolve);
+    state_.supporter_used = true;
+    outcome_.used_steven = true;
+    record_deck_search_knowledge("Steven's Resolve");
+    if (!move_deck_to_hand(*payload)) {
+      throw std::logic_error("Known Steven payload bridge target disappeared");
+    }
+    shuffle(state_.deck);
+    state_.turn_ended = true;
+
+    // Searching only the required Dragon preserves another legal Mysterious Treasure
+    // target in deck. Treasure pays its printed discard cost with this card next turn,
+    // establishing the current-turn Apex Dragon payload without spending a faster
+    // present-turn route:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1023
+    trace("PLAY SUPPORTER", "R-STEVEN-01; R-GAME-SUPPORTER; P-COMPRESS-01",
+          "Searched the late payload-to-Treasure bridge: " + std::string(name(*payload)) +
+              ". Turn ended.");
+    return true;
+  }
+
   bool play_steven() {
     if (play_late_steven_vstar_vessel_route()) return true;
+    if (play_late_steven_payload_treasure_bridge()) return true;
 
     const int regi_before = hand_count(Card::RegidragoV);
     const int vstar_before = hand_count(Card::RegidragoVstar);

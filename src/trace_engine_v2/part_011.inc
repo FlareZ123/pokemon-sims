@@ -123,6 +123,46 @@
     return true;
   }
 
+  bool steven_held_routes_complete_next_turn(
+      const std::vector<Card>& wanted, const bool next_turn_item_locked,
+      const bool projected_vstar_available) const {
+    const bool prior_turn_active_regi_can_evolve = state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn && projected_vstar_available;
+    const bool held_manual_energy_completes_next_turn =
+        (grass_needed() == 1 && fire_needed() == 0 && hand_count(Card::Grass) > 0) ||
+        (grass_needed() == 0 && fire_needed() == 1 && hand_count(Card::Fire) > 0);
+    const auto projected_deck_copy_remains = [&wanted, this](const Card card) {
+      return deck_count_after_search_started(card) >
+          static_cast<int>(std::count(wanted.begin(), wanted.end(), card));
+    };
+    const bool quick_ball_target_remains = std::any_of(
+        state_.deck.begin(), state_.deck.end(), [projected_deck_copy_remains](const Card card) {
+          return is_basic(card) && projected_deck_copy_remains(card);
+        });
+    const auto quick_ball_cost = choose_discard(true, true, true, Card::QuickBall);
+    const bool held_quick_ball_payload_route = !next_turn_item_locked &&
+        hand_count(Card::QuickBall) > 0 && quick_ball_target_remains &&
+        quick_ball_cost && is_payload(*quick_ball_cost);
+
+    // Steven searches up to three cards. When the prior-turn Active Regidrago V can
+    // evolve next turn, a held Basic Energy completes GGF, and target-legal Quick
+    // Ball can discard the held Dragon payload, the VSTAR card is the only missing
+    // search target. Preserve Crispin and the one-copy ACE SPEC in deck:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/978
+    return scenario_.dci == DciProfile::StrictJit &&
+           state_.turn < scenario_.max_turn && prior_turn_active_regi_can_evolve &&
+           held_manual_energy_completes_next_turn && need_payload() &&
+           held_quick_ball_payload_route;
+  }
+
   bool play_steven() {
     if (!supporter_allowed() || hand_count(Card::StevensResolve) == 0 || !should_play_steven()) return false;
     const bool known_t3_compression = late_steven_has_known_t3_compression_route();
@@ -225,21 +265,25 @@
       }
     }
 
+    const bool projected_vstar_available = has_vstar() || hand_count(Card::RegidragoVstar) > 0 ||
+        projected_vstar_direct || projected_vstar_uses_gladion;
+    const bool held_routes_complete_next_turn = steven_held_routes_complete_next_turn(
+        wanted, next_turn_item_locked, projected_vstar_available);
+
     // Crispin source: https://api.pokemontcg.io/v2/cards/sv7-133
-    if (need_energy() && hand_count(Card::Crispin) == 0 && crispin_can_advance_energy_axis() &&
+    if (!held_routes_complete_next_turn && need_energy() &&
+        hand_count(Card::Crispin) == 0 && crispin_can_advance_energy_axis() &&
         deck_count_after_search_started(Card::Crispin) > 0) {
       add_wanted(Card::Crispin);
     }
 
-    const bool projected_vstar_available = has_vstar() || hand_count(Card::RegidragoVstar) > 0 ||
-        projected_vstar_direct || projected_vstar_uses_gladion;
     const bool projected_crispin_available = hand_count(Card::Crispin) > 0 ||
         std::find(wanted.begin(), wanted.end(), Card::Crispin) != wanted.end();
     const Pokemon* projected_regi = target_regi();
     const bool projected_legacy_star_payload_route = projected_vstar_available &&
         !state_.vstar_power_used && ability_available_for_pokemon(Card::RegidragoVstar) &&
         payload_might_be_in_deck();
-    const bool payload_route_preserved = !need_payload() ||
+    const bool payload_route_preserved = !need_payload() || held_routes_complete_next_turn ||
         (!next_turn_item_locked && hand_count(Card::BrilliantBlender) > 0) ||
         hand_count(Card::ProfessorBurnet) > 0 || projected_legacy_star_payload_route;
     const bool basic_active_needs_promotion = state_.active && is_basic(state_.active->card) &&
@@ -260,17 +304,21 @@
       add_wanted(Card::LatiasEx);
     }
 
-    if (wanted.size() < 3U && need_payload() && payload_might_be_in_deck() &&
-        hand_count(Card::BrilliantBlender) == 0 && hand_count(Card::ProfessorBurnet) == 0 &&
+    if (!held_routes_complete_next_turn && wanted.size() < 3U && need_payload() &&
+        payload_might_be_in_deck() && hand_count(Card::BrilliantBlender) == 0 &&
+        hand_count(Card::ProfessorBurnet) == 0 &&
         deck_count_after_search_started(payload_outlet) > 0) {
       add_wanted(payload_outlet);
     }
-    for (const Card fallback : {Card::RegidragoV, Card::RegidragoVstar, Card::Gladion, Card::Crispin, payload_outlet,
-                                Card::MysteriousTreasure, Card::EarthenVessel, Card::LatiasEx}) {
-      if (wanted.size() >= 3U) break;
-      if (fallback == Card::Crispin && !crispin_can_advance_energy_axis()) continue;
-      if (fallback == payload_outlet && !payload_might_be_in_deck()) continue;
-      add_wanted(fallback);
+    if (!held_routes_complete_next_turn) {
+      for (const Card fallback : {Card::RegidragoV, Card::RegidragoVstar, Card::Gladion,
+                                  Card::Crispin, payload_outlet, Card::MysteriousTreasure,
+                                  Card::EarthenVessel, Card::LatiasEx}) {
+        if (wanted.size() >= 3U) break;
+        if (fallback == Card::Crispin && !crispin_can_advance_energy_axis()) continue;
+        if (fallback == payload_outlet && !payload_might_be_in_deck()) continue;
+        add_wanted(fallback);
+      }
     }
     std::vector<Card> found;
     for (const Card target : wanted) {

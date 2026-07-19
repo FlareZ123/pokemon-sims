@@ -1,6 +1,6 @@
 {
   "matrix_seed": 20260705,
-  "simulator_policy_source_sha256": "3cf7edafd4f43b9c65244851aedcaea202995860600c57c5b1d71b1a9a3ba8c4",
+  "simulator_policy_source_sha256": "ab3028398fe636cad37f495987838614a183fe8960b6ed158b2f0e7623e28da6",
   "traces": [
     {
       "deadline": 3,
@@ -28,9 +28,9 @@
     },
     {
       "deadline": 3,
-      "file": "strict_rulebox_lock_go_second_seed_20.txt",
+      "file": "strict_rulebox_lock_go_second_seed_19.txt",
       "scenario": "strict-jit-rulebox-ability-lock/go-second",
-      "seed": 20
+      "seed": 19
     },
     {
       "deadline": 4,

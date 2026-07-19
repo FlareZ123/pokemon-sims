@@ -1,0 +1,31 @@
+
+Seed: 19 | first-ready turn: 3 | setup result: success
+===== SIMULATE THIS =====
+Scenario: strict-jit-rulebox-ability-lock/go-second | DCI: strict-JIT | Locks: full Rule Box Ability lock
+Mulligans: 1
+Opening player-known state: Active=Regidrago V [-] | Bench=(none) | Hand=Grass Energy, Dialga-GX, Gladion, Crispin, Professor Burnet, Grass Energy | Discard=(none)
+DEBUG ONLY: prizes=Mysterious Treasure, Latias ex, Arven, Channeler, Crispin, Regidrago V. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Serena
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [-] | Bench=(none) | Hand=Grass Energy, Dialga-GX, Gladion, Crispin, Professor Burnet, Grass Energy, Serena | Discard=(none)
+T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Crispin: deck inspected; Prize identities are now deducible for later decisions.
+T1 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T1 | ATTACK | rules: R-RV-01; R-GAME-ATTACK | Regidrago V used Celestial Roar; processed top 3: Regidrago VSTAR, Roseanne's Backup, Tapu Lele-GX; attached Energy: (none); remaining discarded: Regidrago VSTAR, Roseanne's Backup, Tapu Lele-GX.
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [GG] | Bench=(none) | Hand=Dialga-GX, Gladion, Professor Burnet, Grass Energy, Serena, Fire Energy | Discard=Crispin, Regidrago VSTAR, Roseanne's Backup, Tapu Lele-GX
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Quick Ball
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [GG] | Bench=(none) | Hand=Dialga-GX, Gladion, Professor Burnet, Grass Energy, Serena, Fire Energy, Quick Ball | Discard=Crispin, Regidrago VSTAR, Roseanne's Backup, Tapu Lele-GX
+T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T2 | PLAY SUPPORTER | rules: R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01 | Looked at Prize cards and exchanged Gladion for Regidrago V.
+T2 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T2 | HOLD ATTACK | rules: R-RV-01; P-KNOWLEDGE-01; P-JIT-01 | Celestial Roar cannot attach a needed Energy or bank a permitted payload from the known remaining deck.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [GGF] | Bench=Regidrago V [-] | Hand=Dialga-GX, Professor Burnet, Grass Energy, Serena, Quick Ball | Discard=Crispin, Regidrago VSTAR, Roseanne's Backup, Tapu Lele-GX
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Arven
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [GGF] | Bench=Regidrago V [-] | Hand=Dialga-GX, Professor Burnet, Grass Energy, Serena, Quick Ball, Arven | Discard=Crispin, Regidrago VSTAR, Roseanne's Backup, Tapu Lele-GX
+T3 | PLAY SUPPORTER | rules: R-ARVEN-01; R-GAME-SUPPORTER; P-COMPRESS-01 | Searched an Item and a Pokemon Tool without duplicating the VSTAR connector: Brilliant Blender, Forest Seal Stone.
+T3 | ATTACH TOOL | rules: R-FSS-01; R-GAME-TOOL | Attached Forest Seal Stone to Regidrago V.
+T3 | STAR ALCHEMY | rules: R-FSS-02; R-VSTAR-01 | Searched any card: Regidrago VSTAR.
+T3 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T3 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dipplin TWM 127.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=Regidrago V [-] | Hand=Dialga-GX, Professor Burnet, Grass Energy, Serena, Quick Ball | Discard=Crispin, Regidrago VSTAR, Roseanne's Backup, Tapu Lele-GX, Arven, Brilliant Blender, Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dipplin TWM 127
+T3 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

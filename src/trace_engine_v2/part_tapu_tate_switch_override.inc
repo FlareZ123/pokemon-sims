@@ -52,6 +52,41 @@
            !live_hand_payload_outlet;
   }
 
+  bool wonder_tag_crispin_is_redundant_with_held_complete_route() const {
+    if (!deck_seen_ || item_locked() || state_.manual_energy_used ||
+        !need_energy() || !need_vstar() || !need_payload() || need_regi() ||
+        hand_count(Card::MysteriousTreasure) == 0 ||
+        deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
+        !state_.active || state_.active->card != Card::RegidragoV ||
+        state_.active->entered_turn >= state_.turn) {
+      return false;
+    }
+
+    const bool held_manual_completes_energy =
+        (grass_needed() == 1 && fire_needed() == 0 &&
+         hand_count(Card::Grass) > 0) ||
+        (grass_needed() == 0 && fire_needed() == 1 &&
+         hand_count(Card::Fire) > 0);
+    if (!held_manual_completes_energy) return false;
+
+    const auto treasure_cost = choose_discard(
+        true, true, true, Card::MysteriousTreasure);
+
+    // The held Basic Energy and unused manual attachment already complete GGF.
+    // A target-legal Mysterious Treasure can discard the held Dragon payload and
+    // search the missing Regidrago VSTAR, so Wonder Tag into unused Crispin only
+    // spends Tapu Lele-GX, a Bench slot, and a one-shot connector:
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/980
+    return treasure_cost && is_payload(*treasure_cost);
+  }
+
   bool original_wonder_tag_route_has_live_target() {
     // Wonder Tag searches a Supporter. At K1, the Supporter that justifies spending
     // Tapu Lele-GX and a Bench slot must actually remain in the inspected deck;
@@ -67,7 +102,8 @@
 
     const bool live_direct_crispin = need_energy() &&
         hand_count(Card::Crispin) == 0 && crispin_can_advance_energy_axis() &&
-        might_be_unseen(Card::Crispin);
+        might_be_unseen(Card::Crispin) &&
+        !wonder_tag_crispin_is_redundant_with_held_complete_route();
     // Crispin advances the Energy axis only while a needed Basic Energy remains:
     // https://api.pokemontcg.io/v2/cards/sv7-133
 
@@ -293,6 +329,10 @@
     // https://github.com/FlareZ123/pokemon-sims/issues/616
     if (bench_space() == 1 && hand_count(Card::Oricorio) > 0 &&
         !in_play(Card::Oricorio) && oricorio_preserves_burnet_with_current_hand()) {
+      return false;
+    }
+
+    if (wonder_tag_crispin_is_redundant_with_held_complete_route()) {
       return false;
     }
 

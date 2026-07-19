@@ -1,3 +1,41 @@
+  bool steven_zero_energy_latias_vessel_candidate() const {
+    if (!deck_seen_ || !supporter_allowed() || hand_count(Card::StevensResolve) == 0 ||
+        scenario_.dci != DciProfile::StrictJit || scenario_.locks != LockMode::None ||
+        state_.turn + 2 > scenario_.max_turn || !state_.active ||
+        !is_basic(state_.active->card) || state_.active->card == Card::RegidragoV ||
+        in_play(Card::LatiasEx) || bench_space() == 0 ||
+        !ability_available_for_pokemon(Card::LatiasEx) ||
+        hand_count(Card::LatiasEx) > 0 || hand_count(Card::EarthenVessel) > 0 ||
+        hand_count(Card::RegidragoVstar) == 0 ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    const Pokemon* setup_regi = target_regi();
+    if (setup_regi == nullptr || setup_regi->card != Card::RegidragoV ||
+        setup_regi->grass != 0 || setup_regi->fire != 0) {
+      return false;
+    }
+
+    // Steven may search any three cards. K1 proves the complete two-turn route only
+    // when Crispin, Latias ex, Earthen Vessel, two Grass Energy, and one Fire Energy
+    // remain in deck. Two remaining Basic Energy cards preserve Vessel's legal T3
+    // search after the intervening draw, including when that draw is the last Grass:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core turn, attachment, evolution, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1 and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/1009
+    return deck_count_after_search_started(Card::Crispin) > 0 &&
+        deck_count_after_search_started(Card::LatiasEx) > 0 &&
+        deck_count_after_search_started(Card::EarthenVessel) > 0 &&
+        deck_count_after_search_started(Card::Grass) >= 2 &&
+        deck_count_after_search_started(Card::Fire) >= 1;
+  }
+
   bool play_steven() {
     const int regi_before = hand_count(Card::RegidragoV);
     const int vstar_before = hand_count(Card::RegidragoVstar);
@@ -11,19 +49,8 @@
         is_basic(state_.active->card) &&
         state_.active->card != Card::RegidragoV &&
         !in_play(Card::LatiasEx);
-    const Pokemon* setup_regi = target_regi();
-    const bool held_zero_energy_regi = setup_regi != nullptr &&
-        setup_regi->card == Card::RegidragoV && setup_regi->grass == 0 &&
-        setup_regi->fire == 0;
-    const bool held_vstar = hand_count(Card::RegidragoVstar) > 0;
-    const bool held_payload = std::any_of(
-        state_.hand.begin(), state_.hand.end(), is_payload);
     const bool zero_energy_latias_vessel_candidate =
-        scenario_.dci == DciProfile::StrictJit && scenario_.locks == LockMode::None &&
-        state_.turn + 2 <= scenario_.max_turn && basic_active_needs_latias_bridge &&
-        bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
-        hand_count(Card::LatiasEx) == 0 && hand_count(Card::EarthenVessel) == 0 &&
-        held_zero_energy_regi && held_vstar && held_payload;
+        steven_zero_energy_latias_vessel_candidate();
 
     const bool played = play_steven_issue1002_empty_deck_original();
     if (!played) return false;
@@ -38,28 +65,23 @@
     auto latias_in_deck = std::find(state_.deck.begin(), state_.deck.end(), Card::LatiasEx);
     auto vessel_in_deck =
         std::find(state_.deck.begin(), state_.deck.end(), Card::EarthenVessel);
-    const bool energy_chain_remains =
-        deck_count_after_search_started(Card::Grass) >= 2 &&
-        deck_count_after_search_started(Card::Fire) >= 1;
     const bool generic_fallback_displaced_complete_route =
         zero_energy_latias_vessel_candidate && regi_found == 1 && vstar_found == 1 &&
         crispin_found == 1 && latias_found == 0 && vessel_found == 0 &&
-        latias_in_deck != state_.deck.end() && vessel_in_deck != state_.deck.end() &&
-        energy_chain_remains;
+        latias_in_deck != state_.deck.end() && vessel_in_deck != state_.deck.end();
 
     if (generic_fallback_displaced_complete_route) {
-      // Steven may search any three cards. With a zero-Energy Regidrago V already in
-      // play, a VSTAR and Dragon payload already held, and a non-Regidrago Basic Active,
-      // Crispin + Latias ex + Earthen Vessel forms the complete observable T3 route:
-      // T2 Crispin attaches one Energy and puts the other in hand for the manual
-      // attachment; Latias supplies free Retreat; T3 Vessel discards the held Dragon,
-      // searches the final Grass Energy, and preserves strict-JIT payload timing.
+      // With the zero-Energy Regidrago V already in play, a VSTAR and Dragon payload
+      // already held, and a non-Regidrago Basic Active, Crispin + Latias ex + Earthen
+      // Vessel is the shortest complete observable route. Crispin and the manual
+      // attachment establish GF on T2; Latias supplies free Retreat; T3 Vessel
+      // discards the held Dragon, searches the final Grass, and preserves strict JIT:
       // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
       // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
       // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
       // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
       // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
-      // Core turn, attachment, evolution, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
       // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
       // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/1009
       if (!remove_one(state_.hand, Card::RegidragoV) ||
@@ -72,8 +94,7 @@
       state_.hand.push_back(Card::EarthenVessel);
 
       // The delegated Steven resolution already randomized the remaining deck. Swap
-      // only the selected card identities in place so deck size and random order remain
-      // unchanged while the three legal targets become the complete route:
+      // only selected identities in place, preserving deck size and random order:
       // https://api.pokemontcg.io/v2/cards/sm7-145
       // https://github.com/FlareZ123/pokemon-sims/issues/1009
       if (trace_ != nullptr && trace_->enabled && !trace_->lines.empty() &&

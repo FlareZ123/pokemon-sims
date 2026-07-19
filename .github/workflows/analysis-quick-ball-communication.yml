@@ -1,0 +1,88 @@
+name: Quick Ball to Communication Analysis
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quick-ball-communication-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build and validate current simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Build matched deck-swap analyzer
+        run: |
+          # The analyzer uses the repository's complete current simulator policy for both lists.
+          # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+          # Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152
+          # Probability interpretation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#what-the-probability-means
+          c++ -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
+            analysis/quick_ball_to_communication.cpp \
+            -o build/quick_ball_to_communication
+
+      - name: Run canonical and paired comparisons
+        run: |
+          mkdir -p analysis-results
+          ./build/quick_ball_to_communication 100000 50000 20260705 analysis-results \
+            | tee analysis-results/console-summary.txt
+
+      - name: Verify baseline reproduction and output contracts
+        run: |
+          # The unchanged list must reproduce the checked-in source-bound matrix exactly:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/results/simulation_results.csv
+          cmp results/simulation_results.csv analysis-results/baseline.csv
+          python - <<'PY'
+          import csv
+          from pathlib import Path
+
+          root = Path('analysis-results')
+          expected = {
+              'baseline.csv',
+              'variant.csv',
+              'aggregate-deltas.csv',
+              'paired-results.csv',
+              'turn-transitions.csv',
+              'changed-trace-examples.txt',
+              'summary.md',
+              'console-summary.txt',
+          }
+          missing = sorted(name for name in expected if not (root / name).is_file())
+          if missing:
+              raise SystemExit(f'missing analysis files: {missing}')
+
+          with (root / 'paired-results.csv').open(newline='', encoding='utf-8') as stream:
+              rows = list(csv.DictReader(stream))
+          if len(rows) != 14:
+              raise SystemExit(f'expected 14 scenarios, found {len(rows)}')
+          if any(int(row['trials']) != 50000 for row in rows):
+              raise SystemExit('paired trial count mismatch')
+          PY
+
+      - name: Record tested source
+        run: |
+          git rev-parse HEAD > analysis-results/tested-head.txt
+          git diff "${{ github.event.pull_request.base.sha }}...HEAD" > analysis-results/analysis.patch
+
+      - name: Upload comparison evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: quick-ball-to-communication-${{ github.run_attempt }}
+          path: analysis-results
+          if-no-files-found: error

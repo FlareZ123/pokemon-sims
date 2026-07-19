@@ -41,6 +41,8 @@ enum class Card : std::uint8_t {
   MawileGX,
   Oricorio,
   Dipplin,
+  Pineco,
+  ForretressEx,
   BrilliantBlender,
   MysteriousTreasure,
   QuickBall,

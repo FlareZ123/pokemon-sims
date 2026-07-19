@@ -95,6 +95,15 @@ add_test(NAME trace_turn2_item_lock_t3 COMMAND regidrago_sim --simulate-this --s
 # https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
 # https://github.com/FlareZ123/pokemon-sims/issues/925
 add_test(NAME trace_issue_925_turn2_item_lock_seed25 COMMAND regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2)
+# Quick Ball must precede Earthen Vessel only when Tapu Lele-GX into Crispin
+# compresses the Energy axis and every separate discard cost remains payable:
+# https://api.pokemontcg.io/v2/cards/swsh1-179
+# https://api.pokemontcg.io/v2/cards/cel25c-60_A
+# https://api.pokemontcg.io/v2/cards/sv7-133
+# https://api.pokemontcg.io/v2/cards/sv4-163
+# https://www.pokemon.com/us/pokemon-tcg/rules
+# https://github.com/FlareZ123/pokemon-sims/issues/962
+add_test(NAME trace_issue_962_strict_first_seed104 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 104 --require-ready-by 3)
 # The source-bound audit manifest includes this Rule Box Ability lock scenario in
 # the six-trace inventory, so CTest must enforce its ready-by deadline as well:
 # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json

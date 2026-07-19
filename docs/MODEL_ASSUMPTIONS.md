@@ -20,7 +20,7 @@ The fixed seed makes each report reproducible. The Monte Carlo standard error sh
 - One manual Energy attachment per turn.
 - Regidrago VSTAR evolution timing.
 - Basic Bench limit.
-- Regidrago V, Regidrago VSTAR, Tapu Lele-GX, Latias ex, Oricorio, and core search-card state transitions.
+- Regidrago V, Regidrago VSTAR, Tapu Lele-GX, Latias ex, Oricorio, Pineco, Forretress ex, and core search-card state transitions. Pineco and Forretress ex are intentionally available to isolated test recipes even though they are absent from the canonical sample deck: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2.
 - Regidrago V’s Celestial Roar top-three discard and Basic Energy attachment on any legal attack turn when the Active Regidrago V can advance the modeled Energy axis or, under no-discard-control, bank a permitted Dragon payload. The player going first still cannot attack on that player's first turn: https://api.pokemontcg.io/v2/cards/swsh12-135 https://www.pokemon.com/us/pokemon-tcg/rules
 - Mysterious Treasure, Quick Ball, Earthen Vessel, Brilliant Blender, Arven, Crispin, Professor Burnet, Serena draw, Tate & Liza draw, Steven’s Resolve, Gladion, Hisuian Heavy Ball, and Forest Seal Stone routes relevant to setup.
 - Path-style Rule Box Ability suppression and Field Blower removal while Items are legal.
@@ -31,7 +31,7 @@ The fixed seed makes each report reproducible. The Monte Carlo standard error sh
 
 ### Opponent actions
 
-No opposing deck is played. The model does not execute damage, Knock Outs, prize-taking, gust, bench pressure, hand disruption, Return Label, Lysandre Prism Star, Surprise Box, Girafarig, or any other opponent card. Lock scenarios are injected as exogenous constraints.
+No opposing deck is played. The model does not execute opponent damage, opponent-caused Knock Outs, prize-taking, gust, bench pressure, hand disruption, Return Label, Lysandre Prism Star, Surprise Box, Girafarig, or any other opponent card. It may execute a supported card’s mandatory self-Knock-Out when that effect is part of setup; Forretress ex’s Exploding Energy is the current example: https://api.pokemontcg.io/v2/cards/sv4pt5-2. Lock scenarios are injected as exogenous constraints.
 
 This means the no-lock baseline is a setup goldfish. It is useful for comparing connector quality. It is not a safe prediction in a competitive game.
 
@@ -61,7 +61,7 @@ Their discrete value is still preserved in the DCI profiles and swap discussion.
 
 ### Card-swap variants
 
-Matched-seed card-swap comparisons are currently unavailable. The active CLI emits baseline scenario rows only, and the prior variant artifact was removed after the policy rewrite: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L271-L283 and https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7. Any future deck-swap claim requires a restored variant builder, executable tests, and newly generated results.
+Matched-seed aggregate card-swap comparisons are currently unavailable. The active CLI emits baseline scenario rows only, and the prior aggregate variant artifact was removed after the policy rewrite: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L271-L283 and https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7. Isolated tests may construct temporary variant recipes to verify source-bound cards and connector combinations that are absent from the sample deck; those recipes must not enter canonical CLI rows or committed aggregate results. Any future probability claim for a deck swap requires a restored aggregate variant builder, executable tests, and newly generated results.
 
 ### Policy versus future-card oracle
 

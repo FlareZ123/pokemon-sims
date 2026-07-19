@@ -1,0 +1,95 @@
+name: Agent debug audit 20260719 0956
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Configure Release build
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Release binaries
+        run: cmake --build build --parallel 2
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Required pass 1 - strict go-second
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee required-pass-1.txt
+        # Trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+
+      - name: Required pass 2 - strict go-first
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 3 | tee required-pass-2.txt
+        # Confirmed route source: https://github.com/FlareZ123/pokemon-sims/issues/964
+
+      - name: Required pass 3 - Rule Box Ability lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee required-pass-3.txt
+        # Lock regression source: https://github.com/FlareZ123/pokemon-sims/issues/917
+
+      - name: Capture open bug witnesses
+        shell: bash
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 7 > open-1027-seed-7.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 293 > open-1022-seed-293.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 180 > open-990-seed-180.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 22 > open-990-seed-22.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 31 > open-990-seed-31.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-first --seed 85 > open-990-seed-85.txt
+        # Open issue sources: https://github.com/FlareZ123/pokemon-sims/issues/1027 https://github.com/FlareZ123/pokemon-sims/issues/1022 https://github.com/FlareZ123/pokemon-sims/issues/990
+
+      - name: Generate canonical T2 and T3 setup matrix
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out agent-debug-matrix.csv
+          cat agent-debug-matrix.csv
+        # Matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+
+      - name: Scan 1,200 traces for unused one-shot search targets
+        shell: bash
+        run: |
+          mkdir -p suspicious-traces
+          : > suspicious-summary.txt
+          for scenario in strict-jit/go-first strict-jit/go-second matchup-flex-jit/go-first matchup-flex-jit/go-second no-discard-control/go-first no-discard-control/go-second; do
+            safe_name="${scenario//\//_}"
+            for seed in $(seq 1 200); do
+              trace="suspicious-traces/${safe_name}-${seed}.txt"
+              ./build/regidrago_sim --simulate-this --scenario "$scenario" --seed "$seed" > "$trace"
+              if python3 -c 'import pathlib,re,sys; p=pathlib.Path(sys.argv[1]); lines=p.read_text().splitlines(); bad=[]; search=re.compile(r"(?:WONDER TAG|STAR ALCHEMY) \\| searched (.+)$"); ready=next((i for i,x in enumerate(lines) if " | READY" in x),len(lines)); [(bad.append((i,m.group(1))) if sum(m.group(1) in x for x in lines[i+1:ready])==0 else None) for i,x in enumerate(lines[:ready]) if (m:=search.search(x))]; sys.exit(0 if bad else 1)' "$trace"; then
+                echo "$scenario seed $seed" >> suspicious-summary.txt
+              else
+                rm "$trace"
+              fi
+            done
+          done
+          cat suspicious-summary.txt
+        # Scarce connector policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+
+      - name: Package exact tested source
+        run: |
+          tar --exclude=.git --exclude=build -czf repo-source.tar.gz .
+          git rev-parse HEAD > tested-head.txt
+
+      - name: Upload audit evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: agent-debug-audit-20260719-0956
+          path: |
+            required-pass-*.txt
+            open-*.txt
+            agent-debug-matrix.csv
+            suspicious-summary.txt
+            suspicious-traces/
+            repo-source.tar.gz
+            tested-head.txt
+            build/regidrago_sim
+          if-no-files-found: error

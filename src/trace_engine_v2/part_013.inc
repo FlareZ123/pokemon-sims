@@ -208,6 +208,8 @@
       const bool preserve_final_connector_slot = preserve_final_slot_for_tapu || preserve_final_slot_for_oricorio;
       if (need_regi() && hand_count(Card::RegidragoV) > 0) {
         changed = bench_from_hand(Card::RegidragoV, false);
+      } else if (bench_pineco_if_useful()) {
+        changed = true;
       } else if (!preserve_final_connector_slot && in_play_count(Card::RegidragoV) < 2 &&
                  hand_count(Card::RegidragoV) > 0 && !has_vstar()) {
         changed = bench_from_hand(Card::RegidragoV, false);
@@ -225,6 +227,7 @@
   bool run_search_items_one_step(const bool permit_payload) {
     if (item_locked()) return false;
     play_basics_from_hand();
+    if (run_forretress_combo_search_step(permit_payload)) return true;
     if (need_regi() && bench_space() > 0) {
       if (play_pokemon_communication(permit_payload)) return true;
       if (play_quick_ball(permit_payload)) return true;

@@ -55,7 +55,21 @@
     const bool want_payload = need_payload() && might_be_unseen(Card::DialgaGX) && !can_jit_discard &&
                               has_payable_payload_outlet_after_costed_search(Card::QuickBall);
     if (!can_jit_discard && !want_regi && !want_latias && !want_tapu && !want_oricorio && !want_payload) return false;
-    const auto cost = choose_discard(can_jit_discard, true, true, Card::QuickBall);
+    auto cost = choose_discard(can_jit_discard, true, true, Card::QuickBall);
+    if (!cost && want_regi && hand_count(Card::RegidragoVstar) >= 2) {
+      // One of two public VSTAR copies may pay Quick Ball only while Quick Ball is
+      // establishing the missing Regidrago V. The other copy remains in hand for the
+      // legal later evolution, so this route-conditioned fallback does not weaken the
+      // singleton VSTAR protection or alter ordinary lower-DCI selector ordering:
+      // https://api.pokemontcg.io/v2/cards/swsh1-179
+      // https://api.pokemontcg.io/v2/cards/swsh12-135
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://www.pokemon.com/us/pokemon-tcg/rules
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // https://github.com/FlareZ123/pokemon-sims/issues/964
+      cost = Card::RegidragoVstar;
+    }
     if (!cost) return false;
 
     remove_one(state_.hand, Card::QuickBall);

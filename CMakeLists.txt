@@ -104,6 +104,14 @@ add_test(NAME trace_issue_925_turn2_item_lock_seed25 COMMAND regidrago_sim --sim
 # https://www.pokemon.com/us/pokemon-tcg/rules
 # https://github.com/FlareZ123/pokemon-sims/issues/962
 add_test(NAME trace_issue_962_strict_first_seed104 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 104 --require-ready-by 3)
+# One of two held Regidrago VSTAR copies may pay Quick Ball while the other stays
+# protected for the Regidrago V that the search establishes, producing the legal T3 route:
+# https://api.pokemontcg.io/v2/cards/swsh1-179
+# https://api.pokemontcg.io/v2/cards/swsh12-135
+# https://api.pokemontcg.io/v2/cards/swsh12-136
+# https://www.pokemon.com/us/pokemon-tcg/rules
+# https://github.com/FlareZ123/pokemon-sims/issues/964
+add_test(NAME trace_issue_964_strict_first_seed43 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 3)
 # The source-bound audit manifest includes this Rule Box Ability lock scenario in
 # the six-trace inventory, so CTest must enforce its ready-by deadline as well:
 # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json

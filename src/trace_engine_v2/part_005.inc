@@ -2,6 +2,31 @@
     return out.str();
   }
 
+  // Test-variant combo support. Definitions are emitted after Engine closes so
+  // these declarations are visible to opening setup, connector policy, and the
+  // active turn composition without disturbing the split translation unit.
+  // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+  // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/972
+  bool forretress_combo_enabled() const;
+  bool needs_pineco_connector() const;
+  bool needs_forretress_connector() const;
+  bool bench_pineco_if_useful();
+  bool evolve_forretress_ex();
+  Pokemon* pokemon_at_board_index(std::size_t index);
+  std::optional<std::size_t> exploding_energy_regidrago_target_index() const;
+  void discard_forretress_ex_stack(const Pokemon& knocked_out);
+  bool resolve_exploding_energy(
+      const std::vector<std::size_t>& attachment_destinations);
+  bool use_exploding_energy_for_setup();
+  bool advance_forretress_combo();
+  Card fallback_combo_basic_after_search_started() const;
+  Card fallback_combo_pokemon_after_search_started() const;
+  bool play_quick_ball_for_pineco();
+  bool play_ultra_ball_for_forretress_combo();
+  bool play_evolution_incense_for_forretress();
+  bool run_forretress_combo_search_step(bool permit_payload);
+
   void setup() {
     deck_seen_ = false;
     prizes_revealed_ = false;
@@ -67,7 +92,8 @@
     const bool tapu_oricorio_are_only_opening_basics =
         hand_count(Card::TapuLeleGX) > 0 && hand_count(Card::Oricorio) > 0 &&
         hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&
-        hand_count(Card::MawileGX) == 0 && hand_count(Card::DialgaGX) == 0;
+        hand_count(Card::MawileGX) == 0 && hand_count(Card::DialgaGX) == 0 &&
+        hand_count(Card::Pineco) == 0;
     const bool rule_box_ability_lock =
         scenario_.locks == LockMode::FullRuleBoxAbility ||
         scenario_.locks == LockMode::FullCombined;
@@ -123,7 +149,8 @@
     const bool lock_oricorio_dialga_are_only_opening_basics =
         hand_count(Card::Oricorio) > 0 && hand_count(Card::DialgaGX) > 0 &&
         hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&
-        hand_count(Card::MawileGX) == 0 && hand_count(Card::TapuLeleGX) == 0;
+        hand_count(Card::MawileGX) == 0 && hand_count(Card::TapuLeleGX) == 0 &&
+        hand_count(Card::Pineco) == 0;
     const int lock_opening_payloads = static_cast<int>(
         std::count_if(state_.hand.begin(), state_.hand.end(), is_payload));
     const bool lock_dialga_is_redundant_payload =
@@ -191,7 +218,8 @@
     const bool tapu_dialga_are_only_opening_basics =
         hand_count(Card::TapuLeleGX) > 0 && hand_count(Card::DialgaGX) > 0 &&
         hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&
-        hand_count(Card::MawileGX) == 0 && hand_count(Card::Oricorio) == 0;
+        hand_count(Card::MawileGX) == 0 && hand_count(Card::Oricorio) == 0 &&
+        hand_count(Card::Pineco) == 0;
     const int payloads_in_hand = static_cast<int>(
         std::count_if(state_.hand.begin(), state_.hand.end(), is_payload));
     const bool dialga_is_unique_in_hand_payload =
@@ -251,7 +279,8 @@
     const bool no_lock_oricorio_dialga_are_only_opening_basics =
         hand_count(Card::Oricorio) > 0 && hand_count(Card::DialgaGX) > 0 &&
         hand_count(Card::RegidragoV) == 0 && hand_count(Card::LatiasEx) == 0 &&
-        hand_count(Card::MawileGX) == 0 && hand_count(Card::TapuLeleGX) == 0;
+        hand_count(Card::MawileGX) == 0 && hand_count(Card::TapuLeleGX) == 0 &&
+        hand_count(Card::Pineco) == 0;
     const bool no_lock_dialga_is_redundant_payload =
         hand_count(Card::DialgaGX) == 1 && payloads_in_hand > 1;
     const bool no_lock_vital_dance_has_energy_value = !both_manual_energy_types_held;
@@ -306,7 +335,9 @@
     // https://api.pokemontcg.io/v2/cards/sm2-55
     // https://api.pokemontcg.io/v2/cards/sm11-141
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULES_AND_INTERACTIONS.md#deliberate-bounds
-    for (const Card candidate : {Card::RegidragoV, Card::LatiasEx, Card::MawileGX, Card::Oricorio, Card::DialgaGX, Card::TapuLeleGX}) {
+    for (const Card candidate : {Card::RegidragoV, Card::LatiasEx, Card::MawileGX,
+                                 Card::Oricorio, Card::DialgaGX, Card::TapuLeleGX,
+                                 Card::Pineco}) {
       if (remove_one(state_.hand, candidate)) {
         state_.active = Pokemon{candidate, 0};
         outcome_.started_regi = candidate == Card::RegidragoV;
@@ -350,6 +381,19 @@
     if (bench_space() > 0 && hand_count(Card::RegidragoV) > 0 && in_play_count(Card::RegidragoV) < 2) {
       remove_one(state_.hand, Card::RegidragoV);
       state_.bench.push_back(Pokemon{Card::RegidragoV, 0});
+    }
+    if (forretress_combo_enabled() && bench_space() > 0 &&
+        hand_count(Card::Pineco) > 0 && !in_play(Card::Pineco) &&
+        !in_play(Card::ForretressEx)) {
+      // Setup may place Pineco on the Bench before turn one. Regidrago remains
+      // the higher-priority Bench axis, then the isolated 2-2 variant reserves a
+      // second slot for the legal turn-two Stage 1 evolution window:
+      // https://api.pokemontcg.io/v2/cards/sv4pt5-1
+      // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+      // https://www.pokemon.com/us/pokemon-tcg/rules
+      // https://github.com/FlareZ123/pokemon-sims/issues/972
+      remove_one(state_.hand, Card::Pineco);
+      state_.bench.push_back(Pokemon{Card::Pineco, 0});
     }
 
     const bool held_shuffle_draw_can_use_hand_compression = hand_count(Card::TateLiza) > 0;

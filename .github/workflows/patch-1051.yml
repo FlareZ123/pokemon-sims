@@ -21,46 +21,54 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
+          import re
+          import textwrap
 
           source = Path('src/trace_engine_v2/part_issue_991_wonder_tag_burnet_legacy_star_override.inc')
           text = source.read_text(encoding='utf-8')
-          old_guard = '''        deck_count_after_search_started(Card::Crispin) == 0 ||
-              !need_energy() || !crispin_can_advance_energy_axis() ||
-              !prizes_known()) {'''
-          new_guard = '''        deck_count_after_search_started(Card::Crispin) == 0 ||
-              !need_energy() || !prizes_known()) {'''
-          if text.count(old_guard) != 1:
-              raise SystemExit('issue 1051 guard anchor mismatch')
-          text = text.replace(old_guard, new_guard, 1)
 
-          old_energy = '''    const bool grass_available = deck_count_after_search_started(Card::Grass) > 0;
-              const bool fire_available = deck_count_after_search_started(Card::Fire) > 0;
-              if (grass_available && fire_available) {'''
-          new_energy = '''    const bool grass_available = deck_count_after_search_started(Card::Grass) > 0;
-              const bool fire_available = deck_count_after_search_started(Card::Fire) > 0;
-              const bool needed_energy_searchable =
-                  (grass_needed() > 0 && grass_available) ||
-                  (fire_needed() > 0 && fire_available);
-              if (!needed_energy_searchable) return false;
-              if (grass_available && fire_available) {'''
-          if text.count(old_energy) != 1:
-              raise SystemExit('issue 1051 energy anchor mismatch')
-          text = text.replace(old_energy, new_energy, 1)
+          text, guard_count = re.subn(
+              r'(?m)^(\s*)!need_energy\(\) \|\| !crispin_can_advance_energy_axis\(\) \|\|\n\1!prizes_known\(\)\) \{',
+              r'\1!need_energy() || !prizes_known()) {',
+              text,
+              count=1,
+          )
+          if guard_count != 1:
+              raise SystemExit(f'issue 1051 guard replacement count: {guard_count}')
 
-          old_comment = '''    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1038
-              return held_crispin_completes_ggf || held_gladion_has_known_axis;'''
-          new_comment = '''    // One-type search-to-hand plus manual attachment:
-              // https://github.com/FlareZ123/pokemon-sims/issues/1051
-              // Confirmed original duplicate route:
-              // https://github.com/FlareZ123/pokemon-sims/issues/1038
-              return held_crispin_completes_ggf || held_gladion_has_known_axis;'''
-          if text.count(old_comment) != 1:
-              raise SystemExit('issue 1051 comment anchor mismatch')
-          text = text.replace(old_comment, new_comment, 1)
+          energy_pattern = re.compile(
+              r'(?m)^(\s*)const bool grass_available = deck_count_after_search_started\(Card::Grass\) > 0;\n'
+              r'\1const bool fire_available = deck_count_after_search_started\(Card::Fire\) > 0;\n'
+              r'\1if \(grass_available && fire_available\) \{'
+          )
+          energy_replacement = (
+              r'\1const bool grass_available = deck_count_after_search_started(Card::Grass) > 0;\n'
+              r'\1const bool fire_available = deck_count_after_search_started(Card::Fire) > 0;\n'
+              r'\1const bool needed_energy_searchable =\n'
+              r'\1    (grass_needed() > 0 && grass_available) ||\n'
+              r'\1    (fire_needed() > 0 && fire_available);\n'
+              r'\1if (!needed_energy_searchable) return false;\n'
+              r'\1if (grass_available && fire_available) {'
+          )
+          text, energy_count = energy_pattern.subn(energy_replacement, text, count=1)
+          if energy_count != 1:
+              raise SystemExit(f'issue 1051 energy replacement count: {energy_count}')
+
+          issue_anchor = '    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1038\n'
+          issue_replacement = (
+              '    // One-type search-to-hand plus manual attachment:\n'
+              '    // https://github.com/FlareZ123/pokemon-sims/issues/1051\n'
+              '    // Confirmed original duplicate route:\n'
+              '    // https://github.com/FlareZ123/pokemon-sims/issues/1038\n'
+          )
+          if text.count(issue_anchor) != 1:
+              raise SystemExit(f'issue 1051 URL anchor count: {text.count(issue_anchor)}')
+          text = text.replace(issue_anchor, issue_replacement, 1)
           source.write_text(text, encoding='utf-8')
 
           test = Path('tests/issue_1051_one_type_crispin_wonder_tag_tests.cpp')
-          test.write_text(r'''#define REGIDRAGO_SIM_NO_MAIN
+          test.write_text(textwrap.dedent(r'''\
+          #define REGIDRAGO_SIM_NO_MAIN
           #include "../src/regidrago_sim.cpp"
 
           #include <algorithm>
@@ -118,12 +126,13 @@ jobs:
             }
             return 0;
           }
-          ''', encoding='utf-8')
+          '''), encoding='utf-8')
 
           Path('.github/workflows/patch-1051.yml').unlink()
           PY
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/trace_engine_v2/part_issue_991_wonder_tag_burnet_legacy_star_override.inc tests/issue_1051_one_type_crispin_wonder_tag_tests.cpp .github/workflows/patch-1051.yml
+          git add -A
+          git diff --cached --check
           git commit -m "Fix one-type duplicate Crispin route (#1051)"
           git push origin HEAD:${{ github.head_ref }}

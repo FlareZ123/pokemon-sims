@@ -92,6 +92,60 @@
     return true;
   }
 
+  bool fss_crispin_scheduled_turn_two_route_available() const {
+    if (!deck_seen_ || scenario_.dci == DciProfile::NoDiscardControl ||
+        scenario_.locks != LockMode::TurnTwoItem || state_.turn != 1 ||
+        scenario_.going_first || scenario_.max_turn < 2 ||
+        !supporter_allowed() || state_.manual_energy_used || !state_.active ||
+        state_.active->card != Card::RegidragoV ||
+        hand_count(Card::RegidragoVstar) == 0 ||
+        hand_count(Card::ProfessorBurnet) == 0 ||
+        deck_count_after_search_started(Card::Crispin) == 0 ||
+        deck_count_after_search_started(Card::Grass) == 0 ||
+        deck_count_after_search_started(Card::Fire) == 0 ||
+        !payload_might_be_in_deck()) {
+      return false;
+    }
+
+    for (const Card crispin_attachment : {Card::Grass, Card::Fire}) {
+      int grass = state_.active->grass;
+      int fire = state_.active->fire;
+      int held_grass = hand_count(Card::Grass);
+      int held_fire = hand_count(Card::Fire);
+
+      if (crispin_attachment == Card::Grass) {
+        ++grass;
+        ++held_fire;
+      } else {
+        ++fire;
+        ++held_grass;
+      }
+
+      const int remaining_grass = std::max(0, 2 - grass);
+      const int remaining_fire = std::max(0, 1 - fire);
+      const int remaining_attachments = remaining_grass + remaining_fire;
+      if (remaining_attachments <= 2 && held_grass >= remaining_grass &&
+          held_fire >= remaining_fire) {
+        // Crispin searches different Basic Energy types, attaches one, and puts the
+        // other into hand. The current and next legal manual attachments then finish
+        // GGF before the scheduled T2 Item lock, while the held Burnet remains free to
+        // establish the strict-JIT payload on the ready turn. This deterministic route
+        // outranks Oricorio plus Celestial Roar's unknown top-three result:
+        // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+        // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+        // Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+        // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+        // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+        // Supporter, attachment, attack, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+        // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+        // Future-card oracle prohibition: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1085
+        return true;
+      }
+    }
+    return false;
+  }
+
   Card fss_target_after_search_started() const {
     if (fss_latias_vessel_promotion_route_available()) {
       // The constrained Latias route solves Active position, Energy, Evolution, and
@@ -101,6 +155,8 @@
       // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1068
       return Card::LatiasEx;
     }
+
+    if (fss_crispin_scheduled_turn_two_route_available()) return Card::Crispin;
 
     const Card original = fss_target_after_search_started_issue1071_original();
     if (original == Card::RegidragoVstar &&

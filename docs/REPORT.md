@@ -36,4 +36,4 @@ Seed: `20260705`.
 
 ## Interpretation boundary
 
-These percentages estimate setup readiness for this policy engine. They are not match-win rates. Opponent damage, Knock Outs, Prize taking, hand disruption, gust, stadium sequencing, and full Expanded legality remain outside this goldfish model.
+These percentages estimate setup readiness for this policy engine. They are not match-win rates. Opponent damage, opponent-caused Knock Outs, Prize taking, hand disruption, gust, stadium sequencing, and full Expanded legality remain outside this goldfish model. A card-mandated self-Knock-Out may still be executed inside an isolated supported setup route, such as Forretress ex’s Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2.

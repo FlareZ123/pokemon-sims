@@ -16,11 +16,13 @@ function(run_trace scenario seed output_var)
 endfunction()
 
 # Held Fire plus the next legal manual attachment guarantees GGF before Regidrago V
-# can evolve. Under strict JIT, Celestial Roar cannot bank the T2 payload, so seed 19
+# can evolve. Held Serena plus Dialga-GX supplies the T2 strict-JIT payload, so seed 19
 # must preserve the unresolved VSTAR and connector axes:
 # Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
 # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
-# Manual attachment and evolution: https://www.pokemon.com/us/pokemon-tcg/rules
+# Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+# Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+# Manual attachment, evolution, and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
 # Strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
 # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1079
 run_trace("strict-jit/go-second" 19 strict_seed_19)
@@ -30,8 +32,8 @@ endif()
 if(strict_seed_19 MATCHES "T1 \\| ATTACK \\|.*Celestial Roar")
   message(FATAL_ERROR "Strict seed 19 still used Celestial Roar:\n${strict_seed_19}")
 endif()
-if(NOT strict_seed_19 MATCHES "T2 \\| PLAY SUPPORTER \\|.*Professor Burnet")
-  message(FATAL_ERROR "Strict seed 19 lost the held Burnet payload route:\n${strict_seed_19}")
+if(NOT strict_seed_19 MATCHES "T2 \\| DISCARD \\|.*Dialga-GX")
+  message(FATAL_ERROR "Strict seed 19 lost its held same-turn payload route:\n${strict_seed_19}")
 endif()
 if(NOT strict_seed_19 MATCHES "T2 \\| READY \\|")
   message(FATAL_ERROR "Strict seed 19 did not retain T2 readiness:\n${strict_seed_19}")
@@ -46,7 +48,7 @@ if(NOT strict_seed_4 MATCHES "T1 \\| ATTACK \\|.*Celestial Roar")
   message(FATAL_ERROR "Strict seed 4 incorrectly suppressed a live Celestial Roar route:\n${strict_seed_4}")
 endif()
 
-# No-discard-control may bank an early Dragon payload, so the held-Energy suppression
+# No-discard-control may bank an early Dragon payload, so the held-route suppression
 # must remain limited to strict and matchup-flex JIT:
 # https://api.pokemontcg.io/v2/cards/swsh12-135
 # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment

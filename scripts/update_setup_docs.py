@@ -114,7 +114,7 @@ Seed: `{manifest['matrix_seed']}`.
 
 ## Interpretation boundary
 
-These percentages estimate setup readiness for this policy engine. They are not match-win rates. Opponent damage, Knock Outs, Prize taking, hand disruption, gust, stadium sequencing, and full Expanded legality remain outside this goldfish model.
+These percentages estimate setup readiness for this policy engine. They are not match-win rates. Opponent damage, opponent-caused Knock Outs, Prize taking, hand disruption, gust, stadium sequencing, and full Expanded legality remain outside this goldfish model. A card-mandated self-Knock-Out may still be executed inside an isolated supported setup route, such as Forretress ex’s Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2.
 """
 
 
@@ -165,7 +165,7 @@ CTest validates its registered deadline cases. The baseline generator separately
 
 ## Boundary
 
-This remains a setup-policy engine. It does not resolve a complete opposing board, damage, Knock Outs, Prize taking, hand disruption, gust, or all Expanded interactions.
+This remains a setup-policy engine. It does not resolve a complete opposing board, opponent damage or opponent-caused Knock Outs, Prize taking, hand disruption, gust, or all Expanded interactions. A card-mandated self-Knock-Out may be modeled when it is part of a supported setup effect, such as Forretress ex’s Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2.
 """
 
 

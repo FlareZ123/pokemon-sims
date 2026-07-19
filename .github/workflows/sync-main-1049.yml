@@ -1,0 +1,29 @@
+name: Sync main for issue 1049
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.head_ref == 'bug/1049-prefer-steven-over-duplicate-crispin'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Merge current main and remove sync workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+          git rm .github/workflows/sync-main-1049.yml
+          git commit -m "Remove issue 1049 sync workflow"
+          git push origin HEAD:${{ github.head_ref }}

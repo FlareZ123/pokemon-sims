@@ -173,7 +173,7 @@
     if (state_.turn != 2 || !scenario_.going_first ||
         scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
-        !supporter_allowed() || !deck_seen_ || !state_.active ||
+        !supporter_allowed() || !state_.active ||
         state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
         !state_.manual_energy_used || state_.active->grass < 2 ||
@@ -182,19 +182,21 @@
         hand_count(Card::RegidragoVstar) > 0 ||
         hand_count(Card::BrilliantBlender) > 0 ||
         !need_vstar() || !need_payload() || !payload_might_be_in_deck() ||
-        deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
-        deck_count_after_search_started(Card::BrilliantBlender) == 0) {
+        !might_be_unseen(Card::RegidragoVstar) ||
+        !might_be_unseen(Card::BrilliantBlender)) {
       return false;
     }
 
-    // A current-turn route remains superior when a legal Item, Star Alchemy, or
-    // other observable connector can expose Regidrago VSTAR now. Otherwise Steven's
-    // unrestricted three-card search banks VSTAR and Brilliant Blender, the held Fire
-    // supplies the next manual attachment, and the prior-turn Active may evolve on T3:
+    // Steven is selected at K0 before any expendable search Item is burned. Fixed-list
+    // targets may remain plausible until Steven legally inspects the deck; its search
+    // then chooses only targets actually present. A current-turn VSTAR connector still
+    // outranks this banked route. Otherwise the held Fire completes GGF on T3 and the
+    // prior-turn Active may evolve before Brilliant Blender supplies the JIT payload:
     // https://api.pokemontcg.io/v2/cards/sm7-145
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/sv8-164
     // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/952

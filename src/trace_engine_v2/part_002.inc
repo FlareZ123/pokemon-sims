@@ -92,13 +92,19 @@ struct TraceLog {
 
   static std::string policy_state_fingerprint(const State& state) {
     // Fixed-point policy may query the same no-op decision repeatedly. Public trace
-    // events are emitted once per exact state and may reappear after any state change:
+    // events are emitted once per equivalent visible state and may reappear after a
+    // real state change. Zone order is canonicalized because deck shuffles do not
+    // change K1 card availability or any visible policy axis:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
     // https://github.com/FlareZ123/pokemon-sims/issues/1007
     std::ostringstream out;
     const auto append_cards = [&out](const std::vector<Card>& cards) {
+      std::vector<int> ordered;
+      ordered.reserve(cards.size());
+      for (const Card card : cards) ordered.push_back(static_cast<int>(card));
+      std::sort(ordered.begin(), ordered.end());
       out << '[';
-      for (const Card card : cards) out << static_cast<int>(card) << ',';
+      for (const int card : ordered) out << card << ',';
       out << ']';
     };
     const auto append_pokemon = [&out](const Pokemon& pokemon) {

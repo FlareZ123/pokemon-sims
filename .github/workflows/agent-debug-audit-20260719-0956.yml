@@ -76,7 +76,8 @@ jobs:
 
       - name: Package exact tested source
         run: |
-          tar --exclude=.git --exclude=build -czf repo-source.tar.gz .
+          tar --exclude=.git --exclude=build -czf /tmp/repo-source.tar.gz .
+          cp /tmp/repo-source.tar.gz repo-source.tar.gz
           git rev-parse HEAD > tested-head.txt
 
       - name: Upload audit evidence

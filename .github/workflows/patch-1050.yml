@@ -1,0 +1,129 @@
+name: Patch issue 1050
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'bug/1050-dynamic-dead-role-dci'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Apply reviewed issue 1050 patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          source = Path('src/trace_engine_v2/part_006.inc')
+          text = source.read_text(encoding='utf-8')
+          anchor = '''    if (hand_count(Card::RegidragoV) > 0 && in_play_count(Card::RegidragoV) >= 2) return Card::RegidragoV;
+              if (hand_count(Card::RegidragoVstar) > 0 && has_vstar()) return Card::RegidragoVstar;
+
+          '''
+          insertion = '''    if (hand_count(Card::RegidragoV) > 0 && in_play_count(Card::RegidragoV) >= 2) return Card::RegidragoV;
+              if (hand_count(Card::RegidragoVstar) > 0 && has_vstar()) return Card::RegidragoVstar;
+
+              const bool final_energy_vessel_completion =
+                  scenario_.dci == DciProfile::NoDiscardControl &&
+                  excluded_from_cost && *excluded_from_cost == Card::EarthenVessel &&
+                  !state_.manual_energy_used && active_is_vstar() && payload_ready() &&
+                  grass_needed() + fire_needed() == 1 &&
+                  ((grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
+                   (fire_needed() == 1 && might_be_unseen(Card::Fire)));
+              if (final_energy_vessel_completion) {
+                // Once Active Regidrago VSTAR, payload, and two Energy are complete,
+                // these held roles no longer advance the repository setup objective.
+                // Earthen Vessel may therefore spend one before searching the final
+                // Basic Energy for the unused manual attachment:
+                // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+                // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+                // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+                // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+                // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+                // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+                // Manual attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+                // Dynamic DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+                // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1050
+                for (const Card card : {Card::QuickBall, Card::StevensResolve,
+                                        Card::LatiasEx, Card::Gladion}) {
+                  if (has_discardable_copy(card)) return card;
+                }
+              }
+
+          '''
+          if text.count(anchor) != 1:
+              raise SystemExit(f'issue 1050 insertion anchor count: {text.count(anchor)}')
+          source.write_text(text.replace(anchor, insertion, 1), encoding='utf-8')
+
+          test = Path('tests/issue_1050_dynamic_dead_role_dci_tests.cpp')
+          test.write_text(textwrap.dedent('''
+          #define REGIDRAGO_SIM_NO_MAIN
+          #include "../src/regidrago_sim.cpp"
+
+          #include <algorithm>
+          #include <stdexcept>
+          #include <string>
+
+          namespace sim { struct EngineTestAccess {}; }
+
+          int main() {
+            const auto scenario = sim::scenario_by_label("no-discard-control/go-first");
+            if (!scenario) throw std::runtime_error("Missing no-discard-control/go-first scenario");
+            sim::DeckRecipe recipe{sim::baseline_recipe()};
+            std::mt19937_64 rng{87};
+            sim::TraceLog trace{true, {}};
+            sim::Engine engine(*scenario, recipe, rng, &trace);
+            const sim::Outcome outcome = engine.run();
+
+            const bool vessel_cost = std::any_of(trace.lines.begin(), trace.lines.end(),
+                [](const std::string& line) {
+                  return line.find("T4 | DISCARD") != std::string::npos &&
+                         line.find("Quick Ball (Earthen Vessel cost)") != std::string::npos;
+                });
+            const bool arven_vessel = std::any_of(trace.lines.begin(), trace.lines.end(),
+                [](const std::string& line) {
+                  return line.find("T4 | PLAY SUPPORTER") != std::string::npos &&
+                         line.find("Arven") != std::string::npos &&
+                         line.find("Earthen Vessel") != std::string::npos;
+                });
+            const bool ready_t4 = outcome.first_ready_turn == 4 &&
+                std::any_of(trace.lines.begin(), trace.lines.end(),
+                    [](const std::string& line) {
+                      return line.find("T4 | READY") != std::string::npos;
+                    });
+
+            // After Active Regidrago VSTAR, payload, and GF are established, Quick
+            // Ball no longer advances setup. Arven may find Earthen Vessel, which
+            // discards that dead role, searches Grass, and enables the legal manual
+            // attachment for the earliest known T4 ready state:
+            // https://api.pokemontcg.io/v2/cards/sv1-166
+            // https://api.pokemontcg.io/v2/cards/sv4-163
+            // https://api.pokemontcg.io/v2/cards/swsh1-179
+            // https://api.pokemontcg.io/v2/cards/swsh12-136
+            // https://www.pokemon.com/us/pokemon-tcg/rules
+            // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+            // https://github.com/FlareZ123/pokemon-sims/issues/1050
+            if (!vessel_cost || !arven_vessel || !ready_t4) {
+              throw std::runtime_error("Seed 87 still leaves the final Arven-Vessel route blocked");
+            }
+            return 0;
+          }
+          ''').lstrip(), encoding='utf-8')
+
+          Path('.github/workflows/patch-1050.yml').unlink()
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git diff --cached --check
+          git commit -m "Allow dynamic dead-role Vessel cost (#1050)"
+          git push origin HEAD:${{ github.head_ref }}

@@ -30,3 +30,4 @@ endforeach()
 # https://api.pokemontcg.io/v2/cards/swsh1-179
 # https://api.pokemontcg.io/v2/cards/sm6-113
 # https://github.com/FlareZ123/pokemon-sims/issues/1090
+# https://github.com/FlareZ123/pokemon-sims/pull/1095

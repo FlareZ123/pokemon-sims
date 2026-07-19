@@ -12,8 +12,7 @@
         hand_count(Card::Arven) == 0 || !need_vstar() || !need_payload() ||
         hand_count(Card::RegidragoVstar) > 0 ||
         deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
-        !forest_seal_ability_available_this_turn ||
-        !can_play_payload_this_turn() || !payload_might_be_in_deck()) {
+        !forest_seal_ability_available_this_turn || !payload_might_be_in_deck()) {
       return false;
     }
 

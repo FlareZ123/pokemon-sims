@@ -148,8 +148,38 @@
     return retreat_to_benched_vstar_with_latias();
   }
 
+  bool complete_late_steven_vstar_vessel_continuation() {
+    if (scenario_.dci != DciProfile::StrictJit || item_locked() ||
+        !state_.active || state_.active->card != Card::RegidragoV ||
+        state_.active->entered_turn >= state_.turn ||
+        state_.active->grass < 2 || state_.active->fire < 1 ||
+        hand_count(Card::RegidragoVstar) == 0 ||
+        hand_count(Card::EarthenVessel) == 0 ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) ||
+        (deck_count_after_search_started(Card::Grass) == 0 &&
+         deck_count_after_search_started(Card::Fire) == 0)) {
+      return false;
+    }
+
+    // Evolve before resolving the held Vessel so the Dragon discard is permitted by
+    // strict-JIT on the same turn that Regidrago VSTAR becomes attack-ready. Vessel
+    // still performs its printed Basic Energy search after paying that discard cost:
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Core evolution and Item procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest-ready and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1017
+    evolve_best_regi();
+    if (!active_is_vstar() || !play_earthen_vessel(true)) {
+      throw std::logic_error("Known late-Steven VSTAR-Vessel continuation failed");
+    }
+    trace("POLICY", "P-AXIS-01", "End: " + state_line());
+    return true;
+  }
+
   void run_turn() {
     trace("POLICY", "P-AXIS-01", "Start: " + state_line());
+    if (complete_late_steven_vstar_vessel_continuation()) return;
     play_chaotic_swell();
     play_field_blower();
     // Resolve the proven K1 Steven route before generic Items can consume Quick Ball

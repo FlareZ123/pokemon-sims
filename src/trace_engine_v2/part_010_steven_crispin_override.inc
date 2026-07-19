@@ -162,8 +162,47 @@
     return true;
   }
 
+  bool late_steven_vstar_vessel_route_available() const {
+    if (!deck_seen_ || state_.turn < 2 || state_.turn >= scenario_.max_turn ||
+        scenario_.dci != DciProfile::StrictJit || scenario_.locks != LockMode::None ||
+        !supporter_allowed() || !state_.active ||
+        state_.active->card != Card::RegidragoV ||
+        state_.active->entered_turn >= state_.turn ||
+        state_.active->grass < 2 || state_.active->fire < 1 ||
+        !need_vstar() || !need_payload() || hand_count(Card::RegidragoVstar) > 0 ||
+        deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
+        (hand_count(Card::EarthenVessel) == 0 &&
+         deck_count_after_search_started(Card::EarthenVessel) == 0) ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    // Steven's Resolve can reserve the missing Regidrago VSTAR and Earthen Vessel,
+    // then ends the current turn. On the following turn the prior-turn Active may
+    // evolve, while Vessel discards the held Dragon payload and performs a real Basic
+    // Energy search, satisfying the strict-JIT payload timing at the earliest known
+    // ready state:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Core evolution, Item, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest-ready and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1017
+    return deck_count_after_search_started(Card::Grass) > 0 ||
+           deck_count_after_search_started(Card::Fire) > 0;
+  }
+
   Card choose_supporter_after_search_started() {
-    if (wonder_tag_can_bank_steven_for_known_t3_blender_route()) {
+    if (wonder_tag_can_bank_steven_for_known_t3_blender_route() ||
+        (late_steven_vstar_vessel_route_available() &&
+         deck_count_after_search_started(Card::StevensResolve) > 0)) {
+      // Wonder Tag searches a Supporter after legal deck inspection. Prefer Steven's
+      // complete next-turn VSTAR-Vessel route over a Burnet target that cannot repair
+      // the unresolved Evolution axis:
+      // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1017
       return Card::StevensResolve;
     }
     return static_cast<const Engine&>(*this).choose_supporter_after_search_started();
@@ -228,5 +267,6 @@
         late_steven_is_only_basic_connector() ||
         late_steven_has_known_t3_compression_route() ||
         banked_steven_has_known_t3_blender_route() ||
-        late_steven_has_active_regidrago_t3_blender_route();
+        late_steven_has_active_regidrago_t3_blender_route() ||
+        late_steven_vstar_vessel_route_available();
   }

@@ -36,7 +36,50 @@
         deck_count_after_search_started(Card::Fire) >= 1;
   }
 
+  bool play_late_steven_vstar_vessel_route() {
+    if (hand_count(Card::StevensResolve) == 0 ||
+        !late_steven_vstar_vessel_route_available()) {
+      return false;
+    }
+
+    remove_one(state_.hand, Card::StevensResolve);
+    state_.discard.push_back(Card::StevensResolve);
+    state_.supporter_used = true;
+    outcome_.used_steven = true;
+    record_deck_search_knowledge("Steven's Resolve");
+
+    std::vector<Card> found;
+    if (!move_deck_to_hand(Card::RegidragoVstar)) {
+      throw std::logic_error("Known late-Steven VSTAR target disappeared");
+    }
+    found.push_back(Card::RegidragoVstar);
+    if (hand_count(Card::EarthenVessel) == 0) {
+      if (!move_deck_to_hand(Card::EarthenVessel)) {
+        throw std::logic_error("Known late-Steven Vessel target disappeared");
+      }
+      found.push_back(Card::EarthenVessel);
+    }
+    shuffle(state_.deck);
+    state_.turn_ended = true;
+
+    // Steven may search up to three cards, so selecting only the two required route
+    // pieces preserves at least one Basic Energy target for Earthen Vessel next turn.
+    // Vessel then discards the held Dragon before searching, which establishes the
+    // strict-JIT Apex Dragon payload on the ready turn:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1017
+    trace("PLAY SUPPORTER", "R-STEVEN-01; R-GAME-SUPPORTER; P-COMPRESS-01",
+          "Searched the complete late VSTAR-Vessel route: " + join_cards(found) +
+              ". Turn ended.");
+    return true;
+  }
+
   bool play_steven() {
+    if (play_late_steven_vstar_vessel_route()) return true;
+
     const int regi_before = hand_count(Card::RegidragoV);
     const int vstar_before = hand_count(Card::RegidragoVstar);
     const int crispin_before = hand_count(Card::Crispin);

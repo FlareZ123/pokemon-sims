@@ -143,7 +143,10 @@
 #undef play_evolution_incense
 #undef play_ultra_ball
 #include "trace_engine_v2/part_pokemon_communication.inc"
+#define fss_target_after_search_started fss_target_after_search_started_issue1071_original
 #include "trace_engine_v2/part_010_fss_override.inc"
+#undef fss_target_after_search_started
+#include "trace_engine_v2/part_issue_1071_fss_oricorio_treasure_decomposition_override.inc"
 #include "trace_engine_v2/part_010_attach_fss_override.inc"
 #define use_fss use_fss_latias_original
 #define play_crispin play_crispin_empty_deck_original

@@ -143,6 +143,13 @@
         (grass_needed() > 0 && grass_available) ||
         (fire_needed() > 0 && fire_available);
     if (!needed_energy_searchable) return false;
+
+    const bool held_crispin_covers_next_turn_one_type_route =
+        !state_.manual_energy_used && grass_remaining == 1 &&
+        fire_remaining == 1 &&
+        ((grass_available && !fire_available && fire_in_hand > 0) ||
+         (fire_available && !grass_available && grass_in_hand > 0));
+
     if (grass_available && fire_available) {
       if (grass_remaining > 0) {
         --grass_remaining;
@@ -179,11 +186,14 @@
     // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
     // One Supporter per turn: https://www.pokemon.com/us/pokemon-tcg/rules
     // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // One-type search-to-hand plus manual attachment:
+    // The held Fire manual on T4 plus the held Crispin's one-type Grass search and
+    // next manual attachment cover the exact T5 Energy route without a second copy:
     // https://github.com/FlareZ123/pokemon-sims/issues/1051
     // Confirmed original duplicate route:
     // https://github.com/FlareZ123/pokemon-sims/issues/1038
-    return held_crispin_completes_ggf || held_gladion_has_known_axis;
+    return held_crispin_completes_ggf ||
+        held_crispin_covers_next_turn_one_type_route ||
+        held_gladion_has_known_axis;
   }
 
   bool wonder_tag_duplicate_held_gladion_has_no_marginal_route() const {
@@ -240,7 +250,7 @@
       trace_tapu_hold_once(
           "issue-1038-duplicate-held-crispin",
           "R-TAPU-01; R-GAME-SUPPORTER; P-CONNECTOR-01; P-KNOWLEDGE-01",
-          "Retained the second Tapu because held Crispin already completes the Energy route or remains available after the known Gladion Prize route.");
+          "Retained the second Tapu because held Crispin already covers the current or next Energy route.");
       return false;
     }
     if (wonder_tag_burnet_is_redundant_with_legacy_star_route()) {

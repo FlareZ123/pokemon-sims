@@ -15,7 +15,7 @@ int main() {
   std::mt19937_64 rng{9};
   sim::TraceLog trace{true, {}};
   sim::Engine engine(*scenario, recipe, rng, &trace);
-  const sim::Outcome outcome = engine.run();
+  const auto outcome = engine.run();
 
   const int wonder_tags = static_cast<int>(std::count_if(
       trace.lines.begin(), trace.lines.end(), [](const std::string& line) {

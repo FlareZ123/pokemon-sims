@@ -230,17 +230,18 @@ bool held_banked_steven_has_known_t3_active_regi_route() const {
   if (state_.turn != 1 || !scenario_.going_first ||
       scenario_.dci != DciProfile::MatchupFlexJit ||
       scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
-      !deck_seen_ || state_.manual_energy_used || !state_.active ||
+      !deck_seen_ || !state_.manual_energy_used || !state_.active ||
       state_.active->card != Card::RegidragoV ||
       hand_count(Card::StevensResolve) == 0 ||
-      hand_count(Card::Grass) < 2 || hand_count(Card::Fire) == 0 ||
+      hand_count(Card::Grass) == 0 || hand_count(Card::Fire) == 0 ||
       !need_vstar() || !need_energy() || !need_payload() ||
       !payload_might_be_in_deck()) {
     return false;
   }
 
-  // The held Steven package already has every public Energy needed for
-  // T1, T2, and T3 manual attachments. A second Tapu and Wonder Tag for
+  // After the T1 Grass attachment, the held Steven package still has
+  // one Grass and one Fire for the T2 and T3 manual attachments. A
+  // second Tapu and Wonder Tag for
   // Crispin spend a Bench slot and one-shot Ability without advancing the
   // earliest deterministic route:
   // https://api.pokemontcg.io/v2/cards/cel25c-60_A

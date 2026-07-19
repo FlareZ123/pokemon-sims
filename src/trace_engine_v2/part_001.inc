@@ -1,5 +1,7 @@
     case Card::Oricorio: return "Oricorio GRI 55";
     case Card::Dipplin: return "Dipplin TWM 127";
+    case Card::Pineco: return "Pineco";
+    case Card::ForretressEx: return "Forretress ex";
     case Card::BrilliantBlender: return "Brilliant Blender";
     case Card::MysteriousTreasure: return "Mysterious Treasure";
     case Card::QuickBall: return "Quick Ball";
@@ -41,6 +43,7 @@ constexpr bool is_basic(const Card card) {
     case Card::LatiasEx:
     case Card::MawileGX:
     case Card::Oricorio:
+    case Card::Pineco:
       return true;
     default:
       return false;
@@ -63,6 +66,8 @@ constexpr bool is_pokemon(const Card card) {
     case Card::MawileGX:
     case Card::Oricorio:
     case Card::Dipplin:
+    case Card::Pineco:
+    case Card::ForretressEx:
       return true;
     default:
       return false;
@@ -87,6 +92,7 @@ constexpr bool is_rule_box_pokemon(const Card card) {
     case Card::TapuLeleGX:
     case Card::LatiasEx:
     case Card::MawileGX:
+    case Card::ForretressEx:
       return true;
     default:
       return false;

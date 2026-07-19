@@ -1,3 +1,37 @@
+  bool arven_final_energy_vessel_dead_role_route_live() const {
+    if (!deck_seen_ || !supporter_allowed() || hand_count(Card::Arven) == 0 ||
+        item_locked() || scenario_.dci != DciProfile::NoDiscardControl ||
+        state_.manual_energy_used || !state_.active ||
+        state_.active->card != Card::RegidragoVstar || need_payload() ||
+        grass_needed() + fire_needed() != 1 ||
+        deck_count_after_search_started(Card::EarthenVessel) == 0) {
+      return false;
+    }
+
+    const bool needed_energy_searchable =
+        (grass_needed() == 1 && deck_count_after_search_started(Card::Grass) > 0) ||
+        (fire_needed() == 1 && deck_count_after_search_started(Card::Fire) > 0);
+    const bool dead_role_held = hand_count(Card::QuickBall) > 0 ||
+        hand_count(Card::StevensResolve) > 0 ||
+        hand_count(Card::LatiasEx) > 0 || hand_count(Card::Gladion) > 0;
+
+    // Active Regidrago VSTAR, payload, and GF are already complete. Arven can
+    // search Earthen Vessel, one now-dead setup role can legally pay its printed
+    // discard cost, and the searched Basic Energy can use the unused manual
+    // attachment for the earliest observable ready state:
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Manual attachment: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Dynamic DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1050
+    return needed_energy_searchable && dead_role_held;
+  }
+
   bool arven_fss_blender_contention_route_live() const {
     if (!deck_seen_ || !supporter_allowed() || hand_count(Card::Arven) == 0 ||
         item_locked() || state_.vstar_power_used || !can_play_payload_this_turn()) {
@@ -22,6 +56,19 @@
   }
 
   bool play_arven() {
+    if (arven_final_energy_vessel_dead_role_route_live()) {
+      remove_one(state_.hand, Card::Arven);
+      state_.discard.push_back(Card::Arven);
+      state_.supporter_used = true;
+      record_deck_search_knowledge("Arven");
+      const bool found = move_deck_to_hand(Card::EarthenVessel);
+      shuffle(state_.deck);
+      trace("PLAY SUPPORTER", "R-ARVEN-01; R-GAME-SUPPORTER; P-DCI-01",
+            found ? "Searched Earthen Vessel for the final Basic Energy route."
+                  : "Earthen Vessel was absent after legal deck inspection.");
+      return true;
+    }
+
     if (!arven_fss_blender_contention_route_live()) {
       return play_arven_fss_blender_contention_original();
     }

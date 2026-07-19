@@ -22,7 +22,32 @@
     const bool needs_tool = has_regi_v() && !state_.vstar_power_used &&
                             ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
                              std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) { return p.card == Card::RegidragoV && p.tool == Tool::None; }));
-    const bool can_pay_search_cost = is_legal_cost_available(can_play_payload_this_turn(), true);
+    const bool final_energy_vessel_dead_role_cost =
+      scenario_.dci == DciProfile::NoDiscardControl &&
+      !state_.manual_energy_used && state_.active &&
+      state_.active->card == Card::RegidragoVstar && !need_payload() &&
+      grass_needed() + fire_needed() == 1 &&
+      ((grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
+       (fire_needed() == 1 && might_be_unseen(Card::Fire))) &&
+      (hand_count(Card::QuickBall) > 0 ||
+       hand_count(Card::StevensResolve) > 0 ||
+       hand_count(Card::LatiasEx) > 0 ||
+       hand_count(Card::Gladion) > 0);
+    // Arven must evaluate the cost after the searched Earthen Vessel enters
+    // hand. In this exact final-Energy state, the listed setup roles are
+    // already dynamically dead and can legally pay Vessel's discard cost:
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Manual attachment: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Dynamic DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1050
+    const bool can_pay_search_cost =
+        is_legal_cost_available(can_play_payload_this_turn(), true) ||
+        final_energy_vessel_dead_role_cost;
 
     const auto item_candidates_for_current_knowledge = [this, can_pay_search_cost]() {
       const bool live_regi_target = hand_count(Card::RegidragoV) == 0 && might_be_unseen(Card::RegidragoV);

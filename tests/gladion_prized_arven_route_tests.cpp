@@ -134,10 +134,10 @@ void item_lock_blocks_the_future_item_route() {
   }
 }
 
-void seed_19_full_trace_selects_arven_and_reaches_turn_three() {
+void seed_299_full_trace_selects_arven_and_reaches_turn_three() {
   const auto scenario = sim::scenario_by_label("strict-jit/go-second");
   if (!scenario) throw std::runtime_error("Missing strict-jit/go-second scenario.");
-  std::mt19937_64 rng{19};
+  std::mt19937_64 rng{299};
   sim::TraceLog trace{true, {}};
   sim::Engine engine(*scenario, recipe(), rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
@@ -147,11 +147,18 @@ void seed_19_full_trace_selects_arven_and_reaches_turn_three() {
         return line.find("Exchanged Gladion for Arven to guarantee the next-turn Forest Seal Stone and Brilliant Blender route.") !=
                std::string::npos;
       });
-  // The exact seed must no longer rely on drawing the other Arven on turn three:
+  // Seed 299 preserves #969's full-trace boundary. Arven is the only known Prize
+  // connector that produces a current legal future VSTAR plus Blender route because
+  // no held Dragon can pay Mysterious Treasure for same-turn strict-JIT completion:
+  // https://api.pokemontcg.io/v2/cards/sm4-95
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/sv8-164
   // https://github.com/FlareZ123/pokemon-sims/issues/969
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+  // Seed 19 is now the distinct same-turn Treasure route: https://github.com/FlareZ123/pokemon-sims/issues/1059
   if (!selected_arven || outcome.first_ready_turn != 3) {
-    throw std::runtime_error("Seed 19 did not take the deterministic prized-Arven route to T3 readiness.");
+    throw std::runtime_error("Seed 299 did not preserve the deterministic prized-Arven T3 route.");
   }
 }
 
@@ -162,6 +169,6 @@ int main() {
   direct_prized_vstar_remains_first_priority();
   incomplete_connector_route_does_not_take_arven();
   item_lock_blocks_the_future_item_route();
-  seed_19_full_trace_selects_arven_and_reaches_turn_three();
+  seed_299_full_trace_selects_arven_and_reaches_turn_three();
   return 0;
 }

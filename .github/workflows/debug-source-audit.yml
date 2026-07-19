@@ -1,0 +1,58 @@
+name: Debug Source Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and unified tests
+        run: cmake --build build --parallel 2
+      - name: Run three independent simulate-this audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Core procedure rules: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Repository trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 71 --require-ready-by 3 | tee audit-trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee audit-trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee audit-trace-3.txt
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-t2-t3-matrix.csv
+      - name: Record tested source
+        run: git rev-parse HEAD > audit-tested-head.txt
+      - name: Upload exact audit snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-source-audit-${{ github.run_attempt }}
+          path: |
+            .github/workflows
+            CMakeLists.txt
+            README.md
+            docs
+            results
+            scripts
+            src
+            tests
+            audit-trace-*.txt
+            audit-t2-t3-matrix.csv
+            audit-tested-head.txt
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+          if-no-files-found: error

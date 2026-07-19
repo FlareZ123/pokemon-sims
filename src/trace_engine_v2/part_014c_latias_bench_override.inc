@@ -303,15 +303,28 @@
     attach_manual();
     // A manual attachment can complete GGF and thereby make a held Mysterious
     // Treasure payload discard legal under strict JIT. Reopen Items and evolution
-    // before spending the Supporter slot so the same-turn Treasure search can evolve
-    // a prior-turn Regidrago V instead of deferring the ready state:
+    // only for that proven same-turn route. Earlier payload banking remains rejected
+    // when the selected Regidrago V still lacks part of Apex Dragon's GGF cost:
     // https://api.pokemontcg.io/v2/cards/sm6-113
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://www.pokemon.com/us/pokemon-tcg/rules
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/1032
-    play_items_until_stable(true);
-    evolve_best_regi();
+    const Pokemon* post_attach_target = target_regi();
+    const bool post_attach_treasure_vstar_route = strict_payload_timing() &&
+        !item_locked() && post_attach_target != nullptr &&
+        post_attach_target->card == Card::RegidragoV &&
+        post_attach_target->entered_turn < state_.turn &&
+        post_attach_target->grass >= 2 && post_attach_target->fire >= 1 &&
+        hand_count(Card::RegidragoVstar) == 0 &&
+        might_be_unseen(Card::RegidragoVstar) &&
+        hand_count(Card::MysteriousTreasure) > 0 &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
+        choose_discard(true, true, true, Card::MysteriousTreasure).has_value();
+    if (post_attach_treasure_vstar_route) {
+      play_items_until_stable(true);
+      evolve_best_regi();
+    }
     // Steven's Resolve ends the turn, so attach a live Powerglass before choosing
     // that Supporter: https://api.pokemontcg.io/v2/cards/sm7-145
     if (should_play_steven()) attach_powerglass();

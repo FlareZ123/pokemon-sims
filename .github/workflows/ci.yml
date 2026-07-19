@@ -27,7 +27,7 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator and unified tests
         run: cmake --build build --parallel 2
-      - name: Run seven independent simulate-this audits
+      - name: Run eight independent simulate-this audits
         shell: bash
         run: |
           set -euo pipefail
@@ -64,6 +64,17 @@ jobs:
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 104 --require-ready-by 3 | tee trace-7.txt
           grep -q "Searched a Basic Pokémon: Tapu Lele-GX" trace-7.txt
           grep -q "WONDER TAG.*Searched and revealed Crispin" trace-7.txt
+          # A duplicate Regidrago VSTAR may pay Quick Ball only while another copy
+          # remains protected for the Regidrago V established by the search:
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/swsh12-135
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # https://github.com/FlareZ123/pokemon-sims/issues/964
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 3 | tee trace-8.txt
+          grep -q "DISCARD.*Regidrago VSTAR (Quick Ball cost)" trace-8.txt
+          grep -q "Searched a Basic Pokémon: Regidrago V" trace-8.txt
+          grep -q "T3 | READY" trace-8.txt
       # The issue #718 PR refreshes and validates the source-bound matrix after the
       # Blender VSTAR-card-axis fix: https://github.com/FlareZ123/pokemon-sims/pull/931
       - name: Generate canonical T2 and T3 matrix
@@ -81,6 +92,8 @@ jobs:
             trace-*.txt
             t2-t3-matrix.csv
             tested-head.txt
+            build/regidrago_sim
+            build/regidrago_unified_tests
             build/Testing
           if-no-files-found: warn
 

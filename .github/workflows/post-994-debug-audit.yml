@@ -1,0 +1,129 @@
+name: Post 994 debug audit
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Configure Release build
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Release binaries
+        run: cmake --build build --parallel 2
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Pass 1 strict go-second
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-pass-1.txt
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+
+      - name: Pass 2 strict go-first
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 3 | tee trace-pass-2.txt
+        # https://github.com/FlareZ123/pokemon-sims/issues/964
+
+      - name: Pass 3 Rule Box Ability lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee trace-pass-3.txt
+        # https://github.com/FlareZ123/pokemon-sims/issues/917
+
+      - name: Reproduce issue 999
+        shell: bash
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 17 | tee trace-issue-999.txt
+          grep -F "WONDER TAG" trace-issue-999.txt | grep -F "Steven's Resolve"
+          if grep -F "PLAY SUPPORTER" trace-issue-999.txt | grep -F "Steven's Resolve"; then
+            echo "Issue #999 no longer reproduces" >&2
+            exit 1
+          fi
+          grep -F "SETUP FAILURE" trace-issue-999.txt
+        # Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+        # Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+        # Confirmed report: https://github.com/FlareZ123/pokemon-sims/issues/999
+
+      - name: Generate canonical T2 and T3 matrix
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out post-994-matrix.csv
+          cat post-994-matrix.csv
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+
+      - name: Scan deterministic traces for unused one-shot search targets
+        shell: bash
+        run: |
+          cat > /tmp/scan_unused.py <<'PY'
+          import pathlib
+          import re
+          import subprocess
+
+          binary = pathlib.Path("build/regidrago_sim")
+          scenarios = (
+              "strict-jit/go-first",
+              "strict-jit/go-second",
+              "matchup-flex-jit/go-first",
+              "matchup-flex-jit/go-second",
+              "no-discard-control/go-first",
+              "no-discard-control/go-second",
+          )
+          search_pattern = re.compile(r"T(\d+) \| (WONDER TAG|STAR ALCHEMY) \| .*?Searched(?: and revealed)? ([^.]+)\.")
+          action_pattern = re.compile(r"T(\d+) \| (.+?) \|")
+          results = []
+
+          for scenario in scenarios:
+              for seed in range(1, 201):
+                  trace = subprocess.run(
+                      [str(binary), "--simulate-this", "--scenario", scenario, "--seed", str(seed)],
+                      check=True,
+                      text=True,
+                      capture_output=True,
+                  ).stdout
+                  lines = trace.splitlines()
+                  for index, line in enumerate(lines):
+                      match = search_pattern.search(line)
+                      if not match:
+                          continue
+                      turn, connector, target = match.groups()
+                      later_same_turn = []
+                      for candidate in lines[index + 1:]:
+                          action = action_pattern.search(candidate)
+                          if not action:
+                              continue
+                          if action.group(1) != turn:
+                              break
+                          later_same_turn.append(candidate)
+                      if not any(target in candidate for candidate in later_same_turn):
+                          results.append(f"{scenario},seed={seed},T{turn},{connector},{target}")
+
+          pathlib.Path("unused-search-summary.txt").write_text("\n".join(results) + ("\n" if results else ""))
+          print(f"unused one-shot targets: {len(results)}")
+          for row in results[:200]:
+              print(row)
+          PY
+          python3 /tmp/scan_unused.py
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+
+      - name: Package exact tested source
+        run: |
+          tar --exclude=.git --exclude=build -czf repo-source.tar.gz .
+
+      - name: Upload audit evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: post-994-debug-audit
+          path: |
+            trace-pass-*.txt
+            trace-issue-999.txt
+            post-994-matrix.csv
+            unused-search-summary.txt
+            repo-source.tar.gz
+            build/regidrago_sim
+          if-no-files-found: error

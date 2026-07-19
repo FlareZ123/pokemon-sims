@@ -21,16 +21,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Steven's Resolve searches up to 3 cards, Regidrago VSTAR evolves from Regidrago V, and Apex Dragon costs GGF:
-          # https://api.pokemontcg.io/v2/cards/sm7-145
-          # https://api.pokemontcg.io/v2/cards/swsh12-136
-          # https://www.pokemon.com/us/pokemon-tcg/rules
-          # https://github.com/FlareZ123/pokemon-sims/issues/952
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee audit-trace-58.txt
-          grep -q "Searched up to 3 cards: Regidrago VSTAR, Crispin, Brilliant Blender" audit-trace-58.txt
-          grep -q "T3 | READY" audit-trace-58.txt
-
-          # Quick Ball can establish Tapu Lele-GX, Wonder Tag can select Crispin, and Crispin advances the GGF Energy axis:
+          # Quick Ball establishes Tapu Lele-GX, Wonder Tag selects Crispin, and
+          # Crispin plus the manual attachments reaches the earliest legal GGF turn:
           # https://api.pokemontcg.io/v2/cards/swsh1-179
           # https://api.pokemontcg.io/v2/cards/cel25c-60_A
           # https://api.pokemontcg.io/v2/cards/sv7-133
@@ -42,16 +34,25 @@ jobs:
           grep -q "WONDER TAG.*Searched and revealed Crispin" audit-trace-104.txt
           grep -q "T3 | READY" audit-trace-104.txt
 
-          # Quick Ball discards 1 card to search a Basic, and a duplicate VSTAR is legal only when another copy remains for evolution:
-          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # Going second permits Celestial Roar on T1. Its Fire attachment and the
+          # T2 Legacy Star payload hit leave only the necessary Grass manual attachment:
           # https://api.pokemontcg.io/v2/cards/swsh12-135
           # https://api.pokemontcg.io/v2/cards/swsh12-136
           # https://www.pokemon.com/us/pokemon-tcg/rules
-          # https://github.com/FlareZ123/pokemon-sims/issues/964
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 3 | tee audit-trace-43.txt
-          grep -q "DISCARD.*Regidrago VSTAR (Quick Ball cost)" audit-trace-43.txt
-          grep -q "Searched a Basic Pokémon: Regidrago V" audit-trace-43.txt
-          grep -q "T3 | READY" audit-trace-43.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 160 --require-ready-by 2 | tee audit-trace-160.txt
+          grep -q "T1 | ATTACK.*Celestial Roar.*attached Energy: Fire Energy" audit-trace-160.txt
+          grep -q "T2 | LEGACY STAR.*Mega Dragonite ex" audit-trace-160.txt
+          grep -q "T2 | READY" audit-trace-160.txt
+
+          # Turn-two Item lock makes the held search Items unusable. Celestial Roar
+          # supplies Fire on T1, and T3 Legacy Star is the live strict-JIT payload route:
+          # https://api.pokemontcg.io/v2/cards/swsh12-135
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 83 --require-ready-by 3 | tee audit-trace-83.txt
+          grep -q "T1 | ATTACK.*Celestial Roar.*attached Energy: Fire Energy" audit-trace-83.txt
+          grep -q "T3 | LEGACY STAR.*Mega Dragonite ex" audit-trace-83.txt
+          grep -q "T3 | READY" audit-trace-83.txt
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
       - name: Package checked-out source

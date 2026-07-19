@@ -25,17 +25,87 @@
       return second.has_value();
     };
 
-    if (need_regi() && hand_count(Card::RegidragoV) == 0 && hand_count(Card::UltraBall) > 0 &&
-        !playable_ultra_search()) {
-      // Gladion can recover the missing Basic from Prizes. An Ultra Ball that
-      // cannot pay its two-card cost is not a competing route:
+    const auto playable_arven_regi_route = [this]() {
+      if (item_locked() || hand_count(Card::Arven) == 0 || !need_regi() ||
+          bench_space() == 0) {
+        return false;
+      }
+
+      const bool known_prized_regi = prizes_known() &&
+          prize_count_after_reveal(Card::RegidragoV) > 0;
+      const bool regi_might_be_in_deck = might_be_unseen(Card::RegidragoV);
+
+      // Arven is a live competing route only when the searched Item can actually
+      // resolve after Arven consumes the Supporter slot. One-discard Items must
+      // retain a DCI-admissible cost, Pokémon Communication must retain a safe
+      // Pokémon exchange, and Heavy Ball requires a legally known prized Basic:
+      // https://api.pokemontcg.io/v2/cards/sv1-166
+      // https://api.pokemontcg.io/v2/cards/swsh1-179
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://api.pokemontcg.io/v2/cards/sm9-152
+      // https://api.pokemontcg.io/v2/cards/swsh10-146
+      // https://api.pokemontcg.io/v2/cards/swsh12-135
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+      // https://github.com/FlareZ123/pokemon-sims/issues/1090
+      // https://github.com/FlareZ123/pokemon-sims/pull/1095
+      if (known_prized_regi && might_be_unseen(Card::HisuianHeavyBall)) return true;
+      if (!regi_might_be_in_deck) return false;
+      if (might_be_unseen(Card::PokemonCommunication) &&
+          pokemon_communication_plan_after_playing_supporter(
+              Card::Arven, false).has_value()) {
+        return true;
+      }
+
+      const bool payable_one_discard_cost =
+          is_legal_cost_available(can_play_payload_this_turn(), true);
+      return payable_one_discard_cost &&
+          (might_be_unseen(Card::QuickBall) ||
+           might_be_unseen(Card::MysteriousTreasure));
+    };
+
+    const bool live_arven_regi_route = playable_arven_regi_route();
+    if (live_arven_regi_route) {
+      // A payable Arven route resolves the exact missing Basic this turn while
+      // preserving Gladion for another Prize-information or recovery action:
+      // https://api.pokemontcg.io/v2/cards/sv1-166
       // https://api.pokemontcg.io/v2/cards/sm4-95
-      // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-      std::vector<Card> held_unpayable_ultra_balls;
-      while (remove_one(state_.hand, Card::UltraBall)) held_unpayable_ultra_balls.push_back(Card::UltraBall);
-      const bool played = play_gladion_original();
-      state_.hand.insert(state_.hand.end(), held_unpayable_ultra_balls.begin(), held_unpayable_ultra_balls.end());
-      return played;
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // https://github.com/FlareZ123/pokemon-sims/issues/1090
+      // https://github.com/FlareZ123/pokemon-sims/pull/1095
+      return false;
+    }
+
+    if (need_regi() && hand_count(Card::RegidragoV) == 0) {
+      const bool hide_unpayable_ultra = hand_count(Card::UltraBall) > 0 &&
+          !playable_ultra_search();
+      const bool hide_unpayable_arven = hand_count(Card::Arven) > 0;
+      if (hide_unpayable_ultra || hide_unpayable_arven) {
+        // Gladion can recover the missing Basic from Prizes. A held search route
+        // that cannot satisfy its printed cost is not a competing route:
+        // https://api.pokemontcg.io/v2/cards/sm4-95
+        // https://api.pokemontcg.io/v2/cards/sv1-166
+        // https://api.pokemontcg.io/v2/cards/swsh1-179
+        // https://api.pokemontcg.io/v2/cards/sm6-113
+        // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+        // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+        // https://github.com/FlareZ123/pokemon-sims/issues/1090
+        // https://github.com/FlareZ123/pokemon-sims/pull/1095
+        std::vector<Card> held_unpayable_routes;
+        if (hide_unpayable_ultra) {
+          while (remove_one(state_.hand, Card::UltraBall)) {
+            held_unpayable_routes.push_back(Card::UltraBall);
+          }
+        }
+        if (hide_unpayable_arven) {
+          while (remove_one(state_.hand, Card::Arven)) {
+            held_unpayable_routes.push_back(Card::Arven);
+          }
+        }
+        const bool played = play_gladion_original();
+        state_.hand.insert(state_.hand.end(), held_unpayable_routes.begin(),
+                           held_unpayable_routes.end());
+        return played;
+      }
     }
 
     const bool direct_missing_pokemon_prized = prizes_known() &&

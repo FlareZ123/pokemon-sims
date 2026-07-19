@@ -1,0 +1,34 @@
+name: Clean final baseline artifacts
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: final-baseline-clean-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  clean:
+    if: github.head_ref == 'maintenance/final-baseline-20260719'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Remove generated build and cache artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm -r --ignore-unmatch build
+          git rm -r --ignore-unmatch scripts/__pycache__
+          git rm --ignore-unmatch results/.simulation_results.csv.vbylu96c.tmp.lock
+          git rm .github/workflows/clean-final-baseline.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m "Remove generated build and cache artifacts"
+          git push origin HEAD:${{ github.head_ref }}

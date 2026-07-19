@@ -85,6 +85,38 @@
     return prized_energy && hand_count(*prized_energy) > 0;
   }
 
+  bool wonder_tag_arven_is_redundant_with_held_burnet_route() const {
+    if (!deck_seen_ || !supporter_allowed() || state_.manual_energy_used ||
+        !need_energy() || has_vstar() || !need_payload() || need_regi() ||
+        hand_count(Card::TapuLeleGX) == 0 || hand_count(Card::Arven) > 0 ||
+        hand_count(Card::ProfessorBurnet) == 0 ||
+        hand_count(Card::RegidragoVstar) == 0 || !state_.active ||
+        state_.active->card != Card::RegidragoV ||
+        state_.active->entered_turn >= state_.turn ||
+        !can_play_payload_this_turn() || !payload_might_be_in_deck()) {
+      return false;
+    }
+
+    const bool held_manual_completes_energy =
+        grass_needed() + fire_needed() == 1 &&
+        ((grass_needed() == 1 && hand_count(Card::Grass) > 0) ||
+         (fire_needed() == 1 && hand_count(Card::Fire) > 0));
+
+    // Held Professor Burnet directly supplies the same-turn payload, the held
+    // Regidrago VSTAR completes evolution, and the held needed Energy completes GGF
+    // through the unused manual attachment. Wonder Tag into Arven then spends Tapu
+    // Lele-GX, its Bench slot, and its one-shot Ability without advancing setup:
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // JIT payload policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/993
+    return held_manual_completes_energy;
+  }
+
   bool bench_tapu_if_useful() {
     if (wonder_tag_burnet_is_redundant_with_legacy_star_route()) {
       // Keep the second Tapu Lele-GX in hand after Quick Ball has legally searched
@@ -104,6 +136,16 @@
       // https://github.com/FlareZ123/pokemon-sims/issues/992
       trace("HOLD TAPU LELE-GX", "R-TAPU-01; P-KNOWLEDGE-01; P-DCI-01",
             "Retained Tapu because the held needed Energy and manual attachment already complete setup.");
+      return false;
+    }
+    if (wonder_tag_arven_is_redundant_with_held_burnet_route()) {
+      // Preserve Tapu Lele-GX because held Energy, Burnet, and VSTAR already form
+      // the shortest complete current-turn route:
+      // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // https://api.pokemontcg.io/v2/cards/sv1-166
+      // https://github.com/FlareZ123/pokemon-sims/issues/993
+      trace("HOLD TAPU LELE-GX", "R-TAPU-01; P-DCI-01; P-KNOWLEDGE-01",
+            "Retained Tapu because held Energy, Professor Burnet, and Regidrago VSTAR already complete setup.");
       return false;
     }
     return bench_tapu_if_useful_issue_991_original();

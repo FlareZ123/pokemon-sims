@@ -33,8 +33,16 @@ void expect(const bool condition, const char* message) {
 std::size_t k1_fss_hold_count(const sim::TraceLog& trace) {
   return static_cast<std::size_t>(std::count_if(
       trace.lines.begin(), trace.lines.end(), [](const std::string& line) {
+        // #1010's invariant applies to every unchanged-state K1 Forest Seal Stone
+        // retention reason. #990 adds the complete-held-route reason while preserving
+        // the same one-event-per-state trace contract:
+        // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+        // Trace contract: https://github.com/FlareZ123/pokemon-sims/issues/1010
+        // Complete-route policy: https://github.com/FlareZ123/pokemon-sims/issues/990
         return line.find("K1 proved that no searched card advances setup") !=
-               std::string::npos;
+                   std::string::npos ||
+            line.find("observable held resources already complete every current-turn setup axis") !=
+                   std::string::npos;
       }));
 }
 

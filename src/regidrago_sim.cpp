@@ -208,9 +208,11 @@
 #define ultra_ball_has_legal_target ultra_ball_has_legal_target_k0_target_original
 #define play_ultra_ball play_ultra_ball_k0_target_original
 #define play_brilliant_blender play_brilliant_blender_vstar_axis_original
+#define play_earthen_vessel play_earthen_vessel_vstar_window_original
 #define in_play tapu_connector_copy_aware_in_play
 #include "trace_engine_v2/part_empty_deck_search_override.inc"
 #undef in_play
+#undef play_earthen_vessel
 #undef play_brilliant_blender
 #undef play_ultra_ball
 #undef ultra_ball_has_legal_target
@@ -218,6 +220,7 @@
 #undef bench_oricorio_if_useful
 #include "trace_engine_v2/part_oricorio_needed_energy_override.inc"
 #include "trace_engine_v2/part_blender_vstar_axis_override.inc"
+#include "trace_engine_v2/part_earthen_vessel_vstar_window_override.inc"
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #include "trace_engine_v2/part_014c.inc"

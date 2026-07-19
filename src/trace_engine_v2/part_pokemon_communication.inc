@@ -3,11 +3,18 @@
     Card target;
   };
 
-  static constexpr std::array<Card, 11> pokemon_communication_pokemon() {
+  static constexpr std::array<Card, 13> pokemon_communication_pokemon() {
+    // Pokémon Communication may exchange any Pokémon represented by the engine,
+    // including test-only cards absent from the canonical sample deck:
+    // https://api.pokemontcg.io/v2/cards/sm9-152
+    // https://api.pokemontcg.io/v2/cards/sv4pt5-1
+    // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // https://github.com/FlareZ123/pokemon-sims/issues/972
     return {Card::RegidragoV, Card::RegidragoVstar, Card::Dragapult,
             Card::MegaDragonite, Card::DialgaGX, Card::GoodraVstar,
             Card::TapuLeleGX, Card::LatiasEx, Card::MawileGX,
-            Card::Oricorio, Card::Dipplin};
+            Card::Oricorio, Card::Dipplin, Card::Pineco,
+            Card::ForretressEx};
   }
 
   bool pokemon_communication_has_exchange_candidate() const {
@@ -92,6 +99,12 @@
     if (hand_count(card) > 1) return 5;
     if (card == Card::Dipplin) return 10;
     if (card == Card::MawileGX) return 20;
+    if (card == Card::Pineco) {
+      return needs_pineco_connector() ? 900 : 25;
+    }
+    if (card == Card::ForretressEx) {
+      return needs_forretress_connector() ? 900 : 25;
+    }
     if (card == Card::RegidragoV) {
       return need_regi() && in_play_count(Card::RegidragoV) == 0 &&
                      in_play_count(Card::RegidragoVstar) == 0
@@ -245,6 +258,12 @@
         needs_tapu_connector()) {
       add_target(Card::TapuLeleGX);
     }
+    if (needs_pineco_connector()) {
+      add_target(Card::Pineco);
+    }
+    if (needs_forretress_connector()) {
+      add_target(Card::ForretressEx);
+    }
 
     const bool payload_already_held =
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
@@ -349,6 +368,12 @@
         ability_available_for_pokemon(Card::TapuLeleGX) &&
         needs_tapu_connector() && present(Card::TapuLeleGX)) {
       return Card::TapuLeleGX;
+    }
+    if (needs_pineco_connector() && present(Card::Pineco)) {
+      return Card::Pineco;
+    }
+    if (needs_forretress_connector() && present(Card::ForretressEx)) {
+      return Card::ForretressEx;
     }
     if (is_payload(preferred)) {
       for (const Card payload : {Card::MegaDragonite, Card::Dragapult,

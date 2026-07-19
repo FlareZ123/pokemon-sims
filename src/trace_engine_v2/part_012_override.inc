@@ -210,6 +210,27 @@
         add_item_candidate(Card::QuickBall, can_pay_search_cost);
         add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
       }
+      // Arven searches an Item. The isolated combo may therefore route through
+      // a Basic search Item for Pineco or an Evolution/Pokémon search Item for
+      // Forretress ex when those source-bound variant cards are present:
+      // https://api.pokemontcg.io/v2/cards/sv1-166
+      // https://api.pokemontcg.io/v2/cards/sv4pt5-1
+      // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+      // https://api.pokemontcg.io/v2/cards/swsh1-179
+      // https://api.pokemontcg.io/v2/cards/swsh1-163
+      // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+      // https://api.pokemontcg.io/v2/cards/sm9-152
+      // https://github.com/FlareZ123/pokemon-sims/issues/972
+      if (needs_pineco_connector()) {
+        add_item_candidate(Card::PokemonCommunication, live_communication);
+        add_item_candidate(Card::QuickBall, can_pay_search_cost);
+        add_item_candidate(Card::UltraBall, can_pay_search_cost);
+      }
+      if (needs_forretress_connector()) {
+        add_item_candidate(Card::EvolutionIncense, true);
+        add_item_candidate(Card::PokemonCommunication, live_communication);
+        add_item_candidate(Card::UltraBall, can_pay_search_cost);
+      }
       if (known_prized_regi_target) add_item_candidate(Card::HisuianHeavyBall, true);
       // A held Mysterious Treasure can cover Regidrago VSTAR. Prefer the
       // complementary Quick Ball when both printed discard costs remain payable
@@ -279,6 +300,8 @@
       return known_prized_vstar_gladion_route ||
              (need_regi() && bench_space() > 0 && might_be_unseen(Card::RegidragoV)) ||
              (need_vstar() && might_be_unseen(Card::RegidragoVstar)) ||
+             (needs_pineco_connector() && might_be_unseen(Card::Pineco)) ||
+             (needs_forretress_connector() && might_be_unseen(Card::ForretressEx)) ||
              (need_energy() && ((grass_needed() > 0 && might_be_unseen(Card::Grass)) ||
                                 (fire_needed() > 0 && might_be_unseen(Card::Fire)))) ||
              (need_active_vstar() && bench_space() > 0 && !in_play(Card::LatiasEx) &&

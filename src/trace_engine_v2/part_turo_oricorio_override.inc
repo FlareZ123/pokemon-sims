@@ -192,20 +192,23 @@
   }
 
   bool tate_draw_has_held_non_supporter_completion() const {
-    if (!supporter_allowed() || !deck_seen_ || hand_count(Card::TateLiza) == 0 ||
+    if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 ||
         !setup_axis_missing()) {
       return false;
     }
 
     // Remove Tate & Liza from the shadow hand and reserve the Supporter play. The
     // exact public remainder of the turn must still complete Active VSTAR, GGF, and
-    // the ready-turn payload through held non-Supporter cards:
+    // the ready-turn payload through held non-Supporter cards. At K0, search actions
+    // retain only targets still plausible from the fixed deck list; at K1, the exact
+    // inspected deck is used by the same action selectors:
     // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Supporter, Item, evolution, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // K1 and earliest complete-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Hidden-information and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1057
     std::mt19937_64 shadow_rng = rng_;
     Engine projected(scenario_, recipe_, shadow_rng);

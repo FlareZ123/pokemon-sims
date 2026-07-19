@@ -35,7 +35,7 @@ bool trace_contains(const sim::TraceLog& trace, const std::string& text) {
                      });
 }
 
-void test_seed_19_uses_prized_treasure_for_t2() {
+void test_seed_19_preserves_t2_through_held_serena_route() {
   const auto scenario = sim::scenario_by_label("strict-jit/go-second");
   if (!scenario) throw std::runtime_error("Missing strict-JIT going-second scenario");
 
@@ -45,27 +45,29 @@ void test_seed_19_uses_prized_treasure_for_t2() {
   sim::Engine engine(*scenario, recipe, rng, &trace);
   const auto outcome = engine.run();
 
-  // Gladion may exchange itself for the known Prize, Mysterious Treasure pays one
-  // held-card cost and searches a Dragon Pokémon, and the prior-turn Regidrago V may
-  // evolve. The held Dialga-GX then satisfies the same-turn strict-JIT payload axis:
-  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
-  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-  // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+  // Issue #1059's crafted projection below still verifies the known prized-Treasure
+  // selector. In the full seed, issue #1079 reveals a strictly better public route:
+  // held Fire completes GGF on T2, held Serena discards Dialga-GX during that same
+  // strict-JIT turn, and preserving Celestial Roar leaves the naturally drawn VSTAR
+  // available. The full witness must retain T2 readiness without spending Gladion:
+  // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
-  // Supporter, Item, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+  // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+  // Manual attachment, Supporter, attack, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // Earliest current-turn route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1059
+  // Original selector bug: https://github.com/FlareZ123/pokemon-sims/issues/1059
+  // Superseding full-seed route: https://github.com/FlareZ123/pokemon-sims/issues/1079
   expect(outcome.first_ready_turn == 2,
-         "Seed 19 did not improve from the slower T3 Arven route to T2");
-  expect(trace_contains(trace, "Exchanged Gladion for Mysterious Treasure"),
-         "Gladion did not recover the known prized Mysterious Treasure");
-  expect(trace_contains(trace, "Dialga-GX (Mysterious Treasure cost)"),
-         "Mysterious Treasure did not discard the held strict-JIT payload");
-  expect(trace_contains(trace,
-                        "Searched a Psychic or Dragon Pokémon: Regidrago VSTAR"),
-         "Mysterious Treasure did not search the known deck-resident VSTAR");
+         "Seed 19 did not preserve T2 readiness");
+  expect(trace_contains(trace, "T1 | HOLD ATTACK"),
+         "Seed 19 did not preserve the unresolved VSTAR axis");
+  expect(trace_contains(trace, "Dialga-GX (Serena chosen discard)"),
+         "Serena did not discard the held strict-JIT payload");
+  expect(!trace_contains(trace, "Exchanged Gladion for Mysterious Treasure"),
+         "The superseded prized-Treasure route still spent Gladion");
   expect(!trace_contains(trace, "Exchanged Gladion for Arven"),
-         "The slower prized-Arven route still preempted current-turn completion");
+         "The slower prized-Arven route preempted current-turn completion");
 }
 
 sim::State exact_prized_treasure_state() {
@@ -126,7 +128,7 @@ void test_projection_boundaries() {
 }  // namespace
 
 int main() {
-  test_seed_19_uses_prized_treasure_for_t2();
+  test_seed_19_preserves_t2_through_held_serena_route();
   test_projection_boundaries();
   return 0;
 }

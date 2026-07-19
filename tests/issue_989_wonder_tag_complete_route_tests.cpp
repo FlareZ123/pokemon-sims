@@ -78,7 +78,7 @@ sim::State held_burnet_state() {
   state.hand = {sim::Card::ProfessorBurnet, sim::Card::RegidragoVstar,
                 sim::Card::Fire, sim::Card::TapuLeleGX};
   state.deck = {sim::Card::Crispin, sim::Card::MegaDragonite,
-                sim::Card::Dragapult, sim::Card::Grass};
+                sim::Card::Dragapult, sim::Card::Grass, sim::Card::Fire};
   return state;
 }
 

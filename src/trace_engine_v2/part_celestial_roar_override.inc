@@ -19,26 +19,35 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-135
     if (state_.active->grass + state_.active->fire < 1) return false;
 
-    const bool held_energy_guarantees_next_ready_window =
+    const bool held_dragon_payload =
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    const bool held_supporter_payload_route =
+        (hand_count(Card::Serena) > 0 && held_dragon_payload) ||
+        (deck_seen_ && hand_count(Card::ProfessorBurnet) > 0 &&
+         std::any_of(state_.deck.begin(), state_.deck.end(), is_payload));
+    const bool held_energy_and_payload_route_guarantee_next_window =
         strict_payload_timing() && state_.manual_energy_used &&
         state_.turn < scenario_.max_turn && missing_grass + missing_fire == 1 &&
         ((missing_grass == 1 && hand_count(Card::Grass) > 0) ||
-         (missing_fire == 1 && hand_count(Card::Fire) > 0));
-    if (held_energy_guarantees_next_ready_window) {
+         (missing_fire == 1 && hand_count(Card::Fire) > 0)) &&
+        held_supporter_payload_route;
+    if (held_energy_and_payload_route_guarantee_next_window) {
       // The unevolved Regidrago V cannot become Regidrago VSTAR before a later legal
-      // evolution window. When one held Basic Energy already guarantees GGF through
-      // that turn's manual attachment, Celestial Roar cannot improve the earliest
-      // ready turn. Strict and matchup-flex JIT also reject a Dragon discarded by the
-      // earlier attack as the later ready-turn payload, so preserve the unresolved
-      // VSTAR and connector axes instead of exposing three random cards:
+      // evolution window. One held Basic Energy already guarantees GGF through that
+      // turn's manual attachment, while held Serena plus a Dragon or held Professor
+      // Burnet plus a known deck Dragon guarantees a legal strict-JIT payload route.
+      // Celestial Roar cannot improve either completed axis and can randomly remove the
+      // unresolved VSTAR or connector, so preserve those resources:
       // Regidrago V and Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
       // Regidrago VSTAR evolution and Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-      // Manual attachment and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+      // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+      // Manual attachment, evolution, attack, and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
       // Strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
       // Earliest complete route and resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
       // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1079
-      trace("HOLD ATTACK", "R-RV-01; R-GAME-ENERGY; P-JIT-01; P-COMPRESS-01",
-            "Held Basic Energy already guarantees the final GGF attachment before the next legal evolution window.");
+      trace("HOLD ATTACK", "R-RV-01; R-GAME-ENERGY; R-SERENA-01; R-BURNET-01; P-JIT-01; P-COMPRESS-01",
+            "Held Energy and a held Supporter payload route already cover the next legal ready window.");
       return false;
     }
 

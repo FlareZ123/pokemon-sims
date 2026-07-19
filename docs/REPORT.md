@@ -14,25 +14,25 @@ Seed: `20260705`.
 
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
-| Strict JIT, going first | 10.9% | 35.584% | 51.284% |
-| Matchup-flex JIT, going first | 16.146% | 44.96% | 60.483% |
-| No discard control, going first | 19.67% | 54.679% | 70.962% |
-| Strict JIT, going second | 26.753% | 47.88% | 58.971% |
-| Matchup-flex JIT, going second | 35.529% | 57.47% | 68.32% |
-| No discard control, going second | 38.614% | 64.499% | 76.464% |
+| Strict JIT, going first | 10.843% | 35.735% | 51.262% |
+| Matchup-flex JIT, going first | 15.905% | 44.813% | 60.606% |
+| No discard control, going first | 19.734% | 54.79% | 71.068% |
+| Strict JIT, going second | 26.83% | 48.457% | 59.452% |
+| Matchup-flex JIT, going second | 34.733% | 57.903% | 68.576% |
+| No discard control, going second | 39.453% | 66.012% | 77.716% |
 
 ## Lock stress tests
 
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
-| Strict JIT, turn-two Item lock, first | 4.349% | 9.562% | 16.92% |
-| Strict JIT, full Item lock, first | 2.832% | 7.354% | 14.349% |
-| Strict JIT, Rule Box Ability lock, first | 4.376% | 24.14% | 36.411% |
-| Strict JIT, combined lock, first | 0.309% | 3.262% | 7.187% |
-| Strict JIT, turn-two Item lock, second | 13.592% | 26.623% | 33.883% |
-| Strict JIT, full Item lock, second | 10.371% | 22.145% | 29.106% |
-| Strict JIT, Rule Box Ability lock, second | 17.288% | 32.38% | 42.499% |
-| Strict JIT, combined lock, second | 2.507% | 11.06% | 15.036% |
+| Strict JIT, turn-two Item lock, first | 4.364% | 9.633% | 17.008% |
+| Strict JIT, full Item lock, first | 2.809% | 7.379% | 14.39% |
+| Strict JIT, Rule Box Ability lock, first | 4.403% | 24.193% | 36.453% |
+| Strict JIT, combined lock, first | 0.308% | 3.27% | 7.2% |
+| Strict JIT, turn-two Item lock, second | 13.491% | 26.795% | 34.033% |
+| Strict JIT, full Item lock, second | 10.407% | 22.17% | 29.132% |
+| Strict JIT, Rule Box Ability lock, second | 17.18% | 32.324% | 42.461% |
+| Strict JIT, combined lock, second | 2.51% | 11.049% | 15.047% |
 
 ## Interpretation boundary
 

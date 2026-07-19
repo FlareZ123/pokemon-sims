@@ -1,0 +1,84 @@
+name: GPT-5.6 debug audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Simulate strict JIT going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Repository trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Earliest complete route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee audit-trace-1.txt
+          grep -F "T1 | PLAY SUPPORTER | rules: R-STEVEN-01" audit-trace-1.txt
+          grep -F "T2 | READY | rules: R-RVS-01; P-JIT-01" audit-trace-1.txt
+      - name: Simulate strict JIT going first
+        shell: bash
+        run: |
+          set -euo pipefail
+          # First-turn procedure source: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Powerglass card text: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee audit-trace-2.txt
+          grep -F "T1 | TURN START | rules: R-GAME-FIRST-TURN" audit-trace-2.txt
+          grep -F "T2 | POWERGLASS | rules: R-POWERGLASS-01" audit-trace-2.txt
+          grep -F "T3 | READY | rules: R-RVS-01; P-JIT-01" audit-trace-2.txt
+      - name: Simulate matchup-flex JIT going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          # Mysterious Treasure card text: https://api.pokemontcg.io/v2/cards/sm6-113
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee audit-trace-3.txt
+          grep -F "T1 | DISCARD | rules: R-MT-01 | Erika's Invitation" audit-trace-3.txt
+          grep -F "T2 | READY | rules: R-RVS-01; P-JIT-01" audit-trace-3.txt
+      - name: Reproduce pending issue 969
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Pending issue and exact expected defect: https://github.com/FlareZ123/pokemon-sims/issues/969
+          # Gladion card text: https://api.pokemontcg.io/v2/cards/sm4-95
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 19 --require-ready-by 3 | tee audit-trace-issue-969.txt
+          grep -F "T2 | PLAY SUPPORTER | rules: R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01 | Looked at Prize cards and exchanged Gladion for Regidrago V." audit-trace-issue-969.txt
+          grep -F "T3 | READY | rules: R-RVS-01; P-JIT-01" audit-trace-issue-969.txt
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure | tee audit-ctest.txt
+      - name: Generate canonical T2/T3 matrix
+        run: |
+          # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-matrix.csv
+      - name: Capture exact tested source
+        run: |
+          git rev-parse HEAD | tee audit-tested-head.txt
+          git archive --format=tar.gz --output=exact-tested-source.tar.gz HEAD
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpt56-debug-audit-${{ github.run_attempt }}
+          path: |
+            audit-trace-*.txt
+            audit-ctest.txt
+            audit-matrix.csv
+            audit-tested-head.txt
+            exact-tested-source.tar.gz
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+          if-no-files-found: error

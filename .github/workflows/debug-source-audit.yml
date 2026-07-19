@@ -1,5 +1,7 @@
 name: Debug Source Audit
 
+# Re-run against current main after PR #1091 merged:
+# https://github.com/FlareZ123/pokemon-sims/pull/1091
 on:
   pull_request:
     branches: [main]

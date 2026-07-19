@@ -8,8 +8,7 @@
         hand_count(Card::MysteriousTreasure) == 0 ||
         deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
         hand_count(Card::ProfessorBurnet) == 0 ||
-        !payload_might_be_in_deck() ||
-        !is_legal_cost_available(false, true)) {
+        !payload_might_be_in_deck()) {
       return false;
     }
 
@@ -17,8 +16,10 @@
         state_.hand.begin(), state_.hand.end(), is_payload));
     if (redundant_payloads < 2) return false;
 
-    const int missing_grass = std::max(0, 2 - state_.active->grass);
-    const int missing_fire = std::max(0, 1 - state_.active->fire);
+    const int missing_grass = std::max(
+        0, 2 - state_.active->grass - hand_count(Card::Grass));
+    const int missing_fire = std::max(
+        0, 1 - state_.active->fire - hand_count(Card::Fire));
     if (missing_grass + missing_fire == 0 ||
         missing_grass + missing_fire > 2) {
       return false;
@@ -30,9 +31,9 @@
 
     // Delegate the VSTAR axis to the held Mysterious Treasure, whose printed cost can
     // use one of two redundant held Dragon payloads. Star Alchemy is then free to find
-    // Oricorio, Vital Dance searches the two-Energy package, and the unused manual
-    // attachments across this turn and the legal evolution turn establish GGF. Held
-    // Professor Burnet remains available for a deck-resident strict-JIT payload:
+    // Oricorio, Vital Dance searches only the Basic Energy not already held, and the
+    // manual attachments across the available turns establish GGF. Held Professor
+    // Burnet remains available for a deck-resident strict-JIT payload:
     // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Oricorio and Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
@@ -40,6 +41,7 @@
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Trainer, Bench, Ability, attachment, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Earliest connector decomposition: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Redundant Dragon cost precedent: https://github.com/FlareZ123/pokemon-sims/issues/925
     // Strict-JIT payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1071
     return true;

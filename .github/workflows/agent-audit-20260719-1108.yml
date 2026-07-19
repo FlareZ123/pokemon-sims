@@ -1,0 +1,56 @@
+name: Agent audit 20260719 1108
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel 2
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Required simulate-this pass 1
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee required-pass-1.txt
+        # Trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      - name: Required simulate-this pass 2
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 3 | tee required-pass-2.txt
+        # Confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/964
+      - name: Required simulate-this pass 3
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee required-pass-3.txt
+        # Lock regression: https://github.com/FlareZ123/pokemon-sims/issues/917
+      - name: Capture claimed bug witnesses
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 120 > issue-1030.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 172 > issue-1031.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 130 > issue-1032.txt
+        # Claimed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1030 https://github.com/FlareZ123/pokemon-sims/issues/1031 https://github.com/FlareZ123/pokemon-sims/issues/1032
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+        # Matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+      - name: Package exact source
+        run: |
+          tar --exclude=.git --exclude=build -czf repo-source.tar.gz .
+          git rev-parse HEAD > tested-head.txt
+      - name: Upload audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-audit-20260719-1108
+          path: |
+            required-pass-*.txt
+            issue-103*.txt
+            t2-t3-matrix.csv
+            repo-source.tar.gz
+            tested-head.txt
+            build/regidrago_sim
+          if-no-files-found: error

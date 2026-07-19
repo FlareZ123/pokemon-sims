@@ -2,6 +2,8 @@
     const bool forest_seal_ability_available_this_turn =
         ability_available_for_pokemon(Card::RegidragoV) ||
         hand_count(Card::ChaoticSwell) > 0;
+    const bool payload_in_known_deck = std::any_of(
+        state_.deck.begin(), state_.deck.end(), is_payload);
 
     if (!deck_seen_ || !supporter_allowed() || item_locked() ||
         scenario_.dci != DciProfile::StrictJit || !state_.active ||
@@ -12,7 +14,7 @@
         hand_count(Card::Arven) == 0 || !need_vstar() || !need_payload() ||
         hand_count(Card::RegidragoVstar) > 0 ||
         deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
-        !forest_seal_ability_available_this_turn || !payload_might_be_in_deck()) {
+        !forest_seal_ability_available_this_turn || !payload_in_known_deck) {
       return false;
     }
 
@@ -33,7 +35,7 @@
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Chaotic Swell can replace the modeled Path before Star Alchemy: https://api.pokemontcg.io/v2/cards/sm12-187
     // Supporter, Stadium, Tool, Ability, evolution, and Item procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // K1 deck inspection and earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Strict-JIT payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1067
     return forest_seal_stone_available && brilliant_blender_available;

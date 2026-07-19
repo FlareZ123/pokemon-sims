@@ -119,9 +119,19 @@ class Engine {
     // copy accounting without changing strategic counts of unevolved Pokémon:
     // https://www.pokemon.com/us/pokemon-tcg/rules
     // https://api.pokemontcg.io/v2/cards/swsh12-136
-    const int evolved_regidrago_bases = card == Card::RegidragoV ? in_play_count(Card::RegidragoVstar) : 0;
+    const int evolved_regidrago_bases =
+        card == Card::RegidragoV ? in_play_count(Card::RegidragoVstar) : 0;
+    // Forretress ex is a Stage 1 that evolves from Pineco. Count the public
+    // underlying Pineco in the same fixed-list K0 accounting used for Regidrago's
+    // Evolution stack: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+    // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/issues/972
+    const int evolved_pineco_bases =
+        card == Card::Pineco ? in_play_count(Card::ForretressEx) : 0;
     const int known = hand_count(card) + count_of(state_.discard, card) + in_play_count(card) +
-                      evolved_regidrago_bases + attached_public_count(card);
+                      evolved_regidrago_bases + evolved_pineco_bases +
+                      attached_public_count(card);
     return total_copies(card) > known;
   }
 

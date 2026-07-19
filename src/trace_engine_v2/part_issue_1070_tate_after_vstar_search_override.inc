@@ -1,9 +1,11 @@
   bool tate_switch_after_held_vstar_evolution_route() const {
+    const bool payload_in_known_deck = !deck_seen_ ||
+        std::any_of(state_.deck.begin(), state_.deck.end(), is_payload);
     if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 ||
         hand_count(Card::RegidragoVstar) == 0 ||
         hand_count(Card::BrilliantBlender) == 0 || item_locked() ||
-        !need_active_vstar() || !strict_payload_timing() ||
-        !payload_might_be_in_deck() || can_free_retreat_with_latias()) {
+        !state_.active || state_.active->card == Card::RegidragoVstar ||
+        !payload_in_known_deck || can_free_retreat_with_latias()) {
       return false;
     }
 
@@ -20,8 +22,8 @@
       // Star Alchemy has already placed Regidrago VSTAR in hand. Preserve Tate & Liza
       // through the current fixed-point pass so the prior-turn GGF Basic evolves first;
       // Tate's switch mode then promotes it and the held Brilliant Blender supplies the
-      // current-turn JIT payload. A payload discarded on an earlier turn does not
-      // satisfy strict or matchup-flex JIT timing:
+      // current-turn JIT payload. The concrete public state is sufficient even before
+      // generic VSTAR-axis helpers recognize the unevolved Benched attacker:
       // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
       // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
       // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156

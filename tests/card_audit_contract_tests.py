@@ -14,6 +14,8 @@ CORE_INDEX_PATH = REPO_ROOT / "docs" / "OPTIMAL_POLICY_FIXTURES.md"
 TIER2_INDEX_PATH = REPO_ROOT / "docs" / "TIER2_POLICY_FIXTURES.md"
 CORE_RUNNER_PATH = REPO_ROOT / "tests" / "policy_fixture_v2" / "part_004a.inc"
 TIER2_RUNNER_PATH = REPO_ROOT / "tests" / "tier2_parts" / "part_003b.inc"
+TRACE_REGISTER_PATH = REPO_ROOT / "docs" / "RULES_TRACEABILITY.md"
+TRACE_SOURCE_DIR = REPO_ROOT / "src" / "trace_engine_v2"
 SCRIPT_PATH = REPO_ROOT / "scripts" / "audit_card_data.py"
 UPSTREAM_COMMIT_URL = (
     "https://github.com/PokemonTCG/pokemon-tcg-data/commit/"
@@ -21,6 +23,9 @@ UPSTREAM_COMMIT_URL = (
 )
 ARCHIVE_SHA256 = "3444c74e47cdb92d83ba760e9eeefa8bbaedd9d7f396068c0e1ed390a686af08"
 ERIKA_SOURCE_URL = "https://api.pokemontcg.io/v2/cards/sv3pt5-160"
+TRACE_CALL = re.compile(r'\btrace\s*\(\s*"[^"]*"\s*,\s*"([^"]*)"', re.DOTALL)
+RULE_ID = re.compile(r"\bR-[A-Z0-9-]+\b")
+REGISTERED_RULE_ID = re.compile(r"^\| `(?P<id>R-[A-Z0-9-]+)` \|", re.MULTILINE)
 
 
 def load_audit_module():
@@ -52,6 +57,14 @@ def require_documented_count(documented: str, label: str, expected: int) -> None
     pattern = rf"{re.escape(label)}[^\n]*\*\*{expected}\*\*"
     if re.search(pattern, documented) is None:
         raise AssertionError(f"{label} must document the canonical count {expected}.")
+
+
+def emitted_rule_ids() -> set[str]:
+    emitted: set[str] = set()
+    for path in TRACE_SOURCE_DIR.glob("*.inc"):
+        for rule_field in TRACE_CALL.findall(path.read_text(encoding="utf-8")):
+            emitted.update(RULE_ID.findall(rule_field))
+    return emitted
 
 
 def main() -> int:
@@ -114,6 +127,21 @@ def main() -> int:
     require_documented_count(audit_status, "Tier Two choice-differentiation fixtures:", tier2_count)
     require_documented_count(core_index, "executes", core_count)
     require_documented_count(tier2_index, "executes", tier2_count)
+
+    # Every production R-* token emitted into a readable trace must have a register
+    # row. Guzma's second switch is conditional on its opponent switch occurring, and
+    # the repository exposes that prerequisite through an explicit opponent-Bench state:
+    # https://api.pokemontcg.io/v2/cards/sm3-115
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#opponent-actions
+    # https://github.com/FlareZ123/pokemon-sims/issues/1033
+    register = TRACE_REGISTER_PATH.read_text(encoding="utf-8")
+    emitted = emitted_rule_ids()
+    registered = set(REGISTERED_RULE_ID.findall(register))
+    missing = sorted(emitted - registered)
+    if missing:
+        raise AssertionError(f"Unregistered emitted rule IDs: {', '.join(missing)}")
+    if "R-GUZMA-01" not in emitted or "R-GUZMA-01" not in registered:
+        raise AssertionError("R-GUZMA-01 must be emitted and registered.")
     return 0
 
 

@@ -39,6 +39,9 @@ jobs:
           ./build/regidrago_sim --trials 100000 --seed 20260705 --out ci-audit-matrix.csv
           cat ci-audit-matrix.csv
 
+      - name: Package exact audit source
+        run: tar --exclude=.git --exclude=build --exclude=repo-source.tar.gz -czf repo-source.tar.gz .
+
       - name: Upload audit outputs
         uses: actions/upload-artifact@v7
         with:
@@ -48,4 +51,6 @@ jobs:
             trace-strict-first-seed43.txt
             trace-item-lock-seed25.txt
             ci-audit-matrix.csv
+            repo-source.tar.gz
+            build/regidrago_sim
           if-no-files-found: error

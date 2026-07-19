@@ -34,14 +34,23 @@ jobs:
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-1.txt
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee trace-2.txt
           ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-3.txt
-          # Active-Regidrago late Steven regression and exact deterministic T3 route:
+          # Steven may search up to three cards. Held Fire plus target-legal Quick Ball
+          # already completes the T3 Energy and strict-JIT payload axes, so preserve
+          # Crispin and the one-copy ACE SPEC after taking the missing VSTAR card:
           # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/sv6-130
           # https://api.pokemontcg.io/v2/cards/swsh12-136
           # https://api.pokemontcg.io/v2/cards/sv8-164
           # https://www.pokemon.com/us/pokemon-tcg/rules
           # https://github.com/FlareZ123/pokemon-sims/issues/952
+          # https://github.com/FlareZ123/pokemon-sims/issues/978
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee trace-4.txt
-          grep -q "Searched up to 3 cards: Regidrago VSTAR, Crispin, Brilliant Blender" trace-4.txt
+          grep -q "Searched up to 3 cards: Regidrago VSTAR. Turn ended." trace-4.txt
+          grep -q "T3 | DISCARD.*Dragapult ex (Quick Ball cost)" trace-4.txt
+          ! grep -q "Searched up to 3 cards: Regidrago VSTAR, Crispin" trace-4.txt
+          ! grep -q "Searched up to 3 cards: Regidrago VSTAR, Brilliant Blender" trace-4.txt
+          grep -q "T3 | READY" trace-4.txt
           # Quick Ball must preserve the strict-JIT Dragon until the VSTAR card axis is reachable:
           # https://api.pokemontcg.io/v2/cards/swsh1-179
           # https://api.pokemontcg.io/v2/cards/swsh12-136

@@ -169,10 +169,45 @@
     return static_cast<const Engine&>(*this).choose_supporter_after_search_started();
   }
 
+  bool late_steven_has_active_regidrago_t3_blender_route() const {
+    if (state_.turn != 2 || !scenario_.going_first ||
+        scenario_.dci != DciProfile::StrictJit ||
+        scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
+        !supporter_allowed() || !state_.active ||
+        state_.active->card != Card::RegidragoV ||
+        state_.active->entered_turn >= state_.turn ||
+        !state_.manual_energy_used || state_.active->grass < 2 ||
+        state_.active->fire != 0 || hand_count(Card::Fire) == 0 ||
+        hand_count(Card::StevensResolve) == 0 ||
+        hand_count(Card::RegidragoVstar) > 0 ||
+        hand_count(Card::BrilliantBlender) > 0 ||
+        !need_vstar() || !need_payload() || !payload_might_be_in_deck() ||
+        !might_be_unseen(Card::RegidragoVstar) ||
+        !might_be_unseen(Card::BrilliantBlender)) {
+      return false;
+    }
+
+    // Steven is selected at K0 before any expendable search Item is burned. Fixed-list
+    // targets may remain plausible until Steven legally inspects the deck; its search
+    // then chooses only targets actually present. A current-turn VSTAR connector still
+    // outranks this banked route. Otherwise the held Fire completes GGF on T3 and the
+    // prior-turn Active may evolve before Brilliant Blender supplies the JIT payload:
+    // https://api.pokemontcg.io/v2/cards/sm7-145
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/952
+    return !blender_vstar_card_axis_can_finish_this_turn();
+  }
+
   bool should_play_steven() const {
     return (should_play_steven_original() &&
             !steven_should_yield_to_crispin_mysterious_route()) ||
         late_steven_is_only_basic_connector() ||
         late_steven_has_known_t3_compression_route() ||
-        banked_steven_has_known_t3_blender_route();
+        banked_steven_has_known_t3_blender_route() ||
+        late_steven_has_active_regidrago_t3_blender_route();
   }

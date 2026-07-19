@@ -129,8 +129,7 @@
         hand_count(Card::TapuLeleGX) == 0 ||
         hand_count(Card::Crispin) == 0 ||
         deck_count_after_search_started(Card::Crispin) == 0 ||
-        !need_energy() || !crispin_can_advance_energy_axis() ||
-        !prizes_known()) {
+        !need_energy() || !prizes_known()) {
       return false;
     }
 
@@ -140,6 +139,10 @@
     int fire_in_hand = hand_count(Card::Fire);
     const bool grass_available = deck_count_after_search_started(Card::Grass) > 0;
     const bool fire_available = deck_count_after_search_started(Card::Fire) > 0;
+    const bool needed_energy_searchable =
+        (grass_needed() > 0 && grass_available) ||
+        (fire_needed() > 0 && fire_available);
+    if (!needed_energy_searchable) return false;
     if (grass_available && fire_available) {
       if (grass_remaining > 0) {
         --grass_remaining;
@@ -176,7 +179,10 @@
     // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
     // One Supporter per turn: https://www.pokemon.com/us/pokemon-tcg/rules
     // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1038
+    // One-type search-to-hand plus manual attachment:
+    // https://github.com/FlareZ123/pokemon-sims/issues/1051
+    // Confirmed original duplicate route:
+    // https://github.com/FlareZ123/pokemon-sims/issues/1038
     return held_crispin_completes_ggf || held_gladion_has_known_axis;
   }
 

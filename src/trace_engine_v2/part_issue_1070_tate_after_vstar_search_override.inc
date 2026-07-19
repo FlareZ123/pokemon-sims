@@ -2,9 +2,8 @@
     if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 ||
         hand_count(Card::RegidragoVstar) == 0 ||
         hand_count(Card::BrilliantBlender) == 0 || item_locked() ||
-        !need_active_vstar() || !need_vstar() || !need_payload() ||
-        !can_play_payload_this_turn() || !payload_might_be_in_deck() ||
-        can_free_retreat_with_latias()) {
+        !need_active_vstar() || !need_payload() ||
+        !payload_might_be_in_deck() || can_free_retreat_with_latias()) {
       return false;
     }
 

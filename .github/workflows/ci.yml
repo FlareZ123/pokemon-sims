@@ -27,7 +27,7 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator and unified tests
         run: cmake --build build --parallel 2
-      - name: Run four independent simulate-this audits
+      - name: Run five independent simulate-this audits
         shell: bash
         run: |
           set -euo pipefail
@@ -42,6 +42,12 @@ jobs:
           # https://github.com/FlareZ123/pokemon-sims/issues/952
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee trace-4.txt
           grep -q "Searched up to 3 cards: Regidrago VSTAR, Crispin, Brilliant Blender" trace-4.txt
+          # Quick Ball must preserve the strict-JIT Dragon until the VSTAR card axis is reachable:
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # https://github.com/FlareZ123/pokemon-sims/issues/953
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 19 --require-ready-by 3 | tee trace-5.txt
       # The issue #718 PR refreshes and validates the source-bound matrix after the
       # Blender VSTAR-card-axis fix: https://github.com/FlareZ123/pokemon-sims/pull/931
       - name: Generate canonical T2 and T3 matrix

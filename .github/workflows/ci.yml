@@ -74,6 +74,16 @@ jobs:
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 3 | tee trace-8.txt
           grep -q "DISCARD.*Regidrago VSTAR (Quick Ball cost)" trace-8.txt
           grep -q "Searched a Basic Pokémon: Regidrago V" trace-8.txt
+          # Once held Mysterious Treasure plus Dragapult ex supplies strict-JIT payload,
+          # Star Alchemy takes the direct Energy Supporter instead of unused Blender:
+          # https://api.pokemontcg.io/v2/cards/swsh12-156
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sv6-130
+          # https://github.com/FlareZ123/pokemon-sims/issues/976
+          grep -q "STAR ALCHEMY.*Crispin" trace-8.txt
+          grep -q "DISCARD.*Dragapult ex.*Mysterious Treasure cost" trace-8.txt
+          ! grep -q "STAR ALCHEMY.*Brilliant Blender" trace-8.txt
           grep -q "T3 | READY" trace-8.txt
       # The issue #718 PR refreshes and validates the source-bound matrix after the
       # Blender VSTAR-card-axis fix: https://github.com/FlareZ123/pokemon-sims/pull/931

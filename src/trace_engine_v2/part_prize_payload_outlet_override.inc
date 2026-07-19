@@ -133,6 +133,62 @@
   }
 
   bool play_gladion() {
+    const bool blind_one_type_crispin_window = supporter_allowed() && !prizes_known() &&
+        hand_count(Card::Gladion) > 0 && state_.turn < scenario_.max_turn &&
+        state_.active && state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn && state_.active->grass >= 2 &&
+        state_.active->fire == 0 && !state_.manual_energy_used && !need_regi() &&
+        need_energy() && hand_count(Card::Crispin) == 0 &&
+        hand_count(Card::RegidragoVstar) == 0 && hand_count(Card::EvolutionIncense) == 0 &&
+        hand_count(Card::MysteriousTreasure) == 0 && hand_count(Card::UltraBall) == 0 &&
+        hand_count(Card::PokemonCommunication) == 0 && hand_count(Card::Arven) == 0 &&
+        hand_count(Card::ForestSealStone) == 0 && hand_count(Card::TapuLeleGX) == 0;
+    if (blind_one_type_crispin_window) {
+      // Gladion reveals every Prize before its exchange, so the post-reveal selector
+      // may recognize a prized Crispin whose one searchable Fire Energy goes to hand
+      // and becomes the next turn's manual attachment to the prior-turn GG Regidrago V:
+      // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+      // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+      // Regidrago VSTAR and Apex Dragon's GGF cost: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // One manual Energy attachment per turn: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Existing one-type specification: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/crispin_one_type_manual_attachment_tests.cpp
+      // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/977
+      remove_one(state_.hand, Card::Gladion);
+      state_.supporter_used = true;
+      prizes_revealed_ = true;
+
+      const auto exchange = [this](const Card target) {
+        const auto it = std::find(state_.prizes.begin(), state_.prizes.end(), target);
+        if (it == state_.prizes.end()) return false;
+        const Card chosen = *it;
+        *it = Card::Gladion;
+        state_.hand.push_back(chosen);
+        shuffle(state_.prizes);
+        trace("PLAY SUPPORTER", "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
+              "Looked at Prize cards and exchanged Gladion for " + std::string(name(chosen)) + ".");
+        return true;
+      };
+
+      if (need_vstar() && exchange(Card::RegidragoVstar)) return true;
+      if (prize_count_after_reveal(Card::Crispin) > 0 &&
+          crispin_can_advance_energy_axis() && exchange(Card::Crispin)) {
+        return true;
+      }
+      for (const Card target : {Card::RegidragoV, Card::ProfessorBurnet,
+                                Card::MegaDragonite}) {
+        if (exchange(target)) return true;
+      }
+      const std::array<Card, 8> lowest_impact{Card::Dipplin, Card::Grass, Card::Fire,
+          Card::Powerglass, Card::FieldBlower, Card::ChaoticSwell, Card::PathToPeak,
+          Card::ErikasInvitation};
+      for (const Card target : lowest_impact) {
+        if (exchange(target)) return true;
+      }
+      if (!state_.prizes.empty()) return exchange(state_.prizes.front());
+      throw std::logic_error("Gladion resolved with no Prize card to exchange");
+    }
+
     const bool dead_prize_payload_route = prizes_known() && need_payload() &&
         !need_regi() && !need_vstar() && !need_energy() && !need_active_vstar() &&
         can_play_payload_this_turn() && !prize_payload_one_discard_outlet_has_legal_target();

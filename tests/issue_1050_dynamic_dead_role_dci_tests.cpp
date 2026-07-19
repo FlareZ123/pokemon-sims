@@ -15,7 +15,7 @@ int main() {
   std::mt19937_64 rng{87};
   sim::TraceLog trace{true, {}};
   sim::Engine engine(*scenario, recipe, rng, &trace);
-  const sim::Outcome outcome = engine.run();
+  const auto outcome = engine.run();
 
   const bool vessel_cost = std::any_of(trace.lines.begin(), trace.lines.end(),
       [](const std::string& line) {

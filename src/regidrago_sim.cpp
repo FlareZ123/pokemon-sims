@@ -217,9 +217,12 @@
 #define play_earthen_vessel play_earthen_vessel_vstar_window_original
 #define bench_tapu_if_useful bench_tapu_if_useful_issue989_empty_deck_original
 #define in_play tapu_connector_copy_aware_in_play
+#define play_steven play_steven_issue1002_empty_deck_original
 #include "trace_engine_v2/part_empty_deck_search_override.inc"
+#undef play_steven
 #undef in_play
 #undef bench_tapu_if_useful
+#include "trace_engine_v2/part_issue_1002_steven_target_override.inc"
 #define bench_tapu_if_useful bench_tapu_if_useful_issue_991_original
 #include "trace_engine_v2/part_issue_989_empty_deck_tapu_override.inc"
 #undef bench_tapu_if_useful

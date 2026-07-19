@@ -84,6 +84,19 @@
       return false;
     }
 
+    if (fss_should_hold_for_observable_complete_route()) {
+      // The K1 shadow reached the same current-turn ready state without adding any
+      // searched card. Preserve the once-per-game VSTAR Power and every one-shot
+      // connector already held by the deterministic complete route:
+      // https://api.pokemontcg.io/v2/cards/swsh12-156
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // https://github.com/FlareZ123/pokemon-sims/issues/990
+      trace("HOLD VSTAR POWER", "R-FSS-02; R-VSTAR-01; P-KNOWLEDGE-01; P-DCI-01",
+            "Retained Star Alchemy because observable held resources already complete every current-turn setup axis.");
+      return false;
+    }
+
     if (deck_seen_) {
       // K1 must preserve the once-per-game VSTAR Power when the inspected deck has no
       // card or complete chain that advances a currently unresolved setup axis:

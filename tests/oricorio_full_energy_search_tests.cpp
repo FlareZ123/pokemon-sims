@@ -153,8 +153,8 @@ void test_star_alchemy_preserves_burnet_with_unusable_held_payload() {
          "The corrected route should reach strict-JIT readiness on turn 2.");
 }
 
-void test_star_alchemy_keeps_crispin_with_live_held_payload_item() {
-  sim::Scenario scenario{"fss-crispin-live-held-payload-item",
+void test_star_alchemy_holds_with_live_held_vessel_payload_item() {
+  sim::Scenario scenario{"fss-hold-live-held-vessel-payload-item",
                          sim::DciProfile::StrictJit, sim::LockMode::None, false, 4};
   sim::DeckRecipe recipe = sim::baseline_recipe();
   std::mt19937_64 rng{622};
@@ -173,20 +173,35 @@ void test_star_alchemy_keeps_crispin_with_live_held_payload_item() {
   sim::EngineTestAccess::set_state(engine, std::move(state));
   sim::EngineTestAccess::set_deck_seen(engine);
 
-  // Earthen Vessel can discard the held Dragon and still search the known Fire target.
-  // The Burnet-preservation override must therefore leave Crispin as Star Alchemy's
-  // stronger Energy connector:
+  // Earthen Vessel can discard the held Dragon, search the known Fire target, and
+  // leave the manual attachment unused until Fire reaches the Active Regidrago VSTAR.
+  // The searched Crispin would remain unused, so the complete K1 route preserves the
+  // once-per-game Star Alchemy resource:
   // Earthen Vessel https://api.pokemontcg.io/v2/cards/sv4-163
   // Crispin https://api.pokemontcg.io/v2/cards/sv7-133
   // Forest Seal Stone https://api.pokemontcg.io/v2/cards/swsh12-156
   // Apex Dragon https://api.pokemontcg.io/v2/cards/swsh12-136
-  expect(sim::EngineTestAccess::use_fss(engine),
-         "Star Alchemy should resolve with a live Vessel payload outlet.");
+  // Turn procedure https://www.pokemon.com/us/pokemon-tcg/rules
+  // Route policy https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug https://github.com/FlareZ123/pokemon-sims/issues/990
+  expect(!sim::EngineTestAccess::use_fss(engine),
+         "Star Alchemy should remain unused with a complete held Vessel route.");
+  sim::EngineTestAccess::run_turn(engine);
+  sim::EngineTestAccess::record_ready(engine);
+
   const sim::State& after = sim::EngineTestAccess::state(engine);
-  expect(count(after.hand, sim::Card::Crispin) == 1,
-         "A live held-payload Item should preserve the Crispin target.");
+  expect(!after.vstar_power_used,
+         "The complete Vessel route should preserve Star Alchemy.");
+  expect(count(after.deck, sim::Card::Crispin) == 1,
+         "Unused Crispin should remain in deck.");
   expect(count(after.deck, sim::Card::Oricorio) == 1,
-         "Oricorio should remain in deck when Burnet is unnecessary.");
+         "Oricorio should remain in deck when Vessel completes Energy directly.");
+  expect(count(after.discard, sim::Card::MegaDragonite) == 1,
+         "Earthen Vessel should discard the held Dragon payload.");
+  expect(after.active && after.active->fire == 1,
+         "The searched Fire Energy should be manually attached.");
+  expect(sim::EngineTestAccess::outcome(engine).first_ready_turn == 2,
+         "The held Vessel route should reach strict-JIT readiness on turn two.");
 }
 
 void test_star_alchemy_keeps_crispin_with_payable_ultra_ball_payload_item() {
@@ -231,7 +246,7 @@ int main() {
     test_mawile_starts_active_so_oricorio_keeps_vital_dance();
     test_oricorio_selects_a_second_legal_energy_for_follow_up_search();
     test_star_alchemy_preserves_burnet_with_unusable_held_payload();
-    test_star_alchemy_keeps_crispin_with_live_held_payload_item();
+    test_star_alchemy_holds_with_live_held_vessel_payload_item();
     test_star_alchemy_keeps_crispin_with_payable_ultra_ball_payload_item();
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

@@ -140,6 +140,33 @@
     if (hand_count(Card::RegidragoV) > 0 && in_play_count(Card::RegidragoV) >= 2) return Card::RegidragoV;
     if (hand_count(Card::RegidragoVstar) > 0 && has_vstar()) return Card::RegidragoVstar;
 
+    const bool final_energy_vessel_completion =
+        scenario_.dci == DciProfile::NoDiscardControl &&
+        excluded_from_cost && *excluded_from_cost == Card::EarthenVessel &&
+        !state_.manual_energy_used && active_is_vstar() && payload_ready() &&
+        grass_needed() + fire_needed() == 1 &&
+        ((grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
+         (fire_needed() == 1 && might_be_unseen(Card::Fire)));
+    if (final_energy_vessel_completion) {
+      // Once Active Regidrago VSTAR, payload, and two Energy are complete,
+      // these held roles no longer advance the repository setup objective.
+      // Earthen Vessel may therefore spend one before searching the final
+      // Basic Energy for the unused manual attachment:
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+      // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+      // Manual attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Dynamic DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1050
+      for (const Card card : {Card::QuickBall, Card::StevensResolve,
+                              Card::LatiasEx, Card::Gladion}) {
+        if (has_discardable_copy(card)) return card;
+      }
+    }
+
     const bool setup_before_steven_route =
         excluded_from_cost && *excluded_from_cost == Card::MysteriousTreasure &&
         state_.turn == 1 && !scenario_.going_first && !item_locked() &&

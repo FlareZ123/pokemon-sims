@@ -198,6 +198,27 @@
                   : std::nullopt;
     if (!known_target && revealed_missing_axis_target) known_target = revealed_missing_axis_target;
 
+    // Gladion reveals every Prize before selecting the exchange, so a newly revealed
+    // prized Crispin can be chosen after the current Regidrago V has already solved
+    // the Basic axis. Require both different Basic Energy types to remain in the
+    // inspected deck, preventing a dead Crispin from displacing a real missing axis:
+    // https://api.pokemontcg.io/v2/cards/sm4-95
+    // https://api.pokemontcg.io/v2/cards/sv7-133
+    // Regidrago VSTAR's Apex Dragon requires GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // One Supporter and one manual Energy attachment are available on the next turn:
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // Advance unresolved axes before redundant resources: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/971
+    const bool revealed_crispin_energy_connector =
+        !known_target && !revealed_missing_axis_target && state_.turn < scenario_.max_turn &&
+        state_.active && state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn && !need_regi() && need_energy() &&
+        hand_count(Card::Crispin) == 0 && prize_count_after_reveal(Card::Crispin) > 0 &&
+        deck_count_after_search_started(Card::Grass) > 0 &&
+        deck_count_after_search_started(Card::Fire) > 0 &&
+        crispin_can_advance_energy_axis();
+    if (revealed_crispin_energy_connector) known_target = Card::Crispin;
+
     const auto exchange = [this](const Card target) {
       const auto it = std::find(state_.prizes.begin(), state_.prizes.end(), target);
       if (it == state_.prizes.end()) return false;

@@ -7,7 +7,7 @@
 
 namespace sim { struct EngineTestAccess {}; }
 
-// Final-head regression after synchronizing the branch with current main.
+// Final CI regression after the post-attachment Tapu hold correction.
 int main() {
   const auto scenario = sim::scenario_by_label("matchup-flex-jit/go-first");
   if (!scenario) throw std::runtime_error("Missing matchup-flex-jit/go-first scenario");

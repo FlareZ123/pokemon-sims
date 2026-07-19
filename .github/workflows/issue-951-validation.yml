@@ -1,4 +1,4 @@
-name: Issue 951 Validation
+name: Strict-JIT Regression Validation
 
 on:
   pull_request:
@@ -24,26 +24,34 @@ jobs:
       - name: Run repository tests against regenerated baseline
         run: ctest --test-dir build --output-on-failure
       - name: Trace Treasure Energy-window reproduction
-        # Treasure, GGF, turn sequence, strict-JIT policy, and issue:
         # https://api.pokemontcg.io/v2/cards/sm6-113
         # https://api.pokemontcg.io/v2/cards/swsh12-136
         # https://www.pokemon.com/us/pokemon-tcg/rules
-        # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
         # https://github.com/FlareZ123/pokemon-sims/issues/951
         run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-first --seed 13 --require-ready-by 3 | tee issue-951-trace.txt
+      - name: Trace Active-Regidrago late Steven reproduction
+        # https://api.pokemontcg.io/v2/cards/sm7-145
+        # https://api.pokemontcg.io/v2/cards/swsh12-136
+        # https://api.pokemontcg.io/v2/cards/sv8-164
+        # https://www.pokemon.com/us/pokemon-tcg/rules
+        # https://github.com/FlareZ123/pokemon-sims/issues/952
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee issue-952-trace.txt
+      - name: Verify Active-Regidrago Steven package
+        run: grep -q "Searched up to 3 cards: Regidrago VSTAR, Crispin, Brilliant Blender" issue-952-trace.txt
       - name: Trace strict baseline control
-        # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
         run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee strict-control-trace.txt
       - name: Trace matchup-flex baseline control
-        # DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
         run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee flex-control-trace.txt
       - name: Upload regenerated baseline and trace evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: issue-951-validation
+          name: strict-jit-regression-validation
           path: |
             issue-951-trace.txt
+            issue-952-trace.txt
             strict-control-trace.txt
             flex-control-trace.txt
             results/baseline_manifest.json

@@ -87,13 +87,19 @@
     if (fss_should_hold_for_observable_complete_route()) {
       // The K1 shadow reached the same current-turn ready state without adding any
       // searched card. Preserve the once-per-game VSTAR Power and every one-shot
-      // connector already held by the deterministic complete route:
+      // connector already held by the deterministic complete route. Repeated policy
+      // stabilization for an unchanged state must emit this decision only once:
       // https://api.pokemontcg.io/v2/cards/swsh12-156
       // https://api.pokemontcg.io/v2/cards/swsh12-136
       // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
       // https://github.com/FlareZ123/pokemon-sims/issues/990
-      trace("HOLD VSTAR POWER", "R-FSS-02; R-VSTAR-01; P-KNOWLEDGE-01; P-DCI-01",
+      // https://github.com/FlareZ123/pokemon-sims/issues/1010
+      if (trace_ != nullptr) {
+        trace_->add_policy_once(
+            state_, "issue-990-fss-observable-complete-route", state_.turn,
+            "HOLD VSTAR POWER", "R-FSS-02; R-VSTAR-01; P-KNOWLEDGE-01; P-DCI-01",
             "Retained Star Alchemy because observable held resources already complete every current-turn setup axis.");
+      }
       return false;
     }
 
@@ -179,8 +185,15 @@
                  (need_vstar() && prize_count_after_reveal(Card::RegidragoVstar) > 0) ||
                  final_prized_energy_for_gladion().has_value());
           case Card::LatiasEx:
-            return need_active_vstar() && bench_space() > 0 &&
-                ability_available_for_pokemon(Card::LatiasEx);
+            // The issue-1068 route proves Latias advances the complete promotion,
+            // Energy, Evolution, and strict-JIT payload chain even though Skyliner is
+            // unavailable until Latias enters play:
+            // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+            // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+            // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1068
+            return fss_latias_vessel_promotion_route_available() ||
+                (need_active_vstar() && bench_space() > 0 &&
+                 ability_available_for_pokemon(Card::LatiasEx));
           case Card::TateLiza:
             return need_active_vstar() && supporter_allowed();
           case Card::BrilliantBlender:
@@ -233,8 +246,17 @@
         }
       }();
       if (!target_present || !target_advances_axis) {
-        trace("HOLD VSTAR POWER", "R-FSS-02; R-VSTAR-01; P-KNOWLEDGE-01; P-DCI-01",
+        // Star Alchemy remains unused, so repeated stabilization must not expose the
+        // same K1 retention decision more than once for an equivalent state:
+        // https://api.pokemontcg.io/v2/cards/swsh12-156
+        // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+        // https://github.com/FlareZ123/pokemon-sims/issues/1010
+        if (trace_ != nullptr) {
+          trace_->add_policy_once(
+              state_, "issue-1010-fss-k1-no-advancing-target", state_.turn,
+              "HOLD VSTAR POWER", "R-FSS-02; R-VSTAR-01; P-KNOWLEDGE-01; P-DCI-01",
               "Retained Star Alchemy because K1 proved that no searched card advances setup.");
+        }
         return false;
       }
     }

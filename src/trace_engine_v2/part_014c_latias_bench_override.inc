@@ -152,6 +152,7 @@
     trace("POLICY", "P-AXIS-01", "Start: " + state_line());
     play_chaotic_swell();
     play_field_blower();
+    advance_forretress_combo();
     // Resolve the proven K1 Steven route before generic Items can consume Quick Ball
     // and erase the public-state predicate. Steven searches any three cards and ends
     // the turn, so attaching Fire and evolving the prior-turn Regidrago V first banks
@@ -197,6 +198,7 @@
     // https://www.pokemon.com/us/pokemon-tcg/rules
     bench_latias_for_pending_vstar_promotion();
     play_basics_from_hand();
+    advance_forretress_combo();
     // Preserve the exact #869 Mysterious Treasure payload outlet before a generic
     // Supporter route can shuffle it away:
     // https://api.pokemontcg.io/v2/cards/sm6-113
@@ -204,12 +206,14 @@
     // https://github.com/FlareZ123/pokemon-sims/issues/869
     play_known_steven_t3_payload_outlet();
     play_items_until_stable(!strict_payload_timing());
+    advance_forretress_combo();
     attach_live_fss();
     use_fss();
     play_chaotic_swell();
     play_field_blower();
     play_basics_from_hand();
     play_items_until_stable(!strict_payload_timing());
+    advance_forretress_combo();
 
     attach_manual();
     // Steven's Resolve ends the turn, so attach a live Powerglass before choosing
@@ -229,10 +233,12 @@
     play_chaotic_swell();
     play_field_blower();
     play_items_until_stable(!strict_payload_timing());
+    advance_forretress_combo();
     attach_manual();
     evolve_best_regi();
     play_basics_from_hand();
     play_items_until_stable(true);
+    advance_forretress_combo();
     // A strict-JIT Item route may now discard an in-hand Dragon payload and search
     // Regidrago VSTAR through Mysterious Treasure (https://api.pokemontcg.io/v2/cards/sm6-113).
     // Retry evolution so a Regidrago V that entered play on a prior turn can evolve
@@ -251,6 +257,7 @@
       play_field_blower();
       play_basics_from_hand();
       play_items_until_stable(true);
+      advance_forretress_combo();
       // Legacy Star can return a Supporter from discard, including Crispin:
       // https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/sv7-133
       // A player may use one available Supporter during the turn before attacking:

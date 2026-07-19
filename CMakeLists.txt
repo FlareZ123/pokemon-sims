@@ -136,6 +136,16 @@ add_test(NAME trace_issue_1079_celestial_roar_hold
   COMMAND ${CMAKE_COMMAND}
     -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
     -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_issue_1079_celestial_roar_hold.cmake)
+# Star Alchemy must choose the deterministic scheduled-lock Crispin route over
+# Oricorio plus unknown Celestial Roar top cards:
+# https://api.pokemontcg.io/v2/cards/swsh12-156
+# https://api.pokemontcg.io/v2/cards/sv7-133
+# https://api.pokemontcg.io/v2/cards/swsh12-135
+# https://github.com/FlareZ123/pokemon-sims/issues/1085
+add_test(NAME trace_issue_1085_fss_crispin_next_turn
+  COMMAND ${CMAKE_COMMAND}
+    -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_issue_1085_fss_crispin_next_turn.cmake)
 add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
 set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)
 

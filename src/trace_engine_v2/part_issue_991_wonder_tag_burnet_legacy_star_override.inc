@@ -1,3 +1,10 @@
+  // Wonder Tag spends Tapu Lele-GX's entry Ability to search a Supporter. Preserve
+  // that exact same-turn Steven's Resolve admission across later legal Item actions:
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm7-145
+  // https://github.com/FlareZ123/pokemon-sims/issues/999
+  bool wonder_tag_selected_steven_this_turn_{false};
+
   bool wonder_tag_burnet_is_redundant_with_legacy_star_route() const {
     if (!deck_seen_ || !supporter_allowed() || state_.manual_energy_used ||
         state_.vstar_power_used || !need_energy() || has_vstar() ||
@@ -148,5 +155,17 @@
             "Retained Tapu because held Energy, Professor Burnet, and Regidrago VSTAR already complete setup.");
       return false;
     }
-    return bench_tapu_if_useful_issue_991_original();
+
+    const int steven_before = hand_count(Card::StevensResolve);
+    const bool benched = bench_tapu_if_useful_issue_991_original();
+    if (benched && hand_count(Card::StevensResolve) > steven_before) {
+      // The one-shot Wonder Tag search admitted Steven before later Item actions may
+      // alter the mutable setup-axis count. Keep that legal admission for this turn:
+      // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // https://api.pokemontcg.io/v2/cards/sm7-145
+      // https://api.pokemontcg.io/v2/cards/swsh1-179
+      // https://github.com/FlareZ123/pokemon-sims/issues/999
+      wonder_tag_selected_steven_this_turn_ = true;
+    }
+    return benched;
   }

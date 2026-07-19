@@ -1,5 +1,6 @@
   bool held_payload_completes_current_turn_without_gladion() const {
-    if (!supporter_allowed() || !prizes_known() || !need_payload() ||
+    if (!supporter_allowed() || hand_count(Card::Gladion) == 0 ||
+        !prizes_known() || !need_payload() ||
         !can_play_payload_this_turn() ||
         std::none_of(state_.hand.begin(), state_.hand.end(), is_payload) ||
         !prize_payload_one_discard_outlet_has_legal_target()) {

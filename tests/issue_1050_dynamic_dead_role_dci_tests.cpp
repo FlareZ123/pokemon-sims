@@ -25,7 +25,7 @@ int main() {
   const bool arven_vessel = std::any_of(trace.lines.begin(), trace.lines.end(),
       [](const std::string& line) {
         return line.find("T4 | PLAY SUPPORTER") != std::string::npos &&
-               line.find("Arven") != std::string::npos &&
+               line.find("R-ARVEN-01") != std::string::npos &&
                line.find("Earthen Vessel") != std::string::npos;
       });
   const bool ready_t4 = outcome.first_ready_turn == 4 &&

@@ -189,6 +189,69 @@
            live_arven_held_payload || live_arven_communication;
   }
 
+
+bool wonder_tag_can_bank_steven_for_known_t3_active_regi_route() const {
+  if (state_.turn != 1 || !scenario_.going_first ||
+      scenario_.dci != DciProfile::MatchupFlexJit ||
+      scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
+      !deck_seen_ || state_.manual_energy_used || !state_.active ||
+      state_.active->card != Card::RegidragoV ||
+      hand_count(Card::StevensResolve) > 0 ||
+      hand_count(Card::EarthenVessel) == 0 ||
+      hand_count(Card::Oricorio) == 0 || bench_space() <= 0 ||
+      !ability_available_for_pokemon(Card::Oricorio) ||
+      !need_vstar() || !need_energy() || !need_payload() ||
+      !payload_might_be_in_deck() ||
+      !choose_discard(false, true, true, Card::EarthenVessel).has_value()) {
+    return false;
+  }
+
+  // Wonder Tag has established K1. Earthen Vessel and Vital Dance each
+  // supply Grass plus Fire, leaving two Grass and one Fire for the three
+  // manual attachments. Steven can therefore reserve Regidrago VSTAR and
+  // Brilliant Blender for a deterministic T3 Active-Regidrago route:
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Turn and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1049
+  return deck_count_after_search_started(Card::StevensResolve) > 0 &&
+      deck_count_after_search_started(Card::Grass) >= 2 &&
+      deck_count_after_search_started(Card::Fire) >= 2 &&
+      deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
+      deck_count_after_search_started(Card::BrilliantBlender) > 0;
+}
+
+bool held_banked_steven_has_known_t3_active_regi_route() const {
+  if (state_.turn != 1 || !scenario_.going_first ||
+      scenario_.dci != DciProfile::MatchupFlexJit ||
+      scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
+      !deck_seen_ || state_.manual_energy_used || !state_.active ||
+      state_.active->card != Card::RegidragoV ||
+      hand_count(Card::StevensResolve) == 0 ||
+      hand_count(Card::Grass) < 2 || hand_count(Card::Fire) == 0 ||
+      !need_vstar() || !need_energy() || !need_payload() ||
+      !payload_might_be_in_deck()) {
+    return false;
+  }
+
+  // The held Steven package already has every public Energy needed for
+  // T1, T2, and T3 manual attachments. A second Tapu and Wonder Tag for
+  // Crispin spend a Bench slot and one-shot Ability without advancing the
+  // earliest deterministic route:
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm7-145
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/issues/1049
+  return deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
+      deck_count_after_search_started(Card::BrilliantBlender) > 0;
+}
+
   bool future_turn_wonder_tag_route_has_live_target() {
     if (state_.turn != 1 || !scenario_.going_first || bench_space() <= 0 ||
         !ability_available_for_pokemon(Card::TapuLeleGX)) {
@@ -329,6 +392,10 @@
     // https://github.com/FlareZ123/pokemon-sims/issues/616
     if (bench_space() == 1 && hand_count(Card::Oricorio) > 0 &&
         !in_play(Card::Oricorio) && oricorio_preserves_burnet_with_current_hand()) {
+      return false;
+    }
+
+    if (held_banked_steven_has_known_t3_active_regi_route()) {
       return false;
     }
 

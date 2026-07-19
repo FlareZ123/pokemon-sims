@@ -1,0 +1,39 @@
+name: Patch issue 1049 pre-attachment gate
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'bug/1049-prefer-steven-over-duplicate-crispin'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Remove stale pre-attachment rejection
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          source = Path('src/trace_engine_v2/part_tapu_tate_switch_override.inc')
+          text = source.read_text(encoding='utf-8')
+          old = '      !deck_seen_ || !state_.manual_energy_used || !state_.active ||\n'
+          new = '      !deck_seen_ || !state_.active ||\n'
+          if text.count(old) != 1:
+              raise SystemExit(f'pre-attachment gate anchor count: {text.count(old)}')
+          source.write_text(text.replace(old, new, 1), encoding='utf-8')
+          Path('.github/workflows/patch-1049-pre-attach.yml').unlink()
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git diff --cached --check
+          git commit -m "Allow banked Steven hold before T1 attachment (#1049)"
+          git push origin HEAD:${{ github.head_ref }}

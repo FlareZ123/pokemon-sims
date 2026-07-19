@@ -1,0 +1,345 @@
+diff --git a/src/trace_engine_v2/part_010_steven_crispin_override.inc b/src/trace_engine_v2/part_010_steven_crispin_override.inc
+index 633a1aa..dd41176 100644
+--- a/src/trace_engine_v2/part_010_steven_crispin_override.inc
++++ b/src/trace_engine_v2/part_010_steven_crispin_override.inc
+@@ -162,8 +162,47 @@
+     return true;
+   }
+ 
++  bool late_steven_vstar_vessel_route_available() const {
++    if (!deck_seen_ || state_.turn < 2 || state_.turn >= scenario_.max_turn ||
++        scenario_.dci != DciProfile::StrictJit || scenario_.locks != LockMode::None ||
++        !supporter_allowed() || !state_.active ||
++        state_.active->card != Card::RegidragoV ||
++        state_.active->entered_turn >= state_.turn ||
++        state_.active->grass < 2 || state_.active->fire < 1 ||
++        !need_vstar() || !need_payload() || hand_count(Card::RegidragoVstar) > 0 ||
++        deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
++        (hand_count(Card::EarthenVessel) == 0 &&
++         deck_count_after_search_started(Card::EarthenVessel) == 0) ||
++        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
++      return false;
++    }
++
++    // Steven's Resolve can reserve the missing Regidrago VSTAR and Earthen Vessel,
++    // then ends the current turn. On the following turn the prior-turn Active may
++    // evolve, while Vessel discards the held Dragon payload and performs a real Basic
++    // Energy search, satisfying the strict-JIT payload timing at the earliest known
++    // ready state:
++    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
++    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
++    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
++    // Core evolution, Item, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
++    // Earliest-ready and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
++    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1017
++    return deck_count_after_search_started(Card::Grass) > 0 ||
++           deck_count_after_search_started(Card::Fire) > 0;
++  }
++
+   Card choose_supporter_after_search_started() {
+-    if (wonder_tag_can_bank_steven_for_known_t3_blender_route()) {
++    if (wonder_tag_can_bank_steven_for_known_t3_blender_route() ||
++        (late_steven_vstar_vessel_route_available() &&
++         deck_count_after_search_started(Card::StevensResolve) > 0)) {
++      // Wonder Tag searches a Supporter after legal deck inspection. Prefer Steven's
++      // complete next-turn VSTAR-Vessel route over a Burnet target that cannot repair
++      // the unresolved Evolution axis:
++      // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
++      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
++      // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
++      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1017
+       return Card::StevensResolve;
+     }
+     return static_cast<const Engine&>(*this).choose_supporter_after_search_started();
+@@ -228,5 +267,6 @@
+         late_steven_is_only_basic_connector() ||
+         late_steven_has_known_t3_compression_route() ||
+         banked_steven_has_known_t3_blender_route() ||
+-        late_steven_has_active_regidrago_t3_blender_route();
++        late_steven_has_active_regidrago_t3_blender_route() ||
++        late_steven_vstar_vessel_route_available();
+   }
+diff --git a/src/trace_engine_v2/part_014c_latias_bench_override.inc b/src/trace_engine_v2/part_014c_latias_bench_override.inc
+index a2e1d36..8aa0bf9 100644
+--- a/src/trace_engine_v2/part_014c_latias_bench_override.inc
++++ b/src/trace_engine_v2/part_014c_latias_bench_override.inc
+@@ -148,8 +148,38 @@
+     return retreat_to_benched_vstar_with_latias();
+   }
+ 
++  bool complete_late_steven_vstar_vessel_continuation() {
++    if (scenario_.dci != DciProfile::StrictJit || item_locked() ||
++        !state_.active || state_.active->card != Card::RegidragoV ||
++        state_.active->entered_turn >= state_.turn ||
++        state_.active->grass < 2 || state_.active->fire < 1 ||
++        hand_count(Card::RegidragoVstar) == 0 ||
++        hand_count(Card::EarthenVessel) == 0 ||
++        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) ||
++        (deck_count_after_search_started(Card::Grass) == 0 &&
++         deck_count_after_search_started(Card::Fire) == 0)) {
++      return false;
++    }
++
++    // Evolve before resolving the held Vessel so the Dragon discard is permitted by
++    // strict-JIT on the same turn that Regidrago VSTAR becomes attack-ready. Vessel
++    // still performs its printed Basic Energy search after paying that discard cost:
++    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
++    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
++    // Core evolution and Item procedure: https://www.pokemon.com/us/pokemon-tcg/rules
++    // Earliest-ready and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
++    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1017
++    evolve_best_regi();
++    if (!active_is_vstar() || !play_earthen_vessel(true)) {
++      throw std::logic_error("Known late-Steven VSTAR-Vessel continuation failed");
++    }
++    trace("POLICY", "P-AXIS-01", "End: " + state_line());
++    return true;
++  }
++
+   void run_turn() {
+     trace("POLICY", "P-AXIS-01", "Start: " + state_line());
++    if (complete_late_steven_vstar_vessel_continuation()) return;
+     play_chaotic_swell();
+     play_field_blower();
+     // Resolve the proven K1 Steven route before generic Items can consume Quick Ball
+diff --git a/src/trace_engine_v2/part_issue_1002_steven_target_override.inc b/src/trace_engine_v2/part_issue_1002_steven_target_override.inc
+index ca5686e..863c48a 100644
+--- a/src/trace_engine_v2/part_issue_1002_steven_target_override.inc
++++ b/src/trace_engine_v2/part_issue_1002_steven_target_override.inc
+@@ -36,7 +36,50 @@
+         deck_count_after_search_started(Card::Fire) >= 1;
+   }
+ 
++  bool play_late_steven_vstar_vessel_route() {
++    if (hand_count(Card::StevensResolve) == 0 ||
++        !late_steven_vstar_vessel_route_available()) {
++      return false;
++    }
++
++    remove_one(state_.hand, Card::StevensResolve);
++    state_.discard.push_back(Card::StevensResolve);
++    state_.supporter_used = true;
++    outcome_.used_steven = true;
++    record_deck_search_knowledge("Steven's Resolve");
++
++    std::vector<Card> found;
++    if (!move_deck_to_hand(Card::RegidragoVstar)) {
++      throw std::logic_error("Known late-Steven VSTAR target disappeared");
++    }
++    found.push_back(Card::RegidragoVstar);
++    if (hand_count(Card::EarthenVessel) == 0) {
++      if (!move_deck_to_hand(Card::EarthenVessel)) {
++        throw std::logic_error("Known late-Steven Vessel target disappeared");
++      }
++      found.push_back(Card::EarthenVessel);
++    }
++    shuffle(state_.deck);
++    state_.turn_ended = true;
++
++    // Steven may search up to three cards, so selecting only the two required route
++    // pieces preserves at least one Basic Energy target for Earthen Vessel next turn.
++    // Vessel then discards the held Dragon before searching, which establishes the
++    // strict-JIT Apex Dragon payload on the ready turn:
++    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
++    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
++    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
++    // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
++    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1017
++    trace("PLAY SUPPORTER", "R-STEVEN-01; R-GAME-SUPPORTER; P-COMPRESS-01",
++          "Searched the complete late VSTAR-Vessel route: " + join_cards(found) +
++              ". Turn ended.");
++    return true;
++  }
++
+   bool play_steven() {
++    if (play_late_steven_vstar_vessel_route()) return true;
++
+     const int regi_before = hand_count(Card::RegidragoV);
+     const int vstar_before = hand_count(Card::RegidragoVstar);
+     const int crispin_before = hand_count(Card::Crispin);
+diff --git a/tests/issue_1017_late_steven_vstar_vessel_tests.cpp b/tests/issue_1017_late_steven_vstar_vessel_tests.cpp
+new file mode 100644
+index 0000000..2836fa0
+--- /dev/null
++++ b/tests/issue_1017_late_steven_vstar_vessel_tests.cpp
+@@ -0,0 +1,180 @@
++#define REGIDRAGO_SIM_NO_MAIN
++#include "../src/regidrago_sim.cpp"
++
++#include <algorithm>
++#include <random>
++#include <stdexcept>
++#include <string>
++#include <utility>
++
++namespace sim {
++struct EngineTestAccess {
++  static void set_k1_state(Engine& engine, State state) {
++    engine.state_ = std::move(state);
++    engine.deck_seen_ = true;
++  }
++
++  static bool late_steven_route(const Engine& engine) {
++    return engine.late_steven_vstar_vessel_route_available();
++  }
++};
++}  // namespace sim
++
++namespace {
++void expect(const bool condition, const char* message) {
++  if (!condition) throw std::runtime_error(message);
++}
++
++bool trace_contains(const sim::TraceLog& trace, const std::string& needle) {
++  return std::any_of(trace.lines.begin(), trace.lines.end(),
++                     [&needle](const std::string& line) {
++                       return line.find(needle) != std::string::npos;
++                     });
++}
++
++sim::State late_steven_state() {
++  sim::State state;
++  state.turn = 3;
++  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1,
++                              sim::Tool::None};
++  state.hand = {sim::Card::StevensResolve, sim::Card::MegaDragonite};
++  state.deck = {sim::Card::RegidragoVstar, sim::Card::EarthenVessel,
++                sim::Card::Grass, sim::Card::Channeler};
++  return state;
++}
++
++sim::Engine make_engine(const sim::Scenario& scenario, std::mt19937_64& rng) {
++  static const sim::DeckRecipe recipe = sim::baseline_recipe();
++  return sim::Engine(scenario, recipe, rng);
++}
++
++void test_exact_k1_state_admits_late_steven_route() {
++  const sim::Scenario scenario{"issue-1017-positive", sim::DciProfile::StrictJit,
++                               sim::LockMode::None, true, 5};
++  std::mt19937_64 rng{1017};
++  sim::Engine engine = make_engine(scenario, rng);
++  sim::EngineTestAccess::set_k1_state(engine, late_steven_state());
++
++  // Steven reserves the missing VSTAR and Vessel. The following-turn Vessel has a
++  // real Basic Energy target and discards the held Dragon on the strict-JIT ready turn:
++  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
++  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
++  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
++  // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
++  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1017
++  expect(sim::EngineTestAccess::late_steven_route(engine),
++         "The exact K1 VSTAR-Vessel continuation must admit late Steven.");
++}
++
++void test_item_lock_rejects_late_vessel_route() {
++  const sim::Scenario scenario{"issue-1017-item-lock", sim::DciProfile::StrictJit,
++                               sim::LockMode::TurnTwoItem, true, 5};
++  std::mt19937_64 rng{1018};
++  sim::Engine engine = make_engine(scenario, rng);
++  sim::EngineTestAccess::set_k1_state(engine, late_steven_state());
++
++  // The route depends on playing Earthen Vessel next turn, so modeled Item lock
++  // invalidates the complete continuation: https://api.pokemontcg.io/v2/cards/sv4-163
++  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
++  // https://github.com/FlareZ123/pokemon-sims/issues/1017
++  expect(!sim::EngineTestAccess::late_steven_route(engine),
++         "Scheduled Item lock must reject the late Vessel route.");
++}
++
++void test_missing_energy_target_rejects_vessel_route() {
++  const sim::Scenario scenario{"issue-1017-no-energy", sim::DciProfile::StrictJit,
++                               sim::LockMode::None, true, 5};
++  std::mt19937_64 rng{1019};
++  sim::Engine engine = make_engine(scenario, rng);
++  sim::State state = late_steven_state();
++  std::erase(state.deck, sim::Card::Grass);
++  sim::EngineTestAccess::set_k1_state(engine, std::move(state));
++
++  // Earthen Vessel cannot be selected as the promised payload outlet when K1 proves
++  // that no Basic Energy remains for its search effect:
++  // https://api.pokemontcg.io/v2/cards/sv4-163
++  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
++  // https://github.com/FlareZ123/pokemon-sims/issues/1017
++  expect(!sim::EngineTestAccess::late_steven_route(engine),
++         "A known targetless Vessel must not justify late Steven.");
++}
++
++void test_horizon_rejects_unresolvable_next_turn_route() {
++  const sim::Scenario scenario{"issue-1017-horizon", sim::DciProfile::StrictJit,
++                               sim::LockMode::None, true, 3};
++  std::mt19937_64 rng{1020};
++  sim::Engine engine = make_engine(scenario, rng);
++  sim::EngineTestAccess::set_k1_state(engine, late_steven_state());
++
++  // Steven ends the current turn, so no continuation exists inside a horizon that
++  // ends on this turn: https://api.pokemontcg.io/v2/cards/sm7-145
++  // https://github.com/FlareZ123/pokemon-sims/issues/1017
++  expect(!sim::EngineTestAccess::late_steven_route(engine),
++         "The route must remain inside the configured simulation horizon.");
++}
++
++void test_seed_14_wonder_tag_selects_steven_and_reaches_t4() {
++  const sim::Scenario scenario{"strict-jit/go-first", sim::DciProfile::StrictJit,
++                               sim::LockMode::None, true, 5};
++  const sim::DeckRecipe recipe = sim::baseline_recipe();
++  std::mt19937_64 rng{14};
++  sim::TraceLog trace;
++  trace.enabled = true;
++  sim::Engine engine(scenario, recipe, rng, &trace);
++  const sim::TrialOutcome outcome = engine.run();
++
++  // Wonder Tag must select the complete Steven route, then Vessel must discard the
++  // held Dragon after the Active Regidrago V evolves on T4:
++  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
++  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
++  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
++  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
++  // https://github.com/FlareZ123/pokemon-sims/issues/1017
++  expect(trace_contains(trace, "T3 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Steven's Resolve"),
++         "Seed 14 must choose Steven instead of Burnet.");
++  expect(trace_contains(trace, "T3 | PLAY SUPPORTER | rules: R-STEVEN-01"),
++         "Seed 14 must resolve late Steven on T3.");
++  expect(trace_contains(trace, "T4 | DISCARD | rules: R-EV-01 | Mega Dragonite ex"),
++         "Seed 14 must use Vessel as the strict-JIT payload outlet.");
++  expect(trace_contains(trace, "T4 | READY"),
++         "Seed 14 must reach readiness on T4.");
++  expect(outcome.ready_by_4 && outcome.first_ready_turn == 4,
++         "Seed 14 must be ready by exactly T4.");
++}
++
++void test_seed_38_executes_held_steven_and_reaches_t5() {
++  const sim::Scenario scenario{"strict-jit/go-first", sim::DciProfile::StrictJit,
++                               sim::LockMode::None, true, 5};
++  const sim::DeckRecipe recipe = sim::baseline_recipe();
++  std::mt19937_64 rng{38};
++  sim::TraceLog trace;
++  trace.enabled = true;
++  sim::Engine engine(scenario, recipe, rng, &trace);
++  const sim::TrialOutcome outcome = engine.run();
++
++  // The refined report covers an already-held Steven. It must search VSTAR on T4,
++  // then the held Vessel discards a Dragon and reaches diagnostic readiness on T5:
++  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
++  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
++  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
++  // https://github.com/FlareZ123/pokemon-sims/issues/1017#issuecomment-5015578916
++  expect(trace_contains(trace, "T4 | PLAY SUPPORTER | rules: R-STEVEN-01"),
++         "Seed 38 must execute the held Steven on T4.");
++  expect(trace_contains(trace, "T5 | DISCARD | rules: R-EV-01 | Mega Dragonite ex"),
++         "Seed 38 must use its held Vessel on T5.");
++  expect(trace_contains(trace, "T5 | READY"),
++         "Seed 38 must reach the deterministic T5 diagnostic state.");
++  expect(outcome.ready_by_5 && outcome.first_ready_turn == 5,
++         "Seed 38 must first become ready on T5.");
++}
++}  // namespace
++
++int main() {
++  test_exact_k1_state_admits_late_steven_route();
++  test_item_lock_rejects_late_vessel_route();
++  test_missing_energy_target_rejects_vessel_route();
++  test_horizon_rejects_unresolvable_next_turn_route();
++  test_seed_14_wonder_tag_selects_steven_and_reaches_t4();
++  test_seed_38_executes_held_steven_and_reaches_t5();
++  return 0;
++}

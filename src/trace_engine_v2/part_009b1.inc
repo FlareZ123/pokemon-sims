@@ -1,6 +1,36 @@
     return true;
   }
 
+  std::optional<Card> quick_ball_strict_deadlock_fallback_cost() const {
+    if (scenario_.dci != DciProfile::StrictJit) return std::nullopt;
+
+    // Channeler removes effects of attacks from the player and their Pokémon. The
+    // setup simulator executes no opposing attacks, so Channeler has no present
+    // modeled setup effect and is the lowest-DCI singleton in this exact deadlock:
+    // Channeler: https://api.pokemontcg.io/v2/cards/sm11-190
+    // Opponent-action boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#opponent-actions
+    // DCI approximation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1018
+    if (hand_count(Card::Channeler) > 0) return Card::Channeler;
+
+    const bool team_yell_has_recovery_target = std::any_of(
+        state_.discard.begin(), state_.discard.end(), [](const Card card) {
+          return card != Card::TeamYellsCheer && (is_pokemon(card) || is_supporter(card));
+        });
+    // Team Yell's Cheer can recover only Pokémon and Supporters already in discard.
+    // With no eligible target, preserving the singleton while passing the missing
+    // Basic axis has less present setup value than paying Quick Ball's legal cost:
+    // Team Yell's Cheer: https://api.pokemontcg.io/v2/cards/swsh9-149
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Earliest-ready priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1018
+    if (!team_yell_has_recovery_target && hand_count(Card::TeamYellsCheer) > 0) {
+      return Card::TeamYellsCheer;
+    }
+    return std::nullopt;
+  }
+
   bool play_quick_ball(const bool permit_payload) {
     if (item_locked() || hand_count(Card::QuickBall) == 0) return false;
     // A strict-JIT Quick Ball payload cost is useful only when the Regidrago VSTAR
@@ -69,6 +99,16 @@
       // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
       // https://github.com/FlareZ123/pokemon-sims/issues/964
       cost = Card::RegidragoVstar;
+    }
+    if (!cost && want_regi) {
+      // This fallback is reached only after every ordinary strict-DCI cost category
+      // and the duplicate-VSTAR route failed. It is limited to the exact missing
+      // Regidrago V axis and never exposes a Dragon payload or live singleton route:
+      // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+      // Core Item, search, and Bench procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1018
+      cost = quick_ball_strict_deadlock_fallback_cost();
     }
     if (!cost) return false;
 

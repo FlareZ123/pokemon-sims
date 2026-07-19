@@ -69,7 +69,7 @@ jobs:
           # https://api.pokemontcg.io/v2/cards/sv6-130
           # https://github.com/FlareZ123/pokemon-sims/issues/978
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee trace-bug-978.txt
-          grep -q "Steven's Resolve.*Regidrago VSTAR, Crispin, Brilliant Blender" trace-bug-978.txt
+          grep -q "Searched up to 3 cards: Regidrago VSTAR, Crispin, Brilliant Blender" trace-bug-978.txt
           grep -q "T3 | READY" trace-bug-978.txt
 
           # A Supporter fetched by Star Alchemy cannot be played after Arven used the turn's Supporter play:
@@ -79,7 +79,7 @@ jobs:
           # https://www.pokemon.com/us/pokemon-tcg/rules
           # https://github.com/FlareZ123/pokemon-sims/issues/979
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 85 --require-ready-by 4 | tee trace-bug-979.txt
-          grep -q "PLAY SUPPORTER.*Arven" trace-bug-979.txt
+          grep -q "PLAY SUPPORTER.*Searched an Item and a Pokémon Tool" trace-bug-979.txt
           grep -q "STAR ALCHEMY.*Professor Burnet" trace-bug-979.txt
           grep -q "T4 | READY" trace-bug-979.txt
 

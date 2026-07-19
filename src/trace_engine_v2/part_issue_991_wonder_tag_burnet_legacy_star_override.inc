@@ -239,6 +239,25 @@
   }
 
   bool bench_tapu_if_useful() {
+    if (held_banked_steven_has_known_t3_active_regi_route()) {
+      // The first Wonder Tag already banked Steven and the public Energy
+      // package covers all three manual attachments. Preserve the second
+      // Tapu Lele-GX, its Bench slot, and Wonder Tag instead of fetching a
+      // redundant Crispin:
+      // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
+      // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1049
+      trace_tapu_hold_once(
+          "issue-1049-banked-steven-route",
+          "R-TAPU-01; R-STEVEN-01; P-CONNECTOR-01; P-KNOWLEDGE-01",
+          "Retained the second Tapu because banked Steven and the public Energy package already complete the deterministic T3 route.");
+      return false;
+    }
     if (wonder_tag_duplicate_held_gladion_has_no_marginal_route()) {
       trace_tapu_hold_once(
           "issue-1039-duplicate-held-gladion",

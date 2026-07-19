@@ -301,6 +301,17 @@
     play_items_until_stable(!strict_payload_timing());
 
     attach_manual();
+    // A manual attachment can complete GGF and thereby make a held Mysterious
+    // Treasure payload discard legal under strict JIT. Reopen Items and evolution
+    // before spending the Supporter slot so the same-turn Treasure search can evolve
+    // a prior-turn Regidrago V instead of deferring the ready state:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/1032
+    play_items_until_stable(true);
+    evolve_best_regi();
     // Steven's Resolve ends the turn, so attach a live Powerglass before choosing
     // that Supporter: https://api.pokemontcg.io/v2/cards/sm7-145
     if (should_play_steven()) attach_powerglass();

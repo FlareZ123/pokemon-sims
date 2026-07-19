@@ -124,6 +124,20 @@
     return held_manual_completes_energy;
   }
 
+  void trace_tapu_hold_once(std::string_view key, std::string_view rules,
+                            std::string_view detail) {
+    // Fixed-point stabilization may re-query the same legal retention decision.
+    // Emit one public event per exact state while preserving later events after a
+    // card, zone, action allowance, or knowledge-relevant state changes:
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+    // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/1004
+    if (trace_ != nullptr) {
+      trace_->add_policy_once(state_, key, state_.turn, "HOLD TAPU LELE-GX",
+                              rules, detail);
+    }
+  }
+
   bool bench_tapu_if_useful() {
     if (wonder_tag_burnet_is_redundant_with_legacy_star_route()) {
       // Keep the second Tapu Lele-GX in hand after Quick Ball has legally searched
@@ -131,8 +145,10 @@
       // https://api.pokemontcg.io/v2/cards/cel25c-60_A
       // https://api.pokemontcg.io/v2/cards/swsh1-179
       // https://github.com/FlareZ123/pokemon-sims/issues/991
-      trace("HOLD TAPU LELE-GX", "R-TAPU-01; P-DCI-01; P-KNOWLEDGE-01",
-            "Retained the second Tapu because held Crispin, evolution, manual attachment, and Legacy Star already complete setup.");
+      trace_tapu_hold_once(
+          "issue-1004-tapu-legacy-star-route",
+          "R-TAPU-01; P-DCI-01; P-KNOWLEDGE-01",
+          "Retained the second Tapu because held Crispin, evolution, manual attachment, and Legacy Star already complete setup.");
       return false;
     }
     if (wonder_tag_gladion_is_redundant_with_held_manual_energy()) {
@@ -141,8 +157,10 @@
       // https://api.pokemontcg.io/v2/cards/cel25c-60_A
       // https://api.pokemontcg.io/v2/cards/sm4-95
       // https://github.com/FlareZ123/pokemon-sims/issues/992
-      trace("HOLD TAPU LELE-GX", "R-TAPU-01; P-KNOWLEDGE-01; P-DCI-01",
-            "Retained Tapu because the held needed Energy and manual attachment already complete setup.");
+      trace_tapu_hold_once(
+          "issue-1004-tapu-gladion-route",
+          "R-TAPU-01; P-KNOWLEDGE-01; P-DCI-01",
+          "Retained Tapu because the held needed Energy and manual attachment already complete setup.");
       return false;
     }
     if (wonder_tag_arven_is_redundant_with_held_burnet_route()) {
@@ -151,8 +169,10 @@
       // https://api.pokemontcg.io/v2/cards/cel25c-60_A
       // https://api.pokemontcg.io/v2/cards/sv1-166
       // https://github.com/FlareZ123/pokemon-sims/issues/993
-      trace("HOLD TAPU LELE-GX", "R-TAPU-01; P-DCI-01; P-KNOWLEDGE-01",
-            "Retained Tapu because held Energy, Professor Burnet, and Regidrago VSTAR already complete setup.");
+      trace_tapu_hold_once(
+          "issue-1004-tapu-arven-burnet-route",
+          "R-TAPU-01; P-DCI-01; P-KNOWLEDGE-01",
+          "Retained Tapu because held Energy, Professor Burnet, and Regidrago VSTAR already complete setup.");
       return false;
     }
 

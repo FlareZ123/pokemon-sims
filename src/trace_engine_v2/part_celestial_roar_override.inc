@@ -11,11 +11,36 @@
     // The setup policy attacks only when Celestial Roar may advance either the
     // Active's GGF Energy axis or a permitted no-discard-control payload bank:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
-    const bool active_needs_energy = state_.active->grass < 2 || state_.active->fire < 1;
+    const int missing_grass = std::max(0, 2 - state_.active->grass);
+    const int missing_fire = std::max(0, 1 - state_.active->fire);
+    const bool active_needs_energy = missing_grass + missing_fire > 0;
 
     // Celestial Roar costs one Colorless Energy, so any attached Energy pays it:
     // https://api.pokemontcg.io/v2/cards/swsh12-135
     if (state_.active->grass + state_.active->fire < 1) return false;
+
+    const bool held_energy_guarantees_next_ready_window =
+        strict_payload_timing() && state_.manual_energy_used &&
+        state_.turn < scenario_.max_turn && missing_grass + missing_fire == 1 &&
+        ((missing_grass == 1 && hand_count(Card::Grass) > 0) ||
+         (missing_fire == 1 && hand_count(Card::Fire) > 0));
+    if (held_energy_guarantees_next_ready_window) {
+      // The unevolved Regidrago V cannot become Regidrago VSTAR before a later legal
+      // evolution window. When one held Basic Energy already guarantees GGF through
+      // that turn's manual attachment, Celestial Roar cannot improve the earliest
+      // ready turn. Strict and matchup-flex JIT also reject a Dragon discarded by the
+      // earlier attack as the later ready-turn payload, so preserve the unresolved
+      // VSTAR and connector axes instead of exposing three random cards:
+      // Regidrago V and Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+      // Regidrago VSTAR evolution and Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Manual attachment and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+      // Earliest complete route and resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1079
+      trace("HOLD ATTACK", "R-RV-01; R-GAME-ENERGY; P-JIT-01; P-COMPRESS-01",
+            "Held Basic Energy already guarantees the final GGF attachment before the next legal evolution window.");
+      return false;
+    }
 
     // Celestial Roar can advance GGF only when a currently needed Energy type may
     // remain in the deck. After K1, might_be_unseen() uses the inspected deck exactly;

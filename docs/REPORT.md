@@ -19,7 +19,7 @@ Seed: `20260705`.
 | No discard control, going first | 19.919% | 55.272% | 71.425% |
 | Strict JIT, going second | 28.014% | 51.038% | 62.77% |
 | Matchup-flex JIT, going second | 36.341% | 60.274% | 70.811% |
-| No discard control, going second | 39.654% | 66.727% | 78.133% |
+| No discard control, going second | 39.686% | 66.751% | 78.152% |
 
 ## Lock stress tests
 

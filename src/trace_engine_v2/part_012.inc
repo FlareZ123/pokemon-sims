@@ -193,8 +193,22 @@
         }
       }
 
+      // A held Professor Burnet is the direct current-turn Supporter when the
+      // Active Regidrago VSTAR already pays GGF and payload is its only missing
+      // setup axis. Gladion cannot spend that Supporter play on Lusamine first:
+      // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+      // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+      // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // One Supporter per turn: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Earliest-ready route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1115
+      const bool active_burnet_completion = active_is_vstar() && !need_energy() &&
+          need_payload() && hand_count(Card::ProfessorBurnet) > 0 &&
+          can_play_payload_this_turn();
       const bool direct_supporter = should_play_steven() ||
                                     (need_energy() && hand_count(Card::Crispin) > 0 && crispin_can_advance_energy_axis()) ||
+                                    active_burnet_completion ||
                                     (need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) > 0) ||
                                     (!item_locked() && hand_count(Card::Arven) > 0);
       if (!known_target && !direct_supporter && prize_count_after_reveal(Card::Lusamine) > 0 &&

@@ -144,7 +144,55 @@
         projected.state_.active->fire >= 1 && projected.payload_ready();
   }
 
+  bool fss_should_bank_tate_for_next_turn_blender_route() const {
+    const bool powered_prior_turn_benched_regi = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV &&
+              pokemon.entered_turn < state_.turn && pokemon.grass >= 2 &&
+              pokemon.fire >= 1;
+        });
+    const bool latias_promotion_live_now = state_.active &&
+        is_basic(state_.active->card) && !state_.retreat_used &&
+        ability_available_for_pokemon(Card::LatiasEx) &&
+        (in_play(Card::LatiasEx) ||
+         (bench_space() > 0 &&
+          (hand_count(Card::LatiasEx) > 0 ||
+           deck_count_after_search_started(Card::LatiasEx) > 0)));
+
+    // Arven has already consumed this turn's Supporter play. When a prior-turn
+    // Benched Regidrago V already carries GGF and Regidrago VSTAR is held, Star
+    // Alchemy may bank Tate & Liza for the next modeled turn. Tate then promotes
+    // the evolved attacker while held Brilliant Blender independently supplies
+    // the strict-JIT payload. Professor Burnet duplicates Blender's axis and would
+    // consume the same next-turn Supporter play. Reject the route when Latias ex
+    // remains available for a faster current-turn promotion, an Item lock disables
+    // Blender, or any required evolution, Energy, payload, or horizon axis is absent:
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Supporter, Item, evolution, switching, and search procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest legal route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // T5 diagnostic recovery: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/T5_FAILURE_POLICY.md
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1139
+    return deck_seen_ && strict_payload_timing() && !supporter_allowed() &&
+        !item_locked() && state_.turn < scenario_.max_turn &&
+        state_.active &&
+        state_.active->card != Card::RegidragoV &&
+        state_.active->card != Card::RegidragoVstar && !state_.retreat_used &&
+        !has_vstar() && powered_prior_turn_benched_regi &&
+        hand_count(Card::RegidragoVstar) > 0 &&
+        hand_count(Card::BrilliantBlender) > 0 &&
+        deck_count_after_search_started(Card::TateLiza) > 0 &&
+        payload_might_be_in_deck() && !latias_promotion_live_now;
+  }
+
   Card fss_target_after_search_started() const {
+    if (fss_should_bank_tate_for_next_turn_blender_route()) return Card::TateLiza;
+
     // Star Alchemy can search Tate & Liza to promote a GGF-complete Benched
     // Regidrago VSTAR. A payable held one-discard Item can establish the strict-JIT
     // payload afterward, provided Tate leaves at least one card for that Item's

@@ -3,6 +3,7 @@
     state_.supporter_used = false;
     state_.manual_energy_used = false;
     state_.retreat_used = false;
+    state_.stadium_used = false;
     state_.turn_ended = false;
     state_.discarded_this_turn.clear();
 

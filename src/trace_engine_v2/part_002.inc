@@ -11,7 +11,7 @@
 enum class DciProfile : std::uint8_t { StrictJit, MatchupFlexJit, NoDiscardControl };
 enum class LockMode : std::uint8_t { None, TurnTwoItem, FullItem, FullRuleBoxAbility, FullCombined };
 enum class Tool : std::uint8_t { None, ForestSealStone, Powerglass };
-enum class Stadium : std::uint8_t { None, ChaoticSwell };
+enum class Stadium : std::uint8_t { None, ChaoticSwell, ForestOfVitality };
 enum class OpponentBenchState : std::uint8_t { Unknown, Unavailable, Available };
 
 struct Scenario {
@@ -48,6 +48,7 @@ struct State {
   bool supporter_used{false};
   bool manual_energy_used{false};
   bool retreat_used{false};
+  bool stadium_used{false};
   bool vstar_power_used{false};
   bool turn_ended{false};
   bool path_lock_removed{false};
@@ -124,6 +125,7 @@ struct TraceLog {
     for (const Pokemon& pokemon : state.bench) append_pokemon(pokemon);
     out << "}:" << state.turn << ':' << state.supporter_used << ':'
         << state.manual_energy_used << ':' << state.retreat_used << ':'
+        << state.stadium_used << ':'
         << state.vstar_power_used << ':' << state.turn_ended << ':'
         << state.path_lock_removed << ':' << static_cast<int>(state.stadium);
     return out.str();

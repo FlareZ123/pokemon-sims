@@ -24,6 +24,10 @@ The API records are card-text sources. They do not replace official tournament r
 | Regidrago VSTAR — Apex Dragon and Legacy Star | https://api.pokemontcg.io/v2/cards/swsh12-136 |
 | Forest Seal Stone — Star Alchemy | https://api.pokemontcg.io/v2/cards/swsh12-156 |
 | Powerglass | https://api.pokemontcg.io/v2/cards/sv6pt5-63 |
+| Dawn | https://api.pokemontcg.io/v2/cards/me2-87 |
+| Forest of Vitality | https://api.pokemontcg.io/v2/cards/me1-117 |
+| Pineco | https://api.pokemontcg.io/v2/cards/sv4pt5-1 |
+| Forretress ex — Exploding Energy | https://api.pokemontcg.io/v2/cards/sv4pt5-2 |
 | Tapu Lele-GX — Wonder Tag | https://api.pokemontcg.io/v2/cards/cel25c-60_A |
 | Oricorio GRI 55 — Vital Dance | https://api.pokemontcg.io/v2/cards/sm2-55 |
 | Latias ex — Skyliner | https://api.pokemontcg.io/v2/cards/sv8-76 |

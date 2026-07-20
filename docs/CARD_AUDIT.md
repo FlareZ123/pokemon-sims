@@ -84,6 +84,12 @@ The model uses `sv8-76`, the 210 HP Psychic ex whose Skyliner makes Basic Pokém
 
 The target needs the Dragon print. The audit uses `sm5-100`; metal-type Dialga-GX prints are excluded from Apex Dragon’s Dragon-only selection condition.
 
+### Test-only Dawn, Forest of Vitality, Pineco, and Forretress ex support
+
+The simulator also supports a temporary variant recipe containing Dawn `me2-87`, Forest of Vitality `me1-117`, Pineco `sv4pt5-1`, and Forretress ex `sv4pt5-2`. The recipe remains outside `baseline_recipe()`, the CLI aggregate scenario matrix, and committed baseline results. Dawn's Basic, Stage 1, and Stage 2 searches are independent optional selections. Forest of Vitality preserves the first-turn evolution prohibition and allows Pineco to evolve into Grass-type Forretress ex on its entry turn from turn two onward.
+
+Direct card sources: https://api.pokemontcg.io/v2/cards/me2-87 https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://github.com/FlareZ123/pokemon-sims/issues/1096
+
 ## Paper legality versus Pokémon TCG Live availability
 
 The supplied database stores `legalities.expanded` for paper Expanded. That field has no model of Pokémon TCG Live backport status. The deck list describes these cards as the actual Live list, so the model accepts it as its game-input roster. This distinction matters when sharing results:

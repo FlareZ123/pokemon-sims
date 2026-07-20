@@ -168,6 +168,16 @@ add_test(NAME trace_issue_1090_gladion_arven_route
   COMMAND ${CMAKE_COMMAND}
     -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
     -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_issue_1090_gladion_arven_route.cmake)
+# Quick Ball may discard a strict-JIT Dragon only when the selected Regidrago VSTAR
+# can finish both its card and GGF Energy axes during that same turn:
+# https://api.pokemontcg.io/v2/cards/swsh1-179
+# https://api.pokemontcg.io/v2/cards/swsh12-136
+# https://www.pokemon.com/us/pokemon-tcg/rules
+# https://github.com/FlareZ123/pokemon-sims/issues/1092
+add_test(NAME trace_issue_1092_quick_ball_energy_jit_gate
+  COMMAND ${CMAKE_COMMAND}
+    -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_issue_1092_quick_ball_energy_jit_gate.cmake)
 add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
 set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)
 

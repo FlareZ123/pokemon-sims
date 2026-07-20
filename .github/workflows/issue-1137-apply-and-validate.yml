@@ -1,0 +1,106 @@
+name: Issue 1137 Apply and Validate
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1137-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  apply-validate-commit:
+    if: github.head_ref == 'bug/1137-fss-latias-burnet'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Apply reviewed issue patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/issue-1137/patch.b64.* | tr -d '\n' | base64 --decode | gzip --decompress > /tmp/issue-1137.patch
+          echo "a5b024c468ae1973f7925a8e3e0a89030fcb8f89825898439ff59624736ac19a  /tmp/issue-1137.patch" | sha256sum --check
+          git apply --check /tmp/issue-1137.patch
+          git apply /tmp/issue-1137.patch
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Run independent simulate-this reviews
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Core turn, Supporter, Item, Ability, evolution, attachment, retreat, and search procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Earliest legal route and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee trace-strict-second-seed-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-full-item-lock/go-second --seed 41 --require-ready-by 3 | tee trace-full-item-lock-seed-41.txt
+          ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 19 --require-ready-by 2 | tee trace-no-control-seed-19.txt
+          # Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+          # Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+          # Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1137
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 17 --require-ready-by 3 | tee trace-issue-1137-seed-17.txt
+          grep -q "STAR ALCHEMY.*Latias ex" trace-issue-1137-seed-17.txt
+          grep -q "T3 | READY" trace-issue-1137-seed-17.txt
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Regenerate and compare canonical matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out /tmp/issue-1137-matrix.csv
+          cmp results/simulation_results.csv /tmp/issue-1137-matrix.csv
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from scripts.baseline_provenance import simulator_policy_source_digest
+          root = Path('.').resolve()
+          manifest = json.loads((root / 'results/baseline_manifest.json').read_text())
+          actual = simulator_policy_source_digest(root)
+          assert manifest['simulator_policy_source_sha256'] == actual, (manifest['simulator_policy_source_sha256'], actual)
+          PY
+      - name: Configure and build ASan plus UBSan
+        run: >-
+          cmake -S . -B build-sanitizers -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - name: Run complete sanitizer suite
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: |
+          cmake --build build-sanitizers --parallel 2
+          ctest --test-dir build-sanitizers --parallel 2 --output-on-failure
+      - name: Commit exact validated source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .github/issue-1137 .github/workflows/issue-1137-apply-and-validate.yml
+          git add CMakeLists.txt docs/REPORT.md results/baseline_manifest.json results/simulation_results.csv src/trace_engine_v2/part_011_fss_latias_override.inc src/trace_engine_v2/part_issue_1071_fss_oricorio_treasure_decomposition_override.inc tests/issue_1137_fss_latias_burnet_tests.cpp
+          git add -u .github
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Fix FSS Latias projection over redundant Burnet payload" -m "Fixes #1137"
+          git push origin HEAD:${{ github.head_ref }}
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1137-validation-${{ github.run_attempt }}
+          path: |
+            trace-*.txt
+            /tmp/issue-1137-matrix.csv
+            build/Testing
+            build-sanitizers/Testing
+          if-no-files-found: warn

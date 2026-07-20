@@ -253,8 +253,10 @@
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Core Supporter, Item, discard, Bench, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1147
-    return choose_discard(false, true, true, Card::QuickBall).has_value();
+    // Confirmed replay bug: https://github.com/FlareZ123/pokemon-sims/issues/1147
+    // Route-conditioned surplus Energy fallback: https://github.com/FlareZ123/pokemon-sims/issues/1146
+    return choose_discard(false, true, true, Card::QuickBall).has_value() ||
+           quick_ball_final_surplus_energy_cost().has_value();
   }
 
   bool complete_late_steven_vstar_vessel_continuation() {

@@ -351,6 +351,14 @@
     // Retry evolution so a Regidrago V that entered play on a prior turn can evolve
     // before this turn's ready check under the core evolution procedure (https://www.pokemon.com/us/pokemon-tcg/rules).
     evolve_best_regi();
+    if (late_steven_active_vstar_crispin_treasure_route_available() &&
+        play_late_steven_active_vstar_crispin_treasure_route()) {
+      // Steven's Resolve ends the turn immediately after the two-card route search.
+      // https://api.pokemontcg.io/v2/cards/sm7-145
+      // https://github.com/FlareZ123/pokemon-sims/issues/1098
+      trace("TURN END", "R-STEVEN-01", state_line());
+      return;
+    }
     // A late Item search can put Tapu Lele-GX into hand, and Bench play can then
     // fetch a new Supporter with Wonder Tag. Reconsider that unused Supporter slot
     // before the ready check: https://api.pokemontcg.io/v2/cards/cel25c-60_A

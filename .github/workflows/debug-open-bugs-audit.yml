@@ -20,7 +20,7 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator and unified tests
         run: cmake --build build --parallel 2
-      - name: Run six independent simulate-this audits
+      - name: Run nine independent simulate-this audits
         shell: bash
         run: |
           set -euo pipefail
@@ -32,6 +32,9 @@ jobs:
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 7180 | tee issue-1111-seed-7180.txt # https://github.com/FlareZ123/pokemon-sims/issues/1111
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 493 | tee issue-1112-seed-493.txt # https://github.com/FlareZ123/pokemon-sims/issues/1112
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 63 | tee issue-1113-seed-63.txt # https://github.com/FlareZ123/pokemon-sims/issues/1113
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2932 | tee issue-1114-seed-2932.txt # https://github.com/FlareZ123/pokemon-sims/issues/1114
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 861 | tee issue-1115-seed-861.txt # https://github.com/FlareZ123/pokemon-sims/issues/1115
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 8697 | tee issue-1117-seed-8697.txt # https://github.com/FlareZ123/pokemon-sims/issues/1117
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
       - name: Generate canonical T2 and T3 matrix

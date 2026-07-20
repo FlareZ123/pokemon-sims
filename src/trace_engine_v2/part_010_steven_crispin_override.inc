@@ -431,6 +431,37 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
     return static_cast<const Engine&>(*this).choose_supporter_after_search_started();
   }
 
+  bool late_steven_vstar_with_held_blender_route_available() const {
+    if (!deck_seen_ || state_.turn >= scenario_.max_turn ||
+        scenario_.dci != DciProfile::StrictJit ||
+        scenario_.locks != LockMode::None || !supporter_allowed() ||
+        !state_.active || state_.active->card != Card::RegidragoV ||
+        state_.active->entered_turn >= state_.turn ||
+        state_.active->grass < 2 || state_.active->fire < 1 ||
+        hand_count(Card::StevensResolve) == 0 ||
+        hand_count(Card::BrilliantBlender) == 0 ||
+        hand_count(Card::RegidragoVstar) > 0 ||
+        !need_vstar() || !need_payload() || !payload_might_be_in_deck()) {
+      return false;
+    }
+
+    // Steven's Resolve may reserve the known-searchable Regidrago VSTAR and end
+    // the turn. On the following turn the prior-turn Active may evolve before the
+    // held Brilliant Blender searches and discards a permitted Dragon payload on
+    // that same strict-JIT ready turn. This complete route outranks Gladion for a
+    // backup Basic because the Active-position and GGF Energy axes are already met:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Core evolution, Supporter, Item, search, discard, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1 and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Strict-JIT payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1109
+    return deck_count_after_search_started(Card::RegidragoVstar) > 0;
+  }
+
   bool late_steven_has_active_regidrago_t3_blender_route() const {
     if (state_.turn != 2 || !scenario_.going_first ||
         scenario_.dci != DciProfile::StrictJit ||
@@ -490,6 +521,7 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
         late_steven_is_only_basic_connector() ||
         late_steven_has_known_t3_compression_route() ||
         banked_steven_has_known_t3_blender_route() ||
+        late_steven_vstar_with_held_blender_route_available() ||
 
 (state_.turn == 2 && scenario_.going_first &&
  scenario_.dci == DciProfile::MatchupFlexJit &&

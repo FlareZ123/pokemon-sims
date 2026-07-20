@@ -56,7 +56,7 @@ jobs:
         run: |
           python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 100 --trials 100000 --matrix-seed 20260705 # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
           python scripts/update_setup_docs.py --repo-root . # https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/update_setup_docs.py
-      - name: Run exact regression and three certified traces
+      - name: Run exact regression, three certified traces, and issue 1130 recheck
         shell: bash
         run: |
           set -euo pipefail
@@ -65,20 +65,27 @@ jobs:
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 | tee certified-1-strict-second-seed-1.txt # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 | tee certified-2-strict-first-seed-2.txt # https://github.com/FlareZ123/pokemon-sims/issues/919
           ./build/regidrago_sim --simulate-this --scenario strict-jit-full-item-lock/go-second --seed 3 | tee certified-3-full-item-lock-second-seed-3.txt # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 31 | tee issue-1130-current-seed-31.txt # https://github.com/FlareZ123/pokemon-sims/issues/1130
       - name: Run complete Release suite
-        run: ctest --test-dir build --parallel 4 --output-on-failure # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+        shell: bash
+        run: |
+          set -o pipefail
+          ctest --test-dir build --parallel 4 --output-on-failure | tee ctest-output.txt # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
       - name: Upload validation evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: issue-1126-validation
+          name: issue-1126-validation-${{ github.run_attempt }}
           path: |
             issue-1126-fixed-seed-16189.txt
+            issue-1130-current-seed-31.txt
             certified-*.txt
+            ctest-output.txt
             results/simulation_results.csv
             results/baseline_manifest.json
             docs/REPORT.md
             build/Testing
-          if-no-files-found: error
+          if-no-files-found: warn
       - name: Replace bootstrap with validated implementation
         shell: bash
         env:

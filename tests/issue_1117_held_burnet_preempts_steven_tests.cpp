@@ -52,6 +52,8 @@ sim::Scenario issue_1117_scenario() {
                        sim::LockMode::None, false, 5};
 }
 
+// Engine stores a Scenario reference, so each test owns its Scenario for the
+// complete Engine lifetime. This keeps the regression valid under ASan and UBSan.
 void test_held_burnet_blocks_late_steven_bridge() {
   const sim::DeckRecipe recipe = sim::baseline_recipe();
   const sim::Scenario scenario = issue_1117_scenario();

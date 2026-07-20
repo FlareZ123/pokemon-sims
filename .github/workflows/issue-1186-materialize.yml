@@ -64,3 +64,5 @@ jobs:
             results/baseline_manifest.json
             build/Testing
           if-no-files-found: warn
+
+# Source-bound validation for https://github.com/FlareZ123/pokemon-sims/issues/1186

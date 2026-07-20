@@ -1,0 +1,26 @@
+--- a/src/trace_engine_v2/part_001.inc
++++ b/src/trace_engine_v2/part_001.inc
+@@ -9,6 +9,7 @@
+     case Card::EvolutionIncense: return "Evolution Incense";
+     case Card::PokemonCommunication: return "Pokémon Communication";
+     case Card::EarthenVessel: return "Earthen Vessel";
++    case Card::Dawn: return "Dawn";
+     case Card::Arven: return "Arven";
+     case Card::Crispin: return "Crispin";
+     case Card::ProfessorBurnet: return "Professor Burnet";
+@@ -27,6 +28,7 @@
+     case Card::Powerglass: return "Powerglass";
+     case Card::FieldBlower: return "Field Blower";
+     case Card::ChaoticSwell: return "Chaotic Swell";
++    case Card::ForestOfVitality: return "Forest of Vitality";
+     case Card::PathToPeak: return "Path to the Peak";
+     case Card::HisuianHeavyBall: return "Hisuian Heavy Ball";
+     case Card::Grass: return "Grass Energy";
+@@ -129,6 +131,7 @@
+ constexpr bool is_energy(const Card card) { return card == Card::Grass || card == Card::Fire; }
+ constexpr bool is_supporter(const Card card) {
+   switch (card) {
++    case Card::Dawn:
+     case Card::Arven:
+     case Card::Crispin:
+     case Card::ProfessorBurnet:

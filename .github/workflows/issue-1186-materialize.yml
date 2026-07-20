@@ -1,0 +1,66 @@
+name: Issue 1186 Materialize and Validate
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize-and-validate:
+    if: github.event.pull_request.head.ref == 'fix/1186-steven-burnet-lock-scope'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 101 --require-ready-by 3 | tee issue-1186-rulebox-seed-101.txt # https://github.com/FlareZ123/pokemon-sims/issues/1186
+          grep -q "known T3 Burnet route" issue-1186-rulebox-seed-101.txt
+          grep -q "T3 | PLAY SUPPORTER.*Professor Burnet" issue-1186-rulebox-seed-101.txt # https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+          grep -q "T3 | READY" issue-1186-rulebox-seed-101.txt
+          ! grep -q "exchanged Gladion for Regidrago V" issue-1186-rulebox-seed-101.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 101 --require-ready-by 3 | tee issue-1186-no-lock-seed-101.txt # https://api.pokemontcg.io/v2/cards/sm7-145
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 73 --require-ready-by 2 | tee issue-1186-control-seed-73.txt # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      - name: Regenerate source-bound setup baselines
+        run: |
+          rm -f .results.lock
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results
+          python scripts/update_setup_docs.py
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Commit final combined matrix and evidence
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results/baseline_manifest.json results/simulation_results.csv results/traces docs/REPORT.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Regenerate setup matrix for issue 1186"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi
+      - name: Upload exact matrix and traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1186-validation-${{ github.run_attempt }}
+          path: |
+            issue-1186-rulebox-seed-101.txt
+            issue-1186-no-lock-seed-101.txt
+            issue-1186-control-seed-73.txt
+            results/simulation_results.csv
+            results/baseline_manifest.json
+            build/Testing
+          if-no-files-found: warn

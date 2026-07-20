@@ -1,7 +1,6 @@
   bool known_burnet_t3_steven_route_available() const {
     if (!deck_seen_ || state_.turn != 2 || scenario_.going_first ||
-        scenario_.dci != DciProfile::StrictJit ||
-        scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
+        scenario_.dci != DciProfile::StrictJit || scenario_.max_turn < 3 ||
         !supporter_allowed() || !state_.active ||
         state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
@@ -23,7 +22,10 @@
     // Core evolution, Supporter, search, discard, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // K1 and earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1108
+    // This route uses no Item or Rule Box Pokémon Ability, so Item, Rule Box
+    // Ability, and combined locks do not suppress Steven, ordinary evolution,
+    // or Professor Burnet: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1108 https://github.com/FlareZ123/pokemon-sims/issues/1186
     return deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
         deck_count_after_search_started(Card::ProfessorBurnet) > 0 &&
         payload_might_be_in_deck();

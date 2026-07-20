@@ -237,6 +237,7 @@ add_test(NAME trace_issue_1115_held_burnet_preempts_gladion
 add_test(NAME trace_issue_1114_latias_burnet_preempts_gladion
   COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2932 --require-ready-by 4)
 
+
 # A private favorable Legacy Star top-seven sample cannot satisfy the Tate hold
 # classifier when the public deterministic route is the held Professor Burnet:
 # https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -255,6 +256,19 @@ add_test(NAME trace_issue_1110_tate_yields_to_burnet
 # https://github.com/FlareZ123/pokemon-sims/issues/1108
 add_test(NAME trace_issue_1108_known_burnet_steven_route
   COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 101 --require-ready-by 3)
+
+# A legal Latias ex promotion plus Serena's mandatory Dragon discard completes
+# both remaining axes before Gladion may spend the Supporter play:
+# https://api.pokemontcg.io/v2/cards/sv8-76
+# https://api.pokemontcg.io/v2/cards/swsh12-164
+# https://api.pokemontcg.io/v2/cards/me2pt5-152
+# https://api.pokemontcg.io/v2/cards/sm4-95
+# https://api.pokemontcg.io/v2/cards/swsh12-136
+# https://www.pokemon.com/us/pokemon-tcg/rules
+# https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+# https://github.com/FlareZ123/pokemon-sims/issues/1126
+add_test(NAME trace_issue_1126_latias_serena_preempts_gladion
+  COMMAND regidrago_sim --simulate-this --scenario strict-jit-full-item-lock/go-first --seed 16189 --require-ready-by 5)
 
 add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
 set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)

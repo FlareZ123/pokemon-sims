@@ -322,6 +322,16 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-164
     // https://github.com/FlareZ123/pokemon-sims/issues/882
     if (serena_completes_only_missing_axis && play_serena(true)) return;
+    // A legal Latias ex promotion lets Serena complete the payload and Active axes
+    // before Gladion consumes the only Supporter play:
+    // https://api.pokemontcg.io/v2/cards/swsh12-164
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://api.pokemontcg.io/v2/cards/sm4-95
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/1126
+    if (latias_serena_completion_ready() && play_serena(true)) return;
 
     // Roseanne's Backup can restore a known discarded Regidrago VSTAR before a
     // payable Item searches and evolves it in the same turn:

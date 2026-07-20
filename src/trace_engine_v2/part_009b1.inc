@@ -78,6 +78,36 @@
     return Card::Grass;
   }
 
+  std::optional<Card> quick_ball_final_surplus_energy_cost() const {
+    if (scenario_.dci != DciProfile::MatchupFlexJit || item_locked() ||
+        !state_.manual_energy_used || !need_active_vstar() || need_energy() ||
+        !benched_vstar_promotion_ready() || !state_.active ||
+        !is_basic(state_.active->card) || state_.retreat_used ||
+        bench_space() == 0 || !ability_available_for_pokemon(Card::LatiasEx) ||
+        in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
+        !might_be_unseen(Card::LatiasEx) ||
+        hand_count(Card::BrilliantBlender) == 0 || !need_payload() ||
+        !payload_might_be_in_deck()) {
+      return std::nullopt;
+    }
+
+    // Once the selected Benched Regidrago VSTAR already has GGF, the final held
+    // Basic Energy advances no remaining setup axis. After ordinary lower-DCI
+    // costs fail, Quick Ball may spend that observable surplus to search Latias ex;
+    // Skyliner promotes the VSTAR and held Brilliant Blender supplies the same-turn
+    // matchup-flex-JIT payload. Keep this fallback confined to that complete route:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Item, discard, Bench, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Dynamic DCI and earliest route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1146
+    if (grass_needed() == 0 && hand_count(Card::Grass) == 1) return Card::Grass;
+    if (fire_needed() == 0 && hand_count(Card::Fire) == 1) return Card::Fire;
+    return std::nullopt;
+  }
+
   bool play_quick_ball(const bool permit_payload) {
     if (item_locked() || hand_count(Card::QuickBall) == 0) return false;
     // Quick Ball may pay a Dragon payload cost when its searched Basic advances a
@@ -147,6 +177,9 @@
     // Refined confirmed bug and controls: https://github.com/FlareZ123/pokemon-sims/issues/1092
     if (!has_preferred_search_target && !can_use_payload_only_outlet) return false;
     auto cost = choose_discard(can_pay_payload_cost, true, true, Card::QuickBall);
+    if (!cost && want_latias) {
+      cost = quick_ball_final_surplus_energy_cost();
+    }
     if (!cost && want_regi && hand_count(Card::RegidragoVstar) >= 2) {
       // One of two public VSTAR copies may pay Quick Ball only while Quick Ball is
       // establishing the missing Regidrago V. The other copy remains in hand for the

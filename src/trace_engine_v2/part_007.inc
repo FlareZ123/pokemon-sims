@@ -23,6 +23,45 @@
     }
   }
 
+  bool wonder_tag_future_gladion_treasure_route() const {
+    if (!strict_payload_timing() || scenario_.locks != LockMode::None ||
+        state_.turn + 2 > scenario_.max_turn || !state_.supporter_used ||
+        !state_.manual_energy_used || !state_.active ||
+        state_.active->card != Card::RegidragoV ||
+        state_.active->entered_turn >= state_.turn ||
+        state_.active->grass < 2 || state_.active->fire != 0 ||
+        !deck_seen_ || !prizes_revealed_ ||
+        hand_count(Card::Fire) == 0 || hand_count(Card::Gladion) > 0 ||
+        hand_count(Card::MysteriousTreasure) > 0 ||
+        !need_vstar() || !need_energy() || !need_payload() ||
+        deck_count_after_search_started(Card::Gladion) == 0 ||
+        deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
+        prize_count_after_reveal(Card::MysteriousTreasure) == 0 ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    // The current Supporter slot was spent to replay Tapu Lele-GX. With GG already
+    // attached and Fire held for the next manual attachment, Crispin adds no missing
+    // setup component. Wonder Tag should bank the known in-deck Gladion, which takes
+    // the known prized Treasure on T4. Treasure then discards the protected payload
+    // and searches Regidrago VSTAR on T5:
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
+    // Regidrago V and VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Supporter, attachment, search, and evolution procedure:
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1166
+    return true;
+  }
+
   Card choose_supporter_after_search_started() const {
     // Wonder Tag is resolving after legal deck inspection. A known prized
     // immediate Pokemon axis, or final attachable Basic Energy, makes Gladion
@@ -98,6 +137,8 @@
         held_manual_completes_energy && current_turn_active_vstar_route && held_payload &&
         deck_count_after_search_started(Card::Serena) > 0;
     if (serena_completes_current_turn_route) return Card::Serena;
+
+    if (wonder_tag_future_gladion_treasure_route()) return Card::Gladion;
 
     // Crispin source: https://api.pokemontcg.io/v2/cards/sv7-133
     // Do not choose it after K1 if the inspected deck contains no needed Energy.

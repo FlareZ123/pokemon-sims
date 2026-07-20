@@ -1,0 +1,86 @@
+name: Materialize Issue 1167 On PR
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'bug/1167-treasure-vessel-redundant-payload'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Apply the source-bound patch from the reviewed branch recipe
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          source = Path('.github/workflows/issue-1167-materialize.yml').read_text(encoding='utf-8').splitlines()
+          start_marker = '      - name: Add narrow Treasure and Vessel DCI projection'
+          end_marker = '      - name: Build and validate the focused bug'
+          start = source.index(start_marker)
+          end = source.index(end_marker)
+          run_line = source.index('        run: |', start, end)
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in source[run_line + 1:end]) + '\n'
+          Path('/tmp/issue-1167-materialize.sh').write_text(script, encoding='utf-8')
+          PY
+          bash /tmp/issue-1167-materialize.sh
+          # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1167
+      - name: Build and validate the exact paid-search chain
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R 'issue_1167|issue_1165|issue_1166' --output-on-failure | tee issue-1167-focused-tests.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 7 --require-ready-by 5 | tee issue-1167-seed7.txt
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+          # Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      - name: Regenerate the matrix and run complete validation
+        shell: bash
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          ctest --test-dir build --parallel 4 --output-on-failure | tee issue-1167-complete-tests.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 | tee issue-1167-trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 | tee issue-1167-trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 | tee issue-1167-trace-3.txt
+          # Generator: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
+          # Trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      - name: Commit the exact tested tree
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/issue-1167-materialize.yml
+          git rm .github/workflows/issue-1167-pr-materialize.yml
+          git rm .github/issue-1167-materialize-trigger.txt
+          git add src tests results docs
+          git commit -m 'Fix seed-7 Treasure and Vessel redundant payload costs (#1167)'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+      - name: Upload exact validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1167-materialized-validation
+          path: |
+            issue-1167-focused-tests.txt
+            issue-1167-complete-tests.txt
+            issue-1167-seed7.txt
+            issue-1167-trace-1.txt
+            issue-1167-trace-2.txt
+            issue-1167-trace-3.txt
+            results/baseline_manifest.json
+            results/simulation_results.csv
+            results/traces
+            docs/REPORT.md
+            docs/TRACE_AUDIT.md
+          if-no-files-found: warn

@@ -51,12 +51,36 @@ sim::State known_route_state() {
   return state;
 }
 
+const sim::Scenario& scenario_for_lock(const sim::LockMode lock) {
+  static const sim::Scenario none{"issue-1186-none", sim::DciProfile::StrictJit,
+                                  sim::LockMode::None, false, 5};
+  static const sim::Scenario turn_two_item{
+      "issue-1186-turn-two-item", sim::DciProfile::StrictJit,
+      sim::LockMode::TurnTwoItem, false, 5};
+  static const sim::Scenario full_item{
+      "issue-1186-full-item", sim::DciProfile::StrictJit,
+      sim::LockMode::FullItem, false, 5};
+  static const sim::Scenario rulebox{
+      "issue-1186-rulebox", sim::DciProfile::StrictJit,
+      sim::LockMode::FullRuleBoxAbility, false, 5};
+  static const sim::Scenario combined{
+      "issue-1186-combined", sim::DciProfile::StrictJit,
+      sim::LockMode::FullCombined, false, 5};
+
+  switch (lock) {
+    case sim::LockMode::None: return none;
+    case sim::LockMode::TurnTwoItem: return turn_two_item;
+    case sim::LockMode::FullItem: return full_item;
+    case sim::LockMode::FullRuleBoxAbility: return rulebox;
+    case sim::LockMode::FullCombined: return combined;
+  }
+  throw std::invalid_argument("Unsupported lock mode");
+}
+
 sim::Engine make_engine(const sim::LockMode lock, std::mt19937_64& rng,
                         sim::State state = known_route_state()) {
   static const sim::DeckRecipe recipe = sim::baseline_recipe();
-  const sim::Scenario scenario{"issue-1186", sim::DciProfile::StrictJit,
-                               lock, false, 5};
-  sim::Engine engine(scenario, recipe, rng);
+  sim::Engine engine(scenario_for_lock(lock), recipe, rng);
   sim::EngineTestAccess::set_state(engine, std::move(state));
   return engine;
 }

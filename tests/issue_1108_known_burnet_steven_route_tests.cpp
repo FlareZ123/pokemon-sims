@@ -61,6 +61,13 @@ sim::Engine make_engine(const sim::LockMode lock, std::mt19937_64& rng,
   return engine;
 }
 
+void expect_lock_route(const sim::LockMode lock, const std::uint64_t seed,
+                       const char* message) {
+  std::mt19937_64 rng{seed};
+  sim::Engine engine = make_engine(lock, rng);
+  expect(sim::EngineTestAccess::known_burnet_route(engine), message);
+}
+
 void test_lock_scope_and_controls() {
   // Steven's Resolve, ordinary evolution, and Professor Burnet use no Item or
   // Rule Box Pokémon Ability. The modeled Item, Rule Box Ability, and combined
@@ -71,14 +78,14 @@ void test_lock_scope_and_controls() {
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
   // https://github.com/FlareZ123/pokemon-sims/issues/1186
-  for (const sim::LockMode lock : {sim::LockMode::None, sim::LockMode::FullItem,
-                                   sim::LockMode::FullRuleBoxAbility,
-                                   sim::LockMode::FullCombined}) {
-    std::mt19937_64 rng{118600 + static_cast<unsigned>(lock)};
-    sim::Engine engine = make_engine(lock, rng);
-    expect(sim::EngineTestAccess::known_burnet_route(engine),
-           "Unrelated Item and Rule Box Ability locks must not suppress the route.");
-  }
+  expect_lock_route(sim::LockMode::None, 118600,
+                    "The known route must remain available without a lock.");
+  expect_lock_route(sim::LockMode::FullItem, 118602,
+                    "Full Item lock must not suppress the Supporter-evolution route.");
+  expect_lock_route(sim::LockMode::FullRuleBoxAbility, 118603,
+                    "Rule Box Ability lock must not suppress the Supporter-evolution route.");
+  expect_lock_route(sim::LockMode::FullCombined, 118604,
+                    "Combined Item and Rule Box Ability lock must not suppress the Supporter-evolution route.");
 
   sim::State missing_vstar = known_route_state();
   missing_vstar.deck.erase(missing_vstar.deck.begin());

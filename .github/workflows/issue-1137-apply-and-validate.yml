@@ -29,7 +29,7 @@ jobs:
         run: |
           set -euo pipefail
           cat .github/issue-1137/patch.b64.* | tr -d '\n' | base64 --decode | gzip --decompress > /tmp/issue-1137.patch
-          echo "a5b024c468ae1973f7925a8e3e0a89030fcb8f89825898439ff59624736ac19a  /tmp/issue-1137.patch" | sha256sum --check
+          echo "4019b8443516bd15ce07c367087ee5df5f5965d985301b7f4d6f0469bbf11960  /tmp/issue-1137.patch" | sha256sum --check
           git apply --check /tmp/issue-1137.patch
           git apply /tmp/issue-1137.patch
       - name: Configure and build Release

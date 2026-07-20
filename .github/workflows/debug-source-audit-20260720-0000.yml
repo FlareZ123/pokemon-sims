@@ -1,0 +1,89 @@
+name: Debug Source Audit 20260720 0000
+
+# Temporary non-merge audit of current main.
+# Trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+# Decision priorities: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+# Official game procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  simulate_unlocked:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build build --parallel 2
+      - name: Pass 1 unlocked strict-JIT
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee audit-trace-unlocked.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: audit-pass-unlocked
+          path: audit-trace-unlocked.txt
+
+  simulate_item_lock:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build build --parallel 2
+      - name: Pass 2 scheduled Item lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee audit-trace-item-lock.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: audit-pass-item-lock
+          path: audit-trace-item-lock.txt
+
+  simulate_rulebox_lock:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build build --parallel 2
+      - name: Pass 3 Rule Box Ability lock
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee audit-trace-rulebox-lock.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: audit-pass-rulebox-lock
+          path: audit-trace-rulebox-lock.txt
+
+  validate_and_snapshot:
+    needs: [simulate_unlocked, simulate_item_lock, simulate_rulebox_lock]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build build --parallel 2
+      - name: Complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure | tee audit-ctest.txt
+      - name: Canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-t2-t3-matrix.csv
+      - run: git rev-parse HEAD > audit-tested-head.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audit-current-main-snapshot
+          path: |
+            CMakeLists.txt
+            README.md
+            data
+            docs
+            results
+            scripts
+            src
+            tests
+            audit-ctest.txt
+            audit-t2-t3-matrix.csv
+            audit-tested-head.txt
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+          if-no-files-found: error

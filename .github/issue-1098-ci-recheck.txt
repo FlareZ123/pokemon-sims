@@ -1,0 +1,2 @@
+Temporary CI synchronization marker for https://github.com/FlareZ123/pokemon-sims/issues/1098
+Source-bound ruling recheck: https://compendium.pokegym.net/category/5-trainers/crispin/

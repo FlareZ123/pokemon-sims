@@ -72,8 +72,9 @@ void test_required_components_gate_route() {
   const sim::DeckRecipe recipe = sim::baseline_recipe();
 
   {
+    const sim::Scenario scenario = issue_1112_scenario();
     std::mt19937_64 rng{1113};
-    sim::Engine engine(issue_1112_scenario(), recipe, rng);
+    sim::Engine engine(scenario, recipe, rng);
     sim::State state = issue_1112_state();
     std::erase(state.hand, sim::Card::ProfessorBurnet);
     sim::EngineTestAccess::set_k1_state(engine, std::move(state));
@@ -82,8 +83,9 @@ void test_required_components_gate_route() {
   }
 
   {
+    const sim::Scenario scenario = issue_1112_scenario();
     std::mt19937_64 rng{1114};
-    sim::Engine engine(issue_1112_scenario(), recipe, rng);
+    sim::Engine engine(scenario, recipe, rng);
     sim::State state = issue_1112_state();
     std::erase(state.deck, sim::Card::Grass);
     std::erase(state.deck, sim::Card::Grass);
@@ -93,9 +95,10 @@ void test_required_components_gate_route() {
   }
 
   {
+    const sim::Scenario scenario =
+        issue_1112_scenario(sim::LockMode::FullItem);
     std::mt19937_64 rng{1115};
-    sim::Engine engine(issue_1112_scenario(sim::LockMode::FullItem),
-                       recipe, rng);
+    sim::Engine engine(scenario, recipe, rng);
     sim::EngineTestAccess::set_k1_state(engine, issue_1112_state());
     // The confirmed route is restricted to the repository no-lock scenario:
     // https://api.pokemontcg.io/v2/cards/sm7-145

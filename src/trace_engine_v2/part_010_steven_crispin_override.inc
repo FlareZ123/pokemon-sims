@@ -348,6 +348,18 @@
       return std::nullopt;
     }
 
+    // A held Professor Burnet is a legal current-turn Supporter outlet in this
+    // exact state. It searches and discards the permitted Dragon payload before the
+    // ready check, while Steven's Resolve ends the turn and delays the same axis:
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Supporter, search, discard, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest-ready route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Strict-JIT payload policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1117
+    if (hand_count(Card::ProfessorBurnet) > 0) return std::nullopt;
+
     // A held Brilliant Blender is a legal current-turn deck-to-discard outlet in
     // this exact state: Active Regidrago VSTAR already pays GGF, Items are legal,
     // and payload is the only missing setup axis. Preserve the shorter one-action

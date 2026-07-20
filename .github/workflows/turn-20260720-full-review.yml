@@ -17,15 +17,18 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
       - name: Build simulator and unified tests
         run: cmake --build build --parallel 2 # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
-      - name: Run three independent simulate-this passes and open-bug reproductions
+      - name: Run three certified simulate-this passes, debug scans, and open-bug reproductions
         shell: bash
         run: |
           set -euo pipefail
           # Core turn, Supporter, Bench, Ability, retreat, search, discard, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
           # Repository trace contract and scenario semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 11 | tee pass-1-strict-jit-go-second-seed-11.txt # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 29 | tee pass-2-strict-jit-go-first-seed-29.txt # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-          ./build/regidrago_sim --simulate-this --scenario strict-jit-full-item-lock/go-second --seed 47 | tee pass-3-full-item-lock-go-second-seed-47.txt # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 | tee certified-pass-1-strict-jit-go-second-seed-1.txt # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 | tee certified-pass-2-strict-jit-go-first-seed-2.txt # https://github.com/FlareZ123/pokemon-sims/issues/919
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-full-item-lock/go-second --seed 3 | tee certified-pass-3-full-item-lock-go-second-seed-3.txt # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 11 | tee debug-pass-1-strict-jit-go-second-seed-11.txt # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 29 | tee debug-pass-2-strict-jit-go-first-seed-29.txt # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-full-item-lock/go-second --seed 47 | tee debug-pass-3-full-item-lock-go-second-seed-47.txt # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
           ./build/regidrago_sim --simulate-this --scenario strict-jit-full-item-lock/go-first --seed 16189 | tee issue-1126-seed-16189.txt # https://github.com/FlareZ123/pokemon-sims/issues/1126
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 31 | tee issue-1130-seed-31.txt # https://github.com/FlareZ123/pokemon-sims/issues/1130
       - name: Run complete Release suite
@@ -36,14 +39,15 @@ jobs:
         shell: bash
         run: |
           git rev-parse HEAD > turn-20260720-tested-head.txt # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULES_TRACEABILITY.md
-          tar --exclude=.git --exclude=build --exclude=turn-20260720-source.tar.gz -czf turn-20260720-source.tar.gz . # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#audit-status
+          git archive --format=tar.gz --output=turn-20260720-source.tar.gz HEAD # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#audit-status
       - name: Upload audit artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: turn-20260720-full-review-${{ github.run_attempt }}
           path: |
-            pass-*.txt
+            certified-pass-*.txt
+            debug-pass-*.txt
             issue-1126-seed-16189.txt
             issue-1130-seed-31.txt
             turn-20260720-t2-t3-matrix.csv

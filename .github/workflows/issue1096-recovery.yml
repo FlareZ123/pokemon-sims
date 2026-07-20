@@ -1,0 +1,62 @@
+name: Apply Issue 1096 Recovery
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1096-recovery-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  apply-and-validate:
+    if: github.event.pull_request.head.ref == 'enhancement/1096-dawn-forest-vitality'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Reset touched files to synchronized main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout "${{ github.event.pull_request.base.sha }}" -- \
+            src/regidrago_sim.cpp \
+            src/trace_engine_v2/part_000.inc \
+            src/trace_engine_v2/part_001.inc \
+            src/trace_engine_v2/part_002.inc \
+            src/trace_engine_v2/part_007.inc \
+            src/trace_engine_v2/part_begin_turn_override.inc \
+            src/trace_engine_v2/part_014c.inc \
+            src/trace_engine_v2/part_forretress_ex_combo.inc \
+            tests/forretress_ex_combo_tests.cpp \
+            docs/CARD_AUDIT.md \
+            docs/RULES_TRACEABILITY.md \
+            docs/RULE_SOURCES.md
+      - name: Apply recovered implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          for patch in tools/issue1096-*.patch; do
+            git apply --whitespace=error "$patch"
+          done
+          python tools/issue1096_docs.py
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run source and exact-route tests
+        run: ctest --test-dir build --parallel 4 --output-on-failure -E 'setup_report_contract'
+      - name: Commit clean implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          rm -f tools/issue1096-*.patch tools/issue1096_docs.py .github/workflows/issue1096-recovery.yml
+          git add -A
+          git commit -m 'Implement Dawn and Forest of Vitality support'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}

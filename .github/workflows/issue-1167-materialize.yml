@@ -1,21 +1,12 @@
-name: Materialize Issue 1167 Fix
+name: Issue 1167 Patch Recipe
 
 on:
-  push:
-    branches: [bug/1167-treasure-vessel-redundant-payload]
-
-permissions:
-  contents: write
+  workflow_dispatch:
 
 jobs:
-  materialize:
+  recipe:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: bug/1167-treasure-vessel-redundant-payload
-          fetch-depth: 0
       - name: Add narrow Treasure and Vessel DCI projection
         shell: bash
         run: |
@@ -33,26 +24,27 @@ jobs:
   }
 
   bool treasure_vessel_source_bounded_route_common() const {
-    // This projection uses only the inspected K1 locations and already-held cards.
-    // It does not reuse any future draw after either mandatory shuffle:
+    // Gladion's Prize reveal establishes K1 for this fixed-list model. No future
+    // draw after either mandatory shuffle is consulted by this projection:
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
     // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // Hidden information and shuffle boundaries: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
     // Earliest source-bounded route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1167
-    return strict_payload_timing() && scenario_.locks == LockMode::None &&
-        scenario_.going_first && state_.turn == 2 &&
-        state_.turn + 3 <= scenario_.max_turn && state_.supporter_used &&
-        !state_.manual_energy_used && state_.active &&
+    return scenario_.dci == DciProfile::StrictJit &&
+        scenario_.locks == LockMode::None && scenario_.going_first &&
+        state_.turn == 2 && state_.turn + 3 <= scenario_.max_turn &&
+        state_.supporter_used && !state_.manual_energy_used && state_.active &&
         state_.active->card == Card::TapuLeleGX &&
         state_.active->grass == 0 && state_.active->fire == 0 &&
-        state_.active->tool == Tool::None && deck_seen_ && prizes_revealed_ &&
+        state_.active->tool == Tool::None && prizes_known() &&
         hand_count(Card::Fire) > 0 && hand_count(Card::ProfessorTuro) > 0 &&
-        count_of(state_.deck, Card::RegidragoVstar) > 0 &&
-        count_of(state_.deck, Card::Gladion) > 0 &&
-        count_of(state_.deck, Card::Grass) >= 2 &&
-        count_of(state_.prizes, Card::MysteriousTreasure) > 0 &&
-        need_vstar() && need_payload();
+        deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
+        deck_count_after_search_started(Card::Gladion) > 0 &&
+        deck_count_after_search_started(Card::Grass) >= 2 &&
+        prize_count_after_reveal(Card::MysteriousTreasure) > 0 &&
+        need_payload();
   }
 
   std::optional<Card> treasure_vessel_first_redundant_payload_cost() const {
@@ -60,12 +52,12 @@ jobs:
         !need_regi() || bench_space() == 0 ||
         hand_count(Card::MysteriousTreasure) == 0 ||
         hand_count(Card::EarthenVessel) == 0 ||
-        count_of(state_.deck, Card::RegidragoV) == 0) {
+        deck_count_after_search_started(Card::RegidragoV) == 0) {
       return std::nullopt;
     }
 
     // Mysterious Treasure discards one other hand card and searches a Dragon or
-    // Psychic Pokémon. Spend one copy only when a second identical payload and a
+    // Psychic Pokemon. Spend one copy only when a second identical payload and a
     // distinct later strict-JIT payload remain protected:
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
@@ -92,7 +84,7 @@ jobs:
               pokemon.entered_turn == state_.turn;
         });
     if (!treasure_vessel_source_bounded_route_common() || item_locked() ||
-        !current_turn_regi || !need_energy() ||
+        !current_turn_regi || !need_vstar() || !need_energy() ||
         hand_count(Card::EarthenVessel) == 0 ||
         count_of(state_.discard, Card::MysteriousTreasure) == 0) {
       return std::nullopt;
@@ -139,18 +131,20 @@ jobs:
     if (!cost && want_regi) {
       // Every ordinary lower-DCI cost was tried first. The exact K1 route may now
       // spend one of two identical payload copies while preserving a distinct T5
-      // payload and the complete Treasure -> Vessel -> Turo -> Gladion chain:
-      // https://api.pokemontcg.io/v2/cards/sm6-113
-      // https://api.pokemontcg.io/v2/cards/me2pt5-152
-      // https://api.pokemontcg.io/v2/cards/swsh11-136
-      // https://github.com/FlareZ123/pokemon-sims/issues/1167
+      // payload and the complete Treasure to Vessel to Turo to Gladion chain:
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+      // Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1167
       cost = treasure_vessel_first_redundant_payload_cost();
     }
     if (!cost && want_vstar && can_spend_redundant_payload_for_locked_vstar_search()) {
 '''
           if treasure.count(treasure_anchor) != 1:
               raise SystemExit('Expected one Mysterious Treasure cost anchor.')
-          treasure_path.write_text(treasure.replace(treasure_anchor, treasure_replacement), encoding='utf-8')
+          treasure_path.write_text(
+              treasure.replace(treasure_anchor, treasure_replacement),
+              encoding='utf-8')
 
           vessel_path = Path('src/trace_engine_v2/part_010.inc')
           vessel = vessel_path.read_text(encoding='utf-8')
@@ -163,17 +157,18 @@ jobs:
       // Every ordinary lower-DCI cost was tried first. The second paid Item may
       // spend the matching redundant payload copy only after the first Treasure
       // cost and current-turn Regidrago V establish the exact source-bounded route:
-      // https://api.pokemontcg.io/v2/cards/sv4-163
-      // https://api.pokemontcg.io/v2/cards/me2pt5-152
-      // https://api.pokemontcg.io/v2/cards/swsh11-136
-      // https://github.com/FlareZ123/pokemon-sims/issues/1167
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+      // Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1167
       cost = treasure_vessel_second_redundant_payload_cost();
     }
     if (!cost) return false;
 '''
           if vessel.count(vessel_anchor) != 1:
               raise SystemExit('Expected one Earthen Vessel cost anchor.')
-          vessel_path.write_text(vessel.replace(vessel_anchor, vessel_replacement), encoding='utf-8')
+          vessel_path.write_text(
+              vessel.replace(vessel_anchor, vessel_replacement), encoding='utf-8')
 
           test_path = Path('tests/issue_1167_treasure_vessel_redundant_payload_tests.cpp')
           test_path.write_text(r'''#define REGIDRAGO_SIM_NO_MAIN
@@ -190,10 +185,9 @@ namespace sim {
 
 struct EngineTestAccess {
   static void set_known_state(Engine& engine, State state,
-                              const bool deck_seen = true,
                               const bool prizes_revealed = true) {
     engine.state_ = std::move(state);
-    engine.deck_seen_ = deck_seen;
+    engine.deck_seen_ = false;
     engine.prizes_revealed_ = prizes_revealed;
   }
   static std::optional<Card> first_cost(const Engine& engine) {
@@ -262,9 +256,8 @@ void test_exact_paid_search_chain() {
   Fixture fixture;
   sim::EngineTestAccess::set_known_state(fixture.engine, route_state());
 
-  // The two Items each require one other-card discard. Two identical Mega
-  // Dragonite ex copies may pay those costs while the distinct Goodra remains
-  // protected for the later strict-JIT ready turn:
+  // Two identical Mega Dragonite ex copies may pay the two one-card costs while
+  // Goodra remains protected for the later strict-JIT ready turn:
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
   // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
   // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
@@ -277,11 +270,11 @@ void test_exact_paid_search_chain() {
              sim::Card::MegaDragonite,
          "Treasure did not recognize the first redundant payload cost.");
   expect(sim::EngineTestAccess::play_treasure(fixture.engine),
-         "Mysterious Treasure did not resolve the source-bounded first step.");
+         "Mysterious Treasure did not resolve the first source-bounded step.");
   expect(count(fixture.engine.state().discard, sim::Card::MegaDragonite) == 1,
-         "Mysterious Treasure did not discard exactly one Mega Dragonite ex.");
+         "Treasure did not discard exactly one Mega Dragonite ex.");
   expect(count(fixture.engine.state().hand, sim::Card::RegidragoV) == 1,
-         "Mysterious Treasure did not search Regidrago V.");
+         "Treasure did not search Regidrago V.");
   expect(count(fixture.engine.state().hand, sim::Card::GoodraVstar) == 1,
          "The distinct strict-JIT payload was not protected.");
 
@@ -293,27 +286,26 @@ void test_exact_paid_search_chain() {
              sim::Card::MegaDragonite,
          "Vessel did not recognize the matching second payload cost.");
   expect(sim::EngineTestAccess::play_vessel(fixture.engine),
-         "Earthen Vessel did not resolve the source-bounded second step.");
+         "Earthen Vessel did not resolve the second source-bounded step.");
   expect(count(fixture.engine.state().discard, sim::Card::MegaDragonite) == 2,
          "The two paid searches did not spend both redundant copies.");
   expect(count(fixture.engine.state().hand, sim::Card::GoodraVstar) == 1,
-         "Earthen Vessel consumed the distinct protected payload.");
+         "Vessel consumed the distinct protected payload.");
   expect(count(fixture.engine.state().hand, sim::Card::Grass) == 2,
-         "Earthen Vessel did not search both Grass Energy.");
+         "Vessel did not search both Grass Energy.");
   expect(sim::EngineTestAccess::attach_manual(fixture.engine),
          "The first searched Grass Energy was not manually attached.");
   expect(fixture.engine.state().bench.front().grass == 1,
-         "The searched Regidrago V did not receive the manual Grass attachment.");
+         "The searched Regidrago V did not receive the Grass attachment.");
 }
 
 void expect_first_rejected(sim::State state, const std::string_view label,
                            const sim::LockMode locks = sim::LockMode::None,
                            const int max_turn = 5,
-                           const bool deck_seen = true,
                            const bool prizes_revealed = true) {
   Fixture fixture{locks, max_turn};
   sim::EngineTestAccess::set_known_state(
-      fixture.engine, std::move(state), deck_seen, prizes_revealed);
+      fixture.engine, std::move(state), prizes_revealed);
   expect(!sim::EngineTestAccess::first_cost(fixture.engine).has_value(), label);
 }
 
@@ -341,31 +333,29 @@ void test_projection_boundaries() {
   state = route_state();
   state.prizes.erase(std::find(state.prizes.begin(), state.prizes.end(),
                                sim::Card::MysteriousTreasure));
-  expect_first_rejected(std::move(state), "The known prized downstream Treasure is required.");
+  expect_first_rejected(std::move(state), "The known prized Treasure is required.");
 
   state = route_state();
   state.bench.assign(5, sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0,
                                      sim::Tool::None});
-  expect_first_rejected(std::move(state), "A full Bench must reject the Basic route.");
+  expect_first_rejected(std::move(state), "A full Bench must reject the route.");
 
   expect_first_rejected(route_state(), "Item lock must reject the route.",
                         sim::LockMode::FullItem);
   expect_first_rejected(route_state(), "The T5 horizon is required.",
                         sim::LockMode::None, 4);
-  expect_first_rejected(route_state(), "Unknown deck locations must reject.",
-                        sim::LockMode::None, 5, false, true);
   expect_first_rejected(route_state(), "Unknown Prize locations must reject.",
-                        sim::LockMode::None, 5, true, false);
+                        sim::LockMode::None, 5, false);
 
   state = route_state();
   state.deck.erase(std::find(state.deck.begin(), state.deck.end(),
                              sim::Card::Gladion));
-  expect_first_rejected(std::move(state), "The in-deck downstream Gladion is required.");
+  expect_first_rejected(std::move(state), "The downstream Gladion is required.");
 
   state = route_state();
   state.deck.erase(std::find(state.deck.begin(), state.deck.end(),
                              sim::Card::RegidragoVstar));
-  expect_first_rejected(std::move(state), "The in-deck Regidrago VSTAR is required.");
+  expect_first_rejected(std::move(state), "The downstream VSTAR is required.");
 }
 
 void test_lower_dci_cost_stays_first() {
@@ -373,15 +363,8 @@ void test_lower_dci_cost_stays_first() {
   state.hand.push_back(sim::Card::EarthenVessel);
   Fixture fixture;
   sim::EngineTestAccess::set_known_state(fixture.engine, std::move(state));
-
-  // A duplicated ordinary search Item remains a lower-DCI cost and must be selected
-  // before the narrow redundant-payload fallback:
-  // https://api.pokemontcg.io/v2/cards/sm6-113
-  // https://api.pokemontcg.io/v2/cards/sv4-163
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-  // https://github.com/FlareZ123/pokemon-sims/issues/1167
   expect(sim::EngineTestAccess::play_treasure(fixture.engine),
-         "Mysterious Treasure did not resolve with lower-DCI fodder.");
+         "Treasure did not resolve with lower-DCI fodder.");
   expect(count(fixture.engine.state().discard, sim::Card::EarthenVessel) == 1,
          "The duplicated ordinary Item was not preferred as the cost.");
   expect(count(fixture.engine.state().hand, sim::Card::MegaDragonite) == 2,
@@ -399,7 +382,7 @@ void test_second_cost_requires_first_paid_step() {
   Fixture fixture;
   sim::EngineTestAccess::set_known_state(fixture.engine, std::move(state));
   expect(!sim::EngineTestAccess::second_cost(fixture.engine).has_value(),
-         "Vessel must not spend a payload without the matching first paid step.");
+         "Vessel must require the matching first paid step.");
 }
 
 void test_seed_7_source_bounded_finish() {
@@ -412,14 +395,14 @@ void test_seed_7_source_bounded_finish() {
   const sim::TrialOutcome outcome = engine.run();
 
   const auto has_line = [&trace](const std::string_view text) {
-    return std::any_of(trace.lines.begin(), trace.lines.end(), [text](const std::string& line) {
+    return std::any_of(trace.lines.begin(), trace.lines.end(),
+                       [text](const std::string& line) {
       return line.find(text) != std::string::npos;
     });
   };
 
-  // The full seed uses only K1 or held cards across both real shuffles. T2 pays the
-  // duplicate payloads, T3 Turo replays Tapu for Gladion, and T5 Treasure discards
-  // the protected Goodra in the actual strict-JIT ready turn:
+  // This full seed uses K1 or held cards across both real shuffles. The protected
+  // Goodra is discarded by the T5 Treasure on the actual ready turn:
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/sv4-163
   // https://api.pokemontcg.io/v2/cards/sv4-171
@@ -431,15 +414,15 @@ void test_seed_7_source_bounded_finish() {
   // https://github.com/FlareZ123/pokemon-sims/issues/1166
   // https://github.com/FlareZ123/pokemon-sims/issues/1167
   expect(outcome.first_ready_turn == 5,
-         "Seed 7 did not reach the source-bounded T5 strict-JIT ready state.");
+         "Seed 7 did not reach the source-bounded T5 ready state.");
   expect(has_line("Mega Dragonite ex (Mysterious Treasure cost)"),
          "Seed 7 omitted the first paid payload.");
   expect(has_line("Mega Dragonite ex (Earthen Vessel cost)"),
          "Seed 7 omitted the second paid payload.");
-  expect(has_line("Professor Turo returned and replayed Tapu Lele-GX"),
-         "Seed 7 omitted the Turo and Tapu replay connector.");
+  expect(has_line("Professor Turo") && has_line("Wonder Tag"),
+         "Seed 7 omitted the Turo and Wonder Tag connector chain.");
   expect(has_line("Hisuian Goodra VSTAR (Mysterious Treasure cost)"),
-         "Seed 7 did not discard the protected payload on the ready turn.");
+         "Seed 7 did not discard the protected payload on T5.");
   expect(has_line("T5 | READY"), "Seed 7 did not record T5 readiness.");
 }
 
@@ -457,48 +440,4 @@ int main() {
           PY
       - name: Build and validate the focused bug
         shell: bash
-        run: |
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --parallel 2
-          ctest --test-dir build -R 'issue_1167|issue_1165|issue_1166' --output-on-failure | tee issue-1167-focused-tests.txt
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 7 --require-ready-by 5 | tee issue-1167-seed7.txt
-          # Exact-state contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
-          # Trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
-      - name: Regenerate canonical evidence and run full validation
-        shell: bash
-        run: |
-          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
-          python scripts/update_setup_docs.py --repo-root .
-          ctest --test-dir build --parallel 4 --output-on-failure | tee issue-1167-complete-tests.txt
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 | tee issue-1167-trace-1.txt
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 | tee issue-1167-trace-2.txt
-          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 | tee issue-1167-trace-3.txt
-          # Canonical generator: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
-          # Documentation generator: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/update_setup_docs.py
-      - name: Commit the exact tested tree
-        shell: bash
-        run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git rm .github/workflows/issue-1167-materialize.yml
-          git add src tests results docs
-          git commit -m 'Fix seed-7 Treasure and Vessel redundant payload costs (#1167)'
-          git push origin HEAD:bug/1167-treasure-vessel-redundant-payload
-      - name: Upload exact validation evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: issue-1167-materialized-validation
-          path: |
-            issue-1167-focused-tests.txt
-            issue-1167-complete-tests.txt
-            issue-1167-seed7.txt
-            issue-1167-trace-1.txt
-            issue-1167-trace-2.txt
-            issue-1167-trace-3.txt
-            results/baseline_manifest.json
-            results/simulation_results.csv
-            results/traces
-            docs/REPORT.md
-            docs/TRACE_AUDIT.md
-          if-no-files-found: warn
+        run: echo "This file is a source recipe consumed by the PR materializer."

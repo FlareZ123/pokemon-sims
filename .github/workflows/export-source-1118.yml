@@ -1,0 +1,23 @@
+name: Export Source 1118
+
+on:
+  push:
+    branches: [enhancement/1118-multi-deck-secret-box]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pack source tree
+        run: |
+          tar --exclude=.git --exclude=build --exclude=build-sanitizers -czf pokemon-sims-source-1118.tar.gz .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pokemon-sims-source-1118
+          path: pokemon-sims-source-1118.tar.gz
+          if-no-files-found: error

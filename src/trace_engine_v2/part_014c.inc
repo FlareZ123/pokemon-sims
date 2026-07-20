@@ -192,7 +192,12 @@
   // https://github.com/FlareZ123/pokemon-sims/blob/main/src/regidrago_sim.cpp#L165-L169
   // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c_latias_bench_override.inc#L1-L105
 #undef run_turn
+#include "part_014c_issue_1152_bridge.inc"
+#define use_legacy_star use_legacy_star_issue_1152
+#define choose_supporter choose_supporter_issue_1152
 #include "part_014c_latias_bench_override.inc"
+#undef choose_supporter
+#undef use_legacy_star
 };
 
 // Pineco and Forretress ex are supported through test-only variant recipes. The

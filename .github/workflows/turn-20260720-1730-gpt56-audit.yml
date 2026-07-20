@@ -1,0 +1,77 @@
+name: Turn 20260720 1730 GPT56 Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release # Repository build contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      - name: Build simulator and unified tests
+        run: cmake --build build --parallel 2 # Repository validation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+      - name: Run four independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Turn, Supporter, Item, search, discard, evolution, attachment, Ability, attack, retreat, and Prize procedures: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Earliest deterministic route, dynamic DCI, strict-JIT, and hidden-information boundaries: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 2 | tee pass-1-strict-jit-go-second-seed-2.txt # Trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-combined-lock/go-first --seed 37 | tee pass-2-combined-lock-go-first-seed-37.txt # Combined-lock specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#combined-lock
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 73 | tee pass-3-matchup-flex-go-second-seed-73.txt # Matchup-flex policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 344 | tee pass-4-no-discard-control-go-second-seed-344.txt # No-discard-control policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+      - name: Reproduce owned and confirmation-pending reports without changing ownership
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 7 | tee issue-1174-seed-7.txt # Owned report: https://github.com/FlareZ123/pokemon-sims/issues/1174
+          grep -q "T3 | ATTACK |.*Celestial Roar" issue-1174-seed-7.txt # Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 23 | tee issue-1185-seed-23.txt # Confirmation-pending report: https://github.com/FlareZ123/pokemon-sims/issues/1185
+          grep -q "T5 | PLAY SUPPORTER |.*Tate & Liza" issue-1185-seed-23.txt # Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 101 | tee issue-1186-seed-101.txt # Confirmation-pending report: https://github.com/FlareZ123/pokemon-sims/issues/1186
+          grep -q "T2 | PLAY SUPPORTER |.*Gladion" issue-1186-seed-101.txt # Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure # Repository test contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out turn-20260720-1730-gpt56-t2-t3-matrix.csv # Canonical aggregate command: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+      - name: Build with broad compiler warnings
+        shell: bash
+        run: |
+          set -o pipefail
+          cmake -S . -B build-warnings -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS='-Wall -Wextra -Wpedantic' 2>&1 | tee warning-configure.txt # Modeled source scope: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#fully-modeled-parts
+          cmake --build build-warnings --parallel 2 2>&1 | tee warning-build.txt # Rules traceability contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULES_TRACEABILITY.md
+      - name: Export exact tested source and static inventory
+        shell: bash
+        run: |
+          git rev-parse HEAD > tested-head.txt # Traceability specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULES_TRACEABILITY.md
+          git archive --format=tar.gz --output=tested-source.tar.gz HEAD # Auditable source snapshot: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#audit-status
+          find src tests docs data scripts -type f -print | sort > source-inventory.txt # Repository modeled scope: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#scope
+          grep -RInE 'TODO|FIXME|HACK|XXX|future.*draw|hidden.*order|prize|discard|lock|Supporter|Item|Quick Ball|Steven|Celestial Roar|Mysterious Treasure|Gladion|Tate|Burnet|Latias' src tests docs data scripts > static-risk-scan.txt || true # Hidden-state and action-selection constraints: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turn-20260720-1730-gpt56-audit-${{ github.run_attempt }}
+          path: |
+            pass-*.txt
+            issue-*.txt
+            turn-20260720-1730-gpt56-t2-t3-matrix.csv
+            warning-*.txt
+            tested-head.txt
+            tested-source.tar.gz
+            source-inventory.txt
+            static-risk-scan.txt
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+          if-no-files-found: error

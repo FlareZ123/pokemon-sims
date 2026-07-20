@@ -52,9 +52,10 @@ sim::Scenario issue_1113_scenario(const sim::LockMode lock = sim::LockMode::None
 }
 
 void test_exact_k0_state_admits_route() {
+  const sim::Scenario scenario = issue_1113_scenario();
   const sim::DeckRecipe recipe = sim::baseline_recipe();
   std::mt19937_64 rng{1113};
-  sim::Engine engine(issue_1113_scenario(), recipe, rng);
+  sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, issue_1113_state(), false);
 
   // K0 keeps fixed-list VSTAR and Grass copies plausible. Steven's search can

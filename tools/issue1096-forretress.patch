@@ -1,0 +1,141 @@
+--- a/src/trace_engine_v2/part_forretress_ex_combo.inc
++++ b/src/trace_engine_v2/part_forretress_ex_combo.inc
+@@ -41,15 +41,18 @@
+     return false;
+   }
+ 
++  const bool forest_active = state_.stadium == Stadium::ForestOfVitality;
++  const auto can_evolve = [this, forest_active](const Pokemon& pokemon) {
++    return pokemon.card == Card::Pineco &&
++           (pokemon.entered_turn < state_.turn || forest_active);
++  };
+   Pokemon* pineco = nullptr;
+-  if (state_.active && state_.active->card == Card::Pineco &&
+-      state_.active->entered_turn < state_.turn) {
++  if (state_.active && can_evolve(*state_.active)) {
+     pineco = &*state_.active;
+   }
+   if (pineco == nullptr) {
+     for (Pokemon& pokemon : state_.bench) {
+-      if (pokemon.card == Card::Pineco &&
+-          pokemon.entered_turn < state_.turn) {
++      if (can_evolve(pokemon)) {
+         pineco = &pokemon;
+         break;
+       }
+@@ -60,15 +63,20 @@
+     return false;
+   }
+ 
+-  // Forretress ex is a Stage 1 that evolves from Pineco. A Pokémon cannot
+-  // evolve on the first turn or during the turn it entered play:
+-  // https://api.pokemontcg.io/v2/cards/sv4pt5-1
+-  // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+-  // https://www.pokemon.com/us/pokemon-tcg/rules
+-  // https://github.com/FlareZ123/pokemon-sims/issues/972
++  const bool evolved_on_entry_turn = pineco->entered_turn == state_.turn;
++  // Forest of Vitality lets a Grass Pokémon evolve into another Grass Pokémon on
++  // its entry turn after the player's first turn. Without it, ordinary prior-turn
++  // evolution timing remains mandatory:
++  // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
++  // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
++  // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
++  // Core evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
++  // https://github.com/FlareZ123/pokemon-sims/issues/1096
+   pineco->card = Card::ForretressEx;
+-  trace("EVOLVE", "R-FORRETRESS-01; R-GAME-EVOLUTION",
+-        "Pineco evolved into Forretress ex.");
++  trace("EVOLVE", "R-FORRETRESS-01; R-GAME-EVOLUTION; R-FOREST-VITALITY-01",
++        evolved_on_entry_turn
++            ? "Forest of Vitality allowed the newly played Pineco to evolve into Forretress ex."
++            : "Pineco evolved into Forretress ex under normal prior-turn timing.");
+   return true;
+ }
+ 
+@@ -216,7 +224,85 @@
+ }
+ 
+ bool Engine::advance_forretress_combo() {
+-  bool changed = bench_pineco_if_useful();
++  if (!forretress_combo_enabled()) return false;
++  bool changed = false;
++
++  const bool combo_stadium_is_useful = !state_.stadium_used && need_energy() &&
++      hand_count(Card::ForestOfVitality) > 0 &&
++      state_.stadium != Stadium::ForestOfVitality;
++  if (combo_stadium_is_useful &&
++      remove_one(state_.hand, Card::ForestOfVitality)) {
++    // Stadiums can be played through Item lock. A player cannot play a Stadium with
++    // the same name as the one already in play. Chaotic Swell discards itself and
++    // the incoming Stadium instead of allowing that Stadium to remain in play:
++    // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
++    // Chaotic Swell: https://api.pokemontcg.io/v2/cards/sm12-187
++    // Stadium procedure: https://www.pokemon.com/us/pokemon-tcg/rules
++    // https://github.com/FlareZ123/pokemon-sims/issues/1096
++    if (state_.stadium == Stadium::ChaoticSwell) {
++      state_.discard.push_back(Card::ChaoticSwell);
++      state_.discard.push_back(Card::ForestOfVitality);
++      state_.stadium = Stadium::None;
++      trace("PLAY STADIUM", "R-FOREST-VITALITY-01; R-CHAOTIC-SWELL-01",
++            "Chaotic Swell discarded itself and the incoming Forest of Vitality.");
++    } else {
++      state_.stadium = Stadium::ForestOfVitality;
++      state_.path_lock_removed = true;
++      trace("PLAY STADIUM", "R-FOREST-VITALITY-01; R-GAME-EVOLUTION",
++            "Played Forest of Vitality. Grass Pokémon may evolve during their entry turn after the first turn.");
++    }
++    state_.stadium_used = true;
++    changed = true;
++  }
++
++  const bool pineco_present = in_play_count(Card::Pineco) > 0 ||
++      in_play_count(Card::ForretressEx) > 0 || hand_count(Card::Pineco) > 0;
++  const bool pineco_searchable = pineco_present || might_be_unseen(Card::Pineco);
++  const bool forretress_searchable = in_play_count(Card::ForretressEx) > 0 ||
++      hand_count(Card::ForretressEx) > 0 || might_be_unseen(Card::ForretressEx);
++  const bool dawn_advances_combo = supporter_allowed() && need_energy() &&
++      ability_available_for_pokemon(Card::ForretressEx) &&
++      hand_count(Card::Dawn) > 0 && pineco_searchable && forretress_searchable &&
++      (pineco_present || bench_space() > 0);
++  if (dawn_advances_combo && remove_one(state_.hand, Card::Dawn)) {
++    state_.discard.push_back(Card::Dawn);
++    state_.supporter_used = true;
++    record_deck_search_knowledge("Dawn");
++
++    std::vector<Card> selected;
++    if (in_play_count(Card::Pineco) == 0 &&
++        in_play_count(Card::ForretressEx) == 0 &&
++        hand_count(Card::Pineco) == 0 && bench_space() > 0 &&
++        move_deck_to_hand(Card::Pineco)) {
++      selected.push_back(Card::Pineco);
++    } else if (need_regi() && move_deck_to_hand(Card::RegidragoV)) {
++      selected.push_back(Card::RegidragoV);
++    }
++    if (in_play_count(Card::ForretressEx) == 0 &&
++        hand_count(Card::ForretressEx) == 0 &&
++        move_deck_to_hand(Card::ForretressEx)) {
++      selected.push_back(Card::ForretressEx);
++    }
++    for (const Card stage_two : {Card::MegaDragonite, Card::Dragapult}) {
++      if (move_deck_to_hand(stage_two)) {
++        selected.push_back(stage_two);
++        break;
++      }
++    }
++    shuffle(state_.deck);
++    // Dawn independently searches one Basic, one Stage 1, and one Stage 2. The
++    // route selector takes Pineco, Forretress ex, and a modeled Stage 2 Dragon when
++    // those cards remain, while each hidden-information category may legally fail:
++    // Dawn: https://api.pokemontcg.io/v2/cards/me2-87
++    // Pineco and Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-1
++    // https://api.pokemontcg.io/v2/cards/sv4pt5-2
++    // https://github.com/FlareZ123/pokemon-sims/issues/1096
++    trace("PLAY SUPPORTER", "R-DAWN-01; R-GAME-SUPPORTER; R-FORRETRESS-01",
++          "Dawn searched and revealed: " + join_cards(selected) + ".");
++    changed = true;
++  }
++
++  if (bench_pineco_if_useful()) changed = true;
+   if (evolve_forretress_ex()) changed = true;
+   if (use_exploding_energy_for_setup()) changed = true;
+   return changed;

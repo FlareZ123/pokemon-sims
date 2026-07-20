@@ -227,6 +227,36 @@
     return choose_discard(true, true, true, Card::MysteriousTreasure).has_value();
   }
 
+  bool late_supporter_quick_ball_latias_completion_available() const {
+    if (!state_.supporter_used || state_.turn_ended || item_locked() ||
+        hand_count(Card::QuickBall) == 0 || !need_active_vstar() ||
+        need_energy() || !benched_vstar_promotion_ready() || state_.retreat_used ||
+        !state_.active || !is_basic(state_.active->card) || bench_space() == 0 ||
+        !ability_available_for_pokemon(Card::LatiasEx) || in_play(Card::LatiasEx) ||
+        hand_count(Card::LatiasEx) > 0 || !might_be_unseen(Card::LatiasEx)) {
+      return false;
+    }
+
+    const bool payload_axis_completable = !need_payload() ||
+        (hand_count(Card::BrilliantBlender) > 0 && payload_might_be_in_deck() &&
+         can_play_payload_this_turn());
+    if (!payload_axis_completable) return false;
+
+    // A late Arven or Wonder Tag Supporter may make Quick Ball newly live after the
+    // turn's previous Item fixed point. Replay Items only when Quick Ball already
+    // has a legal ordinary cost, Latias ex is searchable, Skyliner solves the final
+    // Active axis, and any remaining payload is covered by held Brilliant Blender:
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Supporter, Item, discard, Bench, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1147
+    return choose_discard(false, true, true, Card::QuickBall).has_value();
+  }
+
   bool complete_late_steven_vstar_vessel_continuation() {
     if (scenario_.dci != DciProfile::StrictJit || item_locked() ||
         !state_.active || state_.active->card != Card::RegidragoV ||
@@ -396,7 +426,13 @@
     // before the ready check: https://api.pokemontcg.io/v2/cards/cel25c-60_A
     // Professor Burnet can discard a current-turn deck payload after this chain:
     // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    const bool late_supporter_was_unused = !state_.supporter_used;
     if (!state_.supporter_used && setup_axis_missing()) choose_supporter();
+    if (late_supporter_was_unused &&
+        late_supporter_quick_ball_latias_completion_available()) {
+      play_items_until_stable(true);
+      play_basics_from_hand();
+    }
     if (use_legacy_star()) {
       // Core procedure source: https://www.pokemon.com/us/pokemon-tcg/rules
       // Recovered Items may be played later in the same turn.

@@ -1,0 +1,127 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 314fa9f..8eb7a63 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -237,6 +237,16 @@ add_test(NAME trace_issue_1115_held_burnet_preempts_gladion
+ add_test(NAME trace_issue_1114_latias_burnet_preempts_gladion
+   COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2932 --require-ready-by 4)
+ 
++# A private favorable Legacy Star top-seven sample cannot satisfy the Tate hold
++# classifier when the public deterministic route is the held Professor Burnet:
++# https://api.pokemontcg.io/v2/cards/swsh12-136
++# https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
++# https://api.pokemontcg.io/v2/cards/sm7-148
++# https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
++# https://github.com/FlareZ123/pokemon-sims/issues/1110
++add_test(NAME trace_issue_1110_tate_yields_to_burnet
++  COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 182 --require-ready-by 3)
++
+ add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
+ set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)
+ 
+diff --git a/src/trace_engine_v2/part_turo_oricorio_override.inc b/src/trace_engine_v2/part_turo_oricorio_override.inc
+index d3b5840..e298364 100644
+--- a/src/trace_engine_v2/part_turo_oricorio_override.inc
++++ b/src/trace_engine_v2/part_turo_oricorio_override.inc
+@@ -220,6 +220,18 @@
+     projected.state_.supporter_used = true;
+     projected.run_turn();
+ 
++    // Legacy Star discards a shuffled top-seven sample. A favorable private order in
++    // the shadow engine cannot prove that held non-Supporter cards deterministically
++    // complete the public-state route, especially when Professor Burnet is held and
++    // is the direct known payload outlet:
++    // Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
++    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
++    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
++    // Hidden-order policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
++    // Earliest-ready route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
++    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1110
++    if (projected.outcome_.used_legacy_star) return false;
++
+     return projected.active_is_vstar() && projected.state_.active->grass >= 2 &&
+         projected.state_.active->fire >= 1 && projected.payload_ready();
+   }
+diff --git a/tests/issue_1110_tate_yields_to_burnet_tests.cpp b/tests/issue_1110_tate_yields_to_burnet_tests.cpp
+new file mode 100644
+index 0000000..3cbd7e3
+--- /dev/null
++++ b/tests/issue_1110_tate_yields_to_burnet_tests.cpp
+@@ -0,0 +1,77 @@
++#define REGIDRAGO_SIM_NO_MAIN
++#include "../src/regidrago_sim.cpp"
++
++#include <algorithm>
++#include <random>
++#include <stdexcept>
++#include <string>
++
++namespace sim {
++struct EngineTestAccess {};
++}  // namespace sim
++
++namespace {
++void expect(const bool condition, const char* message) {
++  if (!condition) throw std::runtime_error(message);
++}
++
++bool contains(const sim::TraceLog& trace, const std::string& needle) {
++  return std::any_of(trace.lines.begin(), trace.lines.end(),
++                     [&needle](const std::string& line) {
++                       return line.find(needle) != std::string::npos;
++                     });
++}
++
++void test_seed_182_uses_burnet_on_turn_three() {
++  const auto scenario = sim::scenario_by_label("strict-jit/go-second");
++  if (!scenario) throw std::runtime_error("Missing scenario");
++
++  sim::DeckRecipe recipe{sim::baseline_recipe()};
++  std::mt19937_64 rng{182};
++  sim::TraceLog trace;
++  trace.enabled = true;
++  sim::Engine engine(*scenario, recipe, rng, &trace);
++  const sim::TrialOutcome outcome = engine.run();
++
++  // The shadow classifier may evaluate deterministic held Items, evolution, and
++  // attachments. It cannot use the actual hidden top-seven Legacy Star outcome to
++  // suppress the known Professor Burnet Supporter route:
++  // Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
++  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
++  // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
++  // Hidden-order policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
++  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1110
++  expect(outcome.first_ready_turn == 3,
++         "Seed 182 must reach strict-JIT readiness on T3.");
++  expect(contains(trace, "T3 | PLAY SUPPORTER") &&
++             contains(trace, "Professor Burnet"),
++         "The T3 trace must play Professor Burnet.");
++  expect(!contains(trace, "T3 | HOLD SUPPORTER"),
++         "The Tate hold guard must not use a private Legacy Star sample.");
++}
++
++void test_existing_deterministic_tate_routes_remain_green() {
++  for (const auto& [label, seed, expected_turn] : {
++           std::tuple{"matchup-flex-jit/go-first", std::uint64_t{185}, 3},
++           std::tuple{"strict-jit/go-second", std::uint64_t{13}, 2}}) {
++    const auto scenario = sim::scenario_by_label(label);
++    if (!scenario) throw std::runtime_error("Missing control scenario");
++    sim::DeckRecipe recipe{sim::baseline_recipe()};
++    std::mt19937_64 rng{seed};
++    sim::TraceLog trace;
++    trace.enabled = true;
++    sim::Engine engine(*scenario, recipe, rng, &trace);
++    const sim::TrialOutcome outcome = engine.run();
++    expect(outcome.first_ready_turn == expected_turn,
++           "A deterministic held non-Supporter Tate route regressed.");
++    expect(contains(trace, "HOLD SUPPORTER"),
++           "The deterministic Tate control must still hold the Supporter.");
++  }
++}
++}  // namespace
++
++int main() {
++  test_seed_182_uses_burnet_on_turn_three();
++  test_existing_deterministic_tate_routes_remain_green();
++  return 0;
++}

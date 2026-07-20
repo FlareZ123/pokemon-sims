@@ -135,6 +135,20 @@ def main() -> int:
     # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#opponent-actions
     # https://github.com/FlareZ123/pokemon-sims/issues/1033
     register = TRACE_REGISTER_PATH.read_text(encoding="utf-8")
+
+    # Steven's Resolve has no turn-one-only clause. Keep the traceability register
+    # aligned with the printed effect and the production late-turn route policy:
+    # https://api.pokemontcg.io/v2/cards/sm7-145
+    # https://www.pokemon.com/us/pokemon-tcg/rules
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010_late_steven_override.inc#L162-L166
+    # https://github.com/FlareZ123/pokemon-sims/issues/1181
+    if "It is used only going second on turn 1" in register:
+        raise AssertionError("R-STEVEN-01 still incorrectly limits Steven's Resolve to turn one.")
+    if "On later Supporter-legal turns, the policy also uses source-bounded continuations" not in register:
+        raise AssertionError("R-STEVEN-01 must document the supported later-turn Steven routes.")
+    if "In turn-two Item-lock scenarios it fetches Burnet rather than Blender" not in register:
+        raise AssertionError("R-STEVEN-01 must retain the turn-two Item-lock target rule.")
+
     emitted = emitted_rule_ids()
     registered = set(REGISTERED_RULE_ID.findall(register))
     missing = sorted(emitted - registered)

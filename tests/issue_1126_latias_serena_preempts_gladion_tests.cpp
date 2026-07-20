@@ -85,6 +85,7 @@ void test_route_blocks_gladion() {
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1126
   expect(sim::EngineTestAccess::route_ready(engine),
          "The exact Latias-Serena route must be recognized.");
+  // Gladion's isolated preflight must honor the same public completion route.
   expect(!sim::EngineTestAccess::play_gladion(engine),
          "Gladion must yield to the current-turn Latias-Serena completion.");
 }

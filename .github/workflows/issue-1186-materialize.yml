@@ -29,7 +29,7 @@ jobs:
           set -euo pipefail
           ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 101 --require-ready-by 3 | tee issue-1186-rulebox-seed-101.txt # https://github.com/FlareZ123/pokemon-sims/issues/1186
           grep -q "known T3 Burnet route" issue-1186-rulebox-seed-101.txt
-          grep -q "T3 | PLAY SUPPORTER.*Professor Burnet" issue-1186-rulebox-seed-101.txt # https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+          grep -q "T3 | PLAY SUPPORTER | rules: R-BURNET-01" issue-1186-rulebox-seed-101.txt # https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
           grep -q "T3 | READY" issue-1186-rulebox-seed-101.txt
           ! grep -q "exchanged Gladion for Regidrago V" issue-1186-rulebox-seed-101.txt
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 101 --require-ready-by 3 | tee issue-1186-no-lock-seed-101.txt # https://api.pokemontcg.io/v2/cards/sm7-145

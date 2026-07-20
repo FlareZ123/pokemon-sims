@@ -129,6 +129,20 @@
   }
 
   bool play_gladion() {
+    if (late_steven_vstar_with_held_blender_route_available()) {
+      // Gladion exchanges for one Prize card, while the confirmed route already has
+      // the prior-turn Active and GGF Energy axes complete. Preserve the Supporter
+      // play for Steven to reserve the known-searchable VSTAR; held Brilliant Blender
+      // then establishes the strict-JIT payload on the following ready turn:
+      // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // One Supporter per turn and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1109
+      return false;
+    }
     if (!supporter_allowed() || hand_count(Card::Gladion) == 0) return false;
     // Quick Ball and Mysterious Treasure require their hand-discard costs before their
     // Regidrago V search routes exist: https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sm6-113

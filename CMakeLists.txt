@@ -156,6 +156,18 @@ add_test(NAME trace_issue_1086_wonder_tag_serena_payload
   COMMAND ${CMAKE_COMMAND}
     -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
     -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_issue_1086_wonder_tag_serena_payload.cmake)
+# A held Arven suppresses blind Gladion only when its searched Item can legally
+# resolve the missing-Regidrago-V route after the Supporter play:
+# https://api.pokemontcg.io/v2/cards/sm4-95
+# https://api.pokemontcg.io/v2/cards/sv1-166
+# https://api.pokemontcg.io/v2/cards/swsh1-179
+# https://api.pokemontcg.io/v2/cards/sm6-113
+# https://github.com/FlareZ123/pokemon-sims/issues/1090
+# https://github.com/FlareZ123/pokemon-sims/pull/1095
+add_test(NAME trace_issue_1090_gladion_arven_route
+  COMMAND ${CMAKE_COMMAND}
+    -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_issue_1090_gladion_arven_route.cmake)
 add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
 set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)
 

@@ -1,5 +1,6 @@
 name: Narrow issue 1110 guard
 
+# Re-trigger after the original baseline workflow completed.
 on:
   push:
     branches: [bug/1110-tate-yields-to-burnet-agent]

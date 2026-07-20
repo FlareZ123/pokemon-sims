@@ -1,3 +1,0 @@
-Release CTest: 10/10 passed.
-ASan and UBSan CTest: 10/10 passed.
-Tier Two matrix: 100000 trials per scenario, seed 20260705.

@@ -108,7 +108,7 @@ void test_required_route_components_gate_admission() {
   }
 }
 
-void test_seed_143_uses_steven_and_reaches_turn_four() {
+void test_seed_143_uses_steven_and_reaches_by_turn_four() {
   const auto scenario = sim::scenario_by_label("strict-jit/go-second");
   if (!scenario) throw std::runtime_error("Missing strict-jit/go-second scenario");
   const sim::DeckRecipe recipe = sim::baseline_recipe();
@@ -118,30 +118,33 @@ void test_seed_143_uses_steven_and_reaches_turn_four() {
   sim::Engine engine(*scenario, recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 
-  // Gladion must preserve the Supporter play for the complete Steven route, then
-  // the prior-turn Active evolves and held Blender establishes the JIT payload:
+  // The complete Steven route must outrank spending Gladion on a redundant Basic.
+  // A later policy may legally discover an earlier Steven plus Burnet continuation,
+  // so this integration regression preserves the route and its original T4 deadline
+  // while the exact-state test above continues to cover held Blender admission:
   // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
   // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // https://github.com/FlareZ123/pokemon-sims/issues/1109
-  expect(trace_contains(trace, "T3 | PLAY SUPPORTER | rules: R-STEVEN-01"),
-         "Seed 143 must play Steven on T3.");
-  expect(!trace_contains(trace, "T3 | PLAY SUPPORTER | rules: R-GLADION-01"),
-         "Seed 143 must not spend T3 Gladion on a backup Basic.");
-  expect(trace_contains(trace, "T4 | PLAY ITEM | rules: R-BLENDER-01"),
-         "Seed 143 must play held Blender on T4.");
-  expect(trace_contains(trace, "T4 | READY"),
-         "Seed 143 must reach strict-JIT readiness on T4.");
-  expect(outcome.ready_by_4 && outcome.first_ready_turn == 4,
-         "Seed 143 must first become ready on T4.");
+  // https://github.com/FlareZ123/pokemon-sims/issues/1112
+  const bool used_steven_by_t3 =
+      trace_contains(trace, "T2 | PLAY SUPPORTER | rules: R-STEVEN-01") ||
+      trace_contains(trace, "T3 | PLAY SUPPORTER | rules: R-STEVEN-01");
+  expect(used_steven_by_t3, "Seed 143 must play Steven by T3.");
+  expect(!trace_contains(trace, "T2 | PLAY SUPPORTER | rules: R-GLADION-01") &&
+             !trace_contains(trace, "T3 | PLAY SUPPORTER | rules: R-GLADION-01"),
+         "Seed 143 must not spend T2 or T3 Gladion on a backup Basic.");
+  expect(outcome.ready_by_4 && outcome.first_ready_turn <= 4,
+         "Seed 143 must become ready no later than T4.");
 }
 }  // namespace
 
 int main() {
   test_exact_k1_state_admits_route();
   test_required_route_components_gate_admission();
-  test_seed_143_uses_steven_and_reaches_turn_four();
+  test_seed_143_uses_steven_and_reaches_by_turn_four();
   return 0;
 }

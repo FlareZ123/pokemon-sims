@@ -31,6 +31,7 @@ jobs:
           ./build/regidrago_unified_tests issue_1098_late_steven_crispin_treasure_tests
 
           # Steven ends the turn after searching: https://api.pokemontcg.io/v2/cards/sm7-145
+          # Crispin cannot attach when only one Basic Energy is found: https://compendium.pokegym.net/category/5-trainers/crispin/
           # Strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 44 --require-ready-by 3 | tee issue-1098-trace-seed-44.txt
           grep -F 'Searched the late Crispin-Treasure route' issue-1098-trace-seed-44.txt

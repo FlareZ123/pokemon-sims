@@ -1,0 +1,18 @@
+--- a/src/trace_engine_v2/part_000.inc
++++ b/src/trace_engine_v2/part_000.inc
+@@ -50,6 +50,7 @@
+   EvolutionIncense,
+   PokemonCommunication,
+   EarthenVessel,
++  Dawn,
+   Arven,
+   Crispin,
+   ProfessorBurnet,
+@@ -68,6 +69,7 @@
+   Powerglass,
+   FieldBlower,
+   ChaoticSwell,
++  ForestOfVitality,
+   PathToPeak,
+   HisuianHeavyBall,
+   Grass,

@@ -1,0 +1,70 @@
+name: Refresh Issue 1167 On Main
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'bug/1167-strict-dci-treasure-vessel-chain'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Merge current main
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+          # Main integration: https://github.com/FlareZ123/pokemon-sims/tree/main
+      - name: Build and regenerate final evidence
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R 'issue_1165|issue_1166|issue_1167' --output-on-failure | tee issue-1167-combined-focused-tests.txt
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          ctest --test-dir build --parallel 4 --output-on-failure | tee issue-1167-combined-complete-tests.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 7 | tee issue-1167-combined-seed7.txt
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+          # Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+          # Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+          # Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+          # Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1165 https://github.com/FlareZ123/pokemon-sims/issues/1166 https://github.com/FlareZ123/pokemon-sims/issues/1167
+      - name: Commit tested integrated tree
+        shell: bash
+        run: |
+          git rm --ignore-unmatch .github/workflows/issue-1167-refresh-main.yml
+          find results -type f -name '*.tmp.lock' -delete
+          git add -A results docs .github/workflows
+          if git diff --cached --quiet; then
+            echo 'No generated changes to commit.'
+          else
+            git commit -m 'Integrate issue 1167 with current main evidence'
+          fi
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+      - name: Upload final combined validation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1167-current-main-validation
+          path: |
+            issue-1167-combined-focused-tests.txt
+            issue-1167-combined-complete-tests.txt
+            issue-1167-combined-seed7.txt
+            results/baseline_manifest.json
+            results/simulation_results.csv
+            docs/REPORT.md
+            docs/TRACE_AUDIT.md
+          if-no-files-found: warn

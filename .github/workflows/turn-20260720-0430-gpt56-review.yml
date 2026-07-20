@@ -1,0 +1,61 @@
+name: Turn 20260720 0430 GPT56 Review
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release # Repository build specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      - name: Build simulator and unified tests
+        run: cmake --build build --parallel 2 # Repository test specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+      - name: Run independent simulate-this passes and open-bug controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Core turn, Supporter, Item, search, discard, evolution, attachment, retreat, Ability, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Earliest legal ready route and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 5 | tee pass-1-strict-jit-go-second-seed-5.txt # Trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-full-item-lock/go-second --seed 41 | tee pass-2-full-item-lock-go-second-seed-41.txt # Lock scenario semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 19 | tee pass-3-no-discard-control-go-second-seed-19.txt # DCI scenario contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 | tee pass-4-strict-jit-go-second-seed-1.txt # Earliest complete route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 143 | tee issue-1109-seed-143.txt # Confirmed claimed bug: https://github.com/FlareZ123/pokemon-sims/issues/1109
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 493 | tee issue-1112-seed-493.txt # Confirmed claimed bug: https://github.com/FlareZ123/pokemon-sims/issues/1112
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 63 | tee issue-1113-seed-63.txt # Confirmed claimed bug: https://github.com/FlareZ123/pokemon-sims/issues/1113
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 17 | tee issue-1137-seed-17.txt # Confirmation-pending bug: https://github.com/FlareZ123/pokemon-sims/issues/1137
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure # Repository validation specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out turn-20260720-0430-gpt56-t2-t3-matrix.csv # Canonical aggregate command: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+      - name: Export exact tested source and static inventory
+        shell: bash
+        run: |
+          git rev-parse HEAD > tested-head.txt # Traceability specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULES_TRACEABILITY.md
+          git archive --format=tar.gz --output=tested-source.tar.gz HEAD # Audit source export: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#audit-status
+          find src tests docs data -type f -print | sort > source-inventory.txt # Repository scope: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#scope
+          grep -RInE 'TODO|FIXME|HACK|XXX|future.*draw|hidden.*order|prize' src tests docs > static-risk-scan.txt || true # Hidden-state constraints: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turn-20260720-0430-gpt56-review-${{ github.run_attempt }}
+          path: |
+            pass-*.txt
+            issue-*.txt
+            turn-20260720-0430-gpt56-t2-t3-matrix.csv
+            tested-head.txt
+            tested-source.tar.gz
+            source-inventory.txt
+            static-risk-scan.txt
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+          if-no-files-found: error

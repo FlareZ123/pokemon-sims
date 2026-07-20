@@ -115,7 +115,8 @@ void test_seed_five_preserves_arven() {
   if (!scenario) throw std::runtime_error("Missing strict-jit/go-second scenario");
   const sim::DeckRecipe recipe = sim::baseline_recipe();
   std::mt19937_64 rng{5};
-  sim::TraceLog trace{true, {}};
+  sim::TraceLog trace;
+  trace.enabled = true;
   sim::Engine engine(*scenario, recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 

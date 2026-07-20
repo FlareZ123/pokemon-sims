@@ -33,6 +33,37 @@ jobs:
           Path('/tmp/issue-1167-materialize.sh').write_text(script, encoding='utf-8')
           PY
           bash /tmp/issue-1167-materialize.sh
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/trace_engine_v2/part_006.inc')
+          source = path.read_text(encoding='utf-8')
+          before = '''        count_of(state_.deck, Card::Grass) >= 2 &&
+        count_of(state_.prizes, Card::MysteriousTreasure) > 0 &&
+        need_vstar() && need_payload();
+'''
+          after = '''        count_of(state_.deck, Card::Grass) >= 2 &&
+        count_of(state_.prizes, Card::MysteriousTreasure) > 0 &&
+        need_payload();
+'''
+          if source.count(before) != 1:
+              raise SystemExit('Expected one premature VSTAR-axis gate.')
+          source = source.replace(before, after)
+
+          before = '''        !current_turn_regi || !need_energy() ||
+        hand_count(Card::EarthenVessel) == 0 ||
+'''
+          after = '''        !current_turn_regi || !need_vstar() || !need_energy() ||
+        hand_count(Card::EarthenVessel) == 0 ||
+'''
+          if source.count(before) != 1:
+              raise SystemExit('Expected one second-step axis gate.')
+          path.write_text(source.replace(before, after), encoding='utf-8')
+          PY
+          # The Basic axis must be established before need_vstar() becomes the relevant
+          # downstream test. The second paid search retains that exact guard:
+          # Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
           # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1167
       - name: Build and validate the exact paid-search chain
         shell: bash

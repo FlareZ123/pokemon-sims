@@ -1,6 +1,8 @@
 name: Refresh Issue 1166 On Main
 
 on:
+  push:
+    branches: [bug/1166-wonder-tag-future-gladion]
   pull_request:
     branches: [main]
 
@@ -9,13 +11,13 @@ permissions:
 
 jobs:
   refresh:
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'bug/1166-wonder-tag-future-gladion'
+    if: github.ref == 'refs/heads/bug/1166-wonder-tag-future-gladion' || (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'bug/1166-wonder-tag-future-gladion')
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: bug/1166-wonder-tag-future-gladion
           fetch-depth: 0
       - name: Merge current main and resolve generated evidence
         shell: bash
@@ -67,7 +69,7 @@ jobs:
           git rm .github/workflows/issue-1166-refresh-main.yml
           git add results docs
           git commit -m 'Integrate issue 1166 with current main evidence'
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          git push origin HEAD:bug/1166-wonder-tag-future-gladion
       - name: Upload combined validation
         if: always()
         uses: actions/upload-artifact@v4

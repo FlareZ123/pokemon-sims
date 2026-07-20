@@ -17,9 +17,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Pack source tree
         run: |
-          tar --exclude=.git --exclude=build --exclude=build-sanitizers -czf pokemon-sims-source-1118.tar.gz .
+          tar --exclude=.git --exclude=build --exclude=build-sanitizers -czf "$RUNNER_TEMP/pokemon-sims-source-1118.tar.gz" .
       - uses: actions/upload-artifact@v4
         with:
           name: pokemon-sims-source-1118
-          path: pokemon-sims-source-1118.tar.gz
+          path: ${{ runner.temp }}/pokemon-sims-source-1118.tar.gz
           if-no-files-found: error

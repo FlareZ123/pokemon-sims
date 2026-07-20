@@ -1,0 +1,339 @@
+--- a/tests/forretress_ex_combo_tests.cpp
++++ b/tests/forretress_ex_combo_tests.cpp
+@@ -33,6 +33,12 @@
+   static bool play_evolution_incense_for_forretress(Engine& engine) {
+     return engine.play_evolution_incense_for_forretress();
+   }
++  static bool advance_forretress_combo(Engine& engine) {
++    return engine.advance_forretress_combo();
++  }
++  static Card choose_supporter_after_search_started(const Engine& engine) {
++    return engine.choose_supporter_after_search_started();
++  }
+ };
+ 
+ }  // namespace sim
+@@ -74,6 +80,30 @@
+   return recipe;
+ }
+ 
++sim::DeckRecipe dawn_forest_variant_recipe() {
++  sim::DeckRecipe recipe = sim::baseline_recipe();
++  const auto remove_singleton = [&recipe](const sim::Card card) {
++    const auto it = std::find_if(recipe.begin(), recipe.end(), [card](const auto& entry) {
++      return entry.first == card;
++    });
++    if (it == recipe.end() || it->second != 1) {
++      throw std::runtime_error("Dawn and Forest variant could not remove its test-only singleton.");
++    }
++    recipe.erase(it);
++  };
++  for (const sim::Card card : {sim::Card::LatiasEx, sim::Card::Oricorio,
++                               sim::Card::Dipplin, sim::Card::Serena,
++                               sim::Card::TateLiza, sim::Card::Channeler,
++                               sim::Card::Lusamine, sim::Card::TeamYellsCheer}) {
++    remove_singleton(card);
++  }
++  recipe.emplace_back(sim::Card::Pineco, 2);
++  recipe.emplace_back(sim::Card::ForretressEx, 2);
++  recipe.emplace_back(sim::Card::Dawn, 2);
++  recipe.emplace_back(sim::Card::ForestOfVitality, 2);
++  return recipe;
++}
++
+ struct Fixture {
+   sim::Scenario scenario;
+   sim::DeckRecipe recipe;
+@@ -130,6 +160,42 @@
+   }
+ }
+ 
++void test_dawn_forest_identity_and_variant_isolation() {
++  const sim::DeckRecipe baseline = sim::baseline_recipe();
++  const sim::DeckRecipe variant = dawn_forest_variant_recipe();
++  int baseline_total = 0;
++  int variant_total = 0;
++  for (const auto& [card, copies] : baseline) {
++    (void)card;
++    baseline_total += copies;
++  }
++  for (const auto& [card, copies] : variant) {
++    (void)card;
++    variant_total += copies;
++  }
++
++  // Dawn and Forest of Vitality remain in the same intentional test-only support
++  // category as Pineco and Forretress ex. They do not enter baseline_recipe(), CLI
++  // matrix rows, or committed aggregate results:
++  // Dawn: https://api.pokemontcg.io/v2/cards/me2-87
++  // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
++  // Pineco and Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-1
++  // https://api.pokemontcg.io/v2/cards/sv4pt5-2
++  // https://github.com/FlareZ123/pokemon-sims/issues/1096
++  if (baseline_total != 60 || variant_total != 60 ||
++      recipe_count(baseline, sim::Card::Dawn) != 0 ||
++      recipe_count(baseline, sim::Card::ForestOfVitality) != 0 ||
++      recipe_count(variant, sim::Card::Pineco) != 2 ||
++      recipe_count(variant, sim::Card::ForretressEx) != 2 ||
++      recipe_count(variant, sim::Card::Dawn) != 2 ||
++      recipe_count(variant, sim::Card::ForestOfVitality) != 2 ||
++      sim::name(sim::Card::Dawn) != "Dawn" ||
++      sim::name(sim::Card::ForestOfVitality) != "Forest of Vitality" ||
++      !sim::is_supporter(sim::Card::Dawn)) {
++    throw std::runtime_error("Dawn or Forest of Vitality leaked into or malformed the baseline recipe.");
++  }
++}
++
+ void test_stage_one_evolution_timing() {
+   Fixture fixture("forretress-evolution-timing");
+   sim::State state;
+@@ -158,6 +224,192 @@
+   }
+ }
+ 
++void test_forest_evolution_and_stadium_procedure() {
++  Fixture fixture("forest-evolution-procedure");
++  sim::State state;
++  state.turn = 1;
++  state.stadium = sim::Stadium::ForestOfVitality;
++  state.active = sim::Pokemon{sim::Card::RegidragoV, 0};
++  state.bench = {sim::Pokemon{sim::Card::Pineco, 1}};
++  state.hand = {sim::Card::ForretressEx};
++  sim::EngineTestAccess::set_state(fixture.engine, state);
++  if (sim::EngineTestAccess::evolve_forretress_ex(fixture.engine)) {
++    throw std::runtime_error("Forest of Vitality bypassed the first-turn evolution prohibition.");
++  }
++
++  state.turn = 2;
++  state.stadium = sim::Stadium::None;
++  state.bench.front().entered_turn = 2;
++  sim::EngineTestAccess::set_state(fixture.engine, state);
++  if (sim::EngineTestAccess::evolve_forretress_ex(fixture.engine)) {
++    throw std::runtime_error("Pineco evolved on its entry turn without Forest of Vitality.");
++  }
++
++  state.stadium = sim::Stadium::ForestOfVitality;
++  sim::EngineTestAccess::set_state(fixture.engine, state);
++  if (!sim::EngineTestAccess::evolve_forretress_ex(fixture.engine) ||
++      sim::EngineTestAccess::state(fixture.engine).bench.front().card !=
++          sim::Card::ForretressEx) {
++    throw std::runtime_error("Forest of Vitality did not enable the legal turn-two same-turn evolution.");
++  }
++
++  // A player may play only one Stadium during a turn, and a Stadium with the same
++  // name as the Stadium already in play cannot be played:
++  // https://api.pokemontcg.io/v2/cards/me1-117
++  // https://www.pokemon.com/us/pokemon-tcg/rules
++  // https://github.com/FlareZ123/pokemon-sims/issues/1096
++  state = {};
++  state.turn = 2;
++  state.active = sim::Pokemon{sim::Card::RegidragoV, 0};
++  state.hand = {sim::Card::ForestOfVitality};
++  state.stadium = sim::Stadium::ForestOfVitality;
++  sim::EngineTestAccess::set_state(fixture.engine, state);
++  if (sim::EngineTestAccess::advance_forretress_combo(fixture.engine) ||
++      count(sim::EngineTestAccess::state(fixture.engine).hand,
++            sim::Card::ForestOfVitality) != 1) {
++    throw std::runtime_error("A same-name Forest of Vitality was illegally replayed.");
++  }
++
++  state.stadium = sim::Stadium::None;
++  state.stadium_used = true;
++  sim::EngineTestAccess::set_state(fixture.engine, state);
++  if (sim::EngineTestAccess::advance_forretress_combo(fixture.engine) ||
++      count(sim::EngineTestAccess::state(fixture.engine).hand,
++            sim::Card::ForestOfVitality) != 1) {
++    throw std::runtime_error("A second Stadium was illegally played during the same turn.");
++  }
++
++  state.stadium_used = false;
++  state.stadium = sim::Stadium::ChaoticSwell;
++  sim::EngineTestAccess::set_state(fixture.engine, state);
++  if (!sim::EngineTestAccess::advance_forretress_combo(fixture.engine)) {
++    throw std::runtime_error("Forest of Vitality did not attempt to enter play into Chaotic Swell.");
++  }
++  const sim::State& swell_after = sim::EngineTestAccess::state(fixture.engine);
++  if (swell_after.stadium != sim::Stadium::None || !swell_after.stadium_used ||
++      count(swell_after.discard, sim::Card::ChaoticSwell) != 1 ||
++      count(swell_after.discard, sim::Card::ForestOfVitality) != 1) {
++    throw std::runtime_error("Chaotic Swell did not discard itself and the incoming Forest.");
++  }
++
++  Fixture locked("forest-removes-rulebox-lock", sim::LockMode::FullRuleBoxAbility);
++  state = {};
++  state.turn = 2;
++  state.active = sim::Pokemon{sim::Card::RegidragoV, 0, 0, 1};
++  state.bench = {sim::Pokemon{sim::Card::Pineco, 2}};
++  state.hand = {sim::Card::ForestOfVitality, sim::Card::ForretressEx};
++  state.deck = {sim::Card::Grass, sim::Card::Grass, sim::Card::Grass,
++                sim::Card::Grass, sim::Card::Grass};
++  sim::EngineTestAccess::set_state(locked.engine, state);
++  if (!sim::EngineTestAccess::advance_forretress_combo(locked.engine)) {
++    throw std::runtime_error("Forest did not replace the modeled Path and restore Exploding Energy.");
++  }
++  const sim::State& unlocked = sim::EngineTestAccess::state(locked.engine);
++  if (!unlocked.path_lock_removed || unlocked.stadium != sim::Stadium::ForestOfVitality ||
++      !unlocked.active || unlocked.active->grass != 5 || unlocked.active->fire != 1 ||
++      count(unlocked.discard, sim::Card::ForretressEx) != 1) {
++    throw std::runtime_error("Forest replacement did not unlock and complete Exploding Energy correctly.");
++  }
++}
++
++void test_dawn_search_and_immediate_forest_combo() {
++  const sim::Scenario scenario{"dawn-forest-exact-state",
++                               sim::DciProfile::StrictJit,
++                               sim::LockMode::None, false, 4};
++  const sim::DeckRecipe recipe = dawn_forest_variant_recipe();
++  std::mt19937_64 rng(1096);
++  sim::TraceLog trace{true, {}};
++  sim::Engine engine(scenario, recipe, rng, &trace);
++  sim::State state;
++  state.turn = 2;
++  state.active = sim::Pokemon{sim::Card::RegidragoV, 0, 0, 1};
++  state.hand = {sim::Card::Dawn, sim::Card::ForestOfVitality};
++  state.deck = {sim::Card::Pineco, sim::Card::ForretressEx,
++                sim::Card::MegaDragonite, sim::Card::Grass,
++                sim::Card::Grass, sim::Card::Grass, sim::Card::Grass,
++                sim::Card::Grass};
++  sim::EngineTestAccess::set_state(engine, state);
++
++  // Dawn independently searches one Basic, one Stage 1, and one Stage 2. Forest
++  // then permits the searched Grass line to evolve on Pineco's entry turn after
++  // the first turn, and Exploding Energy resolves under its printed self-KO text:
++  // Dawn: https://api.pokemontcg.io/v2/cards/me2-87
++  // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
++  // Pineco and Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-1
++  // https://api.pokemontcg.io/v2/cards/sv4pt5-2
++  // https://www.pokemon.com/us/pokemon-tcg/rules
++  // https://github.com/FlareZ123/pokemon-sims/issues/1096
++  if (!sim::EngineTestAccess::advance_forretress_combo(engine)) {
++    throw std::runtime_error("The exact Dawn plus Forest route made no progress.");
++  }
++  const sim::State& after = sim::EngineTestAccess::state(engine);
++  if (!after.supporter_used || after.stadium != sim::Stadium::ForestOfVitality ||
++      !after.active || after.active->grass != 5 || after.active->fire != 1 ||
++      !contains(after.hand, sim::Card::MegaDragonite) ||
++      count(after.discard, sim::Card::Dawn) != 1 ||
++      count(after.discard, sim::Card::Pineco) != 1 ||
++      count(after.discard, sim::Card::ForretressEx) != 1) {
++    throw std::runtime_error("Dawn, Forest, or Exploding Energy produced the wrong exact state.");
++  }
++  const bool dawn_trace = std::any_of(trace.lines.begin(), trace.lines.end(),
++      [](const std::string& line) {
++        return line.find("Dawn searched and revealed") != std::string::npos;
++      });
++  const bool forest_trace = std::any_of(trace.lines.begin(), trace.lines.end(),
++      [](const std::string& line) {
++        return line.find("newly played Pineco") != std::string::npos;
++      });
++  if (!dawn_trace || !forest_trace) {
++    throw std::runtime_error("The exact Dawn and Forest route lacked readable proof events.");
++  }
++
++  // Hidden-information search categories may independently fail. Holding the Stage
++  // 1 and having no Stage 2 in deck does not invalidate Dawn's legal Basic search:
++  // https://api.pokemontcg.io/v2/cards/me2-87
++  sim::Engine partial_engine(scenario, recipe, rng, &trace);
++  state = {};
++  state.turn = 2;
++  state.active = sim::Pokemon{sim::Card::RegidragoV, 0, 0, 1};
++  state.hand = {sim::Card::Dawn, sim::Card::ForestOfVitality,
++                sim::Card::ForretressEx};
++  state.deck = {sim::Card::Pineco, sim::Card::Grass};
++  sim::EngineTestAccess::set_state(partial_engine, state);
++  if (!sim::EngineTestAccess::advance_forretress_combo(partial_engine) ||
++      count(sim::EngineTestAccess::state(partial_engine).discard,
++            sim::Card::Dawn) != 1) {
++    throw std::runtime_error("Dawn incorrectly required all three hidden search categories.");
++  }
++}
++
++void test_wonder_tag_prefers_live_dawn_forest_route() {
++  const sim::Scenario scenario{"wonder-tag-dawn-forest",
++                               sim::DciProfile::StrictJit,
++                               sim::LockMode::None, false, 4};
++  const sim::DeckRecipe recipe = dawn_forest_variant_recipe();
++  std::mt19937_64 rng(1096);
++  sim::Engine engine(scenario, recipe, rng);
++  sim::State state;
++  state.turn = 2;
++  state.active = sim::Pokemon{sim::Card::RegidragoV, 0};
++  state.hand = {sim::Card::ForestOfVitality};
++  state.deck = {sim::Card::Dawn, sim::Card::Pineco,
++                sim::Card::ForretressEx, sim::Card::MegaDragonite,
++                sim::Card::Crispin, sim::Card::Grass, sim::Card::Fire};
++  sim::EngineTestAccess::set_state(engine, state);
++  if (sim::EngineTestAccess::choose_supporter_after_search_started(engine) !=
++      sim::Card::Dawn) {
++    throw std::runtime_error("Wonder Tag did not select the live Dawn plus Forest compression route.");
++  }
++
++  state.hand.clear();
++  sim::Engine control(scenario, recipe, rng);
++  sim::EngineTestAccess::set_state(control, state);
++  if (sim::EngineTestAccess::choose_supporter_after_search_started(control) ==
++      sim::Card::Dawn) {
++    throw std::runtime_error("Wonder Tag selected Dawn without a live evolution-timing route.");
++  }
++}
++
+ void test_exploding_energy_attaches_distributes_and_self_knocks_out() {
+   Fixture fixture("forretress-distribution");
+   sim::State state;
+@@ -316,13 +568,56 @@
+   }
+ }
+ 
++void test_seeded_dawn_forest_routes() {
++  const sim::DeckRecipe recipe = dawn_forest_variant_recipe();
++  struct SeedCase {
++    bool going_first;
++    std::uint64_t seed;
++  };
++  for (const SeedCase seed_case : {SeedCase{true, 110}, SeedCase{false, 29}}) {
++    const sim::Scenario scenario{
++        seed_case.going_first ? "dawn-forest/go-first" : "dawn-forest/go-second",
++        sim::DciProfile::StrictJit, sim::LockMode::None,
++        seed_case.going_first, 5};
++    std::mt19937_64 rng(seed_case.seed);
++    sim::TraceLog trace{true, {}};
++    sim::Engine engine(scenario, recipe, rng, &trace);
++    const sim::TrialOutcome outcome = engine.run();
++    const auto has = [&trace](const std::string& needle) {
++      return std::any_of(trace.lines.begin(), trace.lines.end(),
++                         [&needle](const std::string& line) {
++                           return line.find(needle) != std::string::npos;
++                         });
++    };
++
++    // These fixed seeds exercise the complete Wonder Tag or held-Dawn search,
++    // Forest-enabled entry-turn evolution, Exploding Energy, and a T2 ready state:
++    // Dawn: https://api.pokemontcg.io/v2/cards/me2-87
++    // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
++    // Pineco and Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-1
++    // https://api.pokemontcg.io/v2/cards/sv4pt5-2
++    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
++    // https://github.com/FlareZ123/pokemon-sims/issues/1096
++    if (!has("Dawn searched and revealed") ||
++        !has("Forest of Vitality allowed the newly played Pineco") ||
++        !has("Exploding Energy attached") || outcome.first_ready_turn != 2) {
++      throw std::runtime_error("A fixed Dawn and Forest seed lost its complete T2 proof route.");
++    }
++  }
++}
++
+ }  // namespace
+ 
+ int main() {
+   test_card_identity_and_variant_isolation();
++  test_dawn_forest_identity_and_variant_isolation();
+   test_stage_one_evolution_timing();
++  test_forest_evolution_and_stadium_procedure();
++  test_dawn_search_and_immediate_forest_combo();
++  test_wonder_tag_prefers_live_dawn_forest_route();
+   test_exploding_energy_attaches_distributes_and_self_knocks_out();
+   test_exploding_energy_zero_selection_and_lock_boundary();
+   test_basic_and_evolution_connectors();
+   test_seeded_variant_executes_combo();
++  test_seeded_dawn_forest_routes();
+ }

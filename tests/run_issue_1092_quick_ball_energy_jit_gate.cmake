@@ -49,12 +49,12 @@ endif()
 # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
 # Strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
 # Refined bug boundary: https://github.com/FlareZ123/pokemon-sims/issues/1092
-run_trace("strict-jit/go-first" 44 issue_1092_seed_44_control)
-if(NOT issue_1092_seed_44_control MATCHES "T3 \\| DISCARD \\|.*Quick Ball cost")
-  message(FATAL_ERROR "Seed 44 lost the legal same-turn Quick Ball payload outlet:\n${issue_1092_seed_44_control}")
+run_trace("strict-jit/go-first" 61 issue_1092_seed_61_control)
+if(NOT issue_1092_seed_61_control MATCHES "T2 \\| DISCARD \\|.*Quick Ball cost")
+  message(FATAL_ERROR "Seed 61 lost the legal same-turn Quick Ball payload outlet:\n${issue_1092_seed_61_control}")
 endif()
-if(NOT issue_1092_seed_44_control MATCHES "T3 \\| READY \\|")
-  message(FATAL_ERROR "Seed 44 lost same-turn strict-JIT readiness:\n${issue_1092_seed_44_control}")
+if(NOT issue_1092_seed_61_control MATCHES "T2 \\| READY \\|")
+  message(FATAL_ERROR "Seed 61 lost same-turn strict-JIT readiness:\n${issue_1092_seed_61_control}")
 endif()
 
 # Connector control: Quick Ball may still pay a redundant Dragon when its searched

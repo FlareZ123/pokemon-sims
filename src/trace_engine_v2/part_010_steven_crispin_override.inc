@@ -289,6 +289,54 @@
            deck_count_after_search_started(Card::Fire) > 0;
   }
 
+  bool late_steven_active_vstar_crispin_treasure_route_available() const {
+    if (!deck_seen_ || state_.turn != 2 || !scenario_.going_first ||
+        scenario_.dci != DciProfile::StrictJit ||
+        scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
+        !supporter_allowed() || item_locked() || state_.manual_energy_used ||
+        !state_.active || state_.active->card != Card::RegidragoVstar ||
+        state_.active->grass != 0 || state_.active->fire < 1 ||
+        hand_count(Card::StevensResolve) == 0 ||
+        hand_count(Card::MysteriousTreasure) == 0 ||
+        hand_count(Card::Grass) > 0 || hand_count(Card::Crispin) > 0 ||
+        !need_energy() || !need_payload() ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    const int grass_in_deck = deck_count_after_search_started(Card::Grass);
+    const int fire_in_deck = deck_count_after_search_started(Card::Fire);
+    const int treasure_targets = static_cast<int>(std::count_if(
+        state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic));
+    if (deck_count_after_search_started(Card::Crispin) == 0 ||
+        grass_in_deck < 2 || fire_in_deck == 0 || treasure_targets == 0) {
+      return false;
+    }
+
+    const int post_steven_deck_size = static_cast<int>(state_.deck.size()) - 2;
+    const int grass_after_steven = grass_in_deck - 1;
+    const int failing_topdecks = static_cast<int>(grass_after_steven == 1) +
+        static_cast<int>(fire_in_deck == 1);
+
+    // Steven searches exactly Crispin and one Grass, preserving both Basic Energy
+    // types for next turn. A held Dragon then pays Mysterious Treasure while a legal
+    // Psychic or Dragon target remains; Crispin attaches Grass and the normal manual
+    // attachment supplies the second Grass for the Active Regidrago VSTAR's GGF cost.
+    // With seed 44's K1 counts, one Fire among 42 post-search cards is the only failing
+    // topdeck, so the route succeeds on 41/42 draws instead of Serena's one-card gamble:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+    // Core Supporter, Item, attachment, search, shuffle, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1, strict-JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1098
+    return post_steven_deck_size > failing_topdecks;
+  }
+
   std::optional<Card> late_steven_payload_treasure_bridge_payload() const {
     if (!deck_seen_ || state_.turn < 2 || state_.turn >= scenario_.max_turn ||
         scenario_.locks != LockMode::None || !supporter_allowed() || item_locked() ||
@@ -432,5 +480,6 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
   (grass_needed() == 0 && fire_needed() == 1 && hand_count(Card::Fire) > 0))) ||
         late_steven_has_active_regidrago_t3_blender_route() ||
         late_steven_vstar_vessel_route_available() ||
+        late_steven_active_vstar_crispin_treasure_route_available() ||
         late_steven_payload_treasure_bridge_payload().has_value();
   }

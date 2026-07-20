@@ -1,0 +1,15 @@
+diff --git a/src/trace_engine_v2/part_turo_oricorio_override.inc b/src/trace_engine_v2/part_turo_oricorio_override.inc
+index e298364..a4db3e9 100644
+--- a/src/trace_engine_v2/part_turo_oricorio_override.inc
++++ b/src/trace_engine_v2/part_turo_oricorio_override.inc
+@@ -233,7 +233,10 @@
+     // Hidden-order policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+     // Earliest-ready route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1110
+-    if (projected.outcome_.used_legacy_star) return false;
++    if (projected.outcome_.used_legacy_star &&
++        hand_count(Card::RegidragoVstar) > 0 &&
++        hand_count(Card::ProfessorBurnet) > 0) return false;
+ 
+     return projected.active_is_vstar() && projected.state_.active->grass >= 2 &&
+         projected.state_.active->fire >= 1 && projected.payload_ready();

@@ -1,0 +1,78 @@
+name: Debug 20260720 CI Simulation Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Build current main-derived source
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          # Repository build contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md
+
+      - name: Run complete regression suite
+        shell: bash
+        run: |
+          ctest --test-dir build --parallel 4 --output-on-failure | tee complete-tests.txt
+          # Exact-state and regression contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+
+      - name: Simulate strict JIT going first
+        shell: bash
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 7 | tee trace-strict-jit-going-first-seed-7.txt
+          # Trace CLI contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+
+      - name: Simulate strict JIT going second
+        shell: bash
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 29 | tee trace-strict-jit-going-second-seed-29.txt
+          # Trace CLI contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+
+      - name: Simulate matchup-flex JIT going second
+        shell: bash
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 83 | tee trace-matchup-flex-jit-going-second-seed-83.txt
+          # Trace CLI contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+
+      - name: Generate source-bound T2 and T3 matrix
+        shell: bash
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir audit-results --max-seed 5000 --trials 100000 --matrix-seed 20260720
+          # Matrix generator specification: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
+
+      - name: Export exact source snapshot
+        shell: bash
+        run: |
+          git archive --format=zip HEAD -o pokemon-sims-source.zip
+          git rev-parse HEAD | tee audited-head-sha.txt
+          # Audited pull request: https://github.com/FlareZ123/pokemon-sims/pulls
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-20260720-ci-sim-audit
+          path: |
+            complete-tests.txt
+            trace-strict-jit-going-first-seed-7.txt
+            trace-strict-jit-going-second-seed-29.txt
+            trace-matchup-flex-jit-going-second-seed-83.txt
+            audit-results
+            pokemon-sims-source.zip
+            audited-head-sha.txt
+          if-no-files-found: warn

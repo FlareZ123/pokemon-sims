@@ -1,0 +1,121 @@
+name: Materialize Issue 1155 Fix V2
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Remove the historical attachment gate
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          source_path = Path('src/trace_engine_v2/part_009b1.inc')
+          source = source_path.read_text(encoding='utf-8')
+          old_gate = '        !state_.manual_energy_used || !need_active_vstar() || need_energy() ||'
+          if source.count(old_gate) != 1:
+              raise SystemExit('Expected exactly one attachment-history gate.')
+          source = source.replace(
+              old_gate,
+              '        !need_active_vstar() || need_energy() ||',
+          )
+          old_comment = '    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1146 https://github.com/FlareZ123/pokemon-sims/issues/1154'
+          new_comment = '\n'.join([
+              '    // Attachment availability alone is not Energy demand after the selected VSTAR',
+              '    // already has GGF: https://github.com/FlareZ123/pokemon-sims/issues/1155',
+              '    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1146 https://github.com/FlareZ123/pokemon-sims/issues/1154 https://github.com/FlareZ123/pokemon-sims/issues/1155',
+          ])
+          if source.count(old_comment) != 1:
+              raise SystemExit('Expected exactly one confirmed-bug source line.')
+          source_path.write_text(source.replace(old_comment, new_comment), encoding='utf-8')
+
+          test_path = Path('tests/issue_1146_quick_ball_surplus_energy_tests.cpp')
+          test_source = test_path.read_text(encoding='utf-8')
+          pattern = re.compile(
+              r'  sim::State attachment_open = route_state\(\);\n'
+              r'  attachment_open\.manual_energy_used = false;\n'
+              r'  blocked\(attachment_open, scenario, 114605,\n'
+              r'          "The fallback must remain tied to the completed attachment state\."\);\n'
+          )
+          replacement = '\n'.join([
+              '  sim::State attachment_open = route_state();',
+              '  attachment_open.manual_energy_used = false;',
+              '  std::mt19937_64 attachment_rng{114605};',
+              '  sim::Engine attachment_engine = make_engine(scenario, attachment_rng,',
+              '                                               std::move(attachment_open));',
+              '  // An unused attachment no longer protects Energy after the selected VSTAR has GGF:',
+              '  // https://github.com/FlareZ123/pokemon-sims/issues/1155',
+              '  expect(sim::EngineTestAccess::final_surplus_cost(attachment_engine) ==',
+              '             sim::Card::Grass,',
+              '         "The unused-attachment route must admit the final surplus Energy.");',
+              '',
+          ])
+          updated, count = pattern.subn(replacement, test_source)
+          if count != 1:
+              raise SystemExit(f'Expected one issue 1146 attachment control, found {count}.')
+          test_path.write_text(updated, encoding='utf-8')
+          PY
+          # Quick Ball, Latias ex, Blender, Apex Dragon, and core procedure:
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/sv8-76
+          # https://api.pokemontcg.io/v2/cards/sv8-164
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # Confirmed issue: https://github.com/FlareZ123/pokemon-sims/issues/1155
+      - name: Build and run focused regressions
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R 'issue_1155|issue_1154|issue_1146' --output-on-failure | tee issue-1155-focused-tests.txt
+          # Exact-state test contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+      - name: Regenerate source-bound evidence
+        shell: bash
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          # Canonical generation contracts: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/update_setup_docs.py
+      - name: Run complete validation
+        shell: bash
+        run: |
+          ctest --test-dir build --parallel 4 --output-on-failure | tee issue-1155-complete-tests.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 35 | tee issue-1155-trace-control.txt
+          # Validation and trace contracts: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      - name: Commit the tested tree to the issue branch
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/issue-1155-materialize-v2.yml
+          git add src tests results docs README.md
+          git commit -m 'Fix Quick Ball unused-attachment surplus routing (#1155)'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+      - name: Upload exact validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1155-materialized-validation-v2
+          path: |
+            issue-1155-focused-tests.txt
+            issue-1155-complete-tests.txt
+            issue-1155-trace-control.txt
+            results/baseline_manifest.json
+            results/simulation_results.csv
+            results/traces
+            docs/REPORT.md
+            docs/TRACE_AUDIT.md
+          if-no-files-found: warn

@@ -1,6 +1,5 @@
-name: Narrow issue 1110 guard
+name: Validate narrowed issue 1110 guard
 
-# Re-trigger after the original baseline workflow completed.
 on:
   push:
     branches: [bug/1110-tate-yields-to-burnet-agent]
@@ -21,10 +20,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Apply narrowed guard
-        run: |
-          git apply --check .github/agent-patches/narrow-issue-1110.patch
-          git apply .github/agent-patches/narrow-issue-1110.patch
       - name: Build focused controls
         run: |
           cmake -S . -B "$RUNNER_TEMP/build-agent" -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -35,9 +30,9 @@ jobs:
         run: |
           python scripts/regenerate_setup_baselines.py --exe "$RUNNER_TEMP/build-agent/regidrago_sim" --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
           python scripts/update_setup_docs.py --repo-root .
-      - name: Commit narrowed fix and generated files
+      - name: Commit generated files
         run: |
-          rm .github/agent-patches/narrow-issue-1110.patch
+          rm -f .github/agent-patches/narrow-issue-1110.patch
           rm .github/workflows/narrow-issue-1110.yml
           rm -rf scripts/__pycache__
           rm -f results/.simulation_results.csv.*.tmp.lock

@@ -11,7 +11,7 @@
 enum class DciProfile : std::uint8_t { StrictJit, MatchupFlexJit, NoDiscardControl };
 enum class LockMode : std::uint8_t { None, TurnTwoItem, FullItem, FullRuleBoxAbility, FullCombined };
 enum class Tool : std::uint8_t { None, ForestSealStone, Powerglass };
-enum class Stadium : std::uint8_t { None, ChaoticSwell };
+enum class Stadium : std::uint8_t { None, ChaoticSwell, ForestOfVitality };
 enum class OpponentBenchState : std::uint8_t { Unknown, Unavailable, Available };
 
 struct Scenario {

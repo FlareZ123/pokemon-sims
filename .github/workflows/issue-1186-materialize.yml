@@ -24,7 +24,10 @@ jobs:
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build --parallel 2
       - name: Run focused lock-scope regression
-        run: ./build/regidrago_unified_tests issue_1108_known_burnet_steven_route_tests
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/regidrago_unified_tests issue_1108_known_burnet_steven_route_tests 2>&1 | tee issue-1186-focused.txt
       - name: Run three independent simulate-this passes
         shell: bash
         run: |
@@ -59,6 +62,7 @@ jobs:
         with:
           name: issue-1186-validation-${{ github.run_attempt }}
           path: |
+            issue-1186-focused.txt
             issue-1186-rulebox-seed-101.txt
             issue-1186-no-lock-seed-101.txt
             issue-1186-control-seed-73.txt

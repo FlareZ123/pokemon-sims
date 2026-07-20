@@ -431,6 +431,39 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
     return static_cast<const Engine&>(*this).choose_supporter_after_search_started();
   }
 
+  bool late_steven_vstar_grass_with_held_burnet_route_available() const {
+    if (!deck_seen_ || state_.turn >= scenario_.max_turn ||
+        scenario_.dci != DciProfile::StrictJit ||
+        scenario_.locks != LockMode::None || !supporter_allowed() ||
+        !state_.active || state_.active->card != Card::RegidragoV ||
+        state_.active->entered_turn >= state_.turn ||
+        state_.active->grass != 1 || state_.active->fire < 1 ||
+        hand_count(Card::StevensResolve) == 0 ||
+        hand_count(Card::ProfessorBurnet) == 0 ||
+        hand_count(Card::BrilliantBlender) > 0 ||
+        hand_count(Card::RegidragoVstar) > 0 ||
+        hand_count(Card::Grass) > 0 || !need_vstar() || !need_energy() ||
+        !need_payload() || !payload_might_be_in_deck()) {
+      return false;
+    }
+
+    // Steven's Resolve can reserve the known Regidrago VSTAR and final Grass
+    // Energy, then end the turn. On the next turn the prior-turn Active may take
+    // the searched manual attachment, evolve, and use held Professor Burnet to
+    // discard a permitted Dragon payload during that same strict-JIT ready turn:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Grass Energy and core attachment, evolution, Supporter, search, and discard procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1 route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Strict-JIT payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1112
+    return grass_needed() == 1 && fire_needed() == 0 &&
+        deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
+        deck_count_after_search_started(Card::Grass) > 0;
+  }
+
   bool late_steven_vstar_with_held_blender_route_available() const {
     if (!deck_seen_ || state_.turn >= scenario_.max_turn ||
         scenario_.dci != DciProfile::StrictJit ||
@@ -521,6 +554,7 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
         late_steven_is_only_basic_connector() ||
         late_steven_has_known_t3_compression_route() ||
         banked_steven_has_known_t3_blender_route() ||
+        late_steven_vstar_grass_with_held_burnet_route_available() ||
         late_steven_vstar_with_held_blender_route_available() ||
 
 (state_.turn == 2 && scenario_.going_first &&

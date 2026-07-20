@@ -1,0 +1,76 @@
+name: Turn 20260720 1927 GPT56 Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release # Build contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2 # Test contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+      - name: Run six independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Official turn, Trainer, search, discard, evolution, attachment, Ability, attack, retreat, and Prize procedures: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Earliest deterministic route, strict-JIT, DCI, and hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 2 | tee pass-1-strict-jit-go-second-seed-2.txt # Trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-combined-lock/go-first --seed 37 | tee pass-2-combined-lock-go-first-seed-37.txt # Combined lock: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#combined-lock
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 73 | tee pass-3-matchup-flex-go-second-seed-73.txt # JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 344 | tee pass-4-no-discard-control-go-second-seed-344.txt # No-discard-control policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 25 | tee pass-5-turn2-item-lock-go-second-seed-25.txt # Mysterious Treasure and Quick Ball are Items: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 | tee pass-6-rulebox-lock-go-second-seed-20.txt # Wonder Tag is a Rule Box Pokémon Ability: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      - name: Reproduce active owned bug without changing ownership
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 7 | tee issue-1174-seed-7.txt # Owned issue: https://github.com/FlareZ123/pokemon-sims/issues/1174
+          grep -q "T3 | ATTACK |.*Celestial Roar" issue-1174-seed-7.txt # Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure # Repository validation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out turn-20260720-1927-gpt56-t2-t3-matrix.csv # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+      - name: Build broad-warning configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-warnings -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS='-Wall -Wextra -Wpedantic -Wconversion -Wshadow' 2>&1 | tee warning-configure.txt # Warning policy: https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt#L10-L16
+          cmake --build build-warnings --parallel 2 2>&1 | tee warning-build.txt # Traceability requirement: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULES_TRACEABILITY.md
+      - name: Export exact tested source and static inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > tested-head.txt # Source traceability: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULES_TRACEABILITY.md
+          git archive --format=tar.gz --output=tested-source.tar.gz HEAD # Auditable source snapshot: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#audit-status
+          find src tests docs data scripts -type f -print | sort > source-inventory.txt # Modeled scope: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#scope
+          grep -RInE 'TODO|FIXME|HACK|XXX|future.*draw|hidden.*order|prize|discard|lock|Supporter|Item|Quick Ball|Steven|Celestial Roar|Mysterious Treasure|Gladion|Tate|Burnet|Latias|retreat|evolv' src tests docs data scripts > static-risk-scan.txt || true # Hidden-state and policy boundaries: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turn-20260720-1927-gpt56-audit-${{ github.run_attempt }}
+          path: |
+            pass-*.txt
+            issue-*.txt
+            turn-20260720-1927-gpt56-t2-t3-matrix.csv
+            warning-*.txt
+            tested-head.txt
+            tested-source.tar.gz
+            source-inventory.txt
+            static-risk-scan.txt
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+          if-no-files-found: error

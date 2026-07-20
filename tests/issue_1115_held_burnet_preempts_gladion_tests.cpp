@@ -56,8 +56,9 @@ sim::Scenario issue_1115_scenario() {
 
 void test_live_burnet_blocks_gladion_lusamine_exchange() {
   const sim::DeckRecipe recipe = sim::baseline_recipe();
+  const sim::Scenario scenario = issue_1115_scenario();
   std::mt19937_64 rng{1115};
-  sim::Engine engine(issue_1115_scenario(), recipe, rng);
+  sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, issue_1115_state(true));
 
   // Burnet completes the only missing current-turn axis. Gladion into Lusamine
@@ -73,10 +74,11 @@ void test_live_burnet_blocks_gladion_lusamine_exchange() {
 
 void test_turn_policy_plays_burnet_on_turn_three() {
   const sim::DeckRecipe recipe = sim::baseline_recipe();
+  const sim::Scenario scenario = issue_1115_scenario();
   std::mt19937_64 rng{1116};
   sim::TraceLog trace;
   trace.enabled = true;
-  sim::Engine engine(issue_1115_scenario(), recipe, rng, &trace);
+  sim::Engine engine(scenario, recipe, rng, &trace);
   sim::EngineTestAccess::set_state(engine, issue_1115_state(true));
 
   sim::EngineTestAccess::run_turn(engine);
@@ -97,8 +99,9 @@ void test_turn_policy_plays_burnet_on_turn_three() {
 
 void test_gladion_remains_available_without_burnet() {
   const sim::DeckRecipe recipe = sim::baseline_recipe();
+  const sim::Scenario scenario = issue_1115_scenario();
   std::mt19937_64 rng{1117};
-  sim::Engine engine(issue_1115_scenario(), recipe, rng);
+  sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, issue_1115_state(false));
 
   // Preserve the existing known-Prize recovery route when the direct Burnet outlet

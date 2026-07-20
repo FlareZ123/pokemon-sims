@@ -130,7 +130,7 @@ void test_route_controls() {
 
   const sim::Scenario ability_lock{
       "issue-1191-ability-lock", sim::DciProfile::NoDiscardControl,
-      sim::LockMode::RuleBoxAbility, false, 5};
+      sim::LockMode::FullRuleBoxAbility, false, 5};
   static const sim::DeckRecipe recipe = sim::baseline_recipe();
   std::mt19937_64 ability_lock_rng{119117};
   sim::Engine ability_lock_engine(ability_lock, recipe, ability_lock_rng);

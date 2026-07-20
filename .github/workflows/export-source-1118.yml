@@ -3,6 +3,8 @@ name: Export Source 1118
 on:
   push:
     branches: [enhancement/1118-multi-deck-secret-box]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:

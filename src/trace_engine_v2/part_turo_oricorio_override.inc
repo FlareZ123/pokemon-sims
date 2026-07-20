@@ -41,6 +41,77 @@
     state_.discarded_this_turn.push_back(card);
   }
 
+  bool turo_tapu_future_supporter_route_live() const {
+    if (!supporter_allowed() || hand_count(Card::ProfessorTuro) == 0 ||
+        !strict_payload_timing() || scenario_.locks != LockMode::None ||
+        state_.turn + 2 > scenario_.max_turn || !state_.manual_energy_used ||
+        !state_.active || state_.active->card != Card::TapuLeleGX ||
+        state_.active->grass != 0 || state_.active->fire != 0 ||
+        state_.active->tool != Tool::None ||
+        !ability_available_for_pokemon(Card::TapuLeleGX) ||
+        !deck_seen_ || !prizes_revealed_ ||
+        hand_count(Card::Fire) == 0 || hand_count(Card::Gladion) > 0 ||
+        hand_count(Card::MysteriousTreasure) > 0 ||
+        !need_vstar() || !need_energy() || !need_payload() ||
+        count_of(state_.deck, Card::Gladion) == 0 ||
+        count_of(state_.deck, Card::RegidragoVstar) == 0 ||
+        count_of(state_.prizes, Card::MysteriousTreasure) == 0 ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    // After the current turn's second Grass attachment, Professor Turo may return
+    // Active Tapu Lele-GX, promote the prior-turn Regidrago V, and replay Tapu.
+    // Wonder Tag then banks the observable future Supporter connector. The route
+    // uses held or K1-known cards through T5 and does not depend on a future draw:
+    // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Regidrago V and VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Supporter, Active replacement, Bench, Ability, and evolution procedure:
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest source-bounded route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Knowledge state: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1165
+    return std::any_of(state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+      return pokemon.card == Card::RegidragoV &&
+          pokemon.entered_turn < state_.turn && pokemon.grass >= 2 && pokemon.fire == 0;
+    });
+  }
+
+  bool play_turo_tapu_future_supporter_route() {
+    if (!turo_tapu_future_supporter_route_live()) return false;
+
+    const auto promoted = std::find_if(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV &&
+              pokemon.entered_turn < state_.turn && pokemon.grass >= 2 && pokemon.fire == 0;
+        });
+    if (promoted == state_.bench.end()) return false;
+
+    remove_one(state_.hand, Card::ProfessorTuro);
+    state_.discard.push_back(Card::ProfessorTuro);
+    state_.supporter_used = true;
+    state_.hand.push_back(Card::TapuLeleGX);
+    state_.active = *promoted;
+    state_.bench.erase(promoted);
+
+    // Turo returns the Active Pokémon to hand. A Benched Pokémon becomes Active,
+    // then replaying Tapu Lele-GX from hand legally triggers Wonder Tag:
+    // https://api.pokemontcg.io/v2/cards/sv4-171
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/issues/1165
+    if (!bench_from_hand(Card::TapuLeleGX, true)) {
+      throw std::logic_error("Professor Turo returned Tapu Lele-GX but its replay failed");
+    }
+    trace("PLAY SUPPORTER", "R-GAME-SUPPORTER; R-TAPU-01; P-KNOWLEDGE-01",
+          "Professor Turo returned and replayed Tapu Lele-GX after promoting the established Regidrago V.");
+    return true;
+  }
+
   bool play_turo_active_promotion_route() {
     // A direct evolution route requires a prior-turn Regidrago V, the matching
     // Regidrago VSTAR card in hand, and GGF already attached to that Active line.
@@ -259,6 +330,7 @@
     // gate, which may consider a different Benched Regidrago already complete.
     if (play_guzma_active_promotion_route()) return;
     if (play_turo_oricorio_energy_route()) return;
+    if (play_turo_tapu_future_supporter_route()) return;
     if (play_turo_active_promotion_route()) return;
     if (!setup_axis_missing()) return;
     choose_supporter_turo_original();

@@ -210,7 +210,10 @@
 #define play_gladion play_gladion_issue1030_original
 #include "trace_engine_v2/part_prize_payload_outlet_override.inc"
 #undef play_gladion
+#define play_gladion play_gladion_issue1191_original
 #include "trace_engine_v2/part_issue_1030_gladion_turo_override.inc"
+#undef play_gladion
+#include "trace_engine_v2/part_issue_1191_gladion_steven_override.inc"
 #define play_arven play_arven_powerglass_original
 #include "trace_engine_v2/part_012_override.inc"
 #undef play_arven

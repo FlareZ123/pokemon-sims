@@ -36,6 +36,32 @@ jobs:
           path.write_text(text[:start] + "\n" + text[end:], encoding="utf-8")
       - name: Apply reviewed issue 1126 patch
         run: python scripts/apply_issue_1126_patch.py # https://github.com/FlareZ123/pokemon-sims/issues/1126
+      - name: Complete Gladion locked-payload preflight
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("src/trace_engine_v2/part_012.inc")
+          text = path.read_text(encoding="utf-8")
+          old = """    const bool no_locked_payload_route = need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) == 0 &&
+                !playable_fss_vstar_route;
+          """
+          new = """    // Serena's mandatory Dragon discard plus Latias ex's Skyliner retreat
+              // is also a live payload-and-Active route through full Item lock. Do not
+              // classify that public route as blind payload failure and spend Gladion:
+              // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+              // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+              // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+              // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+              // Core Supporter, discard, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+              // Earliest-ready route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+              // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1126
+              const bool no_locked_payload_route = need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) == 0 &&
+                  !playable_fss_vstar_route && !latias_serena_completion_ready();
+          """
+          if text.count(old) != 1:
+              raise RuntimeError(f"Expected one Gladion payload gate, found {text.count(old)}")
+          path.write_text(text.replace(old, new, 1), encoding="utf-8")
       - name: Restore intervening current-main tests
         shell: python
         run: |

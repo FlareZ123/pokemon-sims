@@ -106,8 +106,14 @@ void test_exact_route_and_controls() {
 
   sim::State attachment_open = route_state();
   attachment_open.manual_energy_used = false;
-  blocked(attachment_open, scenario, 114605,
-          "The fallback must remain tied to the completed attachment state.");
+  std::mt19937_64 attachment_rng{114605};
+  sim::Engine attachment_engine = make_engine(scenario, attachment_rng,
+                                               std::move(attachment_open));
+  // An unused attachment no longer protects Energy after the selected VSTAR has GGF:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1155
+  expect(sim::EngineTestAccess::final_surplus_cost(attachment_engine) ==
+             sim::Card::Grass,
+         "The unused-attachment route must admit the final surplus Energy.");
 
   const sim::Scenario strict{"issue-1146-strict", sim::DciProfile::StrictJit,
                              sim::LockMode::None, false, 5};

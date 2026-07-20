@@ -87,7 +87,7 @@
         supporter_allowed() && hand_count(Card::ProfessorBurnet) > 0 &&
         can_play_payload_this_turn() && payload_might_be_in_deck();
     if (scenario_.dci != DciProfile::MatchupFlexJit || item_locked() ||
-        !state_.manual_energy_used || !need_active_vstar() || need_energy() ||
+        !need_active_vstar() || need_energy() ||
         !benched_vstar_promotion_ready() || !state_.active ||
         !is_basic(state_.active->card) || state_.retreat_used ||
         bench_space() == 0 || !ability_available_for_pokemon(Card::LatiasEx) ||
@@ -111,7 +111,9 @@
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Core Item, discard, Bench, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Dynamic DCI and earliest route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1146 https://github.com/FlareZ123/pokemon-sims/issues/1154
+    // Attachment availability alone is not Energy demand after the selected VSTAR
+    // already has GGF: https://github.com/FlareZ123/pokemon-sims/issues/1155
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1146 https://github.com/FlareZ123/pokemon-sims/issues/1154 https://github.com/FlareZ123/pokemon-sims/issues/1155
     if (grass_needed() == 0 && hand_count(Card::Grass) == 1) return Card::Grass;
     if (fire_needed() == 0 && hand_count(Card::Fire) == 1) return Card::Fire;
     return std::nullopt;

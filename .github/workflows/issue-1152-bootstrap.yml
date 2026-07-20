@@ -1,6 +1,8 @@
 name: Issue 1152 branch bootstrap
 
 on:
+  push:
+    branches: [fix/issue-1152-post-legacy-item-replay]
   pull_request:
     branches: [main]
 
@@ -9,13 +11,13 @@ permissions:
 
 jobs:
   patch-build-validate:
-    if: github.head_ref == 'fix/issue-1152-post-legacy-item-replay'
+    if: github.head_ref == 'fix/issue-1152-post-legacy-item-replay' || github.ref_name == 'fix/issue-1152-post-legacy-item-replay'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
@@ -204,4 +206,4 @@ int main() {
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add src/trace_engine_v2/part_014c_latias_bench_override.inc tests/issue_1152_post_legacy_supporter_item_replay_tests.cpp results/simulation_results.csv results/baseline_manifest.json docs/REPORT.md
           git commit -m 'Fix post-Legacy Supporter Item replay (#1152)'
-          git push origin HEAD:${{ github.head_ref }}
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}

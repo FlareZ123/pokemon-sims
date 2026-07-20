@@ -79,6 +79,13 @@
   }
 
   std::optional<Card> quick_ball_final_surplus_energy_cost() const {
+    const bool payload_already_ready = payload_ready();
+    const bool blender_payload_route =
+        hand_count(Card::BrilliantBlender) > 0 && can_play_payload_this_turn() &&
+        payload_might_be_in_deck();
+    const bool burnet_payload_route =
+        supporter_allowed() && hand_count(Card::ProfessorBurnet) > 0 &&
+        can_play_payload_this_turn() && payload_might_be_in_deck();
     if (scenario_.dci != DciProfile::MatchupFlexJit || item_locked() ||
         !state_.manual_energy_used || !need_active_vstar() || need_energy() ||
         !benched_vstar_promotion_ready() || !state_.active ||
@@ -86,28 +93,29 @@
         bench_space() == 0 || !ability_available_for_pokemon(Card::LatiasEx) ||
         in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
         !might_be_unseen(Card::LatiasEx) ||
-        hand_count(Card::BrilliantBlender) == 0 || !need_payload() ||
-        !payload_might_be_in_deck()) {
+        (!payload_already_ready && !blender_payload_route &&
+         !burnet_payload_route)) {
       return std::nullopt;
     }
 
     // Once the selected Benched Regidrago VSTAR already has GGF, the final held
     // Basic Energy advances no remaining setup axis. After ordinary lower-DCI
-    // costs fail, Quick Ball may spend that observable surplus to search Latias ex;
-    // Skyliner promotes the VSTAR and held Brilliant Blender supplies the same-turn
-    // matchup-flex-JIT payload. Keep this fallback confined to that complete route:
+    // costs fail, Quick Ball may spend that observable surplus to search Latias ex.
+    // The payload axis may already be complete this turn, or the remaining legal
+    // action sequence may complete it through held Brilliant Blender or Professor
+    // Burnet. Keep this fallback confined to those complete observable routes:
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Core Item, discard, Bench, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Dynamic DCI and earliest route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1146
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1146 https://github.com/FlareZ123/pokemon-sims/issues/1154
     if (grass_needed() == 0 && hand_count(Card::Grass) == 1) return Card::Grass;
     if (fire_needed() == 0 && hand_count(Card::Fire) == 1) return Card::Fire;
     return std::nullopt;
   }
-
   bool play_quick_ball(const bool permit_payload) {
     if (item_locked() || hand_count(Card::QuickBall) == 0) return false;
     // Quick Ball may pay a Dragon payload cost when its searched Basic advances a

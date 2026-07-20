@@ -201,6 +201,18 @@ add_test(NAME trace_issue_1099_serena_complete_axis_jit_gate
 add_test(NAME trace_issue_1111_held_blender_preempts_steven
   COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 7180 --require-ready-by 3)
 
+# A held Professor Burnet completes the current strict-JIT payload axis before
+# the turn-ending late Steven-to-Mysterious-Treasure bridge is considered:
+# https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+# https://api.pokemontcg.io/v2/cards/sm7-145
+# https://api.pokemontcg.io/v2/cards/sm6-113
+# https://api.pokemontcg.io/v2/cards/swsh12-136
+# https://www.pokemon.com/us/pokemon-tcg/rules
+# https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+# https://github.com/FlareZ123/pokemon-sims/issues/1117
+add_test(NAME trace_issue_1117_held_burnet_preempts_steven
+  COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 8697 --require-ready-by 4)
+
 add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
 set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)
 

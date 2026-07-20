@@ -360,6 +360,18 @@
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1111
     if (hand_count(Card::BrilliantBlender) > 0) return std::nullopt;
 
+    // Professor Burnet is a live current-turn Supporter outlet whenever this bridge
+    // is otherwise eligible: the Active VSTAR already pays GGF, payload is the only
+    // missing axis, and the searched Dragon is present in the inspected deck. Burnet
+    // completes that axis now, while Steven's Resolve ends the turn:
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Supporter, search, discard, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest-ready route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1117
+    if (hand_count(Card::ProfessorBurnet) > 0) return std::nullopt;
+
     const int treasure_targets = static_cast<int>(std::count_if(
         state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic));
     if (treasure_targets < 2) return std::nullopt;

@@ -1,0 +1,87 @@
+name: Materialize issue 1181 fix
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'fix/1181-steven-traceability'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/1181-steven-traceability
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Apply source-bound documentation fix
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import fcntl
+          import os
+          import tempfile
+
+          def atomic_locked_replace(path: Path, transform) -> None:
+              lock_path = path.with_suffix(path.suffix + ".lock")
+              with lock_path.open("a+", encoding="utf-8") as lock:
+                  fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+                  original = path.read_text(encoding="utf-8")
+                  updated = transform(original)
+                  if updated == original:
+                      raise RuntimeError(f"No change produced for {path}")
+                  descriptor, temporary_name = tempfile.mkstemp(prefix=path.name + ".", dir=path.parent)
+                  try:
+                      with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as temporary:
+                          temporary.write(updated)
+                          temporary.flush()
+                          os.fsync(temporary.fileno())
+                      os.replace(temporary_name, path)
+                  finally:
+                      if os.path.exists(temporary_name):
+                          os.unlink(temporary_name)
+                  fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+              lock_path.unlink(missing_ok=True)
+
+          rules_path = Path("docs/RULES_TRACEABILITY.md")
+          old_row = "| `R-STEVEN-01` | Steven’s Resolve `sm7-145`: search up to 3 cards; turn ends. | `should_play_steven`, `play_steven` | It is used only going second on turn 1 with at least two missing setup axes. In turn-two Item-lock scenarios it fetches Burnet rather than Blender. |"
+          new_row = "| `R-STEVEN-01` | Steven’s Resolve `sm7-145`: search up to 3 cards; turn ends. | `should_play_steven`, `play_steven` | Going second on turn 1, it compresses at least two missing setup axes. On later Supporter-legal turns, the policy also uses source-bounded continuations when they are the earliest deterministic route. In turn-two Item-lock scenarios it fetches Burnet rather than Blender: https://api.pokemontcg.io/v2/cards/sm7-145 https://www.pokemon.com/us/pokemon-tcg/rules https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010_late_steven_override.inc#L162-L166 https://github.com/FlareZ123/pokemon-sims/issues/1181 |"
+
+          def update_rules(text: str) -> str:
+              if old_row not in text:
+                  raise RuntimeError("Expected Steven traceability row not found")
+              return text.replace(old_row, new_row, 1)
+
+          atomic_locked_replace(rules_path, update_rules)
+
+          test_path = Path("tests/card_audit_contract_tests.py")
+          needle = '''    register = TRACE_REGISTER_PATH.read_text(encoding="utf-8")\n    emitted = emitted_rule_ids()\n'''
+          replacement = '''    register = TRACE_REGISTER_PATH.read_text(encoding="utf-8")\n\n    # Steven's Resolve has no turn-one-only clause. Keep the traceability register\n    # aligned with the printed effect and the production late-turn route policy:\n    # https://api.pokemontcg.io/v2/cards/sm7-145\n    # https://www.pokemon.com/us/pokemon-tcg/rules\n    # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010_late_steven_override.inc#L162-L166\n    # https://github.com/FlareZ123/pokemon-sims/issues/1181\n    if "It is used only going second on turn 1" in register:\n        raise AssertionError("R-STEVEN-01 still incorrectly limits Steven's Resolve to turn one.")\n    if "On later Supporter-legal turns, the policy also uses source-bounded continuations" not in register:\n        raise AssertionError("R-STEVEN-01 must document the supported later-turn Steven routes.")\n    if "In turn-two Item-lock scenarios it fetches Burnet rather than Blender" not in register:\n        raise AssertionError("R-STEVEN-01 must retain the turn-two Item-lock target rule.")\n\n    emitted = emitted_rule_ids()\n'''
+
+          def update_test(text: str) -> str:
+              if needle not in text:
+                  raise RuntimeError("Expected traceability contract block not found")
+              return text.replace(needle, replacement, 1)
+
+          atomic_locked_replace(test_path, update_test)
+          PY
+      - name: Validate focused contract
+        run: |
+          python -m py_compile tests/card_audit_contract_tests.py
+          python tests/card_audit_contract_tests.py
+          git diff --check
+      - name: Commit fix and remove materializer
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/RULES_TRACEABILITY.md tests/card_audit_contract_tests.py
+          git rm .github/workflows/issue-1181-materializer.yml
+          git commit -m "Fix Steven traceability scope (#1181)"
+          git push origin HEAD:fix/1181-steven-traceability

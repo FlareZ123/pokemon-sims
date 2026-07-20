@@ -80,18 +80,21 @@
 
   bool play_quick_ball(const bool permit_payload) {
     if (item_locked() || hand_count(Card::QuickBall) == 0) return false;
-    // A strict-JIT Quick Ball payload cost is useful only when the Regidrago VSTAR
-    // card axis can finish in the same turn. Quick Ball searches only Basic Pokémon,
-    // so it cannot repair a missing VSTAR card after spending the held Dragon:
-    // https://api.pokemontcg.io/v2/cards/swsh1-179
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // https://www.pokemon.com/us/pokemon-tcg/rules
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // https://github.com/FlareZ123/pokemon-sims/issues/953
-    const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
-                                  blender_vstar_card_axis_can_finish_this_turn() &&
-                                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    // Quick Ball may pay a Dragon payload cost when its searched Basic advances a
+    // live setup axis. Using Quick Ball only as a strict-JIT discard outlet requires
+    // the selected Regidrago VSTAR to finish both its card axis and Apex Dragon's
+    // GGF Energy axis during this same turn:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Regidrago VSTAR and GGF attack cost: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official attachment, Item, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // VSTAR-card-axis precedent: https://github.com/FlareZ123/pokemon-sims/issues/953
+    // Energy-axis projection: https://github.com/FlareZ123/pokemon-sims/issues/737
+    // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1092
+    const bool can_pay_payload_cost = permit_payload && can_play_payload_this_turn() &&
+                                      blender_vstar_card_axis_can_finish_this_turn() &&
+                                      std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
     // Quick Ball searches for a Basic Pokémon. At K0, a target remains plausible only
     // when a fixed-list Basic copy is not accounted for in public zones. At K1, the
     // inspected deck is checked exactly before paying the discard requirement:
@@ -129,10 +132,21 @@
     // Quick Ball pays its discard before the fetched Basic reaches hand. A later
     // Ultra Ball route is live only when its own two-card cost remains payable:
     // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-    const bool want_payload = need_payload() && might_be_unseen(Card::DialgaGX) && !can_jit_discard &&
+    const bool want_payload = need_payload() && might_be_unseen(Card::DialgaGX) && !can_pay_payload_cost &&
                               has_payable_payload_outlet_after_costed_search(Card::QuickBall);
-    if (!can_jit_discard && !want_regi && !want_latias && !want_tapu && !want_oricorio && !want_payload) return false;
-    auto cost = choose_discard(can_jit_discard, true, true, Card::QuickBall);
+    const bool has_preferred_search_target =
+        want_regi || want_latias || want_tapu || want_oricorio || want_payload;
+    const bool can_use_payload_only_outlet =
+        can_pay_payload_cost && blender_energy_axis_can_finish_this_turn();
+    // A payload-only Quick Ball line advances no searched Basic axis. Preserve the
+    // Item and Dragon unless GGF can finish now. A live searched Basic keeps the
+    // existing route legal, including Tapu Lele-GX into Wonder Tag into Crispin:
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Refined confirmed bug and controls: https://github.com/FlareZ123/pokemon-sims/issues/1092
+    if (!has_preferred_search_target && !can_use_payload_only_outlet) return false;
+    auto cost = choose_discard(can_pay_payload_cost, true, true, Card::QuickBall);
     if (!cost && want_regi && hand_count(Card::RegidragoVstar) >= 2) {
       // One of two public VSTAR copies may pay Quick Ball only while Quick Ball is
       // establishing the missing Regidrago V. The other copy remains in hand for the

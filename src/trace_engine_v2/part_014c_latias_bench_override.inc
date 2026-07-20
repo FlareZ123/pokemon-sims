@@ -201,6 +201,32 @@
     return true;
   }
 
+  bool post_attach_treasure_latias_route_available() {
+    const Pokemon* target = target_regi();
+    if (!strict_payload_timing() || item_locked() || target == nullptr ||
+        target->card != Card::RegidragoVstar || target->grass < 2 ||
+        target->fire < 1 || !need_active_vstar() || state_.retreat_used ||
+        !state_.active || !is_basic(state_.active->card) || bench_space() == 0 ||
+        !ability_available_for_pokemon(Card::LatiasEx) || in_play(Card::LatiasEx) ||
+        hand_count(Card::LatiasEx) > 0 || !might_be_unseen(Card::LatiasEx) ||
+        hand_count(Card::MysteriousTreasure) == 0 ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    // A manual attachment can complete GGF on the prior-turn Regidrago VSTAR.
+    // Mysterious Treasure may then discard the held Dragon payload, search Latias
+    // ex, and Skyliner may immediately promote that VSTAR before the unused
+    // Supporter slot is considered. This is the shortest observable complete route:
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Item, Bench, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1145
+    return choose_discard(true, true, true, Card::MysteriousTreasure).has_value();
+  }
+
   bool complete_late_steven_vstar_vessel_continuation() {
     if (scenario_.dci != DciProfile::StrictJit || item_locked() ||
         !state_.active || state_.active->card != Card::RegidragoV ||
@@ -321,9 +347,15 @@
         hand_count(Card::MysteriousTreasure) > 0 &&
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
         choose_discard(true, true, true, Card::MysteriousTreasure).has_value();
-    if (post_attach_treasure_vstar_route) {
+    const bool post_attach_treasure_latias_route =
+        post_attach_treasure_latias_route_available();
+    if (post_attach_treasure_vstar_route || post_attach_treasure_latias_route) {
       play_items_until_stable(true);
       evolve_best_regi();
+      if (post_attach_treasure_latias_route) {
+        play_basics_from_hand();
+        resolve_final_promotion_and_attachment();
+      }
     }
     // Steven's Resolve ends the turn, so attach a live Powerglass before choosing
     // that Supporter: https://api.pokemontcg.io/v2/cards/sm7-145

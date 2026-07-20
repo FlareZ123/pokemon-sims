@@ -54,8 +54,9 @@ sim::Scenario issue_1111_scenario() {
 
 void test_held_blender_blocks_late_steven_bridge() {
   const sim::DeckRecipe recipe = sim::baseline_recipe();
+  const sim::Scenario scenario = issue_1111_scenario();
   std::mt19937_64 rng{1111};
-  sim::Engine engine(issue_1111_scenario(), recipe, rng);
+  sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, issue_1111_state(true));
 
   // Brilliant Blender directly searches and discards a Dragon payload this turn.
@@ -72,10 +73,11 @@ void test_held_blender_blocks_late_steven_bridge() {
 
 void test_turn_policy_plays_blender_and_reaches_ready_state() {
   const sim::DeckRecipe recipe = sim::baseline_recipe();
+  const sim::Scenario scenario = issue_1111_scenario();
   std::mt19937_64 rng{1112};
   sim::TraceLog trace;
   trace.enabled = true;
-  sim::Engine engine(issue_1111_scenario(), recipe, rng, &trace);
+  sim::Engine engine(scenario, recipe, rng, &trace);
   sim::EngineTestAccess::set_state(engine, issue_1111_state(true));
 
   sim::EngineTestAccess::run_turn(engine);
@@ -100,8 +102,9 @@ void test_turn_policy_plays_blender_and_reaches_ready_state() {
 
 void test_bridge_remains_available_without_blender() {
   const sim::DeckRecipe recipe = sim::baseline_recipe();
+  const sim::Scenario scenario = issue_1111_scenario();
   std::mt19937_64 rng{1113};
-  sim::Engine engine(issue_1111_scenario(), recipe, rng);
+  sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, issue_1111_state(false));
 
   // Preserve the confirmed payload-to-Mysterious-Treasure continuation when the

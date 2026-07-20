@@ -48,6 +48,7 @@ struct State {
   bool supporter_used{false};
   bool manual_energy_used{false};
   bool retreat_used{false};
+  bool stadium_used{false};
   bool vstar_power_used{false};
   bool turn_ended{false};
   bool path_lock_removed{false};
@@ -124,6 +125,7 @@ struct TraceLog {
     for (const Pokemon& pokemon : state.bench) append_pokemon(pokemon);
     out << "}:" << state.turn << ':' << state.supporter_used << ':'
         << state.manual_energy_used << ':' << state.retreat_used << ':'
+        << state.stadium_used << ':'
         << state.vstar_power_used << ':' << state.turn_ended << ':'
         << state.path_lock_removed << ':' << static_cast<int>(state.stadium);
     return out.str();

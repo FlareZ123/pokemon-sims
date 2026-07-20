@@ -227,8 +227,7 @@ bool Engine::advance_forretress_combo() {
   if (!forretress_combo_enabled()) return false;
   bool changed = false;
 
-  const bool combo_stadium_is_useful = need_energy() &&
-      ability_available_for_pokemon(Card::ForretressEx) &&
+  const bool combo_stadium_is_useful = !state_.stadium_used && need_energy() &&
       hand_count(Card::ForestOfVitality) > 0 &&
       state_.stadium != Stadium::ForestOfVitality;
   if (combo_stadium_is_useful &&
@@ -252,6 +251,7 @@ bool Engine::advance_forretress_combo() {
       trace("PLAY STADIUM", "R-FOREST-VITALITY-01; R-GAME-EVOLUTION",
             "Played Forest of Vitality. Grass Pokémon may evolve during their entry turn after the first turn.");
     }
+    state_.stadium_used = true;
     changed = true;
   }
 

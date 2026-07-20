@@ -1,0 +1,3352 @@
+Start testing: Jul 20 04:08 UTC
+----------------------------------------------------------
+1/169 Testing: regidrago_arven_complementary_latias_route_tests
+1/169 Test: regidrago_arven_complementary_latias_route_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "arven_complementary_latias_route_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_arven_complementary_latias_route_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] arven_complementary_latias_route_tests
+[       OK ] arven_complementary_latias_route_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_arven_complementary_latias_route_tests" end time: Jul 20 04:08 UTC
+"regidrago_arven_complementary_latias_route_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/169 Testing: regidrago_arven_fss_blender_contention_tests
+2/169 Test: regidrago_arven_fss_blender_contention_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "arven_fss_blender_contention_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_arven_fss_blender_contention_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] arven_fss_blender_contention_tests
+arven_fss_blender_contention_tests: all checks passed
+[       OK ] arven_fss_blender_contention_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_arven_fss_blender_contention_tests" end time: Jul 20 04:08 UTC
+"regidrago_arven_fss_blender_contention_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/169 Testing: regidrago_arven_fss_rulebox_tests
+3/169 Test: regidrago_arven_fss_rulebox_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "arven_fss_rulebox_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_arven_fss_rulebox_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] arven_fss_rulebox_tests
+[       OK ] arven_fss_rulebox_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_arven_fss_rulebox_tests" end time: Jul 20 04:08 UTC
+"regidrago_arven_fss_rulebox_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/169 Testing: regidrago_arven_heavy_ball_prize_tests
+4/169 Test: regidrago_arven_heavy_ball_prize_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "arven_heavy_ball_prize_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_arven_heavy_ball_prize_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] arven_heavy_ball_prize_tests
+Arven Heavy Ball prize tests passed
+[       OK ] arven_heavy_ball_prize_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_arven_heavy_ball_prize_tests" end time: Jul 20 04:08 UTC
+"regidrago_arven_heavy_ball_prize_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/169 Testing: regidrago_benched_vstar_recovery_tests
+5/169 Test: regidrago_benched_vstar_recovery_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "benched_vstar_recovery_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_benched_vstar_recovery_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] benched_vstar_recovery_tests
+[       OK ] benched_vstar_recovery_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_benched_vstar_recovery_tests" end time: Jul 20 04:08 UTC
+"regidrago_benched_vstar_recovery_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/169 Testing: regidrago_blender_active_promotion_gate_tests
+6/169 Test: regidrago_blender_active_promotion_gate_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "blender_active_promotion_gate_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_blender_active_promotion_gate_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] blender_active_promotion_gate_tests
+Blender Active-promotion gate tests passed
+[       OK ] blender_active_promotion_gate_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_blender_active_promotion_gate_tests" end time: Jul 20 04:08 UTC
+"regidrago_blender_active_promotion_gate_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+7/169 Testing: regidrago_blender_energy_completion_gate_tests
+7/169 Test: regidrago_blender_energy_completion_gate_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "blender_energy_completion_gate_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_blender_energy_completion_gate_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] blender_energy_completion_gate_tests
+All Brilliant Blender Energy-completion gate tests passed.
+[       OK ] blender_energy_completion_gate_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_blender_energy_completion_gate_tests" end time: Jul 20 04:08 UTC
+"regidrago_blender_energy_completion_gate_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+8/169 Testing: regidrago_blender_fss_tate_hold_tests
+8/169 Test: regidrago_blender_fss_tate_hold_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "blender_fss_tate_hold_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_blender_fss_tate_hold_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] blender_fss_tate_hold_tests
+[       OK ] blender_fss_tate_hold_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_blender_fss_tate_hold_tests" end time: Jul 20 04:08 UTC
+"regidrago_blender_fss_tate_hold_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+9/169 Testing: regidrago_blender_vstar_card_axis_tests
+9/169 Test: regidrago_blender_vstar_card_axis_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "blender_vstar_card_axis_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_blender_vstar_card_axis_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] blender_vstar_card_axis_tests
+Blender VSTAR card-axis tests passed
+[       OK ] blender_vstar_card_axis_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_blender_vstar_card_axis_tests" end time: Jul 20 04:08 UTC
+"regidrago_blender_vstar_card_axis_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+10/169 Testing: regidrago_burnet_no_vstar_route_tests
+10/169 Test: regidrago_burnet_no_vstar_route_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "burnet_no_vstar_route_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_burnet_no_vstar_route_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] burnet_no_vstar_route_tests
+Burnet no-VSTAR-route tests passed
+[       OK ] burnet_no_vstar_route_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_burnet_no_vstar_route_tests" end time: Jul 20 04:08 UTC
+"regidrago_burnet_no_vstar_route_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+11/169 Testing: regidrago_burnet_ready_turn_gate_tests
+11/169 Test: regidrago_burnet_ready_turn_gate_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "burnet_ready_turn_gate_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_burnet_ready_turn_gate_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] burnet_ready_turn_gate_tests
+Burnet ready-turn gate tests passed
+[       OK ] burnet_ready_turn_gate_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_burnet_ready_turn_gate_tests" end time: Jul 20 04:08 UTC
+"regidrago_burnet_ready_turn_gate_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+12/169 Testing: regidrago_celestial_roar_live_route_tests
+12/169 Test: regidrago_celestial_roar_live_route_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "celestial_roar_live_route_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_celestial_roar_live_route_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] celestial_roar_live_route_tests
+[       OK ] celestial_roar_live_route_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_celestial_roar_live_route_tests" end time: Jul 20 04:08 UTC
+"regidrago_celestial_roar_live_route_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+13/169 Testing: regidrago_costed_search_target_outlet_tests
+13/169 Test: regidrago_costed_search_target_outlet_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "costed_search_target_outlet_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_costed_search_target_outlet_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] costed_search_target_outlet_tests
+costed search target outlet tests passed
+[       OK ] costed_search_target_outlet_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_costed_search_target_outlet_tests" end time: Jul 20 04:08 UTC
+"regidrago_costed_search_target_outlet_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+14/169 Testing: regidrago_crispin_one_type_manual_attachment_tests
+14/169 Test: regidrago_crispin_one_type_manual_attachment_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "crispin_one_type_manual_attachment_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_crispin_one_type_manual_attachment_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] crispin_one_type_manual_attachment_tests
+[       OK ] crispin_one_type_manual_attachment_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_crispin_one_type_manual_attachment_tests" end time: Jul 20 04:08 UTC
+"regidrago_crispin_one_type_manual_attachment_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+15/169 Testing: regidrago_discard_recovery_provenance_tests
+15/169 Test: regidrago_discard_recovery_provenance_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "discard_recovery_provenance_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_discard_recovery_provenance_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] discard_recovery_provenance_tests
+[       OK ] discard_recovery_provenance_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_discard_recovery_provenance_tests" end time: Jul 20 04:08 UTC
+"regidrago_discard_recovery_provenance_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+16/169 Testing: regidrago_duplicate_earthen_vessel_cost_tests
+16/169 Test: regidrago_duplicate_earthen_vessel_cost_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "duplicate_earthen_vessel_cost_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_duplicate_earthen_vessel_cost_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] duplicate_earthen_vessel_cost_tests
+[       OK ] duplicate_earthen_vessel_cost_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_duplicate_earthen_vessel_cost_tests" end time: Jul 20 04:08 UTC
+"regidrago_duplicate_earthen_vessel_cost_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+17/169 Testing: regidrago_duplicate_mysterious_treasure_cost_tests
+17/169 Test: regidrago_duplicate_mysterious_treasure_cost_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "duplicate_mysterious_treasure_cost_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_duplicate_mysterious_treasure_cost_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] duplicate_mysterious_treasure_cost_tests
+[       OK ] duplicate_mysterious_treasure_cost_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_duplicate_mysterious_treasure_cost_tests" end time: Jul 20 04:08 UTC
+"regidrago_duplicate_mysterious_treasure_cost_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+18/169 Testing: regidrago_duplicate_quick_ball_cost_tests
+18/169 Test: regidrago_duplicate_quick_ball_cost_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "duplicate_quick_ball_cost_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_duplicate_quick_ball_cost_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] duplicate_quick_ball_cost_tests
+[       OK ] duplicate_quick_ball_cost_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_duplicate_quick_ball_cost_tests" end time: Jul 20 04:08 UTC
+"regidrago_duplicate_quick_ball_cost_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+19/169 Testing: regidrago_empty_deck_search_tests
+19/169 Test: regidrago_empty_deck_search_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "empty_deck_search_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_empty_deck_search_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] empty_deck_search_tests
+empty-deck search tests passed
+[       OK ] empty_deck_search_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_empty_deck_search_tests" end time: Jul 20 04:08 UTC
+"regidrago_empty_deck_search_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+20/169 Testing: regidrago_erika_deck_thinning_tests
+20/169 Test: regidrago_erika_deck_thinning_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "erika_deck_thinning_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_erika_deck_thinning_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] erika_deck_thinning_tests
+Erika deck-thinning tests passed
+[       OK ] erika_deck_thinning_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_erika_deck_thinning_tests" end time: Jul 20 04:08 UTC
+"regidrago_erika_deck_thinning_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+21/169 Testing: regidrago_erika_discard_tables_tests
+21/169 Test: regidrago_erika_discard_tables_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "erika_discard_tables_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_erika_discard_tables_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] erika_discard_tables_tests
+[       OK ] erika_discard_tables_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_erika_discard_tables_tests" end time: Jul 20 04:08 UTC
+"regidrago_erika_discard_tables_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+22/169 Testing: regidrago_evolution_incense_payload_tests
+22/169 Test: regidrago_evolution_incense_payload_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "evolution_incense_payload_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_evolution_incense_payload_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] evolution_incense_payload_tests
+Evolution Incense payload tests passed
+[       OK ] evolution_incense_payload_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_evolution_incense_payload_tests" end time: Jul 20 04:08 UTC
+"regidrago_evolution_incense_payload_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+23/169 Testing: regidrago_evolution_incense_vstar_fallback_tests
+23/169 Test: regidrago_evolution_incense_vstar_fallback_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "evolution_incense_vstar_fallback_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_evolution_incense_vstar_fallback_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] evolution_incense_vstar_fallback_tests
+[       OK ] evolution_incense_vstar_fallback_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_evolution_incense_vstar_fallback_tests" end time: Jul 20 04:08 UTC
+"regidrago_evolution_incense_vstar_fallback_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+24/169 Testing: regidrago_forest_seal_stone_rulebox_tests
+24/169 Test: regidrago_forest_seal_stone_rulebox_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "forest_seal_stone_rulebox_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_forest_seal_stone_rulebox_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] forest_seal_stone_rulebox_tests
+[       OK ] forest_seal_stone_rulebox_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_forest_seal_stone_rulebox_tests" end time: Jul 20 04:08 UTC
+"regidrago_forest_seal_stone_rulebox_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+26/169 Testing: regidrago_fss_crispin_priority_tests
+26/169 Test: regidrago_fss_crispin_priority_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "fss_crispin_priority_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_fss_crispin_priority_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] fss_crispin_priority_tests
+[       OK ] fss_crispin_priority_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_fss_crispin_priority_tests" end time: Jul 20 04:08 UTC
+"regidrago_fss_crispin_priority_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+27/169 Testing: regidrago_fss_hold_trace_requires_tool_tests
+27/169 Test: regidrago_fss_hold_trace_requires_tool_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "fss_hold_trace_requires_tool_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_fss_hold_trace_requires_tool_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] fss_hold_trace_requires_tool_tests
+[       OK ] fss_hold_trace_requires_tool_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_fss_hold_trace_requires_tool_tests" end time: Jul 20 04:08 UTC
+"regidrago_fss_hold_trace_requires_tool_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+25/169 Testing: regidrago_forretress_ex_combo_tests
+25/169 Test: regidrago_forretress_ex_combo_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "forretress_ex_combo_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_forretress_ex_combo_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] forretress_ex_combo_tests
+[       OK ] forretress_ex_combo_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_forretress_ex_combo_tests" end time: Jul 20 04:08 UTC
+"regidrago_forretress_ex_combo_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+29/169 Testing: regidrago_full_turn_order_tests
+29/169 Test: regidrago_full_turn_order_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "full_turn_order_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_full_turn_order_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] full_turn_order_tests
+[       OK ] full_turn_order_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_full_turn_order_tests" end time: Jul 20 04:08 UTC
+"regidrago_full_turn_order_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+28/169 Testing: regidrago_fss_tate_blender_payload_tests
+28/169 Test: regidrago_fss_tate_blender_payload_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "fss_tate_blender_payload_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_fss_tate_blender_payload_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] fss_tate_blender_payload_tests
+FSS held-payload Item tests passed
+[       OK ] fss_tate_blender_payload_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_fss_tate_blender_payload_tests" end time: Jul 20 04:08 UTC
+"regidrago_fss_tate_blender_payload_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+30/169 Testing: regidrago_gladion_erika_low_impact_tests
+30/169 Test: regidrago_gladion_erika_low_impact_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "gladion_erika_low_impact_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_gladion_erika_low_impact_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] gladion_erika_low_impact_tests
+Gladion Erika low-impact tests passed
+[       OK ] gladion_erika_low_impact_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_gladion_erika_low_impact_tests" end time: Jul 20 04:08 UTC
+"regidrago_gladion_erika_low_impact_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+31/169 Testing: regidrago_gladion_mysterious_treasure_ultra_cost_tests
+31/169 Test: regidrago_gladion_mysterious_treasure_ultra_cost_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "gladion_mysterious_treasure_ultra_cost_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_gladion_mysterious_treasure_ultra_cost_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] gladion_mysterious_treasure_ultra_cost_tests
+[       OK ] gladion_mysterious_treasure_ultra_cost_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_gladion_mysterious_treasure_ultra_cost_tests" end time: Jul 20 04:08 UTC
+"regidrago_gladion_mysterious_treasure_ultra_cost_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+33/169 Testing: regidrago_gladion_revealed_axis_tests
+33/169 Test: regidrago_gladion_revealed_axis_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "gladion_revealed_axis_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_gladion_revealed_axis_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] gladion_revealed_axis_tests
+[       OK ] gladion_revealed_axis_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_gladion_revealed_axis_tests" end time: Jul 20 04:08 UTC
+"regidrago_gladion_revealed_axis_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+32/169 Testing: regidrago_gladion_prized_arven_route_tests
+32/169 Test: regidrago_gladion_prized_arven_route_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "gladion_prized_arven_route_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_gladion_prized_arven_route_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] gladion_prized_arven_route_tests
+[       OK ] gladion_prized_arven_route_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_gladion_prized_arven_route_tests" end time: Jul 20 04:08 UTC
+"regidrago_gladion_prized_arven_route_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+34/169 Testing: regidrago_gladion_revealed_crispin_route_tests
+34/169 Test: regidrago_gladion_revealed_crispin_route_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "gladion_revealed_crispin_route_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_gladion_revealed_crispin_route_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] gladion_revealed_crispin_route_tests
+[       OK ] gladion_revealed_crispin_route_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_gladion_revealed_crispin_route_tests" end time: Jul 20 04:08 UTC
+"regidrago_gladion_revealed_crispin_route_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+35/169 Testing: regidrago_gladion_serena_item_lock_tests
+35/169 Test: regidrago_gladion_serena_item_lock_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "gladion_serena_item_lock_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_gladion_serena_item_lock_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] gladion_serena_item_lock_tests
+[       OK ] gladion_serena_item_lock_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_gladion_serena_item_lock_tests" end time: Jul 20 04:08 UTC
+"regidrago_gladion_serena_item_lock_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+36/169 Testing: regidrago_gladion_unpayable_search_tests
+36/169 Test: regidrago_gladion_unpayable_search_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "gladion_unpayable_search_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_gladion_unpayable_search_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] gladion_unpayable_search_tests
+[       OK ] gladion_unpayable_search_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_gladion_unpayable_search_tests" end time: Jul 20 04:08 UTC
+"regidrago_gladion_unpayable_search_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+37/169 Testing: regidrago_guzma_opponent_bench_tests
+37/169 Test: regidrago_guzma_opponent_bench_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "guzma_opponent_bench_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_guzma_opponent_bench_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] guzma_opponent_bench_tests
+guzma opponent-Bench regressions passed
+[       OK ] guzma_opponent_bench_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_guzma_opponent_bench_tests" end time: Jul 20 04:08 UTC
+"regidrago_guzma_opponent_bench_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+38/169 Testing: regidrago_issue_1002_steven_target_availability_tests
+38/169 Test: regidrago_issue_1002_steven_target_availability_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1002_steven_target_availability_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1002_steven_target_availability_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1002_steven_target_availability_tests
+Issue 1002 Steven target availability tests passed
+[       OK ] issue_1002_steven_target_availability_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1002_steven_target_availability_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1002_steven_target_availability_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+39/169 Testing: regidrago_issue_1004_tapu_hold_trace_tests
+39/169 Test: regidrago_issue_1004_tapu_hold_trace_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1004_tapu_hold_trace_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1004_tapu_hold_trace_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1004_tapu_hold_trace_tests
+Issue 1004 Tapu hold trace tests passed
+[       OK ] issue_1004_tapu_hold_trace_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1004_tapu_hold_trace_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1004_tapu_hold_trace_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+40/169 Testing: regidrago_issue_1007_heavy_ball_hold_trace_tests
+40/169 Test: regidrago_issue_1007_heavy_ball_hold_trace_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1007_heavy_ball_hold_trace_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1007_heavy_ball_hold_trace_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1007_heavy_ball_hold_trace_tests
+Issue 1007 Heavy Ball hold trace tests passed
+[       OK ] issue_1007_heavy_ball_hold_trace_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1007_heavy_ball_hold_trace_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1007_heavy_ball_hold_trace_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+41/169 Testing: regidrago_issue_1009_steven_zero_energy_latias_vessel_tests
+41/169 Test: regidrago_issue_1009_steven_zero_energy_latias_vessel_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1009_steven_zero_energy_latias_vessel_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1009_steven_zero_energy_latias_vessel_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1009_steven_zero_energy_latias_vessel_tests
+Issue 1009 Steven zero-Energy Latias-Vessel tests passed
+[       OK ] issue_1009_steven_zero_energy_latias_vessel_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1009_steven_zero_energy_latias_vessel_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1009_steven_zero_energy_latias_vessel_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+42/169 Testing: regidrago_issue_1010_fss_hold_trace_tests
+42/169 Test: regidrago_issue_1010_fss_hold_trace_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1010_fss_hold_trace_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1010_fss_hold_trace_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1010_fss_hold_trace_tests
+Issue 1010 Forest Seal Stone hold trace tests passed
+[       OK ] issue_1010_fss_hold_trace_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1010_fss_hold_trace_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1010_fss_hold_trace_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+43/169 Testing: regidrago_issue_1016_wonder_tag_duplicate_crispin_tests
+43/169 Test: regidrago_issue_1016_wonder_tag_duplicate_crispin_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1016_wonder_tag_duplicate_crispin_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1016_wonder_tag_duplicate_crispin_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1016_wonder_tag_duplicate_crispin_tests
+Issue 1016 Wonder Tag duplicate Crispin tests passed
+[       OK ] issue_1016_wonder_tag_duplicate_crispin_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1016_wonder_tag_duplicate_crispin_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1016_wonder_tag_duplicate_crispin_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+44/169 Testing: regidrago_issue_1017_late_steven_vstar_vessel_tests
+44/169 Test: regidrago_issue_1017_late_steven_vstar_vessel_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1017_late_steven_vstar_vessel_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1017_late_steven_vstar_vessel_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1017_late_steven_vstar_vessel_tests
+[       OK ] issue_1017_late_steven_vstar_vessel_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1017_late_steven_vstar_vessel_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1017_late_steven_vstar_vessel_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+45/169 Testing: regidrago_issue_1018_quick_ball_inert_singleton_tests
+45/169 Test: regidrago_issue_1018_quick_ball_inert_singleton_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1018_quick_ball_inert_singleton_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1018_quick_ball_inert_singleton_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1018_quick_ball_inert_singleton_tests
+[       OK ] issue_1018_quick_ball_inert_singleton_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1018_quick_ball_inert_singleton_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1018_quick_ball_inert_singleton_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+46/169 Testing: regidrago_issue_1022_wonder_tag_steven_fss_tests
+46/169 Test: regidrago_issue_1022_wonder_tag_steven_fss_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1022_wonder_tag_steven_fss_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1022_wonder_tag_steven_fss_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1022_wonder_tag_steven_fss_tests
+[       OK ] issue_1022_wonder_tag_steven_fss_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1022_wonder_tag_steven_fss_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1022_wonder_tag_steven_fss_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+47/169 Testing: regidrago_issue_1023_late_steven_payload_treasure_tests
+47/169 Test: regidrago_issue_1023_late_steven_payload_treasure_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1023_late_steven_payload_treasure_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1023_late_steven_payload_treasure_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1023_late_steven_payload_treasure_tests
+[       OK ] issue_1023_late_steven_payload_treasure_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1023_late_steven_payload_treasure_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1023_late_steven_payload_treasure_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+48/169 Testing: regidrago_issue_1030_gladion_turo_route_tests
+48/169 Test: regidrago_issue_1030_gladion_turo_route_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1030_gladion_turo_route_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1030_gladion_turo_route_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1030_gladion_turo_route_tests
+[       OK ] issue_1030_gladion_turo_route_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1030_gladion_turo_route_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1030_gladion_turo_route_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+49/169 Testing: regidrago_issue_1031_blender_latias_energy_tests
+49/169 Test: regidrago_issue_1031_blender_latias_energy_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1031_blender_latias_energy_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1031_blender_latias_energy_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1031_blender_latias_energy_tests
+Issue 1031 Blender-Latias Energy tests passed
+[       OK ] issue_1031_blender_latias_energy_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1031_blender_latias_energy_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1031_blender_latias_energy_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+50/169 Testing: regidrago_issue_1032_post_attach_treasure_tests
+50/169 Test: regidrago_issue_1032_post_attach_treasure_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1032_post_attach_treasure_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1032_post_attach_treasure_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1032_post_attach_treasure_tests
+[       OK ] issue_1032_post_attach_treasure_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1032_post_attach_treasure_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1032_post_attach_treasure_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+51/169 Testing: regidrago_issue_1038_duplicate_crispin_wonder_tag_tests
+51/169 Test: regidrago_issue_1038_duplicate_crispin_wonder_tag_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1038_duplicate_crispin_wonder_tag_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1038_duplicate_crispin_wonder_tag_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1038_duplicate_crispin_wonder_tag_tests
+[       OK ] issue_1038_duplicate_crispin_wonder_tag_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1038_duplicate_crispin_wonder_tag_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1038_duplicate_crispin_wonder_tag_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+52/169 Testing: regidrago_issue_1039_duplicate_gladion_wonder_tag_tests
+52/169 Test: regidrago_issue_1039_duplicate_gladion_wonder_tag_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1039_duplicate_gladion_wonder_tag_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1039_duplicate_gladion_wonder_tag_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1039_duplicate_gladion_wonder_tag_tests
+[       OK ] issue_1039_duplicate_gladion_wonder_tag_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1039_duplicate_gladion_wonder_tag_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1039_duplicate_gladion_wonder_tag_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+54/169 Testing: regidrago_issue_1049_active_regi_steven_route_tests
+54/169 Test: regidrago_issue_1049_active_regi_steven_route_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1049_active_regi_steven_route_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1049_active_regi_steven_route_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1049_active_regi_steven_route_tests
+[       OK ] issue_1049_active_regi_steven_route_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1049_active_regi_steven_route_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1049_active_regi_steven_route_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+53/169 Testing: regidrago_issue_1045_duplicate_held_arven_tests
+53/169 Test: regidrago_issue_1045_duplicate_held_arven_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1045_duplicate_held_arven_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1045_duplicate_held_arven_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1045_duplicate_held_arven_tests
+[       OK ] issue_1045_duplicate_held_arven_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1045_duplicate_held_arven_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1045_duplicate_held_arven_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+55/169 Testing: regidrago_issue_1050_dynamic_dead_role_dci_tests
+55/169 Test: regidrago_issue_1050_dynamic_dead_role_dci_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1050_dynamic_dead_role_dci_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1050_dynamic_dead_role_dci_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1050_dynamic_dead_role_dci_tests
+[       OK ] issue_1050_dynamic_dead_role_dci_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1050_dynamic_dead_role_dci_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1050_dynamic_dead_role_dci_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+56/169 Testing: regidrago_issue_1051_one_type_crispin_wonder_tag_tests
+56/169 Test: regidrago_issue_1051_one_type_crispin_wonder_tag_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1051_one_type_crispin_wonder_tag_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1051_one_type_crispin_wonder_tag_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1051_one_type_crispin_wonder_tag_tests
+[       OK ] issue_1051_one_type_crispin_wonder_tag_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1051_one_type_crispin_wonder_tag_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1051_one_type_crispin_wonder_tag_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+59/169 Testing: regidrago_issue_1059_prized_treasure_gladion_tests
+59/169 Test: regidrago_issue_1059_prized_treasure_gladion_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1059_prized_treasure_gladion_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1059_prized_treasure_gladion_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1059_prized_treasure_gladion_tests
+[       OK ] issue_1059_prized_treasure_gladion_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1059_prized_treasure_gladion_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1059_prized_treasure_gladion_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+57/169 Testing: regidrago_issue_1056_held_payload_gladion_tests
+57/169 Test: regidrago_issue_1056_held_payload_gladion_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1056_held_payload_gladion_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1056_held_payload_gladion_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1056_held_payload_gladion_tests
+[       OK ] issue_1056_held_payload_gladion_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1056_held_payload_gladion_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1056_held_payload_gladion_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+58/169 Testing: regidrago_issue_1057_tate_held_route_tests
+58/169 Test: regidrago_issue_1057_tate_held_route_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1057_tate_held_route_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1057_tate_held_route_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1057_tate_held_route_tests
+[       OK ] issue_1057_tate_held_route_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1057_tate_held_route_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1057_tate_held_route_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+60/169 Testing: regidrago_issue_1090_gladion_arven_route_tests
+60/169 Test: regidrago_issue_1090_gladion_arven_route_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1090_gladion_arven_route_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1090_gladion_arven_route_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1090_gladion_arven_route_tests
+[       OK ] issue_1090_gladion_arven_route_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1090_gladion_arven_route_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1090_gladion_arven_route_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+61/169 Testing: regidrago_issue_1093_quick_ball_crispin_energy_tests
+61/169 Test: regidrago_issue_1093_quick_ball_crispin_energy_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1093_quick_ball_crispin_energy_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1093_quick_ball_crispin_energy_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1093_quick_ball_crispin_energy_tests
+Issue 1093 Quick Ball Crispin-Energy tests passed
+[       OK ] issue_1093_quick_ball_crispin_energy_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1093_quick_ball_crispin_energy_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1093_quick_ball_crispin_energy_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+62/169 Testing: regidrago_issue_1098_late_steven_crispin_treasure_tests
+62/169 Test: regidrago_issue_1098_late_steven_crispin_treasure_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_1098_late_steven_crispin_treasure_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_1098_late_steven_crispin_treasure_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_1098_late_steven_crispin_treasure_tests
+Issue 1098 late-Steven Crispin-Treasure tests passed
+[       OK ] issue_1098_late_steven_crispin_treasure_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_1098_late_steven_crispin_treasure_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_1098_late_steven_crispin_treasure_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+63/169 Testing: regidrago_issue_962_quick_ball_vessel_positive_tests
+63/169 Test: regidrago_issue_962_quick_ball_vessel_positive_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_962_quick_ball_vessel_positive_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_962_quick_ball_vessel_positive_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_962_quick_ball_vessel_positive_tests
+Issue 962 positive connector test passed
+[       OK ] issue_962_quick_ball_vessel_positive_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_962_quick_ball_vessel_positive_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_962_quick_ball_vessel_positive_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+64/169 Testing: regidrago_issue_962_quick_ball_vessel_resource_controls_tests
+64/169 Test: regidrago_issue_962_quick_ball_vessel_resource_controls_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_962_quick_ball_vessel_resource_controls_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_962_quick_ball_vessel_resource_controls_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_962_quick_ball_vessel_resource_controls_tests
+Issue 962 resource controls passed
+[       OK ] issue_962_quick_ball_vessel_resource_controls_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_962_quick_ball_vessel_resource_controls_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_962_quick_ball_vessel_resource_controls_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+65/169 Testing: regidrago_issue_962_quick_ball_vessel_target_controls_tests
+65/169 Test: regidrago_issue_962_quick_ball_vessel_target_controls_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_962_quick_ball_vessel_target_controls_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_962_quick_ball_vessel_target_controls_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_962_quick_ball_vessel_target_controls_tests
+Issue 962 target controls passed
+[       OK ] issue_962_quick_ball_vessel_target_controls_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_962_quick_ball_vessel_target_controls_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_962_quick_ball_vessel_target_controls_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+66/169 Testing: regidrago_issue_964_quick_ball_duplicate_vstar_tests
+66/169 Test: regidrago_issue_964_quick_ball_duplicate_vstar_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_964_quick_ball_duplicate_vstar_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_964_quick_ball_duplicate_vstar_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_964_quick_ball_duplicate_vstar_tests
+Issue 964 Quick Ball duplicate-VSTAR tests passed
+[       OK ] issue_964_quick_ball_duplicate_vstar_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_964_quick_ball_duplicate_vstar_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_964_quick_ball_duplicate_vstar_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+67/169 Testing: regidrago_issue_976_fss_direct_crispin_tests
+67/169 Test: regidrago_issue_976_fss_direct_crispin_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_976_fss_direct_crispin_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_976_fss_direct_crispin_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_976_fss_direct_crispin_tests
+[       OK ] issue_976_fss_direct_crispin_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_976_fss_direct_crispin_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_976_fss_direct_crispin_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+68/169 Testing: regidrago_issue_977_gladion_one_type_crispin_tests
+68/169 Test: regidrago_issue_977_gladion_one_type_crispin_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_977_gladion_one_type_crispin_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_977_gladion_one_type_crispin_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_977_gladion_one_type_crispin_tests
+[       OK ] issue_977_gladion_one_type_crispin_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_977_gladion_one_type_crispin_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_977_gladion_one_type_crispin_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+69/169 Testing: regidrago_issue_978_steven_minimal_targets_tests
+69/169 Test: regidrago_issue_978_steven_minimal_targets_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_978_steven_minimal_targets_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_978_steven_minimal_targets_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_978_steven_minimal_targets_tests
+[       OK ] issue_978_steven_minimal_targets_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_978_steven_minimal_targets_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_978_steven_minimal_targets_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+70/169 Testing: regidrago_issue_979_fss_complete_route_tests
+70/169 Test: regidrago_issue_979_fss_complete_route_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_979_fss_complete_route_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_979_fss_complete_route_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_979_fss_complete_route_tests
+[       OK ] issue_979_fss_complete_route_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_979_fss_complete_route_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_979_fss_complete_route_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+71/169 Testing: regidrago_issue_980_wonder_tag_redundant_crispin_tests
+71/169 Test: regidrago_issue_980_wonder_tag_redundant_crispin_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_980_wonder_tag_redundant_crispin_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_980_wonder_tag_redundant_crispin_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_980_wonder_tag_redundant_crispin_tests
+Issue 980 Wonder Tag tests passed
+[       OK ] issue_980_wonder_tag_redundant_crispin_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_980_wonder_tag_redundant_crispin_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_980_wonder_tag_redundant_crispin_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+74/169 Testing: regidrago_issue_991_wonder_tag_burnet_legacy_star_tests
+74/169 Test: regidrago_issue_991_wonder_tag_burnet_legacy_star_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_991_wonder_tag_burnet_legacy_star_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_991_wonder_tag_burnet_legacy_star_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_991_wonder_tag_burnet_legacy_star_tests
+Issue 991 Wonder Tag Burnet tests passed
+[       OK ] issue_991_wonder_tag_burnet_legacy_star_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_991_wonder_tag_burnet_legacy_star_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_991_wonder_tag_burnet_legacy_star_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+72/169 Testing: regidrago_issue_989_wonder_tag_complete_route_tests
+72/169 Test: regidrago_issue_989_wonder_tag_complete_route_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_989_wonder_tag_complete_route_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_989_wonder_tag_complete_route_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_989_wonder_tag_complete_route_tests
+Issue 989 Wonder Tag complete-route tests passed
+[       OK ] issue_989_wonder_tag_complete_route_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_989_wonder_tag_complete_route_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_989_wonder_tag_complete_route_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+75/169 Testing: regidrago_issue_992_wonder_tag_gladion_held_energy_tests
+75/169 Test: regidrago_issue_992_wonder_tag_gladion_held_energy_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_992_wonder_tag_gladion_held_energy_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_992_wonder_tag_gladion_held_energy_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_992_wonder_tag_gladion_held_energy_tests
+Issue 992 Wonder Tag Gladion tests passed
+[       OK ] issue_992_wonder_tag_gladion_held_energy_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_992_wonder_tag_gladion_held_energy_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_992_wonder_tag_gladion_held_energy_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+76/169 Testing: regidrago_issue_993_wonder_tag_arven_held_burnet_tests
+76/169 Test: regidrago_issue_993_wonder_tag_arven_held_burnet_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_993_wonder_tag_arven_held_burnet_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_993_wonder_tag_arven_held_burnet_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_993_wonder_tag_arven_held_burnet_tests
+Issue 993 Wonder Tag Arven tests passed
+[       OK ] issue_993_wonder_tag_arven_held_burnet_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_993_wonder_tag_arven_held_burnet_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_993_wonder_tag_arven_held_burnet_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+77/169 Testing: regidrago_issue_999_wonder_tag_steven_consistency_tests
+77/169 Test: regidrago_issue_999_wonder_tag_steven_consistency_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_999_wonder_tag_steven_consistency_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_999_wonder_tag_steven_consistency_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_999_wonder_tag_steven_consistency_tests
+Issue 999 Wonder Tag Steven consistency tests passed
+[       OK ] issue_999_wonder_tag_steven_consistency_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_999_wonder_tag_steven_consistency_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_999_wonder_tag_steven_consistency_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+78/169 Testing: regidrago_k0_mysterious_treasure_target_tests
+78/169 Test: regidrago_k0_mysterious_treasure_target_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "k0_mysterious_treasure_target_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_k0_mysterious_treasure_target_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] k0_mysterious_treasure_target_tests
+K0 Mysterious Treasure target tests passed
+[       OK ] k0_mysterious_treasure_target_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_k0_mysterious_treasure_target_tests" end time: Jul 20 04:08 UTC
+"regidrago_k0_mysterious_treasure_target_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+73/169 Testing: regidrago_issue_990_fss_observable_complete_route_tests
+73/169 Test: regidrago_issue_990_fss_observable_complete_route_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "issue_990_fss_observable_complete_route_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_issue_990_fss_observable_complete_route_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] issue_990_fss_observable_complete_route_tests
+Issue 990 FSS complete-route tests passed
+[       OK ] issue_990_fss_observable_complete_route_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_issue_990_fss_observable_complete_route_tests" end time: Jul 20 04:08 UTC
+"regidrago_issue_990_fss_observable_complete_route_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+79/169 Testing: regidrago_k0_quick_ball_target_tests
+79/169 Test: regidrago_k0_quick_ball_target_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "k0_quick_ball_target_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_k0_quick_ball_target_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] k0_quick_ball_target_tests
+K0 Quick Ball target tests passed
+[       OK ] k0_quick_ball_target_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_k0_quick_ball_target_tests" end time: Jul 20 04:08 UTC
+"regidrago_k0_quick_ball_target_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+80/169 Testing: regidrago_k0_ultra_ball_target_tests
+80/169 Test: regidrago_k0_ultra_ball_target_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "k0_ultra_ball_target_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_k0_ultra_ball_target_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] k0_ultra_ball_target_tests
+K0 Ultra Ball target tests passed
+[       OK ] k0_ultra_ball_target_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_k0_ultra_ball_target_tests" end time: Jul 20 04:08 UTC
+"regidrago_k0_ultra_ball_target_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+81/169 Testing: regidrago_known_dead_payload_tests
+81/169 Test: regidrago_known_dead_payload_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "known_dead_payload_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_known_dead_payload_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] known_dead_payload_tests
+[       OK ] known_dead_payload_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_known_dead_payload_tests" end time: Jul 20 04:08 UTC
+"regidrago_known_dead_payload_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+82/169 Testing: regidrago_late_item_supporter_tests
+82/169 Test: regidrago_late_item_supporter_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "late_item_supporter_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_late_item_supporter_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] late_item_supporter_tests
+[       OK ] late_item_supporter_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_late_item_supporter_tests" end time: Jul 20 04:08 UTC
+"regidrago_late_item_supporter_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+83/169 Testing: regidrago_late_steven_basic_connector_tests
+83/169 Test: regidrago_late_steven_basic_connector_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "late_steven_basic_connector_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_late_steven_basic_connector_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] late_steven_basic_connector_tests
+[       OK ] late_steven_basic_connector_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_late_steven_basic_connector_tests" end time: Jul 20 04:08 UTC
+"regidrago_late_steven_basic_connector_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+84/169 Testing: regidrago_late_steven_t3_compression_tests
+84/169 Test: regidrago_late_steven_t3_compression_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "late_steven_t3_compression_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_late_steven_t3_compression_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] late_steven_t3_compression_tests
+[       OK ] late_steven_t3_compression_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_late_steven_t3_compression_tests" end time: Jul 20 04:08 UTC
+"regidrago_late_steven_t3_compression_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+85/169 Testing: regidrago_latias_free_retreat_priority_tests
+85/169 Test: regidrago_latias_free_retreat_priority_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "latias_free_retreat_priority_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_latias_free_retreat_priority_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] latias_free_retreat_priority_tests
+[       OK ] latias_free_retreat_priority_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_latias_free_retreat_priority_tests" end time: Jul 20 04:08 UTC
+"regidrago_latias_free_retreat_priority_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+86/169 Testing: regidrago_legacy_star_communication_provenance_tests
+86/169 Test: regidrago_legacy_star_communication_provenance_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "legacy_star_communication_provenance_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_legacy_star_communication_provenance_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] legacy_star_communication_provenance_tests
+[       OK ] legacy_star_communication_provenance_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_legacy_star_communication_provenance_tests" end time: Jul 20 04:08 UTC
+"regidrago_legacy_star_communication_provenance_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+87/169 Testing: regidrago_legacy_star_duplicate_incense_ultra_tests
+87/169 Test: regidrago_legacy_star_duplicate_incense_ultra_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "legacy_star_duplicate_incense_ultra_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_legacy_star_duplicate_incense_ultra_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] legacy_star_duplicate_incense_ultra_tests
+[       OK ] legacy_star_duplicate_incense_ultra_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_legacy_star_duplicate_incense_ultra_tests" end time: Jul 20 04:08 UTC
+"regidrago_legacy_star_duplicate_incense_ultra_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+88/169 Testing: regidrago_legacy_star_evolution_incense_payload_tests
+88/169 Test: regidrago_legacy_star_evolution_incense_payload_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "legacy_star_evolution_incense_payload_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_legacy_star_evolution_incense_payload_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] legacy_star_evolution_incense_payload_tests
+[       OK ] legacy_star_evolution_incense_payload_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_legacy_star_evolution_incense_payload_tests" end time: Jul 20 04:08 UTC
+"regidrago_legacy_star_evolution_incense_payload_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+89/169 Testing: regidrago_legacy_star_latias_recovery_tests
+89/169 Test: regidrago_legacy_star_latias_recovery_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "legacy_star_latias_recovery_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_legacy_star_latias_recovery_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] legacy_star_latias_recovery_tests
+legacy star Latias recovery tests passed
+[       OK ] legacy_star_latias_recovery_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_legacy_star_latias_recovery_tests" end time: Jul 20 04:08 UTC
+"regidrago_legacy_star_latias_recovery_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+90/169 Testing: regidrago_legacy_star_post_powerglass_vessel_tests
+90/169 Test: regidrago_legacy_star_post_powerglass_vessel_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "legacy_star_post_powerglass_vessel_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_legacy_star_post_powerglass_vessel_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] legacy_star_post_powerglass_vessel_tests
+Legacy Star post-Powerglass Vessel tests passed
+[       OK ] legacy_star_post_powerglass_vessel_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_legacy_star_post_powerglass_vessel_tests" end time: Jul 20 04:08 UTC
+"regidrago_legacy_star_post_powerglass_vessel_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+91/169 Testing: regidrago_legacy_star_vessel_payload_cost_tests
+91/169 Test: regidrago_legacy_star_vessel_payload_cost_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "legacy_star_vessel_payload_cost_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_legacy_star_vessel_payload_cost_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] legacy_star_vessel_payload_cost_tests
+Legacy Star recovery bridge tests passed
+[       OK ] legacy_star_vessel_payload_cost_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_legacy_star_vessel_payload_cost_tests" end time: Jul 20 04:08 UTC
+"regidrago_legacy_star_vessel_payload_cost_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+92/169 Testing: regidrago_lusamine_arven_fss_payload_tests
+92/169 Test: regidrago_lusamine_arven_fss_payload_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "lusamine_arven_fss_payload_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_lusamine_arven_fss_payload_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] lusamine_arven_fss_payload_tests
+Lusamine Arven-FSS payload tests passed
+[       OK ] lusamine_arven_fss_payload_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_lusamine_arven_fss_payload_tests" end time: Jul 20 04:08 UTC
+"regidrago_lusamine_arven_fss_payload_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+93/169 Testing: regidrago_lusamine_arven_item_lock_tests
+93/169 Test: regidrago_lusamine_arven_item_lock_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "lusamine_arven_item_lock_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_lusamine_arven_item_lock_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] lusamine_arven_item_lock_tests
+[       OK ] lusamine_arven_item_lock_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_lusamine_arven_item_lock_tests" end time: Jul 20 04:08 UTC
+"regidrago_lusamine_arven_item_lock_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+94/169 Testing: regidrago_lusamine_erika_fallback_tests
+94/169 Test: regidrago_lusamine_erika_fallback_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "lusamine_erika_fallback_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_lusamine_erika_fallback_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] lusamine_erika_fallback_tests
+[       OK ] lusamine_erika_fallback_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_lusamine_erika_fallback_tests" end time: Jul 20 04:08 UTC
+"regidrago_lusamine_erika_fallback_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+95/169 Testing: regidrago_mysterious_treasure_payload_continuation_tests
+95/169 Test: regidrago_mysterious_treasure_payload_continuation_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "mysterious_treasure_payload_continuation_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_mysterious_treasure_payload_continuation_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] mysterious_treasure_payload_continuation_tests
+[       OK ] mysterious_treasure_payload_continuation_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_mysterious_treasure_payload_continuation_tests" end time: Jul 20 04:08 UTC
+"regidrago_mysterious_treasure_payload_continuation_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+96/169 Testing: regidrago_mysterious_treasure_redundant_payload_tests
+96/169 Test: regidrago_mysterious_treasure_redundant_payload_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "mysterious_treasure_redundant_payload_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_mysterious_treasure_redundant_payload_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] mysterious_treasure_redundant_payload_tests
+Mysterious Treasure redundant-payload tests passed
+[       OK ] mysterious_treasure_redundant_payload_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_mysterious_treasure_redundant_payload_tests" end time: Jul 20 04:08 UTC
+"regidrago_mysterious_treasure_redundant_payload_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+97/169 Testing: regidrago_no_redundant_item_tests
+97/169 Test: regidrago_no_redundant_item_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "no_redundant_item_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_no_redundant_item_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] no_redundant_item_tests
+[       OK ] no_redundant_item_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_no_redundant_item_tests" end time: Jul 20 04:08 UTC
+"regidrago_no_redundant_item_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+98/169 Testing: regidrago_opening_active_dialga_payload_tests
+98/169 Test: regidrago_opening_active_dialga_payload_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "opening_active_dialga_payload_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_opening_active_dialga_payload_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] opening_active_dialga_payload_tests
+[       OK ] opening_active_dialga_payload_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_opening_active_dialga_payload_tests" end time: Jul 20 04:08 UTC
+"regidrago_opening_active_dialga_payload_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+99/169 Testing: regidrago_opening_bench_tapu_route_tests
+99/169 Test: regidrago_opening_bench_tapu_route_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "opening_bench_tapu_route_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_opening_bench_tapu_route_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] opening_bench_tapu_route_tests
+[       OK ] opening_bench_tapu_route_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_opening_bench_tapu_route_tests" end time: Jul 20 04:08 UTC
+"regidrago_opening_bench_tapu_route_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+100/169 Testing: regidrago_opening_latias_bench_tests
+100/169 Test: regidrago_opening_latias_bench_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "opening_latias_bench_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_opening_latias_bench_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] opening_latias_bench_tests
+[       OK ] opening_latias_bench_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_opening_latias_bench_tests" end time: Jul 20 04:08 UTC
+"regidrago_opening_latias_bench_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+101/169 Testing: regidrago_opening_oricorio_dialga_lock_route_tests
+101/169 Test: regidrago_opening_oricorio_dialga_lock_route_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "opening_oricorio_dialga_lock_route_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_opening_oricorio_dialga_lock_route_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] opening_oricorio_dialga_lock_route_tests
+[       OK ] opening_oricorio_dialga_lock_route_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_opening_oricorio_dialga_lock_route_tests" end time: Jul 20 04:08 UTC
+"regidrago_opening_oricorio_dialga_lock_route_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+102/169 Testing: regidrago_opening_oricorio_dialga_no_lock_tests
+102/169 Test: regidrago_opening_oricorio_dialga_no_lock_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "opening_oricorio_dialga_no_lock_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_opening_oricorio_dialga_no_lock_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] opening_oricorio_dialga_no_lock_tests
+[       OK ] opening_oricorio_dialga_no_lock_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_opening_oricorio_dialga_no_lock_tests" end time: Jul 20 04:08 UTC
+"regidrago_opening_oricorio_dialga_no_lock_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+103/169 Testing: regidrago_opening_oricorio_dialga_payability_tests
+103/169 Test: regidrago_opening_oricorio_dialga_payability_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "opening_oricorio_dialga_payability_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_opening_oricorio_dialga_payability_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] opening_oricorio_dialga_payability_tests
+[       OK ] opening_oricorio_dialga_payability_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_opening_oricorio_dialga_payability_tests" end time: Jul 20 04:08 UTC
+"regidrago_opening_oricorio_dialga_payability_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+104/169 Testing: regidrago_opening_tapu_oricorio_tests
+104/169 Test: regidrago_opening_tapu_oricorio_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "opening_tapu_oricorio_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_opening_tapu_oricorio_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] opening_tapu_oricorio_tests
+[       OK ] opening_tapu_oricorio_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_opening_tapu_oricorio_tests" end time: Jul 20 04:08 UTC
+"regidrago_opening_tapu_oricorio_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+105/169 Testing: regidrago_oricorio_burnet_compression_tests
+105/169 Test: regidrago_oricorio_burnet_compression_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "oricorio_burnet_compression_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_oricorio_burnet_compression_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] oricorio_burnet_compression_tests
+[       OK ] oricorio_burnet_compression_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_oricorio_burnet_compression_tests" end time: Jul 20 04:08 UTC
+"regidrago_oricorio_burnet_compression_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+106/169 Testing: regidrago_oricorio_full_energy_search_tests
+106/169 Test: regidrago_oricorio_full_energy_search_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "oricorio_full_energy_search_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_oricorio_full_energy_search_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] oricorio_full_energy_search_tests
+[       OK ] oricorio_full_energy_search_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_oricorio_full_energy_search_tests" end time: Jul 20 04:08 UTC
+"regidrago_oricorio_full_energy_search_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+107/169 Testing: regidrago_oricorio_type_sensitive_energy_tests
+107/169 Test: regidrago_oricorio_type_sensitive_energy_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "oricorio_type_sensitive_energy_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_oricorio_type_sensitive_energy_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] oricorio_type_sensitive_energy_tests
+[       OK ] oricorio_type_sensitive_energy_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_oricorio_type_sensitive_energy_tests" end time: Jul 20 04:08 UTC
+"regidrago_oricorio_type_sensitive_energy_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+108/169 Testing: regidrago_pokemon_communication_duplicate_tapu_tests
+108/169 Test: regidrago_pokemon_communication_duplicate_tapu_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "pokemon_communication_duplicate_tapu_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_pokemon_communication_duplicate_tapu_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] pokemon_communication_duplicate_tapu_tests
+[       OK ] pokemon_communication_duplicate_tapu_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_pokemon_communication_duplicate_tapu_tests" end time: Jul 20 04:08 UTC
+"regidrago_pokemon_communication_duplicate_tapu_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+109/169 Testing: regidrago_pokemon_communication_post_exchange_target_tests
+109/169 Test: regidrago_pokemon_communication_post_exchange_target_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "pokemon_communication_post_exchange_target_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_pokemon_communication_post_exchange_target_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] pokemon_communication_post_exchange_target_tests
+[       OK ] pokemon_communication_post_exchange_target_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_pokemon_communication_post_exchange_target_tests" end time: Jul 20 04:08 UTC
+"regidrago_pokemon_communication_post_exchange_target_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+110/169 Testing: regidrago_pokemon_communication_recovery_zone_tests
+110/169 Test: regidrago_pokemon_communication_recovery_zone_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "pokemon_communication_recovery_zone_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_pokemon_communication_recovery_zone_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] pokemon_communication_recovery_zone_tests
+[       OK ] pokemon_communication_recovery_zone_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_pokemon_communication_recovery_zone_tests" end time: Jul 20 04:08 UTC
+"regidrago_pokemon_communication_recovery_zone_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+112/169 Testing: regidrago_powerglass_end_turn_tests
+112/169 Test: regidrago_powerglass_end_turn_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "powerglass_end_turn_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_powerglass_end_turn_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] powerglass_end_turn_tests
+[       OK ] powerglass_end_turn_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_powerglass_end_turn_tests" end time: Jul 20 04:08 UTC
+"regidrago_powerglass_end_turn_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+114/169 Testing: regidrago_redundant_payload_vstar_search_tests
+114/169 Test: regidrago_redundant_payload_vstar_search_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "redundant_payload_vstar_search_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_redundant_payload_vstar_search_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] redundant_payload_vstar_search_tests
+[       OK ] redundant_payload_vstar_search_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_redundant_payload_vstar_search_tests" end time: Jul 20 04:08 UTC
+"regidrago_redundant_payload_vstar_search_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+113/169 Testing: regidrago_quick_ball_ultra_ball_cost_tests
+113/169 Test: regidrago_quick_ball_ultra_ball_cost_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "quick_ball_ultra_ball_cost_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_quick_ball_ultra_ball_cost_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] quick_ball_ultra_ball_cost_tests
+[       OK ] quick_ball_ultra_ball_cost_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_quick_ball_ultra_ball_cost_tests" end time: Jul 20 04:08 UTC
+"regidrago_quick_ball_ultra_ball_cost_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+116/169 Testing: regidrago_regidrago_sim_tests
+116/169 Test: regidrago_regidrago_sim_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "regidrago_sim_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_regidrago_sim_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] regidrago_sim_tests
+[       OK ] regidrago_sim_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_regidrago_sim_tests" end time: Jul 20 04:08 UTC
+"regidrago_regidrago_sim_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+115/169 Testing: regidrago_regidrago_policy_tests
+115/169 Test: regidrago_regidrago_policy_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "regidrago_policy_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_regidrago_policy_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] regidrago_policy_tests
+PASS gladion_fetches_prized_vstar_only_when_no_route_exists
+PASS gladion_is_not_burned_when_vstar_is_already_in_hand
+PASS steven_fetches_burnet_before_turn_two_item_lock
+PASS steven_uses_legal_fallback_when_preferred_card_is_prized
+PASS steven_resolve_reserves_gladion_for_prized_vstar
+PASS steven_skips_known_dead_crispin
+PASS fss_finds_steven_on_turn_one_when_three_axes_are_missing
+PASS fss_uses_a_fallback_when_vstar_is_not_in_deck
+PASS fss_fetches_missing_basic_energy_for_manual_attachment
+PASS fss_cannot_be_used_from_a_vstar_holder
+PASS existing_fss_is_usable_under_item_lock
+PASS fss_is_blocked_by_rule_box_lock
+PASS crispin_attaches_only_with_two_different_energy_types
+PASS crispin_single_type_only_puts_energy_in_hand
+PASS earthen_vessel_can_take_two_grass
+PASS strict_jit_holds_payload_before_turn_two
+PASS no_control_allows_early_payload_banking
+PASS blender_dominates_mysterious_treasure_when_no_search_axis_exists
+PASS searches_use_legal_fallback_targets_after_deck_inspection
+PASS heavy_ball_inspects_prizes_and_chains_tapu
+PASS known_no_basic_prize_holds_heavy_ball_for_discard_cost
+PASS k1_gladion_recovers_final_prized_energy
+PASS heavy_ball_reveal_marks_crispin_dead
+PASS fss_reveal_preserves_burnet_over_prized_energy
+PASS celestial_roar_attached_energy_leaves_discard
+PASS tate_draws_from_a_four_card_dead_hand
+PASS tate_refreshes_a_five_card_dead_hand
+PASS fss_fetches_gladion_for_final_prized_energy
+PASS full_bench_blocks_basic_search_connectors
+PASS strict_serena_uses_three_safe_discards
+PASS heavy_ball_oricorio_preserves_burnet_supporter
+PASS legacy_star_recovered_blender_is_played_same_turn
+PASS legacy_star_recovered_crispin_is_played_same_turn
+PASS legacy_star_recovers_burnet_for_deck_payload
+PASS lusamine_recovers_only_live_axis_connectors
+PASS wonder_tag_skips_known_dead_crispin
+PASS payload_selectors_fetch_burnet_when_blender_is_unavailable
+PASS live_burnet_preempts_arven_when_blender_is_absent
+PASS tapu_fetches_burnet_without_item_lock_when_blender_is_not_live
+PASS lusamine_recovers_current_axis_connectors
+PASS arven_requires_a_live_item_or_tool_route
+PASS oricorio_is_held_when_earthen_vessel_already_solves_energy
+PASS oricorio_works_under_rule_box_lock
+PASS tapu_is_blocked_by_rule_box_lock
+PASS tapu_fetches_steven_when_it_is_the_live_turn_one_connector
+PASS latias_retreat_is_basic_only
+PASS tate_switch_is_selected_when_it_completes_active_axis
+PASS strict_jit_requires_payload_to_be_in_discard_now_and_this_turn
+PASS finished_setup_does_not_burn_serena
+PASS arven_fetches_forest_seal_stone_during_item_lock
+PASS arven_is_not_played_during_item_lock
+PASS first_turn_restrictions_and_celestial_cost
+PASS evolution_timing_and_single_manual_attachment
+PASS item_lock_blocks_item_cards
+PASS ultra_ball_discards_payload_in_jit_window
+PASS dipplin_is_legal_treasure_fallback_but_not_payload_ready
+PASS late_jit_item_search_evolves_in_the_same_turn
+Policy fixtures: 57/57 passed
+[       OK ] regidrago_policy_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_regidrago_policy_tests" end time: Jul 20 04:08 UTC
+"regidrago_regidrago_policy_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+117/169 Testing: regidrago_regidrago_tier2_tests
+117/169 Test: regidrago_regidrago_tier2_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "regidrago_tier2_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_regidrago_tier2_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] regidrago_tier2_tests
+PASS crispin_beats_arven
+PASS steven_beats_arven
+PASS search_then_known_gladion_beats_supporters
+PASS k0_does_not_peek_prizes
+PASS blind_gladion_is_critical_only
+PASS fss_uses_oricorio_compression
+PASS fss_uses_vessel_over_arven
+PASS fss_uses_direct_arven_not_tapu_chain
+PASS fss_uses_blender_for_payload
+PASS known_lusamine_is_delayed_not_direct
+PASS search_effects_persist_knowledge
+PASS zero_target_crispin_rejects_no_effect_play
+PASS k1_singleton_crispin_supplies_manual_energy
+PASS tapu_avoids_redundant_arven
+PASS tapu_uses_gladion_for_known_prized_vstar
+PASS crispin_beats_known_prized_oricorio
+PASS fss_holds_for_tate_switch
+PASS fss_uses_gladion_for_known_prized_vstar
+PASS heavy_ball_oricorio_compresses_energy
+PASS ability_lock_blocks_latias_quick_ball_connector
+PASS fss_is_blocked_by_rulebox_lock
+PASS k1_heavy_ball_beats_still_live_quick_ball
+PASS tate_draw_recovers_missing_vstar
+PASS arven_uses_available_vstar_item_fallback
+PASS fss_holds_for_live_crispin
+PASS ultra_ball_holds_for_live_crispin
+PASS costed_search_accepts_distinct_ultra_second_cost
+PASS tapu_holds_for_three_ultra_vstar_route
+PASS legacy_star_recovers_payable_incense_ultra_bridge
+PASS legacy_star_rejects_final_card_incense_ultra_bridge
+PASS legacy_star_rejects_unpayable_incense_ultra_bridge
+Tier Two policy tests: 31/31 passed
+[       OK ] regidrago_tier2_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_regidrago_tier2_tests" end time: Jul 20 04:08 UTC
+"regidrago_regidrago_tier2_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+118/169 Testing: regidrago_roseanne_energy_recovery_tests
+118/169 Test: regidrago_roseanne_energy_recovery_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "roseanne_energy_recovery_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_roseanne_energy_recovery_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] roseanne_energy_recovery_tests
+[       OK ] roseanne_energy_recovery_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_roseanne_energy_recovery_tests" end time: Jul 20 04:08 UTC
+"regidrago_roseanne_energy_recovery_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+119/169 Testing: regidrago_roseanne_pokemon_communication_zone_tests
+119/169 Test: regidrago_roseanne_pokemon_communication_zone_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "roseanne_pokemon_communication_zone_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_roseanne_pokemon_communication_zone_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] roseanne_pokemon_communication_zone_tests
+[       OK ] roseanne_pokemon_communication_zone_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_roseanne_pokemon_communication_zone_tests" end time: Jul 20 04:08 UTC
+"regidrago_roseanne_pokemon_communication_zone_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+120/169 Testing: regidrago_route_reconciliation_tests
+120/169 Test: regidrago_route_reconciliation_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "route_reconciliation_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_route_reconciliation_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] route_reconciliation_tests
+route reconciliation tests passed
+[       OK ] route_reconciliation_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_route_reconciliation_tests" end time: Jul 20 04:08 UTC
+"regidrago_route_reconciliation_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+121/169 Testing: regidrago_serena_mandatory_discard_tests
+121/169 Test: regidrago_serena_mandatory_discard_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "serena_mandatory_discard_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_serena_mandatory_discard_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] serena_mandatory_discard_tests
+[       OK ] serena_mandatory_discard_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_serena_mandatory_discard_tests" end time: Jul 20 04:08 UTC
+"regidrago_serena_mandatory_discard_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+122/169 Testing: regidrago_serena_zero_draw_tests
+122/169 Test: regidrago_serena_zero_draw_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "serena_zero_draw_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_serena_zero_draw_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] serena_zero_draw_tests
+[       OK ] serena_zero_draw_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_serena_zero_draw_tests" end time: Jul 20 04:08 UTC
+"regidrago_serena_zero_draw_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+123/169 Testing: regidrago_stable_route_contract_tests
+123/169 Test: regidrago_stable_route_contract_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "stable_route_contract_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_stable_route_contract_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] stable_route_contract_tests
+[       OK ] stable_route_contract_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_stable_route_contract_tests" end time: Jul 20 04:08 UTC
+"regidrago_stable_route_contract_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+124/169 Testing: regidrago_start_turn_deck_exhaustion_tests
+124/169 Test: regidrago_start_turn_deck_exhaustion_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "start_turn_deck_exhaustion_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_start_turn_deck_exhaustion_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] start_turn_deck_exhaustion_tests
+turn timing tests passed
+[       OK ] start_turn_deck_exhaustion_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_start_turn_deck_exhaustion_tests" end time: Jul 20 04:08 UTC
+"regidrago_start_turn_deck_exhaustion_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+125/169 Testing: regidrago_steven_crispin_turn2_item_lock_tests
+125/169 Test: regidrago_steven_crispin_turn2_item_lock_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "steven_crispin_turn2_item_lock_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_steven_crispin_turn2_item_lock_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] steven_crispin_turn2_item_lock_tests
+[       OK ] steven_crispin_turn2_item_lock_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_steven_crispin_turn2_item_lock_tests" end time: Jul 20 04:08 UTC
+"regidrago_steven_crispin_turn2_item_lock_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+126/169 Testing: regidrago_steven_matchup_erika_route_tests
+126/169 Test: regidrago_steven_matchup_erika_route_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "steven_matchup_erika_route_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_steven_matchup_erika_route_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] steven_matchup_erika_route_tests
+[       OK ] steven_matchup_erika_route_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_steven_matchup_erika_route_tests" end time: Jul 20 04:08 UTC
+"regidrago_steven_matchup_erika_route_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+127/169 Testing: regidrago_steven_missing_regi_tests
+127/169 Test: regidrago_steven_missing_regi_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "steven_missing_regi_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_steven_missing_regi_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] steven_missing_regi_tests
+[       OK ] steven_missing_regi_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_steven_missing_regi_tests" end time: Jul 20 04:08 UTC
+"regidrago_steven_missing_regi_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+128/169 Testing: regidrago_steven_mysterious_treasure_dci_tests
+128/169 Test: regidrago_steven_mysterious_treasure_dci_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "steven_mysterious_treasure_dci_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_steven_mysterious_treasure_dci_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] steven_mysterious_treasure_dci_tests
+[       OK ] steven_mysterious_treasure_dci_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_steven_mysterious_treasure_dci_tests" end time: Jul 20 04:08 UTC
+"regidrago_steven_mysterious_treasure_dci_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+129/169 Testing: regidrago_steven_projected_axes_tests
+129/169 Test: regidrago_steven_projected_axes_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "steven_projected_axes_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_steven_projected_axes_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] steven_projected_axes_tests
+[       OK ] steven_projected_axes_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_steven_projected_axes_tests" end time: Jul 20 04:08 UTC
+"regidrago_steven_projected_axes_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+130/169 Testing: regidrago_tapu_copy_aware_connector_tests
+130/169 Test: regidrago_tapu_copy_aware_connector_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "tapu_copy_aware_connector_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_tapu_copy_aware_connector_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] tapu_copy_aware_connector_tests
+All copy-aware Tapu connector tests passed.
+[       OK ] tapu_copy_aware_connector_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_tapu_copy_aware_connector_tests" end time: Jul 20 04:08 UTC
+"regidrago_tapu_copy_aware_connector_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+131/169 Testing: regidrago_tapu_gladion_prize_fallback_tests
+131/169 Test: regidrago_tapu_gladion_prize_fallback_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "tapu_gladion_prize_fallback_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_tapu_gladion_prize_fallback_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] tapu_gladion_prize_fallback_tests
+K1 Tapu connector tests passed
+[       OK ] tapu_gladion_prize_fallback_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_tapu_gladion_prize_fallback_tests" end time: Jul 20 04:08 UTC
+"regidrago_tapu_gladion_prize_fallback_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+132/169 Testing: regidrago_tate_switch_blender_payload_tests
+132/169 Test: regidrago_tate_switch_blender_payload_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "tate_switch_blender_payload_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_tate_switch_blender_payload_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] tate_switch_blender_payload_tests
+[       OK ] tate_switch_blender_payload_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_tate_switch_blender_payload_tests" end time: Jul 20 04:08 UTC
+"regidrago_tate_switch_blender_payload_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+133/169 Testing: regidrago_team_yell_latias_recovery_tests
+133/169 Test: regidrago_team_yell_latias_recovery_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "team_yell_latias_recovery_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_team_yell_latias_recovery_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] team_yell_latias_recovery_tests
+[       OK ] team_yell_latias_recovery_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_team_yell_latias_recovery_tests" end time: Jul 20 04:08 UTC
+"regidrago_team_yell_latias_recovery_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+134/169 Testing: regidrago_turo_delayed_burnet_payload_tests
+134/169 Test: regidrago_turo_delayed_burnet_payload_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "turo_delayed_burnet_payload_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_turo_delayed_burnet_payload_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] turo_delayed_burnet_payload_tests
+Turo delayed-Burnet payload tests passed
+[       OK ] turo_delayed_burnet_payload_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_turo_delayed_burnet_payload_tests" end time: Jul 20 04:08 UTC
+"regidrago_turo_delayed_burnet_payload_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+135/169 Testing: regidrago_turo_ready_direct_evolution_tests
+135/169 Test: regidrago_turo_ready_direct_evolution_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "turo_ready_direct_evolution_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_turo_ready_direct_evolution_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] turo_ready_direct_evolution_tests
+Turo ready direct evolution tests passed
+[       OK ] turo_ready_direct_evolution_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_turo_ready_direct_evolution_tests" end time: Jul 20 04:08 UTC
+"regidrago_turo_ready_direct_evolution_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+136/169 Testing: regidrago_ultra_ball_cross_singleton_cost_tests
+136/169 Test: regidrago_ultra_ball_cross_singleton_cost_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "ultra_ball_cross_singleton_cost_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_ultra_ball_cross_singleton_cost_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] ultra_ball_cross_singleton_cost_tests
+[       OK ] ultra_ball_cross_singleton_cost_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_ultra_ball_cross_singleton_cost_tests" end time: Jul 20 04:08 UTC
+"regidrago_ultra_ball_cross_singleton_cost_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+137/169 Testing: regidrago_ultra_ball_redundant_cost_tests
+137/169 Test: regidrago_ultra_ball_redundant_cost_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "ultra_ball_redundant_cost_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_ultra_ball_redundant_cost_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] ultra_ball_redundant_cost_tests
+[       OK ] ultra_ball_redundant_cost_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_ultra_ball_redundant_cost_tests" end time: Jul 20 04:08 UTC
+"regidrago_ultra_ball_redundant_cost_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+138/169 Testing: regidrago_ultra_ball_tapu_connector_tests
+138/169 Test: regidrago_ultra_ball_tapu_connector_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "ultra_ball_tapu_connector_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_ultra_ball_tapu_connector_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] ultra_ball_tapu_connector_tests
+ultra ball connector tests passed
+[       OK ] ultra_ball_tapu_connector_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_ultra_ball_tapu_connector_tests" end time: Jul 20 04:08 UTC
+"regidrago_ultra_ball_tapu_connector_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+139/169 Testing: regidrago_vstar_promotion_selection_tests
+139/169 Test: regidrago_vstar_promotion_selection_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "vstar_promotion_selection_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_vstar_promotion_selection_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] vstar_promotion_selection_tests
+VSTAR promotion selection tests passed
+[       OK ] vstar_promotion_selection_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_vstar_promotion_selection_tests" end time: Jul 20 04:08 UTC
+"regidrago_vstar_promotion_selection_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+140/169 Testing: regidrago_wonder_tag_banked_steven_tests
+140/169 Test: regidrago_wonder_tag_banked_steven_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "wonder_tag_banked_steven_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_wonder_tag_banked_steven_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] wonder_tag_banked_steven_tests
+[       OK ] wonder_tag_banked_steven_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_wonder_tag_banked_steven_tests" end time: Jul 20 04:08 UTC
+"regidrago_wonder_tag_banked_steven_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+141/169 Testing: regidrago_wonder_tag_future_supporter_tests
+141/169 Test: regidrago_wonder_tag_future_supporter_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "wonder_tag_future_supporter_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_wonder_tag_future_supporter_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] wonder_tag_future_supporter_tests
+[       OK ] wonder_tag_future_supporter_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_wonder_tag_future_supporter_tests" end time: Jul 20 04:08 UTC
+"regidrago_wonder_tag_future_supporter_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+142/169 Testing: regidrago_wonder_tag_known_dead_burnet_tests
+142/169 Test: regidrago_wonder_tag_known_dead_burnet_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "wonder_tag_known_dead_burnet_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_wonder_tag_known_dead_burnet_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] wonder_tag_known_dead_burnet_tests
+Wonder Tag connector tests passed
+[       OK ] wonder_tag_known_dead_burnet_tests
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_wonder_tag_known_dead_burnet_tests" end time: Jul 20 04:08 UTC
+"regidrago_wonder_tag_known_dead_burnet_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+143/169 Testing: regidrago_wonder_tag_redundant_burnet_tests
+143/169 Test: regidrago_wonder_tag_redundant_burnet_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "wonder_tag_redundant_burnet_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_wonder_tag_redundant_burnet_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] wonder_tag_redundant_burnet_tests
+Wonder Tag redundant-Burnet tests passed
+[       OK ] wonder_tag_redundant_burnet_tests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_wonder_tag_redundant_burnet_tests" end time: Jul 20 04:08 UTC
+"regidrago_wonder_tag_redundant_burnet_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+111/169 Testing: regidrago_pokemon_communication_tests
+111/169 Test: regidrago_pokemon_communication_tests
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_unified_tests" "pokemon_communication_tests"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_pokemon_communication_tests" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+[ RUN      ] pokemon_communication_tests
+[       OK ] pokemon_communication_tests
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_pokemon_communication_tests" end time: Jul 20 04:08 UTC
+"regidrago_pokemon_communication_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+147/169 Testing: trace_strict_second_t3
+147/169 Test: trace_strict_second_t3
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "--simulate-this" "--scenario" "strict-jit/go-second" "--seed" "1" "--require-ready-by" "3"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"trace_strict_second_t3" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+
+Seed: 1 | first-ready turn: 2 | setup result: success
+===== SIMULATE THIS =====
+Scenario: strict-jit/go-second | DCI: strict-JIT | Locks: none
+Mulligans: 1
+Opening player-known state: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Grass Energy, Hisuian Heavy Ball, Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127 | Discard=(none)
+DEBUG ONLY: prizes=Tate & Liza, Regidrago V, Gladion, Tapu Lele-GX, Regidrago VSTAR, Grass Energy. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Regidrago V
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Grass Energy, Hisuian Heavy Ball, Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127, Regidrago V | Discard=(none)
+T1 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T1 | PLAY ITEM | rules: R-HEAVYBALL-01; R-GAME-ITEM; P-KNOWLEDGE-01; P-COMPRESS-01 | Looked at Prize cards and exchanged Heavy Ball for Tapu Lele-GX.
+T1 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Wonder Tag: deck inspected; Prize identities are now deducible for later decisions.
+T1 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Steven's Resolve.
+T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T1 | PLAY SUPPORTER | rules: R-STEVEN-01; R-GAME-SUPPORTER | Searched up to 3 cards: Regidrago VSTAR, Crispin, Latias ex. Turn ended.
+T1 | TURN END | rules: R-STEVEN-01 or R-RV-01 | Active=Tapu Lele-GX [-] | Bench=Regidrago V [G]; Tapu Lele-GX [-] | Hand=Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127, Regidrago VSTAR, Crispin, Latias ex | Discard=Steven's Resolve
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Professor Turo's Scenario
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=Regidrago V [G]; Tapu Lele-GX [-] | Hand=Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127, Regidrago VSTAR, Crispin, Latias ex, Professor Turo's Scenario | Discard=Steven's Resolve
+T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T2 | BENCH | rules: R-GAME-BENCH | Latias ex from hand.
+T2 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dialga-GX.
+T2 | RETREAT | rules: R-LATIAS-01; R-GAME-RETREAT | Latias ex gives the Basic Active no Retreat Cost; promoted the best-powered Benched Regidrago VSTAR.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Tapu Lele-GX [-]; Tapu Lele-GX [-]; Latias ex [-] | Hand=Professor Burnet, Dipplin TWM 127, Professor Turo's Scenario, Fire Energy | Discard=Steven's Resolve, Crispin, Brilliant Blender, Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dialga-GX
+T2 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"trace_strict_second_t3" end time: Jul 20 04:08 UTC
+"trace_strict_second_t3" time elapsed: 00:00:00
+----------------------------------------------------------
+
+148/169 Testing: trace_strict_first_t4
+148/169 Test: trace_strict_first_t4
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "--simulate-this" "--scenario" "strict-jit/go-first" "--seed" "2" "--require-ready-by" "4"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"trace_strict_first_t4" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+
+Seed: 2 | first-ready turn: 3 | setup result: success
+===== SIMULATE THIS =====
+Scenario: strict-jit/go-first | DCI: strict-JIT | Locks: none
+Mulligans: 0
+Opening player-known state: Active=Regidrago V [-] | Bench=Regidrago V [-] | Hand=Mysterious Treasure, Powerglass, Regidrago V, Guzma, Tapu Lele-GX | Discard=(none)
+DEBUG ONLY: prizes=Arven, Fire Energy, Earthen Vessel, Gladion, Gladion, Hisuian Goodra VSTAR. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Professor Turo's Scenario
+T1 | TURN START | rules: R-GAME-FIRST-TURN | Going first: drew for the turn; no Supporter or attack is permitted.
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [-] | Bench=Regidrago V [-] | Hand=Mysterious Treasure, Powerglass, Regidrago V, Guzma, Tapu Lele-GX, Professor Turo's Scenario | Discard=(none)
+T1 | DISCARD | rules: R-MT-01 | Regidrago V (Mysterious Treasure cost)
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Mysterious Treasure: deck inspected; Prize identities are now deducible for later decisions.
+T1 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM | Searched a Psychic or Dragon Pokémon: Regidrago VSTAR.
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [-] | Bench=Regidrago V [-] | Hand=Powerglass, Guzma, Tapu Lele-GX, Professor Turo's Scenario, Regidrago VSTAR | Discard=Mysterious Treasure, Regidrago V
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Mega Dragonite ex
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [-] | Bench=Regidrago V [-] | Hand=Powerglass, Guzma, Tapu Lele-GX, Professor Turo's Scenario, Regidrago VSTAR, Mega Dragonite ex | Discard=Mysterious Treasure, Regidrago V
+T2 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
+T2 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Crispin.
+T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T2 | LEGACY STAR | rules: R-RVS-01; R-VSTAR-01 | Discarded top 7: Roseanne's Backup, Erika's Invitation, Arven, Grass Energy, Grass Energy, Forest Seal Stone, Earthen Vessel; recovered: Earthen Vessel, Crispin.
+T2 | ATTACH TOOL | rules: R-POWERGLASS-01; R-GAME-TOOL | Attached Powerglass to the Active Regidrago VSTAR.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GF] + Powerglass | Bench=Regidrago V [-]; Tapu Lele-GX [-] | Hand=Guzma, Professor Turo's Scenario, Mega Dragonite ex, Earthen Vessel, Crispin | Discard=Mysterious Treasure, Regidrago V, Roseanne's Backup, Erika's Invitation, Arven, Grass Energy, Grass Energy, Forest Seal Stone
+T2 | POWERGLASS | rules: R-POWERGLASS-01 | Attached Grass Energy from discard at end of turn.
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Tapu Lele-GX
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago VSTAR [GGF] + Powerglass | Bench=Regidrago V [-]; Tapu Lele-GX [-] | Hand=Guzma, Professor Turo's Scenario, Mega Dragonite ex, Earthen Vessel, Crispin, Tapu Lele-GX | Discard=Mysterious Treasure, Regidrago V, Roseanne's Backup, Erika's Invitation, Arven, Grass Energy, Forest Seal Stone
+T3 | DISCARD | rules: R-EV-01 | Mega Dragonite ex (Earthen Vessel cost)
+T3 | Earthen Vessel | rules: R-EV-01; R-GAME-ITEM | Searched up to 2 Basic Energy: Grass Energy, Grass Energy.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] + Powerglass | Bench=Regidrago V [-]; Tapu Lele-GX [-] | Hand=Guzma, Professor Turo's Scenario, Crispin, Tapu Lele-GX, Grass Energy, Grass Energy | Discard=Mysterious Treasure, Regidrago V, Roseanne's Backup, Erika's Invitation, Arven, Grass Energy, Forest Seal Stone, Earthen Vessel, Mega Dragonite ex
+T3 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"trace_strict_first_t4" end time: Jul 20 04:08 UTC
+"trace_strict_first_t4" time elapsed: 00:00:00
+----------------------------------------------------------
+
+149/169 Testing: trace_issue_718_strict_first_seed1
+149/169 Test: trace_issue_718_strict_first_seed1
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "--simulate-this" "--scenario" "strict-jit/go-first" "--seed" "1" "--require-ready-by" "4"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"trace_issue_718_strict_first_seed1" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+
+Seed: 1 | first-ready turn: 3 | setup result: success
+===== SIMULATE THIS =====
+Scenario: strict-jit/go-first | DCI: strict-JIT | Locks: none
+Mulligans: 1
+Opening player-known state: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Grass Energy, Hisuian Heavy Ball, Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127 | Discard=(none)
+DEBUG ONLY: prizes=Tate & Liza, Regidrago V, Gladion, Tapu Lele-GX, Regidrago VSTAR, Grass Energy. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Regidrago V
+T1 | TURN START | rules: R-GAME-FIRST-TURN | Going first: drew for the turn; no Supporter or attack is permitted.
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Grass Energy, Hisuian Heavy Ball, Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127, Regidrago V | Discard=(none)
+T1 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T1 | PLAY ITEM | rules: R-HEAVYBALL-01; R-GAME-ITEM; P-KNOWLEDGE-01; P-COMPRESS-01 | Looked at Prize cards and exchanged Heavy Ball for Tapu Lele-GX.
+T1 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Wonder Tag: deck inspected; Prize identities are now deducible for later decisions.
+T1 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Steven's Resolve.
+T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Tapu Lele-GX [-] | Bench=Regidrago V [G]; Tapu Lele-GX [-] | Hand=Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127, Steven's Resolve | Discard=(none)
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Grass Energy
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=Regidrago V [G]; Tapu Lele-GX [-] | Hand=Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127, Steven's Resolve, Grass Energy | Discard=(none)
+T2 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T2 | PLAY SUPPORTER | rules: R-STEVEN-01; R-GAME-SUPPORTER | Searched up to 3 cards: Regidrago VSTAR, Grass Energy, Latias ex. Turn ended.
+T2 | TURN END | rules: R-STEVEN-01 | Active=Tapu Lele-GX [-] | Bench=Regidrago V [GG]; Tapu Lele-GX [-] | Hand=Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127, Regidrago VSTAR, Grass Energy, Latias ex | Discard=Steven's Resolve
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Mega Dragonite ex
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=Regidrago V [GG]; Tapu Lele-GX [-] | Hand=Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127, Regidrago VSTAR, Grass Energy, Latias ex, Mega Dragonite ex | Discard=Steven's Resolve
+T3 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T3 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T3 | BENCH | rules: R-GAME-BENCH | Latias ex from hand.
+T3 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dialga-GX.
+T3 | RETREAT | rules: R-LATIAS-01; R-GAME-RETREAT | Latias ex gives the Basic Active no Retreat Cost; promoted the best-powered Benched Regidrago VSTAR.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Tapu Lele-GX [-]; Tapu Lele-GX [-]; Latias ex [-] | Hand=Professor Burnet, Dipplin TWM 127, Grass Energy, Mega Dragonite ex | Discard=Steven's Resolve, Brilliant Blender, Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dialga-GX
+T3 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"trace_issue_718_strict_first_seed1" end time: Jul 20 04:08 UTC
+"trace_issue_718_strict_first_seed1" time elapsed: 00:00:00
+----------------------------------------------------------
+
+150/169 Testing: trace_flex_second_t2
+150/169 Test: trace_flex_second_t2
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "--simulate-this" "--scenario" "matchup-flex-jit/go-second" "--seed" "3" "--require-ready-by" "2"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"trace_flex_second_t2" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+
+Seed: 3 | first-ready turn: 2 | setup result: success
+===== SIMULATE THIS =====
+Scenario: matchup-flex-jit/go-second | DCI: matchup-flex-JIT | Locks: none
+Mulligans: 1
+Opening player-known state: Active=Latias ex [-] | Bench=(none) | Hand=Steven's Resolve, Roseanne's Backup, Mysterious Treasure, Serena, Fire Energy, Erika's Invitation | Discard=(none)
+DEBUG ONLY: prizes=Mega Dragonite ex, Team Yell's Cheer, Mysterious Treasure, Regidrago VSTAR, Chaotic Swell, Oricorio GRI 55. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Grass Energy
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=(none) | Hand=Steven's Resolve, Roseanne's Backup, Mysterious Treasure, Serena, Fire Energy, Erika's Invitation, Grass Energy | Discard=(none)
+T1 | DISCARD | rules: R-MT-01 | Erika's Invitation (Mysterious Treasure cost)
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Mysterious Treasure: deck inspected; Prize identities are now deducible for later decisions.
+T1 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM | Searched a Psychic or Dragon Pokémon: Regidrago V.
+T1 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T1 | PLAY SUPPORTER | rules: R-STEVEN-01; R-GAME-SUPPORTER | Searched up to 3 cards: Regidrago VSTAR, Crispin, Brilliant Blender. Turn ended.
+T1 | TURN END | rules: R-STEVEN-01 or R-RV-01 | Active=Latias ex [-] | Bench=Regidrago V [G] | Hand=Roseanne's Backup, Serena, Fire Energy, Regidrago VSTAR, Crispin, Brilliant Blender | Discard=Mysterious Treasure, Erika's Invitation, Steven's Resolve
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Arven
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=Regidrago V [G] | Hand=Roseanne's Backup, Serena, Fire Energy, Regidrago VSTAR, Crispin, Brilliant Blender, Arven | Discard=Mysterious Treasure, Erika's Invitation, Steven's Resolve
+T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T2 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dialga-GX, Dipplin TWM 127.
+T2 | RETREAT | rules: R-LATIAS-01; R-GAME-RETREAT | Latias ex gives the Basic Active no Retreat Cost; promoted the best-powered Benched Regidrago VSTAR.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Latias ex [-] | Hand=Roseanne's Backup, Serena, Arven, Fire Energy | Discard=Mysterious Treasure, Erika's Invitation, Steven's Resolve, Crispin, Brilliant Blender, Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dialga-GX, Dipplin TWM 127
+T2 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"trace_flex_second_t2" end time: Jul 20 04:08 UTC
+"trace_flex_second_t2" time elapsed: 00:00:00
+----------------------------------------------------------
+
+151/169 Testing: trace_turn2_item_lock_t3
+151/169 Test: trace_turn2_item_lock_t3
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "--simulate-this" "--scenario" "strict-jit-turn2-item-lock/go-second" "--seed" "1" "--require-ready-by" "3"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"trace_turn2_item_lock_t3" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+
+Seed: 1 | first-ready turn: 2 | setup result: success
+===== SIMULATE THIS =====
+Scenario: strict-jit-turn2-item-lock/go-second | DCI: strict-JIT | Locks: turn-two Item lock
+Mulligans: 1
+Opening player-known state: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Grass Energy, Hisuian Heavy Ball, Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127 | Discard=(none)
+DEBUG ONLY: prizes=Tate & Liza, Regidrago V, Gladion, Tapu Lele-GX, Regidrago VSTAR, Grass Energy. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Regidrago V
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Grass Energy, Hisuian Heavy Ball, Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127, Regidrago V | Discard=(none)
+T1 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T1 | PLAY ITEM | rules: R-HEAVYBALL-01; R-GAME-ITEM; P-KNOWLEDGE-01; P-COMPRESS-01 | Looked at Prize cards and exchanged Heavy Ball for Tapu Lele-GX.
+T1 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Wonder Tag: deck inspected; Prize identities are now deducible for later decisions.
+T1 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Steven's Resolve.
+T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T1 | PLAY SUPPORTER | rules: R-STEVEN-01; R-GAME-SUPPORTER | Searched up to 3 cards: Regidrago VSTAR, Crispin, Latias ex. Turn ended.
+T1 | TURN END | rules: R-STEVEN-01 or R-RV-01 | Active=Tapu Lele-GX [-] | Bench=Regidrago V [G]; Tapu Lele-GX [-] | Hand=Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127, Regidrago VSTAR, Crispin, Latias ex | Discard=Steven's Resolve
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Professor Turo's Scenario
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=Regidrago V [G]; Tapu Lele-GX [-] | Hand=Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127, Regidrago VSTAR, Crispin, Latias ex, Professor Turo's Scenario | Discard=Steven's Resolve
+T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T2 | BENCH | rules: R-GAME-BENCH | Latias ex from hand.
+T2 | LEGACY STAR | rules: R-RVS-01; R-VSTAR-01 | Discarded top 7: Quick Ball, Field Blower, Dialga-GX, Gladion, Mysterious Treasure, Grass Energy, Forest Seal Stone; recovered: Crispin.
+T2 | RETREAT | rules: R-LATIAS-01; R-GAME-RETREAT | Latias ex gives the Basic Active no Retreat Cost; promoted the best-powered Benched Regidrago VSTAR.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Tapu Lele-GX [-]; Tapu Lele-GX [-]; Latias ex [-] | Hand=Professor Burnet, Brilliant Blender, Dipplin TWM 127, Professor Turo's Scenario, Fire Energy, Crispin | Discard=Steven's Resolve, Quick Ball, Field Blower, Dialga-GX, Gladion, Mysterious Treasure, Grass Energy, Forest Seal Stone
+T2 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"trace_turn2_item_lock_t3" end time: Jul 20 04:08 UTC
+"trace_turn2_item_lock_t3" time elapsed: 00:00:00
+----------------------------------------------------------
+
+152/169 Testing: trace_issue_925_turn2_item_lock_seed25
+152/169 Test: trace_issue_925_turn2_item_lock_seed25
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "--simulate-this" "--scenario" "strict-jit-turn2-item-lock/go-second" "--seed" "25" "--require-ready-by" "2"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"trace_issue_925_turn2_item_lock_seed25" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+
+Seed: 25 | first-ready turn: 2 | setup result: success
+===== SIMULATE THIS =====
+Scenario: strict-jit-turn2-item-lock/go-second | DCI: strict-JIT | Locks: turn-two Item lock
+Mulligans: 2
+Opening player-known state: Active=Regidrago V [-] | Bench=(none) | Hand=Team Yell's Cheer, Mysterious Treasure, Dialga-GX, Forest Seal Stone, Professor Burnet, Grass Energy | Discard=(none)
+DEBUG ONLY: prizes=Regidrago VSTAR, Lusamine, Steven's Resolve, Latias ex, Mysterious Treasure, Earthen Vessel. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Mega Dragonite ex
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [-] | Bench=(none) | Hand=Team Yell's Cheer, Mysterious Treasure, Dialga-GX, Forest Seal Stone, Professor Burnet, Grass Energy, Mega Dragonite ex | Discard=(none)
+T1 | DISCARD | rules: R-MT-01 | Mega Dragonite ex (Mysterious Treasure cost)
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Mysterious Treasure: deck inspected; Prize identities are now deducible for later decisions.
+T1 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM | Searched a Psychic or Dragon Pokémon: Regidrago VSTAR.
+T1 | ATTACH TOOL | rules: R-FSS-01; R-GAME-TOOL | Attached Forest Seal Stone to Regidrago V.
+T1 | STAR ALCHEMY | rules: R-FSS-02; R-VSTAR-01 | Searched any card: Crispin.
+T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T1 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T1 | HOLD ATTACK | rules: R-RV-01; R-GAME-ENERGY; R-SERENA-01; R-BURNET-01; P-JIT-01; P-COMPRESS-01 | Held Energy and a held Supporter payload route already cover the next legal ready window.
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [GG] + Forest Seal Stone | Bench=(none) | Hand=Team Yell's Cheer, Dialga-GX, Professor Burnet, Regidrago VSTAR, Fire Energy | Discard=Mysterious Treasure, Mega Dragonite ex, Crispin
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Channeler
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [GG] + Forest Seal Stone | Bench=(none) | Hand=Team Yell's Cheer, Dialga-GX, Professor Burnet, Regidrago VSTAR, Fire Energy, Channeler | Discard=Mysterious Treasure, Mega Dragonite ex, Crispin
+T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T2 | PLAY SUPPORTER | rules: R-BURNET-01; R-GAME-SUPPORTER; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex.
+T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=(none) | Hand=Team Yell's Cheer, Dialga-GX, Channeler | Discard=Mysterious Treasure, Mega Dragonite ex, Crispin, Professor Burnet, Mega Dragonite ex, Dragapult ex
+T2 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"trace_issue_925_turn2_item_lock_seed25" end time: Jul 20 04:08 UTC
+"trace_issue_925_turn2_item_lock_seed25" time elapsed: 00:00:00
+----------------------------------------------------------
+
+153/169 Testing: trace_issue_989_item_lock_seed25
+153/169 Test: trace_issue_989_item_lock_seed25
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "--simulate-this" "--scenario" "strict-jit-turn2-item-lock/go-second" "--seed" "25" "--require-ready-by" "2"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"trace_issue_989_item_lock_seed25" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+
+Seed: 25 | first-ready turn: 2 | setup result: success
+===== SIMULATE THIS =====
+Scenario: strict-jit-turn2-item-lock/go-second | DCI: strict-JIT | Locks: turn-two Item lock
+Mulligans: 2
+Opening player-known state: Active=Regidrago V [-] | Bench=(none) | Hand=Team Yell's Cheer, Mysterious Treasure, Dialga-GX, Forest Seal Stone, Professor Burnet, Grass Energy | Discard=(none)
+DEBUG ONLY: prizes=Regidrago VSTAR, Lusamine, Steven's Resolve, Latias ex, Mysterious Treasure, Earthen Vessel. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Mega Dragonite ex
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [-] | Bench=(none) | Hand=Team Yell's Cheer, Mysterious Treasure, Dialga-GX, Forest Seal Stone, Professor Burnet, Grass Energy, Mega Dragonite ex | Discard=(none)
+T1 | DISCARD | rules: R-MT-01 | Mega Dragonite ex (Mysterious Treasure cost)
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Mysterious Treasure: deck inspected; Prize identities are now deducible for later decisions.
+T1 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM | Searched a Psychic or Dragon Pokémon: Regidrago VSTAR.
+T1 | ATTACH TOOL | rules: R-FSS-01; R-GAME-TOOL | Attached Forest Seal Stone to Regidrago V.
+T1 | STAR ALCHEMY | rules: R-FSS-02; R-VSTAR-01 | Searched any card: Crispin.
+T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T1 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T1 | HOLD ATTACK | rules: R-RV-01; R-GAME-ENERGY; R-SERENA-01; R-BURNET-01; P-JIT-01; P-COMPRESS-01 | Held Energy and a held Supporter payload route already cover the next legal ready window.
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [GG] + Forest Seal Stone | Bench=(none) | Hand=Team Yell's Cheer, Dialga-GX, Professor Burnet, Regidrago VSTAR, Fire Energy | Discard=Mysterious Treasure, Mega Dragonite ex, Crispin
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Channeler
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [GG] + Forest Seal Stone | Bench=(none) | Hand=Team Yell's Cheer, Dialga-GX, Professor Burnet, Regidrago VSTAR, Fire Energy, Channeler | Discard=Mysterious Treasure, Mega Dragonite ex, Crispin
+T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T2 | PLAY SUPPORTER | rules: R-BURNET-01; R-GAME-SUPPORTER; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex.
+T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=(none) | Hand=Team Yell's Cheer, Dialga-GX, Channeler | Discard=Mysterious Treasure, Mega Dragonite ex, Crispin, Professor Burnet, Mega Dragonite ex, Dragapult ex
+T2 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"trace_issue_989_item_lock_seed25" end time: Jul 20 04:08 UTC
+"trace_issue_989_item_lock_seed25" time elapsed: 00:00:00
+----------------------------------------------------------
+
+154/169 Testing: trace_issue_989_strict_first_seed107
+154/169 Test: trace_issue_989_strict_first_seed107
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "--simulate-this" "--scenario" "strict-jit/go-first" "--seed" "107" "--require-ready-by" "3"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"trace_issue_989_strict_first_seed107" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+
+Seed: 107 | first-ready turn: 3 | setup result: success
+===== SIMULATE THIS =====
+Scenario: strict-jit/go-first | DCI: strict-JIT | Locks: none
+Mulligans: 0
+Opening player-known state: Active=Regidrago V [-] | Bench=(none) | Hand=Quick Ball, Mysterious Treasure, Grass Energy, Lusamine, Mega Dragonite ex, Grass Energy | Discard=(none)
+DEBUG ONLY: prizes=Mega Dragonite ex, Tapu Lele-GX, Regidrago V, Mysterious Treasure, Mysterious Treasure, Dipplin TWM 127. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Grass Energy
+T1 | TURN START | rules: R-GAME-FIRST-TURN | Going first: drew for the turn; no Supporter or attack is permitted.
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [-] | Bench=(none) | Hand=Quick Ball, Mysterious Treasure, Grass Energy, Lusamine, Mega Dragonite ex, Grass Energy, Grass Energy | Discard=(none)
+T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [G] | Bench=(none) | Hand=Quick Ball, Mysterious Treasure, Lusamine, Mega Dragonite ex, Grass Energy, Grass Energy | Discard=(none)
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Arven
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [G] | Bench=(none) | Hand=Quick Ball, Mysterious Treasure, Lusamine, Mega Dragonite ex, Grass Energy, Grass Energy, Arven | Discard=(none)
+T2 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T2 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Arven: deck inspected; Prize identities are now deducible for later decisions.
+T2 | PLAY SUPPORTER | rules: R-ARVEN-01; R-GAME-SUPPORTER | Searched an Item and a Pokémon Tool: Mysterious Treasure, Forest Seal Stone.
+T2 | ATTACH TOOL | rules: R-FSS-01; R-GAME-TOOL | Attached Forest Seal Stone to Regidrago V.
+T2 | STAR ALCHEMY | rules: R-FSS-02; R-VSTAR-01 | Searched any card: Regidrago VSTAR.
+T2 | DISCARD | rules: R-QB-01 | Mysterious Treasure (Quick Ball cost)
+T2 | PLAY ITEM | rules: R-QB-01; R-GAME-ITEM | Searched a Basic Pokémon: Oricorio GRI 55.
+T2 | BENCH | rules: R-GAME-BENCH | Oricorio GRI 55 from hand.
+T2 | Vital Dance | rules: R-ORICORIO-01 | Searched up to 2 Basic Energy: Fire Energy, Grass Energy.
+T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GG] + Forest Seal Stone | Bench=Oricorio GRI 55 [-] | Hand=Lusamine, Mega Dragonite ex, Grass Energy, Mysterious Treasure, Fire Energy, Grass Energy | Discard=Arven, Quick Ball, Mysterious Treasure
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Quick Ball
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago VSTAR [GG] + Forest Seal Stone | Bench=Oricorio GRI 55 [-] | Hand=Lusamine, Mega Dragonite ex, Grass Energy, Mysterious Treasure, Fire Energy, Grass Energy, Quick Ball | Discard=Arven, Quick Ball, Mysterious Treasure
+T3 | DISCARD | rules: R-QB-01 | Grass Energy (Quick Ball cost)
+T3 | PLAY ITEM | rules: R-QB-01; R-GAME-ITEM | Searched a Basic Pokémon: Dialga-GX.
+T3 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago VSTAR.
+T3 | DISCARD | rules: R-MT-01 | Mega Dragonite ex (Mysterious Treasure cost)
+T3 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM | Searched a Psychic or Dragon Pokémon: Tapu Lele-GX.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=Oricorio GRI 55 [-] | Hand=Lusamine, Grass Energy, Dialga-GX, Tapu Lele-GX | Discard=Arven, Quick Ball, Mysterious Treasure, Quick Ball, Grass Energy, Mysterious Treasure, Mega Dragonite ex
+T3 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"trace_issue_989_strict_first_seed107" end time: Jul 20 04:08 UTC
+"trace_issue_989_strict_first_seed107" time elapsed: 00:00:00
+----------------------------------------------------------
+
+155/169 Testing: trace_issue_989_strict_first_seed122
+155/169 Test: trace_issue_989_strict_first_seed122
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "--simulate-this" "--scenario" "strict-jit/go-first" "--seed" "122" "--require-ready-by" "4"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"trace_issue_989_strict_first_seed122" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+
+Seed: 122 | first-ready turn: 4 | setup result: success
+===== SIMULATE THIS =====
+Scenario: strict-jit/go-first | DCI: strict-JIT | Locks: none
+Mulligans: 0
+Opening player-known state: Active=Dialga-GX [-] | Bench=(none) | Hand=Grass Energy, Professor Burnet, Arven, Mysterious Treasure, Steven's Resolve, Grass Energy | Discard=(none)
+DEBUG ONLY: prizes=Grass Energy, Mega Dragonite ex, Powerglass, Forest Seal Stone, Mysterious Treasure, Regidrago VSTAR. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Brilliant Blender
+T1 | TURN START | rules: R-GAME-FIRST-TURN | Going first: drew for the turn; no Supporter or attack is permitted.
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Dialga-GX [-] | Bench=(none) | Hand=Grass Energy, Professor Burnet, Arven, Mysterious Treasure, Steven's Resolve, Grass Energy, Brilliant Blender | Discard=(none)
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Dialga-GX [-] | Bench=(none) | Hand=Grass Energy, Professor Burnet, Arven, Mysterious Treasure, Steven's Resolve, Grass Energy, Brilliant Blender | Discard=(none)
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Latias ex
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Dialga-GX [-] | Bench=(none) | Hand=Grass Energy, Professor Burnet, Arven, Mysterious Treasure, Steven's Resolve, Grass Energy, Brilliant Blender, Latias ex | Discard=(none)
+T2 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Steven's Resolve: deck inspected; Prize identities are now deducible for later decisions.
+T2 | PLAY SUPPORTER | rules: R-STEVEN-01; R-GAME-SUPPORTER | Searched up to 3 cards: Regidrago V, Regidrago VSTAR, Crispin. Turn ended.
+T2 | TURN END | rules: R-STEVEN-01 or R-RV-01 | Active=Dialga-GX [-] | Bench=(none) | Hand=Grass Energy, Professor Burnet, Arven, Mysterious Treasure, Grass Energy, Brilliant Blender, Latias ex, Regidrago V, Regidrago VSTAR, Crispin | Discard=Steven's Resolve
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Grass Energy
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Dialga-GX [-] | Bench=(none) | Hand=Grass Energy, Professor Burnet, Arven, Mysterious Treasure, Grass Energy, Brilliant Blender, Latias ex, Regidrago V, Regidrago VSTAR, Crispin, Grass Energy | Discard=Steven's Resolve
+T3 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T3 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T3 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Dialga-GX [-] | Bench=Regidrago V [GG] | Hand=Professor Burnet, Arven, Mysterious Treasure, Grass Energy, Brilliant Blender, Latias ex, Regidrago VSTAR, Grass Energy, Fire Energy | Discard=Steven's Resolve, Crispin
+T4 | DRAW | rules: R-GAME-DRAW | start-of-turn: Lusamine
+T4 | POLICY | rules: P-AXIS-01 | Start: Active=Dialga-GX [-] | Bench=Regidrago V [GG] | Hand=Professor Burnet, Arven, Mysterious Treasure, Grass Energy, Brilliant Blender, Latias ex, Regidrago VSTAR, Grass Energy, Fire Energy, Lusamine | Discard=Steven's Resolve, Crispin
+T4 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T4 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T4 | BENCH | rules: R-GAME-BENCH | Latias ex from hand.
+T4 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dipplin TWM 127.
+T4 | RETREAT | rules: R-LATIAS-01; R-GAME-RETREAT | Latias ex gives the Basic Active no Retreat Cost; promoted the best-powered Benched Regidrago VSTAR.
+T4 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Dialga-GX [-]; Latias ex [-] | Hand=Professor Burnet, Arven, Mysterious Treasure, Grass Energy, Grass Energy, Lusamine | Discard=Steven's Resolve, Crispin, Brilliant Blender, Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dipplin TWM 127
+T4 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"trace_issue_989_strict_first_seed122" end time: Jul 20 04:08 UTC
+"trace_issue_989_strict_first_seed122" time elapsed: 00:00:00
+----------------------------------------------------------
+
+156/169 Testing: trace_issue_962_strict_first_seed104
+156/169 Test: trace_issue_962_strict_first_seed104
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "--simulate-this" "--scenario" "strict-jit/go-first" "--seed" "104" "--require-ready-by" "3"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"trace_issue_962_strict_first_seed104" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+
+Seed: 104 | first-ready turn: 3 | setup result: success
+===== SIMULATE THIS =====
+Scenario: strict-jit/go-first | DCI: strict-JIT | Locks: none
+Mulligans: 1
+Opening player-known state: Active=Regidrago V [-] | Bench=(none) | Hand=Mysterious Treasure, Regidrago VSTAR, Dialga-GX, Serena, Earthen Vessel, Brilliant Blender | Discard=(none)
+DEBUG ONLY: prizes=Regidrago VSTAR, Grass Energy, Grass Energy, Guzma, Tapu Lele-GX, Grass Energy. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Quick Ball
+T1 | TURN START | rules: R-GAME-FIRST-TURN | Going first: drew for the turn; no Supporter or attack is permitted.
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [-] | Bench=(none) | Hand=Mysterious Treasure, Regidrago VSTAR, Dialga-GX, Serena, Earthen Vessel, Brilliant Blender, Quick Ball | Discard=(none)
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [-] | Bench=(none) | Hand=Mysterious Treasure, Regidrago VSTAR, Dialga-GX, Serena, Earthen Vessel, Brilliant Blender, Quick Ball | Discard=(none)
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Hisuian Goodra VSTAR
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [-] | Bench=(none) | Hand=Mysterious Treasure, Regidrago VSTAR, Dialga-GX, Serena, Earthen Vessel, Brilliant Blender, Quick Ball, Hisuian Goodra VSTAR | Discard=(none)
+T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T2 | DISCARD | rules: R-QB-01 | Hisuian Goodra VSTAR (Quick Ball cost)
+T2 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Quick Ball: deck inspected; Prize identities are now deducible for later decisions.
+T2 | PLAY ITEM | rules: R-QB-01; R-GAME-ITEM | Searched a Basic Pokémon: Tapu Lele-GX.
+T2 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
+T2 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Crispin.
+T2 | DISCARD | rules: R-EV-01 | Dialga-GX (Earthen Vessel cost)
+T2 | Earthen Vessel | rules: R-EV-01; R-GAME-ITEM | Searched up to 2 Basic Energy: Grass Energy, Fire Energy.
+T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago VSTAR and put Fire Energy into hand.
+T2 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago VSTAR.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GG] | Bench=Tapu Lele-GX [-] | Hand=Mysterious Treasure, Serena, Brilliant Blender, Fire Energy, Fire Energy | Discard=Quick Ball, Hisuian Goodra VSTAR, Earthen Vessel, Dialga-GX, Crispin
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Channeler
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago VSTAR [GG] | Bench=Tapu Lele-GX [-] | Hand=Mysterious Treasure, Serena, Brilliant Blender, Fire Energy, Fire Energy, Channeler | Discard=Quick Ball, Hisuian Goodra VSTAR, Earthen Vessel, Dialga-GX, Crispin
+T3 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago VSTAR.
+T3 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex, Dipplin TWM 127.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Tapu Lele-GX [-] | Hand=Mysterious Treasure, Serena, Fire Energy, Channeler | Discard=Quick Ball, Hisuian Goodra VSTAR, Earthen Vessel, Dialga-GX, Crispin, Brilliant Blender, Mega Dragonite ex, Dragapult ex, Dipplin TWM 127
+T3 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"trace_issue_962_strict_first_seed104" end time: Jul 20 04:08 UTC
+"trace_issue_962_strict_first_seed104" time elapsed: 00:00:00
+----------------------------------------------------------
+
+157/169 Testing: trace_issue_964_strict_first_seed43
+157/169 Test: trace_issue_964_strict_first_seed43
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "--simulate-this" "--scenario" "strict-jit/go-first" "--seed" "43" "--require-ready-by" "3"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"trace_issue_964_strict_first_seed43" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+
+Seed: 43 | first-ready turn: 3 | setup result: success
+===== SIMULATE THIS =====
+Scenario: strict-jit/go-first | DCI: strict-JIT | Locks: none
+Mulligans: 2
+Opening player-known state: Active=Latias ex [-] | Bench=(none) | Hand=Quick Ball, Dragapult ex, Grass Energy, Regidrago VSTAR, Grass Energy, Mysterious Treasure | Discard=(none)
+DEBUG ONLY: prizes=Oricorio GRI 55, Mega Dragonite ex, Earthen Vessel, Grass Energy, Fire Energy, Mysterious Treasure. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Arven
+T1 | TURN START | rules: R-GAME-FIRST-TURN | Going first: drew for the turn; no Supporter or attack is permitted.
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=(none) | Hand=Quick Ball, Dragapult ex, Grass Energy, Regidrago VSTAR, Grass Energy, Mysterious Treasure, Arven | Discard=(none)
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Latias ex [-] | Bench=(none) | Hand=Quick Ball, Dragapult ex, Grass Energy, Regidrago VSTAR, Grass Energy, Mysterious Treasure, Arven | Discard=(none)
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Regidrago VSTAR
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=(none) | Hand=Quick Ball, Dragapult ex, Grass Energy, Regidrago VSTAR, Grass Energy, Mysterious Treasure, Arven, Regidrago VSTAR | Discard=(none)
+T2 | DISCARD | rules: R-QB-01 | Regidrago VSTAR (Quick Ball cost)
+T2 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Quick Ball: deck inspected; Prize identities are now deducible for later decisions.
+T2 | PLAY ITEM | rules: R-QB-01; R-GAME-ITEM | Searched a Basic Pokémon: Regidrago V.
+T2 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T2 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T2 | PLAY SUPPORTER | rules: R-ARVEN-01; R-GAME-SUPPORTER | Searched an Item and a Pokémon Tool: Forest Seal Stone.
+T2 | ATTACH TOOL | rules: R-FSS-01; R-GAME-TOOL | Attached Forest Seal Stone to Regidrago V.
+T2 | HOLD VSTAR POWER | rules: R-FSS-02; R-VSTAR-01; P-KNOWLEDGE-01; P-DCI-01 | Retained Star Alchemy because K1 proved that no searched card advances setup.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Latias ex [-] | Bench=Regidrago V [G] + Forest Seal Stone | Hand=Dragapult ex, Grass Energy, Mysterious Treasure, Regidrago VSTAR | Discard=Quick Ball, Regidrago VSTAR, Arven
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Regidrago VSTAR
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=Regidrago V [G] + Forest Seal Stone | Hand=Dragapult ex, Grass Energy, Mysterious Treasure, Regidrago VSTAR, Regidrago VSTAR | Discard=Quick Ball, Regidrago VSTAR, Arven
+T3 | STAR ALCHEMY | rules: R-FSS-02; R-VSTAR-01 | Searched any card: Crispin.
+T3 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T3 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Fire Energy and Grass Energy; attached Fire Energy to Regidrago V and put Grass Energy into hand.
+T3 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T3 | DISCARD | rules: R-MT-01 | Dragapult ex (Mysterious Treasure cost)
+T3 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM | No preferred target remained; legally searched Regidrago V.
+T3 | RETREAT | rules: R-LATIAS-01; R-GAME-RETREAT | Latias ex gives the Basic Active no Retreat Cost; promoted the best-powered Benched Regidrago VSTAR.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=Latias ex [-] | Hand=Regidrago VSTAR, Grass Energy, Regidrago V | Discard=Quick Ball, Regidrago VSTAR, Arven, Crispin, Mysterious Treasure, Dragapult ex
+T3 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"trace_issue_964_strict_first_seed43" end time: Jul 20 04:08 UTC
+"trace_issue_964_strict_first_seed43" time elapsed: 00:00:00
+----------------------------------------------------------
+
+158/169 Testing: trace_rulebox_lock_t3
+158/169 Test: trace_rulebox_lock_t3
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "--simulate-this" "--scenario" "strict-jit-rulebox-ability-lock/go-second" "--seed" "20" "--require-ready-by" "3"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"trace_rulebox_lock_t3" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+
+Seed: 20 | first-ready turn: 2 | setup result: success
+===== SIMULATE THIS =====
+Scenario: strict-jit-rulebox-ability-lock/go-second | DCI: strict-JIT | Locks: full Rule Box Ability lock
+Mulligans: 1
+Opening player-known state: Active=Regidrago V [-] | Bench=(none) | Hand=Regidrago VSTAR, Lusamine, Grass Energy, Earthen Vessel, Earthen Vessel, Regidrago VSTAR | Discard=(none)
+DEBUG ONLY: prizes=Hisuian Goodra VSTAR, Gladion, Team Yell's Cheer, Serena, Arven, Channeler. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Grass Energy
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [-] | Bench=(none) | Hand=Regidrago VSTAR, Lusamine, Grass Energy, Earthen Vessel, Earthen Vessel, Regidrago VSTAR, Grass Energy | Discard=(none)
+T1 | DISCARD | rules: R-EV-01 | Earthen Vessel (Earthen Vessel cost)
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Earthen Vessel: deck inspected; Prize identities are now deducible for later decisions.
+T1 | Earthen Vessel | rules: R-EV-01; R-GAME-ITEM | Searched up to 2 Basic Energy: Grass Energy, Fire Energy.
+T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T1 | ATTACK | rules: R-RV-01; R-GAME-ATTACK | Regidrago V used Celestial Roar; processed top 3: Professor Burnet, Dragapult ex, Grass Energy; attached Energy: Grass Energy; remaining discarded: Professor Burnet, Dragapult ex.
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [GG] | Bench=(none) | Hand=Regidrago VSTAR, Lusamine, Regidrago VSTAR, Grass Energy, Grass Energy, Fire Energy | Discard=Earthen Vessel, Earthen Vessel, Professor Burnet, Dragapult ex
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Arven
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [GG] | Bench=(none) | Hand=Regidrago VSTAR, Lusamine, Regidrago VSTAR, Grass Energy, Grass Energy, Fire Energy, Arven | Discard=Earthen Vessel, Earthen Vessel, Professor Burnet, Dragapult ex
+T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T2 | PLAY SUPPORTER | rules: R-ARVEN-01; R-GAME-SUPPORTER; P-COMPRESS-01 | Searched an Item and a Pokemon Tool without duplicating the VSTAR connector: Brilliant Blender, Forest Seal Stone.
+T2 | ATTACH TOOL | rules: R-FSS-01; R-GAME-TOOL | Attached Forest Seal Stone to Regidrago V.
+T2 | HOLD VSTAR POWER | rules: R-FSS-02; R-VSTAR-01; P-KNOWLEDGE-01; P-DCI-01 | Retained Star Alchemy because observable held resources already complete every current-turn setup axis.
+T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T2 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex, Dialga-GX, Dipplin TWM 127.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=(none) | Hand=Lusamine, Regidrago VSTAR, Grass Energy, Grass Energy | Discard=Earthen Vessel, Earthen Vessel, Professor Burnet, Dragapult ex, Arven, Brilliant Blender, Mega Dragonite ex, Dragapult ex, Dialga-GX, Dipplin TWM 127
+T2 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"trace_rulebox_lock_t3" end time: Jul 20 04:08 UTC
+"trace_rulebox_lock_t3" time elapsed: 00:00:00
+----------------------------------------------------------
+
+159/169 Testing: trace_no_control_first_t4
+159/169 Test: trace_no_control_first_t4
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "--simulate-this" "--scenario" "no-discard-control/go-first" "--seed" "6" "--require-ready-by" "4"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"trace_no_control_first_t4" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+
+Seed: 6 | first-ready turn: 2 | setup result: success
+===== SIMULATE THIS =====
+Scenario: no-discard-control/go-first | DCI: no-discard-control | Locks: none
+Mulligans: 0
+Opening player-known state: Active=Latias ex [-] | Bench=(none) | Hand=Grass Energy, Regidrago VSTAR, Grass Energy, Quick Ball, Mega Dragonite ex, Hisuian Goodra VSTAR | Discard=(none)
+DEBUG ONLY: prizes=Tapu Lele-GX, Earthen Vessel, Dialga-GX, Crispin, Tate & Liza, Regidrago VSTAR. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Quick Ball
+T1 | TURN START | rules: R-GAME-FIRST-TURN | Going first: drew for the turn; no Supporter or attack is permitted.
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=(none) | Hand=Grass Energy, Regidrago VSTAR, Grass Energy, Quick Ball, Mega Dragonite ex, Hisuian Goodra VSTAR, Quick Ball | Discard=(none)
+T1 | DISCARD | rules: R-QB-01 | Mega Dragonite ex (Quick Ball cost)
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Quick Ball: deck inspected; Prize identities are now deducible for later decisions.
+T1 | PLAY ITEM | rules: R-QB-01; R-GAME-ITEM | Searched a Basic Pokémon: Regidrago V.
+T1 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T1 | DISCARD | rules: R-QB-01 | Hisuian Goodra VSTAR (Quick Ball cost)
+T1 | PLAY ITEM | rules: R-QB-01; R-GAME-ITEM | Searched a Basic Pokémon: Tapu Lele-GX.
+T1 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
+T1 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Crispin.
+T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Latias ex [-] | Bench=Regidrago V [G]; Tapu Lele-GX [-] | Hand=Regidrago VSTAR, Grass Energy, Crispin | Discard=Quick Ball, Mega Dragonite ex, Quick Ball, Hisuian Goodra VSTAR
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Dragapult ex
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=Regidrago V [G]; Tapu Lele-GX [-] | Hand=Regidrago VSTAR, Grass Energy, Crispin, Dragapult ex | Discard=Quick Ball, Mega Dragonite ex, Quick Ball, Hisuian Goodra VSTAR
+T2 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Fire Energy and Grass Energy; attached Fire Energy to Regidrago V and put Grass Energy into hand.
+T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T2 | RETREAT | rules: R-LATIAS-01; R-GAME-RETREAT | Latias ex gives the Basic Active no Retreat Cost; promoted the best-powered Benched Regidrago VSTAR.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Latias ex [-]; Tapu Lele-GX [-] | Hand=Dragapult ex, Grass Energy | Discard=Quick Ball, Mega Dragonite ex, Quick Ball, Hisuian Goodra VSTAR, Crispin
+T2 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"trace_no_control_first_t4" end time: Jul 20 04:08 UTC
+"trace_no_control_first_t4" time elapsed: 00:00:00
+----------------------------------------------------------
+
+160/169 Testing: trace_issue_1079_celestial_roar_hold
+160/169 Test: trace_issue_1079_celestial_roar_hold
+Command: "/usr/local/bin/cmake" "-DSIMULATOR=/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "-P" "/home/runner/work/pokemon-sims/pokemon-sims/tests/run_issue_1079_celestial_roar_hold.cmake"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"trace_issue_1079_celestial_roar_hold" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"trace_issue_1079_celestial_roar_hold" end time: Jul 20 04:08 UTC
+"trace_issue_1079_celestial_roar_hold" time elapsed: 00:00:00
+----------------------------------------------------------
+
+161/169 Testing: trace_issue_1085_fss_crispin_next_turn
+161/169 Test: trace_issue_1085_fss_crispin_next_turn
+Command: "/usr/local/bin/cmake" "-DSIMULATOR=/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "-P" "/home/runner/work/pokemon-sims/pokemon-sims/tests/run_issue_1085_fss_crispin_next_turn.cmake"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"trace_issue_1085_fss_crispin_next_turn" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"trace_issue_1085_fss_crispin_next_turn" end time: Jul 20 04:08 UTC
+"trace_issue_1085_fss_crispin_next_turn" time elapsed: 00:00:00
+----------------------------------------------------------
+
+145/169 Testing: regidrago_release_assertions_enabled
+145/169 Test: regidrago_release_assertions_enabled
+Command: "/usr/local/bin/cmake" "-DASSERTION_PROBE=/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_release_assertion_tests" "-P" "/home/runner/work/pokemon-sims/pokemon-sims/tests/run_assertion_probe.cmake"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_release_assertions_enabled" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+regidrago_release_assertion_tests: /home/runner/work/pokemon-sims/pokemon-sims/tests/release_assertion_tests.cpp:6: int main(): Assertion `false && "Release test assertions must remain enabled"' failed.
+<end of output>
+Test time =   0.13 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_release_assertions_enabled" end time: Jul 20 04:08 UTC
+"regidrago_release_assertions_enabled" time elapsed: 00:00:00
+----------------------------------------------------------
+
+162/169 Testing: trace_issue_1086_wonder_tag_serena_payload
+162/169 Test: trace_issue_1086_wonder_tag_serena_payload
+Command: "/usr/local/bin/cmake" "-DSIMULATOR=/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "-P" "/home/runner/work/pokemon-sims/pokemon-sims/tests/run_issue_1086_wonder_tag_serena_payload.cmake"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"trace_issue_1086_wonder_tag_serena_payload" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"trace_issue_1086_wonder_tag_serena_payload" end time: Jul 20 04:08 UTC
+"trace_issue_1086_wonder_tag_serena_payload" time elapsed: 00:00:00
+----------------------------------------------------------
+
+163/169 Testing: trace_issue_1090_gladion_arven_route
+163/169 Test: trace_issue_1090_gladion_arven_route
+Command: "/usr/local/bin/cmake" "-DSIMULATOR=/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "-P" "/home/runner/work/pokemon-sims/pokemon-sims/tests/run_issue_1090_gladion_arven_route.cmake"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"trace_issue_1090_gladion_arven_route" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"trace_issue_1090_gladion_arven_route" end time: Jul 20 04:08 UTC
+"trace_issue_1090_gladion_arven_route" time elapsed: 00:00:00
+----------------------------------------------------------
+
+165/169 Testing: trace_issue_1099_serena_complete_axis_jit_gate
+165/169 Test: trace_issue_1099_serena_complete_axis_jit_gate
+Command: "/usr/local/bin/cmake" "-DSIMULATOR=/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "-P" "/home/runner/work/pokemon-sims/pokemon-sims/tests/run_issue_1099_serena_complete_axis_jit_gate.cmake"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"trace_issue_1099_serena_complete_axis_jit_gate" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"trace_issue_1099_serena_complete_axis_jit_gate" end time: Jul 20 04:08 UTC
+"trace_issue_1099_serena_complete_axis_jit_gate" time elapsed: 00:00:00
+----------------------------------------------------------
+
+164/169 Testing: trace_issue_1092_quick_ball_energy_jit_gate
+164/169 Test: trace_issue_1092_quick_ball_energy_jit_gate
+Command: "/usr/local/bin/cmake" "-DSIMULATOR=/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "-P" "/home/runner/work/pokemon-sims/pokemon-sims/tests/run_issue_1092_quick_ball_energy_jit_gate.cmake"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"trace_issue_1092_quick_ball_energy_jit_gate" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"trace_issue_1092_quick_ball_energy_jit_gate" end time: Jul 20 04:08 UTC
+"trace_issue_1092_quick_ball_energy_jit_gate" time elapsed: 00:00:00
+----------------------------------------------------------
+
+168/169 Testing: card_audit_category_contract
+168/169 Test: card_audit_category_contract
+Command: "/usr/bin/python3.12" "/home/runner/work/pokemon-sims/pokemon-sims/tests/card_audit_category_contract_tests.py"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"card_audit_category_contract" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.12 sec
+----------------------------------------------------------
+Test Passed.
+"card_audit_category_contract" end time: Jul 20 04:08 UTC
+"card_audit_category_contract" time elapsed: 00:00:00
+----------------------------------------------------------
+
+167/169 Testing: card_audit_contract
+167/169 Test: card_audit_contract
+Command: "/usr/bin/python3.12" "/home/runner/work/pokemon-sims/pokemon-sims/tests/card_audit_contract_tests.py"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"card_audit_contract" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.22 sec
+----------------------------------------------------------
+Test Passed.
+"card_audit_contract" end time: Jul 20 04:08 UTC
+"card_audit_contract" time elapsed: 00:00:00
+----------------------------------------------------------
+
+169/169 Testing: setup_docs_generator_contract
+169/169 Test: setup_docs_generator_contract
+Command: "/usr/bin/python3.12" "/home/runner/work/pokemon-sims/pokemon-sims/tests/update_setup_docs_tests.py"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"setup_docs_generator_contract" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.24 sec
+----------------------------------------------------------
+Test Passed.
+"setup_docs_generator_contract" end time: Jul 20 04:08 UTC
+"setup_docs_generator_contract" time elapsed: 00:00:00
+----------------------------------------------------------
+
+144/169 Testing: regidrago_sim_self_test
+144/169 Test: regidrago_sim_self_test
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "--self-test"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_sim_self_test" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.80 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_sim_self_test" end time: Jul 20 04:08 UTC
+"regidrago_sim_self_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+146/169 Testing: regidrago_cli_mode_contract
+146/169 Test: regidrago_cli_mode_contract
+Command: "/usr/local/bin/cmake" "-DSIMULATOR=/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "-DTEST_DIR=/home/runner/work/pokemon-sims/pokemon-sims/build/cli-mode-contract" "-P" "/home/runner/work/pokemon-sims/pokemon-sims/tests/run_cli_mode_contract.cmake"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_cli_mode_contract" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.79 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_cli_mode_contract" end time: Jul 20 04:08 UTC
+"regidrago_cli_mode_contract" time elapsed: 00:00:00
+----------------------------------------------------------
+
+166/169 Testing: regidrago_sim_matrix_smoke
+166/169 Test: regidrago_sim_matrix_smoke
+Command: "/home/runner/work/pokemon-sims/pokemon-sims/build/regidrago_sim" "--trials" "100" "--seed" "20260705" "--out" "/home/runner/work/pokemon-sims/pokemon-sims/build/smoke_results.csv"
+Directory: /home/runner/work/pokemon-sims/pokemon-sims/build
+"regidrago_sim_matrix_smoke" start time: Jul 20 04:08 UTC
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.11 sec
+----------------------------------------------------------
+Test Passed.
+"regidrago_sim_matrix_smoke" end time: Jul 20 04:08 UTC
+"regidrago_sim_matrix_smoke" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Jul 20 04:08 UTC

@@ -67,10 +67,12 @@
     // https://www.pokemon.com/us/pokemon-tcg/rules
     // Path to the Peak suppresses Rule Box Pokémon Abilities only while it remains
     // in play: https://api.pokemontcg.io/v2/cards/swsh6-148
-    if (!rule_box_abilities_locked() || hand_count(Card::ChaoticSwell) == 0 ||
+    if (state_.stadium_used || !rule_box_abilities_locked() ||
+        hand_count(Card::ChaoticSwell) == 0 ||
         state_.stadium == Stadium::ChaoticSwell) return false;
 
     remove_one(state_.hand, Card::ChaoticSwell);
+    state_.stadium_used = true;
     state_.stadium = Stadium::ChaoticSwell;
     state_.path_lock_removed = true;
     trace("PLAY STADIUM", "R-CHAOTIC-SWELL-01; R-PATH-01",
@@ -97,6 +99,15 @@
     trace("POLICY", "P-AXIS-01", "Start: " + state_line());
     play_chaotic_swell();
     play_field_blower();
+    // Forest of Vitality is a Stadium, not an Item. Play it before on-play Rule
+    // Box Pokémon such as Tapu Lele-GX so replacing Path to the Peak can restore
+    // Wonder Tag before that Pokémon enters the Bench:
+    // https://api.pokemontcg.io/v2/cards/me1-117
+    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/swsh6-148
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/issues/1096
+    advance_forretress_combo();
     play_basics_from_hand();
     play_items_until_stable(!strict_payload_timing());
     attach_live_fss();

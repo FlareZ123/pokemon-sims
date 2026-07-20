@@ -99,6 +99,19 @@
   }
 
   bool play_tate_draw() {
+    if (tate_draw_after_active_vstar_evolution_route()) {
+      // The prior-turn Active Regidrago V already has GGF. Preserve the searched
+      // evolution through this fixed-point pass, then Tate still draws exactly five:
+      // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+      // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+      // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Evolution, Supporter, search, shuffle, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1162
+      trace("HOLD SUPPORTER", "R-TATE-01; R-FSS-02; R-RVS-01; P-JIT-01; P-COMPRESS-01",
+            "Retained Tate & Liza until the held Regidrago VSTAR evolves the prior-turn GGF Active.");
+      return false;
+    }
     if (tate_switch_after_held_vstar_evolution_route()) {
       // Star Alchemy has already searched Regidrago VSTAR. Keep Tate's switch mode
       // while the fixed-point policy evolves the prior-turn GGF Benched Basic:

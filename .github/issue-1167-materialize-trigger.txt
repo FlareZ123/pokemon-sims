@@ -1,0 +1,2 @@
+Triggers the one-shot issue #1167 branch materializer after the workflow exists on the branch.
+https://github.com/FlareZ123/pokemon-sims/issues/1167

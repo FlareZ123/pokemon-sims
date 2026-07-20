@@ -1,0 +1,57 @@
+name: Apply and validate issue 1147
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'fix/issue-1147-late-supporter-item-replay'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Apply source-bound fix and tests
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, zlib
+          path = Path('src/trace_engine_v2/part_014c_latias_bench_override.inc')
+          text = path.read_text()
+          anchor = '  bool complete_late_steven_vstar_vessel_continuation() {\n'
+          helper = "  bool late_supporter_quick_ball_latias_completion_available() const {\n    if (!state_.supporter_used || state_.turn_ended || item_locked() ||\n        hand_count(Card::QuickBall) == 0 || !need_active_vstar() ||\n        need_energy() || !benched_vstar_promotion_ready() || state_.retreat_used ||\n        !state_.active || !is_basic(state_.active->card) || bench_space() == 0 ||\n        !ability_available_for_pokemon(Card::LatiasEx) || in_play(Card::LatiasEx) ||\n        hand_count(Card::LatiasEx) > 0 || !might_be_unseen(Card::LatiasEx)) {\n      return false;\n    }\n\n    const bool payload_axis_completable = !need_payload() ||\n        (hand_count(Card::BrilliantBlender) > 0 && payload_might_be_in_deck() &&\n         can_play_payload_this_turn());\n    if (!payload_axis_completable) return false;\n\n    // A late Arven or Wonder Tag Supporter may make Quick Ball newly live after the\n    // turn's previous Item fixed point. Replay Items only when Quick Ball already\n    // has a legal ordinary cost, Latias ex is searchable, Skyliner solves the final\n    // Active axis, and any remaining payload is covered by held Brilliant Blender:\n    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166\n    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179\n    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76\n    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164\n    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136\n    // Core Supporter, Item, discard, Bench, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules\n    // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities\n    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1147\n    return choose_discard(false, true, true, Card::QuickBall).has_value();\n  }\n\n"
+          old = '    if (!state_.supporter_used && setup_axis_missing()) choose_supporter();\n    if (use_legacy_star()) {\n'
+          new = '    const bool late_supporter_was_unused = !state_.supporter_used;\n    if (!state_.supporter_used && setup_axis_missing()) choose_supporter();\n    if (late_supporter_was_unused &&\n        late_supporter_quick_ball_latias_completion_available()) {\n      play_items_until_stable(true);\n      play_basics_from_hand();\n    }\n    if (use_legacy_star()) {\n'
+          if helper not in text:
+              text = text.replace(anchor, helper + anchor)
+          if old in text:
+              text = text.replace(old, new)
+          elif new not in text:
+              raise SystemExit('Issue 1147 source block no longer matches main')
+          path.write_text(text)
+          Path('tests/issue_1147_late_supporter_item_replay_tests.cpp').write_bytes(
+              zlib.decompress(base64.b64decode('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')))
+          PY
+      - name: Build and validate focused behavior
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R 'issue_1145|issue_1147|issue_1032' --output-on-failure
+          build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 344 --require-ready-by 2
+      - name: Refresh source-bound evidence
+        run: |
+          python3 scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python3 scripts/update_setup_docs.py --repo-root .
+      - name: Commit final issue 1147 tree
+        run: |
+          rm .github/workflows/apply-issue-1147.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_014c_latias_bench_override.inc tests/issue_1147_late_supporter_item_replay_tests.cpp results docs/REPORT.md .github/workflows/apply-issue-1147.yml
+          git commit -m "Fix late Supporter Item replay (#1147)"
+          git push origin HEAD:${{ github.head_ref }}

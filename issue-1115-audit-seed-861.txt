@@ -1,0 +1,35 @@
+
+Seed: 861 | first-ready turn: 4 | setup result: success
+===== SIMULATE THIS =====
+Scenario: strict-jit/go-first | DCI: strict-JIT | Locks: none
+Mulligans: 0
+Opening player-known state: Active=Regidrago V [-] | Bench=(none) | Hand=Professor Burnet, Forest Seal Stone, Dipplin TWM 127, Earthen Vessel, Gladion, Crispin | Discard=(none)
+DEBUG ONLY: prizes=Regidrago V, Lusamine, Grass Energy, Tapu Lele-GX, Latias ex, Channeler. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Team Yell's Cheer
+T1 | TURN START | rules: R-GAME-FIRST-TURN | Going first: drew for the turn; no Supporter or attack is permitted.
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [-] | Bench=(none) | Hand=Professor Burnet, Forest Seal Stone, Dipplin TWM 127, Earthen Vessel, Gladion, Crispin, Team Yell's Cheer | Discard=(none)
+T1 | DISCARD | rules: R-EV-01 | Dipplin TWM 127 (Earthen Vessel cost)
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Earthen Vessel: deck inspected; Prize identities are now deducible for later decisions.
+T1 | Earthen Vessel | rules: R-EV-01; R-GAME-ITEM | Searched up to 2 Basic Energy: Grass Energy, Fire Energy.
+T1 | ATTACH TOOL | rules: R-FSS-01; R-GAME-TOOL | Attached Forest Seal Stone to Regidrago V.
+T1 | STAR ALCHEMY | rules: R-FSS-02; R-VSTAR-01 | Searched any card: Regidrago VSTAR.
+T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [G] + Forest Seal Stone | Bench=(none) | Hand=Professor Burnet, Gladion, Crispin, Team Yell's Cheer, Fire Energy, Regidrago VSTAR | Discard=Earthen Vessel, Dipplin TWM 127
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Dragapult ex
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [G] + Forest Seal Stone | Bench=(none) | Hand=Professor Burnet, Gladion, Crispin, Team Yell's Cheer, Fire Energy, Regidrago VSTAR, Dragapult ex | Discard=Earthen Vessel, Dipplin TWM 127
+T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=(none) | Hand=Professor Burnet, Gladion, Team Yell's Cheer, Dragapult ex, Fire Energy | Discard=Earthen Vessel, Dipplin TWM 127, Crispin
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Regidrago VSTAR
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=(none) | Hand=Professor Burnet, Gladion, Team Yell's Cheer, Dragapult ex, Fire Energy, Regidrago VSTAR | Discard=Earthen Vessel, Dipplin TWM 127, Crispin
+T3 | PLAY SUPPORTER | rules: R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01 | Looked at Prize cards and exchanged Gladion for Lusamine.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=(none) | Hand=Professor Burnet, Team Yell's Cheer, Dragapult ex, Fire Energy, Regidrago VSTAR, Lusamine | Discard=Earthen Vessel, Dipplin TWM 127, Crispin
+T4 | DRAW | rules: R-GAME-DRAW | start-of-turn: Tapu Lele-GX
+T4 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=(none) | Hand=Professor Burnet, Team Yell's Cheer, Dragapult ex, Fire Energy, Regidrago VSTAR, Lusamine, Tapu Lele-GX | Discard=Earthen Vessel, Dipplin TWM 127, Crispin
+T4 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
+T4 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Arven.
+T4 | PLAY SUPPORTER | rules: R-BURNET-01; R-GAME-SUPPORTER; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex.
+T4 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=Tapu Lele-GX [-] | Hand=Team Yell's Cheer, Dragapult ex, Fire Energy, Regidrago VSTAR, Lusamine, Arven | Discard=Earthen Vessel, Dipplin TWM 127, Crispin, Professor Burnet, Mega Dragonite ex, Dragapult ex
+T4 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

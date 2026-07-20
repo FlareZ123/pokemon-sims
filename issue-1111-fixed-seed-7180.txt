@@ -1,0 +1,30 @@
+
+Seed: 7180 | first-ready turn: 3 | setup result: success
+===== SIMULATE THIS =====
+Scenario: strict-jit/go-second | DCI: strict-JIT | Locks: none
+Mulligans: 0
+Opening player-known state: Active=Regidrago V [-] | Bench=(none) | Hand=Forest Seal Stone, Grass Energy, Gladion, Mysterious Treasure, Chaotic Swell, Grass Energy | Discard=(none)
+DEBUG ONLY: prizes=Regidrago VSTAR, Regidrago V, Serena, Grass Energy, Regidrago V, Team Yell's Cheer. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Quick Ball
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [-] | Bench=(none) | Hand=Forest Seal Stone, Grass Energy, Gladion, Mysterious Treasure, Chaotic Swell, Grass Energy, Quick Ball | Discard=(none)
+T1 | ATTACH TOOL | rules: R-FSS-01; R-GAME-TOOL | Attached Forest Seal Stone to Regidrago V.
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Star Alchemy: deck inspected; Prize identities are now deducible for later decisions.
+T1 | STAR ALCHEMY | rules: R-FSS-02; R-VSTAR-01 | Searched any card: Steven's Resolve.
+T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T1 | PLAY SUPPORTER | rules: R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01 | Looked at Prize cards and exchanged Gladion for Regidrago VSTAR.
+T1 | ATTACK | rules: R-RV-01; R-GAME-ATTACK | Regidrago V used Celestial Roar; processed top 3: Crispin, Mysterious Treasure, Dialga-GX; attached Energy: (none); remaining discarded: Crispin, Mysterious Treasure, Dialga-GX.
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [G] + Forest Seal Stone | Bench=(none) | Hand=Chaotic Swell, Grass Energy, Quick Ball, Steven's Resolve, Regidrago VSTAR, Mysterious Treasure | Discard=Crispin, Mysterious Treasure, Dialga-GX
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Tapu Lele-GX
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [G] + Forest Seal Stone | Bench=(none) | Hand=Chaotic Swell, Grass Energy, Quick Ball, Steven's Resolve, Regidrago VSTAR, Mysterious Treasure, Tapu Lele-GX | Discard=Crispin, Mysterious Treasure, Dialga-GX
+T2 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
+T2 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Crispin.
+T2 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Fire Energy and Grass Energy; attached Fire Energy to Regidrago V and put Grass Energy into hand.
+T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=Tapu Lele-GX [-] | Hand=Chaotic Swell, Steven's Resolve, Mysterious Treasure, Grass Energy, Quick Ball | Discard=Crispin, Mysterious Treasure, Dialga-GX, Crispin
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Brilliant Blender
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=Tapu Lele-GX [-] | Hand=Chaotic Swell, Steven's Resolve, Mysterious Treasure, Grass Energy, Quick Ball, Brilliant Blender | Discard=Crispin, Mysterious Treasure, Dialga-GX, Crispin
+T3 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dipplin TWM 127.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=Tapu Lele-GX [-] | Hand=Chaotic Swell, Steven's Resolve, Mysterious Treasure, Grass Energy, Quick Ball | Discard=Crispin, Mysterious Treasure, Dialga-GX, Crispin, Brilliant Blender, Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dipplin TWM 127
+T3 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

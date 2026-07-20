@@ -17,7 +17,7 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release # Build specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
       - name: Build simulator and unified tests
         run: cmake --build build --parallel 2 # Test specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
-      - name: Run three independent simulate-this passes
+      - name: Run six independent simulate-this passes
         shell: bash
         run: |
           set -euo pipefail
@@ -26,6 +26,9 @@ jobs:
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 5 | tee pass-1-issue-1145-seed-5.txt # Issue: https://github.com/FlareZ123/pokemon-sims/issues/1145
           ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 122 | tee pass-2-issue-1146-seed-122.txt # Issue: https://github.com/FlareZ123/pokemon-sims/issues/1146
           ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 344 | tee pass-3-issue-1147-seed-344.txt # Issue: https://github.com/FlareZ123/pokemon-sims/issues/1147
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-full-item-lock/go-second --seed 41 | tee pass-4-perfect-item-lock-seed-41.txt # Lock and decision policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 19 | tee pass-5-perfect-no-discard-seed-19.txt # DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 1 | tee pass-6-perfect-strict-seed-1.txt # First-turn and earliest-route rules: https://www.pokemon.com/us/pokemon-tcg/rules https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure # Validation specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
       - name: Generate canonical T2 and T3 matrix

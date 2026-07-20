@@ -247,6 +247,15 @@ add_test(NAME trace_issue_1114_latias_burnet_preempts_gladion
 add_test(NAME trace_issue_1110_tate_yields_to_burnet
   COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 182 --require-ready-by 3)
 
+# Known K1 VSTAR plus Professor Burnet must outrank irrelevant Gladion recovery:
+# https://api.pokemontcg.io/v2/cards/sm7-145
+# https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+# https://api.pokemontcg.io/v2/cards/swsh12-136
+# https://www.pokemon.com/us/pokemon-tcg/rules
+# https://github.com/FlareZ123/pokemon-sims/issues/1108
+add_test(NAME trace_issue_1108_known_burnet_steven_route
+  COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 101 --require-ready-by 3)
+
 add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
 set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)
 

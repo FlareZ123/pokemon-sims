@@ -1,3 +1,61 @@
+  bool known_burnet_t3_steven_route_available() const {
+    if (!deck_seen_ || state_.turn != 2 || scenario_.going_first ||
+        scenario_.dci != DciProfile::StrictJit ||
+        scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
+        !supporter_allowed() || !state_.active ||
+        state_.active->card != Card::RegidragoV ||
+        state_.active->entered_turn >= state_.turn ||
+        state_.active->grass < 2 || state_.active->fire < 1 ||
+        hand_count(Card::StevensResolve) == 0 ||
+        hand_count(Card::RegidragoVstar) > 0 ||
+        hand_count(Card::ProfessorBurnet) > 0 ||
+        hand_count(Card::BrilliantBlender) > 0 ||
+        !need_vstar() || !need_payload()) {
+      return false;
+    }
+
+    // At K1, Steven can reserve the known VSTAR and Professor Burnet, then end T2.
+    // On T3 the prior-turn Active evolves and Burnet searches and discards the
+    // permitted Dragon payload during the strict-JIT ready turn:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core evolution, Supporter, search, discard, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1 and earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1108
+    return deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
+        deck_count_after_search_started(Card::ProfessorBurnet) > 0 &&
+        payload_might_be_in_deck();
+  }
+
+  bool play_known_burnet_t3_steven_route() {
+    if (!known_burnet_t3_steven_route_available()) return false;
+
+    remove_one(state_.hand, Card::StevensResolve);
+    state_.discard.push_back(Card::StevensResolve);
+    state_.supporter_used = true;
+    outcome_.used_steven = true;
+    record_deck_search_knowledge("Steven's Resolve");
+
+    if (!move_deck_to_hand(Card::RegidragoVstar) ||
+        !move_deck_to_hand(Card::ProfessorBurnet)) {
+      throw std::logic_error("Known Burnet T3 Steven targets disappeared");
+    }
+    shuffle(state_.deck);
+    state_.turn_ended = true;
+
+    // Steven searches up to three unrestricted cards. Taking only VSTAR and Burnet
+    // preserves the remaining deck payload for Burnet's next-turn search:
+    // https://api.pokemontcg.io/v2/cards/sm7-145
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // https://github.com/FlareZ123/pokemon-sims/issues/1108
+    trace("PLAY SUPPORTER",
+          "R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
+          "Searched the known T3 Burnet route: Regidrago VSTAR, Professor Burnet. Turn ended.");
+    return true;
+  }
+
   bool known_turo_t4_steven_route_available() const {
     if (!deck_seen_ || state_.turn != 3 || scenario_.going_first ||
         scenario_.dci != DciProfile::StrictJit ||
@@ -78,6 +136,7 @@
 
   bool should_play_steven() const {
     return should_play_steven_issue1030_original() ||
+        known_burnet_t3_steven_route_available() ||
         known_turo_t4_steven_route_available();
   }
 
@@ -90,6 +149,7 @@
     // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1067
     if (held_arven_fss_blender_finish_available()) return false;
+    if (play_known_burnet_t3_steven_route()) return true;
     if (play_known_turo_t4_steven_route()) return true;
     return play_steven_issue1030_original();
   }

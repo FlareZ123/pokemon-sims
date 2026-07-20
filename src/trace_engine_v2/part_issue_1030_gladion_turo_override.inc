@@ -117,6 +117,38 @@
   }
 
   bool play_gladion() {
+    const bool held_burnet_vstar_completion = supporter_allowed() &&
+        state_.turn == 3 && scenario_.dci == DciProfile::StrictJit &&
+        state_.active && state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        state_.active->grass >= 2 && state_.active->fire >= 1 &&
+        hand_count(Card::RegidragoVstar) > 0 &&
+        hand_count(Card::ProfessorBurnet) > 0 && !has_vstar() &&
+        need_payload() && can_play_payload_this_turn() &&
+        payload_might_be_in_deck();
+    if (held_burnet_vstar_completion) {
+      // The banked VSTAR may evolve the prior-turn Basic and Burnet supplies the
+      // strict-JIT payload during this turn. Gladion and a discard Item spend extra
+      // discrete resources without reaching readiness earlier:
+      // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+      // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Supporter and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Resource-preserving earliest route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1108
+      return false;
+    }
+    if (known_burnet_t3_steven_route_available()) {
+      // Steven reserves the known VSTAR and Professor Burnet for the deterministic
+      // next-turn finish. A backup Basic Prize exchange advances no missing axis:
+      // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1108
+      return false;
+    }
     if (held_payload_completes_current_turn_without_gladion()) {
       // The held Dragon and legal one-discard Item already reach the same earliest
       // ready state. Preserve Gladion, the Supporter play, and Prize configuration:

@@ -1,0 +1,207 @@
+name: Issue 1152 branch bootstrap
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-validate:
+    if: github.head_ref == 'fix/issue-1152-post-legacy-item-replay'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply the narrow production fix and regression test
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -q 'issues/1152' src/trace_engine_v2/part_014c_latias_bench_override.inc; then
+            echo 'Issue 1152 patch already present.'
+            exit 0
+          fi
+          python - <<'PY'
+          from pathlib import Path
+
+          source_path = Path('src/trace_engine_v2/part_014c_latias_bench_override.inc')
+          source = source_path.read_text(encoding='utf-8')
+          needle = '''      if (!state_.supporter_used && setup_axis_missing()) choose_supporter();
+    }
+    resolve_final_promotion_and_attachment();
+'''
+          replacement = '''      if (!state_.supporter_used && setup_axis_missing()) choose_supporter();
+      if (late_supporter_quick_ball_latias_completion_available()) {
+        // Legacy Star may recover a Supporter that searches Quick Ball after the
+        // previous Item fixed point. Replay that newly live Item only through the
+        // existing cost, GGF, payload, Bench, lock, Latias, Ability, and retreat gates:
+        // Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+        // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+        // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+        // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+        // Core Supporter, Item, discard, Bench, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+        // Earliest complete route and strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1152
+        play_items_until_stable(true);
+        play_basics_from_hand();
+      }
+    }
+    resolve_final_promotion_and_attachment();
+'''
+          if source.count(needle) != 1:
+              raise SystemExit(f'Expected one post-Legacy insertion point, found {source.count(needle)}')
+          source_path.write_text(source.replace(needle, replacement), encoding='utf-8')
+
+          test = r'''#define REGIDRAGO_SIM_NO_MAIN
+#include "../src/regidrago_sim.cpp"
+
+#include <algorithm>
+#include <iostream>
+#include <random>
+#include <stdexcept>
+#include <string>
+
+namespace {
+void expect(const bool condition, const char* message) {
+  if (!condition) throw std::runtime_error(message);
+}
+
+bool trace_contains(const sim::TraceLog& trace, const std::string& needle) {
+  return std::any_of(trace.lines.begin(), trace.lines.end(),
+                     [&needle](const std::string& line) {
+                       return line.find(needle) != std::string::npos;
+                     });
+}
+
+void test_seed_35_replays_post_legacy_quick_ball_on_turn_two() {
+  const auto scenario = sim::scenario_by_label("matchup-flex-jit/go-second");
+  if (!scenario) throw std::runtime_error("Missing matchup-flex-jit/go-second scenario");
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{35};
+  sim::TraceLog trace{true, {}};
+  sim::Engine engine(*scenario, recipe, rng, &trace);
+  const sim::TrialOutcome outcome = engine.run();
+
+  // Legacy Star recovers Arven after the earlier Item fixed point. Arven may search
+  // Quick Ball, Quick Ball may discard Chaotic Swell, Latias ex may be Benched, and
+  // Skyliner may promote the already-GGF Regidrago VSTAR during the same payload turn:
+  // Legacy Star / Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Chaotic Swell: https://api.pokemontcg.io/v2/cards/sm12-187
+  // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+  // Core Supporter, Item, discard, Bench, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Earliest complete route and strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1152
+  expect(outcome.first_ready_turn == 2,
+         "Seed 35 must become ready on turn two after the post-Legacy replay.");
+  expect(trace_contains(trace, "T2 | LEGACY STAR |"),
+         "Seed 35 must use Legacy Star on turn two.");
+  expect(trace_contains(trace, "T2 | PLAY SUPPORTER | rules: R-ARVEN-01"),
+         "Seed 35 must use recovered Arven on turn two.");
+  expect(trace_contains(trace, "T2 | DISCARD | rules: R-QB-01 | Chaotic Swell"),
+         "Seed 35 must pay Quick Ball with the ordinary low-DCI Stadium cost.");
+  expect(trace_contains(trace, "T2 | PLAY ITEM | rules: R-QB-01"),
+         "Seed 35 must replay Quick Ball on turn two.");
+  expect(trace_contains(trace, "T2 | BENCH | rules: R-GAME-BENCH | Latias ex"),
+         "Seed 35 must Bench Latias ex on turn two.");
+  expect(trace_contains(trace, "T2 | RETREAT | rules: R-LATIAS-01"),
+         "Seed 35 must use Skyliner on turn two.");
+  expect(trace_contains(trace, "T2 | READY |"),
+         "Seed 35 must record turn-two readiness.");
+}
+}  // namespace
+
+int main() {
+  try {
+    test_seed_35_replays_post_legacy_quick_ball_on_turn_two();
+    std::cout << "Issue 1152 post-Legacy Supporter Item replay tests passed\n";
+    return 0;
+  } catch (const std::exception& error) {
+    std::cerr << error.what() << '\n';
+    return 1;
+  }
+}
+'''
+          Path('tests/issue_1152_post_legacy_supporter_item_replay_tests.cpp').write_text(
+              test, encoding='utf-8')
+          PY
+      - name: Build patched simulator and tests
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Validate exact issue route before regenerating evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 35 --require-ready-by 2 | tee issue-1152-seed-35.txt
+          grep -q 'T2 | DISCARD | rules: R-QB-01 | Chaotic Swell' issue-1152-seed-35.txt
+          grep -q 'T2 | PLAY ITEM | rules: R-QB-01' issue-1152-seed-35.txt
+          grep -q 'T2 | RETREAT | rules: R-LATIAS-01' issue-1152-seed-35.txt
+          grep -q 'T2 | READY' issue-1152-seed-35.txt
+          ./build/regidrago_unified_tests issue_1152_post_legacy_supporter_item_replay_tests
+      - name: Regenerate source-bound aggregate evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out results/simulation_results.csv
+          python - <<'PY'
+          import csv
+          import json
+          import re
+          from pathlib import Path
+          from scripts.baseline_provenance import simulator_policy_source_digest
+
+          root = Path('.').resolve()
+          manifest_path = root / 'results/baseline_manifest.json'
+          manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+          manifest['simulator_policy_source_sha256'] = simulator_policy_source_digest(root)
+          manifest_path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
+
+          rows = {}
+          with (root / 'results/simulation_results.csv').open(newline='', encoding='utf-8') as handle:
+              for row in csv.DictReader(handle):
+                  rows[row['scenario']] = row
+          labels = {
+              'strict-jit/go-first': 'Strict JIT, going first',
+              'matchup-flex-jit/go-first': 'Matchup-flex JIT, going first',
+              'no-discard-control/go-first': 'No discard control, going first',
+              'strict-jit/go-second': 'Strict JIT, going second',
+              'matchup-flex-jit/go-second': 'Matchup-flex JIT, going second',
+              'no-discard-control/go-second': 'No discard control, going second',
+          }
+          def pct(value: str) -> str:
+              return f"{float(value):.3f}".rstrip('0').rstrip('.') + '%'
+          report_path = root / 'docs/REPORT.md'
+          report = report_path.read_text(encoding='utf-8')
+          for scenario, label in labels.items():
+              row = rows[scenario]
+              replacement = (
+                  f"| {label} | {pct(row['ready_by_t2_pct'])} | "
+                  f"{pct(row['ready_by_t3_pct'])} | {pct(row['ready_by_t4_pct'])} |"
+              )
+              report, count = re.subn(
+                  rf'^\| {re.escape(label)} \|.*$', replacement, report,
+                  count=1, flags=re.MULTILINE)
+              if count != 1:
+                  raise SystemExit(f'Could not update REPORT row for {label}')
+          report_path.write_text(report, encoding='utf-8')
+          PY
+      - name: Run the complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Commit the validated branch patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/trace_engine_v2/part_014c_latias_bench_override.inc tests/issue_1152_post_legacy_supporter_item_replay_tests.cpp results/simulation_results.csv results/baseline_manifest.json docs/REPORT.md
+          git commit -m 'Fix post-Legacy Supporter Item replay (#1152)'
+          git push origin HEAD:${{ github.head_ref }}

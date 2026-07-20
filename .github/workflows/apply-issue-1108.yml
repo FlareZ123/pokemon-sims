@@ -1,0 +1,48 @@
+name: Apply issue 1108 patch
+
+on:
+  push:
+    branches: [bug/1108-known-burnet-steven-agent]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bug/1108-known-burnet-steven-agent
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Apply source patch
+        run: |
+          git apply --check .github/agent-patches/issue-1108.patch
+          git apply .github/agent-patches/issue-1108.patch
+      - name: Build focused controls
+        run: |
+          cmake -S . -B "$RUNNER_TEMP/build-agent" -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build "$RUNNER_TEMP/build-agent" --target regidrago_sim regidrago_unified_tests --parallel 2
+          "$RUNNER_TEMP/build-agent/regidrago_unified_tests" issue_1108_known_burnet_steven_route_tests
+          "$RUNNER_TEMP/build-agent/regidrago_unified_tests" issue_1110_tate_yields_to_burnet_tests
+          "$RUNNER_TEMP/build-agent/regidrago_sim" --simulate-this --scenario strict-jit/go-second --seed 101 --require-ready-by 3
+      - name: Regenerate source-bound setup evidence
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe "$RUNNER_TEMP/build-agent/regidrago_sim" --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+      - name: Commit production and generated files
+        run: |
+          rm .github/agent-patches/issue-1108.patch
+          rm .github/workflows/apply-issue-1108.yml
+          rm -rf scripts/__pycache__
+          rm -f results/.simulation_results.csv.*.tmp.lock
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix known Burnet Steven route (#1108)"
+          git push origin HEAD:bug/1108-known-burnet-steven-agent

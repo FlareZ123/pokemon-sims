@@ -203,6 +203,29 @@
     return state_.active && is_basic(state_.active->card) && in_play(Card::LatiasEx) &&
            ability_available_for_pokemon(Card::LatiasEx) && !state_.retreat_used;
   }
+
+  bool latias_serena_completion_ready() const {
+    // Serena can establish the strict-JIT Dragon payload while Skyliner promotes
+    // the already powered Benched Regidrago VSTAR during the same turn. Gladion
+    // must preserve the single Supporter play for this complete two-axis route:
+    // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+    // Mega Dragonite ex, a modeled Dragon payload: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Latias ex and Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Regidrago VSTAR and Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Bench, Ability, Supporter, discard, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest-ready route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1126
+    const bool latias_available = in_play(Card::LatiasEx) ||
+        (hand_count(Card::LatiasEx) > 0 && bench_space() > 0);
+    return supporter_allowed() && need_active_vstar() && !need_energy() &&
+        need_payload() && can_play_payload_this_turn() && state_.active &&
+        is_basic(state_.active->card) && !state_.retreat_used &&
+        benched_vstar_promotion_ready() &&
+        ability_available_for_pokemon(Card::LatiasEx) && latias_available &&
+        hand_count(Card::Serena) > 0 &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+  }
   bool need_active_vstar() const { return has_vstar() && !active_is_vstar(); }
 
   std::string state_line() const {

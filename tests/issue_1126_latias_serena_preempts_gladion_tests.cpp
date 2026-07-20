@@ -60,16 +60,18 @@ sim::Scenario scenario(const sim::LockMode locks = sim::LockMode::FullItem) {
 bool route_ready_for(sim::State state,
                      const sim::LockMode locks = sim::LockMode::FullItem) {
   const sim::DeckRecipe recipe = sim::baseline_recipe();
+  const sim::Scenario test_scenario = scenario(locks);
   std::mt19937_64 rng{1126};
-  sim::Engine engine(scenario(locks), recipe, rng);
+  sim::Engine engine(test_scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, std::move(state));
   return sim::EngineTestAccess::route_ready(engine);
 }
 
 void test_route_blocks_gladion() {
   const sim::DeckRecipe recipe = sim::baseline_recipe();
+  const sim::Scenario test_scenario = scenario();
   std::mt19937_64 rng{1126};
-  sim::Engine engine(scenario(), recipe, rng);
+  sim::Engine engine(test_scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, exact_state());
 
   // Serena's mandatory Dragon discard establishes the strict-JIT payload, while
@@ -92,10 +94,11 @@ void test_route_blocks_gladion() {
 
 void test_turn_policy_completes_both_axes() {
   const sim::DeckRecipe recipe = sim::baseline_recipe();
+  const sim::Scenario test_scenario = scenario();
   std::mt19937_64 rng{1126};
   sim::TraceLog trace;
   trace.enabled = true;
-  sim::Engine engine(scenario(), recipe, rng, &trace);
+  sim::Engine engine(test_scenario, recipe, rng, &trace);
   sim::EngineTestAccess::set_state(engine, exact_state());
 
   sim::EngineTestAccess::run_turn(engine);

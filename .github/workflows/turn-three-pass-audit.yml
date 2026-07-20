@@ -1,0 +1,49 @@
+name: Turn Three-Pass Simulator Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and unified tests
+        run: cmake --build build --parallel 2
+      - name: Run three independent simulate-this passes and issue 1126 reproduction
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Core turn, Supporter, retreat, search, and discard procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Repository trace contract and scenario semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 | tee pass-1-strict-jit-go-second-seed-1.txt # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 | tee pass-2-strict-jit-go-first-seed-2.txt # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-full-item-lock/go-second --seed 3 | tee pass-3-full-item-lock-go-second-seed-3.txt # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-full-item-lock/go-first --seed 16189 | tee issue-1126-seed-16189.txt # https://github.com/FlareZ123/pokemon-sims/issues/1126
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out turn-t2-t3-matrix.csv # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+      - name: Record tested source
+        run: git rev-parse HEAD > turn-tested-head.txt
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turn-three-pass-audit-${{ github.run_attempt }}
+          path: |
+            pass-*.txt
+            issue-1126-seed-16189.txt
+            turn-t2-t3-matrix.csv
+            turn-tested-head.txt
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+          if-no-files-found: error

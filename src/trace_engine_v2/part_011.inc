@@ -166,6 +166,8 @@
   bool play_steven() {
     if (!supporter_allowed() || hand_count(Card::StevensResolve) == 0 || !should_play_steven()) return false;
     const bool known_t3_compression = late_steven_has_known_t3_compression_route();
+    const bool late_burnet_vstar_grass =
+        late_steven_vstar_grass_with_held_burnet_route_available();
     remove_one(state_.hand, Card::StevensResolve);
     state_.discard.push_back(Card::StevensResolve);
     state_.supporter_used = true;
@@ -187,6 +189,18 @@
     const auto add_wanted = [&wanted](const Card card) {
       if (std::find(wanted.begin(), wanted.end(), card) == wanted.end()) wanted.push_back(card);
     };
+
+    if (late_burnet_vstar_grass) {
+      // These two direct Steven targets complete the confirmed K1 continuation;
+      // held Burnet supplies the payload after next-turn attachment and evolution:
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Grass Energy attachment: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1112
+      add_wanted(Card::RegidragoVstar);
+      add_wanted(Card::Grass);
+    }
 
     if (known_t3_compression) {
       // These exact K1 targets complete the confirmed T3 route; generic fallbacks may
@@ -267,8 +281,9 @@
 
     const bool projected_vstar_available = has_vstar() || hand_count(Card::RegidragoVstar) > 0 ||
         projected_vstar_direct || projected_vstar_uses_gladion;
-    const bool held_routes_complete_next_turn = steven_held_routes_complete_next_turn(
-        wanted, next_turn_item_locked, projected_vstar_available);
+    const bool held_routes_complete_next_turn = late_burnet_vstar_grass ||
+        steven_held_routes_complete_next_turn(
+            wanted, next_turn_item_locked, projected_vstar_available);
 
     // Crispin source: https://api.pokemontcg.io/v2/cards/sv7-133
     if (!held_routes_complete_next_turn && need_energy() &&

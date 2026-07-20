@@ -277,3 +277,16 @@ add_test(NAME card_audit_contract COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRE
 add_test(NAME card_audit_category_contract COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/card_audit_category_contract_tests.py")
 add_test(NAME setup_report_contract COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/setup_report_contract_tests.py")
 add_test(NAME setup_docs_generator_contract COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/update_setup_docs_tests.py")
+
+# Star Alchemy must project the same-turn Regidrago V evolution and choose Latias ex
+# when held Professor Burnet already covers the payload axis. The deterministic seed
+# then reaches strict-JIT readiness on T3 instead of delaying promotion until T4:
+# https://api.pokemontcg.io/v2/cards/swsh12-156
+# https://api.pokemontcg.io/v2/cards/sv8-76
+# https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+# https://api.pokemontcg.io/v2/cards/swsh12-136
+# https://www.pokemon.com/us/pokemon-tcg/rules
+# https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+# https://github.com/FlareZ123/pokemon-sims/issues/1137
+add_test(NAME trace_issue_1137_fss_latias_burnet
+  COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 17 --require-ready-by 3)

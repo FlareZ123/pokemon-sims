@@ -1,3 +1,100 @@
+  bool fss_latias_over_redundant_burnet_route_available() const {
+    const bool latias_ability_available =
+        scenario_.locks != LockMode::FullRuleBoxAbility &&
+        scenario_.locks != LockMode::FullCombined;
+    if (!deck_seen_ || scenario_.dci != DciProfile::StrictJit ||
+        state_.turn != 2 || state_.turn >= scenario_.max_turn ||
+        !supporter_allowed() ||
+        state_.manual_energy_used || state_.retreat_used || !state_.active ||
+        state_.active->card != Card::Oricorio || bench_space() <= 0 ||
+        in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
+        deck_count_after_search_started(Card::LatiasEx) == 0 ||
+        !latias_ability_available || hand_count(Card::RegidragoVstar) == 0 ||
+        hand_count(Card::ProfessorBurnet) == 0 ||
+        hand_count(Card::Crispin) == 0 || !crispin_can_advance_energy_axis() ||
+        !in_play(Card::TapuLeleGX) ||
+        std::none_of(state_.hand.begin(), state_.hand.end(), is_payload) ||
+        !payload_might_be_in_deck()) {
+      return false;
+    }
+
+    const Pokemon* evolving_regi = nullptr;
+    for (const Pokemon& pokemon : state_.bench) {
+      if (pokemon.card == Card::RegidragoV &&
+          pokemon.entered_turn < state_.turn) {
+        evolving_regi = &pokemon;
+        break;
+      }
+    }
+    if (evolving_regi == nullptr || evolving_regi->grass != 0 ||
+        evolving_regi->fire != 0) {
+      return false;
+    }
+
+    const int deck_grass = deck_count_after_search_started(Card::Grass);
+    const int deck_fire = deck_count_after_search_started(Card::Fire);
+    if (deck_grass == 0 || deck_fire == 0) return false;
+
+    bool current_turn_energy_completes = false;
+    bool next_turn_energy_continues = false;
+    for (const Card crispin_attachment : {Card::Grass, Card::Fire}) {
+      int after_crispin_grass = evolving_regi->grass;
+      int after_crispin_fire = evolving_regi->fire;
+      int held_grass = hand_count(Card::Grass);
+      int held_fire = hand_count(Card::Fire);
+      const int remaining_grass = deck_grass - 1;
+      const int remaining_fire = deck_fire - 1;
+
+      if (crispin_attachment == Card::Grass) {
+        ++after_crispin_grass;
+        ++held_fire;
+      } else {
+        ++after_crispin_fire;
+        ++held_grass;
+      }
+
+      for (const Card manual_attachment : {Card::Grass, Card::Fire}) {
+        int grass = after_crispin_grass;
+        int fire = after_crispin_fire;
+        if (manual_attachment == Card::Grass) {
+          if (held_grass == 0) continue;
+          ++grass;
+        } else {
+          if (held_fire == 0) continue;
+          ++fire;
+        }
+
+        const int missing_grass = std::max(0, 2 - grass);
+        const int missing_fire = std::max(0, 1 - fire);
+        if (missing_grass == 0 && missing_fire == 0) {
+          current_turn_energy_completes = true;
+          continue;
+        }
+        next_turn_energy_continues = next_turn_energy_continues ||
+            (missing_grass == 1 && missing_fire == 0 && remaining_grass > 0) ||
+            (missing_grass == 0 && missing_fire == 1 && remaining_fire > 0);
+      }
+    }
+    if (current_turn_energy_completes || !next_turn_energy_continues) return false;
+
+    // The prior-turn Benched Regidrago V can evolve after Crispin and the manual
+    // attachment. Latias ex then resolves the different Active-position axis,
+    // while held Professor Burnet preserves the deck-to-discard payload axis for
+    // the next ready turn. Brilliant Blender would duplicate Burnet and leave the
+    // Basic Active stranded:
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Evolution, Supporter, attachment, Ability, Bench, and Retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Hidden-order boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1137
+    return true;
+  }
+
   bool fss_latias_vessel_promotion_route_available() const {
     const bool latias_ability_available =
         scenario_.locks != LockMode::FullRuleBoxAbility &&
@@ -147,6 +244,10 @@
   }
 
   Card fss_target_after_search_started() const {
+    if (fss_latias_over_redundant_burnet_route_available()) {
+      return Card::LatiasEx;
+    }
+
     if (fss_latias_vessel_promotion_route_available()) {
       // The constrained Latias route solves Active position, Energy, Evolution, and
       // ready-turn payload together, so it outranks any delegated single-axis target:

@@ -1,0 +1,180 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b9b69bd..314fa9f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -225,6 +225,18 @@ add_test(NAME trace_issue_1117_held_burnet_preempts_steven
+ add_test(NAME trace_issue_1115_held_burnet_preempts_gladion
+   COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 861 --require-ready-by 3)
+ 
++# A held Latias ex provides a zero-Retreat promotion to the prepared Benched VSTAR,
++# so Professor Burnet must keep the current Supporter play ahead of Gladion:
++# https://api.pokemontcg.io/v2/cards/sv8-76
++# https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
++# https://api.pokemontcg.io/v2/cards/sm4-95
++# https://api.pokemontcg.io/v2/cards/swsh12-136
++# https://www.pokemon.com/us/pokemon-tcg/rules
++# https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
++# https://github.com/FlareZ123/pokemon-sims/issues/1114
++add_test(NAME trace_issue_1114_latias_burnet_preempts_gladion
++  COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2932 --require-ready-by 4)
++
+ add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
+ set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)
+ 
+diff --git a/src/trace_engine_v2/part_012.inc b/src/trace_engine_v2/part_012.inc
+index 6886037..0967aa0 100644
+--- a/src/trace_engine_v2/part_012.inc
++++ b/src/trace_engine_v2/part_012.inc
+@@ -206,9 +206,28 @@
+       const bool active_burnet_completion = active_is_vstar() && !need_energy() &&
+           need_payload() && hand_count(Card::ProfessorBurnet) > 0 &&
+           can_play_payload_this_turn();
++      // A held or already Benched Latias ex also proves a current-turn Burnet
++      // route when its Skyliner Ability can promote the complete Benched VSTAR.
++      // Gladion cannot consume the Supporter permission before that free retreat:
++      // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
++      // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
++      // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
++      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
++      // Core Bench, Ability, retreat, and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
++      // Earliest-ready route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
++      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1114
++      const bool latias_burnet_completion = need_active_vstar() && !need_energy() &&
++          need_payload() && hand_count(Card::ProfessorBurnet) > 0 &&
++          can_play_payload_this_turn() && state_.active &&
++          is_basic(state_.active->card) && !state_.retreat_used &&
++          benched_vstar_promotion_ready() &&
++          ability_available_for_pokemon(Card::LatiasEx) &&
++          (in_play(Card::LatiasEx) ||
++           (hand_count(Card::LatiasEx) > 0 && bench_space() > 0));
+       const bool direct_supporter = should_play_steven() ||
+                                     (need_energy() && hand_count(Card::Crispin) > 0 && crispin_can_advance_energy_axis()) ||
+                                     active_burnet_completion ||
++                                    latias_burnet_completion ||
+                                     (need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) > 0) ||
+                                     (!item_locked() && hand_count(Card::Arven) > 0);
+       if (!known_target && !direct_supporter && prize_count_after_reveal(Card::Lusamine) > 0 &&
+diff --git a/tests/issue_1114_latias_burnet_preempts_gladion_tests.cpp b/tests/issue_1114_latias_burnet_preempts_gladion_tests.cpp
+new file mode 100644
+index 0000000..569ffeb
+--- /dev/null
++++ b/tests/issue_1114_latias_burnet_preempts_gladion_tests.cpp
+@@ -0,0 +1,118 @@
++#define REGIDRAGO_SIM_NO_MAIN
++#include "../src/regidrago_sim.cpp"
++
++#include <algorithm>
++#include <random>
++#include <stdexcept>
++#include <string>
++#include <utility>
++
++namespace sim {
++struct EngineTestAccess {
++  static void set_state(Engine& engine, State state) {
++    engine.state_ = std::move(state);
++    engine.deck_seen_ = true;
++    engine.prizes_revealed_ = true;
++  }
++  static bool play_gladion(Engine& engine) { return engine.play_gladion(); }
++  static void run_turn(Engine& engine) { engine.run_turn(); }
++  static const State& state(const Engine& engine) { return engine.state_; }
++  static bool payload_ready(const Engine& engine) { return engine.payload_ready(); }
++};
++}  // namespace sim
++
++namespace {
++void expect(const bool condition, const char* message) {
++  if (!condition) throw std::runtime_error(message);
++}
++
++bool trace_contains(const sim::TraceLog& trace, const std::string& needle) {
++  return std::any_of(trace.lines.begin(), trace.lines.end(),
++                     [&needle](const std::string& line) {
++                       return line.find(needle) != std::string::npos;
++                     });
++}
++
++sim::State issue_1114_state(const bool include_latias) {
++  sim::State state;
++  state.turn = 4;
++  state.active = sim::Pokemon{sim::Card::Oricorio, 1, 0, 0, sim::Tool::None};
++  state.bench = {sim::Pokemon{sim::Card::RegidragoVstar, 2, 2, 1,
++                              sim::Tool::None}};
++  state.hand = {sim::Card::ProfessorBurnet, sim::Card::Gladion};
++  if (include_latias) state.hand.push_back(sim::Card::LatiasEx);
++  state.deck = {sim::Card::MegaDragonite, sim::Card::Dragapult,
++                sim::Card::Grass};
++  state.prizes = {sim::Card::Lusamine, sim::Card::Fire, sim::Card::Grass,
++                  sim::Card::RegidragoV, sim::Card::QuickBall,
++                  sim::Card::MysteriousTreasure};
++  state.discard = {sim::Card::Arven};
++  return state;
++}
++
++sim::Scenario issue_1114_scenario() {
++  return sim::Scenario{"issue-1114-latias-burnet", sim::DciProfile::StrictJit,
++                       sim::LockMode::None, true, 5};
++}
++
++void test_latias_burnet_route_blocks_gladion_lusamine_exchange() {
++  const sim::DeckRecipe recipe = sim::baseline_recipe();
++  std::mt19937_64 rng{1114};
++  const sim::Scenario scenario = issue_1114_scenario();
++  sim::Engine engine(scenario, recipe, rng);
++  sim::EngineTestAccess::set_state(engine, issue_1114_state(true));
++
++  // Latias ex removes Oricorio's Retreat Cost, allowing the prepared GGF VSTAR to
++  // become Active before Professor Burnet completes the strict-JIT payload axis:
++  // https://api.pokemontcg.io/v2/cards/sv8-76
++  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
++  // https://api.pokemontcg.io/v2/cards/sm4-95
++  // https://api.pokemontcg.io/v2/cards/swsh12-136
++  // https://www.pokemon.com/us/pokemon-tcg/rules
++  // https://github.com/FlareZ123/pokemon-sims/issues/1114
++  expect(!sim::EngineTestAccess::play_gladion(engine),
++         "Gladion must yield to the current-turn Latias-Burnet completion.");
++}
++
++void test_turn_policy_promotes_and_plays_burnet_on_turn_four() {
++  const sim::DeckRecipe recipe = sim::baseline_recipe();
++  std::mt19937_64 rng{1114};
++  sim::TraceLog trace;
++  trace.enabled = true;
++  const sim::Scenario scenario = issue_1114_scenario();
++  sim::Engine engine(scenario, recipe, rng, &trace);
++  sim::EngineTestAccess::set_state(engine, issue_1114_state(true));
++
++  sim::EngineTestAccess::run_turn(engine);
++  const sim::State& after = sim::EngineTestAccess::state(engine);
++
++  expect(after.supporter_used, "Professor Burnet must consume the T4 Supporter play.");
++  expect(after.active && after.active->card == sim::Card::RegidragoVstar,
++         "Latias ex must promote the prepared Benched Regidrago VSTAR.");
++  expect(sim::EngineTestAccess::payload_ready(engine),
++         "Professor Burnet must establish the T4 payload.");
++  expect(trace_contains(trace, "Latias ex"), "The trace must record Latias ex.");
++  expect(trace_contains(trace, "Professor Burnet"),
++         "The trace must record Professor Burnet.");
++  expect(!trace_contains(trace, "exchanged Gladion"),
++         "The trace must not exchange Gladion for Lusamine.");
++}
++
++void test_gladion_route_remains_without_latias_promotion() {
++  const sim::DeckRecipe recipe = sim::baseline_recipe();
++  std::mt19937_64 rng{1114};
++  const sim::Scenario scenario = issue_1114_scenario();
++  sim::Engine engine(scenario, recipe, rng);
++  sim::EngineTestAccess::set_state(engine, issue_1114_state(false));
++
++  expect(sim::EngineTestAccess::play_gladion(engine),
++         "Gladion must remain available without the Latias promotion route.");
++}
++}  // namespace
++
++int main() {
++  test_latias_burnet_route_blocks_gladion_lusamine_exchange();
++  test_turn_policy_promotes_and_plays_burnet_on_turn_four();
++  test_gladion_route_remains_without_latias_promotion();
++  return 0;
++}

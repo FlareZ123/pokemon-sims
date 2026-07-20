@@ -225,6 +225,18 @@ add_test(NAME trace_issue_1117_held_burnet_preempts_steven
 add_test(NAME trace_issue_1115_held_burnet_preempts_gladion
   COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 861 --require-ready-by 3)
 
+# A held Latias ex provides a zero-Retreat promotion to the prepared Benched VSTAR,
+# so Professor Burnet must keep the current Supporter play ahead of Gladion:
+# https://api.pokemontcg.io/v2/cards/sv8-76
+# https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+# https://api.pokemontcg.io/v2/cards/sm4-95
+# https://api.pokemontcg.io/v2/cards/swsh12-136
+# https://www.pokemon.com/us/pokemon-tcg/rules
+# https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+# https://github.com/FlareZ123/pokemon-sims/issues/1114
+add_test(NAME trace_issue_1114_latias_burnet_preempts_gladion
+  COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2932 --require-ready-by 4)
+
 add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
 set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)
 

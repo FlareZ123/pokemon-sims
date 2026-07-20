@@ -206,9 +206,28 @@
       const bool active_burnet_completion = active_is_vstar() && !need_energy() &&
           need_payload() && hand_count(Card::ProfessorBurnet) > 0 &&
           can_play_payload_this_turn();
+      // A held or already Benched Latias ex also proves a current-turn Burnet
+      // route when its Skyliner Ability can promote the complete Benched VSTAR.
+      // Gladion cannot consume the Supporter permission before that free retreat:
+      // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+      // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+      // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Core Bench, Ability, retreat, and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Earliest-ready route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1114
+      const bool latias_burnet_completion = need_active_vstar() && !need_energy() &&
+          need_payload() && hand_count(Card::ProfessorBurnet) > 0 &&
+          can_play_payload_this_turn() && state_.active &&
+          is_basic(state_.active->card) && !state_.retreat_used &&
+          benched_vstar_promotion_ready() &&
+          ability_available_for_pokemon(Card::LatiasEx) &&
+          (in_play(Card::LatiasEx) ||
+           (hand_count(Card::LatiasEx) > 0 && bench_space() > 0));
       const bool direct_supporter = should_play_steven() ||
                                     (need_energy() && hand_count(Card::Crispin) > 0 && crispin_can_advance_energy_axis()) ||
                                     active_burnet_completion ||
+                                    latias_burnet_completion ||
                                     (need_payload() && item_locked() && hand_count(Card::ProfessorBurnet) > 0) ||
                                     (!item_locked() && hand_count(Card::Arven) > 0);
       if (!known_target && !direct_supporter && prize_count_after_reveal(Card::Lusamine) > 0 &&

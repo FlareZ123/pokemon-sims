@@ -1,0 +1,4 @@
+# ninja log v7
+2	7	1784527097393438510	/home/runner/work/pokemon-sims/pokemon-sims/build-agent/CMakeFiles/cmake.verify_globs	3ee01795fa90b3a1
+7	27734	1784527097398438503	CMakeFiles/regidrago_sim.dir/src/regidrago_sim.cpp.o	d2acd32a25a89a35
+27735	27788	1784527125126497538	regidrago_sim	47cced2776284ec5

@@ -23,6 +23,8 @@ jobs:
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build --parallel 2
+      - name: Run focused lock-scope regression
+        run: ./build/regidrago_unified_tests issue_1108_known_burnet_steven_route_tests
       - name: Run three independent simulate-this passes
         shell: bash
         run: |

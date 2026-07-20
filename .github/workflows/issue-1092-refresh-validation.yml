@@ -1,0 +1,63 @@
+name: Issue 1092 Refresh Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run issue controls and three independent trace audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1092
+          ctest --test-dir build -R trace_issue_1092_quick_ball_energy_jit_gate --output-on-failure
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 71 --require-ready-by 3 | tee issue-1092-trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 44 --require-ready-by 3 | tee issue-1092-trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 104 --require-ready-by 3 | tee issue-1092-trace-3.txt
+      - name: Regenerate source-bound baselines
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/regenerate_setup_baselines.py \
+            --exe build/regidrago_sim \
+            --out-dir results \
+            --max-seed 5000 \
+            --trials 100000 \
+            --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          cp results/simulation_results.csv issue-1092-t2-t3-matrix.csv
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Upload generated baselines and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1092-refresh-${{ github.run_attempt }}
+          path: |
+            CMakeLists.txt
+            docs/REPORT.md
+            results
+            scripts
+            src
+            tests
+            issue-1092-trace-*.txt
+            issue-1092-t2-t3-matrix.csv
+            build/Testing
+          if-no-files-found: error

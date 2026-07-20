@@ -290,3 +290,16 @@ add_test(NAME setup_docs_generator_contract COMMAND "${Python3_EXECUTABLE}" "${C
 # https://github.com/FlareZ123/pokemon-sims/issues/1137
 add_test(NAME trace_issue_1137_fss_latias_burnet
   COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 17 --require-ready-by 3)
+
+# Arven consumes T4's Supporter play, so Star Alchemy must bank Tate & Liza
+# instead of redundant Professor Burnet. T5 Tate promotes the prior-turn GGF
+# Regidrago VSTAR, then held Brilliant Blender establishes strict-JIT payload:
+# Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+# Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+# Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+# Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+# Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+# T5 diagnostic recovery: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/T5_FAILURE_POLICY.md
+# Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1139
+add_test(NAME trace_issue_1139_fss_banks_tate
+  COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 100 --require-ready-by 5)

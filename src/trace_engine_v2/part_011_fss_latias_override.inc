@@ -196,7 +196,14 @@
                 (need_active_vstar() && bench_space() > 0 &&
                  ability_available_for_pokemon(Card::LatiasEx));
           case Card::TateLiza:
-            return need_active_vstar() && supporter_allowed();
+            // The current-turn Tate route requires an available Supporter play.
+            // Issue #1139 adds the separately proven next-turn banked route after
+            // Arven has consumed that play and held Blender covers payload:
+            // https://api.pokemontcg.io/v2/cards/sm7-148
+            // https://api.pokemontcg.io/v2/cards/sv8-164
+            // https://github.com/FlareZ123/pokemon-sims/issues/1139
+            return (need_active_vstar() && supporter_allowed()) ||
+                fss_should_bank_tate_for_next_turn_blender_route();
           case Card::BrilliantBlender:
             return need_payload() && can_play_payload_this_turn() && !item_locked() &&
                 payload_present;

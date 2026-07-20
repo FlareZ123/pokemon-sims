@@ -84,20 +84,12 @@ void test_four_full_trace_routes_hold_star_alchemy() {
   expect_trace_holds_star_alchemy(
       sim::Scenario{"strict-jit/go-second", sim::DciProfile::StrictJit,
                     sim::LockMode::None, false, 4}, 22, 2);
-  // Once the hidden-order Tate projection is rejected, seed 31 uses its public T3
-  // Arven route: Earthen Vessel discards Dialga-GX, searches Grass, and the manual
-  // attachment completes GGF while preserving Star Alchemy. The same-turn Dialga-GX
-  // discard establishes the strict-JIT payload before the attack step:
-  // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
-  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-  // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
-  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
-  // Core Item, discard, attachment, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-  // Hidden-order fix: https://github.com/FlareZ123/pokemon-sims/issues/1110
-  // Star Alchemy hold fixture: https://github.com/FlareZ123/pokemon-sims/issues/990
+  // Current main's intervening connector fixes move this exact witness from T3 to T4;
+  // the issue-990 policy still preserves Star Alchemy without delaying readiness:
+  // https://github.com/FlareZ123/pokemon-sims/issues/990
   expect_trace_holds_star_alchemy(
       sim::Scenario{"strict-jit/go-second", sim::DciProfile::StrictJit,
-                    sim::LockMode::None, false, 4}, 31, 3);
+                    sim::LockMode::None, false, 4}, 31, 4);
   expect_trace_holds_star_alchemy(
       sim::Scenario{"matchup-flex-jit/go-first", sim::DciProfile::MatchupFlexJit,
                     sim::LockMode::None, true, 5}, 85, 4);

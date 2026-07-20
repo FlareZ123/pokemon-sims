@@ -1,0 +1,84 @@
+name: Issue 1139 Apply and Validate
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          fetch-depth: 0
+
+      - name: Apply focused issue 1139 patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! grep -q 'fss_should_bank_tate_for_next_turn_blender_route' src/trace_engine_v2/part_010_fss_override.inc; then
+            git apply --check .github/issue-1139.patch
+            git apply .github/issue-1139.patch
+          fi
+          # Confirmed issue and route specification: https://github.com/FlareZ123/pokemon-sims/issues/1139
+
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build-issue-1139 -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-issue-1139 --parallel 2
+          # Repository build and test specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+
+      - name: Regenerate source-bound baselines
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build-issue-1139/regidrago_sim --out-dir results
+          python scripts/update_setup_docs.py --repo-root .
+          # Canonical 100,000-trial matrix specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+          # Source-bound manifest specification: https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build-issue-1139 --parallel 4 --output-on-failure
+
+      - name: Run independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Core turn, Supporter, Item, search, discard, evolution, attachment, switching, Ability, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Earliest legal ready route and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build-issue-1139/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 100 --require-ready-by 5 | tee issue-1139-seed-100.txt
+          ./build-issue-1139/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 5 | tee pass-1-strict-jit-go-second-seed-5.txt
+          ./build-issue-1139/regidrago_sim --simulate-this --scenario strict-jit-full-item-lock/go-second --seed 41 | tee pass-2-full-item-lock-go-second-seed-41.txt
+          ./build-issue-1139/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 19 | tee pass-3-no-discard-control-go-second-seed-19.txt
+          ./build-issue-1139/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 | tee pass-4-strict-jit-go-second-seed-1.txt
+
+      - name: Commit applied fix and generated evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add CMakeLists.txt README.md docs/REPORT.md docs/TRACE_AUDIT.md results src/trace_engine_v2/part_010_fss_override.inc src/trace_engine_v2/part_011_fss_latias_override.inc tests/issue_1139_fss_bank_tate_tests.cpp
+          if ! git diff --cached --quiet; then
+            git commit -m 'Fix Star Alchemy next-turn Tate route (#1139)'
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1139-validation-${{ github.run_attempt }}
+          path: |
+            issue-1139-seed-100.txt
+            pass-*.txt
+            results/simulation_results.csv
+            results/baseline_manifest.json
+            results/traces
+            build-issue-1139/Testing
+            build-issue-1139/regidrago_sim
+          if-no-files-found: error

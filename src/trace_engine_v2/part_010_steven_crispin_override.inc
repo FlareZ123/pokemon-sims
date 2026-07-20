@@ -348,6 +348,18 @@
       return std::nullopt;
     }
 
+    // A held Brilliant Blender is a legal current-turn deck-to-discard outlet in
+    // this exact state: Active Regidrago VSTAR already pays GGF, Items are legal,
+    // and payload is the only missing setup axis. Preserve the shorter one-action
+    // completion instead of ending the turn for Steven's slower Treasure bridge:
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Item, Supporter, search, discard, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest-ready route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1111
+    if (hand_count(Card::BrilliantBlender) > 0) return std::nullopt;
+
     const int treasure_targets = static_cast<int>(std::count_if(
         state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic));
     if (treasure_targets < 2) return std::nullopt;

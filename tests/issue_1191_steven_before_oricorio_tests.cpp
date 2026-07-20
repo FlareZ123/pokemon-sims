@@ -128,6 +128,21 @@ void test_route_controls() {
   blocked(std::move(no_bench), 119115,
           "Latias ex must have an open Bench slot.");
 
+  const sim::Scenario ability_lock{
+      "issue-1191-ability-lock", sim::DciProfile::NoDiscardControl,
+      sim::LockMode::RuleBoxAbility, false, 5};
+  static const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 ability_lock_rng{119117};
+  sim::Engine ability_lock_engine(ability_lock, recipe, ability_lock_rng);
+  sim::EngineTestAccess::set_state(ability_lock_engine, route_state());
+  // Rule Box Ability lock suppresses Skyliner, so the Basic Active cannot use
+  // Latias ex for the deterministic promotion route:
+  // https://api.pokemontcg.io/v2/cards/sv8-76
+  // https://api.pokemontcg.io/v2/cards/swsh6-148
+  // https://github.com/FlareZ123/pokemon-sims/issues/1191
+  expect(!sim::EngineTestAccess::route_available(ability_lock_engine),
+         "Rule Box Ability lock must block the Latias route.");
+
   sim::State no_grass_start = route_state();
   no_grass_start.bench.front().grass = 0;
   no_grass_start.bench.front().fire = 1;

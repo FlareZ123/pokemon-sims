@@ -1,0 +1,61 @@
+name: Turn 20260720 1902 GPT56 Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release # Build contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      - name: Build simulator and unified tests
+        run: cmake --build build --parallel 2 # Test contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Official turn, Trainer, search, discard, evolution, attachment, Ability, retreat, attack, and Prize procedures: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Earliest deterministic route and DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 | tee pass-1-strict-jit-go-second-seed-1.txt # Trace interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 91 | tee pass-2-strict-jit-go-first-seed-91.txt # Strict-JIT source: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-first --seed 173 | tee pass-3-matchup-flex-go-first-seed-173.txt # Matchup-flex source: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+      - name: Reproduce issue 1191 on current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 509 | tee issue-1191-seed-509.txt # Issue: https://github.com/FlareZ123/pokemon-sims/issues/1191
+          grep -q "T1 | PLAY SUPPORTER | Gladion exchanged for Oricorio" issue-1191-seed-509.txt # Gladion and Oricorio: https://api.pokemontcg.io/v2/cards/sm4-95 https://api.pokemontcg.io/v2/cards/sm2-55
+          grep -q "T5 | SETUP FAILURE" issue-1191-seed-509.txt # Horizon contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#t5-horizon-and-setup-loss-rule
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure # Test contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out turn-20260720-1902-gpt56-t2-t3-matrix.csv # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+      - name: Export exact tested source
+        shell: bash
+        run: |
+          git rev-parse HEAD > tested-head.txt # Source traceability: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULES_TRACEABILITY.md
+          git archive --format=tar.gz --output=tested-source.tar.gz HEAD # Auditable source snapshot: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#audit-status
+          find src tests docs data scripts -type f -print | sort > source-inventory.txt # Repository scope: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#scope
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turn-20260720-1902-gpt56-audit-${{ github.run_attempt }}
+          path: |
+            pass-*.txt
+            issue-1191-seed-509.txt
+            turn-20260720-1902-gpt56-t2-t3-matrix.csv
+            tested-head.txt
+            tested-source.tar.gz
+            source-inventory.txt
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+          if-no-files-found: error

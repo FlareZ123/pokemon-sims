@@ -86,7 +86,10 @@
     const bool burnet_payload_route =
         supporter_allowed() && hand_count(Card::ProfessorBurnet) > 0 &&
         can_play_payload_this_turn() && payload_might_be_in_deck();
-    if (scenario_.dci != DciProfile::MatchupFlexJit || item_locked() ||
+    const bool route_allows_surplus_energy =
+        scenario_.dci == DciProfile::MatchupFlexJit ||
+        scenario_.dci == DciProfile::StrictJit;  // Confirmed strict-JIT route: https://github.com/FlareZ123/pokemon-sims/issues/1185
+    if (!route_allows_surplus_energy || item_locked() ||
         !need_active_vstar() || need_energy() ||
         !benched_vstar_promotion_ready() || !state_.active ||
         !is_basic(state_.active->card) || state_.retreat_used ||
@@ -113,7 +116,7 @@
     // Dynamic DCI and earliest route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Attachment availability alone is not Energy demand after the selected VSTAR
     // already has GGF: https://github.com/FlareZ123/pokemon-sims/issues/1155
-    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1146 https://github.com/FlareZ123/pokemon-sims/issues/1154 https://github.com/FlareZ123/pokemon-sims/issues/1155
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1146 https://github.com/FlareZ123/pokemon-sims/issues/1154 https://github.com/FlareZ123/pokemon-sims/issues/1155 https://github.com/FlareZ123/pokemon-sims/issues/1185
     if (grass_needed() == 0 && hand_count(Card::Grass) == 1) return Card::Grass;
     if (fire_needed() == 0 && hand_count(Card::Fire) == 1) return Card::Fire;
     return std::nullopt;

@@ -117,8 +117,22 @@ void test_exact_route_and_controls() {
 
   const sim::Scenario strict{"issue-1146-strict", sim::DciProfile::StrictJit,
                              sim::LockMode::None, false, 5};
-  blocked(route_state(), strict, 114606,
-          "Strict DCI must keep the singleton Energy protected.");
+  std::mt19937_64 strict_rng{114606};
+  sim::Engine strict_engine = make_engine(strict, strict_rng, route_state());
+  // Strict JIT may spend the final Energy once GGF is complete and the held
+  // Blender plus Latias ex route deterministically completes the ready turn:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1185
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  expect(sim::EngineTestAccess::final_surplus_cost(strict_engine) ==
+             sim::Card::Grass,
+         "Strict JIT must admit the complete route-conditioned surplus Energy.");
+
+  sim::State strict_no_blender = route_state();
+  strict_no_blender.hand.erase(
+      std::find(strict_no_blender.hand.begin(), strict_no_blender.hand.end(),
+                sim::Card::BrilliantBlender));
+  blocked(strict_no_blender, strict, 114609,
+          "Strict JIT must protect Energy without a ready-turn payload route.");
 
   const sim::Scenario item_lock{"issue-1146-item-lock",
                                 sim::DciProfile::MatchupFlexJit,

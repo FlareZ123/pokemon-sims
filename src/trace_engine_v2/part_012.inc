@@ -283,10 +283,34 @@
     return true;
   }
 
+  bool serena_payload_can_complete_this_turn() {
+    const auto payload_it = std::find_if(state_.hand.begin(), state_.hand.end(), is_payload);
+    if (!can_play_payload_this_turn() || payload_it == state_.hand.end()) return false;
+
+    // Serena consumes the Supporter play and its mandatory Dragon discard before
+    // the rest of the turn can finish. Project that paid state so a second Supporter
+    // or the discarded payload cannot falsely satisfy the remaining VSTAR, GGF, or
+    // Active-position axes:
+    // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+    // Regidrago VSTAR and Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Supporter, attachment, evolution, and Retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Strict-JIT contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1099
+    Engine projected = *this;
+    remove_one(projected.state_.hand, Card::Serena);
+    const Card payload = *payload_it;
+    remove_one(projected.state_.hand, payload);
+    projected.state_.discard.push_back(payload);
+    projected.state_.discarded_this_turn.push_back(payload);
+    projected.state_.supporter_used = true;
+    return projected.blender_vstar_card_axis_can_finish_this_turn() &&
+           projected.blender_energy_axis_can_finish_this_turn() &&
+           projected.blender_active_axis_can_finish_this_turn();
+  }
+
   bool play_serena(const bool allow_zero_draw_payload_completion = false) {
     if (!supporter_allowed() || hand_count(Card::Serena) == 0) return false;
-    const bool permit_payload = can_play_payload_this_turn() &&
-        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    const bool permit_payload = serena_payload_can_complete_this_turn();
     const auto payload_it = std::find_if(state_.hand.begin(), state_.hand.end(), is_payload);
     // The dedicated completion branch exists to put a Dragon payload in discard now.
     // Force that printed Serena discard instead of allowing generic low-DCI fodder to
@@ -295,10 +319,27 @@
     // https://api.pokemontcg.io/v2/cards/sv6-127
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/issues/882
-    const std::optional<Card> first =
-        allow_zero_draw_payload_completion && payload_it != state_.hand.end()
-            ? std::optional<Card>{*payload_it}
-            : choose_discard(permit_payload, true);
+    std::optional<Card> first;
+    if (allow_zero_draw_payload_completion && payload_it != state_.hand.end()) {
+      first = *payload_it;
+    } else {
+      first = choose_discard(permit_payload, true);
+      const bool latias_role_is_dead = scenario_.dci == DciProfile::StrictJit &&
+          !permit_payload && active_is_vstar() && hand_count(Card::LatiasEx) > 0;
+      const bool ordinary_cost_is_live_regi_role = first &&
+          (*first == Card::RegidragoV || *first == Card::RegidragoVstar);
+      if (latias_role_is_dead && (!first || ordinary_cost_is_live_regi_role)) {
+        // Once Regidrago VSTAR is already Active, Skyliner cannot advance the setup
+        // objective because it removes Retreat Cost only from Basic Pokémon. Prefer
+        // that observably dead singleton over a premature strict-JIT Dragon or a live
+        // Regidrago card while Serena still provides a productive draw:
+        // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+        // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+        // Dynamic DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1099
+        first = Card::LatiasEx;
+      }
+    }
     if (!first || *first == Card::Serena) return false;
 
     // Build the same deterministic discard plan without committing it. Serena draws

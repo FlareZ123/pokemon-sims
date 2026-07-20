@@ -178,6 +178,17 @@ add_test(NAME trace_issue_1092_quick_ball_energy_jit_gate
   COMMAND ${CMAKE_COMMAND}
     -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
     -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_issue_1092_quick_ball_energy_jit_gate.cmake)
+# Serena may discard a strict-JIT Dragon only when its paid Supporter state can
+# finish the VSTAR card, GGF Energy, and Active-position axes during that turn:
+# https://api.pokemontcg.io/v2/cards/swsh12-164
+# https://api.pokemontcg.io/v2/cards/swsh12-136
+# https://api.pokemontcg.io/v2/cards/sv8-76
+# https://www.pokemon.com/us/pokemon-tcg/rules
+# https://github.com/FlareZ123/pokemon-sims/issues/1099
+add_test(NAME trace_issue_1099_serena_complete_axis_jit_gate
+  COMMAND ${CMAKE_COMMAND}
+    -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_issue_1099_serena_complete_axis_jit_gate.cmake)
 add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
 set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)
 

@@ -18,35 +18,13 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
 
-      - name: Apply reviewed source patch once
-        id: source_patch
-        shell: bash
-        run: |
-          set -euo pipefail
-          if compgen -G '.github/issue-1098/patch.part*' > /dev/null; then
-            cat .github/issue-1098/patch.part* | base64 --decode > /tmp/issue-1098.patch
-            git apply --index /tmp/issue-1098.patch
-            rm -rf .github/issue-1098
-            git add -A
-            git config user.name github-actions[bot]
-            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-            git commit -m 'Fix late Steven Crispin-Treasure route (#1098)'
-            git push origin HEAD:${GITHUB_HEAD_REF}
-            echo 'applied=true' >> "$GITHUB_OUTPUT"
-          else
-            echo 'applied=false' >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Configure Release
-        if: steps.source_patch.outputs.applied != 'true'
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
       - name: Build simulator and unified tests
-        if: steps.source_patch.outputs.applied != 'true'
         run: cmake --build build --parallel 2
 
-      - name: Run exact regression and independent simulate-this audits
-        if: steps.source_patch.outputs.applied != 'true'
+      - name: Run exact regression and four independent simulate-this audits
         shell: bash
         run: |
           set -euo pipefail
@@ -63,40 +41,31 @@ jobs:
           ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee audit-trace-rulebox-lock.txt
 
       - name: Run behavior suite before baseline refresh
-        if: steps.source_patch.outputs.applied != 'true'
         run: ctest --test-dir build --parallel 4 --output-on-failure -E setup_report_contract
 
       - name: Regenerate source-bound traces and 100000-trial matrix
-        if: steps.source_patch.outputs.applied != 'true'
         run: python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
 
       - name: Refresh generated reports
-        if: steps.source_patch.outputs.applied != 'true'
         run: python scripts/update_setup_docs.py --repo-root .
 
       - name: Run complete suite against regenerated artifacts
-        if: steps.source_patch.outputs.applied != 'true'
         run: ctest --test-dir build --parallel 4 --output-on-failure
 
       - name: Commit regenerated source-bound artifacts
-        id: generated
-        if: steps.source_patch.outputs.applied != 'true'
         shell: bash
         run: |
           set -euo pipefail
           git add README.md docs/REPORT.md docs/TRACE_AUDIT.md results
-          if git diff --cached --quiet; then
-            echo 'committed=false' >> "$GITHUB_OUTPUT"
-          else
+          if ! git diff --cached --quiet; then
             git config user.name github-actions[bot]
             git config user.email 41898282+github-actions[bot]@users.noreply.github.com
             git commit -m 'Refresh issue 1098 setup baselines'
             git push origin HEAD:${GITHUB_HEAD_REF}
-            echo 'committed=true' >> "$GITHUB_OUTPUT"
           fi
 
       - name: Upload validation evidence
-        if: always() && steps.source_patch.outputs.applied != 'true'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: issue-1098-validation-${{ github.run_attempt }}

@@ -23,7 +23,10 @@ jobs:
         run: |
           set -euo pipefail
           if ! grep -q 'fss_should_bank_tate_for_next_turn_blender_route' src/trace_engine_v2/part_010_fss_override.inc; then
-            git apply --check .github/issue-1139.patch
+            if ! git apply --check --verbose .github/issue-1139.patch 2>patch-error.txt; then
+              cat patch-error.txt
+              exit 1
+            fi
             git apply .github/issue-1139.patch
           fi
           # Confirmed issue and route specification: https://github.com/FlareZ123/pokemon-sims/issues/1139
@@ -74,6 +77,7 @@ jobs:
         with:
           name: issue-1139-validation-${{ github.run_attempt }}
           path: |
+            patch-error.txt
             issue-1139-seed-100.txt
             pass-*.txt
             results/simulation_results.csv

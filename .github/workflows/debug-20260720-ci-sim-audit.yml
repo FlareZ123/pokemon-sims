@@ -31,23 +31,63 @@ jobs:
           ctest --test-dir build --parallel 4 --output-on-failure | tee complete-tests.txt
           # Exact-state and regression contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
 
-      - name: Simulate strict JIT going first
+      - name: Simulate investigated strict JIT going first state
         shell: bash
         run: |
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 7 | tee trace-strict-jit-going-first-seed-7.txt
+          # Prior rejected deterministic claim: https://github.com/FlareZ123/pokemon-sims/issues/1027
           # Trace CLI contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
 
-      - name: Simulate strict JIT going second
+      - name: Simulate audited strict JIT going second state
         shell: bash
         run: |
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 29 | tee trace-strict-jit-going-second-seed-29.txt
           # Trace CLI contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
 
-      - name: Simulate matchup-flex JIT going second
+      - name: Simulate audited matchup-flex JIT going second state
         shell: bash
         run: |
           ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 83 | tee trace-matchup-flex-jit-going-second-seed-83.txt
           # Trace CLI contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+
+      - name: Perfect-play pass 1, strict JIT going second
+        shell: bash
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee perfect-pass-1-strict-going-second-seed-1.txt
+          # Heavy Ball, Wonder Tag, Steven, Crispin, Blender, Latias, and readiness sources:
+          # https://api.pokemontcg.io/v2/cards/swsh10-146
+          # https://api.pokemontcg.io/v2/cards/cel25c-60_A
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://api.pokemontcg.io/v2/cards/sv8-164
+          # https://api.pokemontcg.io/v2/cards/sv8-76
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+
+      - name: Perfect-play pass 2, strict JIT going first
+        shell: bash
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 3 | tee perfect-pass-2-strict-going-first-seed-43.txt
+          # Quick Ball, Arven, Forest Seal Stone, Crispin, Treasure, Latias, and readiness sources:
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/sv1-166
+          # https://api.pokemontcg.io/v2/cards/swsh12-156
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sv8-76
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+
+      - name: Perfect-play pass 3, Rule Box Ability lock
+        shell: bash
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee perfect-pass-3-rulebox-lock-seed-20.txt
+          # Earthen Vessel, Celestial Roar, Arven, FSS, Blender, Path lock, and readiness sources:
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          # https://api.pokemontcg.io/v2/cards/swsh12-135
+          # https://api.pokemontcg.io/v2/cards/sv1-166
+          # https://api.pokemontcg.io/v2/cards/swsh12-156
+          # https://api.pokemontcg.io/v2/cards/sv8-164
+          # https://api.pokemontcg.io/v2/cards/swsh6-148
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
 
       - name: Generate source-bound T2 and T3 matrix
         shell: bash
@@ -60,7 +100,7 @@ jobs:
         run: |
           git archive --format=zip HEAD -o pokemon-sims-source.zip
           git rev-parse HEAD | tee audited-head-sha.txt
-          # Audited pull request: https://github.com/FlareZ123/pokemon-sims/pulls
+          # Audited pull request: https://github.com/FlareZ123/pokemon-sims/pull/1161
 
       - name: Upload audit evidence
         if: always()
@@ -72,6 +112,9 @@ jobs:
             trace-strict-jit-going-first-seed-7.txt
             trace-strict-jit-going-second-seed-29.txt
             trace-matchup-flex-jit-going-second-seed-83.txt
+            perfect-pass-1-strict-going-second-seed-1.txt
+            perfect-pass-2-strict-going-first-seed-43.txt
+            perfect-pass-3-rulebox-lock-seed-20.txt
             audit-results
             pokemon-sims-source.zip
             audited-head-sha.txt

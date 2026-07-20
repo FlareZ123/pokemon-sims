@@ -84,12 +84,16 @@ void test_four_full_trace_routes_hold_star_alchemy() {
   expect_trace_holds_star_alchemy(
       sim::Scenario{"strict-jit/go-second", sim::DciProfile::StrictJit,
                     sim::LockMode::None, false, 4}, 22, 2);
-  // Current main's intervening connector fixes move this exact witness from T3 to T4;
-  // the issue-990 policy still preserves Star Alchemy without delaying readiness:
+  // Issue #1130 restores the public Arven, Earthen Vessel, Dialga-GX, and manual
+  // Grass route on T3 while the issue-990 policy still preserves Star Alchemy:
+  // https://api.pokemontcg.io/v2/cards/sv1-166
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://api.pokemontcg.io/v2/cards/sm5-100
   // https://github.com/FlareZ123/pokemon-sims/issues/990
+  // https://github.com/FlareZ123/pokemon-sims/issues/1130
   expect_trace_holds_star_alchemy(
       sim::Scenario{"strict-jit/go-second", sim::DciProfile::StrictJit,
-                    sim::LockMode::None, false, 4}, 31, 4);
+                    sim::LockMode::None, false, 4}, 31, 3);
   expect_trace_holds_star_alchemy(
       sim::Scenario{"matchup-flex-jit/go-first", sim::DciProfile::MatchupFlexJit,
                     sim::LockMode::None, true, 5}, 85, 4);

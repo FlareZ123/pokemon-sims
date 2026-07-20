@@ -220,19 +220,15 @@
     projected.state_.supporter_used = true;
     projected.run_turn();
 
-    // Legacy Star discards a shuffled top-seven sample. A favorable private order in
-    // the shadow engine cannot prove that held non-Supporter cards deterministically
-    // complete the public-state route, especially when Professor Burnet is held and
-    // is the direct known payload outlet:
+    // Legacy Star samples a shuffled private top seven. That result cannot prove
+    // that the public held non-Supporter cards deterministically complete the turn:
     // Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
     // Hidden-order policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
-    // Earliest-ready route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1110
-    if (projected.outcome_.used_legacy_star &&
-        hand_count(Card::RegidragoVstar) > 0 &&
-        hand_count(Card::ProfessorBurnet) > 0) return false;
+    // Earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1110
+    // https://github.com/FlareZ123/pokemon-sims/issues/1130
+    if (projected.outcome_.used_legacy_star) return false;
 
     return projected.active_is_vstar() && projected.state_.active->grass >= 2 &&
         projected.state_.active->fire >= 1 && projected.payload_ready();

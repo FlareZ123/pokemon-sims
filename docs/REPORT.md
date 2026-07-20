@@ -14,25 +14,25 @@ Seed: `20260705`.
 
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
-| Strict JIT, going first | 11.338% | 37.173% | 53.733% |
-| Matchup-flex JIT, going first | 16.077% | 46.81% | 62.551% |
-| No discard control, going first | 19.941% | 55.418% | 71.503% |
-| Strict JIT, going second | 28.322% | 50.646% | 62.216% |
-| Matchup-flex JIT, going second | 36.311% | 59.625% | 70.269% |
-| No discard control, going second | 39.768% | 66.516% | 78.116% |
+| Strict JIT, going first | 11.358% | 37.123% | 53.792% |
+| Matchup-flex JIT, going first | 16.146% | 47.011% | 62.763% |
+| No discard control, going first | 19.91% | 55.372% | 71.509% |
+| Strict JIT, going second | 28.341% | 50.83% | 62.416% |
+| Matchup-flex JIT, going second | 36.293% | 60.024% | 70.571% |
+| No discard control, going second | 39.563% | 66.301% | 77.997% |
 
 ## Lock stress tests
 
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
-| Strict JIT, turn-two Item lock, first | 4.601% | 10.289% | 17.766% |
-| Strict JIT, full Item lock, first | 2.761% | 7.517% | 14.838% |
-| Strict JIT, Rule Box Ability lock, first | 4.313% | 25.643% | 38.626% |
-| Strict JIT, combined lock, first | 0.285% | 3.254% | 7.185% |
-| Strict JIT, turn-two Item lock, second | 13.94% | 27.434% | 34.825% |
-| Strict JIT, full Item lock, second | 10.752% | 22.553% | 29.485% |
-| Strict JIT, Rule Box Ability lock, second | 17.85% | 33.841% | 43.963% |
-| Strict JIT, combined lock, second | 2.434% | 10.992% | 15.024% |
+| Strict JIT, turn-two Item lock, first | 4.631% | 10.259% | 17.695% |
+| Strict JIT, full Item lock, first | 2.776% | 7.456% | 14.729% |
+| Strict JIT, Rule Box Ability lock, first | 4.293% | 25.571% | 38.517% |
+| Strict JIT, combined lock, first | 0.286% | 3.262% | 7.155% |
+| Strict JIT, turn-two Item lock, second | 13.58% | 26.901% | 34.419% |
+| Strict JIT, full Item lock, second | 10.571% | 22.357% | 29.358% |
+| Strict JIT, Rule Box Ability lock, second | 17.733% | 33.779% | 43.915% |
+| Strict JIT, combined lock, second | 2.415% | 10.983% | 15.008% |
 
 ## Interpretation boundary
 

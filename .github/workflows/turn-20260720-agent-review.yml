@@ -17,15 +17,17 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release # Repository build specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
       - name: Build simulator and unified tests
         run: cmake --build build --parallel 2 # Repository test specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
-      - name: Run three independent simulate-this passes and open-bug controls
+      - name: Run five independent simulate-this passes and open-bug controls
         shell: bash
         run: |
           set -euo pipefail
           # Core turn, Supporter, Item, search, discard, evolution, attachment, retreat, Ability, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
           # Earliest legal ready route and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 5 | tee pass-1-strict-jit-go-second-seed-5.txt # Trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 17 | tee pass-2-strict-jit-go-first-seed-17.txt # Hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 17 | tee pass-2-strict-jit-go-first-seed-17.txt # Newly filed defect: https://github.com/FlareZ123/pokemon-sims/issues/1137
           ./build/regidrago_sim --simulate-this --scenario strict-jit-full-item-lock/go-second --seed 41 | tee pass-3-full-item-lock-go-second-seed-41.txt # Lock scenario semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 19 | tee pass-4-no-discard-control-go-second-seed-19.txt # No-discard-control scenario contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 | tee pass-5-strict-jit-go-second-seed-1.txt # Earliest complete route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 143 | tee issue-1109-seed-143.txt # https://github.com/FlareZ123/pokemon-sims/issues/1109
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 493 | tee issue-1112-seed-493.txt # https://github.com/FlareZ123/pokemon-sims/issues/1112
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 63 | tee issue-1113-seed-63.txt # https://github.com/FlareZ123/pokemon-sims/issues/1113

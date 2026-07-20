@@ -1,0 +1,53 @@
+name: Debug Open Bugs Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and unified tests
+        run: cmake --build build --parallel 2
+      - name: Run six independent simulate-this audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Core procedure rules: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Repository trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 101 | tee issue-1108-seed-101.txt # https://github.com/FlareZ123/pokemon-sims/issues/1108
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 143 | tee issue-1109-seed-143.txt # https://github.com/FlareZ123/pokemon-sims/issues/1109
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 182 | tee issue-1110-seed-182.txt # https://github.com/FlareZ123/pokemon-sims/issues/1110
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 7180 | tee issue-1111-seed-7180.txt # https://github.com/FlareZ123/pokemon-sims/issues/1111
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 493 | tee issue-1112-seed-493.txt # https://github.com/FlareZ123/pokemon-sims/issues/1112
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 63 | tee issue-1113-seed-63.txt # https://github.com/FlareZ123/pokemon-sims/issues/1113
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-t2-t3-matrix.csv
+      - name: Record tested source
+        run: git rev-parse HEAD > audit-tested-head.txt
+      - name: Upload exact audit snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-open-bugs-audit-${{ github.run_attempt }}
+          path: |
+            issue-*.txt
+            audit-t2-t3-matrix.csv
+            audit-tested-head.txt
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+          if-no-files-found: error

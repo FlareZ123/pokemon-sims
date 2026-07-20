@@ -77,6 +77,36 @@
     return true;
   }
 
+  bool play_late_steven_active_vstar_crispin_treasure_route() {
+    if (!late_steven_active_vstar_crispin_treasure_route_available()) return false;
+
+    remove_one(state_.hand, Card::StevensResolve);
+    state_.discard.push_back(Card::StevensResolve);
+    state_.supporter_used = true;
+    outcome_.used_steven = true;
+    record_deck_search_knowledge("Steven's Resolve");
+
+    if (!move_deck_to_hand(Card::Crispin) || !move_deck_to_hand(Card::Grass)) {
+      throw std::logic_error("Known late-Steven Crispin-Treasure target disappeared");
+    }
+    shuffle(state_.deck);
+    state_.turn_ended = true;
+
+    // Search only the two required cards. Keeping the remaining Fire in deck preserves
+    // Crispin's two-type search on every next-turn draw except that singleton Fire;
+    // held Mysterious Treasure and the held Dragon provide the exact strict-JIT payload:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1098
+    trace("PLAY SUPPORTER",
+          "R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
+          "Searched the late Crispin-Treasure route: Crispin, Grass Energy. Turn ended.");
+    return true;
+  }
+
   bool play_late_steven_payload_treasure_bridge() {
     const std::optional<Card> payload =
         late_steven_payload_treasure_bridge_payload();
@@ -111,6 +141,7 @@
 
   bool play_steven() {
     if (play_late_steven_vstar_vessel_route()) return true;
+    if (play_late_steven_active_vstar_crispin_treasure_route()) return true;
     if (play_late_steven_payload_treasure_bridge()) return true;
 
     const int regi_before = hand_count(Card::RegidragoV);

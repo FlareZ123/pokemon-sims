@@ -1,0 +1,52 @@
+name: Agent Source Export and Three Trace Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 7180 | tee issue-1111-seed-7180.txt # https://github.com/FlareZ123/pokemon-sims/issues/1111
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 861 | tee issue-1115-seed-861.txt # https://github.com/FlareZ123/pokemon-sims/issues/1115
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 8697 | tee issue-1117-seed-8697.txt # https://github.com/FlareZ123/pokemon-sims/issues/1117
+          # Core procedure rules: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out agent-t2-t3-matrix.csv
+      - name: Export exact source snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > agent-tested-head.txt
+          git archive --format=zip --output=agent-source.zip HEAD
+      - name: Upload audit artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-source-and-three-traces-${{ github.run_attempt }}
+          path: |
+            agent-source.zip
+            agent-tested-head.txt
+            agent-t2-t3-matrix.csv
+            issue-*.txt
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+          if-no-files-found: error

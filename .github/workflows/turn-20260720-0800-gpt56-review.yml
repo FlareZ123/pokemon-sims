@@ -1,0 +1,57 @@
+name: Turn 20260720 0800 GPT56 Review
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release # Build specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      - name: Build simulator and unified tests
+        run: cmake --build build --parallel 2 # Test specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+      - name: Run claimed-bug reproductions and three independent perfect-play passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Turn, Supporter, Item, search, discard, Bench, evolution, Ability, attack, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Earliest legal complete route and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 143 | tee claimed-1109-seed-143.txt # Issue and expected missed Steven route: https://github.com/FlareZ123/pokemon-sims/issues/1109
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 493 | tee claimed-1112-seed-493.txt # Issue and expected missed Steven plus Burnet route: https://github.com/FlareZ123/pokemon-sims/issues/1112
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 63 | tee claimed-1113-seed-63.txt # Issue and expected missed Steven plus Blender route: https://github.com/FlareZ123/pokemon-sims/issues/1113
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 122 | tee claimed-1146-seed-122.txt # Issue and expected surplus-Energy DCI stall: https://github.com/FlareZ123/pokemon-sims/issues/1146
+          ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 344 | tee claimed-1147-seed-344.txt # Issue and expected missing late Item replay: https://github.com/FlareZ123/pokemon-sims/issues/1147
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-full-item-lock/go-second --seed 41 | tee perfect-pass-1-item-lock-seed-41.txt # Lock-aware decision policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 19 | tee perfect-pass-2-no-discard-seed-19.txt # DCI/JIT treatment: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 1 | tee perfect-pass-3-strict-seed-1.txt # First-turn and earliest-route procedure: https://www.pokemon.com/us/pokemon-tcg/rules https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure # Validation specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out turn-20260720-0800-gpt56-t2-t3-matrix.csv # Aggregate specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+      - name: Export exact tested source
+        shell: bash
+        run: |
+          git rev-parse HEAD > tested-head.txt # Traceability specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULES_TRACEABILITY.md
+          git archive --format=tar.gz --output=tested-source.tar.gz HEAD # Audit source export: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#audit-status
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turn-20260720-0800-gpt56-review-${{ github.run_attempt }}
+          path: |
+            claimed-*.txt
+            perfect-pass-*.txt
+            turn-20260720-0800-gpt56-t2-t3-matrix.csv
+            tested-head.txt
+            tested-source.tar.gz
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+          if-no-files-found: error

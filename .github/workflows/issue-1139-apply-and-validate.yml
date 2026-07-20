@@ -23,11 +23,29 @@ jobs:
         run: |
           set -euo pipefail
           if ! grep -q 'fss_should_bank_tate_for_next_turn_blender_route' src/trace_engine_v2/part_010_fss_override.inc; then
-            if ! git apply --check --verbose .github/issue-1139.patch 2>patch-error.txt; then
+            awk '/^diff --git a\/src\// { emit = 1 } emit' .github/issue-1139.patch > issue-1139-code.patch
+            if ! git apply --check --verbose issue-1139-code.patch 2>patch-error.txt; then
               cat patch-error.txt
               exit 1
             fi
-            git apply .github/issue-1139.patch
+            git apply issue-1139-code.patch
+          fi
+          if ! grep -q 'trace_issue_1139_fss_banks_tate' CMakeLists.txt; then
+            cat >> CMakeLists.txt <<'EOF'
+
+          # Arven consumes T4's Supporter play, so Star Alchemy must bank Tate & Liza
+          # instead of redundant Professor Burnet. T5 Tate promotes the prior-turn GGF
+          # Regidrago VSTAR, then held Brilliant Blender establishes strict-JIT payload:
+          # Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+          # Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+          # Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # T5 diagnostic recovery: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/T5_FAILURE_POLICY.md
+          # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1139
+          add_test(NAME trace_issue_1139_fss_banks_tate
+            COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 100 --require-ready-by 5)
+          EOF
           fi
           # Confirmed issue and route specification: https://github.com/FlareZ123/pokemon-sims/issues/1139
 

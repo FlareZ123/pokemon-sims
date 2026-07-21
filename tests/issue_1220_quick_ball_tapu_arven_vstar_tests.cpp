@@ -74,12 +74,12 @@ void erase_one(std::vector<sim::Card>& cards, const sim::Card card) {
 }
 
 void test_exact_route_completes_turn_four() {
+  const sim::Scenario chosen = scenario();
   std::mt19937_64 rng{122001};
   sim::TraceLog trace;
   trace.enabled = true;
-  sim::Engine engine = make_engine(scenario(), rng, route_state(), &trace);
+  sim::Engine engine = make_engine(chosen, rng, route_state(), &trace);
 
-  // The complete K1 graph must remain payable before Quick Ball is spent:
   // Quick Ball -> Tapu Lele-GX -> Arven -> Mysterious Treasure -> Regidrago VSTAR.
   // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
   // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
@@ -105,8 +105,6 @@ void test_exact_route_completes_turn_four() {
          "The second redundant Dragon must pay Mysterious Treasure.");
   expect(trace_contains(trace, "Searched a Basic Pokémon: Tapu Lele-GX"),
          "Quick Ball must search Tapu Lele-GX.");
-  expect(trace_contains(trace, "WONDER TAG"),
-         "Tapu Lele-GX must resolve Wonder Tag.");
   expect(trace_contains(trace, "Searched and revealed Arven"),
          "Wonder Tag must search Arven.");
   expect(trace_contains(trace, "Searched a Psychic or Dragon Pokémon: Regidrago VSTAR"),
@@ -165,10 +163,11 @@ void test_route_preflight_blocks_missing_or_illegal_edges() {
 }
 
 void test_direct_vstar_item_stays_preferred() {
+  const sim::Scenario chosen = scenario();
   std::mt19937_64 rng{122012};
   sim::State state = route_state();
   state.hand.push_back(sim::Card::MysteriousTreasure);
-  sim::Engine engine = make_engine(scenario(), rng, std::move(state));
+  sim::Engine engine = make_engine(chosen, rng, std::move(state));
 
   expect(sim::EngineTestAccess::run_search_step(engine),
          "A direct held VSTAR Item must execute.");

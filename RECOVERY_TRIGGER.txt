@@ -6,3 +6,4 @@ Retriggered with exhaustive shard-order validation.
 Retriggered to export raw recovery shards for byte-level inspection.
 Retriggered to decode the authoritative PR 1119 payload directly.
 Retriggered to export the authoritative PR payload unchanged.
+Retriggered to export all historical recovery-branch shard revisions.

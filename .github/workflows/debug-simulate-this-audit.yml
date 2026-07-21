@@ -10,7 +10,7 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - name: Record source revision
@@ -25,12 +25,15 @@ jobs:
         run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-shell-flex-second-seed-3.txt
       - name: Audit Pineco strict-JIT going second
         run: ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-pineco-strict-second-seed-35.txt
-      - name: Upload traces
+      - name: Generate paired T2/T3 matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-multi-deck-comparison.csv
+      - name: Upload audit evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: debug-simulate-this-traces
+          name: debug-simulate-this-evidence
           path: |
             audited-commit.txt
             trace-*.txt
+            audit-multi-deck-comparison.csv
           if-no-files-found: error

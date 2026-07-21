@@ -71,9 +71,9 @@ jobs:
           python scripts/update_multi_deck_docs.py --repo-root .
       - name: Commit current-main patch
         run: |
-          git add src/trace_engine_v2/part_empty_deck_search_override.inc src/trace_engine_v2/part_013_legacy_star_override.inc src/trace_engine_v2/part_forretress_ex_combo.inc tests/issue_1255_evolution_incense_appletun_continuation_tests.cpp docs results
+          rm -f results/*.lock results/.*.lock
+          git add src/trace_engine_v2/part_empty_deck_search_override.inc src/trace_engine_v2/part_013_legacy_star_override.inc src/trace_engine_v2/part_forretress_ex_combo.inc tests/issue_1255_evolution_incense_appletun_continuation_tests.cpp docs/REPORT.md docs/MULTI_DECK_REPORT.md results/baseline_manifest.json results/simulation_results.csv results/multi_deck_comparison.csv results/multi_deck_manifest.json
           git add -u .github/workflows/complete-issue-1255.yml scripts/complete_issue_1255_patch.py
           git diff --cached --check
           git commit -m "Complete Appletun Evolution Incense routes"
           git push --force-with-lease origin HEAD:fix/issue-1255-evolution-incense-appletun
-# Synchronize trigger for the completed continuation patch.

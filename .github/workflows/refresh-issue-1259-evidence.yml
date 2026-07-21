@@ -29,9 +29,9 @@ jobs:
           git merge --no-edit origin/main
       - name: Build and run focused regression
         run: |
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --parallel 2
-          ./build/regidrago_unified_tests issue_1259_gladion_appletun_tests
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release > configure.log 2>&1 || { cat configure.log; exit 1; }
+          cmake --build build --parallel 2 > build.log 2>&1 || { tail -n 160 build.log; exit 1; }
+          ./build/regidrago_unified_tests issue_1259_gladion_appletun_tests > focused-test.log 2>&1 || { cat focused-test.log; exit 1; }
       - name: Run three simulate-this audits
         run: |
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee issue-1259-trace-1.txt

@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Reconstruct and verify archive
         run: |
-          cat part0.bin part1.bin part2.bin > "$RUNNER_TEMP/recovered-1118.tar.gz"
+          cat part2.bin part1.bin part0.bin > "$RUNNER_TEMP/recovered-1118.tar.gz"
           sha256sum "$RUNNER_TEMP/recovered-1118.tar.gz" | tee "$RUNNER_TEMP/recovered-1118.sha256"
           tar -tzf "$RUNNER_TEMP/recovered-1118.tar.gz" > "$RUNNER_TEMP/recovered-1118-files.txt"
           test -s "$RUNNER_TEMP/recovered-1118-files.txt"

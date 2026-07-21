@@ -1,0 +1,97 @@
+name: Serena Slot Discrete Value Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure and build current simulator
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release # Repository build contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2 # Repository test contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure # Validation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+
+      - name: Add trace-only Serena context metrics
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("src/trace_engine_v2/part_013.inc")
+          text = path.read_text(encoding="utf-8")
+          old = '''    remove_one(state_.hand, Card::Serena);
+              state_.discard.push_back(Card::Serena);
+              for (std::size_t index = 0; index < planned_discards.size(); ++index) {
+                discard_from_hand(planned_discards[index],
+                                  index == 0U ? "Serena chosen discard" : "Serena optional discard",
+                                  "R-SERENA-01");
+              }
+              state_.supporter_used = true;
+              while (state_.hand.size() < 5U && !state_.deck.empty()) draw_card("Serena");
+              trace("PLAY SUPPORTER", "R-SERENA-01; R-GAME-SUPPORTER", "Used Serena draw mode after discarding at least one card.");
+          '''
+          new = '''    // Trace-only audit counters. Serena exact text: https://api.pokemontcg.io/v2/cards/swsh12-164
+              // Resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+              const std::size_t serena_hand_before = state_.hand.size();
+              const std::size_t serena_deck_before = state_.deck.size();
+              remove_one(state_.hand, Card::Serena);
+              state_.discard.push_back(Card::Serena);
+              for (std::size_t index = 0; index < planned_discards.size(); ++index) {
+                discard_from_hand(planned_discards[index],
+                                  index == 0U ? "Serena chosen discard" : "Serena optional discard",
+                                  "R-SERENA-01");
+              }
+              state_.supporter_used = true;
+              while (state_.hand.size() < 5U && !state_.deck.empty()) draw_card("Serena");
+              const std::size_t serena_draws = serena_deck_before - state_.deck.size();
+              std::ostringstream serena_detail;
+              serena_detail << "Used Serena draw mode; hand_before=" << serena_hand_before
+                            << "; discards=" << planned_discards.size()
+                            << "; draws=" << serena_draws;
+              trace("PLAY SUPPORTER", "R-SERENA-01; R-GAME-SUPPORTER", serena_detail.str());
+          '''
+          if old not in text:
+              raise SystemExit("Serena audit patch target was not found")
+          path.write_text(text.replace(old, new, 1), encoding="utf-8")
+          PY
+
+      - name: Build context audit harness
+        run: c++ -std=c++20 -O2 -I. tools/serena_slot_context_audit.cpp -o serena-slot-context-audit # Serena source: https://api.pokemontcg.io/v2/cards/swsh12-164
+
+      - name: Run Serena context audit
+        run: ./serena-slot-context-audit 25000 20260721 # Manual discrete-value analysis remains primary; this records simulator setup contexts only.
+
+      - name: Generate current canonical matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out current-main-t2-t3-matrix.csv # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+
+      - name: Export tested source identity
+        shell: bash
+        run: |
+          git rev-parse HEAD > tested-head.txt # Source traceability: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULES_TRACEABILITY.md
+          sha256sum src/trace_engine_v2/part_000.inc > deck-recipe-sha256.txt
+
+      - name: Upload analysis artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: serena-slot-discrete-value-audit-${{ github.run_attempt }}
+          path: |
+            serena-slot-context.csv
+            serena-played-samples.txt
+            serena-held-unused-samples.txt
+            current-main-t2-t3-matrix.csv
+            tested-head.txt
+            deck-recipe-sha256.txt
+            build/Testing
+          if-no-files-found: error

@@ -159,10 +159,16 @@
     // outlet remains legal after Ultra Ball removes that Dragon from the deck:
     // Apex Dragon https://api.pokemontcg.io/v2/cards/swsh12-136
     const bool has_live_hand_payload_outlet = ultra_ball_has_live_post_payload_outlet();
+    // Ultra Ball may search any Pokémon. Appletun sv8-140 is both modeled and a
+    // strict-JIT payload, so it belongs in the K0 payload-availability gate:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://api.pokemontcg.io/v2/cards/sv8-140
+    // https://github.com/FlareZ123/pokemon-sims/issues/1254
     const bool payload_might_be_searchable = might_be_unseen(Card::MegaDragonite) ||
                                                might_be_unseen(Card::Dragapult) ||
                                                might_be_unseen(Card::GoodraVstar) ||
-                                               might_be_unseen(Card::DialgaGX);
+                                               might_be_unseen(Card::DialgaGX) ||
+                                               might_be_unseen(Card::Appletun);
     const bool want_payload = need_payload() && payload_might_be_searchable &&
                               !can_jit_discard && has_live_hand_payload_outlet;
     if (!want_regi && !want_vstar && !want_latias && !want_oricorio && !want_tapu && !want_payload && !can_jit_discard) return false;
@@ -276,9 +282,13 @@
 
     // A fetched Dragon can become this turn's strict-JIT payload through the separate
     // hand-discard outlet selected in play_ultra_ball: https://api.pokemontcg.io/v2/cards/swsh12-136
-    const std::array<Card, 9> targets{Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio,
-                                      Card::TapuLeleGX, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
-                                      Card::DialgaGX};
+    // Appletun is a legal Pokémon target and modeled payload:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://api.pokemontcg.io/v2/cards/sv8-140
+    // https://github.com/FlareZ123/pokemon-sims/issues/1254
+    const std::array<Card, 10> targets{Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio,
+                                       Card::TapuLeleGX, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
+                                       Card::DialgaGX, Card::Appletun};
     for (const Card target : targets) {
       const bool desired = (target == Card::RegidragoV && want_regi) ||
                            (target == Card::RegidragoVstar && want_vstar) ||

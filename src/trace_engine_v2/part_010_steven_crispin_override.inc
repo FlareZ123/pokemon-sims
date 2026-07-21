@@ -410,8 +410,16 @@
     // Core Supporter, Item, and attack-cost procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // JIT and earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1023
+    // Appletun is a Dragon Pokémon and a modeled Apex Dragon payload, so it is a
+    // legal Steven target for the next-turn Mysterious Treasure discard bridge:
+    // https://api.pokemontcg.io/v2/cards/sv8-140
+    // https://api.pokemontcg.io/v2/cards/sm7-145
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1258
     for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
-                               Card::DialgaGX, Card::GoodraVstar}) {
+                               Card::DialgaGX, Card::GoodraVstar,
+                               Card::Appletun}) {
       if (deck_count_after_search_started(payload) > 0) return payload;
     }
     return std::nullopt;

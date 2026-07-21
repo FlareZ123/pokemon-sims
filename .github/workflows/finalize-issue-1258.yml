@@ -1,0 +1,29 @@
+name: Finalize issue 1258 evidence
+
+on:
+  push:
+    branches: [fix/issue-1258-late-steven-appletun]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Update exact source-bound provenance
+        run: python scripts/finalize_issue_1258_evidence.py
+      - name: Commit final evidence
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Refresh issue 1258 source-bound evidence"
+          git push origin HEAD:${GITHUB_REF_NAME}

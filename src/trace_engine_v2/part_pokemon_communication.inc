@@ -3,11 +3,18 @@
     Card target;
   };
 
-  static constexpr std::array<Card, 11> pokemon_communication_pokemon() {
+  static constexpr std::array<Card, 14> pokemon_communication_pokemon() {
+    // Pokémon Communication may return and search any Pokémon. Keep this list
+    // aligned with the complete modeled Pokémon universe:
+    // https://api.pokemontcg.io/v2/cards/sm9-152
+    // Appletun: https://api.pokemontcg.io/v2/cards/sv8-140
+    // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+    // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
     return {Card::RegidragoV, Card::RegidragoVstar, Card::Dragapult,
             Card::MegaDragonite, Card::DialgaGX, Card::GoodraVstar,
             Card::TapuLeleGX, Card::LatiasEx, Card::MawileGX,
-            Card::Oricorio, Card::Dipplin};
+            Card::Oricorio, Card::Dipplin, Card::Appletun,
+            Card::Pineco, Card::ForretressEx};
   }
 
   bool pokemon_communication_has_exchange_candidate() const {
@@ -99,6 +106,16 @@
                  : 30;
     }
     if (card == Card::RegidragoVstar) {
+      // A singleton held VSTAR is the immediate evolution half of the same setup
+      // graph. Do not return it merely because hand-aware `need_vstar()` is already
+      // satisfied while Pokémon Communication is fetching the Pineco line:
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // https://github.com/FlareZ123/pokemon-sims/issues/1250
+      if (!has_vstar() &&
+          (needs_pineco_connector() || needs_forretress_connector())) {
+        return 900;
+      }
       return need_vstar() && !has_vstar() ? 900 : 30;
     }
     if (card == Card::LatiasEx) {
@@ -116,6 +133,22 @@
     }
     if (card == Card::Oricorio) {
       return !in_play(Card::Oricorio) && needs_oricorio_connector() ? 900 : 40;
+    }
+    if (card == Card::Pineco) {
+      return needs_pineco_connector() ? 900 : 45;
+    }
+    if (card == Card::ForretressEx) {
+      return needs_forretress_connector() ? 900 : 45;
+    }
+    if (card == Card::Appletun &&
+        (needs_pineco_connector() || needs_forretress_connector())) {
+      // Appletun is the lower-DCI exchange when the singleton Regidrago VSTAR and
+      // Pineco line are both immediately live. Pokémon Communication puts it back
+      // into the deck, where later Dragon search can recover it:
+      // https://api.pokemontcg.io/v2/cards/sm9-152
+      // https://api.pokemontcg.io/v2/cards/sv8-140
+      // https://github.com/FlareZ123/pokemon-sims/issues/1250
+      return 45;
     }
     if (is_payload(card)) {
       return need_payload() && can_play_payload_this_turn() ? 900 : 50;
@@ -224,6 +257,18 @@
         targets.push_back(target);
       }
     };
+    // The Forretress package delegates its live connector axes to Pokémon
+    // Communication before weaker search Items:
+    // https://api.pokemontcg.io/v2/cards/sm9-152
+    // https://api.pokemontcg.io/v2/cards/sv4pt5-1
+    // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // https://github.com/FlareZ123/pokemon-sims/issues/1250
+    if (needs_pineco_connector() && hand_count(Card::Pineco) == 0) {
+      add_target(Card::Pineco);
+    }
+    if (needs_forretress_connector() && hand_count(Card::ForretressEx) == 0) {
+      add_target(Card::ForretressEx);
+    }
     if (need_regi() && bench_space() > 0 && hand_count(Card::RegidragoV) == 0) {
       add_target(Card::RegidragoV);
     }
@@ -251,7 +296,8 @@
     if (permit_payload && need_payload() && can_play_payload_this_turn() &&
         !payload_already_held) {
       for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
-                                 Card::GoodraVstar, Card::DialgaGX}) {
+                                 Card::GoodraVstar, Card::DialgaGX,
+                                 Card::Appletun}) {
         add_target(payload);
       }
     }
@@ -329,6 +375,12 @@
     // https://api.pokemontcg.io/v2/cards/sm9-152
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
     // https://github.com/FlareZ123/pokemon-sims/issues/701
+    if (needs_pineco_connector() && present(Card::Pineco)) {
+      return Card::Pineco;
+    }
+    if (needs_forretress_connector() && present(Card::ForretressEx)) {
+      return Card::ForretressEx;
+    }
     if (need_regi() && bench_space() > 0 && present(Card::RegidragoV)) {
       return Card::RegidragoV;
     }
@@ -352,7 +404,8 @@
     }
     if (is_payload(preferred)) {
       for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
-                                 Card::GoodraVstar, Card::DialgaGX}) {
+                                 Card::GoodraVstar, Card::DialgaGX,
+                                 Card::Appletun}) {
         if (present(payload)) return payload;
       }
     }

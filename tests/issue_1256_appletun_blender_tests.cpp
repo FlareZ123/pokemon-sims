@@ -1,49 +1,4 @@
-from __future__ import annotations
-
-import os
-import tempfile
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-
-
-def atomic_write(path: Path, text: str) -> None:
-    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
-            handle.write(text)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary_name, path)
-    except BaseException:
-        try:
-            os.unlink(temporary_name)
-        except FileNotFoundError:
-            pass
-        raise
-
-
-def main() -> None:
-    source = ROOT / "src/trace_engine_v2/part_010_blender_thinning_override.inc"
-    text = source.read_text(encoding="utf-8")
-    old = """    for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
-                               Card::GoodraVstar, Card::DialgaGX}) {
-"""
-    new = """    // Appletun is a Dragon Pokémon and a modeled Apex Dragon payload:
-    // https://api.pokemontcg.io/v2/cards/sv8-164
-    // https://api.pokemontcg.io/v2/cards/sv8-140
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // https://github.com/FlareZ123/pokemon-sims/issues/1256
-    for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
-                               Card::GoodraVstar, Card::DialgaGX,
-                               Card::Appletun}) {
-"""
-    if text.count(old) != 1:
-        raise RuntimeError("Expected one Brilliant Blender payload anchor")
-    atomic_write(source, text.replace(old, new, 1))
-
-    test = ROOT / "tests/issue_1256_appletun_blender_tests.cpp"
-    atomic_write(test, r'''#define REGIDRAGO_SIM_NO_MAIN
+#define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
 #include <algorithm>
@@ -134,11 +89,3 @@ int main() {
   std::cout << "Issue 1256 Appletun Brilliant Blender tests passed.\n";
   return 0;
 }
-''')
-
-    (ROOT / ".github/workflows/apply-issue-1256-v3.yml").unlink(missing_ok=True)
-    Path(__file__).unlink(missing_ok=True)
-
-
-if __name__ == "__main__":
-    main()

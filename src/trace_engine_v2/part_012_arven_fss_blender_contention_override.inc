@@ -55,7 +55,67 @@
            in_deck(Card::BrilliantBlender) && payload_in_deck;
   }
 
+  bool arven_appletun_payload_route_live() const {
+    if (!supporter_allowed() || hand_count(Card::Arven) == 0 ||
+        !can_play_payload_this_turn() || !need_payload() || need_regi() ||
+        need_vstar() || need_energy() || need_active_vstar() ||
+        !might_be_unseen(Card::Appletun)) {
+      return false;
+    }
+
+    // Appletun is a Stage 1 Dragon and a modeled Apex Dragon payload. Arven may
+    // take Brilliant Blender for a current-turn discard, or take Forest Seal Stone
+    // so Star Alchemy can bank Professor Burnet for the next modeled turn:
+    // Appletun: https://api.pokemontcg.io/v2/cards/sv8-140
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago VSTAR and Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Tool, Supporter, search, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1293
+    const bool direct_blender_route =
+        !item_locked() && might_be_unseen(Card::BrilliantBlender);
+    const bool open_v_tool_slot =
+        (state_.active && is_pokemon_v(state_.active->card) &&
+         state_.active->tool == Tool::None) ||
+        std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
+          return is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None;
+        });
+    const bool next_turn_burnet_route = state_.turn < scenario_.max_turn &&
+        !state_.vstar_power_used && open_v_tool_slot &&
+        might_be_unseen(Card::ForestSealStone) &&
+        might_be_unseen(Card::ProfessorBurnet);
+    return direct_blender_route || next_turn_burnet_route;
+  }
+
   bool play_arven() {
+    if (arven_appletun_payload_route_live()) {
+      remove_one(state_.hand, Card::Arven);
+      state_.discard.push_back(Card::Arven);
+      state_.supporter_used = true;
+      record_deck_search_knowledge("Arven");
+
+      std::vector<Card> found;
+      const bool appletun_present =
+          deck_count_after_search_started(Card::Appletun) > 0;
+      if (appletun_present && !item_locked() &&
+          deck_count_after_search_started(Card::BrilliantBlender) > 0 &&
+          move_deck_to_hand(Card::BrilliantBlender)) {
+        found.push_back(Card::BrilliantBlender);
+      } else if (appletun_present && state_.turn < scenario_.max_turn &&
+                 deck_count_after_search_started(Card::ProfessorBurnet) > 0 &&
+                 deck_count_after_search_started(Card::ForestSealStone) > 0 &&
+                 move_deck_to_hand(Card::ForestSealStone)) {
+        found.push_back(Card::ForestSealStone);
+      }
+      shuffle(state_.deck);
+      trace("PLAY SUPPORTER", "R-ARVEN-01; R-GAME-SUPPORTER; P-COMPRESS-01",
+            "Searched the live Appletun payload connector: " + join_cards(found) + ".");
+      return true;
+    }
+
     if (arven_final_energy_vessel_dead_role_route_live()) {
       remove_one(state_.hand, Card::Arven);
       state_.discard.push_back(Card::Arven);

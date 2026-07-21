@@ -191,6 +191,28 @@
   }
 
   Card fss_target_after_search_started() const {
+    const bool appletun_burnet_bank = deck_seen_ && !supporter_allowed() &&
+        !state_.vstar_power_used && state_.turn < scenario_.max_turn &&
+        need_payload() && !need_regi() && !need_vstar() && !need_energy() &&
+        !need_active_vstar() && can_play_payload_this_turn() &&
+        hand_count(Card::ProfessorBurnet) == 0 &&
+        deck_count_after_search_started(Card::Appletun) > 0 &&
+        deck_count_after_search_started(Card::ProfessorBurnet) > 0;
+    // Arven has consumed this turn's Supporter play while every setup axis except
+    // the Appletun payload is complete. Star Alchemy should bank Professor Burnet
+    // for the next modeled turn, where Burnet can search and discard Appletun for
+    // Apex Dragon. This remains legal through Item lock and Rule Box Ability lock:
+    // Appletun: https://api.pokemontcg.io/v2/cards/sv8-140
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago VSTAR and Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Tool, Supporter, search, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Forest Seal Stone ruling: https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
+    // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1293
+    if (appletun_burnet_bank) return Card::ProfessorBurnet;
+
     if (fss_should_bank_tate_for_next_turn_blender_route()) return Card::TateLiza;
 
     // Star Alchemy can search Tate & Liza to promote a GGF-complete Benched

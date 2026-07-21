@@ -59,7 +59,9 @@ jobs:
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
       - name: Record tested source
-        run: git rev-parse HEAD | tee tested-head.txt
+        run: |
+          git rev-parse HEAD | tee tested-head.txt
+          git archive --format=tar.gz --output=source-snapshot.tar.gz HEAD
       - name: Upload audit evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -70,5 +72,6 @@ jobs:
             audit-shell-matrix.csv
             audit-all-decks-matrix.csv
             tested-head.txt
+            source-snapshot.tar.gz
             build/Testing
           if-no-files-found: error

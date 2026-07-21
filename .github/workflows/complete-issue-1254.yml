@@ -1,8 +1,8 @@
 name: Complete issue 1254 current-main patch
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches: [fix/issue-1254-ultra-ball-continuations-v2]
 
 permissions:
   contents: write

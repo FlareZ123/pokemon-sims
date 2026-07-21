@@ -1,0 +1,21 @@
+name: Export latest main for issue 1118
+
+on:
+  push:
+    branches: [tmp/1118-latest-main-export]
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pack readable source
+        run: tar --exclude=.git --exclude=build --exclude=build-sanitizers -czf "$RUNNER_TEMP/pokemon-sims-latest-main.tar.gz" .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pokemon-sims-latest-main-1118
+          path: ${{ runner.temp }}/pokemon-sims-latest-main.tar.gz
+          if-no-files-found: error

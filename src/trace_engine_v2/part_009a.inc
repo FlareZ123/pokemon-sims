@@ -2,9 +2,17 @@
   }
 
   Card fallback_ultra_ball_target_after_search_started() const {
+    // Ultra Ball searches any Pokémon, so the K1 fallback covers the complete
+    // modeled universe, including the Appletun and Pineco package:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://api.pokemontcg.io/v2/cards/sv8-140
+    // https://api.pokemontcg.io/v2/cards/sv4pt5-1
+    // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // https://github.com/FlareZ123/pokemon-sims/issues/1254
     for (const Card target : {Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio,
                               Card::TapuLeleGX, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
-                              Card::DialgaGX, Card::MawileGX, Card::Dipplin}) {
+                              Card::DialgaGX, Card::MawileGX, Card::Dipplin, Card::Appletun,
+                              Card::Pineco, Card::ForretressEx}) {
       if (deck_count_after_search_started(target) > 0) return target;
     }
     return Card::RegidragoV;

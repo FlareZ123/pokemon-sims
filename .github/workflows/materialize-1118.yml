@@ -3,6 +3,8 @@ name: Materialize issue 1118 readable source
 on:
   push:
     branches: [enhancement/1118-multi-deck-secret-box]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write

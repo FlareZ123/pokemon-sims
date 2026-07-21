@@ -29,8 +29,8 @@ jobs:
           # https://api.pokemontcg.io/v2/cards/swsh12-136
           # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
           # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee audit-trace-1.txt
-          grep -q "T3 | READY" audit-trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee audit-trace-1.txt
+          grep -q "T2 | READY" audit-trace-1.txt
 
           # Matchup-flex may establish a legal payload earlier, while all public-information,
           # turn-order, attachment, Supporter, Ability, evolution, and Bench constraints remain binding:

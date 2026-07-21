@@ -1,0 +1,43 @@
+name: Issue 1197 Baseline Refresh
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release # Build contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2 # Test contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+      - name: Validate focused route and non-baseline suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          ctest --test-dir build --output-on-failure -R issue_1197 # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1197
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 11 --require-ready-by 3 | tee issue-1197-seed-11.txt # Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+          ctest --test-dir build --parallel 4 --output-on-failure -E setup_report_contract # Baseline contract: https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md
+      - name: Regenerate canonical baseline
+        run: python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 100 --trials 100000 --matrix-seed 20260705 # Reproducibility contract: https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md
+      - name: Update generated setup report
+        run: python scripts/update_setup_docs.py # Report source: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/update_setup_docs.py
+      - name: Validate refreshed full suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure # Official turn and card procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      - name: Upload refreshed baseline
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1197-baseline-refresh-${{ github.run_attempt }}
+          path: |
+            issue-1197-seed-11.txt
+            results/simulation_results.csv
+            results/baseline_manifest.json
+            results/traces
+            docs/SETUP_PROBABILITIES.md
+          if-no-files-found: error

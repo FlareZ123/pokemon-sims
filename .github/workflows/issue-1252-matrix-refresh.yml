@@ -1,0 +1,37 @@
+name: Issue 1252 matrix refresh
+
+on:
+  pull_request:
+    types: [synchronize]
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  refresh:
+    if: github.event.pull_request.head.ref == 'fix/issue-1252-heavy-ball-pineco'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONPATH: .
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-1252-heavy-ball-pineco
+      - name: Download the validated matrix artifact
+        run: gh run download 29837353948 --name release-validation-1 --dir /tmp/issue-1252-release
+      - name: Refresh matrix, manifest, and report
+        run: |
+          cp /tmp/issue-1252-release/multi-deck-matrix.csv results/multi_deck_comparison.csv
+          python -c "from pathlib import Path; import hashlib,json; p=Path('results/multi_deck_comparison.csv'); m=Path('results/multi_deck_manifest.json'); d=json.loads(m.read_text(encoding='utf-8')); d['comparison_csv_sha256']=hashlib.sha256(p.read_bytes()).hexdigest(); m.write_text(json.dumps(d, indent=2, ensure_ascii=False)+'\n', encoding='utf-8')"
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Commit the generated snapshot
+        run: |
+          rm .github/workflows/issue-1252-matrix-refresh.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Refresh paired matrix for #1252"
+          git push origin HEAD:fix/issue-1252-heavy-ball-pineco

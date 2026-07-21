@@ -63,5 +63,4 @@ jobs:
           git add docs results
           git diff --cached --check
           git commit -m "Refresh issue 1259 source-bound evidence"
-          git pull --rebase origin fix/issue-1259-gladion-appletun-v2
-          git push origin HEAD:fix/issue-1259-gladion-appletun-v2
+          git push --force-with-lease origin HEAD:fix/issue-1259-gladion-appletun-v2

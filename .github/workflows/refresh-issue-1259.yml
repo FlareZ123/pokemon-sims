@@ -1,0 +1,47 @@
+name: Refresh issue 1259 evidence
+
+on:
+  push:
+    branches: [fix/issue-1259-gladion-appletun]
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Correct focused Treasure invocation
+        run: >-
+          python -c "from pathlib import Path; p=Path('tests/issue_1259_gladion_appletun_tests.cpp'); s=p.read_text(); old='return engine.play_mysterious_treasure();'; assert s.count(old)==1; p.write_text(s.replace(old, 'return engine.play_mysterious_treasure(true);', 1))"
+      - name: Merge current main
+        run: |
+          git fetch origin main
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git merge --no-edit origin/main
+      - name: Build Release simulator and tests
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Regenerate source-bound setup evidence
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe ./build/regidrago_sim --out-dir results --max-seed 20 --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe ./build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Commit refreshed branch
+        run: |
+          rm .github/workflows/refresh-issue-1259.yml
+          git add -A
+          git diff --cached --check
+          git commit -m "Correct issue 1259 regression and refresh evidence"
+          git push origin HEAD:${GITHUB_REF_NAME}

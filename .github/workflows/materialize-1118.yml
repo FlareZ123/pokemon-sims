@@ -1,8 +1,6 @@
 name: Materialize issue 1118 readable source
 
 on:
-  push:
-    branches: [enhancement/1118-multi-deck-secret-box]
   pull_request:
     branches: [main]
 
@@ -11,16 +9,13 @@ permissions:
 
 jobs:
   materialize:
-    timeout-minutes: 30
+    timeout-minutes: 10
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           ref: enhancement/1118-multi-deck-secret-box
           fetch-depth: 0
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
       - name: Verify and apply issue 1118 source
         shell: bash
         run: |
@@ -29,14 +24,7 @@ jobs:
           base64 -d "$RUNNER_TEMP/issue1118.b64" > "$RUNNER_TEMP/issue1118.tar.xz"
           echo "72ed3eb7be7ad618579d02b1c4d5e62ffdd6337b99674ffe458b3a746b4ef2c7  $RUNNER_TEMP/issue1118.tar.xz" | sha256sum -c -
           tar -xJf "$RUNNER_TEMP/issue1118.tar.xz"
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --parallel 2
-          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
-          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
-          python scripts/update_setup_docs.py --repo-root .
-          python scripts/update_multi_deck_docs.py --repo-root .
-          ctest --test-dir build --parallel 4 --output-on-failure
-          rm -rf build .issue1118
+          rm -rf .issue1118
           rm -f .github/workflows/materialize-1118.yml
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com

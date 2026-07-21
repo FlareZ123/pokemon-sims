@@ -277,8 +277,17 @@
          hand_count(Card::MysteriousTreasure) > 0);
     if (prizes_known() && need_payload() && can_play_payload_this_turn() &&
         live_one_discard_payload_outlet) {
+      // Appletun is a modeled Dragon payload and Gladion may exchange itself
+      // for that known Prize before a live one-discard Item puts it into discard:
+      // https://api.pokemontcg.io/v2/cards/sm4-95
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://api.pokemontcg.io/v2/cards/sv8-140
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://www.pokemon.com/us/pokemon-tcg/rules
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1259
       for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
-                                 Card::GoodraVstar, Card::DialgaGX}) {
+                                 Card::GoodraVstar, Card::DialgaGX,
+                                 Card::Appletun}) {
         if (prize_count_after_reveal(payload) == 0) continue;
         remove_one(state_.hand, Card::Gladion);
         state_.supporter_used = true;

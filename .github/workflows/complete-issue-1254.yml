@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: complete-issue-1254
+  group: complete-issue-1254-v2
   cancel-in-progress: true
 
 jobs:
@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: fix/issue-1254-ultra-ball-appletun
+          ref: fix/issue-1254-ultra-ball-continuations-v2
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
@@ -44,7 +44,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: issue-1254-focused-diagnostics
+          name: issue-1254-focused-diagnostics-v2
           path: |
             configure.log
             build.log
@@ -71,4 +71,4 @@ jobs:
           git add src/trace_engine_v2/part_empty_deck_search_override.inc src/trace_engine_v2/part_012_override.inc src/trace_engine_v2/part_forretress_ex_combo.inc tests/issue_1254_ultra_ball_appletun_continuation_tests.cpp docs/REPORT.md docs/MULTI_DECK_REPORT.md results/baseline_manifest.json results/simulation_results.csv results/multi_deck_comparison.csv results/multi_deck_manifest.json
           git diff --cached --check
           git commit -m "Complete Appletun Ultra Ball routes"
-          git push --force-with-lease origin HEAD:fix/issue-1254-ultra-ball-appletun
+          git push --force-with-lease origin HEAD:fix/issue-1254-ultra-ball-continuations-v2

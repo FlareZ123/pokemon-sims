@@ -1,3 +1,5 @@
+#include "part_issue_1199_steven_package_override.inc"
+
   int issue_1152_legacy_star_turn_ = 0;
 
   bool use_legacy_star_issue_1152() {
@@ -7,6 +9,7 @@
   }
 
   void choose_supporter_issue_1152() {
+    if (play_issue_1199_route_after_attachment()) return;
     choose_supporter();
     if (issue_1152_legacy_star_turn_ != state_.turn) {
       issue_1152_legacy_star_turn_ = 0;

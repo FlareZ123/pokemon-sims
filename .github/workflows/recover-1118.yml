@@ -3,6 +3,8 @@ name: Recover issue 1118 source bundle
 on:
   push:
     branches: [tmp/1118-blob-recovery]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read

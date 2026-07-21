@@ -277,7 +277,14 @@
 #define play_mysterious_treasure play_mysterious_treasure_issue1209_original
 #include "trace_engine_v2/part_issue_1167_treasure_vessel_override.inc"
 #undef play_mysterious_treasure
+#define play_quick_ball play_quick_ball_issue1235_original
+#define play_mysterious_treasure play_mysterious_treasure_issue1235_original
+#define choose_supporter choose_supporter_issue1235_original
 #include "trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc"
+#undef choose_supporter
+#undef play_mysterious_treasure
+#undef play_quick_ball
+#include "trace_engine_v2/part_issue_1235_oricorio_treasure_tapu_override.inc"
 #include "trace_engine_v2/part_issue_1118_secret_box.inc"
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original

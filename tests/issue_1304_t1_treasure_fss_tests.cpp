@@ -83,8 +83,9 @@ void erase_one(std::vector<sim::Card>& cards, const sim::Card card) {
 }
 
 void test_exact_t1_route_spends_erika_and_holds_star_alchemy() {
+  const sim::Scenario chosen = scenario();
   std::mt19937_64 rng{130401};
-  sim::Engine engine = make_engine(scenario(), rng, route_state());
+  sim::Engine engine = make_engine(chosen, rng, route_state());
 
   // Mysterious Treasure may discard Erika's Invitation and search Regidrago V.
   // Erika is setup-dead in the repository's opponent-free model, while this search

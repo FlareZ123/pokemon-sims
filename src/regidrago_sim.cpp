@@ -64,7 +64,9 @@
 #define needs_tapu_connector needs_tapu_connector_original
 #define bench_tapu_if_useful bench_tapu_if_useful_original
 #define recover_discard_to_hand recover_discard_to_hand_name_only_original
+#define choose_discard choose_discard_issue1236_original
 #include "trace_engine_v2/part_006.inc"
+#undef choose_discard
 #undef recover_discard_to_hand
 #undef bench_tapu_if_useful
 #undef needs_tapu_connector
@@ -77,6 +79,7 @@
 #define play_tate_switch play_tate_switch_tate_blender_original
 #define play_tate_draw play_tate_draw_tate_blender_original
 #include "trace_engine_v2/part_008a.inc"
+#include "trace_engine_v2/part_issue_1236_pre_steven_dci_override.inc"
 #undef play_tate_draw
 #undef play_tate_switch
 // part_007.inc opens evolve_best_regi(), and part_008a.inc completes it before
@@ -171,7 +174,10 @@
 #define use_legacy_star use_legacy_star_original
 #include "trace_engine_v2/part_013.inc"
 #undef use_legacy_star
+#define play_items_until_stable play_items_until_stable_issue1236_original
 #include "trace_engine_v2/part_014a.inc"
+#undef play_items_until_stable
+#include "trace_engine_v2/part_issue_1236_pre_steven_order_override.inc"
 // part_012.inc opens Serena's draw-mode body, part_013.inc closes it and later
 // opens run_search_items_one_step(), and part_014a.inc completes that method.
 // Define the active Burnet policy only after this first complete member boundary:

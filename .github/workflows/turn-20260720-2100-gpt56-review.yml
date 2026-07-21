@@ -1,0 +1,54 @@
+name: Turn 20260720 2100 GPT56 Review
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release # Build contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2 # Test contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+      - name: Run independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Official turn, Trainer, search, discard, evolution, attachment, Ability, attack, retreat, and Prize procedures: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Earliest deterministic route and DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          # Hidden-information boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 11 | tee pass-1-strict-jit-go-second-seed-11.txt # Confirmation-pending issue: https://github.com/FlareZ123/pokemon-sims/issues/1197
+          ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 341 | tee pass-2-no-discard-control-go-second-seed-341.txt # Confirmation-pending issue: https://github.com/FlareZ123/pokemon-sims/issues/1199
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 293 | tee pass-3-strict-jit-go-first-seed-293.txt # Existing route control: https://github.com/FlareZ123/pokemon-sims/issues/1022
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-first --seed 47 | tee pass-4-matchup-flex-go-first-seed-47.txt # JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 25 | tee pass-5-turn2-item-lock-go-second-seed-25.txt # Item-lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 7 | tee pass-6-strict-jit-go-first-seed-7.txt # Owned issue control: https://github.com/FlareZ123/pokemon-sims/issues/1174
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure # Repository validation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out turn-20260720-2100-gpt56-t2-t3-matrix.csv # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+      - name: Export tested source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > tested-head.txt # Source traceability: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULES_TRACEABILITY.md
+          git archive --format=tar.gz --output=tested-source.tar.gz HEAD # Auditable source snapshot: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#audit-status
+      - name: Upload review artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turn-20260720-2100-gpt56-review-${{ github.run_attempt }}
+          path: |
+            pass-*.txt
+            turn-20260720-2100-gpt56-t2-t3-matrix.csv
+            tested-head.txt
+            tested-source.tar.gz
+            build/Testing
+          if-no-files-found: error

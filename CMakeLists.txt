@@ -76,6 +76,12 @@ add_test(NAME regidrago_cli_mode_contract
     -DSIMULATOR=$<TARGET_FILE:regidrago_sim>
     -DTEST_DIR=${CMAKE_CURRENT_BINARY_DIR}/cli-mode-contract
     -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_cli_mode_contract.cmake)
+# Both source-bound matrix generators must remove simulator-created locks for
+# their random temporary output paths after success and failure:
+# https://github.com/FlareZ123/pokemon-sims/issues/1300
+add_test(NAME regidrago_issue_1300_matrix_lock_cleanup
+  COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/issue_1300_matrix_lock_cleanup_tests.py)
 
 add_test(NAME trace_strict_second_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3)
 add_test(NAME trace_strict_first_t4 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4)

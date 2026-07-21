@@ -7,10 +7,6 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: apply-issue-1256-v3
-  cancel-in-progress: true
-
 jobs:
   patch:
     if: github.actor != 'github-actions[bot]'

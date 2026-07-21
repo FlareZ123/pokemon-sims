@@ -7,6 +7,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: complete-issue-1254
+  cancel-in-progress: true
+
 jobs:
   patch:
     if: github.actor != 'github-actions[bot]'
@@ -49,5 +53,7 @@ jobs:
         run: |
           git add -A
           git diff --cached --check
+          git status --short
           git commit -m "Complete Appletun Ultra Ball routes"
+          git pull --rebase origin fix/issue-1254-ultra-ball-appletun
           git push origin HEAD:fix/issue-1254-ultra-ball-appletun

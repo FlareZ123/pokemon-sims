@@ -45,6 +45,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git restore --source=HEAD -- .github/workflows/ci.yml .github/workflows/issue-951-validation.yml
           rm -rf .issue1118
           rm -f .issue1118-delete-list.txt
           git config user.name github-actions[bot]

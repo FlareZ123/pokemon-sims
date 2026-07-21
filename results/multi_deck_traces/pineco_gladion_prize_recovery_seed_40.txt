@@ -1,0 +1,36 @@
+
+Deck: regidrago-pineco | Seed: 40 | first-ready turn: 2 | setup result: success
+Seed: 40 | first-ready turn: 2 | setup result: success
+===== SIMULATE THIS =====
+Deck: regidrago-pineco
+Scenario: strict-jit/go-second | DCI: strict-JIT | Locks: none
+Mulligans: 0
+Opening player-known state: Active=Regidrago V [-] | Bench=(none) | Hand=Fire Energy, Grass Energy, Hisuian Goodra VSTAR, Tapu Lele-GX, Gladion, Grass Energy | Discard=(none)
+DEBUG ONLY: prizes=Mysterious Treasure, Hisuian Heavy Ball, Fire Energy, Secret Box, Professor Burnet, Tapu Lele-GX. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Gladion
+T1 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | Start Pineco policy: Active=Regidrago V [-] | Bench=(none) | Hand=Fire Energy, Grass Energy, Hisuian Goodra VSTAR, Tapu Lele-GX, Gladion, Grass Energy, Gladion | Discard=(none)
+T1 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Wonder Tag: deck inspected; Prize identities are now deducible for later decisions.
+T1 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Steven's Resolve.
+T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T1 | PLAY SUPPORTER | rules: R-GLADION-01; R-SECRET-BOX-01 | Gladion recovered the legally known prized Secret Box.
+T1 | ATTACK | rules: R-RV-01; R-GAME-ATTACK | Regidrago V used Celestial Roar; processed top 3: Wishful Baton, Crispin, Appletun sv8-140; attached Energy: (none); remaining discarded: Wishful Baton, Crispin, Appletun sv8-140.
+T1 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | End Pineco policy: Active=Regidrago V [G] | Bench=Tapu Lele-GX [-] | Hand=Fire Energy, Hisuian Goodra VSTAR, Grass Energy, Gladion, Steven's Resolve, Secret Box | Discard=Wishful Baton, Crispin, Appletun sv8-140
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Forest of Vitality
+T2 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | Start Pineco policy: Active=Regidrago V [G] | Bench=Tapu Lele-GX [-] | Hand=Fire Energy, Hisuian Goodra VSTAR, Grass Energy, Gladion, Steven's Resolve, Secret Box, Forest of Vitality | Discard=Wishful Baton, Crispin, Appletun sv8-140
+T2 | DISCARD | rules: R-SECRET-BOX-01; P-DCI-01 | Hisuian Goodra VSTAR (Secret Box cost)
+T2 | DISCARD | rules: R-SECRET-BOX-01; P-DCI-01 | Steven's Resolve (Secret Box cost)
+T2 | DISCARD | rules: R-SECRET-BOX-01; P-DCI-01 | Gladion (Secret Box cost)
+T2 | PLAY ITEM | rules: R-SECRET-BOX-01; R-GAME-ITEM | Secret Box discarded three other cards and searched: Mysterious Treasure, Dawn.
+T2 | PLAY STADIUM | rules: R-FOREST-VITALITY-01; R-GAME-EVOLUTION | Played Forest of Vitality. Grass Pokémon may evolve during their entry turn after the first turn.
+T2 | PLAY SUPPORTER | rules: R-DAWN-01; R-GAME-SUPPORTER; R-FORRETRESS-01 | Dawn searched and revealed: Pineco, Forretress ex, Dragapult ex.
+T2 | BENCH | rules: R-GAME-BENCH | Pineco from hand.
+T2 | EVOLVE | rules: R-FORRETRESS-01; R-GAME-EVOLUTION; R-FOREST-VITALITY-01 | Forest of Vitality allowed the newly played Pineco to evolve into Forretress ex.
+T2 | USE ABILITY | rules: R-FORRETRESS-01; R-GAME-ABILITY; R-GAME-KO | Exploding Energy attached 4 Basic Grass Energy, shuffled the deck, and Knocked Out Forretress ex. Its Pokémon ex rule would award the opponent 2 Prize cards in a complete two-player game.
+T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T2 | DISCARD | rules: R-MT-01; R-SECRET-BOX-01; P-DCI-01 | Grass Energy (Mysterious Treasure completion cost)
+T2 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM; R-SECRET-BOX-01 | Mysterious Treasure used the proven dead or payload cost and searched Regidrago VSTAR after GGF became complete.
+T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T2 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | Direct Regidrago route completed before future-route banking: Active=Regidrago VSTAR [GGGGGF] | Bench=Tapu Lele-GX [-] | Hand=Dragapult ex | Discard=Wishful Baton, Crispin, Appletun sv8-140, Hisuian Goodra VSTAR, Steven's Resolve, Gladion, Secret Box, Dawn, Forretress ex, Pineco, Mysterious Treasure, Grass Energy
+T2 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

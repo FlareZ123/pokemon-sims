@@ -1,0 +1,74 @@
+{
+  "comparison_csv_sha256": "8745f7b694c489e2cacf506c4f9a9a3ac733b4fb3b6fc00698244864b7cfaced",
+  "condition_count": 32,
+  "decks": [
+    "regidrago-shell",
+    "regidrago-pineco"
+  ],
+  "matrix_seed": 20260705,
+  "scenarios": [
+    "strict-jit/go-first",
+    "matchup-flex-jit/go-first",
+    "no-discard-control/go-first",
+    "strict-jit-turn2-item-lock/go-first",
+    "strict-jit-full-item-lock/go-first",
+    "strict-jit-rulebox-ability-lock/go-first",
+    "strict-jit-combined-lock/go-first",
+    "strict-jit/go-second",
+    "matchup-flex-jit/go-second",
+    "no-discard-control/go-second",
+    "strict-jit-turn2-item-lock/go-second",
+    "strict-jit-full-item-lock/go-second",
+    "strict-jit-rulebox-ability-lock/go-second",
+    "strict-jit-combined-lock/go-second",
+    "strict-jit-supporter-lock/go-first",
+    "strict-jit-supporter-lock/go-second"
+  ],
+  "simulator_policy_source_sha256": "e88be27b391716b25554556a6d39073c4aa528e48aca7fe1cf2744565ffe4bb0",
+  "total_simulated_games": 3200000,
+  "traces": [
+    {
+      "deadline": 3,
+      "deck": "regidrago-shell",
+      "file": "shell_strict_go_second_seed_1.txt",
+      "scenario": "strict-jit/go-second",
+      "seed": 1
+    },
+    {
+      "deadline": 2,
+      "deck": "regidrago-shell",
+      "file": "shell_flex_go_second_seed_3.txt",
+      "scenario": "matchup-flex-jit/go-second",
+      "seed": 3
+    },
+    {
+      "deadline": 4,
+      "deck": "regidrago-shell",
+      "file": "shell_no_control_go_first_seed_1.txt",
+      "scenario": "no-discard-control/go-first",
+      "seed": 1
+    },
+    {
+      "deadline": 2,
+      "deck": "regidrago-pineco",
+      "file": "pineco_steven_secret_box_seed_35.txt",
+      "scenario": "strict-jit/go-second",
+      "seed": 35
+    },
+    {
+      "deadline": 2,
+      "deck": "regidrago-pineco",
+      "file": "pineco_arven_active_recovery_seed_18.txt",
+      "scenario": "strict-jit/go-second",
+      "seed": 18
+    },
+    {
+      "deadline": 2,
+      "deck": "regidrago-pineco",
+      "file": "pineco_gladion_prize_recovery_seed_40.txt",
+      "scenario": "strict-jit/go-second",
+      "seed": 40
+    }
+  ],
+  "trials_per_condition": 100000
+}

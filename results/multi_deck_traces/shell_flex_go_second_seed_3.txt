@@ -1,0 +1,28 @@
+
+Deck: regidrago-shell | Seed: 3 | first-ready turn: 2 | setup result: success
+Seed: 3 | first-ready turn: 2 | setup result: success
+===== SIMULATE THIS =====
+Deck: regidrago-shell
+Scenario: matchup-flex-jit/go-second | DCI: matchup-flex-JIT | Locks: none
+Mulligans: 1
+Opening player-known state: Active=Latias ex [-] | Bench=(none) | Hand=Steven's Resolve, Roseanne's Backup, Mysterious Treasure, Serena, Fire Energy, Erika's Invitation | Discard=(none)
+DEBUG ONLY: prizes=Mega Dragonite ex, Team Yell's Cheer, Mysterious Treasure, Regidrago VSTAR, Chaotic Swell, Oricorio GRI 55. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Grass Energy
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=(none) | Hand=Steven's Resolve, Roseanne's Backup, Mysterious Treasure, Serena, Fire Energy, Erika's Invitation, Grass Energy | Discard=(none)
+T1 | DISCARD | rules: R-MT-01 | Erika's Invitation (Mysterious Treasure cost)
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Mysterious Treasure: deck inspected; Prize identities are now deducible for later decisions.
+T1 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM | Searched a Psychic or Dragon Pokémon: Regidrago V.
+T1 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T1 | PLAY SUPPORTER | rules: R-STEVEN-01; R-GAME-SUPPORTER | Searched up to 3 cards: Regidrago VSTAR, Crispin, Brilliant Blender. Turn ended.
+T1 | TURN END | rules: R-STEVEN-01 or R-RV-01 | Active=Latias ex [-] | Bench=Regidrago V [G] | Hand=Roseanne's Backup, Serena, Fire Energy, Regidrago VSTAR, Crispin, Brilliant Blender | Discard=Mysterious Treasure, Erika's Invitation, Steven's Resolve
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Arven
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=Regidrago V [G] | Hand=Roseanne's Backup, Serena, Fire Energy, Regidrago VSTAR, Crispin, Brilliant Blender, Arven | Discard=Mysterious Treasure, Erika's Invitation, Steven's Resolve
+T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T2 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dialga-GX, Dipplin TWM 127.
+T2 | RETREAT | rules: R-LATIAS-01; R-GAME-RETREAT | Latias ex gives the Basic Active no Retreat Cost; promoted the best-powered Benched Regidrago VSTAR.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Latias ex [-] | Hand=Roseanne's Backup, Serena, Arven, Fire Energy | Discard=Mysterious Treasure, Erika's Invitation, Steven's Resolve, Crispin, Brilliant Blender, Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dialga-GX, Dipplin TWM 127
+T2 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

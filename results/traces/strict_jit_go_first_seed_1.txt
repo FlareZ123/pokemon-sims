@@ -1,6 +1,8 @@
 
+Deck: regidrago-shell | Seed: 1 | first-ready turn: 3 | setup result: success
 Seed: 1 | first-ready turn: 3 | setup result: success
 ===== SIMULATE THIS =====
+Deck: regidrago-shell
 Scenario: strict-jit/go-first | DCI: strict-JIT | Locks: none
 Mulligans: 1
 Opening player-known state: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Grass Energy, Hisuian Heavy Ball, Professor Burnet, Fire Energy, Brilliant Blender, Dipplin TWM 127 | Discard=(none)

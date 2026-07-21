@@ -59,7 +59,8 @@ void run_fss_burnet_route(const sim::LockMode locks, const std::uint64_t seed) {
   const sim::Scenario scenario{"issue-1293-fss-burnet", sim::DciProfile::StrictJit,
                                locks, false, 4};
   std::mt19937_64 rng{seed};
-  sim::Engine engine(scenario, sim::pineco_recipe(), rng);
+  const sim::DeckRecipe recipe = sim::pineco_recipe();
+  sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(
       engine, payload_only_state({sim::Card::ForestSealStone,
                                   sim::Card::ProfessorBurnet,
@@ -126,7 +127,8 @@ void test_direct_blender_route() {
                                sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 3};
   std::mt19937_64 rng{129304};
-  sim::Engine engine(scenario, sim::pineco_recipe(), rng);
+  const sim::DeckRecipe recipe = sim::pineco_recipe();
+  sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(
       engine, payload_only_state({sim::Card::BrilliantBlender,
                                   sim::Card::Appletun,
@@ -154,7 +156,8 @@ void expect_arven_holds(const sim::Scenario& scenario,
                         const std::uint64_t seed,
                         const char* message) {
   std::mt19937_64 rng{seed};
-  sim::Engine engine(scenario, sim::pineco_recipe(), rng);
+  const sim::DeckRecipe recipe = sim::pineco_recipe();
+  sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, payload_only_state(std::move(deck)));
   expect(!sim::EngineTestAccess::play_arven(engine), message);
   const sim::State& result = sim::EngineTestAccess::state(engine);

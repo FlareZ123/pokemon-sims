@@ -1,0 +1,39 @@
+name: Issue 1236 Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release # Repository build contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      - name: Build simulator and repository tests
+        run: cmake --build build --parallel 2 # Repository test contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-tests
+      - name: Compile focused regression
+        run: c++ -std=c++20 -O0 -I. tests/issue_1236_pre_steven_vessel_tests.cpp -o build/issue_1236_tests # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1236
+      - name: Run focused regression
+        run: ./build/issue_1236_tests # Vessel, Treasure, Roseanne, Stone, Steven, Crispin, Blender: https://api.pokemontcg.io/v2/cards/sv4-163 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh9-148 https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/sv8-164
+      - name: Run exact simulate-this regression
+        run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 307 --require-ready-by 2 | tee issue-1236-seed-307.txt # Official Item, Tool, VSTAR Power, Supporter, attachment, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure # Repository validation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-tests
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-1236-t2-t3-matrix.csv # Aggregate simulation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-canonical-shell-baseline
+      - name: Upload validation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1236-validation-${{ github.run_attempt }}
+          path: |
+            issue-1236-seed-307.txt
+            issue-1236-t2-t3-matrix.csv
+            build/Testing
+          if-no-files-found: error

@@ -17,9 +17,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git rev-parse HEAD
-          git rev-parse HEAD^1
-          test "$(git rev-parse HEAD^1)" = "e978e839e5c285a7e355e9edb5b92c7e47cb0640"
+          echo "checked_out=$(git rev-parse HEAD)"
+          echo "base=${{ github.event.pull_request.base.sha }}"
+          test "${{ github.event.pull_request.base.sha }}" = "e978e839e5c285a7e355e9edb5b92c7e47cb0640"
       - name: Configure Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator and tests
@@ -76,7 +76,7 @@ jobs:
         shell: bash
         run: |
           git rev-parse HEAD > tested-head.txt
-          git rev-parse HEAD^1 > tested-main-parent.txt
+          echo "${{ github.event.pull_request.base.sha }}" > tested-main-parent.txt
       - name: Upload traces, matrix, source, and static scan
         if: always()
         uses: actions/upload-artifact@v4

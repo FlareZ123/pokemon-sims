@@ -1,0 +1,92 @@
+name: Current Main Debug Audit 20260721 1944
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  current-main-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify audited main parent
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          git rev-parse HEAD^1
+          test "$(git rev-parse HEAD^1)" = "e978e839e5c285a7e355e9edb5b92c7e47cb0640"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run repository test suite
+        run: ctest --test-dir build --output-on-failure
+      - name: Simulate-this pass 1 Pineco seed 31415
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Exact route specification and authoritative card/rule sources: https://github.com/FlareZ123/pokemon-sims/issues/1304
+          # Earliest legal ready-state policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-first --seed 31415 --require-ready-by 2 | tee debug-pass-1.txt
+      - name: Simulate-this pass 2 shell strict go-first
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Core turn, search, attachment, evolution, Ability, Supporter, Retreat, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Strict-JIT timing policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 20260721 --require-ready-by 4 | tee debug-pass-2.txt
+      - name: Simulate-this pass 3 shell matchup-flex go-second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Observable-information boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+          # Matchup-flex DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 8675309 | tee debug-pass-3.txt
+      - name: Scan source for route enumerations and audit markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo '=== TODO/FIXME/XXX/BUG markers ==='
+            grep -RInE 'TODO|FIXME|XXX|BUG' src tests docs scripts CMakeLists.txt README.md || true
+            echo '=== Hardcoded modeled-card route lists ==='
+            grep -RInE 'Card::[A-Za-z0-9_]+.*Card::[A-Za-z0-9_]+' src tests | head -n 4000 || true
+            echo '=== Appletun references ==='
+            grep -RIn 'Appletun' src tests docs scripts CMakeLists.txt README.md || true
+            echo '=== Search and fallback functions ==='
+            grep -RInE 'fallback|preflight|has_live|preferred|search.*target|target.*search' src/trace_engine_v2 | head -n 5000 || true
+            echo '=== Card enum and recipe references ==='
+            grep -RInE 'enum class Card|DeckRecipe|baseline_recipe|pineco' src tests | head -n 3000 || true
+          } > static-audit.txt
+      - name: Generate current-run paired setup matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Matrix contract and all 16 conditions: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260721 --out current-run-matrix.csv
+      - name: Export current source snapshot
+        shell: bash
+        run: tar -czf current-source-snapshot.tar.gz src tests docs scripts .github CMakeLists.txt README.md
+      - name: Record tested source
+        shell: bash
+        run: |
+          git rev-parse HEAD > tested-head.txt
+          git rev-parse HEAD^1 > tested-main-parent.txt
+      - name: Upload traces, matrix, source, and static scan
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-debug-audit-20260721-1944
+          path: |
+            debug-pass-*.txt
+            static-audit.txt
+            current-run-matrix.csv
+            current-source-snapshot.tar.gz
+            tested-head.txt
+            tested-main-parent.txt
+          if-no-files-found: error

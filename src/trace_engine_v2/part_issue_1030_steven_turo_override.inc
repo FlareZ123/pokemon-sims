@@ -136,6 +136,51 @@
     return true;
   }
 
+  bool issue_1223_full_item_lock_steven_grass_route_available() const {
+    if (!deck_seen_ || !supporter_allowed() ||
+        scenario_.dci != DciProfile::StrictJit ||
+        scenario_.locks != LockMode::FullItem ||
+        state_.turn + 2 > scenario_.max_turn || !state_.active ||
+        !is_basic(state_.active->card) ||
+        state_.active->card == Card::RegidragoV ||
+        hand_count(Card::StevensResolve) == 0 ||
+        hand_count(Card::RegidragoVstar) == 0 ||
+        hand_count(Card::ProfessorBurnet) == 0 ||
+        hand_count(Card::RegidragoV) > 0 ||
+        hand_count(Card::Crispin) > 0 ||
+        hand_count(Card::Grass) > 0 ||
+        in_play(Card::RegidragoV) || in_play(Card::RegidragoVstar) ||
+        in_play(Card::LatiasEx) || bench_space() < 2 ||
+        !ability_available_for_pokemon(Card::LatiasEx)) {
+      return false;
+    }
+
+    // Steven's Resolve may search any three cards. With VSTAR and Burnet already
+    // held under permanent Item lock, the deterministic package is Regidrago V,
+    // Crispin, and Grass Energy. A second VSTAR duplicates a completed axis, while
+    // the searched Grass preserves the manual-attachment plus Crispin GGF schedule:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Official search, attachment, evolution, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1, lock, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-model https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1223
+    const bool latias_available =
+        hand_count(Card::LatiasEx) > 0 ||
+        deck_count_after_search_started(Card::LatiasEx) > 0;
+    const bool stone_available =
+        hand_count(Card::ForestSealStone) > 0 ||
+        deck_count_after_search_started(Card::ForestSealStone) > 0;
+    return deck_count_after_search_started(Card::RegidragoV) > 0 &&
+        deck_count_after_search_started(Card::Crispin) > 0 &&
+        deck_count_after_search_started(Card::Grass) >= 2 &&
+        deck_count_after_search_started(Card::Fire) > 0 &&
+        latias_available && stone_available && payload_might_be_in_deck();
+  }
+
   bool should_play_steven() const {
     return should_play_steven_issue1030_original() ||
         known_burnet_t3_steven_route_available() ||
@@ -153,5 +198,49 @@
     if (held_arven_fss_blender_finish_available()) return false;
     if (play_known_burnet_t3_steven_route()) return true;
     if (play_known_turo_t4_steven_route()) return true;
-    return play_steven_issue1030_original();
+
+    const bool issue_1223_route =
+        issue_1223_full_item_lock_steven_grass_route_available();
+    const int vstar_before = hand_count(Card::RegidragoVstar);
+    const int grass_before = hand_count(Card::Grass);
+    const int regi_before = hand_count(Card::RegidragoV);
+    const int crispin_before = hand_count(Card::Crispin);
+
+    const bool played = play_steven_issue1030_original();
+    if (!played || !issue_1223_route) return played;
+
+    const int vstar_found = hand_count(Card::RegidragoVstar) - vstar_before;
+    const int grass_found = hand_count(Card::Grass) - grass_before;
+    const int regi_found = hand_count(Card::RegidragoV) - regi_before;
+    const int crispin_found = hand_count(Card::Crispin) - crispin_before;
+    auto grass_in_deck =
+        std::find(state_.deck.begin(), state_.deck.end(), Card::Grass);
+
+    if (vstar_found != 1 || grass_found != 0 || regi_found != 1 ||
+        crispin_found != 1 || grass_in_deck == state_.deck.end()) {
+      return true;
+    }
+
+    // The delegated Steven search already randomized the remaining deck. Replace only
+    // the redundant selected VSTAR with one known Grass in the same randomized slot,
+    // preserving deck size, order, and every other selected card:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Grass Energy and one manual attachment per turn: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Route specification: https://github.com/FlareZ123/pokemon-sims/issues/1223
+    if (!remove_one(state_.hand, Card::RegidragoVstar)) {
+      throw std::logic_error("Redundant Steven VSTAR target disappeared");
+    }
+    *grass_in_deck = Card::RegidragoVstar;
+    state_.hand.push_back(Card::Grass);
+
+    if (trace_ != nullptr && trace_->enabled && !trace_->lines.empty() &&
+        trace_->lines.back().find("PLAY SUPPORTER") != std::string::npos &&
+        trace_->lines.back().find("Searched up to 3 cards") != std::string::npos) {
+      trace_->lines.pop_back();
+    }
+    trace("PLAY SUPPORTER",
+          "R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
+          "Searched up to 3 cards: Regidrago V, Crispin, Grass Energy. Turn ended.");
+    return true;
   }

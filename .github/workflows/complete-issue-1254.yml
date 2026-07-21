@@ -71,5 +71,4 @@ jobs:
           git diff --cached --check
           git status --short
           git commit -m "Complete Appletun Ultra Ball routes"
-          git pull --rebase origin fix/issue-1254-ultra-ball-appletun
-          git push origin HEAD:fix/issue-1254-ultra-ball-appletun
+          git push --force-with-lease origin HEAD:fix/issue-1254-ultra-ball-appletun

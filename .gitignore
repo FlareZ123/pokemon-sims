@@ -1,0 +1,5 @@
+build/
+*.log
+issue-*-trace-*.txt
+results/*.lock
+results/.*.lock

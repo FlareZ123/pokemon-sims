@@ -102,3 +102,36 @@
     play_items_until_stable(true);
     play_basics_from_hand();
   }
+
+  void evolve_best_regi_issue_1224() {
+    const int vstar_count_before = in_play_count(Card::RegidragoVstar);
+    evolve_best_regi();
+    if (in_play_count(Card::RegidragoVstar) <= vstar_count_before ||
+        state_.vstar_power_used) {
+      return;
+    }
+
+    // Forest Seal Stone remains attached when Regidrago V evolves, and its attached
+    // Pokémon V may use Star Alchemy after that board-state transition. Re-evaluate
+    // the still-unused Power once, then Bench a searched Basic through the existing
+    // target, lock, Bench-space, K1, and once-per-game VSTAR Power guards:
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Pokémon V and Forest Seal Stone ruling: https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
+    // Official evolution, Ability, Bench, Supporter, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest-route specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1224
+    if (use_fss()) play_basics_from_hand();
+  }
+
+// Compose the active turn policy here so the evolution wrapper is scoped only to
+// this replacement. The later include in part_014c.inc is suppressed by its guard.
+#define evolve_best_regi evolve_best_regi_issue_1224
+#define use_legacy_star use_legacy_star_issue_1152
+#define choose_supporter choose_supporter_issue_1152
+#include "part_014c_latias_bench_override.inc"
+#undef choose_supporter
+#undef use_legacy_star
+#undef evolve_best_regi

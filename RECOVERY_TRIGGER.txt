@@ -2,3 +2,4 @@ Trigger isolated issue 1118 archive recovery workflow.
 
 Retriggered after correcting the temporary base workflow branch filter.
 Retriggered after correcting the archive part order.
+Retriggered with exhaustive shard-order validation.

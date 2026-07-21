@@ -31,6 +31,8 @@ jobs:
           git add docs results
           test -z "$(git diff --name-only --diff-filter=U)"
           git commit --no-edit
+      - name: Apply isolated issue patch
+        run: python scripts/apply_issue_1256_v3_patch.py
       - name: Build and run focused regression
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -50,7 +52,8 @@ jobs:
       - name: Commit reconciled branch
         run: |
           rm -f results/*.lock results/.*.lock
-          git add docs/REPORT.md docs/MULTI_DECK_REPORT.md results/baseline_manifest.json results/simulation_results.csv results/multi_deck_comparison.csv results/multi_deck_manifest.json
+          git add src/trace_engine_v2/part_010_blender_thinning_override.inc tests/issue_1256_appletun_blender_tests.cpp docs/REPORT.md docs/MULTI_DECK_REPORT.md results/baseline_manifest.json results/simulation_results.csv results/multi_deck_comparison.csv results/multi_deck_manifest.json
+          git add -u .github/workflows/apply-issue-1256-v3.yml scripts/apply_issue_1256_v3_patch.py
           git diff --cached --check
-          git commit -m "Regenerate issue 1256 evidence on current main"
+          git commit -m "Integrate Appletun Brilliant Blender routes"
           git push --force-with-lease origin HEAD:fix/issue-1256-appletun-blender-final

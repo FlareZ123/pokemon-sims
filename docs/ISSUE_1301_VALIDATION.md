@@ -9,4 +9,4 @@ Sources:
 - https://www.pokemon.com/us/pokemon-tcg/rules
 - https://github.com/FlareZ123/pokemon-sims/issues/1301
 
-The permanent regression checks all modeled printed Retreat Costs and a reachable Exploding Energy fixture. The final branch evidence was regenerated from current `main` with 100,000 trials per matrix condition and no temporary lock artifacts.
+The permanent regression checks all modeled printed Retreat Costs and a reachable Exploding Energy fixture. The final branch evidence was regenerated from current `main` with 100,000 trials per matrix condition and no temporary lock artifacts. Repository CI also validates the canonical shell matrix and the paired shell/Pineco matrix against the same source digest.

@@ -147,9 +147,15 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/cel25c-60_A
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    const std::array<Card, 9> targets{Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx,
-                                      Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
-                                      Card::DialgaGX, Card::TapuLeleGX, Card::Oricorio};
+    // Appletun sv8-140 is a Dragon Pokémon and modeled Apex Dragon payload, so it
+    // belongs in the preferred payload search sequence:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/sv8-140
+    // https://github.com/FlareZ123/pokemon-sims/issues/1253
+    const std::array<Card, 10> targets{Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx,
+                                       Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
+                                       Card::DialgaGX, Card::Appletun, Card::TapuLeleGX,
+                                       Card::Oricorio};
     for (const Card target : targets) {
       const bool desired = (target == Card::RegidragoV && want_regi) ||
                            (target == Card::RegidragoVstar && want_vstar) ||

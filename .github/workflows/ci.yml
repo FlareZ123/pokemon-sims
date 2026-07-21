@@ -87,7 +87,7 @@ jobs:
           # https://github.com/FlareZ123/pokemon-sims/issues/1209
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee trace-8.txt
           grep -q "T1 | DISCARD.*Grass Energy (Quick Ball cost)" trace-8.txt
-          grep -q "Searched a Basic Pokemon: Regidrago V" trace-8.txt
+          grep -q "searched a Basic Pokemon: Regidrago V" trace-8.txt
           grep -q "T2 | HOLD SUPPORTER.*Mysterious Treasure to Tapu Lele-GX to Crispin" trace-8.txt
           grep -q "T2 | DISCARD.*Dragapult ex (Mysterious Treasure cost)" trace-8.txt
           grep -q "T2 | WONDER TAG.*Crispin" trace-8.txt

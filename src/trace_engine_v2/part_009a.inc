@@ -2,9 +2,17 @@
   }
 
   Card fallback_ultra_ball_target_after_search_started() const {
+    // Ultra Ball searches any Pokémon, so the K1 fallback covers the complete
+    // modeled universe, including the Appletun and Pineco package:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://api.pokemontcg.io/v2/cards/sv8-140
+    // https://api.pokemontcg.io/v2/cards/sv4pt5-1
+    // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // https://github.com/FlareZ123/pokemon-sims/issues/1254
     for (const Card target : {Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio,
                               Card::TapuLeleGX, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
-                              Card::DialgaGX, Card::MawileGX, Card::Dipplin}) {
+                              Card::DialgaGX, Card::MawileGX, Card::Dipplin, Card::Appletun,
+                              Card::Pineco, Card::ForretressEx}) {
       if (deck_count_after_search_started(target) > 0) return target;
     }
     return Card::RegidragoV;
@@ -147,9 +155,15 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/cel25c-60_A
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    const std::array<Card, 9> targets{Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx,
-                                      Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
-                                      Card::DialgaGX, Card::TapuLeleGX, Card::Oricorio};
+    // Appletun sv8-140 is a Dragon Pokémon and modeled Apex Dragon payload, so it
+    // belongs in the preferred payload search sequence:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/sv8-140
+    // https://github.com/FlareZ123/pokemon-sims/issues/1253
+    const std::array<Card, 10> targets{Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx,
+                                       Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
+                                       Card::DialgaGX, Card::Appletun, Card::TapuLeleGX,
+                                       Card::Oricorio};
     for (const Card target : targets) {
       const bool desired = (target == Card::RegidragoV && want_regi) ||
                            (target == Card::RegidragoVstar && want_vstar) ||

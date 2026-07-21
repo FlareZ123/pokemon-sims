@@ -32,6 +32,20 @@ def replace_once(path: Path, old: str, new: str) -> None:
 
 
 def main() -> None:
+    empty_deck = ROOT / "src/trace_engine_v2/part_empty_deck_search_override.inc"
+    replace_once(
+        empty_deck,
+        """    for (const Card payload : {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar}) {
+""",
+        """    // Evolution Incense can search Appletun because it is a Stage 1 Pokémon:
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/sv8-140
+    // https://github.com/FlareZ123/pokemon-sims/issues/1255
+    for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
+                               Card::GoodraVstar, Card::Appletun}) {
+""",
+    )
+
     legacy = ROOT / "src/trace_engine_v2/part_013_legacy_star_override.inc"
     replace_once(
         legacy,
@@ -103,11 +117,19 @@ bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
   return std::find(cards.begin(), cards.end(), card) != cards.end();
 }
 
+sim::DeckRecipe continuation_recipe() {
+  sim::DeckRecipe recipe = sim::baseline_recipe();
+  recipe.emplace_back(sim::Card::Pineco, 1);
+  recipe.emplace_back(sim::Card::ForretressEx, 1);
+  return recipe;
+}
+
 struct Fixture {
   sim::Scenario scenario{"issue-1255/continuations", sim::DciProfile::StrictJit,
                          sim::LockMode::None, false, 4};
+  sim::DeckRecipe recipe{continuation_recipe()};
   std::mt19937_64 rng{12550};
-  sim::Engine engine{scenario, sim::pineco_recipe(), rng};
+  sim::Engine engine{scenario, recipe, rng};
 };
 
 sim::Pokemon ready_vstar() {

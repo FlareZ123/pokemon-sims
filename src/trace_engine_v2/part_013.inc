@@ -222,6 +222,62 @@
     }
   }
 
+  bool issue_1220_quick_ball_tapu_arven_vstar_route_available() {
+    // This indirect bridge is admitted only after a legal K1 inspection proves the
+    // complete route and both mandatory discard costs. Quick Ball finds Tapu Lele-GX,
+    // Wonder Tag finds Arven, and Arven finds the direct VSTAR Item. Latias ex must
+    // still provide a legal zero-cost promotion after the prior-turn Regidrago evolves:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Evolution Incense: https://api.pokemontcg.io/v2/cards/swsh1-163
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Official Item, Supporter, Ability, evolution, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1, DCI, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1220
+    if (!deck_seen_ || item_locked() || !supporter_allowed() || !need_vstar() ||
+        hand_count(Card::QuickBall) == 0 || bench_space() <= 0 ||
+        !ability_available_for_pokemon(Card::TapuLeleGX) ||
+        !ability_available_for_pokemon(Card::LatiasEx) || state_.retreat_used ||
+        !state_.active || state_.active->card != Card::LatiasEx ||
+        deck_count_after_search_started(Card::TapuLeleGX) == 0 ||
+        deck_count_after_search_started(Card::Arven) == 0 ||
+        deck_count_after_search_started(Card::RegidragoVstar) == 0) {
+      return false;
+    }
+    const bool evolvable_regi = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV && pokemon.entered_turn < state_.turn;
+        });
+    if (!evolvable_regi) return false;
+
+    const bool incense_route =
+        deck_count_after_search_started(Card::EvolutionIncense) > 0;
+    const bool treasure_route =
+        deck_count_after_search_started(Card::MysteriousTreasure) > 0;
+    if (!incense_route && !treasure_route) return false;
+
+    const State original_state = state_;
+    const auto first_cost = choose_discard(false, true, true, Card::QuickBall);
+    if (!first_cost || !remove_one(state_.hand, Card::QuickBall) ||
+        !remove_one(state_.hand, *first_cost)) {
+      state_ = original_state;
+      return false;
+    }
+    if (incense_route) {
+      state_ = original_state;
+      return true;
+    }
+
+    state_.hand.push_back(Card::MysteriousTreasure);
+    const bool second_cost =
+        choose_discard(false, true, true, Card::MysteriousTreasure).has_value();
+    state_ = original_state;
+    return second_cost;
+  }
+
   bool run_search_items_one_step(const bool permit_payload) {
     if (item_locked()) return false;
     play_basics_from_hand();
@@ -237,6 +293,8 @@
       if (play_pokemon_communication(permit_payload)) return true;
       if (play_mysterious_treasure(permit_payload)) return true;
       if (play_ultra_ball(permit_payload)) return true;
+      if (issue_1220_quick_ball_tapu_arven_vstar_route_available() &&
+          play_quick_ball(permit_payload)) return true;
     }
     if (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) && !in_play(Card::LatiasEx)) {
       if (play_pokemon_communication(permit_payload)) return true;

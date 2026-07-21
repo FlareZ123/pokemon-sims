@@ -217,8 +217,11 @@
 #undef play_gladion
 #include "trace_engine_v2/part_issue_1191_gladion_steven_override.inc"
 #define play_arven play_arven_powerglass_original
+#define has_payable_payload_outlet_after_costed_search has_payable_payload_outlet_after_costed_search_issue1237_original
 #include "trace_engine_v2/part_012_override.inc"
+#undef has_payable_payload_outlet_after_costed_search
 #undef play_arven
+#include "trace_engine_v2/part_issue_1237_quick_ball_dialga_vessel_preflight_override.inc"
 #define play_arven play_arven_fss_blender_contention_original
 #include "trace_engine_v2/part_012_powerglass_override.inc"
 #undef play_arven
@@ -277,7 +280,10 @@
 #define play_mysterious_treasure play_mysterious_treasure_issue1209_original
 #include "trace_engine_v2/part_issue_1167_treasure_vessel_override.inc"
 #undef play_mysterious_treasure
+#define play_quick_ball play_quick_ball_issue1237_original
 #include "trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc"
+#undef play_quick_ball
+#include "trace_engine_v2/part_issue_1237_quick_ball_dialga_vessel_execution_override.inc"
 #include "trace_engine_v2/part_issue_1118_secret_box.inc"
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original

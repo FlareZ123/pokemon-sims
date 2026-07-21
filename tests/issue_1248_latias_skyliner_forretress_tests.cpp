@@ -48,7 +48,8 @@ void test_skyliner_preserves_all_exploding_energy_grass() {
   const sim::Scenario scenario{"issue-1248-skyliner", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
   std::mt19937_64 rng{1248};
-  sim::Engine engine(scenario, forretress_recipe(), rng);
+  const sim::DeckRecipe recipe = forretress_recipe();
+  sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, exact_state());
 
   // Latias ex sv8-76 is a Basic Pokémon with printed Retreat Cost 2, while
@@ -72,7 +73,8 @@ void test_rule_box_ability_lock_blocks_forretress_route() {
   const sim::Scenario scenario{"issue-1248-rulebox-lock", sim::DciProfile::StrictJit,
                                sim::LockMode::FullRuleBoxAbility, false, 4};
   std::mt19937_64 rng{12481};
-  sim::Engine engine(scenario, forretress_recipe(), rng);
+  const sim::DeckRecipe recipe = forretress_recipe();
+  sim::Engine engine(scenario, recipe, rng);
   const sim::State before = exact_state();
   sim::EngineTestAccess::set_state(engine, before);
 

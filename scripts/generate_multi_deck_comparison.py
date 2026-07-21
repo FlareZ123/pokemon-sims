@@ -98,6 +98,11 @@ def generate_matrix_atomic(
     )
     os.close(descriptor)
     temporary_path = Path(temporary_name)
+    # The simulator locks the exact temporary output path. Remove that random
+    # generator-only lock after either success or failure:
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_015.inc#L113-L170
+    # https://github.com/FlareZ123/pokemon-sims/issues/1300
+    temporary_lock_path = Path(f"{temporary_path}.lock")
     try:
         run(
             [
@@ -114,6 +119,7 @@ def generate_matrix_atomic(
         os.replace(temporary_path, matrix_path)
     finally:
         temporary_path.unlink(missing_ok=True)
+        temporary_lock_path.unlink(missing_ok=True)
 
 
 def generate_traces(executable: Path, trace_dir: Path) -> list[dict[str, object]]:

@@ -40,7 +40,7 @@
         });
   }
 
-  bool play_gladion() {
+  bool play_gladion_issue1204_original() {
     if (!known_t2_steven_crispin_latias_route_available()) {
       return play_gladion_issue1191_original();
     }
@@ -64,3 +64,5 @@
     }
     return false;
   }
+
+#include "part_issue_1204_gladion_treasure_override.inc"

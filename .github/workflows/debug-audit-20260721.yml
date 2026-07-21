@@ -37,8 +37,8 @@ jobs:
           # https://api.pokemontcg.io/v2/cards/swsh12-135
           # https://api.pokemontcg.io/v2/cards/sv8-76
           # Retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-          rg -n -C 6 'retreat_cost\(' src tests docs | tee retreat-cost-callers.txt
-          rg -n -C 8 'case Card::RegidragoV: return 2|case Card::LatiasEx: return 1' src tests docs | tee retreat-cost-constants.txt
+          grep -RIn -C 6 'retreat_cost(' src tests docs | tee retreat-cost-callers.txt || true
+          grep -RIn -C 8 -E 'case Card::RegidragoV: return 2|case Card::LatiasEx: return 1' src tests docs | tee retreat-cost-constants.txt || true
       - name: Export source snapshot for complete static review
         shell: bash
         run: tar -czf source-snapshot.tar.gz src tests docs scripts .github CMakeLists.txt README.md

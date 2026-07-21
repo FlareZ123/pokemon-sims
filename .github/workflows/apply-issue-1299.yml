@@ -1,0 +1,48 @@
+name: Apply issue 1299 patch
+
+on:
+  push:
+    branches: [fix/issue-1299-pineco-ultra-ball-appletun]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-issue-1299
+  cancel-in-progress: true
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-1299-pineco-ultra-ball-appletun
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply isolated fix
+        run: python scripts/apply_issue_1299_patch.py
+      - name: Build and run focused regression
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ./build/regidrago_unified_tests issue_1118_multi_deck_secret_box_tests
+      - name: Run three simulate-this audits
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee issue-1299-trace-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-1299-trace-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee issue-1299-trace-3.txt
+      - name: Commit completed fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -f .github/workflows/apply-issue-1299.yml scripts/apply_issue_1299_patch.py .apply_issue_1299_patch.lock
+          git add src/trace_engine_v2/part_forretress_ex_combo.inc tests/issue_1118_multi_deck_secret_box_tests.cpp
+          git add -u .github/workflows/apply-issue-1299.yml scripts/apply_issue_1299_patch.py
+          git diff --cached --check
+          git commit -m 'Include Appletun in Pineco Ultra Ball fallback (#1299)'
+          git push origin HEAD:fix/issue-1299-pineco-ultra-ball-appletun

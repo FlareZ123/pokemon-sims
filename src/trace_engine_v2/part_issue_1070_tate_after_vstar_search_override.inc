@@ -38,7 +38,75 @@
     });
   }
 
+  bool tate_switch_after_incomplete_held_vstar_evolution_route() const {
+    if (!supporter_allowed() || !strict_payload_timing() ||
+        hand_count(Card::TateLiza) == 0 ||
+        hand_count(Card::RegidragoVstar) == 0 ||
+        hand_count(Card::Serena) == 0 ||
+        !state_.manual_energy_used || !state_.active ||
+        state_.active->card != Card::TapuLeleGX ||
+        can_free_retreat_with_latias() || !need_energy()) {
+      return false;
+    }
+
+    // A prior-turn Benched Regidrago V at GF can evolve now, and Tate & Liza can
+    // then switch that VSTAR Active. Preserve those two held, deterministic axes
+    // before considering Tate's random five-card redraw:
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Evolution, switching, attachment, and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest direct route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1197
+    return std::any_of(state_.bench.begin(), state_.bench.end(),
+                       [this](const Pokemon& pokemon) {
+      return pokemon.card == Card::RegidragoV &&
+          pokemon.entered_turn < state_.turn && pokemon.grass == 1 &&
+          pokemon.fire >= 1;
+    });
+  }
+
+  bool tate_switch_after_incomplete_vstar_evolution_ready() const {
+    if (!supporter_allowed() || !strict_payload_timing() ||
+        hand_count(Card::TateLiza) == 0 || hand_count(Card::Serena) == 0 ||
+        !state_.active ||
+        state_.active->card != Card::TapuLeleGX ||
+        can_free_retreat_with_latias() || need_vstar() ||
+        !need_active_vstar() || !need_energy()) {
+      return false;
+    }
+
+    // The fixed-point policy has now evolved the preserved Basic. Use Tate's
+    // printed switch mode before Serena or Tate draw can randomize that progress:
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Supporter and switching procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1197
+    return std::any_of(state_.bench.begin(), state_.bench.end(),
+                       [this](const Pokemon& pokemon) {
+      return pokemon.card == Card::RegidragoVstar &&
+          pokemon.entered_turn < state_.turn && pokemon.grass == 1 &&
+          pokemon.fire >= 1;
+    });
+  }
+
   void choose_supporter() {
+    if (tate_switch_after_incomplete_held_vstar_evolution_route()) {
+      if (trace_ != nullptr) {
+        trace_->add_policy_once(
+            state_, "issue-1197-tate-before-held-vstar-evolution", state_.turn,
+            "HOLD SUPPORTER", "R-TATE-01; R-RVS-01; P-COMPRESS-01",
+            "Retained Tate & Liza until the held Regidrago VSTAR evolves the prior-turn GF Benched Basic.");
+      }
+      return;
+    }
+    if (tate_switch_after_incomplete_vstar_evolution_ready()) {
+      if (!play_tate_switch()) {
+        throw std::logic_error("Known issue-1197 Tate switch route failed");
+      }
+      return;
+    }
     if (tate_draw_after_active_vstar_evolution_route()) {
       if (trace_ != nullptr) {
         trace_->add_policy_once(

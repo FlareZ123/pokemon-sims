@@ -4,7 +4,8 @@ on:
   push:
     branches: [tmp/1118-blob-recovery]
   pull_request:
-    branches: [main]
+    branches: [main, tmp/1118-blob-recovery]
+  workflow_dispatch:
 
 permissions:
   contents: read

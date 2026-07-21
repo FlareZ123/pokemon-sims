@@ -1,0 +1,116 @@
+name: Apply issue 1304 fix and refresh evidence
+
+on:
+  push:
+    branches: [fix/issue-1304-t1-treasure-fss]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-issue-1304-fix
+  cancel-in-progress: false
+
+jobs:
+  apply-and-refresh:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-1304-t1-treasure-fss
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply source fix and CLI regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import base64
+          Path('issue-1304-source.patch').write_bytes(base64.b64decode('LS0tIGEvc3JjL3RyYWNlX2VuZ2luZV92Mi9wYXJ0XzAwOWEuaW5jCisrKyBiL3NyYy90cmFjZV9lbmdpbmVfdjIvcGFydF8wMDlhLmluYwpAQCAtMTI5LDYgKzEyOSwxNiBAQAogICAgIC8vIGh0dHBzOi8vYXBpLnBva2Vtb250Y2cuaW8vdjIvY2FyZHMvc202LTExMyBodHRwczovL2FwaS5wb2tlbW9udGNnLmlvL3YyL2NhcmRzL3N3c2gxMnB0NS0xNDYKICAgICBzdGQ6Om9wdGlvbmFsPENhcmQ+IGNvc3QgPQogICAgICAgICBjaG9vc2VfZGlzY2FyZChjYW5faml0X2Rpc2NhcmQsIHRydWUsIHRydWUsIENhcmQ6Ok15c3RlcmlvdXNUcmVhc3VyZSk7CisgICAgaWYgKCFjb3N0ICYmIHdhbnRfcmVnaSAmJiBpc3N1ZV8xMzA0X3QxX3RyZWFzdXJlX2VyaWthX2Nvc3RfYXZhaWxhYmxlKCkpIHsKKyAgICAgIC8vIEVyaWthJ3MgSW52aXRhdGlvbiBjYW5ub3QgYWR2YW5jZSB0aGlzIHNpbmdsZS1wbGF5ZXIgc2V0dXAgc3RhdGUsIHdoaWxlCisgICAgICAvLyBNeXN0ZXJpb3VzIFRyZWFzdXJlIGVzdGFibGlzaGVzIHRoZSBwcmlvci10dXJuIFJlZ2lkcmFnbyBWIHJlcXVpcmVkIGJ5CisgICAgICAvLyB0aGUgY29tcGxldGUgVDIgRm9yZXN0IFNlYWwgU3RvbmUgcGx1cyBFeHBsb2RpbmcgRW5lcmd5IHJvdXRlOgorICAgICAgLy8gaHR0cHM6Ly9hcGkucG9rZW1vbnRjZy5pby92Mi9jYXJkcy9zdjNwdDUtMTYwCisgICAgICAvLyBodHRwczovL2FwaS5wb2tlbW9udGNnLmlvL3YyL2NhcmRzL3NtNi0xMTMKKyAgICAgIC8vIGh0dHBzOi8vYXBpLnBva2Vtb250Y2cuaW8vdjIvY2FyZHMvc3dzaDEyLTEzNQorICAgICAgLy8gaHR0cHM6Ly9naXRodWIuY29tL0ZsYXJlWjEyMy9wb2tlbW9uLXNpbXMvaXNzdWVzLzEzMDQKKyAgICAgIGNvc3QgPSBDYXJkOjpFcmlrYXNJbnZpdGF0aW9uOworICAgIH0KICAgICBpZiAoIWNvc3QgJiYgd2FudF92c3RhcikgewogICAgICAgY29zdCA9IGlzc3VlXzEyMjFfYnVybmV0X3RyZWFzdXJlX3ZzdGFyX2Nvc3QoKTsKICAgICB9Ci0tLSBhL3NyYy90cmFjZV9lbmdpbmVfdjIvcGFydF9pc3N1ZV8xMTE4X3NlY3JldF9ib3guaW5jCisrKyBiL3NyYy90cmFjZV9lbmdpbmVfdjIvcGFydF9pc3N1ZV8xMTE4X3NlY3JldF9ib3guaW5jCkBAIC01ODIsMTAgKzU4Miw2NiBAQAogICAgIHJldHVybiB0cnVlOwogICB9CiAKKyAgYm9vbCBpc3N1ZV8xMzA0X3QxX3RyZWFzdXJlX2VyaWthX2Nvc3RfYXZhaWxhYmxlKCkgY29uc3QgeworICAgIC8vIFRoaXMgZXhjZXB0aW9uIGlzIGxpbWl0ZWQgdG8gdGhlIHNvdXJjZS1ib3VuZCwgb2JzZXJ2YWJsZSBUMSByb3V0ZS4gRXJpa2EncworICAgIC8vIEludml0YXRpb24gaGFzIG5vIHNldHVwIGVmZmVjdCBpbiB0aGlzIG9wcG9uZW50LWZyZWUgbW9kZWwsIHdoaWxlIHRoZSBwYWlkCisgICAgLy8gVHJlYXN1cmUgc2VhcmNoIGVzdGFibGlzaGVzIFJlZ2lkcmFnbyBWIG9uZSB0dXJuIGJlZm9yZSBpdCBtdXN0IGV2b2x2ZToKKyAgICAvLyBodHRwczovL2FwaS5wb2tlbW9udGNnLmlvL3YyL2NhcmRzL3N2M3B0NS0xNjAKKyAgICAvLyBodHRwczovL2FwaS5wb2tlbW9udGNnLmlvL3YyL2NhcmRzL3NtNi0xMTMKKyAgICAvLyBodHRwczovL2FwaS5wb2tlbW9udGNnLmlvL3YyL2NhcmRzL3N3c2gxMi0xMzUKKyAgICAvLyBodHRwczovL2FwaS5wb2tlbW9udGNnLmlvL3YyL2NhcmRzL3N3c2gxMi0xMzYKKyAgICAvLyBodHRwczovL2FwaS5wb2tlbW9udGNnLmlvL3YyL2NhcmRzL3N2NHB0NS0xCisgICAgLy8gaHR0cHM6Ly9hcGkucG9rZW1vbnRjZy5pby92Mi9jYXJkcy9zdjRwdDUtMgorICAgIC8vIGh0dHBzOi8vYXBpLnBva2Vtb250Y2cuaW8vdjIvY2FyZHMvbWUxLTExNworICAgIC8vIGh0dHBzOi8vYXBpLnBva2Vtb250Y2cuaW8vdjIvY2FyZHMvc3dzaDEyLTE1NgorICAgIC8vIGh0dHBzOi8vd3d3LnBva2Vtb24uY29tL3VzL3Bva2Vtb24tdGNnL3J1bGVzCisgICAgLy8gaHR0cHM6Ly9naXRodWIuY29tL0ZsYXJlWjEyMy9wb2tlbW9uLXNpbXMvYmxvYi9tYWluL2RvY3MvUE9MSUNZX0RFQ0lTSU9OUy5tZCNrbm93bGVkZ2Utc3RhdGVzCisgICAgLy8gaHR0cHM6Ly9naXRodWIuY29tL0ZsYXJlWjEyMy9wb2tlbW9uLXNpbXMvYmxvYi9tYWluL2RvY3MvUE9MSUNZX0RFQ0lTSU9OUy5tZCNkZWNpc2lvbi1wcmlvcml0aWVzCisgICAgLy8gaHR0cHM6Ly9naXRodWIuY29tL0ZsYXJlWjEyMy9wb2tlbW9uLXNpbXMvaXNzdWVzLzEzMDQKKyAgICBjb25zdCBib29sIHBpbmVjb19pbl9wbGF5ID0gaW5fcGxheV9jb3VudChDYXJkOjpQaW5lY28pID4gMDsKKyAgICBjb25zdCBib29sIHBheWxvYWRfaGVsZCA9IHN0ZDo6YW55X29mKHN0YXRlXy5oYW5kLmJlZ2luKCksIHN0YXRlXy5oYW5kLmVuZCgpLCBpc19wYXlsb2FkKTsKKyAgICByZXR1cm4gc2VjcmV0X2JveF9jb21ib19lbmFibGVkKCkgJiYgc3RhdGVfLnR1cm4gPT0gMSAmJiBzY2VuYXJpb18uZ29pbmdfZmlyc3QgJiYKKyAgICAgICAgc3RyaWN0X3BheWxvYWRfdGltaW5nKCkgJiYgc2NlbmFyaW9fLm1heF90dXJuID49IDIgJiYgIWl0ZW1fbG9ja2VkKCkgJiYKKyAgICAgICAgIXJ1bGVfYm94X2FiaWxpdGllc19sb2NrZWQoKSAmJiAhc3RhdGVfLnZzdGFyX3Bvd2VyX3VzZWQgJiYgcGluZWNvX2luX3BsYXkgJiYKKyAgICAgICAgYmVuY2hfc3BhY2UoKSA+IDAgJiYgIWhhc19hbnlfcmVnaSgpICYmIGhhbmRfY291bnQoQ2FyZDo6UmVnaWRyYWdvVikgPT0gMCAmJgorICAgICAgICBoYW5kX2NvdW50KENhcmQ6Ok15c3RlcmlvdXNUcmVhc3VyZSkgPiAwICYmCisgICAgICAgIGhhbmRfY291bnQoQ2FyZDo6RXJpa2FzSW52aXRhdGlvbikgPiAwICYmCisgICAgICAgIGhhbmRfY291bnQoQ2FyZDo6Rm9yZXN0U2VhbFN0b25lKSA+IDAgJiYKKyAgICAgICAgaGFuZF9jb3VudChDYXJkOjpGb3JyZXRyZXNzRXgpID4gMCAmJgorICAgICAgICAoc3RhdGVfLnN0YWRpdW0gPT0gU3RhZGl1bTo6Rm9yZXN0T2ZWaXRhbGl0eSB8fAorICAgICAgICAgaGFuZF9jb3VudChDYXJkOjpGb3Jlc3RPZlZpdGFsaXR5KSA+IDApICYmCisgICAgICAgIHBheWxvYWRfaGVsZCAmJiBtaWdodF9iZV91bnNlZW4oQ2FyZDo6UmVnaWRyYWdvVikgJiYKKyAgICAgICAgbWlnaHRfYmVfdW5zZWVuKENhcmQ6OlJlZ2lkcmFnb1ZzdGFyKSAmJiBtaWdodF9iZV91bnNlZW4oQ2FyZDo6RmlyZSkgJiYKKyAgICAgICAgbWlnaHRfYmVfdW5zZWVuKENhcmQ6OkdyYXNzKTsKKyAgfQorCisgIGJvb2wgaXNzdWVfMTMwNF90MV90cmVhc3VyZV9mc3Nfcm91dGVfZXN0YWJsaXNoZWQoKSBjb25zdCB7CisgICAgLy8gQWZ0ZXIgVHJlYXN1cmUgcmVzb2x2ZXMsIEsxIG1heSB2ZXJpZnkgdGhlIHJlbWFpbmluZyByb3V0ZSBwaWVjZXMgd2l0aG91dAorICAgIC8vIHJlYWRpbmcgdGhlIHBvc3Qtc2h1ZmZsZSB0b3AgY2FyZC4gU3RhciBBbGNoZW15IGlzIGhlbGQgYXMgdGhlIHVuaXF1ZSBkaXJlY3QKKyAgICAvLyBGaXJlIGNoYW5uZWw7IHRoZSByZW1haW5pbmcgVHJlYXN1cmUgaXMgb25seSBrbm93biB0byBleGlzdCBzb21ld2hlcmUgaW4gZGVjazoKKyAgICAvLyBodHRwczovL2FwaS5wb2tlbW9udGNnLmlvL3YyL2NhcmRzL3N3c2gxMi0xNTYKKyAgICAvLyBodHRwczovL2FwaS5wb2tlbW9udGNnLmlvL3YyL2NhcmRzL3NtNi0xMTMKKyAgICAvLyBodHRwczovL2dpdGh1Yi5jb20vRmxhcmVaMTIzL3Bva2Vtb24tc2ltcy9ibG9iL21haW4vZG9jcy9NT0RFTF9BU1NVTVBUSU9OUy5tZCNwb2xpY3ktdmVyc3VzLWZ1dHVyZS1jYXJkLW9yYWNsZQorICAgIC8vIGh0dHBzOi8vZ2l0aHViLmNvbS9GbGFyZVoxMjMvcG9rZW1vbi1zaW1zL2lzc3Vlcy8xMzA0CisgICAgY29uc3QgYm9vbCBwYXlsb2FkX2hlbGQgPSBzdGQ6OmFueV9vZihzdGF0ZV8uaGFuZC5iZWdpbigpLCBzdGF0ZV8uaGFuZC5lbmQoKSwgaXNfcGF5bG9hZCk7CisgICAgcmV0dXJuIHN0YXRlXy50dXJuID09IDEgJiYgc2NlbmFyaW9fLmdvaW5nX2ZpcnN0ICYmIHN0cmljdF9wYXlsb2FkX3RpbWluZygpICYmCisgICAgICAgIHNjZW5hcmlvXy5tYXhfdHVybiA+PSAyICYmICFydWxlX2JveF9hYmlsaXRpZXNfbG9ja2VkKCkgJiYgZGVja19zZWVuXyAmJgorICAgICAgICBjb3VudF9vZihzdGF0ZV8uZGlzY2FyZCwgQ2FyZDo6TXlzdGVyaW91c1RyZWFzdXJlKSA+IDAgJiYKKyAgICAgICAgY291bnRfb2Yoc3RhdGVfLmRpc2NhcmQsIENhcmQ6OkVyaWthc0ludml0YXRpb24pID4gMCAmJgorICAgICAgICBoYXNfYW55X3JlZ2koKSAmJiBpbl9wbGF5X2NvdW50KENhcmQ6OlBpbmVjbykgPiAwICYmCisgICAgICAgIGhhbmRfY291bnQoQ2FyZDo6Rm9ycmV0cmVzc0V4KSA+IDAgJiYgcGF5bG9hZF9oZWxkICYmCisgICAgICAgIChzdGF0ZV8uc3RhZGl1bSA9PSBTdGFkaXVtOjpGb3Jlc3RPZlZpdGFsaXR5IHx8CisgICAgICAgICBoYW5kX2NvdW50KENhcmQ6OkZvcmVzdE9mVml0YWxpdHkpID4gMCkgJiYKKyAgICAgICAgbWlnaHRfYmVfdW5zZWVuKENhcmQ6Ok15c3RlcmlvdXNUcmVhc3VyZSkgJiYKKyAgICAgICAgbWlnaHRfYmVfdW5zZWVuKENhcmQ6OlJlZ2lkcmFnb1ZzdGFyKSAmJiBtaWdodF9iZV91bnNlZW4oQ2FyZDo6RmlyZSkgJiYKKyAgICAgICAgbWlnaHRfYmVfdW5zZWVuKENhcmQ6OkdyYXNzKTsKKyAgfQorCiAgIGJvb2wgaG9sZF9mc3NfZm9yX25leHRfdHVybl9zZWNyZXRfYm94KCkgY29uc3QgeworICAgIGNvbnN0IGJvb2wgaXNzdWVfMTMwNF9yb3V0ZSA9IGlzc3VlXzEzMDRfdDFfdHJlYXN1cmVfZnNzX3JvdXRlX2VzdGFibGlzaGVkKCk7CiAgICAgaWYgKCFzZWNyZXRfYm94X2NvbWJvX2VuYWJsZWQoKSB8fCBzdGF0ZV8udHVybiAhPSAxIHx8Ci0gICAgICAgICFzZWNyZXRfYm94X2hhc19saXZlX2Zzc19ob2xkZXIoKSB8fAotICAgICAgICBoYW5kX2NvdW50KENhcmQ6OlNlY3JldEJveCkgPT0gMCB8fCBmaXJlX25lZWRlZCgpID09IDApIHsKKyAgICAgICAgIXNlY3JldF9ib3hfaGFzX2xpdmVfZnNzX2hvbGRlcigpIHx8IGZpcmVfbmVlZGVkKCkgPT0gMCB8fAorICAgICAgICAoaGFuZF9jb3VudChDYXJkOjpTZWNyZXRCb3gpID09IDAgJiYgIWlzc3VlXzEzMDRfcm91dGUpKSB7CiAgICAgICByZXR1cm4gZmFsc2U7CiAgICAgfQogCkBAIC05MTgsMTMgKzk3NCwxMSBAQAogICAgICAgcGxheV9iYXNpY3NfZnJvbV9oYW5kKCk7CiAgICAgICBwbGF5X3NlY3JldF9ib3hfdDFfc2VhcmNoX2l0ZW1zKCk7CiAgICAgICBhdHRhY2hfbGl2ZV9mc3MoKTsKLSAgICAgIGlmICghdXNlX2Zzc19mb3Jfc2VjcmV0X2JveF9iYW5rKCkpIHsKLSAgICAgICAgaWYgKGhvbGRfZnNzX2Zvcl9uZXh0X3R1cm5fc2VjcmV0X2JveCgpKSB7Ci0gICAgICAgICAgdHJhY2UoIkhPTEQgVlNUQVIgUE9XRVIiLCAiUi1GU1MtMDE7IFItU0VDUkVULUJPWC0wMTsgUC1BWElTLTAxIiwKLSAgICAgICAgICAgICAgICAiSGVsZCBTdGFyIEFsY2hlbXkgYXMgdGhlIG5leHQtdHVybiBTZWNyZXQgQm94IEZpcmUgY2hhbm5lbC4iKTsKLSAgICAgICAgfSBlbHNlIHsKLSAgICAgICAgICB1c2VfZnNzKCk7Ci0gICAgICAgIH0KKyAgICAgIGlmIChob2xkX2Zzc19mb3JfbmV4dF90dXJuX3NlY3JldF9ib3goKSkgeworICAgICAgICB0cmFjZSgiSE9MRCBWU1RBUiBQT1dFUiIsICJSLUZTUy0wMTsgUi1TRUNSRVQtQk9YLTAxOyBQLUFYSVMtMDEiLAorICAgICAgICAgICAgICAiSGVsZCBTdGFyIEFsY2hlbXkgYXMgdGhlIG5leHQtdHVybiBTZWNyZXQgQm94IEZpcmUgY2hhbm5lbC4iKTsKKyAgICAgIH0gZWxzZSBpZiAoIXVzZV9mc3NfZm9yX3NlY3JldF9ib3hfYmFuaygpKSB7CisgICAgICAgIHVzZV9mc3MoKTsKICAgICAgIH0KICAgICAgIGFkdmFuY2VfZm9ycmV0cmVzc19jb21ibygpOwogICAgICAgdXNlX2NlbGVzdGlhbF9yb2FyKCk7Cg=='))
+          cmake = Path('CMakeLists.txt')
+          text = cmake.read_text(encoding='utf-8')
+          marker = 'add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)'
+          block = """# The source-bound Pineco seed must use T1 Mysterious Treasure, preserve
+          # Star Alchemy, and reach strict-JIT readiness on T2:
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sv3pt5-160
+          # https://api.pokemontcg.io/v2/cards/swsh12-156
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # https://api.pokemontcg.io/v2/cards/swsh11-136
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # https://github.com/FlareZ123/pokemon-sims/issues/1304
+          add_test(NAME trace_issue_1304_t1_treasure_fss
+            COMMAND regidrago_sim --simulate-this --deck regidrago-pineco
+              --scenario strict-jit/go-first --seed 31415 --require-ready-by 2)
+
+          """
+          if 'trace_issue_1304_t1_treasure_fss' not in text:
+              if marker not in text:
+                  raise SystemExit('CMake insertion marker missing')
+              cmake.write_text(text.replace(marker, block + marker, 1), encoding='utf-8')
+          PY
+          git apply --check issue-1304-source.patch
+          git apply issue-1304-source.patch
+          rm issue-1304-source.patch
+          git diff --check
+      - name: Build Release simulator and tests
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Run focused issue 1304 regression
+        run: ./build/regidrago_unified_tests issue_1304_t1_treasure_fss_tests
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Exact corrected route: https://github.com/FlareZ123/pokemon-sims/issues/1304
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-first --seed 31415 --require-ready-by 2 | tee issue-1304-trace-1.txt
+          grep -q "T1 | DISCARD.*Erika's Invitation" issue-1304-trace-1.txt
+          grep -q "T1 | HOLD VSTAR POWER" issue-1304-trace-1.txt
+          grep -q "T2 | READY" issue-1304-trace-1.txt
+          # Independent shell route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee issue-1304-trace-2.txt
+          grep -q "T2 | READY" issue-1304-trace-2.txt
+          # Independent Pineco route: https://api.pokemontcg.io/v2/cards/sv6-163
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee issue-1304-trace-3.txt
+          grep -q "T2 | READY" issue-1304-trace-3.txt
+      - name: Regenerate source-bound matrices and reports
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe ./build/regidrago_sim --out-dir results --max-seed 20 --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe ./build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Record tested source
+        run: git rev-parse HEAD > issue-1304-tested-head.txt
+      - name: Upload traces and T2-T3 matrices
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1304-validation
+          path: |
+            issue-1304-trace-*.txt
+            issue-1304-tested-head.txt
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            docs/REPORT.md
+            docs/MULTI_DECK_REPORT.md
+          if-no-files-found: error
+      - name: Commit fix and refreshed evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm .github/workflows/apply-issue-1304.yml
+          git add src tests CMakeLists.txt results docs
+          git add -u .github/workflows/apply-issue-1304.yml
+          git diff --cached --check
+          git commit -m 'Fix Pineco T1 Treasure-FSS route'
+          git push origin HEAD:fix/issue-1304-t1-treasure-fss

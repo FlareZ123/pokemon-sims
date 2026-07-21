@@ -1,0 +1,64 @@
+name: Turn 20260721 GPT56 Current Main Retreat Review
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release # Repository build contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2 # Repository test contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-tests
+      - name: Run three independent simulate-this perfect-play audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Official setup, turn, Trainer, search, discard, attachment, evolution, Ability, retreat, and VSTAR Power procedures: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Earliest legal ready-state objective and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          # Hidden-information and lock boundaries: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-interpretation
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 137 | tee pass-1-strict-go-first-137.txt # Regidrago V/VSTAR and Crispin route: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/sv7-133
+          grep -F 'Seed: 137 | first-ready turn: 2 | setup result: success' pass-1-strict-go-first-137.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-first --seed 401 | tee pass-2-turn2-item-lock-401.txt # Turn-two Item-lock model and Steven route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock https://api.pokemontcg.io/v2/cards/sm7-145
+          grep -F 'Seed: 401 | first-ready turn: 5 | setup result: failure' pass-2-turn2-item-lock-401.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-full-item-lock/go-second --seed 12 | tee pass-3-full-item-lock-12.txt # Full Item-lock model, Burnet, and Forest Seal Stone: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#full-item-lock https://api.pokemontcg.io/v2/cards/swsh6-169 https://api.pokemontcg.io/v2/cards/swsh12-156
+          grep -F 'Seed: 12 | first-ready turn: 3 | setup result: success' pass-3-full-item-lock-12.txt
+      - name: Recheck active owned bugs and retreat metadata reports
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-first --seed 47 | tee issue-1205-seed-47.txt # Active owned DCI issue: https://github.com/FlareZ123/pokemon-sims/issues/1205 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sv4-171
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 211 | tee issue-1235-seed-211.txt # Active owned target-ranking issue: https://github.com/FlareZ123/pokemon-sims/issues/1235 https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sm2-55
+          grep -F 'case Card::RegidragoV: return 2;' src/trace_engine_v2/part_001.inc # Confirmation-pending exact-print mismatch: https://github.com/FlareZ123/pokemon-sims/issues/1249 https://api.pokemontcg.io/v2/cards/swsh12-135
+          grep -F 'case Card::LatiasEx: return 1;' src/trace_engine_v2/part_001.inc # Confirmation-pending exact-print mismatch: https://github.com/FlareZ123/pokemon-sims/issues/1248 https://api.pokemontcg.io/v2/cards/sv8-76
+          grep -F '? retreat_cost(state_.active->card) : 0;' src/trace_engine_v2/part_forretress_ex_combo.inc # Current caller omits Skyliner effective-cost handling: https://github.com/FlareZ123/pokemon-sims/issues/1248 https://api.pokemontcg.io/v2/cards/sv8-76 https://www.pokemon.com/us/pokemon-tcg/rules
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure # Repository validation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-tests
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out turn-20260721-gpt56-current-main-retreat-t2-t3-matrix.csv # Aggregate simulation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-canonical-shell-baseline
+      - name: Export tested source and artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > tested-head.txt # Source traceability specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULES_TRACEABILITY.md
+          git archive --format=tar.gz --output=tested-source.tar.gz HEAD # Audit snapshot specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#audit-status
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turn-20260721-gpt56-current-main-retreat-review-${{ github.run_attempt }}
+          path: |
+            pass-*.txt
+            issue-*.txt
+            turn-20260721-gpt56-current-main-retreat-t2-t3-matrix.csv
+            tested-head.txt
+            tested-source.tar.gz
+            build/Testing
+          if-no-files-found: error

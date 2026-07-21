@@ -146,7 +146,7 @@ constexpr int retreat_cost(const Card card) {
     case Card::DialgaGX: return 3;
     case Card::RegidragoV: return 3;  // Exact swsh12-135 print: https://api.pokemontcg.io/v2/cards/swsh12-135
     case Card::RegidragoVstar: return 3;
-    case Card::LatiasEx: return 1;
+    case Card::LatiasEx: return 2;  // Exact sv8-76 print: https://api.pokemontcg.io/v2/cards/sv8-76
     case Card::Oricorio: return 1;
     default: return 0;
   }

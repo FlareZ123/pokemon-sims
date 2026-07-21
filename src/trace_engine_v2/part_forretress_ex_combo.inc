@@ -231,7 +231,16 @@ bool Engine::use_exploding_energy_for_setup() {
   const bool active_blocks_regi = !source_is_active && state_.active &&
       state_.active->card != Card::RegidragoV &&
       state_.active->card != Card::RegidragoVstar;
-  const int active_retreat_cost = active_blocks_regi && !state_.retreat_used
+  const bool retreat_available = active_blocks_regi && !state_.retreat_used;
+  // Skyliner gives every Basic Pokémon in play no Retreat Cost while Latias ex's
+  // Rule Box Ability is available. Apply that effective cost before distributing
+  // Exploding Energy so a free retreat never consumes a searched Grass Energy:
+  // https://api.pokemontcg.io/v2/cards/sv8-76
+  // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  const bool skyliner_free_retreat = retreat_available &&
+      can_free_retreat_with_latias();
+  const int active_retreat_cost = retreat_available && !skyliner_free_retreat
       ? retreat_cost(state_.active->card) : 0;
   const int target_grass_needed = std::max(0, grass_needed());
 
@@ -246,19 +255,20 @@ bool Engine::use_exploding_energy_for_setup() {
   // https://api.pokemontcg.io/v2/cards/sm5-100
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/issues/1118
-  const bool can_fund_retreat = active_retreat_cost > 0 &&
-      available >= active_retreat_cost + target_grass_needed;
-  if (can_fund_retreat) {
+  const bool can_complete_retreat = retreat_available &&
+      (active_retreat_cost == 0 ||
+       available >= active_retreat_cost + target_grass_needed);
+  if (can_complete_retreat && active_retreat_cost > 0) {
     destinations.insert(destinations.end(),
                         static_cast<std::size_t>(active_retreat_cost), 0U);
   }
   destinations.insert(destinations.end(),
                       static_cast<std::size_t>(available -
-                          (can_fund_retreat ? active_retreat_cost : 0)),
+                          (can_complete_retreat ? active_retreat_cost : 0)),
                       *target_index);
 
   if (!resolve_exploding_energy(destinations)) return false;
-  if (!can_fund_retreat || !state_.active) return true;
+  if (!can_complete_retreat || !state_.active) return true;
 
   int remaining_cost = active_retreat_cost;
   while (remaining_cost > 0 && state_.active->grass > 0) {
@@ -294,8 +304,9 @@ bool Engine::use_exploding_energy_for_setup() {
   std::swap(*state_.active, *target);
   state_.retreat_used = true;
   trace("RETREAT", "R-GAME-RETREAT; R-FORRETRESS-01",
-        "Used Grass Energy attached by Exploding Energy to pay the Active "
-        "Pokémon's Retreat Cost and promote Regidrago.");
+        skyliner_free_retreat
+            ? "Skyliner removed the Basic Active's Retreat Cost and promoted Regidrago without discarding Energy."
+            : "Used Grass Energy attached by Exploding Energy to pay the Active Pokémon's Retreat Cost and promote Regidrago.");
   return true;
 }
 

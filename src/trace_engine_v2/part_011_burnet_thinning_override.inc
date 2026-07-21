@@ -16,7 +16,8 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
     // https://github.com/FlareZ123/pokemon-sims/issues/719
     const bool vstar_search_route = hand_count(Card::RegidragoVstar) > 0 ||
-        held_item_can_find_pending_vstar();
+        held_item_can_find_pending_vstar() ||
+        issue_1221_burnet_then_treasure_route_available();
     const bool active_regi_can_evolve = state_.active &&
         state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn && vstar_search_route;

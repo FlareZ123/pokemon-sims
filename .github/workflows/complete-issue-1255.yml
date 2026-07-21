@@ -1,8 +1,8 @@
 name: Complete issue 1255 current-main patch
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches: [fix/issue-1255-evolution-incense-v2]
 
 permissions:
   contents: write

@@ -33,11 +33,27 @@ jobs:
       - name: Apply complete issue patch
         run: python scripts/complete_issue_1254_patch.py
       - name: Build and run focused regression
+        id: focused
+        continue-on-error: true
         run: |
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release > configure.log 2>&1 || { cat configure.log; exit 1; }
-          cmake --build build --parallel 2 > build.log 2>&1 || { tail -n 160 build.log; exit 1; }
-          ./build/regidrago_unified_tests issue_1254_ultra_ball_appletun_tests > primary-test.log 2>&1 || { cat primary-test.log; exit 1; }
-          ./build/regidrago_unified_tests issue_1254_ultra_ball_appletun_continuation_tests > continuation-test.log 2>&1 || { cat continuation-test.log; exit 1; }
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release > configure.log 2>&1 || exit 1
+          cmake --build build --parallel 2 > build.log 2>&1 || exit 1
+          ./build/regidrago_unified_tests issue_1254_ultra_ball_appletun_tests > primary-test.log 2>&1 || exit 1
+          ./build/regidrago_unified_tests issue_1254_ultra_ball_appletun_continuation_tests > continuation-test.log 2>&1 || exit 1
+      - name: Upload focused diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1254-focused-diagnostics
+          path: |
+            configure.log
+            build.log
+            primary-test.log
+            continuation-test.log
+          if-no-files-found: ignore
+      - name: Enforce focused validation
+        if: steps.focused.outcome != 'success'
+        run: exit 1
       - name: Run three simulate-this audits
         run: |
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee issue-1254-trace-1.txt

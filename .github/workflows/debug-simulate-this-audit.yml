@@ -1,0 +1,36 @@
+name: Debug simulate-this audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record source revision
+        run: git rev-parse HEAD | tee audited-commit.txt
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel 2
+      - name: Audit shell strict-JIT going second
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-shell-strict-second-seed-1.txt
+      - name: Audit shell matchup-flex going second
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-shell-flex-second-seed-3.txt
+      - name: Audit Pineco strict-JIT going second
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-pineco-strict-second-seed-35.txt
+      - name: Upload traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-simulate-this-traces
+          path: |
+            audited-commit.txt
+            trace-*.txt
+          if-no-files-found: error

@@ -29,7 +29,11 @@ jobs:
           git fetch origin main
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git merge --no-edit origin/main
+          git merge --no-commit origin/main || true
+          git checkout --theirs -- docs results
+          git add docs results
+          test -z "$(git diff --name-only --diff-filter=U)"
+          git commit --no-edit
       - name: Apply complete issue patch
         run: python scripts/complete_issue_1255_patch.py
       - name: Build and run focused regressions
@@ -67,8 +71,8 @@ jobs:
           python scripts/update_multi_deck_docs.py --repo-root .
       - name: Commit current-main patch
         run: |
-          git add -A
+          git add src/trace_engine_v2/part_empty_deck_search_override.inc src/trace_engine_v2/part_013_legacy_star_override.inc src/trace_engine_v2/part_forretress_ex_combo.inc tests/issue_1255_evolution_incense_appletun_continuation_tests.cpp docs results
+          git add -u .github/workflows/complete-issue-1255.yml scripts/complete_issue_1255_patch.py
           git diff --cached --check
-          git status --short
           git commit -m "Complete Appletun Evolution Incense routes"
           git push --force-with-lease origin HEAD:fix/issue-1255-evolution-incense-appletun

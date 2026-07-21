@@ -1,0 +1,120 @@
+name: Debug three-trace audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: debug-three-trace-audit-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  shell-strict-jit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+      - name: Audit shell strict-JIT trace
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Earliest complete route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Regidrago VSTAR Apex Dragon and Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official turn, Item, search, discard, evolution, attachment, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-shell-strict-jit.txt
+          grep -Eq "T[23] \| READY" trace-shell-strict-jit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-shell-strict-jit
+          path: trace-shell-strict-jit.txt
+          if-no-files-found: error
+
+  shell-matchup-flex:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+      - name: Audit shell matchup-flex trace
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Matchup-flex JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+          # Mysterious Treasure card text: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Earthen Vessel card text: https://api.pokemontcg.io/v2/cards/sv4-163
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-shell-matchup-flex.txt
+          grep -q "T2 | READY" trace-shell-matchup-flex.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-shell-matchup-flex
+          path: trace-shell-matchup-flex.txt
+          if-no-files-found: error
+
+  pineco-strict-jit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+      - name: Audit Pineco strict-JIT trace
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Registered Pineco recipe specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#named-deck-recipes
+          # Secret Box card identity: https://api.pokemontcg.io/v2/cards/sv6-163
+          # Appletun exact Stage 1 Dragon payload: https://api.pokemontcg.io/v2/cards/sv8-140
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-pineco-strict-jit.txt
+          grep -q "Secret Box discarded three other cards" trace-pineco-strict-jit.txt
+          grep -q "T2 | READY" trace-pineco-strict-jit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-pineco-strict-jit
+          path: trace-pineco-strict-jit.txt
+          if-no-files-found: error
+
+  full-validation-and-matrices:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Package exact source snapshot
+        run: git archive --format=zip --output=repository-source.zip HEAD
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Generate canonical shell and paired matrices
+        run: |
+          # Matrix specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-canonical-shell-baseline
+          # Paired two-deck specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir audit-results --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir audit-results --trials 100000 --matrix-seed 20260705
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: debug-audit-source-tests-matrices
+          path: |
+            repository-source.zip
+            audit-results
+            build/Testing
+          if-no-files-found: error

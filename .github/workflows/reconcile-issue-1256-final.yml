@@ -1,0 +1,56 @@
+name: Reconcile issue 1256 final
+
+on:
+  push:
+    branches: [fix/issue-1256-appletun-blender-final]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: reconcile-issue-1256-final
+  cancel-in-progress: true
+
+jobs:
+  reconcile:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-1256-appletun-blender-final
+          fetch-depth: 0
+      - name: Merge current main and resolve generated evidence
+        run: |
+          git fetch origin main
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git merge --no-commit origin/main || true
+          git checkout --theirs -- docs results
+          git add docs results
+          test -z "$(git diff --name-only --diff-filter=U)"
+          git commit --no-edit
+      - name: Build and run focused regression
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ./build/regidrago_unified_tests issue_1256_appletun_blender_tests
+      - name: Run three simulate-this audits
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee issue-1256-trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-1256-trace-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee issue-1256-trace-3.txt
+      - name: Regenerate source-bound matrices
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe ./build/regidrago_sim --out-dir results --max-seed 20 --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe ./build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Commit reconciled branch
+        run: |
+          rm -f results/*.lock results/.*.lock
+          git add docs/REPORT.md docs/MULTI_DECK_REPORT.md results/baseline_manifest.json results/simulation_results.csv results/multi_deck_comparison.csv results/multi_deck_manifest.json
+          git diff --cached --check
+          git commit -m "Regenerate issue 1256 evidence on current main"
+          git push --force-with-lease origin HEAD:fix/issue-1256-appletun-blender-final

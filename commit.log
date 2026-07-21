@@ -1,0 +1,4 @@
+ M scripts/apply_issue_1259_v2_patch.py
+ M src/trace_engine_v2/part_012_gladion_override.inc
+?? commit.log
+?? tests/issue_1259_gladion_appletun_tests.cpp

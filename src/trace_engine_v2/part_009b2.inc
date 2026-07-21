@@ -1,3 +1,6 @@
+#undef has_payable_payload_outlet_after_costed_search
+#undef choose_discard
+
                            (target == Card::DialgaGX && want_payload);
       if (desired && move_deck_to_hand(target)) {
         shuffle(state_.deck);

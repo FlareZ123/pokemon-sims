@@ -17,23 +17,26 @@ jobs:
           ref: enhancement/1118-multi-deck-secret-box
           fetch-depth: 0
       - name: Decode issue 1118 archive
+        if: ${{ hashFiles('.issue1118/payload.part001') != '' }}
         shell: bash
         run: |
           set -euo pipefail
           cat .issue1118/payload.part* > "$RUNNER_TEMP/issue1118.b64"
           base64 -d "$RUNNER_TEMP/issue1118.b64" > "$RUNNER_TEMP/issue1118.tar.xz"
       - name: Verify issue 1118 archive checksum
+        if: ${{ hashFiles('.issue1118/payload.part001') != '' }}
         shell: bash
         run: echo "72ed3eb7be7ad618579d02b1c4d5e62ffdd6337b99674ffe458b3a746b4ef2c7  $RUNNER_TEMP/issue1118.tar.xz" | sha256sum -c -
       - name: Extract issue 1118 readable source
+        if: ${{ hashFiles('.issue1118/payload.part001') != '' }}
         shell: bash
         run: tar -xJf "$RUNNER_TEMP/issue1118.tar.xz"
       - name: Stage issue 1118 readable source
+        if: ${{ hashFiles('.issue1118/payload.part001') != '' }}
         shell: bash
         run: |
           set -euo pipefail
           rm -rf .issue1118
-          rm -f .github/workflows/materialize-1118.yml
           rm -f .issue1118-delete-list.txt
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
@@ -41,8 +44,10 @@ jobs:
           git status --short
           git diff --cached --stat
       - name: Commit issue 1118 readable source
+        if: ${{ hashFiles('.issue1118/payload.part001') != '' }}
         shell: bash
         run: git commit -m "Implement multi-deck Secret Box Pineco simulation (#1118)"
       - name: Push issue 1118 readable source
+        if: ${{ hashFiles('.issue1118/payload.part001') != '' }}
         shell: bash
         run: git push origin HEAD:enhancement/1118-multi-deck-secret-box

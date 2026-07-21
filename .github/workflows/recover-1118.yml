@@ -1,0 +1,28 @@
+name: Recover issue 1118 source bundle
+
+on:
+  push:
+    branches: [tmp/1118-blob-recovery]
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct and verify archive
+        run: |
+          cat part0.bin part1.bin part2.bin > "$RUNNER_TEMP/recovered-1118.tar.gz"
+          sha256sum "$RUNNER_TEMP/recovered-1118.tar.gz" | tee "$RUNNER_TEMP/recovered-1118.sha256"
+          tar -tzf "$RUNNER_TEMP/recovered-1118.tar.gz" > "$RUNNER_TEMP/recovered-1118-files.txt"
+          test -s "$RUNNER_TEMP/recovered-1118-files.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: recovered-1118-source
+          path: |
+            ${{ runner.temp }}/recovered-1118.tar.gz
+            ${{ runner.temp }}/recovered-1118.sha256
+            ${{ runner.temp }}/recovered-1118-files.txt
+          if-no-files-found: error

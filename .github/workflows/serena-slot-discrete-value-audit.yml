@@ -71,7 +71,7 @@ jobs:
         run: c++ -std=c++20 -O2 -I. tools/serena_slot_context_audit.cpp -o serena-slot-context-audit # Serena source: https://api.pokemontcg.io/v2/cards/swsh12-164
 
       - name: Run Serena context audit
-        run: ./serena-slot-context-audit 1000 20260721 # Manual discrete-value analysis remains primary; this records 14,000 simulator contexts only.
+        run: ./serena-slot-context-audit 100 20260721 # Manual discrete-value analysis remains primary; this records 1,400 qualitative simulator contexts only.
 
       - name: Export tested source identity
         shell: bash

@@ -1,9 +1,28 @@
   bool issue_1022_banked_route_{false};
 
+  bool issue_1022_items_locked_by_turn_four() const {
+    // The route needs Forest Seal Stone and Mysterious Treasure on T4, so every
+    // full or scheduled Item lock blocks the projection even when Items are legal on T1:
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Core Item procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1195
+    return scenario_.locks == LockMode::FullItem ||
+        scenario_.locks == LockMode::FullCombined ||
+        scenario_.locks == LockMode::TurnTwoItem;
+  }
+
   bool wonder_tag_can_bank_steven_for_known_t4_fss_route() const {
+    // Field Blower removes Path to the Peak, so Wonder Tag is live once the active
+    // lock state is cleared. Star Alchemy remains usable through Path itself:
+    // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
+    // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Forest Seal Stone ruling: https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1195
     if (state_.turn != 1 || !scenario_.going_first ||
-        scenario_.dci != DciProfile::StrictJit ||
-        scenario_.locks != LockMode::None || scenario_.max_turn < 4 ||
+        scenario_.dci != DciProfile::StrictJit || rule_box_abilities_locked() ||
+        issue_1022_items_locked_by_turn_four() || scenario_.max_turn < 4 ||
         !deck_seen_ || state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::Oricorio || state_.retreat_used ||
         bench_space() <= 0 || !need_regi() ||
@@ -43,9 +62,14 @@
   }
 
   bool banked_steven_has_known_t4_fss_route() const {
+    // Wonder Tag has already resolved. The remaining route is legal under a
+    // removed Path, while future Item lock still blocks its T4 Tool and search Items:
+    // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
+    // Forest Seal Stone ruling: https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1195
     return issue_1022_banked_route_ && state_.turn == 2 &&
         scenario_.going_first && scenario_.dci == DciProfile::StrictJit &&
-        scenario_.locks == LockMode::None && scenario_.max_turn >= 4 &&
+        !issue_1022_items_locked_by_turn_four() && scenario_.max_turn >= 4 &&
         supporter_allowed() && deck_seen_ && state_.active &&
         state_.active->card == Card::Oricorio && state_.active->grass >= 1 &&
         !state_.manual_energy_used && !state_.retreat_used && need_regi() &&

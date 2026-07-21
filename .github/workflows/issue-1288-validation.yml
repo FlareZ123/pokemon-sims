@@ -1,0 +1,96 @@
+name: Issue 1288 validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1288-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-commit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-1288-mysterious-treasure-appletun-outlet
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Apply focused source fix
+        run: python .github/issue-1288-bootstrap.py
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and unified tests
+        run: cmake --build build --parallel 2
+      - name: Run focused and adjacent regressions
+        shell: bash
+        run: |
+          set +e
+          set -uo pipefail
+          status=0
+          for case_name in \
+            issue_1288_mysterious_treasure_appletun_outlet_tests \
+            issue_1287_ultra_ball_appletun_outlet_tests \
+            issue_1253_mysterious_treasure_appletun_tests \
+            costed_search_target_outlet_tests
+          do
+            ./build/regidrago_unified_tests "$case_name" 2>&1 | tee "focused-${case_name}.txt"
+            if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+              status=1
+            fi
+          done
+          exit "$status"
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Earliest legal ready-state policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Regidrago VSTAR Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee issue-1288-trace-1.txt
+          grep -Eq "T[23] \| READY" issue-1288-trace-1.txt
+          # Official turn, Item, search, discard, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-1288-trace-2.txt
+          grep -q "T2 | READY" issue-1288-trace-2.txt
+          # Registered Pineco recipe specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#named-deck-recipes
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee issue-1288-trace-3.txt
+          grep -q "Secret Box discarded three other cards" issue-1288-trace-3.txt
+          grep -q "T2 | READY" issue-1288-trace-3.txt
+      - name: Regenerate source-bound setup matrices and reports
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Commit validated source and evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/trace_engine_v2/part_012_override.inc tests/issue_1288_mysterious_treasure_appletun_outlet_tests.cpp results docs
+          if git diff --cached --quiet; then
+            echo "No validated changes remain to commit."
+            exit 0
+          fi
+          git commit -m "Fix Appletun Mysterious Treasure outlet projection"
+          git push
+      - name: Upload focused validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1288-validation-${{ github.run_attempt }}
+          path: |
+            focused-*.txt
+            issue-1288-trace-*.txt
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            build/Testing
+          if-no-files-found: warn

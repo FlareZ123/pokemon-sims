@@ -68,8 +68,9 @@
   // Brilliant Blender and Professor Burnet can only place deck cards in discard:
   // https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   bool payload_might_be_in_deck() const {
-    return might_be_unseen(Card::MegaDragonite) || might_be_unseen(Card::Dragapult) ||
-           might_be_unseen(Card::GoodraVstar) || might_be_unseen(Card::DialgaGX);
+    return might_be_unseen(Card::Appletun) || might_be_unseen(Card::MegaDragonite) ||
+           might_be_unseen(Card::Dragapult) || might_be_unseen(Card::GoodraVstar) ||
+           might_be_unseen(Card::DialgaGX);
   }
 
   bool has_live_blender_payload_line() const {
@@ -120,7 +121,7 @@
       return hand_count(card) > excluded;
     };
     if (permit_payload) {
-      for (const Card card : {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::DialgaGX}) {
+      for (const Card card : {Card::Appletun, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::DialgaGX}) {
         if (hand_count(card) > 0) return card;
       }
     }
@@ -128,7 +129,7 @@
       const int held_payloads = static_cast<int>(std::count_if(
           state_.hand.begin(), state_.hand.end(), is_payload));
       if (held_payloads >= 2) {
-        for (const Card card : {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::DialgaGX}) {
+        for (const Card card : {Card::Appletun, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::DialgaGX}) {
           if (hand_count(card) > 0) return card;
         }
       }
@@ -136,6 +137,16 @@
 
     // Dipplin cannot be legally put into play without Applin, which is absent from this deck.
     if (hand_count(Card::Dipplin) > 0) return Card::Dipplin;
+
+    // Grant and Wishful Baton have no setup-axis value in these goldfish recipes.
+    // Grant remains recoverable from discard through its printed auxiliary effect,
+    // while Wishful Baton requires an opponent attack Knock Out that this model does
+    // not simulate:
+    // https://api.pokemontcg.io/v2/cards/swsh10-144
+    // https://api.pokemontcg.io/v2/cards/sm3-128
+    // https://github.com/FlareZ123/pokemon-sims/issues/1118
+    if (has_discardable_copy(Card::Grant)) return Card::Grant;
+    if (has_discardable_copy(Card::WishfulBaton)) return Card::WishfulBaton;
 
     if (hand_count(Card::RegidragoV) > 0 && in_play_count(Card::RegidragoV) >= 2) return Card::RegidragoV;
     if (hand_count(Card::RegidragoVstar) > 0 && has_vstar()) return Card::RegidragoVstar;
@@ -223,7 +234,7 @@
       // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CARD_AUDIT.md#erikas-invitation
       // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
       // https://github.com/FlareZ123/pokemon-sims/issues/852
-      for (const Card card : {Card::ErikasInvitation, Card::Guzma, Card::Channeler, Card::FieldBlower,
+      for (const Card card : {Card::Grant, Card::WishfulBaton, Card::ErikasInvitation, Card::Guzma, Card::Channeler, Card::FieldBlower,
                               Card::ChaoticSwell, Card::PathToPeak, Card::TeamYellsCheer,
                               Card::RoseannesBackup, Card::Lusamine, Card::ProfessorTuro,
                               Card::Powerglass}) {
@@ -232,7 +243,7 @@
     }
 
     if (scenario_.dci == DciProfile::NoDiscardControl) {
-      for (const Card card : {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::DialgaGX}) {
+      for (const Card card : {Card::Appletun, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::DialgaGX}) {
         if (hand_count(card) > 0) return card;
       }
     }

@@ -61,7 +61,7 @@ Their discrete value is still preserved in the DCI profiles and swap discussion.
 
 ### Card-swap variants
 
-Matched-seed aggregate card-swap comparisons are currently unavailable. The active CLI emits baseline scenario rows only, and the prior aggregate variant artifact was removed after the policy rewrite: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L271-L283 and https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7. Isolated tests may construct temporary variant recipes to verify source-bound cards and connector combinations that are absent from the sample deck; those recipes must not enter canonical CLI rows or committed aggregate results. Any future probability claim for a deck swap requires a restored aggregate variant builder, executable tests, and newly generated results.
+Matched-seed named-deck comparisons are available through `--all-decks` and `scripts/generate_multi_deck_comparison.py`. The registry contains `regidrago-shell` and `regidrago-pineco`. Both decks use the same derived seed for each scenario, every row includes the deck ID, and the committed comparison is bound to the complete simulator source digest.
 
 ### Policy versus future-card oracle
 
@@ -142,3 +142,11 @@ A point difference smaller than roughly two combined standard errors should be t
 ## Windows build and result-write behavior
 
 The project is designed for Windows 11 CMake builds. The C++ result writer uses an exclusive lock file and an atomic temporary-file replacement. The audit script uses the equivalent Windows lock path through `msvcrt`, with a POSIX fallback for the current automated verification environment.
+
+### Named-deck ownership
+
+Deck ownership is separate from action policy. The shell remains the default and preserves its historical scenario seed schedule. Pineco-specific route policy is gated by recipe capabilities, including Secret Box, Pineco, Forretress ex, Dawn, and Forest of Vitality. The withdrawn Pineco Brilliant Blender recipe is absent. Unknown deck IDs fail before simulation.
+
+Appletun `sv8-140` is a Stage 1 Dragon. It satisfies the modeled Apex Dragon payload condition when discarded, while the absence of Applin prevents every in-play Appletun route: https://api.pokemontcg.io/v2/cards/sv8-140.
+
+Secret Box planning uses only observable state. Legal deck inspection may establish K1 Prize knowledge. Gladion can recover a known prized axis, while no policy reads debug-only Prize output. Costs, Bench space, first-turn evolution, Stadium use, Supporter use, Item locks, Rule Box Ability locks, and the shared VSTAR Power are checked before route admission.

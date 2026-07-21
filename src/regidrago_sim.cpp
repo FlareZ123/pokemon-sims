@@ -22,6 +22,8 @@
 // Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152
 // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
 // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+// Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+// Appletun: https://api.pokemontcg.io/v2/cards/sv8-140
 // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
 // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
 // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
@@ -276,6 +278,7 @@
 #include "trace_engine_v2/part_issue_1167_treasure_vessel_override.inc"
 #undef play_mysterious_treasure
 #include "trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc"
+#include "trace_engine_v2/part_issue_1118_secret_box.inc"
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #include "trace_engine_v2/part_014c.inc"

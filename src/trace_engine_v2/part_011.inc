@@ -114,7 +114,7 @@
     state_.discard.push_back(Card::ProfessorBurnet);
     state_.supporter_used = true;
     std::vector<Card> discarded;
-    for (const Card card : {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::DialgaGX}) {
+    for (const Card card : {Card::Appletun, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::DialgaGX}) {
       if (move_deck_to_discard(card)) { discarded.push_back(card); break; }
     }
     if (move_deck_to_discard(Card::Dipplin)) discarded.push_back(Card::Dipplin);

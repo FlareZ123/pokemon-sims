@@ -1,8 +1,10 @@
     case Card::Oricorio: return "Oricorio GRI 55";
     case Card::Dipplin: return "Dipplin TWM 127";
+    case Card::Appletun: return "Appletun sv8-140";
     case Card::Pineco: return "Pineco";
     case Card::ForretressEx: return "Forretress ex";
     case Card::BrilliantBlender: return "Brilliant Blender";
+    case Card::SecretBox: return "Secret Box";
     case Card::MysteriousTreasure: return "Mysterious Treasure";
     case Card::QuickBall: return "Quick Ball";
     case Card::UltraBall: return "Ultra Ball";
@@ -10,6 +12,7 @@
     case Card::PokemonCommunication: return "Pokémon Communication";
     case Card::EarthenVessel: return "Earthen Vessel";
     case Card::Dawn: return "Dawn";
+    case Card::Grant: return "Grant";
     case Card::Arven: return "Arven";
     case Card::Crispin: return "Crispin";
     case Card::ProfessorBurnet: return "Professor Burnet";
@@ -25,6 +28,7 @@
     case Card::ProfessorTuro: return "Professor Turo's Scenario";
     case Card::ErikasInvitation: return "Erika's Invitation";
     case Card::ForestSealStone: return "Forest Seal Stone";
+    case Card::WishfulBaton: return "Wishful Baton";
     case Card::Powerglass: return "Powerglass";
     case Card::FieldBlower: return "Field Blower";
     case Card::ChaoticSwell: return "Chaotic Swell";
@@ -68,6 +72,7 @@ constexpr bool is_pokemon(const Card card) {
     case Card::MawileGX:
     case Card::Oricorio:
     case Card::Dipplin:
+    case Card::Appletun:
     case Card::Pineco:
     case Card::ForretressEx:
       return true;
@@ -113,6 +118,7 @@ constexpr bool is_dragon_or_psychic(const Card card) {
     case Card::LatiasEx:
     case Card::Oricorio:
     case Card::Dipplin:
+    case Card::Appletun:
       return true;
     default:
       return false;
@@ -125,13 +131,32 @@ constexpr bool is_dragon_or_psychic(const Card card) {
 // Dipplin never satisfies readiness or opens a payload-discard route.
 constexpr bool is_payload(const Card card) {
   return card == Card::Dragapult || card == Card::MegaDragonite || card == Card::DialgaGX ||
-         card == Card::GoodraVstar;
+         card == Card::GoodraVstar || card == Card::Appletun;
+}
+
+constexpr int retreat_cost(const Card card) {
+  // Printed Retreat Costs for the opening-position recovery modeled by the
+  // Pineco/Forretress ex route:
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+  // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+  switch (card) {
+    case Card::TapuLeleGX: return 1;
+    case Card::Pineco: return 2;
+    case Card::DialgaGX: return 3;
+    case Card::RegidragoV: return 2;
+    case Card::RegidragoVstar: return 3;
+    case Card::LatiasEx: return 1;
+    case Card::Oricorio: return 1;
+    default: return 0;
+  }
 }
 
 constexpr bool is_energy(const Card card) { return card == Card::Grass || card == Card::Fire; }
 constexpr bool is_supporter(const Card card) {
   switch (card) {
     case Card::Dawn:
+    case Card::Grant:
     case Card::Arven:
     case Card::Crispin:
     case Card::ProfessorBurnet:

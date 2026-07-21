@@ -84,11 +84,17 @@ The model uses `sv8-76`, the 210 HP Psychic ex whose Skyliner makes Basic Pokém
 
 The target needs the Dragon print. The audit uses `sm5-100`; metal-type Dialga-GX prints are excluded from Apex Dragon’s Dragon-only selection condition.
 
-### Test-only Dawn, Forest of Vitality, Pineco, and Forretress ex support
+### Dawn, Forest of Vitality, Pineco, and Forretress ex
 
-The simulator also supports a temporary variant recipe containing Dawn `me2-87`, Forest of Vitality `me1-117`, Pineco `sv4pt5-1`, and Forretress ex `sv4pt5-2`. The recipe remains outside `baseline_recipe()`, the CLI aggregate scenario matrix, and committed baseline results. Dawn's Basic, Stage 1, and Stage 2 searches are independent optional selections. Forest of Vitality preserves the first-turn evolution prohibition and allows Pineco to evolve into Grass-type Forretress ex on its entry turn from turn two onward.
+The registered `regidrago-pineco` recipe contains Dawn `me2-87`, Forest of Vitality `me1-117`, Pineco `sv4pt5-1`, and Forretress ex `sv4pt5-2`. Dawn's Basic, Stage 1, and Stage 2 searches are independent optional selections. Forest of Vitality preserves the first-turn evolution prohibition and allows Pineco to evolve into Grass-type Forretress ex on its entry turn from turn two onward. Exploding Energy searches up to five Basic Grass Energy, attaches them, shuffles, and Knocks Out Forretress ex.
 
-Direct card sources: https://api.pokemontcg.io/v2/cards/me2-87 https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://github.com/FlareZ123/pokemon-sims/issues/1096
+Direct card sources: https://api.pokemontcg.io/v2/cards/me2-87 https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://github.com/FlareZ123/pokemon-sims/issues/1118
+
+## Named recipe validation
+
+The registry contains `regidrago-shell` and `regidrago-pineco`. The Pineco recipe contains exactly 60 cards and one ACE SPEC, Secret Box `sv6-163`. It contains one Appletun `sv8-140`, which is a Stage 1 Dragon and legal Apex Dragon discard payload. No Applin is present, so Appletun can never be chosen as an opening Basic, Benched from hand, or evolved in play. The withdrawn Pineco Brilliant Blender recipe is not registered.
+
+Secret Box discards three other cards before independently searching up to one Item, Pokémon Tool, Supporter, and Stadium. The route planner reserves any additional Item discard cost, models Bench and action contention, and admits only executable combinations.
 
 ## Paper legality versus Pokémon TCG Live availability
 

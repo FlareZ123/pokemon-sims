@@ -63,6 +63,8 @@ def find_trace_seed(executable: Path, scenario: str, deadline: int, max_seed: in
             [
                 str(executable),
                 "--simulate-this",
+                "--deck",
+                "regidrago-shell",
                 "--scenario",
                 scenario,
                 "--seed",
@@ -112,6 +114,7 @@ def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, m
     trace_dir.mkdir(parents=True, exist_ok=True)
 
     manifest: dict[str, object] = {
+        "deck": "regidrago-shell",
         "matrix_seed": matrix_seed,
         "trials": trials,
         # Bind the published matrix to every aggregate simulator input, including

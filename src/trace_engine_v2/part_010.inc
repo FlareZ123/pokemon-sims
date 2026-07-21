@@ -151,7 +151,7 @@
     remove_one(state_.hand, Card::BrilliantBlender);
     state_.discard.push_back(Card::BrilliantBlender);
     std::vector<Card> discarded;
-    for (const Card payload : {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::DialgaGX}) {
+    for (const Card payload : {Card::Appletun, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::DialgaGX}) {
       if (move_deck_to_discard(payload)) { discarded.push_back(payload); break; }
     }
     if (move_deck_to_discard(Card::Dipplin)) discarded.push_back(Card::Dipplin);

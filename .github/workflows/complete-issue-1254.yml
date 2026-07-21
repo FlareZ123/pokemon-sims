@@ -34,10 +34,10 @@ jobs:
         run: python scripts/complete_issue_1254_patch.py
       - name: Build and run focused regression
         run: |
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --parallel 2
-          ./build/regidrago_unified_tests issue_1254_ultra_ball_appletun_tests
-          ./build/regidrago_unified_tests issue_1254_ultra_ball_appletun_continuation_tests
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release > configure.log 2>&1 || { cat configure.log; exit 1; }
+          cmake --build build --parallel 2 > build.log 2>&1 || { tail -n 160 build.log; exit 1; }
+          ./build/regidrago_unified_tests issue_1254_ultra_ball_appletun_tests > primary-test.log 2>&1 || { cat primary-test.log; exit 1; }
+          ./build/regidrago_unified_tests issue_1254_ultra_ball_appletun_continuation_tests > continuation-test.log 2>&1 || { cat continuation-test.log; exit 1; }
       - name: Run three simulate-this audits
         run: |
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee issue-1254-trace-1.txt

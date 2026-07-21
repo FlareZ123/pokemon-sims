@@ -1,0 +1,121 @@
+name: Issue 1195 Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Apply guarded issue 1195 fix
+        run: python3 scripts/apply_issue_1195.py # Confirmed issue: https://github.com/FlareZ123/pokemon-sims/issues/1195
+
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release # Build contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2 # Test contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+
+      - name: Run focused route and lock tests
+        run: ./build/regidrago_unified_tests issue_1022_wonder_tag_steven_fss_tests # Field Blower, Path, Wonder Tag, FSS: https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/swsh6-148 https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/swsh12-156
+
+      - name: Run six independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Official turn, Trainer, Ability, attachment, evolution, retreat, attack, and Prize procedures: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Earliest deterministic route and hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 293 | tee pass-1-strict-first-seed-293.txt # Steven-FSS route: https://github.com/FlareZ123/pokemon-sims/issues/1022
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 25 | tee pass-2-turn2-item-lock-seed-25.txt # Item lock control: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-combined-lock/go-first --seed 37 | tee pass-3-combined-lock-seed-37.txt # Combined lock control: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#combined-lock
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 11 | tee pass-4-strict-second-seed-11.txt # Open review issue: https://github.com/FlareZ123/pokemon-sims/issues/1197
+          ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 341 | tee pass-5-no-control-second-seed-341.txt # Open review issue: https://github.com/FlareZ123/pokemon-sims/issues/1199
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-first --seed 47 | tee pass-6-flex-first-seed-47.txt # JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+
+      - name: Validate with AddressSanitizer
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-asan -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address'
+          cmake --build build-asan --parallel 2
+          ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 ./build-asan/regidrago_unified_tests issue_1022_wonder_tag_steven_fss_tests # Sanitizer contract: https://github.com/FlareZ123/pokemon-sims/issues/1195
+
+      - name: Validate with UndefinedBehaviorSanitizer
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-ubsan -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=undefined -fno-sanitize-recover=all' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=undefined'
+          cmake --build build-ubsan --parallel 2
+          UBSAN_OPTIONS=halt_on_error=1 ./build-ubsan/regidrago_unified_tests issue_1022_wonder_tag_steven_fss_tests # Sanitizer contract: https://github.com/FlareZ123/pokemon-sims/issues/1195
+
+      - name: Regenerate canonical traces and 100000-trial matrix
+        run: python3 scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705 # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+
+      - name: Update synchronized setup documents
+        run: python3 scripts/update_setup_docs.py --repo-root . # Provenance contract: https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure # Repository validation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+
+      - name: Review matrix shape and T2 T3 values
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import csv
+          from pathlib import Path
+          path = Path('results/simulation_results.csv')
+          with path.open(newline='', encoding='utf-8') as handle:
+              rows = list(csv.DictReader(handle))
+          if len(rows) != 14:
+              raise SystemExit(f'expected 14 scenarios, found {len(rows)}')
+          for row in rows:
+              print(row['scenario'], row['ready_by_t2_pct'], row['ready_by_t3_pct'])
+          PY
+
+      - name: Run broad static risk scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -RInE 'TODO|FIXME|HACK|XXX|future.*draw|hidden.*order|prize|discard|lock|Supporter|Item|Quick Ball|Steven|Celestial Roar|Mysterious Treasure|Gladion|Tate|Burnet|Latias|retreat|evolv' src tests docs data scripts > static-risk-scan.txt || true # Audit scope: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
+
+      - name: Commit validated source and provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm scripts/apply_issue_1195.py .github/workflows/issue-1195-validation.yml
+          git add src tests results docs README.md
+          git commit -m 'Fix removed Path Steven-FSS route (#1195)'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1195-validation-${{ github.run_attempt }}
+          path: |
+            pass-*.txt
+            results/simulation_results.csv
+            results/baseline_manifest.json
+            results/traces
+            docs/REPORT.md
+            docs/TRACE_AUDIT.md
+            static-risk-scan.txt
+            build/Testing
+          if-no-files-found: error

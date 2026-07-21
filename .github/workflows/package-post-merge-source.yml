@@ -1,0 +1,22 @@
+name: Package post-merge source
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package exact source
+        run: git archive --format=zip --output=post-merge-source.zip HEAD
+      - uses: actions/upload-artifact@v4
+        with:
+          name: post-merge-source
+          path: post-merge-source.zip
+          if-no-files-found: error

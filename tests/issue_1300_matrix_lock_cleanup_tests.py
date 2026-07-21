@@ -42,8 +42,10 @@ def exercise_generator(module: ModuleType, *, fail: bool) -> None:
             if fail:
                 raise RuntimeError("The failure control unexpectedly succeeded.")
 
-        # The generators own only the random temporary path and its matching
-        # simulator lock. Final-output locking remains in the simulator:
+        # Both source-bound generator entry points own only their random temporary
+        # path and matching simulator lock. Final-output locking remains in the simulator:
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/generate_multi_deck_comparison.py
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
         # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_015.inc#L113-L170
         # https://github.com/FlareZ123/pokemon-sims/issues/1300
         if list(directory.glob(".*.tmp")) or list(directory.glob(".*.tmp.lock")):

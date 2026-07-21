@@ -53,8 +53,16 @@ sim::State complete_route_state() {
 
 sim::Engine make_engine(const sim::LockMode lock, const std::uint64_t seed,
                         sim::State state) {
-  const sim::Scenario scenario{"issue-1208", sim::DciProfile::StrictJit,
-                               lock, true, 5};
+  static const sim::Scenario no_lock{"issue-1208", sim::DciProfile::StrictJit,
+                                     sim::LockMode::None, true, 5};
+  static const sim::Scenario item_lock{"issue-1208", sim::DciProfile::StrictJit,
+                                       sim::LockMode::FullItem, true, 5};
+  static const sim::Scenario ability_lock{
+      "issue-1208", sim::DciProfile::StrictJit,
+      sim::LockMode::FullRuleBoxAbility, true, 5};
+  const sim::Scenario& scenario = lock == sim::LockMode::FullItem
+      ? item_lock
+      : lock == sim::LockMode::FullRuleBoxAbility ? ability_lock : no_lock;
   static const sim::DeckRecipe recipe = sim::baseline_recipe();
   static std::mt19937_64 rng;
   rng.seed(seed);

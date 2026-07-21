@@ -91,7 +91,8 @@ void erase_one(std::vector<sim::Card>& cards, const sim::Card card) {
 
 void test_t1_dynamic_grass_cost_and_exact_search() {
   std::mt19937_64 rng{120901};
-  sim::Engine engine = make_engine(strict_first(), rng, t1_route_state());
+  const sim::Scenario scenario = strict_first();
+  sim::Engine engine = make_engine(scenario, rng, t1_route_state());
 
   // Quick Ball may spend one of two held Grass only because the observable graph
   // preserves the second Grass for T1 and proves the K1 Treasure -> Tapu -> Crispin
@@ -118,9 +119,10 @@ void test_t1_dynamic_grass_cost_and_exact_search() {
 
 void test_lower_dci_cost_stays_ahead_of_grass() {
   std::mt19937_64 rng{120926};
+  const sim::Scenario scenario = strict_first();
   sim::State state = t1_route_state();
   state.hand.push_back(sim::Card::QuickBall);
-  sim::Engine engine = make_engine(strict_first(), rng, std::move(state));
+  sim::Engine engine = make_engine(scenario, rng, std::move(state));
 
   // A duplicate Quick Ball is ordinary lower-DCI fuel and must remain ahead of the
   // route-conditioned Grass exception:
@@ -211,9 +213,10 @@ void test_t1_missing_route_parts_protect_grass() {
 
 void test_t2_holds_arven_and_completes_route() {
   std::mt19937_64 rng{120914};
+  const sim::Scenario scenario = strict_first();
   sim::TraceLog trace;
   trace.enabled = true;
-  sim::Engine engine = make_engine(strict_first(), rng, t2_route_state(), &trace);
+  sim::Engine engine = make_engine(scenario, rng, t2_route_state(), &trace);
 
   expect(sim::EngineTestAccess::t2_completion_available(engine),
          "The exact K1 T2 route must be recognized as a complete finish.");
@@ -249,10 +252,11 @@ void test_t2_holds_arven_and_completes_route() {
 
 void test_t2_completion_does_not_require_a_drawn_energy() {
   std::mt19937_64 rng{120927};
+  const sim::Scenario scenario = strict_first();
   sim::State state = t2_route_state();
   state.bench.front().grass = 1;
   state.manual_energy_used = false;
-  sim::Engine engine = make_engine(strict_first(), rng, std::move(state));
+  sim::Engine engine = make_engine(scenario, rng, std::move(state));
 
   // With only the T1 Grass attached, Crispin still searches both Basic Energy types,
   // attaches one, and places the other in hand for the unused manual attachment:
@@ -330,11 +334,12 @@ void test_t2_controls_leave_arven_policy_live() {
               120924, "Rule Box Ability lock must block Wonder Tag and Skyliner.");
 
   std::mt19937_64 rng{120925};
+  const sim::Scenario scenario = strict_first();
   sim::State missing_fire = t2_route_state();
   erase_one(missing_fire.deck, sim::Card::Fire);
   missing_fire.deck.push_back(sim::Card::QuickBall);
   missing_fire.deck.push_back(sim::Card::ForestSealStone);
-  sim::Engine engine = make_engine(strict_first(), rng, std::move(missing_fire));
+  sim::Engine engine = make_engine(scenario, rng, std::move(missing_fire));
   sim::EngineTestAccess::choose_supporter(engine);
   const sim::State& after = sim::EngineTestAccess::state(engine);
   expect(after.supporter_used && count_card(after.discard, sim::Card::Arven) == 1,

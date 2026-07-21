@@ -67,8 +67,7 @@ jobs:
           python scripts/update_multi_deck_docs.py --repo-root .
       - name: Commit current-main patch
         run: |
-          git add -A
+          git add src/trace_engine_v2/part_empty_deck_search_override.inc src/trace_engine_v2/part_012_override.inc src/trace_engine_v2/part_forretress_ex_combo.inc tests/issue_1254_ultra_ball_appletun_continuation_tests.cpp docs results
           git diff --cached --check
-          git status --short
           git commit -m "Complete Appletun Ultra Ball routes"
           git push --force-with-lease origin HEAD:fix/issue-1254-ultra-ball-appletun

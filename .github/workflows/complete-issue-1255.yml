@@ -76,3 +76,4 @@ jobs:
           git diff --cached --check
           git commit -m "Complete Appletun Evolution Incense routes"
           git push --force-with-lease origin HEAD:fix/issue-1255-evolution-incense-appletun
+# Synchronize trigger for the completed continuation patch.

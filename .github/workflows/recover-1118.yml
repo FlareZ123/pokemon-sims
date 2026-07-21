@@ -15,17 +15,23 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Export raw recovery shards
+      - name: Recover and verify PR 1119 payload
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/recovery-shards"
-          cp part0.bin part1.bin part2.bin "$RUNNER_TEMP/recovery-shards/"
-          sha256sum part0.bin part1.bin part2.bin | tee "$RUNNER_TEMP/recovery-shards/SHA256SUMS.txt"
-          wc -c part0.bin part1.bin part2.bin | tee "$RUNNER_TEMP/recovery-shards/SIZES.txt"
-          file part0.bin part1.bin part2.bin | tee "$RUNNER_TEMP/recovery-shards/FILE_TYPES.txt"
+          git fetch --no-tags --depth=1 origin enhancement/1118-multi-deck-secret-box
+          git show FETCH_HEAD:.issue1118/payload.00 > "$RUNNER_TEMP/payload.00"
+          base64 --decode "$RUNNER_TEMP/payload.00" > "$RUNNER_TEMP/recovered-1118.tar.gz"
+          tar -tzf "$RUNNER_TEMP/recovered-1118.tar.gz" > "$RUNNER_TEMP/recovered-1118-files.txt"
+          test -s "$RUNNER_TEMP/recovered-1118-files.txt"
+          sha256sum "$RUNNER_TEMP/recovered-1118.tar.gz" | tee "$RUNNER_TEMP/recovered-1118.sha256"
+          wc -c "$RUNNER_TEMP/payload.00" "$RUNNER_TEMP/recovered-1118.tar.gz"
+          wc -l "$RUNNER_TEMP/recovered-1118-files.txt"
       - uses: actions/upload-artifact@v4
         with:
-          name: issue-1118-raw-recovery-shards
-          path: ${{ runner.temp }}/recovery-shards
+          name: recovered-1118-source
+          path: |
+            ${{ runner.temp }}/recovered-1118.tar.gz
+            ${{ runner.temp }}/recovered-1118.sha256
+            ${{ runner.temp }}/recovered-1118-files.txt
           if-no-files-found: error

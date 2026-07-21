@@ -26,6 +26,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git merge --no-edit origin/main
+      - name: Preserve temporary branch files
+        run: >-
+          python -c "from pathlib import Path; p=Path('scripts/apply_issue_1259_v2_patch.py'); s=p.read_text(); old='    SCRIPT.unlink()\n    WORKFLOW.unlink()\n'; assert s.count(old)==1; p.write_text(s.replace(old, '', 1))"
       - name: Apply production and focused regressions
         run: python scripts/apply_issue_1259_v2_patch.py
       - name: Build Release simulator and tests

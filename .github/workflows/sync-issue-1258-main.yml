@@ -1,8 +1,8 @@
 name: Synchronize issue 1258 with main
 
 on:
-  push:
-    branches: [fix/issue-1258-late-steven-appletun]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
@@ -15,6 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: fix/issue-1258-late-steven-appletun
           fetch-depth: 0
       - name: Merge current main and remove workflow
         run: |
@@ -26,4 +27,4 @@ jobs:
           git add -A
           git diff --cached --check
           git commit -m "Synchronize issue 1258 with current main"
-          git push origin HEAD:${GITHUB_REF_NAME}
+          git push origin HEAD:fix/issue-1258-late-steven-appletun

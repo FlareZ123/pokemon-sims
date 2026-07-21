@@ -4,16 +4,11 @@ on:
   pull_request:
     branches: [main]
 
-permissions:
-  contents: write
-
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
       - name: Configure Release
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator and tests
@@ -46,15 +41,6 @@ jobs:
       - name: Trace matchup-flex baseline control
         # DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
         run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee flex-control-trace.txt
-      - name: Commit regenerated source-bound outputs
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/REPORT.md docs/MULTI_DECK_REPORT.md results/simulation_results.csv results/multi_deck_comparison.csv results/baseline_manifest.json results/multi_deck_manifest.json
-          if ! git diff --cached --quiet; then
-            git commit -m "Regenerate issue 1236 source-bound matrices"
-            git push origin HEAD:${{ github.head_ref }}
-          fi
       - name: Upload regenerated baseline and trace evidence
         if: always()
         uses: actions/upload-artifact@v4

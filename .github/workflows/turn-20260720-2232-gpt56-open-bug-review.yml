@@ -1,0 +1,57 @@
+name: Turn 20260720 2232 GPT56 Open Bug Review
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release # Repository build contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2 # Repository test contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+      - name: Run three independent perfect-play traces and open-bug controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Official turn, Trainer, search, discard, Bench, Ability, attachment, evolution, attack, retreat, and Prize procedures: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Earliest deterministic route, source-bounded K0/K1 knowledge, DCI, UDP-like resource protection, and strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          # Hidden-information boundary and modeled locks: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-model
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 | tee pass-1-strict-jit-go-second-seed-1.txt # Regidrago V/VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 | tee pass-2-strict-jit-go-first-seed-2.txt # Mysterious Treasure, Crispin, and Latias ex: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/sv8-76
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 | tee pass-3-matchup-flex-go-second-seed-3.txt # Steven's Resolve and Brilliant Blender: https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/sv8-164
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 7 | tee control-issue-1174-seed-7.txt # Celestial Roar, Gladion, Treasure, and Goodra: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/sm4-95 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh11-136
+          ./build/regidrago_sim --simulate-this --scenario no-discard-control/go-second --seed 207 | tee control-issue-1204-seed-207.txt # Gladion, Treasure, and Regidrago V: https://api.pokemontcg.io/v2/cards/sm4-95 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh12-135
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-first --seed 47 | tee control-issue-1205-seed-47.txt # Treasure, Professor Turo, Tapu Lele-GX, and Dragon payloads: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sv4-171 https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/sv6-130
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 73 | tee control-issue-1208-seed-73.txt # Arven, Quick Ball, Latias ex, and Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sv1-166 https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sv8-76 https://api.pokemontcg.io/v2/cards/sm6-113
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 | tee control-issue-1209-seed-43.txt # Quick Ball, Treasure, Tapu Lele-GX, Crispin, and Latias ex: https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/sv8-76
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure # Repository validation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-exact-state-policy-tests
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out turn-20260720-2232-gpt56-t2-t3-matrix.csv # Aggregate contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+      - name: Export tested source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > tested-head.txt # Source traceability: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULES_TRACEABILITY.md
+          git archive --format=tar.gz --output=tested-source.tar.gz HEAD # Auditable source snapshot: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#audit-status
+      - name: Upload review artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turn-20260720-2232-gpt56-open-bug-review-${{ github.run_attempt }}
+          path: |
+            pass-*.txt
+            control-*.txt
+            turn-20260720-2232-gpt56-t2-t3-matrix.csv
+            tested-head.txt
+            tested-source.tar.gz
+            build/Testing
+          if-no-files-found: error

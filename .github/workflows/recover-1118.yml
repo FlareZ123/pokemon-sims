@@ -16,11 +16,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Reconstruct and verify archive
+        shell: bash
         run: |
-          cat part2.bin part1.bin part0.bin > "$RUNNER_TEMP/recovered-1118.tar.gz"
-          sha256sum "$RUNNER_TEMP/recovered-1118.tar.gz" | tee "$RUNNER_TEMP/recovered-1118.sha256"
-          tar -tzf "$RUNNER_TEMP/recovered-1118.tar.gz" > "$RUNNER_TEMP/recovered-1118-files.txt"
+          set -euo pipefail
+          found=0
+          for order in \
+            "part0.bin part1.bin part2.bin" \
+            "part0.bin part2.bin part1.bin" \
+            "part1.bin part0.bin part2.bin" \
+            "part1.bin part2.bin part0.bin" \
+            "part2.bin part0.bin part1.bin" \
+            "part2.bin part1.bin part0.bin"
+          do
+            echo "Trying $order"
+            cat $order > "$RUNNER_TEMP/candidate-1118.tar.gz"
+            if tar -tzf "$RUNNER_TEMP/candidate-1118.tar.gz" > "$RUNNER_TEMP/candidate-files.txt" 2> "$RUNNER_TEMP/candidate-error.txt"; then
+              mv "$RUNNER_TEMP/candidate-1118.tar.gz" "$RUNNER_TEMP/recovered-1118.tar.gz"
+              mv "$RUNNER_TEMP/candidate-files.txt" "$RUNNER_TEMP/recovered-1118-files.txt"
+              printf '%s\n' "$order" > "$RUNNER_TEMP/recovered-1118-order.txt"
+              found=1
+              break
+            fi
+            cat "$RUNNER_TEMP/candidate-error.txt"
+          done
+          test "$found" -eq 1
           test -s "$RUNNER_TEMP/recovered-1118-files.txt"
+          sha256sum "$RUNNER_TEMP/recovered-1118.tar.gz" | tee "$RUNNER_TEMP/recovered-1118.sha256"
+          cat "$RUNNER_TEMP/recovered-1118-order.txt"
+          wc -l "$RUNNER_TEMP/recovered-1118-files.txt"
       - uses: actions/upload-artifact@v4
         with:
           name: recovered-1118-source
@@ -28,4 +51,5 @@ jobs:
             ${{ runner.temp }}/recovered-1118.tar.gz
             ${{ runner.temp }}/recovered-1118.sha256
             ${{ runner.temp }}/recovered-1118-files.txt
+            ${{ runner.temp }}/recovered-1118-order.txt
           if-no-files-found: error

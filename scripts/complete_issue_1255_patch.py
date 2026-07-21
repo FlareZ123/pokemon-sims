@@ -25,35 +25,52 @@ def atomic_write(path: Path, text: str) -> None:
 
 def replace_once(path: Path, old: str, new: str) -> None:
     text = path.read_text(encoding="utf-8")
-    if text.count(old) != 1:
-        raise RuntimeError(f"Expected one source anchor in {path}, found {text.count(old)}")
+    count = text.count(old)
+    if count != 1:
+        raise RuntimeError(f"Expected one source anchor in {path}, found {count}")
     atomic_write(path, text.replace(old, new, 1))
 
 
 def main() -> None:
-    empty_deck = ROOT / "src/trace_engine_v2/part_empty_deck_search_override.inc"
-    replace_once(
-        empty_deck,
-        """    for (const Card payload : {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar}) {\n""",
-        """    // Evolution Incense can search Appletun because it is a Stage 1 Pokémon:\n    // https://api.pokemontcg.io/v2/cards/swsh1-163\n    // https://api.pokemontcg.io/v2/cards/sv8-140\n    // https://github.com/FlareZ123/pokemon-sims/issues/1255\n    for (const Card payload : {Card::MegaDragonite, Card::Dragapult,\n                               Card::GoodraVstar, Card::Appletun}) {\n""",
-    )
-
     legacy = ROOT / "src/trace_engine_v2/part_013_legacy_star_override.inc"
     replace_once(
         legacy,
-        """        for (const Card candidate :\n             {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar}) {\n""",
-        """        // Evolution Incense can fetch Appletun after Legacy Star recovers the\n        // two-card search-and-discard bridge:\n        // https://api.pokemontcg.io/v2/cards/swsh12-136\n        // https://api.pokemontcg.io/v2/cards/swsh1-163\n        // https://api.pokemontcg.io/v2/cards/sv8-140\n        // https://github.com/FlareZ123/pokemon-sims/issues/1255\n        for (const Card candidate :\n             {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,\n              Card::Appletun}) {\n""",
+        """        for (const Card candidate :
+             {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar}) {
+""",
+        """        // Evolution Incense can fetch Appletun after Legacy Star recovers the
+        // two-card search-and-discard bridge:
+        // https://api.pokemontcg.io/v2/cards/swsh12-136
+        // https://api.pokemontcg.io/v2/cards/swsh1-163
+        // https://api.pokemontcg.io/v2/cards/sv8-140
+        // https://github.com/FlareZ123/pokemon-sims/issues/1255
+        for (const Card candidate :
+             {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
+              Card::Appletun}) {
+""",
     )
 
     combo = ROOT / "src/trace_engine_v2/part_forretress_ex_combo.inc"
     replace_once(
         combo,
-        """    for (const Card fallback : {Card::RegidragoVstar,\n                                Card::MegaDragonite, Card::Dragapult,\n                                Card::GoodraVstar}) {\n""",
-        """    // Evolution Incense searches any Evolution Pokémon, including Appletun:\n    // https://api.pokemontcg.io/v2/cards/swsh1-163\n    // https://api.pokemontcg.io/v2/cards/sv8-140\n    // https://github.com/FlareZ123/pokemon-sims/issues/1255\n    for (const Card fallback : {Card::RegidragoVstar,\n                                Card::MegaDragonite, Card::Dragapult,\n                                Card::GoodraVstar, Card::Appletun}) {\n""",
+        """    for (const Card fallback : {Card::RegidragoVstar,
+                                Card::MegaDragonite, Card::Dragapult,
+                                Card::GoodraVstar}) {
+""",
+        """    // Evolution Incense searches any Evolution Pokémon, including Appletun:
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/sv8-140
+    // https://github.com/FlareZ123/pokemon-sims/issues/1255
+    for (const Card fallback : {Card::RegidragoVstar,
+                                Card::MegaDragonite, Card::Dragapult,
+                                Card::GoodraVstar, Card::Appletun}) {
+""",
     )
 
     test = ROOT / "tests/issue_1255_evolution_incense_appletun_continuation_tests.cpp"
-    atomic_write(test, r'''#define REGIDRAGO_SIM_NO_MAIN
+    atomic_write(
+        test,
+        r'''#define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
 #include <algorithm>
@@ -180,7 +197,11 @@ int main() {
   std::cout << "Issue 1255 Evolution Incense continuation tests passed.\n";
   return 0;
 }
-''')
+''',
+    )
+
+    (ROOT / ".github/workflows/complete-issue-1255.yml").unlink(missing_ok=True)
+    Path(__file__).unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

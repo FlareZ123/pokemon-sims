@@ -241,8 +241,14 @@
     // https://api.pokemontcg.io/v2/cards/sv6-130
     // https://api.pokemontcg.io/v2/cards/swsh11-136
     // https://api.pokemontcg.io/v2/cards/sm5-100
+    // Appletun is a Dragon Pokémon and a modeled Apex Dragon payload:
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://api.pokemontcg.io/v2/cards/sv8-140
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/issues/1256
     for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
-                               Card::GoodraVstar, Card::DialgaGX}) {
+                               Card::GoodraVstar, Card::DialgaGX,
+                               Card::Appletun}) {
       if (discarded.size() >= 5U) break;
       if (move_deck_to_discard(payload)) discarded.push_back(payload);
     }

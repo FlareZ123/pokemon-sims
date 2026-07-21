@@ -416,7 +416,11 @@ Card Engine::fallback_combo_pokemon_after_search_started() const {
                             Card::TapuLeleGX, Card::MawileGX,
                             Card::DialgaGX, Card::MegaDragonite,
                             Card::Dragapult, Card::GoodraVstar,
-                            Card::Dipplin}) {
+                            Card::Dipplin, Card::Appletun}) {
+      // Ultra Ball searches any Pokémon, including Appletun:
+      // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+      // https://api.pokemontcg.io/v2/cards/sv8-140
+      // https://github.com/FlareZ123/pokemon-sims/issues/1254
     if (deck_count_after_search_started(target) > 0) return target;
   }
   return Card::Pineco;

@@ -64,8 +64,14 @@
           planned_payload = Card::DialgaGX;
         }
       } else {
+        // Appletun is a legal Ultra Ball target and modeled Apex Dragon payload:
+        // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+        // https://api.pokemontcg.io/v2/cards/sv8-140
+        // https://api.pokemontcg.io/v2/cards/swsh12-136
+        // https://github.com/FlareZ123/pokemon-sims/issues/1254
         for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
-                                   Card::GoodraVstar, Card::DialgaGX}) {
+                                   Card::GoodraVstar, Card::DialgaGX,
+                                   Card::Appletun}) {
           if (deck_count_after_search_started(payload) > 0) {
             planned_payload = payload;
             break;

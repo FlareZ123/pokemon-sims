@@ -103,8 +103,15 @@
     }
 
     std::optional<Card> planned_payload;
+    // Appletun is a legal Ultra Ball target and modeled Apex Dragon payload.
+    // Remove the exact planned payload before proving a follow-up Item target:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://api.pokemontcg.io/v2/cards/sv8-140
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/issues/1287
     for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
-                               Card::GoodraVstar, Card::DialgaGX}) {
+                               Card::GoodraVstar, Card::DialgaGX,
+                               Card::Appletun}) {
       if (std::find(state_.deck.begin(), state_.deck.end(), payload) != state_.deck.end()) {
         planned_payload = payload;
         break;
@@ -205,8 +212,16 @@
       std::optional<Card> cross_singleton_search_cost;
       if (payload_is_only_missing_axis && deck_seen_ && state_.deck.size() > 1U) {
         std::optional<Card> planned_payload;
+        // Appletun must leave the projected deck before the surviving one-discard
+        // search Item is selected, or its fetched copy can be counted as its own target:
+        // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+        // https://api.pokemontcg.io/v2/cards/sv8-140
+        // https://api.pokemontcg.io/v2/cards/sm6-113
+        // https://api.pokemontcg.io/v2/cards/sv4-163
+        // https://github.com/FlareZ123/pokemon-sims/issues/1287
         for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
-                                   Card::GoodraVstar, Card::DialgaGX}) {
+                                   Card::GoodraVstar, Card::DialgaGX,
+                                   Card::Appletun}) {
           if (deck_count_after_search_started(payload) > 0) {
             planned_payload = payload;
             break;

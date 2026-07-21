@@ -1,8 +1,8 @@
 name: Reconcile issue 1235 with current main v2
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches: [fix/issue-1235-oricorio-t2-v2]
 
 permissions:
   contents: write

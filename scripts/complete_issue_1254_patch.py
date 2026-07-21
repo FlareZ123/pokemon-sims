@@ -111,19 +111,20 @@ void test_costed_search_preserves_appletun_outlet() {
   sim::State state;
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1};
-  state.hand = {sim::Card::QuickBall, sim::Card::Grant,
-                sim::Card::MysteriousTreasure};
+  state.hand = {sim::Card::MysteriousTreasure, sim::Card::Grant,
+                sim::Card::QuickBall};
   state.deck = {sim::Card::Appletun, sim::Card::RegidragoV};
   sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
 
-  // Quick Ball can pay Grant, then the surviving Mysterious Treasure can discard
-  // the fetched Appletun and search the remaining Dragon Pokémon:
-  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Mysterious Treasure can pay Grant and search the Dragon Appletun. The
+  // surviving Quick Ball can then discard Appletun and search Regidrago V:
   // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
   // https://api.pokemontcg.io/v2/cards/sv8-140
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/issues/1254
-  if (!sim::EngineTestAccess::payable_outlet(fixture.engine, sim::Card::QuickBall)) {
+  if (!sim::EngineTestAccess::payable_outlet(
+          fixture.engine, sim::Card::MysteriousTreasure)) {
     throw std::runtime_error("Costed-search planner omitted the Appletun continuation.");
   }
 }

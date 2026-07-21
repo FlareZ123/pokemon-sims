@@ -226,6 +226,43 @@
     if (hand_count(Card::Grass) > grass_needed() + 1) return Card::Grass;
     if (hand_count(Card::Fire) > fire_needed() + 1) return Card::Fire;
 
+    const int held_payloads_for_turo = static_cast<int>(std::count_if(
+        state_.hand.begin(), state_.hand.end(), is_payload));
+    const bool latias_is_live_active_connector =
+        ability_available_for_pokemon(Card::LatiasEx) &&
+        (hand_count(Card::LatiasEx) > 0 || in_play(Card::LatiasEx));
+    const bool active_has_retreat_energy = state_.active &&
+        state_.active->grass + state_.active->fire > 0;
+    const bool turo_is_only_observable_active_connector = state_.active &&
+        state_.active->card == Card::TapuLeleGX &&
+        !latias_is_live_active_connector && hand_count(Card::TateLiza) == 0 &&
+        !active_has_retreat_energy;
+    const bool preserve_turo_for_stranded_active =
+        scenario_.dci == DciProfile::MatchupFlexJit && flex_fodder &&
+        excluded_from_cost && *excluded_from_cost == Card::MysteriousTreasure &&
+        !item_locked() && state_.turn == 1 && scenario_.going_first &&
+        need_regi() && bench_space() > 0 && might_be_unseen(Card::RegidragoV) &&
+        hand_count(Card::ProfessorTuro) > 0 && held_payloads_for_turo >= 2 &&
+        turo_is_only_observable_active_connector;
+    if (preserve_turo_for_stranded_active) {
+      // One of two held Dragon payloads retains attack value after becoming the
+      // Mysterious Treasure cost, while singleton Professor Turo remains the only
+      // public route that can clear the stranded Active Tapu Lele-GX:
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://api.pokemontcg.io/v2/cards/sv4-171
+      // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://www.pokemon.com/us/pokemon-tcg/rules
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed stale-claim bug: https://github.com/FlareZ123/pokemon-sims/issues/1205
+      for (const Card card : {Card::Appletun, Card::MegaDragonite,
+                              Card::Dragapult, Card::GoodraVstar,
+                              Card::DialgaGX}) {
+        if (hand_count(card) > 0) return card;
+      }
+    }
+
     if (flex_fodder && scenario_.dci != DciProfile::StrictJit) {
       // Erika's Invitation replaced Mawile-GX in the canonical deck. Its effect is
       // opponent-dependent and deliberately inert in this goldfish model, so it is

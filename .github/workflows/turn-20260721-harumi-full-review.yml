@@ -1,0 +1,53 @@
+name: Turn 20260721 Harumi Full Review
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release # Repository build contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2 # Repository test contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-tests
+      - name: Run three independent simulate-this reviews
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Official turn, Trainer, search, discard, Bench, attachment, evolution, Ability, VSTAR Power, attack, and promotion procedures: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Earliest legal route, K0/K1, DCI, JIT, and lock specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-model
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 137 | tee review-pass-1-strict-go-first-137.txt # Regidrago V and VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-first --seed 401 | tee review-pass-2-turn2-item-lock-401.txt # Turn-two Item-lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-full-item-lock/go-second --seed 12 | tee review-pass-3-full-item-lock-12.txt # Full Item-lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#full-item-lock
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure # Repository validation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-tests
+      - name: Generate canonical shell matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out turn-20260721-harumi-t2-t3-matrix.csv # Aggregate simulation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-canonical-shell-baseline
+      - name: Generate paired deck matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out turn-20260721-harumi-multi-deck-matrix.csv # Paired matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+      - name: Export tested source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > tested-head.txt # Source traceability: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULES_TRACEABILITY.md
+          git archive --format=tar.gz --output=tested-source.tar.gz HEAD # Repository audit contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#audit-status
+      - name: Upload review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turn-20260721-harumi-full-review-${{ github.run_attempt }}
+          path: |
+            review-pass-*.txt
+            turn-20260721-harumi-t2-t3-matrix.csv
+            turn-20260721-harumi-multi-deck-matrix.csv
+            tested-head.txt
+            tested-source.tar.gz
+            build/Testing
+          if-no-files-found: error

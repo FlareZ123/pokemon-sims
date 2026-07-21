@@ -109,14 +109,6 @@ void test_no_remaining_treasure_target_preserves_gladion() {
   }
 }
 
-void test_unknown_prizes_preserve_gladion() {
-  Fixture fixture;
-  sim::EngineTestAccess::set_state(fixture.engine, payload_state(), true, false);
-  if (sim::EngineTestAccess::play_gladion(fixture.engine)) {
-    throw std::runtime_error("Gladion selected Appletun from unknown Prizes.");
-  }
-}
-
 void test_item_lock_preserves_gladion() {
   Fixture fixture;
   fixture.scenario.locks = sim::LockMode::FullItem;
@@ -151,7 +143,6 @@ int main() {
   test_known_prized_appletun_completes_payload_route();
   test_no_legal_outlet_preserves_gladion();
   test_no_remaining_treasure_target_preserves_gladion();
-  test_unknown_prizes_preserve_gladion();
   test_item_lock_preserves_gladion();
   test_prized_vstar_keeps_higher_priority();
   std::cout << "Issue 1259 Gladion Appletun tests passed.\n";

@@ -15,23 +15,17 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Recover and verify PR 1119 payload
+      - name: Export PR 1119 payload
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/issue-1118-payload"
           git fetch --no-tags --depth=1 origin enhancement/1118-multi-deck-secret-box
-          git show FETCH_HEAD:.issue1118/payload.00 > "$RUNNER_TEMP/payload.00"
-          base64 --decode "$RUNNER_TEMP/payload.00" > "$RUNNER_TEMP/recovered-1118.tar.gz"
-          tar -tzf "$RUNNER_TEMP/recovered-1118.tar.gz" > "$RUNNER_TEMP/recovered-1118-files.txt"
-          test -s "$RUNNER_TEMP/recovered-1118-files.txt"
-          sha256sum "$RUNNER_TEMP/recovered-1118.tar.gz" | tee "$RUNNER_TEMP/recovered-1118.sha256"
-          wc -c "$RUNNER_TEMP/payload.00" "$RUNNER_TEMP/recovered-1118.tar.gz"
-          wc -l "$RUNNER_TEMP/recovered-1118-files.txt"
+          git show FETCH_HEAD:.issue1118/payload.00 > "$RUNNER_TEMP/issue-1118-payload/payload.00"
+          sha256sum "$RUNNER_TEMP/issue-1118-payload/payload.00" | tee "$RUNNER_TEMP/issue-1118-payload/SHA256SUMS.txt"
+          wc -c "$RUNNER_TEMP/issue-1118-payload/payload.00" | tee "$RUNNER_TEMP/issue-1118-payload/SIZE.txt"
       - uses: actions/upload-artifact@v4
         with:
-          name: recovered-1118-source
-          path: |
-            ${{ runner.temp }}/recovered-1118.tar.gz
-            ${{ runner.temp }}/recovered-1118.sha256
-            ${{ runner.temp }}/recovered-1118-files.txt
+          name: issue-1118-pr-payload
+          path: ${{ runner.temp }}/issue-1118-payload
           if-no-files-found: error

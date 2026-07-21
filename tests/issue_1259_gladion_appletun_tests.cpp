@@ -109,13 +109,23 @@ void test_no_remaining_treasure_target_preserves_gladion() {
   }
 }
 
-void test_item_lock_preserves_gladion() {
+void test_item_lock_preserves_prized_appletun() {
   Fixture fixture;
   fixture.scenario.locks = sim::LockMode::FullItem;
   std::mt19937_64 rng{1260};
   sim::Engine engine{fixture.scenario, fixture.recipe, rng};
   sim::EngineTestAccess::set_state(engine, payload_state());
-  if (sim::EngineTestAccess::play_gladion(engine)) {
+
+  // Item lock makes Mysterious Treasure unusable. Gladion may still have another
+  // valid Prize exchange, but it must not recover Appletun for the blocked outlet:
+  // https://api.pokemontcg.io/v2/cards/sm4-95
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/me2pt5-16
+  // https://github.com/FlareZ123/pokemon-sims/issues/1259
+  sim::EngineTestAccess::play_gladion(engine);
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  if (!contains(after.prizes, sim::Card::Appletun) ||
+      contains(after.hand, sim::Card::Appletun)) {
     throw std::runtime_error("Gladion projected the Treasure route through Item lock.");
   }
 }
@@ -143,7 +153,7 @@ int main() {
   test_known_prized_appletun_completes_payload_route();
   test_no_legal_outlet_preserves_gladion();
   test_no_remaining_treasure_target_preserves_gladion();
-  test_item_lock_preserves_gladion();
+  test_item_lock_preserves_prized_appletun();
   test_prized_vstar_keeps_higher_priority();
   std::cout << "Issue 1259 Gladion Appletun tests passed.\n";
   return 0;

@@ -125,7 +125,7 @@ void test_missing_payload_outlet_keeps_star_alchemy_live() {
          "Star Alchemy must remain live without a legal payload outlet.");
 }
 
-void test_existing_direct_crispin_route_keeps_star_alchemy_live() {
+void test_seed_43_treasure_tapu_route_supersedes_star_alchemy() {
   const sim::Scenario scenario{"strict-jit/go-first", sim::DciProfile::StrictJit,
                                sim::LockMode::None, true, 4};
   const sim::DeckRecipe recipe{sim::baseline_recipe()};
@@ -133,16 +133,20 @@ void test_existing_direct_crispin_route_keeps_star_alchemy_live() {
   sim::Engine engine(scenario, recipe, rng);
   const sim::TrialOutcome outcome = engine.run();
 
-  // The #976 route uses Star Alchemy for Crispin directly. A shadow that must bench
-  // a new Tapu Lele-GX and spend Wonder Tag is not a stronger held-resource route:
-  // https://api.pokemontcg.io/v2/cards/swsh12-156
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
-  // https://api.pokemontcg.io/v2/cards/sv7-133
-  // https://github.com/FlareZ123/pokemon-sims/issues/976
-  expect(outcome.first_ready_turn == 3,
-         "The existing direct Crispin route must remain ready on turn three.");
-  expect(engine.state().vstar_power_used,
-         "Star Alchemy must remain live when avoiding it spends a new Wonder Tag.");
+  // The confirmed #1209 route establishes Regidrago V on T1, then uses held
+  // Mysterious Treasure to discard Dragapult ex and search Tapu Lele-GX. Wonder Tag
+  // obtains Crispin, reaching readiness on T2 while preserving the VSTAR Power:
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1209
+  expect(outcome.first_ready_turn == 2,
+         "The Treasure-Tapu-Crispin route must reach readiness on turn two.");
+  expect(!engine.state().vstar_power_used,
+         "The earlier deterministic route must preserve the VSTAR Power.");
 }
 
 void test_k0_never_projects_hidden_complete_route() {
@@ -166,7 +170,7 @@ int main() {
     test_missing_manual_energy_keeps_star_alchemy_live();
     test_spent_manual_attachment_keeps_star_alchemy_live();
     test_missing_payload_outlet_keeps_star_alchemy_live();
-    test_existing_direct_crispin_route_keeps_star_alchemy_live();
+    test_seed_43_treasure_tapu_route_supersedes_star_alchemy();
     test_k0_never_projects_hidden_complete_route();
     std::cout << "Issue 990 FSS complete-route tests passed\n";
     return 0;

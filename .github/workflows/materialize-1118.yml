@@ -16,14 +16,22 @@ jobs:
         with:
           ref: enhancement/1118-multi-deck-secret-box
           fetch-depth: 0
-      - name: Verify and apply issue 1118 source
+      - name: Decode issue 1118 archive
         shell: bash
         run: |
           set -euo pipefail
           cat .issue1118/payload.part* > "$RUNNER_TEMP/issue1118.b64"
           base64 -d "$RUNNER_TEMP/issue1118.b64" > "$RUNNER_TEMP/issue1118.tar.xz"
-          echo "72ed3eb7be7ad618579d02b1c4d5e62ffdd6337b99674ffe458b3a746b4ef2c7  $RUNNER_TEMP/issue1118.tar.xz" | sha256sum -c -
-          tar -xJf "$RUNNER_TEMP/issue1118.tar.xz"
+      - name: Verify issue 1118 archive checksum
+        shell: bash
+        run: echo "72ed3eb7be7ad618579d02b1c4d5e62ffdd6337b99674ffe458b3a746b4ef2c7  $RUNNER_TEMP/issue1118.tar.xz" | sha256sum -c -
+      - name: Extract issue 1118 readable source
+        shell: bash
+        run: tar -xJf "$RUNNER_TEMP/issue1118.tar.xz"
+      - name: Commit issue 1118 readable source
+        shell: bash
+        run: |
+          set -euo pipefail
           rm -rf .issue1118
           rm -f .github/workflows/materialize-1118.yml
           git config user.name github-actions[bot]

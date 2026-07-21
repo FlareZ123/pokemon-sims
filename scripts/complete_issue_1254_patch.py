@@ -81,41 +81,40 @@ struct EngineTestAccess {
 
 namespace {
 
-sim::Engine make_engine(std::mt19937_64& rng) {
-  const sim::Scenario scenario{"issue-1254/continuations", sim::DciProfile::StrictJit,
-                               sim::LockMode::None, false, 4};
-  return sim::Engine(scenario, sim::pineco_recipe(), rng);
-}
+struct Fixture {
+  sim::Scenario scenario{"issue-1254/continuations", sim::DciProfile::StrictJit,
+                         sim::LockMode::None, false, 4};
+  std::mt19937_64 rng{12540};
+  sim::Engine engine{scenario, sim::pineco_recipe(), rng};
+};
 
 void test_second_ultra_projects_appletun_removal() {
-  std::mt19937_64 rng{12540};
-  sim::Engine engine = make_engine(rng);
+  Fixture fixture;
   sim::State state;
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1};
   state.deck = {sim::Card::Appletun, sim::Card::RegidragoV};
-  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
 
   // Ultra Ball searches any Pokémon. Appletun is the projected first payload,
   // and Regidrago V remains as the legal target for the second Ultra Ball:
   // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
   // https://api.pokemontcg.io/v2/cards/sv8-140
   // https://github.com/FlareZ123/pokemon-sims/issues/1254
-  if (!sim::EngineTestAccess::second_ultra_has_target(engine)) {
+  if (!sim::EngineTestAccess::second_ultra_has_target(fixture.engine)) {
     throw std::runtime_error("Second Ultra Ball omitted Appletun from its K1 projection.");
   }
 }
 
 void test_costed_search_preserves_appletun_outlet() {
-  std::mt19937_64 rng{12541};
-  sim::Engine engine = make_engine(rng);
+  Fixture fixture;
   sim::State state;
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1};
   state.hand = {sim::Card::QuickBall, sim::Card::Grant,
                 sim::Card::MysteriousTreasure};
   state.deck = {sim::Card::Appletun, sim::Card::RegidragoV};
-  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
 
   // Quick Ball can pay Grant, then the surviving Mysterious Treasure can discard
   // the fetched Appletun and search the remaining Dragon Pokémon:
@@ -124,24 +123,23 @@ void test_costed_search_preserves_appletun_outlet() {
   // https://api.pokemontcg.io/v2/cards/sv8-140
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/issues/1254
-  if (!sim::EngineTestAccess::payable_outlet(engine, sim::Card::QuickBall)) {
+  if (!sim::EngineTestAccess::payable_outlet(fixture.engine, sim::Card::QuickBall)) {
     throw std::runtime_error("Costed-search planner omitted the Appletun continuation.");
   }
 }
 
 void test_forretress_ultra_fallback_can_take_appletun() {
-  std::mt19937_64 rng{12542};
-  sim::Engine engine = make_engine(rng);
+  Fixture fixture;
   sim::State state;
   state.turn = 2;
   state.deck = {sim::Card::Appletun};
-  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
 
   // The Forretress route still uses Ultra Ball's exact any-Pokémon target class:
   // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
   // https://api.pokemontcg.io/v2/cards/sv8-140
   // https://github.com/FlareZ123/pokemon-sims/issues/1254
-  if (sim::EngineTestAccess::combo_fallback(engine) != sim::Card::Appletun) {
+  if (sim::EngineTestAccess::combo_fallback(fixture.engine) != sim::Card::Appletun) {
     throw std::runtime_error("Forretress Ultra Ball fallback omitted Appletun.");
   }
 }

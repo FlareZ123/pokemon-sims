@@ -74,7 +74,10 @@ void erase_one(std::vector<sim::Card>& cards, const sim::Card card) {
 
 void test_vessel_precedes_vstar_search() {
   std::mt19937_64 rng{1236001};
-  sim::Engine engine = make_engine(scenario(), rng, route_state());
+  // Engine retains Scenario by reference, so the fixture must outlive the Engine:
+  // https://eel.is/c++draft/class.temporary#6.10
+  const sim::Scenario selected = scenario();
+  sim::Engine engine = make_engine(selected, rng, route_state());
 
   // The duplicate Treasure pays Vessel while its surviving copy pays its own cost
   // with Roseanne's Backup and searches Regidrago VSTAR. Grass is available for the
@@ -107,7 +110,10 @@ void test_seed_307_reaches_t2() {
   sim::TraceLog trace;
   trace.enabled = true;
   const sim::DeckRecipe recipe = sim::baseline_recipe();
-  sim::Engine engine(scenario(), recipe, rng, &trace);
+  // Engine retains Scenario by reference, so the fixture must outlive the Engine:
+  // https://eel.is/c++draft/class.temporary#6.10
+  const sim::Scenario selected = scenario();
+  sim::Engine engine(selected, recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 
   // The deterministic reproduction attaches Grass before Steven ends T1, then uses
@@ -137,6 +143,8 @@ void test_incomplete_routes_hold() {
   const auto blocked = [](sim::State state, const sim::Scenario selected,
                           const std::uint64_t seed, const char* message) {
     std::mt19937_64 rng{seed};
+    // The by-value selected parameter owns the Scenario through the Engine use:
+    // https://eel.is/c++draft/class.temporary#6.10
     sim::Engine engine = make_engine(selected, rng, std::move(state));
     expect(!sim::EngineTestAccess::route_available(engine), message);
   };
@@ -162,7 +170,10 @@ void test_incomplete_routes_hold() {
       no_grass.deck.end());
   {
     std::mt19937_64 rng{1236006};
-    sim::Engine engine = make_engine(scenario(), rng, std::move(no_grass), true);
+    // Engine retains Scenario by reference, so the fixture must outlive the Engine:
+    // https://eel.is/c++draft/class.temporary#6.10
+    const sim::Scenario selected = scenario();
+    sim::Engine engine = make_engine(selected, rng, std::move(no_grass), true);
     expect(!sim::EngineTestAccess::route_available(engine),
            "Known missing Grass must block the route.");
   }

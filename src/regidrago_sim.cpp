@@ -233,18 +233,22 @@
 #define choose_supporter choose_supporter_issue1070_original
 #include "trace_engine_v2/part_turo_oricorio_override.inc"
 #undef choose_supporter
+#define choose_supporter choose_supporter_issue1209_original
 #include "trace_engine_v2/part_issue_1070_tate_after_vstar_search_override.inc"
+#undef choose_supporter
 #define bench_oricorio_if_useful bench_oricorio_if_useful_target_original
 #define ultra_ball_has_legal_target ultra_ball_has_legal_target_k0_target_original
 #define play_ultra_ball play_ultra_ball_k0_target_original
 #define play_brilliant_blender play_brilliant_blender_vstar_axis_original
 #define play_earthen_vessel play_earthen_vessel_vstar_window_original
 #define play_mysterious_treasure play_mysterious_treasure_issue1167_original
+#define play_quick_ball play_quick_ball_issue1209_original
 #define bench_tapu_if_useful bench_tapu_if_useful_issue989_empty_deck_original
 #define in_play tapu_connector_copy_aware_in_play
 #define play_steven play_steven_issue1002_empty_deck_original
 #include "trace_engine_v2/part_empty_deck_search_override.inc"
 #undef play_steven
+#undef play_quick_ball
 #undef play_mysterious_treasure
 #undef in_play
 #undef bench_tapu_if_useful
@@ -268,7 +272,10 @@
 #include "trace_engine_v2/part_oricorio_needed_energy_override.inc"
 #include "trace_engine_v2/part_blender_vstar_axis_override.inc"
 #include "trace_engine_v2/part_earthen_vessel_vstar_window_override.inc"
+#define play_mysterious_treasure play_mysterious_treasure_issue1209_original
 #include "trace_engine_v2/part_issue_1167_treasure_vessel_override.inc"
+#undef play_mysterious_treasure
+#include "trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc"
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #include "trace_engine_v2/part_014c.inc"

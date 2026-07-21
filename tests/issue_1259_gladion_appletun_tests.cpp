@@ -1,33 +1,4 @@
-from __future__ import annotations
-
-import os
-import tempfile
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "src" / "trace_engine_v2" / "part_012_gladion_override.inc"
-TEST = ROOT / "tests" / "issue_1259_gladion_appletun_tests.cpp"
-WORKFLOW = ROOT / ".github" / "workflows" / "apply-issue-1259.yml"
-SCRIPT = Path(__file__).resolve()
-
-OLD = """      for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
-                                 Card::GoodraVstar, Card::DialgaGX}) {
-"""
-
-NEW = """      // Appletun is a modeled Dragon payload and Gladion may exchange itself
-      // for that known Prize before a live one-discard Item puts it into discard:
-      // https://api.pokemontcg.io/v2/cards/sm4-95
-      // https://api.pokemontcg.io/v2/cards/sm6-113
-      // https://api.pokemontcg.io/v2/cards/sv8-140
-      // https://api.pokemontcg.io/v2/cards/swsh12-136
-      // https://www.pokemon.com/us/pokemon-tcg/rules
-      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1259
-      for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
-                                 Card::GoodraVstar, Card::DialgaGX,
-                                 Card::Appletun}) {
-"""
-
-TEST_CONTENT = r'''#define REGIDRAGO_SIM_NO_MAIN
+#define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
 #include <algorithm>
@@ -190,35 +161,3 @@ int main() {
   std::cout << "Issue 1259 Gladion Appletun tests passed.\n";
   return 0;
 }
-'''
-
-
-def atomic_write(path: Path, text: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, temp_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
-            handle.write(text)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temp_name, path)
-    except BaseException:
-        try:
-            os.unlink(temp_name)
-        except FileNotFoundError:
-            pass
-        raise
-
-
-def main() -> None:
-    source = SOURCE.read_text(encoding="utf-8")
-    if source.count(OLD) != 1:
-        raise RuntimeError("Issue 1259 source anchor was not unique.")
-    atomic_write(SOURCE, source.replace(OLD, NEW, 1))
-    atomic_write(TEST, TEST_CONTENT)
-    SCRIPT.unlink()
-    WORKFLOW.unlink()
-
-
-if __name__ == "__main__":
-    main()

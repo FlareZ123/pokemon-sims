@@ -40,9 +40,14 @@
     }
 
     // Hisuian Heavy Ball reveals the Prize cards before its optional Basic recovery.
-    // The revealed information therefore permits an exact K1 continuation check:
+    // Preserve the live Pineco connector decision made at K0, then use the exact
+    // revealed Prize contents to choose that Basic when it is present:
     // https://api.pokemontcg.io/v2/cards/swsh10-146
+    // https://api.pokemontcg.io/v2/cards/sv4pt5-1
+    // https://api.pokemontcg.io/v2/cards/sv4pt5-2
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    // https://github.com/FlareZ123/pokemon-sims/issues/1252
+    const bool recover_prized_pineco = needs_pineco_connector();
     remove_one(state_.hand, Card::HisuianHeavyBall);
     prizes_revealed_ = true;
 
@@ -70,7 +75,9 @@
         payload_still_in_deck;
     Card selected = Card::HisuianHeavyBall;
 
-    if (need_regi() && can_bench_recovered_basic && prized(Card::RegidragoV)) {
+    if (recover_prized_pineco && can_bench_recovered_basic && prized(Card::Pineco)) {
+      selected = Card::Pineco;
+    } else if (need_regi() && can_bench_recovered_basic && prized(Card::RegidragoV)) {
       selected = Card::RegidragoV;
     } else if (oricorio_preserves_burnet && prized(Card::Oricorio)) {
       selected = Card::Oricorio;

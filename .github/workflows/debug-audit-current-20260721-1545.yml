@@ -10,14 +10,14 @@ permissions:
 jobs:
   current-main-audit:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - name: Configure Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator
         run: cmake --build build --parallel 2
-      - name: Simulate-this pass 1 shell strict go-first
+      - name: Simulate-this pass 1 shell strict go-first defect probe
         shell: bash
         run: |
           set -euo pipefail
@@ -38,6 +38,28 @@ jobs:
           # Registered Pineco recipe and source identities: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#named-deck-recipes
           # Forretress ex Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-first --seed 31415 | tee debug-pass-3.txt
+      - name: Perfect-play pass 4 shell strict go-second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Quick Ball, Steven, Crispin, Brilliant Blender, evolution, and Retreat are evaluated under the earliest-ready policy:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee perfect-pass-1.txt
+      - name: Perfect-play pass 5 shell matchup-flex go-second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee perfect-pass-2.txt
+      - name: Perfect-play pass 6 Pineco strict go-second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+          # Forest of Vitality and Forretress ex: https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee perfect-pass-3.txt
       - name: Generate current-run paired setup matrix
         shell: bash
         run: |
@@ -56,6 +78,7 @@ jobs:
           name: current-main-debug-audit-20260721-1545
           path: |
             debug-pass-*.txt
+            perfect-pass-*.txt
             current-run-matrix.csv
             current-source-snapshot.tar.gz
             tested-head.txt

@@ -215,8 +215,15 @@
 
         std::vector<Card> remaining = state_.deck;
         auto payload = remaining.end();
+        // Evolution Incense can fetch Appletun after Legacy Star recovers the
+        // two-card search-and-discard bridge:
+        // https://api.pokemontcg.io/v2/cards/swsh12-136
+        // https://api.pokemontcg.io/v2/cards/swsh1-163
+        // https://api.pokemontcg.io/v2/cards/sv8-140
+        // https://github.com/FlareZ123/pokemon-sims/issues/1255
         for (const Card candidate :
-             {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar}) {
+             {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
+              Card::Appletun}) {
           payload = std::find(remaining.begin(), remaining.end(), candidate);
           if (payload != remaining.end()) break;
         }

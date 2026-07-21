@@ -188,7 +188,12 @@
     }
 
     std::optional<Card> planned_payload;
-    for (const Card payload : {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar}) {
+    // Evolution Incense can search Appletun because it is a Stage 1 Pokémon:
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/sv8-140
+    // https://github.com/FlareZ123/pokemon-sims/issues/1255
+    for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
+                               Card::GoodraVstar, Card::Appletun}) {
       if (std::find(state_.deck.begin(), state_.deck.end(), payload) != state_.deck.end()) {
         planned_payload = payload;
         break;
@@ -239,8 +244,13 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     const bool vstar_axis_searchable = need_vstar() &&
         hand_count(Card::RegidragoVstar) == 0 && might_be_unseen(Card::RegidragoVstar);
+    // Appletun sv8-140 is a Stage 1 Evolution Pokémon and modeled payload:
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/sv8-140
+    // https://github.com/FlareZ123/pokemon-sims/issues/1255
     const bool evolution_payload_searchable = might_be_unseen(Card::MegaDragonite) ||
-        might_be_unseen(Card::Dragapult) || might_be_unseen(Card::GoodraVstar);
+        might_be_unseen(Card::Dragapult) || might_be_unseen(Card::GoodraVstar) ||
+        might_be_unseen(Card::Appletun);
     const bool payload_axis_requested = permit_payload && can_play_payload_this_turn() &&
         need_payload();
     if (!vstar_axis_searchable && payload_axis_requested &&

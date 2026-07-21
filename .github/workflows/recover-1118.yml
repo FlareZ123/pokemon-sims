@@ -15,17 +15,28 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Export PR 1119 payload
+      - name: Export recovery branch history
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/issue-1118-payload"
-          git fetch --no-tags --depth=1 origin enhancement/1118-multi-deck-secret-box
-          git show FETCH_HEAD:.issue1118/payload.00 > "$RUNNER_TEMP/issue-1118-payload/payload.00"
-          sha256sum "$RUNNER_TEMP/issue-1118-payload/payload.00" | tee "$RUNNER_TEMP/issue-1118-payload/SHA256SUMS.txt"
-          wc -c "$RUNNER_TEMP/issue-1118-payload/payload.00" | tee "$RUNNER_TEMP/issue-1118-payload/SIZE.txt"
+          out="$RUNNER_TEMP/issue-1118-history"
+          mkdir -p "$out/blobs"
+          git fetch --no-tags --depth=100 origin tmp/1118-blob-recovery
+          git log --reverse --format='%H %s' FETCH_HEAD | tee "$out/COMMITS.txt"
+          while read -r sha rest
+          do
+            for path in part0.bin part1.bin part2.bin .issue1118/payload.00
+            do
+              if git cat-file -e "$sha:$path" 2>/dev/null; then
+                safe_path=${path//\//_}
+                git show "$sha:$path" > "$out/blobs/${sha}-${safe_path}"
+              fi
+            done
+          done < <(git log --reverse --format='%H %s' FETCH_HEAD)
+          find "$out/blobs" -type f -print0 | sort -z | xargs -0 sha256sum > "$out/SHA256SUMS.txt"
+          find "$out/blobs" -type f -printf '%f %s\n' | sort > "$out/SIZES.txt"
       - uses: actions/upload-artifact@v4
         with:
-          name: issue-1118-pr-payload
-          path: ${{ runner.temp }}/issue-1118-payload
+          name: issue-1118-recovery-history
+          path: ${{ runner.temp }}/issue-1118-history
           if-no-files-found: error

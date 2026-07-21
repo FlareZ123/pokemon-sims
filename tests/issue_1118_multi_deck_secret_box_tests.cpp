@@ -22,6 +22,9 @@ struct EngineTestAccess {
   static void run_secret_box_turn(Engine& engine) {
     engine.run_secret_box_turn();
   }
+  static bool play_combo_ultra_ball(Engine& engine) {
+    return engine.play_ultra_ball_for_forretress_combo();
+  }
 };
 }  // namespace sim
 
@@ -249,6 +252,48 @@ void test_reviewed_seeded_routes() {
   });
 }
 
+void test_combo_ultra_ball_fallback_includes_appletun() {
+  Fixture fixture;
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0,
+                              sim::Tool::None};
+  state.hand = {sim::Card::UltraBall, sim::Card::Grant,
+                sim::Card::WishfulBaton};
+  state.deck = {sim::Card::Appletun};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // Ultra Ball pays two cards, legally inspects the deck, and must take the only
+  // remaining Pokémon, Appletun, after the preferred Pineco target is absent:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://api.pokemontcg.io/v2/cards/sv8-140
+  // https://github.com/FlareZ123/pokemon-sims/issues/1299
+  if (!sim::EngineTestAccess::play_combo_ultra_ball(fixture.engine)) {
+    throw std::runtime_error("The combo Ultra Ball route did not begin.");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  if (!contains(after.hand, sim::Card::Appletun) ||
+      contains(after.deck, sim::Card::Appletun)) {
+    throw std::runtime_error(
+        "The combo Ultra Ball fallback left the only legal Pokémon in deck.");
+  }
+
+  Fixture no_pokemon;
+  state = sim::State{};
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0,
+                              sim::Tool::None};
+  state.hand = {sim::Card::UltraBall, sim::Card::Grant,
+                sim::Card::WishfulBaton};
+  state.deck = {sim::Card::Grass};
+  sim::EngineTestAccess::set_state(no_pokemon.engine, std::move(state));
+  if (!sim::EngineTestAccess::play_combo_ultra_ball(no_pokemon.engine) ||
+      contains(sim::EngineTestAccess::state(no_pokemon.engine).hand,
+               sim::Card::Appletun)) {
+    throw std::runtime_error("The no-Pokémon combo fallback control diverged.");
+  }
+}
+
 void test_route_lock_and_bench_controls() {
   Fixture no_bench;
   sim::State state = complete_route_state();
@@ -290,5 +335,6 @@ int main() {
   test_complete_secret_box_route();
   test_secret_box_cost_reservation_and_dci();
   test_reviewed_seeded_routes();
+  test_combo_ultra_ball_fallback_includes_appletun();
   test_route_lock_and_bench_controls();
 }

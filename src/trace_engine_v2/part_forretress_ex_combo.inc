@@ -410,13 +410,18 @@ Card Engine::fallback_combo_basic_after_search_started() const {
 }
 
 Card Engine::fallback_combo_pokemon_after_search_started() const {
+  // Ultra Ball searches any Pokémon, so the post-inspection fallback includes
+  // the registered Appletun payload:
+  // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // https://api.pokemontcg.io/v2/cards/sv8-140
+  // https://github.com/FlareZ123/pokemon-sims/issues/1299
   for (const Card target : {Card::ForretressEx, Card::Pineco,
                             Card::RegidragoVstar, Card::RegidragoV,
                             Card::LatiasEx, Card::Oricorio,
                             Card::TapuLeleGX, Card::MawileGX,
                             Card::DialgaGX, Card::MegaDragonite,
                             Card::Dragapult, Card::GoodraVstar,
-                            Card::Dipplin}) {
+                            Card::Appletun, Card::Dipplin}) {
     if (deck_count_after_search_started(target) > 0) return target;
   }
   return Card::Pineco;

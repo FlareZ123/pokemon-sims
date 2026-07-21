@@ -102,7 +102,70 @@
         });
   }
 
+  bool issue_1236_vessel_steven_compression_available() const {
+    // A duplicate Mysterious Treasure may pay Earthen Vessel while the surviving
+    // copy searches Regidrago VSTAR. Grass is then manually attached before
+    // Steven's Resolve ends T1, preserving the T2 Crispin, Fire attachment,
+    // evolution, and Brilliant Blender finish:
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1236
+    return scenario_.dci == DciProfile::MatchupFlexJit && state_.turn == 1 &&
+        !scenario_.going_first && !item_locked() && supporter_allowed() &&
+        !state_.manual_energy_used && !state_.vstar_power_used && state_.active &&
+        state_.active->card == Card::RegidragoV && state_.active->grass == 0 &&
+        state_.active->fire == 0 && state_.active->tool == Tool::None &&
+        hand_count(Card::EarthenVessel) > 0 &&
+        hand_count(Card::MysteriousTreasure) >= 2 &&
+        hand_count(Card::RoseannesBackup) > 0 &&
+        hand_count(Card::ForestSealStone) > 0 &&
+        hand_count(Card::Grass) == 0 && hand_count(Card::Fire) == 0 &&
+        hand_count(Card::RegidragoVstar) == 0 &&
+        hand_count(Card::StevensResolve) == 0 &&
+        hand_count(Card::Crispin) == 0 &&
+        hand_count(Card::BrilliantBlender) == 0 &&
+        might_be_unseen(Card::Grass) && might_be_unseen(Card::Fire) &&
+        might_be_unseen(Card::RegidragoVstar) &&
+        might_be_unseen(Card::StevensResolve) &&
+        might_be_unseen(Card::Crispin) &&
+        might_be_unseen(Card::BrilliantBlender);
+  }
+
+  bool play_issue_1236_vessel_before_steven() {
+    if (!issue_1236_vessel_steven_compression_available()) return false;
+
+    // Earthen Vessel discards one other card before searching up to two Basic
+    // Energy. The route spends exactly one duplicate Treasure and keeps the second
+    // physical copy for its separate printed search cost on the next policy step:
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/issues/1236
+    remove_one(state_.hand, Card::EarthenVessel);
+    state_.discard.push_back(Card::EarthenVessel);
+    discard_from_hand(Card::MysteriousTreasure,
+                      "Earthen Vessel cost", "R-EV-01; P-DCI-01");
+    search_energy_to_hand(2, "R-EV-01; R-GAME-ITEM; P-DCI-01",
+                          "Earthen Vessel");
+    return true;
+  }
+
   bool play_mysterious_treasure(const bool permit_payload) {
+    // The active search loop reaches Mysterious Treasure first while the VSTAR axis
+    // is missing. Execute the proven Vessel setup step, then let the next loop pass
+    // resolve the surviving Treasure normally:
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://github.com/FlareZ123/pokemon-sims/issues/1236
+    if (play_issue_1236_vessel_before_steven()) return true;
     if (play_mysterious_treasure_issue1209_original(permit_payload)) return true;
     if (!permit_payload ||
         !issue_1209_t2_treasure_tapu_context_available()) {

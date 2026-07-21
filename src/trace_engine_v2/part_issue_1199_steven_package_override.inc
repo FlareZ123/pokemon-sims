@@ -6,17 +6,28 @@
     // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
     // Hidden-information boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1199
-    return state_.turn == 1 && !scenario_.going_first &&
-        scenario_.dci == DciProfile::NoDiscardControl &&
-        scenario_.locks == LockMode::None && scenario_.max_turn >= 3 &&
-        supporter_allowed() && !state_.manual_energy_used && !deck_seen_ &&
-        state_.active && state_.active->card == Card::RegidragoV &&
-        state_.active->entered_turn < state_.turn &&
-        state_.active->grass == 0 && state_.active->fire == 0 &&
-        state_.bench.empty() && hand_count(Card::StevensResolve) > 0 &&
-        hand_count(Card::MysteriousTreasure) > 0 &&
-        hand_count(Card::Fire) > 0 && hand_count(Card::Grass) == 0 &&
-        hand_count(Card::RegidragoVstar) == 0;
+    if (state_.turn != 1 || scenario_.going_first ||
+        scenario_.dci != DciProfile::NoDiscardControl ||
+        scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
+        !supporter_allowed() || state_.manual_energy_used || deck_seen_ ||
+        !state_.active || state_.active->card != Card::RegidragoV ||
+        state_.active->entered_turn >= state_.turn ||
+        state_.active->grass != 0 || state_.active->fire != 0 ||
+        !state_.bench.empty() || hand_count(Card::StevensResolve) == 0 ||
+        hand_count(Card::MysteriousTreasure) == 0 ||
+        hand_count(Card::Fire) == 0 || hand_count(Card::Grass) > 0 ||
+        hand_count(Card::RegidragoVstar) > 0 ||
+        !might_be_unseen(Card::RegidragoVstar)) {
+      return false;
+    }
+
+    // K0 may prove only that Treasure has a legal observable cost and that the fixed
+    // list still permits a VSTAR target. The package identities remain unknown until
+    // the real Treasure search establishes K1:
+    // Mysterious Treasure discard and search text: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Legal search and hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+    return choose_discard(can_play_payload_this_turn(), true, true,
+                          Card::MysteriousTreasure).has_value();
   }
 
   bool issue_1199_known_package_after_treasure() const {
@@ -39,19 +50,11 @@
   }
 
   bool issue_1199_route_available() const {
-    if (!issue_1199_preinspection_candidate()) return false;
-
-    // Project the exact legal Mysterious Treasure play with an isolated RNG copy.
-    // The real state remains K0 unless that search proves the complete Steven package:
-    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-    // Knowledge model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
-    std::mt19937_64 shadow_rng = rng_;
-    Engine projected(scenario_, recipe_, shadow_rng);
-    projected.state_ = state_;
-    projected.deck_seen_ = deck_seen_;
-    projected.prizes_revealed_ = prizes_revealed_;
-    if (!projected.play_mysterious_treasure(false)) return false;
-    return projected.issue_1199_known_package_after_treasure();
+    // The early turn block is admitted only to perform the legal information action.
+    // Steven remains unselected until the actual Treasure resolution proves K1:
+    // Knowledge-state policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1199
+    return issue_1199_preinspection_candidate();
   }
 
   bool play_issue_1199_steven_package() {
@@ -107,17 +110,14 @@
       return false;
     }
 
-    // The preceding source-bounded gate proved this exact inspection route before
-    // the Fire attachment. Resolve the held Treasure now, then spend Steven only if
-    // the legally inspected K1 state still proves the complete package:
+    // Resolve the legal K0 information action first. If K1 does not prove both Grass
+    // copies, Blender, payload, and VSTAR access, leave Steven unused and continue the
+    // ordinary Supporter policy from the now-known state:
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Core Item, attachment, Supporter, and turn-end procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1199
-    if (!play_mysterious_treasure(false) ||
-        !issue_1199_known_package_after_treasure() ||
-        !play_issue_1199_steven_package()) {
-      throw std::logic_error("Known issue-1199 Steven package failed after projection");
-    }
-    return true;
+    if (!play_mysterious_treasure(false)) return false;
+    return play_issue_1199_steven_package();
   }

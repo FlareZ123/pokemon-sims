@@ -1,0 +1,69 @@
+name: Audit current main perfect-play traces
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Ready-state and strict-JIT specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+          # Earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Regidrago VSTAR card data: https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee audit-trace-1.txt
+          grep -q "T2 | READY" audit-trace-1.txt
+
+          # Official turn, Supporter, Energy, evolution, Ability, Bench, and retreat procedures: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Observable-information model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee audit-trace-2.txt
+          grep -q "T2 | READY" audit-trace-2.txt
+
+          # Registered Pineco recipe specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#named-deck-recipes
+          # Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+          # Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+          # Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # Dawn: https://api.pokemontcg.io/v2/cards/me2-87
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee audit-trace-3.txt
+          grep -q "T2 | READY" audit-trace-3.txt
+      - name: Generate canonical T2 and T3 matrices
+        run: |
+          # Canonical matrix command and fixed seed: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-canonical-shell-baseline
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-shell-matrix.csv
+          # Paired registered-deck matrix specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-all-decks-matrix.csv
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Record tested source
+        run: |
+          git rev-parse HEAD | tee tested-head.txt
+          git archive --format=tar.gz --output=source-snapshot.tar.gz HEAD
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-20260721-gpt56-current-main
+          path: |
+            audit-trace-*.txt
+            audit-shell-matrix.csv
+            audit-all-decks-matrix.csv
+            tested-head.txt
+            source-snapshot.tar.gz
+            build/Testing
+          if-no-files-found: error

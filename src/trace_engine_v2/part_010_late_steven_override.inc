@@ -57,6 +57,16 @@
   }
 
   bool late_steven_has_known_t3_compression_route() const {
+    // A legal held-Treasure projection may prove the no-discard-control Steven
+    // package before generic T1 connector spending. The existing run-turn block
+    // then attaches Fire and delegates actual Treasure plus Steven resolution to
+    // the Supporter bridge:
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Hidden-information boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1199
+    if (issue_1199_route_available()) return true;
+
     if (state_.turn != 2 || scenario_.locks != LockMode::None || !supporter_allowed() ||
         hand_count(Card::StevensResolve) == 0 || hand_count(Card::TateLiza) == 0 ||
         hand_count(Card::QuickBall) == 0 || !deck_seen_ || !state_.active ||

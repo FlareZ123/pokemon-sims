@@ -1,40 +1,4 @@
-from __future__ import annotations
-
-import json
-import re
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "src/trace_engine_v2/part_011_burnet_thinning_override.inc"
-TEST = ROOT / "tests/issue_1257_burnet_appletun_tests.cpp"
-
-
-def replace_once(text: str, old: str, new: str) -> str:
-    if text.count(old) != 1:
-        raise RuntimeError(f"expected one source anchor, found {text.count(old)}")
-    return text.replace(old, new, 1)
-
-
-source = SOURCE.read_text(encoding="utf-8")
-source = replace_once(
-    source,
-    '''    // https://api.pokemontcg.io/v2/cards/sv6-130
-    // https://api.pokemontcg.io/v2/cards/swsh11-136
-    // https://api.pokemontcg.io/v2/cards/sm5-100
-    for (const Card card : {Card::MegaDragonite, Card::Dragapult,
-                            Card::GoodraVstar, Card::DialgaGX}) {''',
-    '''    // https://api.pokemontcg.io/v2/cards/sv6-130
-    // https://api.pokemontcg.io/v2/cards/swsh11-136
-    // https://api.pokemontcg.io/v2/cards/sm5-100
-    // Appletun sv8-140: https://api.pokemontcg.io/v2/cards/sv8-140
-    // Confirmed omission: https://github.com/FlareZ123/pokemon-sims/issues/1257
-    for (const Card card : {Card::MegaDragonite, Card::Dragapult,
-                            Card::GoodraVstar, Card::DialgaGX,
-                            Card::Appletun}) {''',
-)
-SOURCE.write_text(source, encoding="utf-8")
-
-TEST.write_text(r'''#define REGIDRAGO_SIM_NO_MAIN
+#define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
 #include <algorithm>
@@ -109,25 +73,3 @@ int main() {
     return 1;
   }
 }
-''', encoding="utf-8")
-
-from scripts.baseline_provenance import simulator_policy_source_digest
-
-digest = simulator_policy_source_digest(ROOT)
-for relative in ("results/baseline_manifest.json", "results/multi_deck_manifest.json"):
-    path = ROOT / relative
-    data = json.loads(path.read_text(encoding="utf-8"))
-    data["simulator_policy_source_sha256"] = digest
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-
-report = ROOT / "docs/MULTI_DECK_REPORT.md"
-text = report.read_text(encoding="utf-8")
-text, count = re.subn(
-    r"Simulator policy digest: `[0-9a-f]{64}`\.",
-    f"Simulator policy digest: `{digest}`.",
-    text,
-)
-if count != 1:
-    raise RuntimeError("expected one report provenance line")
-report.write_text(text, encoding="utf-8")
-print(digest)

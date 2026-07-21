@@ -84,7 +84,8 @@ sim::Engine make_engine(const sim::Scenario& scenario, std::mt19937_64& rng,
 
 void test_t1_quick_ball_selects_oricorio_after_inspection() {
   std::mt19937_64 rng{123501};
-  sim::Engine engine = make_engine(strict_second(), rng, t1_state());
+  const sim::Scenario scenario = strict_second();
+  sim::Engine engine = make_engine(scenario, rng, t1_state());
 
   // Quick Ball's legal deck inspection proves that Oricorio supplies the T1 Grass
   // attachment while leaving the T2 Treasure -> Tapu Lele-GX -> Crispin chain live.
@@ -117,7 +118,8 @@ void test_t2_holds_gladion_and_finishes() {
   std::mt19937_64 rng{123502};
   sim::TraceLog trace;
   trace.enabled = true;
-  sim::Engine engine = make_engine(strict_second(), rng, t2_state(), true, &trace);
+  const sim::Scenario scenario = strict_second();
+  sim::Engine engine = make_engine(scenario, rng, t2_state(), true, &trace);
   expect(sim::EngineTestAccess::t2_completion(engine),
          "The Active-Regidrago Treasure-Tapu-Crispin route must project T2 readiness.");
   sim::EngineTestAccess::run_turn(engine);

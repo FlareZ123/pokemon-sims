@@ -21,10 +21,16 @@
 
     const bool held_dragon_payload =
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    const bool held_gladion_prized_treasure_route =
+        deck_seen_ && prizes_known() && !item_locked() &&
+        hand_count(Card::Gladion) > 0 && held_dragon_payload &&
+        prize_count_after_reveal(Card::MysteriousTreasure) > 0 &&
+        deck_count_after_search_started(Card::RegidragoVstar) > 0;
     const bool held_supporter_payload_route =
         (hand_count(Card::Serena) > 0 && held_dragon_payload) ||
         (deck_seen_ && hand_count(Card::ProfessorBurnet) > 0 &&
-         std::any_of(state_.deck.begin(), state_.deck.end(), is_payload));
+         std::any_of(state_.deck.begin(), state_.deck.end(), is_payload)) ||
+        held_gladion_prized_treasure_route;
     const bool held_energy_and_payload_route_guarantee_next_window =
         strict_payload_timing() && state_.manual_energy_used &&
         state_.turn < scenario_.max_turn && missing_grass + missing_fire == 1 &&
@@ -34,19 +40,23 @@
     if (held_energy_and_payload_route_guarantee_next_window) {
       // The unevolved Regidrago V cannot become Regidrago VSTAR before a later legal
       // evolution window. One held Basic Energy already guarantees GGF through that
-      // turn's manual attachment, while held Serena plus a Dragon or held Professor
-      // Burnet plus a known deck Dragon guarantees a legal strict-JIT payload route.
-      // Celestial Roar cannot improve either completed axis and can randomly remove the
-      // unresolved VSTAR or connector, so preserve those resources:
+      // turn's manual attachment. Held Serena plus a Dragon, held Professor Burnet
+      // plus a known deck Dragon, or held Gladion plus a known prized Mysterious
+      // Treasure, a held Dragon cost, and a known deck Regidrago VSTAR guarantees a
+      // legal strict-JIT payload and evolution route. Celestial Roar cannot improve the
+      // earliest ready window and can randomly remove the unresolved VSTAR or connector:
       // Regidrago V and Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
       // Regidrago VSTAR evolution and Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
       // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
       // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-      // Manual attachment, evolution, attack, and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Manual attachment, evolution, attack, Item, Prize exchange, and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
       // Strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
       // Earliest complete route and resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1079
-      trace("HOLD ATTACK", "R-RV-01; R-GAME-ENERGY; R-SERENA-01; R-BURNET-01; P-JIT-01; P-COMPRESS-01",
+      // Existing confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1079
+      // Confirmed Gladion-Treasure continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/1174
+      trace("HOLD ATTACK", "R-RV-01; R-GAME-ENERGY; R-SERENA-01; R-BURNET-01; R-GLADION-01; R-MT-01; P-JIT-01; P-COMPRESS-01",
             "Held Energy and a held Supporter payload route already cover the next legal ready window.");
       return false;
     }

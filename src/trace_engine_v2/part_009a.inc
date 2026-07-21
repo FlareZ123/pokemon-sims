@@ -129,6 +129,16 @@
     // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     std::optional<Card> cost =
         choose_discard(can_jit_discard, true, true, Card::MysteriousTreasure);
+    if (!cost && want_regi && issue_1304_t1_treasure_erika_cost_available()) {
+      // Erika's Invitation cannot advance this single-player setup state, while
+      // Mysterious Treasure establishes the prior-turn Regidrago V required by
+      // the complete T2 Forest Seal Stone plus Exploding Energy route:
+      // https://api.pokemontcg.io/v2/cards/sv3pt5-160
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://api.pokemontcg.io/v2/cards/swsh12-135
+      // https://github.com/FlareZ123/pokemon-sims/issues/1304
+      cost = Card::ErikasInvitation;
+    }
     if (!cost && want_vstar) {
       cost = issue_1221_burnet_treasure_vstar_cost();
     }

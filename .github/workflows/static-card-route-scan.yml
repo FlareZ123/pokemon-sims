@@ -1,0 +1,40 @@
+name: Static card-route scan
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: static-card-route-scan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Scan hardcoded card routes
+        run: python .github/debug_static_scan.py | tee static-scan-report.txt
+      - name: Build current source
+        run: |
+          # Repository build and validation specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-tests
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Run policy and Tier Two suites
+        run: |
+          # Exact-state and choice-differentiation suites: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#test-surfaces
+          ./build/regidrago_unified_tests regidrago_policy_tests
+          ./build/regidrago_unified_tests regidrago_tier2_tests
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: static-card-route-scan
+          path: static-scan-report.txt
+          if-no-files-found: error

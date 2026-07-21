@@ -1,0 +1,62 @@
+name: Sync issue 1299 with main
+
+on:
+  push:
+    branches: [fix/issue-1299-pineco-ultra-ball-appletun]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-issue-1299
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-1299-pineco-ultra-ball-appletun
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Merge validated main
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          set +e
+          git merge origin/main --no-edit
+          merge_status=$?
+          set -e
+          if [ "$merge_status" -ne 0 ]; then
+            git checkout --theirs docs/MULTI_DECK_REPORT.md results/baseline_manifest.json results/multi_deck_manifest.json
+            git add docs/MULTI_DECK_REPORT.md results/baseline_manifest.json results/multi_deck_manifest.json
+            test -z "$(git diff --name-only --diff-filter=U)"
+            git commit --no-edit
+          fi
+      - name: Build and test Appletun fallback
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ./build/regidrago_unified_tests issue_1118_multi_deck_secret_box_tests
+      - name: Regenerate combined evidence
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe ./build/regidrago_sim --out-dir results --max-seed 20 --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe ./build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+          find results -name '.*.tmp.lock' -delete
+          test -z "$(find results -name '.*.tmp.lock' -print -quit)"
+      - name: Commit combined branch
+        run: |
+          rm -f .github/workflows/sync-issue-1299.yml
+          git add docs results
+          git add -u .github/workflows/sync-issue-1299.yml
+          git diff --cached --check
+          git commit -m 'Sync issue 1299 with validated main evidence'
+          git push origin HEAD:fix/issue-1299-pineco-ultra-ball-appletun

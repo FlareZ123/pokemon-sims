@@ -1,0 +1,39 @@
+name: Issue 1237 Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release # Repository build contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+      - name: Build simulator and repository tests
+        run: cmake --build build --parallel 2 # Repository test contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-tests
+      - name: Compile focused regression
+        run: c++ -std=c++20 -O0 -I. tests/issue_1237_quick_ball_dialga_vessel_tests.cpp -o build/issue_1237_tests # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1237
+      - name: Run focused regression
+        run: ./build/issue_1237_tests # Quick Ball, Dialga-GX, Vessel, Channeler, Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sm5-100 https://api.pokemontcg.io/v2/cards/sv4-163 https://api.pokemontcg.io/v2/cards/sm11-190 https://api.pokemontcg.io/v2/cards/swsh12-136
+      - name: Run exact simulate-this regression
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 503 --require-ready-by 3 | tee issue-1237-seed-503.txt # Official Item, discard, search, attachment, evolution, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure # Repository validation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-tests
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-1237-t2-t3-matrix.csv # Aggregate simulation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-canonical-shell-baseline
+      - name: Upload validation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1237-validation-${{ github.run_attempt }}
+          path: |
+            issue-1237-seed-503.txt
+            issue-1237-t2-t3-matrix.csv
+            build/Testing
+          if-no-files-found: error

@@ -582,10 +582,66 @@
     return true;
   }
 
+  bool issue_1304_t1_treasure_erika_cost_available() const {
+    // This exception is limited to the source-bound, observable T1 route. Erika's
+    // Invitation has no setup effect in this opponent-free model, while the paid
+    // Treasure search establishes Regidrago V one turn before it must evolve:
+    // https://api.pokemontcg.io/v2/cards/sv3pt5-160
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh12-135
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/sv4pt5-1
+    // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // https://api.pokemontcg.io/v2/cards/me1-117
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/1304
+    const bool pineco_in_play = in_play_count(Card::Pineco) > 0;
+    const bool payload_held = std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    return secret_box_combo_enabled() && state_.turn == 1 && scenario_.going_first &&
+        strict_payload_timing() && scenario_.max_turn >= 2 && !item_locked() &&
+        !rule_box_abilities_locked() && !state_.vstar_power_used && pineco_in_play &&
+        bench_space() > 0 && !has_any_regi() && hand_count(Card::RegidragoV) == 0 &&
+        hand_count(Card::MysteriousTreasure) > 0 &&
+        hand_count(Card::ErikasInvitation) > 0 &&
+        hand_count(Card::ForestSealStone) > 0 &&
+        hand_count(Card::ForretressEx) > 0 &&
+        (state_.stadium == Stadium::ForestOfVitality ||
+         hand_count(Card::ForestOfVitality) > 0) &&
+        payload_held && might_be_unseen(Card::RegidragoV) &&
+        might_be_unseen(Card::RegidragoVstar) && might_be_unseen(Card::Fire) &&
+        might_be_unseen(Card::Grass);
+  }
+
+  bool issue_1304_t1_treasure_fss_route_established() const {
+    // After Treasure resolves, K1 may verify the remaining route pieces without
+    // reading the post-shuffle top card. Star Alchemy is held as the unique direct
+    // Fire channel; the remaining Treasure is only known to exist somewhere in deck:
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+    // https://github.com/FlareZ123/pokemon-sims/issues/1304
+    const bool payload_held = std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    return state_.turn == 1 && scenario_.going_first && strict_payload_timing() &&
+        scenario_.max_turn >= 2 && !rule_box_abilities_locked() && deck_seen_ &&
+        count_of(state_.discard, Card::MysteriousTreasure) > 0 &&
+        count_of(state_.discard, Card::ErikasInvitation) > 0 &&
+        has_any_regi() && in_play_count(Card::Pineco) > 0 &&
+        hand_count(Card::ForretressEx) > 0 && payload_held &&
+        (state_.stadium == Stadium::ForestOfVitality ||
+         hand_count(Card::ForestOfVitality) > 0) &&
+        might_be_unseen(Card::MysteriousTreasure) &&
+        might_be_unseen(Card::RegidragoVstar) && might_be_unseen(Card::Fire) &&
+        might_be_unseen(Card::Grass);
+  }
+
   bool hold_fss_for_next_turn_secret_box() const {
+    const bool issue_1304_route = issue_1304_t1_treasure_fss_route_established();
     if (!secret_box_combo_enabled() || state_.turn != 1 ||
-        !secret_box_has_live_fss_holder() ||
-        hand_count(Card::SecretBox) == 0 || fire_needed() == 0) {
+        !secret_box_has_live_fss_holder() || fire_needed() == 0 ||
+        (hand_count(Card::SecretBox) == 0 && !issue_1304_route)) {
       return false;
     }
 
@@ -918,13 +974,11 @@
       play_basics_from_hand();
       play_secret_box_t1_search_items();
       attach_live_fss();
-      if (!use_fss_for_secret_box_bank()) {
-        if (hold_fss_for_next_turn_secret_box()) {
-          trace("HOLD VSTAR POWER", "R-FSS-01; R-SECRET-BOX-01; P-AXIS-01",
-                "Held Star Alchemy as the next-turn Secret Box Fire channel.");
-        } else {
-          use_fss();
-        }
+      if (hold_fss_for_next_turn_secret_box()) {
+        trace("HOLD VSTAR POWER", "R-FSS-01; R-SECRET-BOX-01; P-AXIS-01",
+              "Held Star Alchemy as the next-turn Secret Box Fire channel.");
+      } else if (!use_fss_for_secret_box_bank()) {
+        use_fss();
       }
       advance_forretress_combo();
       use_celestial_roar();

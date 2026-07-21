@@ -28,14 +28,21 @@ jobs:
       - name: Extract issue 1118 readable source
         shell: bash
         run: tar -xJf "$RUNNER_TEMP/issue1118.tar.xz"
-      - name: Commit issue 1118 readable source
+      - name: Stage issue 1118 readable source
         shell: bash
         run: |
           set -euo pipefail
           rm -rf .issue1118
           rm -f .github/workflows/materialize-1118.yml
+          rm -f .issue1118-delete-list.txt
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
-          git commit -m "Implement multi-deck Secret Box Pineco simulation (#1118)"
-          git push origin HEAD:enhancement/1118-multi-deck-secret-box
+          git status --short
+          git diff --cached --stat
+      - name: Commit issue 1118 readable source
+        shell: bash
+        run: git commit -m "Implement multi-deck Secret Box Pineco simulation (#1118)"
+      - name: Push issue 1118 readable source
+        shell: bash
+        run: git push origin HEAD:enhancement/1118-multi-deck-secret-box

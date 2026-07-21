@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Apply exact anchored patch
-        run: python tools/issue_1250_branch_patch.py
+        run: PYTHONPATH=. python tools/issue_1250_branch_patch.py
       - name: Commit source, regression, and provenance
         run: |
           rm tools/issue_1250_branch_patch.py

@@ -1,0 +1,42 @@
+name: Debug Audit 20260721
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  simulate-this-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+      - name: Run three independent debug-mode simulate-this probes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Earliest legal ready-state objective and observable-information limits:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+          # Core turn, search, attachment, evolution, Ability, Supporter, and attack procedure:
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 1429 | tee debug-pass-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 2718 | tee debug-pass-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-first --seed 31415 | tee debug-pass-3.txt
+      - name: Record tested source
+        run: git rev-parse HEAD > tested-head.txt
+      - name: Upload debug traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-audit-20260721
+          path: |
+            debug-pass-*.txt
+            tested-head.txt
+          if-no-files-found: error

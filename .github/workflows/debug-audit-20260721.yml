@@ -29,6 +29,16 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 1429 | tee debug-pass-1.txt
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 2718 | tee debug-pass-2.txt
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-first --seed 31415 | tee debug-pass-3.txt
+      - name: Audit retreat-cost callers and exact constants
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Exact prints: Regidrago V has Retreat Cost 3 and Latias ex has Retreat Cost 2:
+          # https://api.pokemontcg.io/v2/cards/swsh12-135
+          # https://api.pokemontcg.io/v2/cards/sv8-76
+          # Retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          rg -n -C 6 'retreat_cost\(' src tests docs | tee retreat-cost-callers.txt
+          rg -n -C 8 'case Card::RegidragoV: return 2|case Card::LatiasEx: return 1' src tests docs | tee retreat-cost-constants.txt
       - name: Record tested source
         run: git rev-parse HEAD > tested-head.txt
       - name: Upload debug traces
@@ -38,5 +48,6 @@ jobs:
           name: debug-audit-20260721
           path: |
             debug-pass-*.txt
+            retreat-cost-*.txt
             tested-head.txt
           if-no-files-found: error

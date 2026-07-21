@@ -1,16 +1,15 @@
 name: Issue 1250 branch patch
 
 on:
-  push:
-    branches:
-      - fix/issue-1250-pokemon-communication-universe
+  pull_request:
+    types: [opened, synchronize]
 
 permissions:
   contents: write
 
 jobs:
   apply:
-    if: github.event.head_commit.message == 'Stage issue 1250 patch'
+    if: github.event.pull_request.head.ref == 'fix/issue-1250-pokemon-communication-universe'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

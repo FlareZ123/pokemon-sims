@@ -1,0 +1,51 @@
+name: Apply issue 1300 patch
+
+on:
+  push:
+    branches: [fix/issue-1300-matrix-temp-locks]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-issue-1300
+  cancel-in-progress: true
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-1300-matrix-temp-locks
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply isolated fix
+        run: python scripts/apply_issue_1300_patch.py
+      - name: Run permanent cleanup contract
+        run: python tests/issue_1300_matrix_lock_cleanup_tests.py
+      - name: Build and run CTest contract
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R issue_1300_matrix_lock_cleanup --output-on-failure
+      - name: Exercise both real generators
+        run: |
+          mkdir -p issue-1300-output
+          python scripts/regenerate_setup_baselines.py --exe ./build/regidrago_sim --out-dir issue-1300-output/baseline --max-seed 20 --trials 1 --matrix-seed 1300
+          python scripts/generate_multi_deck_comparison.py --exe ./build/regidrago_sim --out-dir issue-1300-output/multi --trials 1 --matrix-seed 1300
+          test -z "$(find issue-1300-output -name '.*.tmp.lock' -print -quit)"
+      - name: Commit completed fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -f .github/workflows/apply-issue-1300.yml scripts/apply_issue_1300_patch.py .apply_issue_1300_patch.lock
+          git add CMakeLists.txt scripts/generate_multi_deck_comparison.py scripts/regenerate_setup_baselines.py tests/issue_1300_matrix_lock_cleanup_tests.py
+          git add -u results .github/workflows/apply-issue-1300.yml scripts/apply_issue_1300_patch.py
+          git diff --cached --check
+          git commit -m 'Clean matrix generator temporary locks (#1300)'
+          git push origin HEAD:fix/issue-1300-matrix-temp-locks

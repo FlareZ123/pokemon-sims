@@ -10,6 +10,52 @@
     return Card::RegidragoV;
   }
 
+  std::optional<Card> issue_1221_burnet_treasure_vstar_cost() const {
+    // After Professor Burnet establishes the strict current-turn payload, one
+    // setup-dead Supporter may pay Mysterious Treasure only when the searched
+    // Regidrago VSTAR immediately completes an evolution-legal Active GGF route:
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Supporter, Item, discard, search, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Strict-JIT and DCI specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1221
+    const bool burnet_resolved_this_turn = state_.supporter_used &&
+        count_of(state_.discard, Card::ProfessorBurnet) > 0 &&
+        std::any_of(state_.discarded_this_turn.begin(),
+                    state_.discarded_this_turn.end(), is_payload);
+    const bool active_route_complete = state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        state_.active->grass >= 2 && state_.active->fire >= 1 &&
+        !item_locked() && hand_count(Card::MysteriousTreasure) > 0 &&
+        might_be_unseen(Card::RegidragoVstar);
+    if (!burnet_resolved_this_turn || !active_route_complete) return std::nullopt;
+
+    // These Supporters have no remaining setup role after Burnet has consumed the
+    // Supporter play and every non-VSTAR axis is complete. Movement, recovery,
+    // Energy, ACE SPEC, Pokémon, and Tool resources remain protected.
+    for (const Card card : {Card::Channeler, Card::ErikasInvitation}) {
+      if (hand_count(card) > 0) return card;
+    }
+    return std::nullopt;
+  }
+
+  bool issue_1221_burnet_then_treasure_route_available() const {
+    if (!supporter_allowed() || item_locked() ||
+        hand_count(Card::ProfessorBurnet) == 0 ||
+        hand_count(Card::MysteriousTreasure) == 0 ||
+        !payload_might_be_in_deck() ||
+        !might_be_unseen(Card::RegidragoVstar) || !state_.active ||
+        state_.active->card != Card::RegidragoV ||
+        state_.active->entered_turn >= state_.turn ||
+        state_.active->grass < 2 || state_.active->fire < 1) {
+      return false;
+    }
+    return hand_count(Card::Channeler) > 0 ||
+           hand_count(Card::ErikasInvitation) > 0;
+  }
+
   bool play_mysterious_treasure(const bool permit_payload) {
     if (item_locked() || hand_count(Card::MysteriousTreasure) == 0) return false;
     // is_payload is the A/S readiness set. Dipplin is a legal Dragon search
@@ -75,6 +121,9 @@
     // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     std::optional<Card> cost =
         choose_discard(can_jit_discard, true, true, Card::MysteriousTreasure);
+    if (!cost && want_vstar) {
+      cost = issue_1221_burnet_treasure_vstar_cost();
+    }
     if (!cost && want_vstar && can_spend_redundant_payload_for_locked_vstar_search()) {
       // Mysterious Treasure may discard any one card. This fallback spends one
       // redundant payload only after every ordinary strict-DCI cost has failed:

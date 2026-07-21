@@ -95,7 +95,8 @@
     // https://api.pokemontcg.io/v2/cards/swsh11-136
     // https://api.pokemontcg.io/v2/cards/sm5-100
     for (const Card card : {Card::MegaDragonite, Card::Dragapult,
-                            Card::GoodraVstar, Card::DialgaGX}) {
+                            Card::GoodraVstar, Card::DialgaGX,
+                            Card::Appletun}) {  // Appletun sv8-140: https://api.pokemontcg.io/v2/cards/sv8-140
       if (discarded.size() >= 2U) break;
       if (move_deck_to_discard(card)) discarded.push_back(card);
     }

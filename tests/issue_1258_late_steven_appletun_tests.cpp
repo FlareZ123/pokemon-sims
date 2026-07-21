@@ -1,34 +1,4 @@
-from __future__ import annotations
-
-import os
-import tempfile
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "src" / "trace_engine_v2" / "part_010_steven_crispin_override.inc"
-TEST = ROOT / "tests" / "issue_1258_late_steven_appletun_tests.cpp"
-WORKFLOW = ROOT / ".github" / "workflows" / "apply-issue-1258.yml"
-SCRIPT = Path(__file__).resolve()
-
-OLD = """    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1023
-    for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
-                               Card::DialgaGX, Card::GoodraVstar}) {
-"""
-
-NEW = """    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1023
-    // Appletun is a Dragon Pokémon and a modeled Apex Dragon payload, so it is a
-    // legal Steven target for the next-turn Mysterious Treasure discard bridge:
-    // https://api.pokemontcg.io/v2/cards/sv8-140
-    // https://api.pokemontcg.io/v2/cards/sm7-145
-    // https://api.pokemontcg.io/v2/cards/sm6-113
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1258
-    for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
-                               Card::DialgaGX, Card::GoodraVstar,
-                               Card::Appletun}) {
-"""
-
-TEST_CONTENT = r'''#define REGIDRAGO_SIM_NO_MAIN
+#define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
 #include <algorithm>
@@ -175,35 +145,3 @@ int main() {
   std::cout << "Issue 1258 late Steven Appletun tests passed.\n";
   return 0;
 }
-'''
-
-
-def atomic_write(path: Path, text: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, temp_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
-            handle.write(text)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temp_name, path)
-    except BaseException:
-        try:
-            os.unlink(temp_name)
-        except FileNotFoundError:
-            pass
-        raise
-
-
-def main() -> None:
-    source = SOURCE.read_text(encoding="utf-8")
-    if source.count(OLD) != 1:
-        raise RuntimeError("Issue 1258 source anchor was not unique.")
-    atomic_write(SOURCE, source.replace(OLD, NEW, 1))
-    atomic_write(TEST, TEST_CONTENT)
-    SCRIPT.unlink()
-    WORKFLOW.unlink()
-
-
-if __name__ == "__main__":
-    main()

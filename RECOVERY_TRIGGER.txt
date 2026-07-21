@@ -4,3 +4,4 @@ Retriggered after correcting the temporary base workflow branch filter.
 Retriggered after correcting the archive part order.
 Retriggered with exhaustive shard-order validation.
 Retriggered to export raw recovery shards for byte-level inspection.
+Retriggered to decode the authoritative PR 1119 payload directly.

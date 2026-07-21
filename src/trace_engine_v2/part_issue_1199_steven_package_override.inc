@@ -19,26 +19,26 @@
         hand_count(Card::RegidragoVstar) == 0;
   }
 
-  bool issue_1199_known_steven_package_available() const {
+  bool issue_1199_known_package_after_treasure() const {
     // After Mysterious Treasure's legal inspection, K1 must prove every source in
-    // the T1 Fire, T2 Grass plus evolution and Blender, T3 Grass schedule:
+    // the Fire, Grass, Grass, VSTAR, and Blender schedule:
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Manual attachment and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // No-discard-control policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1199
-    return deck_seen_ && supporter_allowed() && !state_.manual_energy_used &&
-        state_.active && state_.active->card == Card::RegidragoV &&
+    return deck_seen_ && supporter_allowed() && state_.active &&
+        state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn &&
-        hand_count(Card::StevensResolve) > 0 && hand_count(Card::Fire) > 0 &&
+        hand_count(Card::StevensResolve) > 0 &&
         hand_count(Card::RegidragoVstar) > 0 &&
         deck_count_after_search_started(Card::Grass) >= 2 &&
         deck_count_after_search_started(Card::BrilliantBlender) > 0 &&
         std::any_of(state_.deck.begin(), state_.deck.end(), is_payload);
   }
 
-  bool issue_1199_route_available() {
+  bool issue_1199_route_available() const {
     if (!issue_1199_preinspection_candidate()) return false;
 
     // Project the exact legal Mysterious Treasure play with an isolated RNG copy.
@@ -51,25 +51,16 @@
     projected.deck_seen_ = deck_seen_;
     projected.prizes_revealed_ = prizes_revealed_;
     if (!projected.play_mysterious_treasure(false)) return false;
-    return projected.issue_1199_known_steven_package_available();
+    return projected.issue_1199_known_package_after_treasure();
   }
 
   bool play_issue_1199_steven_package() {
-    if (!deck_seen_ || !supporter_allowed() || !state_.manual_energy_used ||
-        !state_.active || state_.active->card != Card::RegidragoV ||
-        state_.active->fire < 1 || hand_count(Card::StevensResolve) == 0 ||
-        hand_count(Card::RegidragoVstar) == 0 ||
-        deck_count_after_search_started(Card::Grass) < 2 ||
-        deck_count_after_search_started(Card::BrilliantBlender) == 0 ||
-        !std::any_of(state_.deck.begin(), state_.deck.end(), is_payload)) {
+    if (!issue_1199_known_package_after_treasure() ||
+        !state_.manual_energy_used || !state_.active ||
+        state_.active->fire < 1) {
       return false;
     }
 
-    // Fire has already moved from hand to the Active Regidrago V. Recheck the
-    // remaining K1 package here without reusing the pre-attachment predicate:
-    // Manual attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1199
     remove_one(state_.hand, Card::StevensResolve);
     state_.discard.push_back(Card::StevensResolve);
     state_.supporter_used = true;
@@ -92,7 +83,7 @@
 
     // Steven searches any three cards and ends the turn. Two Grass Energy plus the
     // one-copy Blender are the complete source-bounded package, so Quick Ball, Tapu
-    // Lele-GX, Wonder Tag, Forest Seal Stone, and Star Alchemy remain unspent:
+    // Lele-GX, Wonder Tag, Forest Seal Stone, and Star Alchemy remain unspent on T1:
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
@@ -101,5 +92,32 @@
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1199
     trace("PLAY SUPPORTER", "R-STEVEN-01; R-GAME-SUPPORTER; P-COMPRESS-01",
           "Searched the issue-1199 T3 package: " + join_cards(found) + ". Turn ended.");
+    return true;
+  }
+
+  bool play_issue_1199_route_after_attachment() {
+    if (state_.turn != 1 || scenario_.going_first ||
+        scenario_.dci != DciProfile::NoDiscardControl ||
+        scenario_.locks != LockMode::None || !state_.manual_energy_used ||
+        deck_seen_ || !state_.active ||
+        state_.active->card != Card::RegidragoV || state_.active->fire < 1 ||
+        hand_count(Card::StevensResolve) == 0 ||
+        hand_count(Card::MysteriousTreasure) == 0 ||
+        hand_count(Card::Grass) > 0 || hand_count(Card::RegidragoVstar) > 0) {
+      return false;
+    }
+
+    // The preceding source-bounded gate proved this exact inspection route before
+    // the Fire attachment. Resolve the held Treasure now, then spend Steven only if
+    // the legally inspected K1 state still proves the complete package:
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Core Item, attachment, Supporter, and turn-end procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1199
+    if (!play_mysterious_treasure(false) ||
+        !issue_1199_known_package_after_treasure() ||
+        !play_issue_1199_steven_package()) {
+      throw std::logic_error("Known issue-1199 Steven package failed after projection");
+    }
     return true;
   }

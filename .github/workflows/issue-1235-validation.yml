@@ -23,17 +23,27 @@ jobs:
         run: ./build/issue_1235_tests # Quick Ball, Oricorio, Treasure, Tapu, and Crispin: https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sm2-55 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/sv7-133
       - name: Run exact simulate-this regression
         run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 211 --require-ready-by 2 | tee issue-1235-seed-211.txt # Official Item, Ability, Supporter, Bench, attachment, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-      - name: Run complete Release suite
+      - name: Regenerate canonical shell baseline
+        run: python scripts/regenerate_setup_baselines.py --exe ./build/regidrago_sim --out-dir results --max-seed 20 --trials 100000 --matrix-seed 20260705 # Canonical regeneration contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
+      - name: Regenerate paired deck baseline
+        run: python scripts/generate_multi_deck_comparison.py --exe ./build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705 # Paired comparison contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/generate_multi_deck_comparison.py
+      - name: Regenerate source-bound reports
+        run: |
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Run complete Release suite against regenerated evidence
         run: ctest --test-dir build --parallel 4 --output-on-failure # Repository validation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-tests
-      - name: Generate canonical T2 and T3 matrix
-        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-1235-t2-t3-matrix.csv # Aggregate simulation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-canonical-shell-baseline
-      - name: Upload validation artifacts
+      - name: Show generated changes
+        run: git status --short && git diff --stat
+      - name: Upload validation and regeneration artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: issue-1235-validation-${{ github.run_attempt }}
           path: |
             issue-1235-seed-211.txt
-            issue-1235-t2-t3-matrix.csv
+            results
+            docs/REPORT.md
+            docs/MULTI_DECK_REPORT.md
             build/Testing
           if-no-files-found: error

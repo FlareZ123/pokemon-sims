@@ -18,9 +18,13 @@ jobs:
         # https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
         # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
         run: python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+      - name: Regenerate paired named-deck comparison
+        run: python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
       - name: Regenerate setup reports
         # Generated-doc contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/update_setup_docs.py
-        run: python scripts/update_setup_docs.py --repo-root .
+        run: |
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
       - name: Run repository tests against regenerated baseline
         run: ctest --test-dir build --output-on-failure
       - name: Trace Treasure Energy-window reproduction
@@ -49,7 +53,11 @@ jobs:
             results/baseline_manifest.json
             results/simulation_results.csv
             results/traces
+            results/multi_deck_comparison.csv
+            results/multi_deck_manifest.json
+            results/multi_deck_traces
             docs/REPORT.md
+            docs/MULTI_DECK_REPORT.md
             docs/TRACE_AUDIT.md
             README.md
           if-no-files-found: error

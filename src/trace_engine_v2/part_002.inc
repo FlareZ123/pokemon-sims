@@ -8,9 +8,42 @@
   }
 }
 
+constexpr bool is_item(const Card card) {
+  switch (card) {
+    case Card::BrilliantBlender:
+    case Card::SecretBox:
+    case Card::MysteriousTreasure:
+    case Card::QuickBall:
+    case Card::UltraBall:
+    case Card::EvolutionIncense:
+    case Card::PokemonCommunication:
+    case Card::EarthenVessel:
+    case Card::FieldBlower:
+    case Card::HisuianHeavyBall:
+      return true;
+    default:
+      return false;
+  }
+}
+
+constexpr bool is_tool(const Card card) {
+  return card == Card::ForestSealStone || card == Card::WishfulBaton ||
+         card == Card::Powerglass;
+}
+
+constexpr bool is_stadium(const Card card) {
+  return card == Card::ChaoticSwell || card == Card::ForestOfVitality ||
+         card == Card::PathToPeak;
+}
+
+constexpr bool is_ace_spec(const Card card) {
+  return card == Card::BrilliantBlender || card == Card::SecretBox;
+}
+
+
 enum class DciProfile : std::uint8_t { StrictJit, MatchupFlexJit, NoDiscardControl };
-enum class LockMode : std::uint8_t { None, TurnTwoItem, FullItem, FullRuleBoxAbility, FullCombined };
-enum class Tool : std::uint8_t { None, ForestSealStone, Powerglass };
+enum class LockMode : std::uint8_t { None, TurnTwoItem, FullItem, FullRuleBoxAbility, FullCombined, FullSupporter };
+enum class Tool : std::uint8_t { None, ForestSealStone, WishfulBaton, Powerglass };
 enum class Stadium : std::uint8_t { None, ChaoticSwell, ForestOfVitality };
 enum class OpponentBenchState : std::uint8_t { Unknown, Unavailable, Available };
 
@@ -64,10 +97,43 @@ struct TrialOutcome {
   bool setup_failed{false};
   int mulligans{0};
   bool started_regi{false};
+  bool started_tapu{false};
   bool used_fss{false};
   bool used_legacy_star{false};
   bool used_steven{false};
   bool used_blender{false};
+  bool used_secret_box{false};
+  bool used_exploding_energy{false};
+  std::uint64_t secret_box_combo_attempted{0};
+  std::uint64_t secret_box_cost_blocked{0};
+  std::uint64_t secret_box_missing_axis{0};
+  std::uint64_t secret_box_missing_regi_axis{0};
+  std::uint64_t secret_box_missing_line_axis{0};
+  std::uint64_t secret_box_missing_vstar_axis{0};
+  std::uint64_t secret_box_missing_payload_axis{0};
+  std::uint64_t secret_box_missing_treasure_axis{0};
+  std::uint64_t secret_box_missing_fire_axis{0};
+  std::uint64_t secret_box_missing_grass_axis{0};
+  std::uint64_t secret_box_missing_ability_axis{0};
+  std::uint64_t secret_box_missing_supporter_axis{0};
+  std::uint64_t secret_box_missing_known_prize_zone{0};
+  std::uint64_t secret_box_missing_discard_zone{0};
+  std::uint64_t secret_box_missing_stranded_hand_zone{0};
+  std::uint64_t secret_box_bench_blocked{0};
+  std::uint64_t secret_box_arven_bank{0};
+  std::uint64_t secret_box_steven_bank{0};
+  std::uint64_t secret_box_gladion_bank{0};
+  std::uint64_t secret_box_fss_bank{0};
+  bool t2_missing_active_vstar{false};
+  bool t2_missing_grass{false};
+  bool t2_missing_fire{false};
+  bool t2_missing_payload{false};
+  bool t2_eligible_regi_start{false};
+  bool t2_active_regi_start{false};
+  bool t2_pineco_line_start{false};
+  bool t2_vstar_held_start{false};
+  bool t2_eligible_held_vstar_missed_active{false};
+  bool t2_eligible_missed_active{false};
 };
 
 struct Aggregate {
@@ -79,10 +145,43 @@ struct Aggregate {
   std::uint64_t ready_on5{0};
   std::uint64_t setup_failures{0};
   std::uint64_t started_regi{0};
+  std::uint64_t started_tapu{0};
   std::uint64_t fss{0};
   std::uint64_t legacy{0};
   std::uint64_t steven{0};
   std::uint64_t blender{0};
+  std::uint64_t secret_box{0};
+  std::uint64_t exploding_energy{0};
+  std::uint64_t secret_box_combo_attempted{0};
+  std::uint64_t secret_box_cost_blocked{0};
+  std::uint64_t secret_box_missing_axis{0};
+  std::uint64_t secret_box_missing_regi_axis{0};
+  std::uint64_t secret_box_missing_line_axis{0};
+  std::uint64_t secret_box_missing_vstar_axis{0};
+  std::uint64_t secret_box_missing_payload_axis{0};
+  std::uint64_t secret_box_missing_treasure_axis{0};
+  std::uint64_t secret_box_missing_fire_axis{0};
+  std::uint64_t secret_box_missing_grass_axis{0};
+  std::uint64_t secret_box_missing_ability_axis{0};
+  std::uint64_t secret_box_missing_supporter_axis{0};
+  std::uint64_t secret_box_missing_known_prize_zone{0};
+  std::uint64_t secret_box_missing_discard_zone{0};
+  std::uint64_t secret_box_missing_stranded_hand_zone{0};
+  std::uint64_t secret_box_bench_blocked{0};
+  std::uint64_t secret_box_arven_bank{0};
+  std::uint64_t secret_box_steven_bank{0};
+  std::uint64_t secret_box_gladion_bank{0};
+  std::uint64_t secret_box_fss_bank{0};
+  std::uint64_t t2_missing_active_vstar{0};
+  std::uint64_t t2_missing_grass{0};
+  std::uint64_t t2_missing_fire{0};
+  std::uint64_t t2_missing_payload{0};
+  std::uint64_t t2_eligible_regi_start{0};
+  std::uint64_t t2_active_regi_start{0};
+  std::uint64_t t2_pineco_line_start{0};
+  std::uint64_t t2_vstar_held_start{0};
+  std::uint64_t t2_eligible_held_vstar_missed_active{0};
+  std::uint64_t t2_eligible_missed_active{0};
   double total_mulligans{0.0};
 };
 

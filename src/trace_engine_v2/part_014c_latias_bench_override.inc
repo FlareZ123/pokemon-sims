@@ -289,6 +289,10 @@
   }
 
   void run_turn() {
+    if (secret_box_combo_enabled()) {
+      run_secret_box_turn();
+      return;
+    }
     trace("POLICY", "P-AXIS-01", "Start: " + state_line());
     if (complete_late_steven_vstar_vessel_continuation()) return;
     play_chaotic_swell();

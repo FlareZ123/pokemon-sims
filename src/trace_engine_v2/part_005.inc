@@ -27,6 +27,17 @@
   bool play_evolution_incense_for_forretress();
   bool run_forretress_combo_search_step(bool permit_payload);
 
+  std::string current_deck_id() const {
+    if (total_copies(Card::SecretBox) > 0 && total_copies(Card::Pineco) > 0) {
+      return "regidrago-pineco";
+    }
+    if (total_copies(Card::RegidragoV) == 4 &&
+        total_copies(Card::BrilliantBlender) == 1) {
+      return "regidrago-shell";
+    }
+    return "custom";
+  }
+
   void setup() {
     deck_seen_ = false;
     prizes_revealed_ = false;
@@ -49,6 +60,7 @@
     }
 
     choose_opening_active();
+    outcome_.started_tapu = state_.active && state_.active->card == Card::TapuLeleGX;
     choose_opening_bench();
     // Place six Prize cards from the already-shuffled remaining deck after the
     // opening Active and optional Bench are selected. The setup procedure does
@@ -60,6 +72,7 @@
 
     if (trace_ != nullptr && trace_->enabled) {
       trace_->note("===== SIMULATE THIS =====");
+      trace_->note("Deck: " + current_deck_id());
       trace_->note("Scenario: " + scenario_.label + " | DCI: " + dci_name() + " | Locks: " + lock_name());
       trace_->note("Mulligans: " + std::to_string(outcome_.mulligans));
       trace_->note("Opening player-known state: " + state_line());
@@ -84,6 +97,7 @@
       case LockMode::FullItem: return "full Item lock";
       case LockMode::FullRuleBoxAbility: return "full Rule Box Ability lock";
       case LockMode::FullCombined: return "full Item + Rule Box Ability lock";
+      case LockMode::FullSupporter: return "full Supporter lock";
     }
     return "unknown";
   }

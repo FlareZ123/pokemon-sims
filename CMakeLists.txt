@@ -276,6 +276,7 @@ set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)
 add_test(NAME card_audit_contract COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/card_audit_contract_tests.py")
 add_test(NAME card_audit_category_contract COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/card_audit_category_contract_tests.py")
 add_test(NAME setup_report_contract COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/setup_report_contract_tests.py")
+add_test(NAME multi_deck_report_contract COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/multi_deck_report_contract_tests.py")
 add_test(NAME setup_docs_generator_contract COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/update_setup_docs_tests.py")
 
 # Star Alchemy must project the same-turn Regidrago V evolution and choose Latias ex

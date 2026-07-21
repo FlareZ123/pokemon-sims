@@ -1,58 +1,81 @@
 # pokemon-sims
 
-A traceable, rules-mapped goldfish simulator for the supplied Pokémon TCG Live Expanded Regidrago VSTAR deck.
+A traceable, rules-mapped goldfish simulator for two named Pokémon TCG Live Expanded Regidrago VSTAR recipes.
 
 ## Audit status
 
-This repository contains a rules-mapped simulator, deterministic `simulate-this` traces, six scenario trace regressions, **57 core exact-state policy fixtures**, and a **31-case Tier Two** suite for choice differentiation and fast-compression states. The executable fixture tables are the canonical inventories: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/policy_fixture_v2/part_004a.inc#L134-L191 and https://github.com/FlareZ123/pokemon-sims/blob/main/tests/tier2_parts/part_003b.inc#L40-L73. The synchronized indexes are in [`docs/OPTIMAL_POLICY_FIXTURES.md`](docs/OPTIMAL_POLICY_FIXTURES.md) and [`docs/TIER2_POLICY_FIXTURES.md`](docs/TIER2_POLICY_FIXTURES.md). The K0/K1 knowledge model and connector hierarchy are recorded in [`docs/POLICY_DECISIONS.md`](docs/POLICY_DECISIONS.md). Exact direct card-text and procedure URLs are in [`docs/RULE_SOURCES.md`](docs/RULE_SOURCES.md), with the same raw URLs placed in the active source wrapper. The card-text recheck is in [`docs/RULES_REVERIFICATION.md`](docs/RULES_REVERIFICATION.md).
+The repository contains a rules-mapped simulator, deterministic `simulate-this` traces, core exact-state policy fixtures, Tier Two choice-differentiation fixtures, fixed-seed statistical matrices, source provenance, and sanitizer validation. Exact rule and card sources are registered in [`docs/RULE_SOURCES.md`](docs/RULE_SOURCES.md) and [`docs/RULES_TRACEABILITY.md`](docs/RULES_TRACEABILITY.md).
 
-The model is deliberately a single-player setup model. It does not claim to resolve every Expanded card or any opponent-dependent game state.
+The model is deliberately a single-player setup model. It does not resolve every Expanded card or opponent-dependent game state.
 
-## Supported cards beyond the sample deck
+## Named deck recipes
 
-The engine intentionally implements some cards that are absent from the canonical sample deck in [`data/decklist.json`](data/decklist.json). Those source-bound card identities, rules, and search connectors let isolated regression fixtures test cross-card combinations while the simulator grows toward broader deck support. They must not be removed merely because the current sample 60 does not contain them.
+The validated registry contains exactly two decks:
 
-Variant recipes used for these checks belong in tests only. They must not add rows to the normal CLI scenario matrix, change `baseline_recipe()`, or be written into canonical aggregate results. Pineco and Forretress ex are one such test-only 2-2 line: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://github.com/FlareZ123/pokemon-sims/issues/972.
+- `regidrago-shell`: the historical repository list. This remains the default when `--deck` is omitted.
+- `regidrago-pineco`: the Secret Box list with two Pineco, two Forretress ex, two Dawn, two Forest of Vitality, four Tapu Lele-GX, and Appletun `sv8-140` as a discard-only Dragon payload.
+
+The withdrawn Pineco Brilliant Blender proposal is not registered. Every registered recipe must contain exactly 60 cards, obey the four-copy limit outside Basic Energy, contain at most one ACE SPEC, and include the lower stage for modeled in-play evolution lines.
+
+Direct identities: Secret Box https://api.pokemontcg.io/v2/cards/sv6-163, Appletun https://api.pokemontcg.io/v2/cards/sv8-140, Pineco https://api.pokemontcg.io/v2/cards/sv4pt5-1, Forretress ex https://api.pokemontcg.io/v2/cards/sv4pt5-2, Dawn https://api.pokemontcg.io/v2/cards/me2-87, and Forest of Vitality https://api.pokemontcg.io/v2/cards/me1-117.
 
 ## Run one readable hand
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel 2
-./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2
 ```
 
-The command prints the opening player-known state, debug-only prizes, every draw, card cost, search, attachment, evolution, retreat, VSTAR Power, attack, and ready-state check. The debug Prize list is never read by policy before a legal reveal/search effect.
+Each trace prints the selected deck ID, opening player-known state, debug-only Prize cards, every cost, search, attachment, evolution, retreat, VSTAR Power, attack, and ready-state check. Policy never reads debug Prize output before a legal deck or Prize inspection.
 
-## Run exact-state policy tests
+## Run tests
 
 ```bash
 ctest --test-dir build --output-on-failure
-./build/regidrago_unified_tests regidrago_policy_tests
-./build/regidrago_unified_tests regidrago_tier2_tests
+./build/regidrago_unified_tests issue_1118_multi_deck_secret_box_tests
 ```
 
-The `regidrago_policy_tests` unified case checks core rule and connector legality. The `regidrago_tier2_tests` unified case checks comparison states, including direct Crispin versus indirect Energy routes, Steven versus Arven, K0/K1 Gladion and Heavy Ball choices, Heavy Ball into Tapu Lele-GX Supporter chains, Forest Seal Stone conservation, Rule Box lock-aware search paths, Tate & Liza switch and draw modes, and Arven fallback selection.
+The issue-specific suite covers recipe validation, unknown or withdrawn deck identities, Appletun stage and payload identity, the complete Secret Box route, strict DCI cost protection, Mysterious Treasure cost reservation, Bench limits, turn-one evolution, locks, legal Prize recovery, and reviewed seeded traces.
 
-## Run aggregate smoke test
+## Generate the canonical shell baseline
+
+```bash
+python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+python scripts/update_setup_docs.py --repo-root .
+```
+
+The historical aggregate CLI remains backward compatible:
 
 ```bash
 ./build/regidrago_sim --trials 100000 --seed 20260705 --out results/simulation_results.csv
 ```
 
-## T5 horizon and setup-loss rule
+## Generate the paired two-deck matrices
 
-Standard scenarios stop early when they become ready through T4. Games still unresolved after T4 continue through T5 for diagnostic recovery data. Reaching T5 is classified as a setup loss even when the deck first becomes ready during that turn.
+```bash
+python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+python scripts/update_multi_deck_docs.py --repo-root .
+```
 
-Aggregate CSV output separates cumulative `ready_by_t5_pct`, T5-only `ready_on_t5_pct`, and the benchmark `setup_failure_pct`. The failure percentage is the complement of readiness through T4. A T5 recovery remains inside that failure count.
+The paired generator runs both decks across all 16 scenarios, producing 32 independent 100,000-trial rows and 3.2 million simulated games. It writes `results/multi_deck_comparison.csv`, `results/multi_deck_manifest.json`, reviewed named-deck traces, and [`docs/MULTI_DECK_REPORT.md`](docs/MULTI_DECK_REPORT.md). Both decks use the same derived seed for each scenario.
 
-## Scope
+The equivalent direct command is:
 
-A ready state means:
+```bash
+./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out results/multi_deck_comparison.csv
+```
+
+## Ready-state and T5 policy
+
+A ready state requires:
 
 1. Active Regidrago VSTAR.
-2. At least two Grass and one Fire attached.
-3. A modeled Dragon payload in discard: Dragapult ex, Mega Dragonite ex, Dialga-GX, or Hisuian Goodra VSTAR.
-4. In strict and matchup-flex profiles, that payload entered discard in the current player turn and remains in discard at the ready check.
+2. At least two Grass Energy and one Fire Energy attached.
+3. A modeled Dragon payload in discard. Appletun is eligible only in a recipe that contains it.
+4. Strict and matchup-flex JIT require the payload to enter discard during the ready turn.
 
-See `docs/T5_FAILURE_POLICY.md`, `docs/RULES_TRACEABILITY.md`, `docs/RULES_REVERIFICATION.md`, `docs/RULE_SOURCES.md`, `docs/POLICY_DECISIONS.md`, `docs/OPTIMAL_POLICY_FIXTURES.md`, `docs/TIER2_POLICY_FIXTURES.md`, `docs/TRACE_AUDIT.md`, `docs/MODEL_ASSUMPTIONS.md`, and `docs/REPORT.md`.
+Readiness through T4 is setup success. T5 remains a diagnostic recovery turn and is counted inside setup failure.
+
+See `docs/MODEL_ASSUMPTIONS.md`, `docs/POLICY_DECISIONS.md`, `docs/RULES_TRACEABILITY.md`, `docs/RULE_SOURCES.md`, `docs/TRACE_AUDIT.md`, `docs/REPORT.md`, and `docs/MULTI_DECK_REPORT.md`.

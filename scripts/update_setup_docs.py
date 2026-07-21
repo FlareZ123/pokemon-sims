@@ -24,6 +24,8 @@ SCENARIO_LABELS = {
     "strict-jit-full-item-lock/go-second": "Strict JIT, full Item lock, second",
     "strict-jit-rulebox-ability-lock/go-second": "Strict JIT, Rule Box Ability lock, second",
     "strict-jit-combined-lock/go-second": "Strict JIT, combined lock, second",
+    "strict-jit-supporter-lock/go-first": "Strict JIT, Supporter lock, first",
+    "strict-jit-supporter-lock/go-second": "Strict JIT, Supporter lock, second",
 }
 
 

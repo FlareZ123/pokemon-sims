@@ -175,8 +175,26 @@
   }
 
   void record_ready() {
-    const bool ready = state_.turn >= 2 && active_is_vstar() && state_.active->grass >= 2 && state_.active->fire >= 1 && payload_ready();
-    if (!ready) return;
+    const bool active_vstar = active_is_vstar();
+    const bool grass_ready = active_vstar && state_.active->grass >= 2;
+    const bool fire_ready = active_vstar && state_.active->fire >= 1;
+    const bool payload_is_ready = payload_ready();
+    const bool ready = state_.turn >= 2 && active_vstar && grass_ready &&
+        fire_ready && payload_is_ready;
+    if (!ready) {
+      if (state_.turn == 2) {
+        outcome_.t2_missing_active_vstar = !active_vstar;
+        outcome_.t2_missing_grass = !grass_ready;
+        outcome_.t2_missing_fire = !fire_ready;
+        outcome_.t2_missing_payload = !payload_is_ready;
+        outcome_.t2_eligible_missed_active =
+            outcome_.t2_eligible_regi_start && !active_vstar;
+        outcome_.t2_eligible_held_vstar_missed_active =
+            outcome_.t2_eligible_regi_start && outcome_.t2_vstar_held_start &&
+            !active_vstar;
+      }
+      return;
+    }
     if (outcome_.first_ready_turn == 0) {
       outcome_.first_ready_turn = state_.turn;
       trace("READY", "R-RVS-01; P-JIT-01", "Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.");
@@ -200,18 +218,119 @@
 #undef use_legacy_star
 };
 
-// Pineco and Forretress ex are supported through test-only variant recipes. The
-// qualified definitions live after Engine closes so the canonical sample deck and
-// matrix rows remain unchanged:
+// Pineco and Forretress ex mechanics are shared by exact-state fixtures and the
+// registered regidrago-pineco recipe. Qualified definitions live after Engine closes:
 // https://api.pokemontcg.io/v2/cards/sv4pt5-1
 // https://api.pokemontcg.io/v2/cards/sv4pt5-2
 // https://github.com/FlareZ123/pokemon-sims/issues/972
 #include "part_forretress_ex_combo.inc"
 
-DeckRecipe baseline_recipe() { return DeckRecipe(kDeckRecipe.begin(), kDeckRecipe.end()); }
+DeckRecipe baseline_recipe() {
+  return DeckRecipe(kDeckRecipe.begin(), kDeckRecipe.end());
+}
+
+DeckRecipe pineco_recipe() {
+  // Exact issue-1118 Secret Box recipe. Appletun is a Stage 1 Dragon payload and
+  // remains unplayable because the recipe intentionally contains no Applin:
+  // https://api.pokemontcg.io/v2/cards/sv8-140
+  // https://api.pokemontcg.io/v2/cards/sv6-163
+  // https://github.com/FlareZ123/pokemon-sims/issues/1118
+  return {
+      {Card::Grant, 1},              {Card::FieldBlower, 1},
+      {Card::ErikasInvitation, 1},   {Card::ProfessorBurnet, 1},
+      {Card::Dawn, 2},               {Card::QuickBall, 3},
+      {Card::Pineco, 2},             {Card::ForretressEx, 2},
+      {Card::TapuLeleGX, 4},         {Card::Guzma, 1},
+      {Card::WishfulBaton, 1},       {Card::StevensResolve, 1},
+      {Card::ForestSealStone, 1},    {Card::ForestOfVitality, 2},
+      {Card::Gladion, 2},            {Card::HisuianHeavyBall, 1},
+      {Card::Crispin, 1},            {Card::Arven, 2},
+      {Card::MysteriousTreasure, 4}, {Card::RegidragoV, 4},
+      {Card::RegidragoVstar, 3},     {Card::DialgaGX, 1},
+      {Card::Dragapult, 2},          {Card::MegaDragonite, 2},
+      {Card::GoodraVstar, 1},        {Card::Appletun, 1},
+      {Card::ProfessorTuro, 1},      {Card::EarthenVessel, 2},
+      {Card::Grass, 6},              {Card::Fire, 3},
+      {Card::SecretBox, 1},
+  };
+}
+
+struct NamedDeck {
+  std::string id;
+  DeckRecipe recipe;
+};
+
+bool validate_recipe(const NamedDeck& deck, std::string* error = nullptr) {
+  const auto fail = [&](const std::string& message) {
+    if (error != nullptr) *error = deck.id + ": " + message;
+    return false;
+  };
+  if (deck.id.empty()) return fail("deck ID is empty");
+
+  int total = 0;
+  int ace_specs = 0;
+  std::map<Card, int> copies_by_card;
+  for (const auto& [card, copies] : deck.recipe) {
+    if (copies <= 0) return fail("card copy count must be positive");
+    total += copies;
+    copies_by_card[card] += copies;
+    if (!is_energy(card) && copies_by_card[card] > 4) {
+      return fail(std::string(name(card)) + " exceeds the four-copy limit");
+    }
+    if (is_ace_spec(card)) ace_specs += copies;
+  }
+  if (total != 60) return fail("recipe must contain exactly 60 cards");
+  if (ace_specs > 1) return fail("recipe contains more than one ACE SPEC");
+  if (copies_by_card[Card::RegidragoVstar] > 0 &&
+      copies_by_card[Card::RegidragoV] == 0) {
+    return fail("Regidrago VSTAR has no Regidrago V");
+  }
+  if (copies_by_card[Card::ForretressEx] > 0 &&
+      copies_by_card[Card::Pineco] == 0) {
+    return fail("Forretress ex has no Pineco");
+  }
+  // Appletun has no Applin in either named recipe. That is legal because the
+  // simulator represents it solely as an Apex Dragon discard payload and never
+  // admits it as a Basic or an in-play evolution:
+  // https://api.pokemontcg.io/v2/cards/sv8-140
+  if (copies_by_card[Card::Appletun] > 0 &&
+      (is_basic(Card::Appletun) || !is_payload(Card::Appletun))) {
+    return fail("Appletun must remain a non-Basic Dragon payload");
+  }
+  return true;
+}
+
+const std::vector<NamedDeck>& deck_registry() {
+  static const std::vector<NamedDeck> decks = [] {
+    std::vector<NamedDeck> result{
+        {"regidrago-shell", baseline_recipe()},
+        {"regidrago-pineco", pineco_recipe()},
+    };
+    for (const NamedDeck& deck : result) {
+      std::string error;
+      if (!validate_recipe(deck, &error)) throw std::logic_error(error);
+    }
+    return result;
+  }();
+  return decks;
+}
+
+const NamedDeck* deck_by_id(const std::string_view id) {
+  const std::string_view normalized =
+      id == "regidrago-pineco-secret-box" ? "regidrago-pineco" : id;
+  const auto& decks = deck_registry();
+  const auto found = std::find_if(
+      decks.begin(), decks.end(), [normalized](const NamedDeck& deck) {
+        return deck.id == normalized;
+      });
+  return found == decks.end() ? nullptr : &*found;
+}
 
 std::vector<Scenario> all_scenarios() {
   std::vector<Scenario> result;
+  // Preserve the historical 14-row order exactly. The seed schedule derives
+  // from this index, so new conditions are appended after every existing row:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1118
   for (const bool first : {true, false}) {
     const std::string seat = first ? "go-first" : "go-second";
     result.push_back({"strict-jit/" + seat, DciProfile::StrictJit, LockMode::None, first, 5});
@@ -222,6 +341,10 @@ std::vector<Scenario> all_scenarios() {
     result.push_back({"strict-jit-rulebox-ability-lock/" + seat, DciProfile::StrictJit, LockMode::FullRuleBoxAbility, first, 5});
     result.push_back({"strict-jit-combined-lock/" + seat, DciProfile::StrictJit, LockMode::FullCombined, first, 5});
   }
+  result.push_back({"strict-jit-supporter-lock/go-first",
+                    DciProfile::StrictJit, LockMode::FullSupporter, true, 5});
+  result.push_back({"strict-jit-supporter-lock/go-second",
+                    DciProfile::StrictJit, LockMode::FullSupporter, false, 5});
   return result;
 }
 

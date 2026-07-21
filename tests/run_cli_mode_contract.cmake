@@ -46,6 +46,8 @@ set(ignored_aggregate_scenario "${TEST_DIR}/ignored-aggregate-scenario.csv")
 set(ignored_aggregate_start_seed "${TEST_DIR}/ignored-aggregate-start-seed.csv")
 set(ignored_trace_output "${TEST_DIR}/ignored-trace-output.csv")
 set(ignored_find_output "${TEST_DIR}/ignored-find-output.csv")
+set(pineco_aggregate_output "${TEST_DIR}/pineco-aggregate.csv")
+set(all_decks_output "${TEST_DIR}/all-decks.csv")
 
 # Preserve each supported mode and its mode-specific controls.
 expect_cli_success(aggregate-valid --trials 1 --seed 0 --out "${aggregate_output}")
@@ -55,6 +57,41 @@ endif()
 expect_cli_success(single-trace-valid --simulate-this --scenario strict-jit/go-second --seed 3)
 expect_cli_success(find-ready-valid --find-ready 1 --start-seed 1 --scenario strict-jit/go-second)
 expect_cli_success(self-test-valid --self-test)
+
+# Named-deck selection is explicit in traces and aggregate rows. The default
+# remains regidrago-shell, while --all-decks emits both registered recipes:
+# https://github.com/FlareZ123/pokemon-sims/issues/1118
+expect_cli_success(pineco-aggregate-valid --deck regidrago-pineco --trials 1 --seed 0 --out "${pineco_aggregate_output}")
+file(READ "${pineco_aggregate_output}" pineco_aggregate_text)
+string(FIND "${pineco_aggregate_text}" "\"regidrago-pineco\"" pineco_deck_row)
+if(pineco_deck_row EQUAL -1)
+  message(FATAL_ERROR "pineco-aggregate-valid: output omitted the selected deck ID")
+endif()
+expect_cli_success(all-decks-valid --all-decks --trials 1 --seed 0 --out "${all_decks_output}")
+file(READ "${all_decks_output}" all_decks_text)
+foreach(deck_id IN ITEMS regidrago-shell regidrago-pineco)
+  string(FIND "${all_decks_text}" "\"${deck_id}\"" deck_position)
+  if(deck_position EQUAL -1)
+    message(FATAL_ERROR "all-decks-valid: output omitted ${deck_id}")
+  endif()
+endforeach()
+expect_cli_success(pineco-trace-valid --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2)
+expect_cli_error(deck-all-decks-conflict --deck regidrago-shell --all-decks --trials 1)
+
+execute_process(
+  COMMAND "${SIMULATOR}" --deck unknown-deck --trials 1 --out "${TEST_DIR}/unknown.csv"
+  RESULT_VARIABLE unknown_deck_result
+  OUTPUT_VARIABLE unknown_deck_output
+  ERROR_VARIABLE unknown_deck_error
+)
+if(NOT unknown_deck_result EQUAL 1)
+  message(FATAL_ERROR "unknown-deck: expected exit 1, got ${unknown_deck_result}")
+endif()
+string(FIND "${unknown_deck_error}" "unknown deck: unknown-deck" unknown_deck_message)
+if(unknown_deck_message EQUAL -1)
+  message(FATAL_ERROR "unknown-deck: missing clear diagnostic
+${unknown_deck_error}")
+endif()
 
 # Aggregate mode may use trials, seed, and output. Trace-only selectors must fail
 # before the aggregate CSV is written:
@@ -188,6 +225,7 @@ endif()
 expect_cli_error(self-test-trials --self-test --trials 1)
 expect_cli_error(self-test-trace --self-test --simulate-this)
 expect_cli_error(self-test-find --self-test --find-ready 1)
+expect_cli_error(self-test-deck --self-test --deck regidrago-shell)
 
 foreach(path IN ITEMS
     "${ignored_aggregate_deadline}"

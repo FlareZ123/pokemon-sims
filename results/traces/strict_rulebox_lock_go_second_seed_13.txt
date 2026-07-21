@@ -1,6 +1,8 @@
 
+Deck: regidrago-shell | Seed: 13 | first-ready turn: 2 | setup result: success
 Seed: 13 | first-ready turn: 2 | setup result: success
 ===== SIMULATE THIS =====
+Deck: regidrago-shell
 Scenario: strict-jit-rulebox-ability-lock/go-second | DCI: strict-JIT | Locks: full Rule Box Ability lock
 Mulligans: 0
 Opening player-known state: Active=Regidrago V [-] | Bench=Regidrago V [-] | Hand=Mega Dragonite ex, Fire Energy, Grass Energy, Dragapult ex, Regidrago VSTAR | Discard=(none)

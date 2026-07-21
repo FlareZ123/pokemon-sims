@@ -73,3 +73,15 @@ K1 begins only during a legal effect resolution. It does not grant prior knowled
 - `--simulate-this`: seeded full-game traces with state changes labeled by rule and policy IDs.
 
 Every policy test is deterministic and starts from an explicit state. The tests constrain the model's choices; they do not constitute a proof of globally optimal play across every hidden deck order or opponent response.
+
+## Secret Box and Pineco route policy
+
+The `regidrago-pineco` policy compares a direct Regidrago completion against the Forretress route before spending resources. It does not assume visible Pineco pieces make the combo optimal.
+
+A planned sequence may use Arven, Gladion, or Steven's Resolve on T1 and Dawn on T2. These are sequential Supporters, so they are not treated as same-turn contention. Secret Box pays three other cards first and reserves any additional discard needed by the selected Item. Search categories are adaptive: held Fire can remove the Forest Seal Stone requirement, prior-turn Pineco can remove Forest of Vitality, held VSTAR can change the Item target, and an existing payload can remove Dawn's Stage 2 target.
+
+Route-aware DCI may spend a normally protected card only when the complete observable route replaces its role. This includes redundant Energy, duplicate VSTAR cards, a search Item replaced by Secret Box, or a Supporter that cannot be played after Dawn consumes the Supporter action. The strict fixture still blocks Secret Box when the third apparent cost is a unique, unreplaced VSTAR axis.
+
+The policy models proactive Active-position recovery. Tapu Lele-GX can receive a T1 Grass attachment and retreat to an evolution-eligible Regidrago V. Exploding Energy can fund a later retreat when that creates the earliest complete route. Forest Seal Stone and Legacy Star remain mutually exclusive VSTAR Powers.
+
+All route decisions and failure counters are recipe-gated. They do not change the shell action selector.

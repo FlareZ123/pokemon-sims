@@ -5,6 +5,7 @@
   if (p.grass == 0 && p.fire == 0) out << "-";
   out << "]";
   if (p.tool == Tool::ForestSealStone) out << " + Forest Seal Stone";
+  if (p.tool == Tool::WishfulBaton) out << " + Wishful Baton";
   if (p.tool == Tool::Powerglass) out << " + Powerglass";
   return out.str();
 }
@@ -96,6 +97,7 @@ class Engine {
         case Card::Grass: return pokemon.grass;
         case Card::Fire: return pokemon.fire;
         case Card::ForestSealStone: return pokemon.tool == Tool::ForestSealStone ? 1 : 0;
+        case Card::WishfulBaton: return pokemon.tool == Tool::WishfulBaton ? 1 : 0;
         case Card::Powerglass: return pokemon.tool == Tool::Powerglass ? 1 : 0;
         default: return 0;
       }
@@ -149,7 +151,7 @@ class Engine {
   }
 
   bool first_turn_going_first() const { return state_.turn == 1 && scenario_.going_first; }
-  bool supporter_allowed() const { return !first_turn_going_first() && !state_.supporter_used && !state_.turn_ended; }
+  bool supporter_allowed() const { return scenario_.locks != LockMode::FullSupporter && !first_turn_going_first() && !state_.supporter_used && !state_.turn_ended; }
   bool item_locked() const {
     return scenario_.locks == LockMode::FullItem || scenario_.locks == LockMode::FullCombined ||
            (scenario_.locks == LockMode::TurnTwoItem && state_.turn >= 2);

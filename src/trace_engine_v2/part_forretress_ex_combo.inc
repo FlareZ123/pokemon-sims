@@ -151,6 +151,7 @@ bool Engine::resolve_exploding_energy(
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/issues/972
   record_deck_search_knowledge("Exploding Energy");
+  outcome_.used_exploding_energy = true;
   for (const std::size_t destination : attachment_destinations) {
     if (!remove_one(state_.deck, Card::Grass)) {
       throw std::logic_error(
@@ -184,11 +185,23 @@ bool Engine::resolve_exploding_energy(
             "Prize cards in a complete two-player game.");
 
   if (!state_.active && !state_.bench.empty()) {
-    state_.active = state_.bench.front();
-    state_.bench.erase(state_.bench.begin());
-    trace("PROMOTE", "R-GAME-KO",
+    const auto promotion_rank = [](const Pokemon& pokemon) {
+      const int role = pokemon.card == Card::RegidragoVstar ? 3 :
+          (pokemon.card == Card::RegidragoV ? 2 : 1);
+      return std::tuple{role, pokemon.grass + pokemon.fire,
+                        -pokemon.entered_turn};
+    };
+    const auto promoted = std::max_element(
+        state_.bench.begin(), state_.bench.end(),
+        [&promotion_rank](const Pokemon& left, const Pokemon& right) {
+          return promotion_rank(left) < promotion_rank(right);
+        });
+    state_.active = *promoted;
+    state_.bench.erase(promoted);
+    trace("PROMOTE", "R-GAME-KO; R-FORRETRESS-01",
           std::string(name(state_.active->card)) +
-              " was promoted after the Active Forretress ex was Knocked Out.");
+              " was selected from the Bench after the Active Forretress ex "
+              "was Knocked Out.");
   }
   return true;
 }
@@ -207,20 +220,83 @@ bool Engine::use_exploding_energy_for_setup() {
   // the printed deck search begins:
   // https://api.pokemontcg.io/v2/cards/sv4pt5-2
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-  // https://github.com/FlareZ123/pokemon-sims/issues/972
+  // https://github.com/FlareZ123/pokemon-sims/issues/1118
   record_deck_search_knowledge("Exploding Energy");
-  const int available = deck_count_after_search_started(Card::Grass);
+  const int available = std::min(5, deck_count_after_search_started(Card::Grass));
+  if (available <= 0) return false;
 
-  // Use all five legal attachments when available. Extra Grass Energy remains
-  // attached to the selected Regidrago and therefore preserves the modeled GGF
-  // requirement while exercising the complete printed combo:
+  std::vector<std::size_t> destinations;
+  const bool source_is_active =
+      state_.active && state_.active->card == Card::ForretressEx;
+  const bool active_blocks_regi = !source_is_active && state_.active &&
+      state_.active->card != Card::RegidragoV &&
+      state_.active->card != Card::RegidragoVstar;
+  const int active_retreat_cost = active_blocks_regi && !state_.retreat_used
+      ? retreat_cost(state_.active->card) : 0;
+  const int target_grass_needed = std::max(0, grass_needed());
+
+  // Exploding Energy may distribute its five Grass among any Pokémon. When a
+  // non-Regidrago Active blocks a Benched setup target, pay that printed Retreat
+  // Cost from the Ability while retaining enough Grass on Regidrago. This models
+  // the real T2 Tapu, Pineco, and Dialga recovery line rather than leaving a fully
+  // powered VSTAR stranded on the Bench:
   // https://api.pokemontcg.io/v2/cards/sv4pt5-2
-  // https://api.pokemontcg.io/v2/cards/swsh12-136
-  // https://github.com/FlareZ123/pokemon-sims/issues/972
-  const int selected = std::min(5, available);
-  return resolve_exploding_energy(
-      std::vector<std::size_t>(static_cast<std::size_t>(selected),
-                               *target_index));
+  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sv4pt5-1
+  // https://api.pokemontcg.io/v2/cards/sm5-100
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/issues/1118
+  const bool can_fund_retreat = active_retreat_cost > 0 &&
+      available >= active_retreat_cost + target_grass_needed;
+  if (can_fund_retreat) {
+    destinations.insert(destinations.end(),
+                        static_cast<std::size_t>(active_retreat_cost), 0U);
+  }
+  destinations.insert(destinations.end(),
+                      static_cast<std::size_t>(available -
+                          (can_fund_retreat ? active_retreat_cost : 0)),
+                      *target_index);
+
+  if (!resolve_exploding_energy(destinations)) return false;
+  if (!can_fund_retreat || !state_.active) return true;
+
+  int remaining_cost = active_retreat_cost;
+  while (remaining_cost > 0 && state_.active->grass > 0) {
+    --state_.active->grass;
+    state_.discard.push_back(Card::Grass);
+    --remaining_cost;
+  }
+  while (remaining_cost > 0 && state_.active->fire > 0) {
+    --state_.active->fire;
+    state_.discard.push_back(Card::Fire);
+    --remaining_cost;
+  }
+  if (remaining_cost != 0) {
+    throw std::logic_error("Exploding Energy retreat payment disappeared");
+  }
+  const auto target = std::max_element(
+      state_.bench.begin(), state_.bench.end(), [](const Pokemon& left,
+                                                   const Pokemon& right) {
+        const auto rank = [](const Pokemon& pokemon) {
+          return std::tuple{
+              pokemon.card == Card::RegidragoVstar ? 2 :
+                  (pokemon.card == Card::RegidragoV ? 1 : 0),
+              pokemon.grass + pokemon.fire,
+              -pokemon.entered_turn};
+        };
+        return rank(left) < rank(right);
+      });
+  if (target == state_.bench.end() ||
+      (target->card != Card::RegidragoV &&
+       target->card != Card::RegidragoVstar)) {
+    throw std::logic_error("Exploding Energy retreat target disappeared");
+  }
+  std::swap(*state_.active, *target);
+  state_.retreat_used = true;
+  trace("RETREAT", "R-GAME-RETREAT; R-FORRETRESS-01",
+        "Used Grass Energy attached by Exploding Energy to pay the Active "
+        "Pokémon's Retreat Cost and promote Regidrago.");
+  return true;
 }
 
 bool Engine::advance_forretress_combo() {
@@ -283,7 +359,11 @@ bool Engine::advance_forretress_combo() {
         move_deck_to_hand(Card::ForretressEx)) {
       selected.push_back(Card::ForretressEx);
     }
-    for (const Card stage_two : {Card::MegaDragonite, Card::Dragapult}) {
+    const std::array<Card, 2> stage_two_priority =
+        secret_box_combo_enabled()
+            ? std::array<Card, 2>{Card::Dragapult, Card::MegaDragonite}
+            : std::array<Card, 2>{Card::MegaDragonite, Card::Dragapult};
+    for (const Card stage_two : stage_two_priority) {
       if (move_deck_to_hand(stage_two)) {
         selected.push_back(stage_two);
         break;

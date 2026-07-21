@@ -40,6 +40,7 @@ The API records are card-text sources. They do not replace official tournament r
 | Pokémon Communication variant support | https://api.pokemontcg.io/v2/cards/sm9-152 |
 | Earthen Vessel | https://api.pokemontcg.io/v2/cards/sv4-163 |
 | Brilliant Blender | https://api.pokemontcg.io/v2/cards/sv8-164 |
+| Secret Box | https://api.pokemontcg.io/v2/cards/sv6-163 |
 | Arven | https://api.pokemontcg.io/v2/cards/sv1-166 |
 | Crispin | https://api.pokemontcg.io/v2/cards/sv7-133 |
 | Professor Burnet | https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 |
@@ -58,6 +59,7 @@ The API records are card-text sources. They do not replace official tournament r
 | Mega Dragonite ex payload model | https://api.pokemontcg.io/v2/cards/me2pt5-152 |
 | Dragon Dialga-GX payload model | https://api.pokemontcg.io/v2/cards/sm5-100 |
 | Hisuian Goodra VSTAR payload model | https://api.pokemontcg.io/v2/cards/swsh11-136 |
+| Appletun payload model | https://api.pokemontcg.io/v2/cards/sv8-140 |
 
 ## Recent policy-fix traceability
 

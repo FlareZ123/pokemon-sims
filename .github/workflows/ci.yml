@@ -73,27 +73,27 @@ jobs:
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 104 --require-ready-by 3 | tee trace-7.txt
           grep -q "Searched a Basic Pokémon: Tapu Lele-GX" trace-7.txt
           grep -q "WONDER TAG.*Searched and revealed Crispin" trace-7.txt
-          # A duplicate Regidrago VSTAR may pay Quick Ball only while another copy
-          # remains protected for the Regidrago V established by the search:
+          # The source-bounded seed-43 route spends one dynamically replaceable Grass
+          # on T1, then preserves the T2 Supporter play while Mysterious Treasure
+          # discards Dragapult ex and searches Tapu Lele-GX for Wonder Tag into Crispin:
           # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/cel25c-60_A
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://api.pokemontcg.io/v2/cards/sv6-130
           # https://api.pokemontcg.io/v2/cards/swsh12-135
           # https://api.pokemontcg.io/v2/cards/swsh12-136
           # https://www.pokemon.com/us/pokemon-tcg/rules
-          # https://github.com/FlareZ123/pokemon-sims/issues/964
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 3 | tee trace-8.txt
-          grep -q "DISCARD.*Regidrago VSTAR (Quick Ball cost)" trace-8.txt
-          grep -q "Searched a Basic Pokémon: Regidrago V" trace-8.txt
-          # Once held Mysterious Treasure plus Dragapult ex supplies strict-JIT payload,
-          # Star Alchemy takes the direct Energy Supporter instead of unused Blender:
-          # https://api.pokemontcg.io/v2/cards/swsh12-156
-          # https://api.pokemontcg.io/v2/cards/sv7-133
-          # https://api.pokemontcg.io/v2/cards/sm6-113
-          # https://api.pokemontcg.io/v2/cards/sv6-130
-          # https://github.com/FlareZ123/pokemon-sims/issues/976
-          grep -q "STAR ALCHEMY.*Crispin" trace-8.txt
-          grep -q "DISCARD.*Dragapult ex.*Mysterious Treasure cost" trace-8.txt
-          ! grep -q "STAR ALCHEMY.*Brilliant Blender" trace-8.txt
-          grep -q "T3 | READY" trace-8.txt
+          # https://github.com/FlareZ123/pokemon-sims/issues/1209
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee trace-8.txt
+          grep -q "T1 | DISCARD.*Grass Energy (Quick Ball cost)" trace-8.txt
+          grep -q "Searched a Basic Pokemon: Regidrago V" trace-8.txt
+          grep -q "T2 | HOLD SUPPORTER.*Mysterious Treasure to Tapu Lele-GX to Crispin" trace-8.txt
+          grep -q "T2 | DISCARD.*Dragapult ex (Mysterious Treasure cost)" trace-8.txt
+          grep -q "T2 | WONDER TAG.*Crispin" trace-8.txt
+          grep -q "T2 | PLAY SUPPORTER.*R-CRISPIN-01" trace-8.txt
+          ! grep -q "STAR ALCHEMY" trace-8.txt
+          grep -q "T2 | READY" trace-8.txt
       # The issue #718 PR refreshes and validates the source-bound matrix after the
       # Blender VSTAR-card-axis fix: https://github.com/FlareZ123/pokemon-sims/pull/931
       - name: Generate canonical T2 and T3 matrix

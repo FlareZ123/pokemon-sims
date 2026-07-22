@@ -51,8 +51,19 @@
       return std::find(state_.deck.begin(), state_.deck.end(), card) != state_.deck.end();
     };
     const bool payload_in_deck = std::any_of(state_.deck.begin(), state_.deck.end(), is_payload);
-    return in_deck(Card::ForestSealStone) && in_deck(Card::RegidragoVstar) &&
-           in_deck(Card::BrilliantBlender) && payload_in_deck;
+    const bool vstar_already_held = hand_count(Card::RegidragoVstar) > 0;
+    // A held Regidrago VSTAR already solves the card axis, so Arven needs only
+    // Brilliant Blender for the current-turn payload. Forest Seal Stone remains
+    // necessary only when Star Alchemy must search the missing VSTAR:
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/1346
+    return in_deck(Card::BrilliantBlender) && payload_in_deck &&
+           (vstar_already_held ||
+            (in_deck(Card::ForestSealStone) && in_deck(Card::RegidragoVstar)));
   }
 
   bool arven_appletun_payload_route_live() const {
@@ -153,9 +164,19 @@
     state_.supporter_used = true;
     record_deck_search_knowledge("Arven");
 
+    const bool vstar_already_held = hand_count(Card::RegidragoVstar) > 0;
     std::vector<Card> found;
     if (move_deck_to_hand(Card::BrilliantBlender)) found.push_back(Card::BrilliantBlender);
-    if (move_deck_to_hand(Card::ForestSealStone)) found.push_back(Card::ForestSealStone);
+    // Arven may leave the Tool search unresolved when the held VSTAR already
+    // completes that axis. Preserve Forest Seal Stone and the open Tool slot:
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Typed deck searches may voluntarily fail: https://compendium.pokegym.net/compendium-bw.html#trainers-in-general
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/1346
+    if (!vstar_already_held && move_deck_to_hand(Card::ForestSealStone)) {
+      found.push_back(Card::ForestSealStone);
+    }
     shuffle(state_.deck);
     trace("PLAY SUPPORTER", "R-ARVEN-01; R-GAME-SUPPORTER; P-COMPRESS-01",
           "Searched an Item and a Pokemon Tool without duplicating the VSTAR connector: " +

@@ -21,6 +21,22 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Reconcile latest main
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Validate the issue fix on the current main branch rather than the filing snapshot:
+          # https://github.com/FlareZ123/pokemon-sims/tree/main
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          before=$(git rev-parse HEAD)
+          git merge --no-edit origin/main
+          after=$(git rev-parse HEAD)
+          if [ "$before" != "$after" ]; then
+            git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+          fi
+
       - name: Configure Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 

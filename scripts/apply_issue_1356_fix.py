@@ -205,10 +205,10 @@ def main() -> int:
     )
     include_block = "\n".join(
         [
-            '#include "trace_engine_v2/part_issue_1235_oricorio_treasure_tapu_override.inc"',
             '#define play_mysterious_treasure play_mysterious_treasure_issue1356_original',
-            '#include "trace_engine_v2/part_issue_1356_fss_treasure_energy_override.inc"',
+            '#include "trace_engine_v2/part_issue_1235_oricorio_treasure_tapu_override.inc"',
             '#undef play_mysterious_treasure',
+            '#include "trace_engine_v2/part_issue_1356_fss_treasure_energy_override.inc"',
             '#include "trace_engine_v2/part_issue_1118_secret_box.inc"',
         ]
     )

@@ -349,8 +349,17 @@
     const bool hand_payload_discard_outlet = hand_count(Card::MysteriousTreasure) > 0 ||
         hand_count(Card::QuickBall) > 0 || hand_count(Card::EarthenVessel) > 0 ||
         ultra_ball_payload_discard_outlet || (supporter_allowed() && hand_count(Card::Serena) > 0);
+    // A public Dragon payload can already pay the held discard outlet. Evolution
+    // Incense must not spend itself to fetch a second payload that advances no axis:
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/1337
+    const bool payload_already_held =
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
     const bool want_payload = permit_payload && can_play_payload_this_turn() && need_payload() &&
-                              hand_payload_discard_outlet;
+                              !payload_already_held && hand_payload_discard_outlet;
     if (!want_vstar && !want_payload) return false;
 
     remove_one(state_.hand, Card::EvolutionIncense);

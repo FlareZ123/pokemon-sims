@@ -24,30 +24,11 @@ jobs:
           # Confirmed issue: https://github.com/FlareZ123/pokemon-sims/issues/1343
           python scripts/apply_issue_1343_fix.py
 
-      - name: Configure Release
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-
-      - name: Build simulator
-        run: cmake --build build --parallel 2
-
-      - name: Capture changed deterministic routes
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-          # Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
-          # Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
-          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
-          # Issue: https://github.com/FlareZ123/pokemon-sims/issues/1343
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 71 | tee issue-1343-seed-71.txt
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 100 | tee issue-1343-seed-100.txt
-
-      - name: Upload materialized source and route traces
+      - name: Upload materialized source and regression
         uses: actions/upload-artifact@v4
         with:
           name: issue-1343-materialized
           path: |
             src/trace_engine_v2/part_012_override.inc
             audit/issue_1343_arven_held_payload_probe.cpp
-            issue-1343-seed-*.txt
           if-no-files-found: error

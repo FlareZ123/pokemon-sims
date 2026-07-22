@@ -12,7 +12,7 @@ It does not model opponent turns, damage, prizes taken, or a global two-player g
 
 ### A/S payload classification
 
-`is_payload` is the single readiness and payload-routing predicate. It contains Dragapult ex, Mega Dragonite ex, Dialga-GX, and Hisuian Goodra VSTAR. Dipplin TWM 127 remains a legal Dragon target for Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sv6-127.
+`is_payload` is the single readiness and payload-routing predicate. It contains Dragapult ex, Mega Dragonite ex, Dialga-GX, Hisuian Goodra VSTAR, and Appletun: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/swsh12-136. Dipplin TWM 127 remains a legal Dragon target for Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sv6-127.
 
 Maintainer policy excludes Dipplin's Syrup Catcher from the A/S win-condition set. The attack can create a gust-like target, yet it may take no Prize and allows an opponent to switch after the effect. That line is insufficient for this deck's modeled ready-state definition. Dipplin therefore never completes the payload axis, never makes `payload_ready()` true, and never becomes a payload-discard target.
 

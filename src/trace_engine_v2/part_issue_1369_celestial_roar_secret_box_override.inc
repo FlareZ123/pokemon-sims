@@ -9,7 +9,6 @@
     // Registered recipes: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc#L71-L150
     // Synthetic fixture copy accounting: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L78-L93
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1369
-    // Validated fix: https://github.com/FlareZ123/pokemon-sims/pull/1371
     const auto recipe_copies = [this](const Card card) {
       int copies = 0;
       for (const auto& [candidate, count] : recipe_) {

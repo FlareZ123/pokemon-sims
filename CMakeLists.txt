@@ -127,10 +127,18 @@ add_test(NAME trace_issue_962_strict_first_seed104 COMMAND regidrago_sim --simul
 # https://github.com/FlareZ123/pokemon-sims/issues/964
 add_test(NAME trace_issue_964_strict_first_seed43 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 3)
 # The source-bound audit manifest includes this Rule Box Ability lock scenario in
-# the six-trace inventory, so CTest must enforce its ready-by deadline as well:
+# the six-trace inventory, so CTest must enforce its ready-by deadline as well.
+# Issue #1368 changes Earthen Vessel's legal target count and therefore the
+# post-search shuffle for historical seed 20. This concrete ready seed is
+# discovered through the public --find-ready interface during validation, while
+# seed 20 remains covered by the exact policy regression:
 # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
+# https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#find-known-good-trace-seeds
+# https://api.pokemontcg.io/v2/cards/sv4-163
+# https://api.pokemontcg.io/v2/cards/swsh12-135
 # https://github.com/FlareZ123/pokemon-sims/issues/917
-add_test(NAME trace_rulebox_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3)
+# https://github.com/FlareZ123/pokemon-sims/issues/1368
+add_test(NAME trace_rulebox_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3)
 add_test(NAME trace_no_control_first_t4 COMMAND regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 6 --require-ready-by 4)
 # Seed 19 must hold the random top-three attack when held Fire already guarantees
 # the last GGF attachment, while multi-Energy and no-discard-control routes stay live:

@@ -144,11 +144,18 @@ def treasure_override() -> str:
     const bool grass_is_held_next_attachment =
         state_.active->grass == 1 && state_.active->fire >= 1 &&
         hand_count(Card::Grass) > 0;
+    const bool pending_treasure_vstar_axis =
+        hand_count(Card::MysteriousTreasure) >= 2 &&
+        hand_count(Card::RegidragoVstar) == 0 &&
+        deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
+        ((fire_is_held_next_attachment && hand_count(Card::Grass) > 0) ||
+         (grass_is_held_next_attachment && hand_count(Card::Fire) > 0));
 
-    // The public T3 route is complete: Regidrago VSTAR is held or already Active,
-    // the sole missing Basic Energy is held, and Mysterious Treasure can discard the
-    // held Dragon on the ready turn. Quick Ball into Oricorio spends an extra Item,
-    // an extra discard, a Bench slot, and a support Pokémon without improving T3:
+    // The public T3 route is complete or has a fully payable Treasure-to-VSTAR
+    // bridge: the sole missing Basic Energy is held, the opposite held Energy pays
+    // Treasure when VSTAR is still in deck, and another Treasure plus the held Dragon
+    // remain for the ready turn. Quick Ball into Oricorio spends an extra Item, an
+    // extra discard, a Bench slot, and a support Pokémon without improving T3:
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
@@ -156,7 +163,7 @@ def treasure_override() -> str:
     // Official Item, Bench, Ability, evolution, attachment, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Earliest complete route and resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1335 https://github.com/FlareZ123/pokemon-sims/issues/1356
-    return vstar_axis_complete &&
+    return (vstar_axis_complete || pending_treasure_vstar_axis) &&
         (fire_is_held_next_attachment || grass_is_held_next_attachment);
   }
 

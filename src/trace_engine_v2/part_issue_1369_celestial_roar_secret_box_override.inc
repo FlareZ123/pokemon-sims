@@ -1,19 +1,38 @@
   bool guaranteed_next_turn_secret_box_route_after_hold() const {
-    // This hold is restricted to the strict-JIT Pineco recipe after legal K1
-    // inspection. Regidrago V already has the Energy required to attack, while
-    // Secret Box and the held Fire/Grass schedule can complete the next-turn route:
-    // Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // This hold is restricted to the registered strict-JIT Pineco recipe after
+    // legal K1 inspection. Read recipe_ directly because total_copies() deliberately
+    // derives synthetic unit-fixture cards from zones when a card is absent from the
+    // registered list. A shell fixture must never impersonate the Pineco recipe:
     // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+    // Pineco and Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+    // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // Registered recipes: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc#L71-L150
+    // Synthetic fixture copy accounting: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L78-L93
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1369
+    const auto recipe_copies = [this](const Card card) {
+      int copies = 0;
+      for (const auto& [candidate, count] : recipe_) {
+        if (candidate == card) copies += count;
+      }
+      return copies;
+    };
+    const bool registered_pineco_recipe =
+        recipe_copies(Card::SecretBox) == 1 &&
+        recipe_copies(Card::Pineco) == 2 &&
+        recipe_copies(Card::ForretressEx) == 2;
+
+    // Regidrago V already has the Energy required to attack, while Secret Box
+    // and the held Fire/Grass schedule can complete the next-turn route:
+    // Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
     // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Dawn: https://api.pokemontcg.io/v2/cards/me2-87
     // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
-    // Pineco and Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-1
-    // https://api.pokemontcg.io/v2/cards/sv4pt5-2
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Core draw, Item, Supporter, evolution, Ability, attachment, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Secret Box route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1369
-    if (!secret_box_combo_enabled() || !strict_payload_timing() || !deck_seen_ ||
+    if (!registered_pineco_recipe || !secret_box_combo_enabled() ||
+        !strict_payload_timing() || !deck_seen_ ||
         state_.turn >= scenario_.max_turn || state_.turn_ended ||
         first_turn_going_first() || !state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::RegidragoV ||

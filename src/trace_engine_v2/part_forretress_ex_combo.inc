@@ -250,7 +250,7 @@ bool Engine::use_exploding_energy_for_setup() {
   // the real T2 Tapu, Pineco, and Dialga recovery line rather than leaving a fully
   // powered VSTAR stranded on the Bench:
   // https://api.pokemontcg.io/v2/cards/sv4pt5-2
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv4pt5-1
   // https://api.pokemontcg.io/v2/cards/sm5-100
   // https://www.pokemon.com/us/pokemon-tcg/rules

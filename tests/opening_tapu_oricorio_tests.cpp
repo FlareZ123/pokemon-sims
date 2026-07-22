@@ -39,7 +39,7 @@ void test_dense_public_graph_preserves_wonder_tag() {
   // already cover much of Vital Dance's route, while Wonder Tag retains broader
   // post-K1 Supporter access:
   // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sm2-55
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://api.pokemontcg.io/v2/cards/sv1-166
@@ -72,7 +72,7 @@ void test_duplicate_crispin_with_one_energy_type_preserves_vital_dance() {
   // Grass Energy without consuming that Supporter play:
   // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
   // https://api.pokemontcg.io/v2/cards/sm2-55
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://api.pokemontcg.io/v2/cards/sv1-166
   // https://api.pokemontcg.io/v2/cards/swsh1-179

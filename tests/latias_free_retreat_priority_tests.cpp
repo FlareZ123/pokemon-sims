@@ -55,7 +55,7 @@ void test_free_latias_retreat_precedes_paid_tapu_route() {
   // Latias ex makes the Basic Active Tapu Lele-GX's Retreat Cost zero. The free
   // promotion must preserve Fire Energy and the once-per-turn manual attachment:
   // https://api.pokemontcg.io/v2/cards/sv8-76
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // https://github.com/FlareZ123/pokemon-sims/issues/905
@@ -80,7 +80,7 @@ void test_paid_tapu_route_remains_when_latias_is_absent() {
 
   // Without Skyliner in play, Tapu Lele-GX still needs its printed one-Colorless
   // Retreat Cost, preserving the confirmed paid fallback from issue #802:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/issues/802
   // https://github.com/FlareZ123/pokemon-sims/issues/905
@@ -107,7 +107,7 @@ void test_paid_tapu_route_remains_when_skyliner_is_locked() {
   // route is unavailable, so the same paid Tapu fallback remains legal:
   // https://api.pokemontcg.io/v2/cards/swsh6-148
   // https://api.pokemontcg.io/v2/cards/sv8-76
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
   // https://github.com/FlareZ123/pokemon-sims/issues/905
   assert(sim::EngineTestAccess::resolve_final_promotion_and_attachment(engine));

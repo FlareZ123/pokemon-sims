@@ -802,7 +802,7 @@ void test_opening_selector_counts_only_an_unlocked_communication_route() {
     // With Tapu Lele-GX and Oricorio as the only exchange Pokémon, Communication
     // cannot make either connector redundant. Starting Tapu preserves Vital Dance:
     // https://api.pokemontcg.io/v2/cards/sm9-152
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/sm2-55
     if (!after.active || after.active->card != sim::Card::TapuLeleGX ||
         !contains(after.hand, sim::Card::Oricorio)) {
@@ -951,7 +951,7 @@ void test_wonder_tag_arven_plan_consumes_tapu_and_bench_space() {
   // Wonder Tag requires Tapu Lele-GX to be played to the Bench before Arven and the
   // searched Item resolve. Tapu cannot then be exchanged, and Arven cannot pay a
   // later Ultra Ball cost after leaving the hand:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv1-166
   // https://api.pokemontcg.io/v2/cards/sm9-152
   if (sim::EngineTestAccess::communication_plan_after_wonder_tag_arven(

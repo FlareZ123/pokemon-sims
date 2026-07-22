@@ -129,7 +129,7 @@ void test_opening_choice_preserves_dialga_with_redundant_payload_graph() {
   // Dialga-GX's DCI value:
   // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
   // https://api.pokemontcg.io/v2/cards/sm5-100
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv4-171
   // https://api.pokemontcg.io/v2/cards/swsh12-156
   // https://api.pokemontcg.io/v2/cards/sv7-133
@@ -179,7 +179,7 @@ void test_unpayable_singleton_search_items_preserve_wonder_tag() {
   // Tapu Lele-GX must remain available for a later Wonder Tag:
   // https://api.pokemontcg.io/v2/cards/swsh1-179
   // https://api.pokemontcg.io/v2/cards/sm6-113
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
   // https://github.com/FlareZ123/pokemon-sims/issues/788
   sim::EngineTestAccess::choose_opening_active(engine);
@@ -254,7 +254,7 @@ void test_full_item_lock_rejects_direct_regi_item_signal() {
   // Full Item lock prevents Quick Ball and Mysterious Treasure from supplying the
   // public Regidrago route, so Wonder Tag remains the stronger live connector:
   // https://www.pokemon.com/us/pokemon-tcg/rules
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/swsh1-179
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-scenarios
@@ -284,7 +284,7 @@ void test_blender_duplicate_crispin_preserves_wonder_tag() {
   // saturates the held Energy-Supporter route. Wonder Tag retains greater marginal
   // value than preserving Dialga-GX in hand:
   // https://api.pokemontcg.io/v2/cards/sv8-164
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://api.pokemontcg.io/v2/cards/swsh1-179
   // https://api.pokemontcg.io/v2/cards/sm5-100

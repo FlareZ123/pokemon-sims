@@ -36,7 +36,7 @@ int main() {
   // Wonder Tag would search another Gladion for the same known Prize axis. The held
   // copy already performs that mandatory exchange, and only one Supporter can be
   // played this turn. Holding Tapu preserves the Bench slot without changing T3:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sm4-95
   // https://api.pokemontcg.io/v2/cards/sv4-163
   // https://api.pokemontcg.io/v2/cards/swsh12-136

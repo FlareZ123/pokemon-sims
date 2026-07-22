@@ -13,7 +13,7 @@ void test_vessel_stays_first_when_manual_attachment_already_completes_energy() {
   // Earthen Vessel can search the single missing Fire Energy for the unused manual
   // attachment, so spending Quick Ball, Tapu Lele-GX, and the Supporter slot adds
   // no setup speed: https://api.pokemontcg.io/v2/cards/sv4-163
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/issues/962

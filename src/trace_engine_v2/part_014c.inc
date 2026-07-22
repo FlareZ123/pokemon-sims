@@ -103,7 +103,7 @@
     // Box Pokémon such as Tapu Lele-GX so replacing Path to the Peak can restore
     // Wonder Tag before that Pokémon enters the Bench:
     // https://api.pokemontcg.io/v2/cards/me1-117
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/swsh6-148
     // https://www.pokemon.com/us/pokemon-tcg/rules
     // https://github.com/FlareZ123/pokemon-sims/issues/1096
@@ -146,7 +146,7 @@
     evolve_best_regi();
     // A late Item search can put Tapu Lele-GX into hand, and Bench play can then
     // fetch a new Supporter with Wonder Tag. Reconsider that unused Supporter slot
-    // before the ready check: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // before the ready check: https://api.pokemontcg.io/v2/cards/sm2-60
     // Professor Burnet can discard a current-turn deck payload after this chain:
     // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     if (!state_.supporter_used && setup_axis_missing()) choose_supporter();

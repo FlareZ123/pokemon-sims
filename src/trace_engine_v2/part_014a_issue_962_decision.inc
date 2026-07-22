@@ -24,7 +24,7 @@
           // Vessel only when Quick Ball-first preserves both paid effects while
           // Vessel-first exhausts the legal Quick Ball cost:
           // https://api.pokemontcg.io/v2/cards/swsh1-179
-          // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+          // https://api.pokemontcg.io/v2/cards/sm2-60
           // https://api.pokemontcg.io/v2/cards/sv7-133
           // https://api.pokemontcg.io/v2/cards/sv4-163
           // https://api.pokemontcg.io/v2/cards/swsh12-136

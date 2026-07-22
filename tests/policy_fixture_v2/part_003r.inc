@@ -2,7 +2,7 @@ void test_tapu_fetches_burnet_without_item_lock_when_blender_is_not_live() {
   State s = state(2, Card::RegidragoVstar, 0, 2, 1);
   s.hand = {Card::TapuLeleGX};
   s.deck = {Card::ProfessorBurnet, Card::MegaDragonite};
-  // Wonder Tag may search the deck for a Supporter: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Wonder Tag may search the deck for a Supporter: https://api.pokemontcg.io/v2/cards/sm2-60
   Fixture f(scenario("tapu-clear-state-burnet"), s);
   expect(EngineTestAccess::bench_tapu_if_useful(f.engine),
          "Tapu Lele-GX should bench when Burnet is the only immediate payload bridge.");

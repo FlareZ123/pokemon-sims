@@ -199,7 +199,7 @@
       // currently needed on-play connector. The Bench limit is five:
       // https://www.pokemon.com/us/pokemon-tcg/rules
       // Wonder Tag and Vital Dance require playing their Basic from hand to Bench:
-      // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // https://api.pokemontcg.io/v2/cards/sm2-60
       // https://api.pokemontcg.io/v2/cards/sm2-55
       const bool preserve_final_slot_for_tapu = bench_space() == 1 &&
           hand_count(Card::TapuLeleGX) > 0 && !in_play(Card::TapuLeleGX) && needs_tapu_connector();
@@ -228,7 +228,7 @@
     // Wonder Tag finds Arven, and Arven finds the direct VSTAR Item. Latias ex must
     // still provide a legal zero-cost promotion after the prior-turn Regidrago evolves:
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Evolution Incense: https://api.pokemontcg.io/v2/cards/swsh1-163

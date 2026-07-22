@@ -71,7 +71,7 @@ void test_wonder_tag_arven_treasure_held_payload_route() {
 
   // Wonder Tag finds Arven, Arven finds Mysterious Treasure, and Treasure discards
   // the held Dragon before legally searching Dipplin:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv1-166
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
@@ -101,7 +101,7 @@ void test_wonder_tag_arven_quick_ball_held_payload_route() {
   sim::EngineTestAccess::set_deck_seen(engine);
 
   // The equivalent Quick Ball route retains a legal Basic target:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv1-166
   // https://api.pokemontcg.io/v2/cards/swsh1-179
   // https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -130,7 +130,7 @@ void test_wonder_tag_arven_vessel_held_payload_route() {
   sim::EngineTestAccess::set_deck_seen(engine);
 
   // The equivalent Earthen Vessel route retains legal Basic Energy:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv1-166
   // https://api.pokemontcg.io/v2/cards/sv4-163
   // https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -306,7 +306,7 @@ void test_quick_ball_fallback_uses_tapu_for_prized_regidrago_v() {
 
   // Wonder Tag searches a Supporter when Tapu Lele-GX is played from hand to Bench.
   // Gladion then exchanges for a revealed Prize card:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/sm4-95
+  // https://api.pokemontcg.io/v2/cards/sm2-60 https://api.pokemontcg.io/v2/cards/sm4-95
   if (!sim::EngineTestAccess::bench_from_hand(fixture.engine, sim::Card::TapuLeleGX) ||
       !contains(sim::EngineTestAccess::state(fixture.engine).hand, sim::Card::Gladion) ||
       !sim::EngineTestAccess::play_gladion(fixture.engine) ||
@@ -333,7 +333,7 @@ void test_mysterious_treasure_fallback_uses_tapu_for_prized_vstar() {
   }
 
   // Wonder Tag and Gladion form a legal same-turn recovery line for the known Prize:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/sm4-95
+  // https://api.pokemontcg.io/v2/cards/sm2-60 https://api.pokemontcg.io/v2/cards/sm4-95
   if (!sim::EngineTestAccess::bench_from_hand(fixture.engine, sim::Card::TapuLeleGX) ||
       !contains(sim::EngineTestAccess::state(fixture.engine).hand, sim::Card::Gladion) ||
       !sim::EngineTestAccess::play_gladion(fixture.engine) ||
@@ -356,7 +356,7 @@ void test_wonder_tag_fetches_tate_for_the_only_missing_active_axis() {
 
   // Wonder Tag can search Tate & Liza, then its switch mode can promote the powered
   // Benched Regidrago VSTAR using the still-open Supporter play:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sm7-148
   // https://www.pokemon.com/us/pokemon-tcg/rules
   if (!sim::EngineTestAccess::needs_tapu_connector(fixture.engine) ||

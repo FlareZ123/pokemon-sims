@@ -65,7 +65,7 @@ jobs:
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 42 --require-ready-by 3 | tee trace-6.txt
           # Quick Ball must take the live Tapu Lele-GX -> Crispin connector before Vessel:
           # https://api.pokemontcg.io/v2/cards/swsh1-179
-          # https://api.pokemontcg.io/v2/cards/cel25c-60_A
+          # https://api.pokemontcg.io/v2/cards/sm2-60
           # https://api.pokemontcg.io/v2/cards/sv7-133
           # https://api.pokemontcg.io/v2/cards/sv4-163
           # https://www.pokemon.com/us/pokemon-tcg/rules
@@ -78,7 +78,7 @@ jobs:
           # discards Dragapult ex and searches Tapu Lele-GX for Wonder Tag into Crispin:
           # https://api.pokemontcg.io/v2/cards/swsh1-179
           # https://api.pokemontcg.io/v2/cards/sm6-113
-          # https://api.pokemontcg.io/v2/cards/cel25c-60_A
+          # https://api.pokemontcg.io/v2/cards/sm2-60
           # https://api.pokemontcg.io/v2/cards/sv7-133
           # https://api.pokemontcg.io/v2/cards/sv6-130
           # https://api.pokemontcg.io/v2/cards/swsh12-135

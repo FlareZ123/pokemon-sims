@@ -45,7 +45,7 @@ void test_wonder_tag_yields_known_dead_burnet_to_arven() {
   sim::EngineTestAccess::set_state(engine, std::move(state));
 
   // Wonder Tag searches the deck for a Supporter after Tapu Lele-GX is played
-  // from hand to the Bench: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // from hand to the Bench: https://api.pokemontcg.io/v2/cards/sm2-60
   if (!sim::EngineTestAccess::bench_from_hand(engine, sim::Card::TapuLeleGX, true)) {
     throw std::runtime_error("Tapu Lele-GX should resolve Wonder Tag from the Bench.");
   }
@@ -76,7 +76,7 @@ void test_wonder_tag_uses_arven_vessel_for_final_energy() {
 
   // Wonder Tag may find Arven, Arven may find Earthen Vessel, and Vessel may
   // search the final Basic Fire Energy for the turn's manual attachment:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv1-166
   // https://api.pokemontcg.io/v2/cards/sv4-163
   // https://www.pokemon.com/us/pokemon-tcg/rules
@@ -114,7 +114,7 @@ void test_wonder_tag_uses_an_available_supporter_fallback() {
 
   // Wonder Tag may search for any Supporter, so an available Guzma is a legal
   // fallback when no preferred setup Supporter remains:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sm3-115
   if (!sim::EngineTestAccess::bench_from_hand(engine, sim::Card::TapuLeleGX, true)) {
     throw std::runtime_error("Tapu Lele-GX should resolve Wonder Tag for the fallback test.");
@@ -145,7 +145,7 @@ void test_wonder_tag_tate_connector_accepts_held_payload_route() {
 
   // Wonder Tag must prefer Tate & Liza over Serena because Tate promotes the GGF
   // VSTAR while the held Mysterious Treasure can establish the payload afterward:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sm7-148
   // https://api.pokemontcg.io/v2/cards/swsh12-164
   // https://api.pokemontcg.io/v2/cards/sm6-113
@@ -298,7 +298,7 @@ void test_k1_wonder_tag_rejects_serena_only_vstar_route() {
   // the Supporter target that justified the VSTAR connector is absent:
   // https://api.pokemontcg.io/v2/cards/swsh12-164
   // https://api.pokemontcg.io/v2/cards/sv1-166
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   if (sim::EngineTestAccess::needs_tapu_connector(engine) ||
       sim::EngineTestAccess::bench_tapu_if_useful(engine)) {
     throw std::runtime_error("K1 must reject the Serena-only Wonder Tag VSTAR route.");
@@ -324,7 +324,7 @@ void test_k1_wonder_tag_rejects_serena_only_steven_route() {
   // replace its up-to-three-card search after K1 proves Steven absent:
   // https://api.pokemontcg.io/v2/cards/sm7-145
   // https://api.pokemontcg.io/v2/cards/swsh12-164
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   if (sim::EngineTestAccess::needs_tapu_connector(engine) ||
       sim::EngineTestAccess::bench_tapu_if_useful(engine)) {
     throw std::runtime_error("K1 must reject the Serena-only Wonder Tag Steven route.");

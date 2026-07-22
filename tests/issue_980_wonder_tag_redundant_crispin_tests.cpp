@@ -80,7 +80,7 @@ void test_seed_331_full_route_skips_wonder_tag() {
 
   // Seed 331 reaches the same earliest T3 readiness through held Fire and
   // Mysterious Treasure, while Tapu Lele-GX and Crispin retain their discrete value:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/swsh11-136
@@ -101,7 +101,7 @@ void test_complete_held_route_suppresses_wonder_tag() {
   // Fire plus the unused manual attachment completes GGF. Mysterious Treasure
   // discards Hisuian Goodra VSTAR and searches Regidrago VSTAR, so Wonder Tag's
   // Crispin target is unused and Tapu Lele-GX should remain in hand:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/swsh11-136

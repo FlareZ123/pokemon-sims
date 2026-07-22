@@ -103,7 +103,7 @@ add_test(NAME trace_turn2_item_lock_t3 COMMAND regidrago_sim --simulate-this --s
 add_test(NAME trace_issue_925_turn2_item_lock_seed25 COMMAND regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2)
 # Issue #989 preserves the same earliest ready turns while skipping unused Wonder Tag -> Crispin.
 # https://github.com/FlareZ123/pokemon-sims/issues/989
-# https://api.pokemontcg.io/v2/cards/cel25c-60_A
+# https://api.pokemontcg.io/v2/cards/sm2-60
 # https://api.pokemontcg.io/v2/cards/sv7-133
 # https://www.pokemon.com/us/pokemon-tcg/rules
 add_test(NAME trace_issue_989_item_lock_seed25 COMMAND regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2)
@@ -112,7 +112,7 @@ add_test(NAME trace_issue_989_strict_first_seed122 COMMAND regidrago_sim --simul
 # Quick Ball must precede Earthen Vessel only when Tapu Lele-GX into Crispin
 # compresses the Energy axis and every separate discard cost remains payable:
 # https://api.pokemontcg.io/v2/cards/swsh1-179
-# https://api.pokemontcg.io/v2/cards/cel25c-60_A
+# https://api.pokemontcg.io/v2/cards/sm2-60
 # https://api.pokemontcg.io/v2/cards/sv7-133
 # https://api.pokemontcg.io/v2/cards/sv4-163
 # https://www.pokemon.com/us/pokemon-tcg/rules
@@ -154,7 +154,7 @@ add_test(NAME trace_issue_1085_fss_crispin_next_turn
     -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_issue_1085_fss_crispin_next_turn.cmake)
 # Wonder Tag must select Serena when a held manual attachment completes GGF and
 # Serena can establish the strict-JIT payload without spending Legacy Star:
-# https://api.pokemontcg.io/v2/cards/cel25c-60_A
+# https://api.pokemontcg.io/v2/cards/sm2-60
 # https://api.pokemontcg.io/v2/cards/swsh12-164
 # https://api.pokemontcg.io/v2/cards/swsh12-136
 # https://github.com/FlareZ123/pokemon-sims/issues/1086
@@ -310,3 +310,11 @@ add_test(NAME trace_issue_1137_fss_latias_burnet
 # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1139
 add_test(NAME trace_issue_1139_fss_banks_tate
   COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 100 --require-ready-by 5)
+# The Pokémon TCG Live recipe must use the playable Guardians Rising Tapu Lele-GX
+# print rather than the unavailable Celebrations Classic Collection variant:
+# https://support.pokemon.com/hc/en-us/articles/6489934466708-Pok%C3%A9mon-TCG-Live-Migration-FAQ-from-the-Pok%C3%A9mon-TCG-Online
+# https://api.pokemontcg.io/v2/cards/sm2-60
+# https://github.com/FlareZ123/pokemon-sims/issues/1333
+add_test(NAME issue_1333_tapu_live_print_contract
+  COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/issue_1333_tapu_live_print_tests.py)

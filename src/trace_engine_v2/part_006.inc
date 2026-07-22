@@ -250,7 +250,7 @@
       // public route that can clear the stranded Active Tapu Lele-GX:
       // https://api.pokemontcg.io/v2/cards/sm6-113
       // https://api.pokemontcg.io/v2/cards/sv4-171
-      // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // https://api.pokemontcg.io/v2/cards/sm2-60
       // https://api.pokemontcg.io/v2/cards/swsh12-136
       // https://www.pokemon.com/us/pokemon-tcg/rules
       // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
@@ -328,7 +328,7 @@
     // Keep this behind every existing duplicate and surplus category so the fallback
     // cannot expose a protected singleton or consume lower-DCI fuel first:
     // https://api.pokemontcg.io/v2/cards/swsh1-179
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // https://github.com/FlareZ123/pokemon-sims/issues/711
     if (hand_count(Card::TapuLeleGX) >= 2) return Card::TapuLeleGX;
@@ -420,7 +420,7 @@
     // At K1, Wonder Tag may find Arven, Arven may find a one-discard Item, and that
     // Item may discard the held Dragon only when its mandatory search retains a
     // legal target. Arven is a Supporter and is still in deck during target choice:
-    // Wonder Tag: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
@@ -451,7 +451,7 @@
     // With only one Bench slot left, Tapu Lele-GX into Crispin consumes both the
     // Bench slot and the single Supporter play. Oricorio can instead find the final
     // Energy and leave Professor Burnet playable for the current-turn payload:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://api.pokemontcg.io/v2/cards/sm2-60 https://api.pokemontcg.io/v2/cards/sm2-55
     // https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // https://www.pokemon.com/us/pokemon-tcg/rules
     if (bench_space() == 1 && hand_count(Card::Oricorio) > 0 && !in_play(Card::Oricorio) &&
@@ -467,14 +467,14 @@
     const bool needs_crispin = need_energy() && !direct_communication_oricorio_route &&
         (hand_count(Card::Crispin) == 0 || !crispin_can_advance_energy_axis());
     // Wonder Tag can inspect the deck for Burnet. It is a live direct payload
-    // bridge only while a payload may remain in deck: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // bridge only while a payload may remain in deck: https://api.pokemontcg.io/v2/cards/sm2-60
     const bool needs_burnet = can_play_payload_this_turn() && payload_might_be_in_deck() &&
                               hand_count(Card::ProfessorBurnet) == 0 && !has_live_blender_payload_line() &&
                               might_be_unseen(Card::ProfessorBurnet);
     // A payable Ultra Ball already searches Regidrago VSTAR directly, so Wonder Tag
     // must not spend a Bench slot and Supporter route on indirect Arven:
     // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/sv1-166
     const bool direct_ultra_vstar_route = payable_ultra_ball_vstar_route();
     const bool direct_communication_vstar_route = need_vstar() &&
@@ -486,7 +486,7 @@
                                        !direct_communication_vstar_route;
     // A direct in-hand one-discard Item avoids Tapu Lele-GX's Bench cost and the
     // Supporter play, so Wonder Tag is reserved for the known Arven-only bridge:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     const bool needs_arven_for_held_payload = bench_space() > 0 &&
         !has_live_one_discard_hand_payload_line() &&

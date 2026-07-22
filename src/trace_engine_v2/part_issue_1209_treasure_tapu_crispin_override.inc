@@ -40,7 +40,7 @@
     // Latias ex supplies the zero-Retreat promotion after the prior-turn Basic evolves:
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -182,7 +182,7 @@
     // searched Tapu Lele-GX obtains Crispin, and Crispin deterministically completes
     // the remaining GGF Energy axis before the same turn's ready-state check:
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Core Item, Ability, Supporter, attachment, evolution, and Retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
@@ -230,7 +230,7 @@
       // Dragon cost, searches Tapu Lele-GX, and Wonder Tag obtains Crispin. Spending
       // Arven first consumes the only Supporter play and loses the proven T2 finish:
       // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-      // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
       // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
       // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
       // Core Supporter, Item, Ability, attachment, evolution, and Retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules

@@ -44,7 +44,7 @@ int main() {
   // manual attachment advances GGF. A second Wonder Tag for the same held
   // Supporter therefore has no marginal route:
   // https://api.pokemontcg.io/v2/cards/sv7-133
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities

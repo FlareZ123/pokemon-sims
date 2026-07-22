@@ -1,0 +1,186 @@
+name: Issue 1368 Earthen Vessel Density
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Reconcile current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Current source contract: https://github.com/FlareZ123/pokemon-sims/tree/main
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Apply confirmed source fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/apply_issue_1368_fix.py
+
+      - name: Static repository audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Repository specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md
+          # DCI, K1, lock, and route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          # Model boundaries: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
+          test -f src/trace_engine_v2/part_issue_1368_earthen_vessel_celestial_roar_override.inc
+          test -f tests/issue_1368_earthen_vessel_celestial_roar_tests.cpp
+          git grep -n "https://api.pokemontcg.io/v2/cards/sv4-163" -- src/trace_engine_v2/part_issue_1368_earthen_vessel_celestial_roar_override.inc tests/issue_1368_earthen_vessel_celestial_roar_tests.cpp
+          git grep -n "https://api.pokemontcg.io/v2/cards/swsh12-135" -- src/trace_engine_v2/part_issue_1368_earthen_vessel_celestial_roar_override.inc tests/issue_1368_earthen_vessel_celestial_roar_tests.cpp
+          git grep -n "https://github.com/FlareZ123/pokemon-sims/issues/1368" -- src tests
+          python -m compileall -q scripts
+
+      - name: Configure and build Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Refresh generic Rule Box trace seed
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The Earthen Vessel target-count change alters the post-search shuffle for
+          # historical seed 20. Find a concrete ready-by-T3 smoke seed through the
+          # documented public CLI, then atomically update CMake. Seed 20 remains the
+          # exact policy regression below:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#find-known-good-trace-seeds
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          # https://api.pokemontcg.io/v2/cards/swsh12-135
+          # https://github.com/FlareZ123/pokemon-sims/issues/1368
+          ./build/regidrago_sim --find-ready 1 --start-seed 1 --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --require-ready-by 3 | tee issue-1368-rulebox-ready-seed.txt
+          ready_seed="$(sed -n 's/^Seed: \([0-9][0-9]*\) |.*/\1/p' issue-1368-rulebox-ready-seed.txt | head -n 1)"
+          test -n "$ready_seed"
+          python scripts/update_issue_1368_rulebox_seed.py "$ready_seed"
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Run focused regression
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/regidrago_unified_tests issue_1368_earthen_vessel_celestial_roar_tests 2>&1 | tee issue-1368-focused.txt
+
+      - name: Simulate-this pass 1 exact seed 20 route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+          # Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+          # Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1368
+          # The target-count change alters the post-search shuffle, so this trace
+          # validates the legal decision itself rather than one random outcome.
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 | tee issue-1368-pass-seed20.txt
+          grep -F "Searched up to 2 Basic Energy: Fire Energy." issue-1368-pass-seed20.txt
+          ! grep -F "Searched up to 2 Basic Energy: Grass Energy, Fire Energy." issue-1368-pass-seed20.txt
+          grep -Eq '^T1 \| ATTACK \|' issue-1368-pass-seed20.txt
+
+      - name: Simulate-this pass 2 scheduled Item lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+          # Existing source-bound regression: https://github.com/FlareZ123/pokemon-sims/issues/925
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee issue-1368-pass-item-lock.txt
+          grep -Eq '^T2 \| READY \|' issue-1368-pass-item-lock.txt
+
+      - name: Simulate-this pass 3 baseline strict route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Trace surface specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#test-surfaces
+          # Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee issue-1368-pass-baseline.txt
+          grep -Eq '^T[23] \| READY \|' issue-1368-pass-baseline.txt
+
+      - name: Refresh source-bound canonical evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Canonical evidence contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-canonical-shell-baseline
+          # Paired matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+
+      - name: Generate current-run T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Matrix interface: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out issue-1368-t2-t3-matrix.csv
+          test "$(wc -l < issue-1368-t2-t3-matrix.csv)" -eq 33
+
+      - name: Run complete Release suite
+        shell: bash
+        run: |
+          set -o pipefail
+          ctest --test-dir build --parallel 4 --output-on-failure 2>&1 | tee issue-1368-release-suite.txt
+
+      - name: Configure and build sanitizers
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build-sanitize --parallel 2
+
+      - name: Run complete sanitizer suite
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: ctest --test-dir build-sanitize --parallel 2 --output-on-failure
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1368-earthen-vessel-density
+          path: |
+            issue-1368-focused.txt
+            issue-1368-pass-*.txt
+            issue-1368-rulebox-ready-seed.txt
+            issue-1368-t2-t3-matrix.csv
+            issue-1368-release-suite.txt
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn
+
+      - name: Commit validated fix and remove temporary machinery
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build build-sanitize issue-1368-focused.txt issue-1368-pass-*.txt issue-1368-rulebox-ready-seed.txt issue-1368-t2-t3-matrix.csv issue-1368-release-suite.txt
+          git rm .github/workflows/issue-1368-earthen-vessel-density.yml scripts/apply_issue_1368_fix.py scripts/update_issue_1368_rulebox_seed.py
+          git add CMakeLists.txt src tests README.md docs results
+          if git diff --cached --quiet; then
+            echo 'No validated source change was produced' >&2
+            exit 1
+          fi
+          git commit -m 'Preserve Grass for Celestial Roar (#1368)'
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

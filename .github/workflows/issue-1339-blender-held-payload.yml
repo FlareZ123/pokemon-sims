@@ -88,11 +88,11 @@ jobs:
           # Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
           # Issue: https://github.com/FlareZ123/pokemon-sims/issues/1339
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 107 --require-ready-by 3 | tee issue-1339-pass-strict-first.txt
-          grep -q 'T3 | READY |' issue-1339-pass-strict-first.txt
+          grep -Eq 'T3 .*READY' issue-1339-pass-strict-first.txt
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee issue-1339-pass-item-lock.txt
-          grep -q 'T2 | READY |' issue-1339-pass-item-lock.txt
+          grep -Eq 'T2 .*READY' issue-1339-pass-item-lock.txt
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee issue-1339-pass-rulebox-lock.txt
-          grep -Eq 'T[23] \| READY \|' issue-1339-pass-rulebox-lock.txt
+          grep -Eq 'T[23] .*READY' issue-1339-pass-rulebox-lock.txt
 
       - name: Generate current-run paired matrix
         run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out issue-1339-matrix.csv

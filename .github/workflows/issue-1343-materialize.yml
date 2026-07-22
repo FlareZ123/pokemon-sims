@@ -5,30 +5,36 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   materialize:
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
 
-      - name: Apply confirmed source fix
+      - name: Commit confirmed source fix and permanent regression
+        shell: bash
         run: |
+          set -euo pipefail
           # Arven: https://api.pokemontcg.io/v2/cards/sv1-166
           # Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
           # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
           # Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
           # Core rules: https://www.pokemon.com/us/pokemon-tcg/rules
           # Repository policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
           # Confirmed issue: https://github.com/FlareZ123/pokemon-sims/issues/1343
           python scripts/apply_issue_1343_fix.py
-
-      - name: Upload materialized source and regression
-        uses: actions/upload-artifact@v4
-        with:
-          name: issue-1343-materialized
-          path: |
-            src/trace_engine_v2/part_012_override.inc
-            audit/issue_1343_arven_held_payload_probe.cpp
-          if-no-files-found: error
+          cp audit/issue_1343_arven_held_payload_probe.cpp tests/issue_1343_arven_held_payload_tests.cpp
+          git add src/trace_engine_v2/part_012_override.inc tests/issue_1343_arven_held_payload_tests.cpp
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m "Commit confirmed issue 1343 fix and regression"
+          git push origin "HEAD:${{ github.head_ref }}"

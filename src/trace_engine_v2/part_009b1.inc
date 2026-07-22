@@ -175,7 +175,18 @@
     // Quick Ball pays its discard before the fetched Basic reaches hand. A later
     // Ultra Ball route is live only when its own two-card cost remains payable:
     // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-    const bool want_payload = need_payload() && might_be_unseen(Card::DialgaGX) && !can_pay_payload_cost &&
+    // When a Dragon payload is already held, the surviving hand-discard outlet can
+    // spend that public payload directly. Fetching a second Dialga-GX first consumes
+    // Quick Ball and an extra discard without advancing readiness:
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/sm5-100
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/1335
+    const bool payload_already_held =
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    const bool want_payload = need_payload() && !payload_already_held &&
+                              might_be_unseen(Card::DialgaGX) && !can_pay_payload_cost &&
                               has_payable_payload_outlet_after_costed_search(Card::QuickBall);
     const bool has_preferred_search_target =
         want_regi || want_latias || want_tapu || want_oricorio || want_payload;

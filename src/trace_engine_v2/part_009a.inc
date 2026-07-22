@@ -119,7 +119,18 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-164
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/issues/889
+    // A public Dragon payload can pay the surviving hand-discard outlet directly.
+    // Fetching another payload first consumes Mysterious Treasure plus an extra cost
+    // without advancing the current ready turn:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/1335
+    const bool payload_already_held =
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
     const bool want_payload = need_payload() && !can_jit_discard &&
+                              !payload_already_held &&
                               !has_live_serena_hand_payload_line() &&
                               has_payable_payload_outlet_after_costed_search(Card::MysteriousTreasure);
     if (!can_jit_discard && !want_regi && !want_vstar && !want_latias && !want_tapu && !want_oricorio && !want_payload) return false;

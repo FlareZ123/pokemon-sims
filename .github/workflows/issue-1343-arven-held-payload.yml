@@ -1,42 +1,40 @@
-name: Issue 1343 Arven Held Payload Audit
+name: Issue 1343 Arven Held Payload
 
 on:
   pull_request:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  audit:
+  validate:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: 0
 
-      - name: Apply confirmed production fix
-        run: python scripts/apply_issue_1343_fix.py
-
-      - name: Keep audit recipe alive
-        run: python scripts/apply_issue_1343_probe_lifetime_fix.py
-
-      - name: Correct payable Ultra Ball control
-        run: python scripts/apply_issue_1343_probe_ultra_fix.py
-
-      - name: Compile exact-state audit probe
-        run: g++ -std=c++20 -O0 audit/issue_1343_arven_held_payload_probe.cpp -o issue-1343-probe
-
-      - name: Run exact-state audit probe
-        run: ./issue-1343-probe
+      - name: Verify confirmed source fix is committed
+        run: |
+          # Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+          # Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Core rules: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Repository policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Confirmed issue: https://github.com/FlareZ123/pokemon-sims/issues/1343
+          python scripts/apply_issue_1343_fix.py
+          git diff --exit-code -- src/trace_engine_v2/part_012_override.inc
 
       - name: Configure Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
       - name: Build Release
         run: cmake --build build --parallel 2
+
+      - name: Run focused regression
+        run: ./build/regidrago_unified_tests issue_1343_arven_held_payload_tests
 
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
@@ -78,36 +76,25 @@ jobs:
           # Matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
           ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out issue-1343-matrix.csv
 
-      - name: Compile sanitizer audit probe
-        run: g++ -std=c++20 -O0 -g -fsanitize=address,undefined -fno-omit-frame-pointer audit/issue_1343_arven_held_payload_probe.cpp -o issue-1343-probe-sanitize
+      - name: Configure sanitizers
+        run: cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON
 
-      - name: Run sanitizer audit probe
+      - name: Build sanitizers
+        run: cmake --build build-sanitize --parallel 2
+
+      - name: Run sanitizer focused regression
         env:
           ASAN_OPTIONS: detect_leaks=0
           UBSAN_OPTIONS: halt_on_error=1
-        run: ./issue-1343-probe-sanitize
+        run: ./build-sanitize/regidrago_unified_tests issue_1343_arven_held_payload_tests
 
-      - name: Upload audit evidence
+      - name: Upload validation evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: issue-1343-arven-held-payload-audit
+          name: issue-1343-arven-held-payload
           path: |
             issue-1343-pass-*.txt
             issue-1343-matrix.csv
             build/Testing
           if-no-files-found: warn
-
-      - name: Commit confirmed production fix
-        if: success()
-        shell: bash
-        run: |
-          set -euo pipefail
-          if git diff --quiet -- src/trace_engine_v2/part_012_override.inc; then
-            exit 0
-          fi
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/trace_engine_v2/part_012_override.inc
-          git commit -m 'Preserve Arven through a held payload outlet (#1343)'
-          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

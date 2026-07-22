@@ -7,6 +7,7 @@ from typing import Iterator, TextIO
 
 
 FSS_PATH = Path("src/trace_engine_v2/part_010_fss_override.inc")
+FSS_USE_PATH = Path("src/trace_engine_v2/part_011_fss_latias_override.inc")
 TEST_PATH = Path("tests/issue_1356_fss_treasure_energy_tests.cpp")
 LOCK_PATH = FSS_PATH.with_suffix(FSS_PATH.suffix + ".issue1356-timing.lock")
 
@@ -66,7 +67,45 @@ def main() -> int:
         )
         atomic_write(FSS_PATH, fss)
 
+        fss_use = FSS_USE_PATH.read_text(encoding="utf-8")
+        fss_use = replace_once(
+            fss_use,
+            "          case Card::Grass:\n"
+            "            return grass_needed() > 0 && !state_.manual_energy_used;\n"
+            "          case Card::Fire:\n"
+            "            return fire_needed() > 0 && !state_.manual_energy_used;",
+            "          case Card::Grass:\n"
+            "            // The confirmed split route banks Grass for the next modeled turn\n"
+            "            // after this turn's manual attachment is already used. Treasure\n"
+            "            // independently supplies Regidrago VSTAR and preserves the T3 payload:\n"
+            "            // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156\n"
+            "            // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113\n"
+            "            // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136\n"
+            "            // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules\n"
+            "            // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1356\n"
+            "            return (grass_needed() > 0 && !state_.manual_energy_used) ||\n"
+            "                fss_should_split_treasure_vstar_and_next_turn_energy();\n"
+            "          case Card::Fire:\n"
+            "            // The same proved split applies when Fire is the banked next-turn\n"
+            "            // attachment: https://github.com/FlareZ123/pokemon-sims/issues/1356\n"
+            "            return (fire_needed() > 0 && !state_.manual_energy_used) ||\n"
+            "                fss_should_split_treasure_vstar_and_next_turn_energy();",
+            "Forest Seal Stone next-turn Energy advancement gate",
+        )
+        atomic_write(FSS_USE_PATH, fss_use)
+
         tests = TEST_PATH.read_text(encoding="utf-8")
+        tests = replace_once(
+            tests,
+            "  static Card fss_target(const Engine& engine) {\n"
+            "    return engine.fss_target_after_search_started();\n"
+            "  }",
+            "  static Card fss_target(const Engine& engine) {\n"
+            "    return engine.fss_target_after_search_started();\n"
+            "  }\n"
+            "  static bool use_fss(Engine& engine) { return engine.use_fss(); }",
+            "focused Forest Seal Stone use-gate accessor",
+        )
         tests = replace_once(
             tests,
             "  state.supporter_used = true;\n  state.manual_energy_used = true;",
@@ -87,6 +126,39 @@ def main() -> int:
             "  state.supporter_used = true;\n"
             "  state.vstar_power_used = true;",
             "post-Arven fixture transition",
+        )
+        tests = replace_once(
+            tests,
+            "void test_split_is_symmetric_for_missing_grass() {",
+            "void test_live_fss_gate_banks_next_turn_fire() {\n"
+            "  std::mt19937_64 rng(135608);\n"
+            "  sim::Engine engine(test_scenario(), test_recipe(), rng);\n"
+            "  sim::EngineTestAccess::set_state(engine, split_state());\n"
+            "\n"
+            "  // Star Alchemy is evaluated after the T2 attachment has been used. Fire\n"
+            "  // still advances the complete T3 route because Treasure supplies VSTAR:\n"
+            "  // https://api.pokemontcg.io/v2/cards/swsh12-156\n"
+            "  // https://api.pokemontcg.io/v2/cards/sm6-113\n"
+            "  // https://github.com/FlareZ123/pokemon-sims/issues/1356\n"
+            "  expect(sim::EngineTestAccess::use_fss(engine),\n"
+            "         \"The live Forest Seal Stone gate should bank Fire for T3\");\n"
+            "  const sim::State& result = sim::EngineTestAccess::state(engine);\n"
+            "  expect(result.vstar_power_used, \"Star Alchemy should be consumed\");\n"
+            "  expect(has(result.hand, sim::Card::Fire),\n"
+            "         \"Star Alchemy should move Fire Energy to hand\");\n"
+            "}\n"
+            "\n"
+            "void test_split_is_symmetric_for_missing_grass() {",
+            "focused Forest Seal Stone use-gate regression",
+        )
+        tests = replace_once(
+            tests,
+            "  test_treasure_takes_vstar_and_fss_takes_fire();\n"
+            "  test_split_is_symmetric_for_missing_grass();",
+            "  test_treasure_takes_vstar_and_fss_takes_fire();\n"
+            "  test_live_fss_gate_banks_next_turn_fire();\n"
+            "  test_split_is_symmetric_for_missing_grass();",
+            "focused Forest Seal Stone use-gate invocation",
         )
         atomic_write(TEST_PATH, tests)
 

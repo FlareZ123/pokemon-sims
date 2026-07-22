@@ -1,0 +1,70 @@
+name: Current Main Debug Audit 20260722 0145
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  current-main-debug-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run full repository tests
+        run: ctest --test-dir build --output-on-failure
+      - name: Simulate-this pass 1 scheduled Item lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Scheduled-lock scenario contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
+          # Search, attachment, evolution, Supporter, Item, Retreat, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Regidrago VSTAR and Brilliant Blender identities: https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/sv8-164
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 1 --require-ready-by 2 | tee debug-pass-item-lock.txt
+      - name: Simulate-this pass 2 Rule Box Ability lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Rule Box Ability-lock treatment: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+          # Core Ability, evolution, attachment, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Regidrago VSTAR and Oricorio identities: https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/sm2-55
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 2 | tee debug-pass-rulebox-lock.txt
+      - name: Simulate-this pass 3 no-discard-control
+        shell: bash
+        run: |
+          set -euo pipefail
+          # DCI and JIT profile contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          # Core discard, search, Energy, evolution, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Regidrago VSTAR and Mysterious Treasure identities: https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/sm6-113
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 1 --require-ready-by 4 | tee debug-pass-no-discard-control.txt
+      - name: Generate paired T2 and T3 setup matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Two-deck, 32-condition matrix specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out current-turn-matrix.csv
+      - name: Static route and source scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Repository policy scope and decision priorities: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          grep -RInE 'TODO|FIXME|XXX|BUG|fallback|preflight|preferred|choose_|reserve|discardable|prize|lock|retreat|payload|Forretress|Appletun' src tests docs scripts CMakeLists.txt README.md > static-route-scan.txt || true
+      - name: Record exact tested source
+        run: git rev-parse HEAD > tested-head.txt
+      - name: Package review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-debug-audit-20260722-0145
+          path: |
+            debug-pass-*.txt
+            current-turn-matrix.csv
+            static-route-scan.txt
+            tested-head.txt
+          if-no-files-found: error

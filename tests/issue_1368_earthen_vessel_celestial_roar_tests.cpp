@@ -67,6 +67,7 @@ void test_searches_only_fire_before_immediate_celestial_roar() {
   // Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Core Item, attachment, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1368
+  // Validated fix: https://github.com/FlareZ123/pokemon-sims/pull/1370
   expect(sim::EngineTestAccess::play_earthen_vessel(engine),
          "The exact Earthen Vessel route must resolve.");
   const sim::State& result = sim::EngineTestAccess::state(engine);

@@ -23,7 +23,8 @@ def sync_main_in_ci() -> None:
 def main() -> int:
     sync_main_in_ci()
     path = Path("src/trace_engine_v2/part_010_blender_thinning_override.inc")
-    text = path.read_text(encoding="utf-8")n
+    text = path.read_text(encoding="utf-8")
+
     anchor = "\n".join(
         [
             "    if (item_locked() || hand_count(Card::BrilliantBlender) == 0 ||",

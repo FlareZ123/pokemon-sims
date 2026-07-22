@@ -19,6 +19,9 @@ struct EngineTestAccess {
   static Card fss_target(const Engine& engine) {
     return engine.fss_target_after_search_started();
   }
+  static bool split_available(const Engine& engine) {
+    return engine.issue_1356_treasure_vstar_energy_split_available();
+  }
   static bool play_treasure(Engine& engine) {
     return engine.play_mysterious_treasure(false);
   }
@@ -128,6 +131,8 @@ void test_resolved_fss_route_spends_surplus_grass() {
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1356
+  expect(sim::EngineTestAccess::split_available(engine),
+         "The post-Star Alchemy split route should be available");
   expect(sim::EngineTestAccess::play_treasure(engine),
          "The proved Treasure split route should resolve");
   const sim::State& result = sim::EngineTestAccess::state(engine);

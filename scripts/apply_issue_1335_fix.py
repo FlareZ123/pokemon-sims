@@ -5,7 +5,7 @@ import subprocess
 from pathlib import Path
 
 
-# This idempotent helper keeps the confirmed source patch reproducible in CI.
+# This idempotent helper keeps the validated source patch reproducible in CI.
 ISSUE_URL = "https://github.com/FlareZ123/pokemon-sims/issues/1335"
 
 

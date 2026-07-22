@@ -1,0 +1,88 @@
+name: Apply issue 1255 on current main
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-issue-1255-current-main
+  cancel-in-progress: true
+
+jobs:
+  apply-validated-fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-1255-evolution-incense-appletun-current-main
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Import the isolated validated source and test delta
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Confirmed issue and exact card target class:
+          # https://github.com/FlareZ123/pokemon-sims/issues/1255
+          # https://api.pokemontcg.io/v2/cards/swsh1-163
+          # https://api.pokemontcg.io/v2/cards/sv8-140
+          git fetch origin fix/issue-1255-evolution-incense-appletun-v2
+          git diff --binary 7d8d5e800026bfacdbc4fad48b0fe9114a92831c 61ae022d77f8d5ca2894993b84598d78e6a0459e -- src tests > /tmp/issue-1255.patch
+          git apply --3way /tmp/issue-1255.patch
+          git diff --check
+      - name: Build and run focused regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Evolution Incense, Appletun, Serena, Legacy Star, and Forretress ex:
+          # https://api.pokemontcg.io/v2/cards/swsh1-163
+          # https://api.pokemontcg.io/v2/cards/sv8-140
+          # https://api.pokemontcg.io/v2/cards/swsh12-164
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ./build/regidrago_unified_tests issue_1255_evolution_incense_appletun_tests
+          ./build/regidrago_unified_tests issue_1255_evolution_incense_appletun_continuation_tests
+          ./build/regidrago_unified_tests evolution_incense_payload_tests
+          ./build/regidrago_unified_tests legacy_star_evolution_incense_payload_tests
+          ./build/regidrago_unified_tests forretress_ex_combo_tests
+      - name: Run three independent simulate-this audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Earliest legal ready-state policy and core game procedure:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 20260721 | tee issue-1255-trace-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 8675309 | tee issue-1255-trace-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee issue-1255-trace-3.txt
+      - name: Regenerate canonical source-bound evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Canonical setup evidence commands:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          python scripts/regenerate_setup_baselines.py --exe ./build/regidrago_sim --out-dir results --max-seed 20 --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe ./build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Commit completed current-main fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f results/*.tmp.lock results/.*.tmp.lock
+          git rm .github/workflows/apply-issue-1255-current-main.yml
+          git add src tests docs results
+          git diff --cached --check
+          git commit -m "Complete Appletun Evolution Incense routes on current main"
+          git push origin HEAD:fix/issue-1255-evolution-incense-appletun-current-main

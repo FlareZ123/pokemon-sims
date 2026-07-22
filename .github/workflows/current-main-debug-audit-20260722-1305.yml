@@ -73,7 +73,9 @@ jobs:
         run: |
           set -euo pipefail
           git rev-parse HEAD > tested-head.txt
-          tar --exclude=.git --exclude=build --exclude='*.tar.gz' -czf source-snapshot.tar.gz .
+          # Archive only tracked files from the exact tested commit, avoiding recursive self-inclusion.
+          # Git archive specification: https://git-scm.com/docs/git-archive
+          git archive --format=tar.gz --output=source-snapshot.tar.gz HEAD
 
       - name: Package audit evidence
         if: always()

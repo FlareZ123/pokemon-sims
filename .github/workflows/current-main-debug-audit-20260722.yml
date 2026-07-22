@@ -41,7 +41,7 @@ jobs:
           # Core retreat and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
           # Merged specification: https://github.com/FlareZ123/pokemon-sims/issues/1325
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 208 --require-ready-by 2 | tee audit-trace-1.txt
-          grep -q 'T1 | SKYLINER |' audit-trace-1.txt
+          grep -q 'T1 | RETREAT |.*Latias ex gives the Basic Active no Retreat Cost' audit-trace-1.txt
           grep -q 'T1 | ATTACK |.*Celestial Roar' audit-trace-1.txt
           grep -q 'T2 | READY |' audit-trace-1.txt
 

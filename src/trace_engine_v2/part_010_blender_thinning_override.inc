@@ -182,6 +182,21 @@
       return false;
     }
 
+    // A public Dragon payload plus a legal hand-discard outlet already completes
+    // the current-turn payload axis. Preserve the one-copy ACE SPEC and the deck
+    // payloads instead of duplicating that role:
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/976
+    // https://github.com/FlareZ123/pokemon-sims/issues/1339
+    const bool held_payload_outlet =
+        has_live_one_discard_hand_payload_line() ||
+        has_live_ultra_ball_hand_payload_line() ||
+        has_live_serena_hand_payload_line();
+    if (held_payload_outlet) return false;
+
     const int supporters_in_hand = static_cast<int>(
         std::count_if(state_.hand.begin(), state_.hand.end(), is_supporter));
     const bool only_tate_supporter_held =

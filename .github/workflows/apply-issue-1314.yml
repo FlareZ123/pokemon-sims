@@ -1,0 +1,55 @@
+name: Apply issue 1314 Appletun Treasure Vessel fix
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-issue-1314
+  cancel-in-progress: true
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-1314-appletun-treasure-vessel
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Apply isolated source and regression patch
+        run: python scripts/apply_issue_1314_patch.py
+      - name: Build and run focused regression
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ./build/regidrago_unified_tests issue_1314_appletun_treasure_vessel_tests
+      - name: Run three independent simulate-this audits
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-first --seed 31415 --require-ready-by 2 | tee issue-1314-trace-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 20260721 --require-ready-by 4 | tee issue-1314-trace-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 8675309 | tee issue-1314-trace-3.txt
+      - name: Regenerate source-bound matrices and reports
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe ./build/regidrago_sim --out-dir results --max-seed 20 --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe ./build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+          find results -name '*.tmp.lock' -delete
+      - name: Commit completed issue fix
+        run: |
+          rm .github/workflows/apply-issue-1314.yml scripts/apply_issue_1314_patch.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src tests docs results
+          git add -u .github/workflows/apply-issue-1314.yml scripts/apply_issue_1314_patch.py
+          git diff --cached --check
+          git commit -m "Include Appletun in the redundant paid-search route"
+          git push origin HEAD:fix/issue-1314-appletun-treasure-vessel

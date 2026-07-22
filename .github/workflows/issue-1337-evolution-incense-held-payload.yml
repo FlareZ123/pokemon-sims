@@ -1,0 +1,124 @@
+name: Issue 1337 Evolution Incense Held Payload
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Apply Evolution Incense held-payload fix
+        run: python scripts/apply_issue_1337_fix.py
+
+      - name: Commit production fix to PR branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- src/trace_engine_v2/part_search_item_overrides.inc; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_search_item_overrides.inc
+          git commit -m 'Preserve held payload through Evolution Incense (#1337)'
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+
+      - name: Configure and build Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Run focused regression
+        run: ./build/regidrago_unified_tests issue_1337_evolution_incense_held_payload_tests
+
+      - name: Refresh source-bound canonical baselines
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out results/multi_deck_comparison.csv
+          python - <<'PY'
+          from __future__ import annotations
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          from scripts.baseline_provenance import simulator_policy_source_digest
+
+          root = Path('.').resolve()
+          csv_path = root / 'results' / 'multi_deck_comparison.csv'
+          manifest_path = root / 'results' / 'multi_deck_manifest.json'
+          manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+          manifest['comparison_csv_sha256'] = hashlib.sha256(csv_path.read_bytes()).hexdigest()
+          manifest['simulator_policy_source_sha256'] = simulator_policy_source_digest(root)
+          temporary = manifest_path.with_suffix('.json.tmp')
+          temporary.write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          os.replace(temporary, manifest_path)
+          PY
+          python scripts/update_multi_deck_docs.py --repo-root .
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Run three simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Evolution Incense: https://api.pokemontcg.io/v2/cards/swsh1-163
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Issue: https://github.com/FlareZ123/pokemon-sims/issues/1337
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 107 --require-ready-by 3 | tee issue-1337-pass-strict-first.txt
+          grep -Eq 'T3 .*READY' issue-1337-pass-strict-first.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee issue-1337-pass-item-lock.txt
+          grep -Eq 'T2 .*READY' issue-1337-pass-item-lock.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee issue-1337-pass-rulebox-lock.txt
+          grep -Eq 'T[23] .*READY' issue-1337-pass-rulebox-lock.txt
+
+      - name: Generate current-run paired matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out issue-1337-matrix.csv
+
+      - name: Package validation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1337-evolution-incense-held-payload
+          path: |
+            issue-1337-pass-*.txt
+            issue-1337-matrix.csv
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            build/Testing
+          if-no-files-found: error
+
+      - name: Commit refreshed baselines to PR branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build issue-1337-pass-*.txt issue-1337-matrix.csv
+          if git diff --quiet && git diff --cached --quiet; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add README.md docs results
+          git commit -m 'Refresh source-bound setup baselines (#1337)'
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

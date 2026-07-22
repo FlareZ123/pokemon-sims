@@ -57,7 +57,18 @@ jobs:
           cmake --build build --parallel 2
 
       - name: Run focused regression
-        run: ./build/regidrago_unified_tests issue_1356_fss_treasure_energy_tests
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/regidrago_unified_tests issue_1356_fss_treasure_energy_tests 2>&1 | tee issue-1356-focused.txt
+
+      - name: Upload focused failure output
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1356-focused-failure
+          path: issue-1356-focused.txt
+          if-no-files-found: error
 
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
@@ -153,7 +164,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf build build-sanitize issue-1356-pass-*.txt issue-1356-t2-t3-matrix.csv
+          rm -rf build build-sanitize issue-1356-pass-*.txt issue-1356-t2-t3-matrix.csv issue-1356-focused.txt
           git rm .github/workflows/issue-1356-fss-treasure-energy.yml scripts/apply_issue_1356_fix.py
           git add src tests README.md docs results
           if git diff --cached --quiet; then

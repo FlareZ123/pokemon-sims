@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace sim {
 struct EngineTestAccess {
@@ -15,48 +16,13 @@ struct EngineTestAccess {
     engine.state_ = std::move(state);
     engine.deck_seen_ = true;
   }
-
-  static Card diagnosed_fss_target(Engine& engine) {
-    const Card missing_energy = engine.grass_needed() == 1 ? Card::Grass : Card::Fire;
-    const std::size_t payloads_before = static_cast<std::size_t>(std::count_if(
-        engine.state_.hand.begin(), engine.state_.hand.end(), is_payload));
-    std::mt19937_64 shadow_rng = engine.rng_;
-    Engine projected(engine.scenario_, engine.recipe_, shadow_rng);
-    projected.state_ = engine.state_;
-    projected.deck_seen_ = engine.deck_seen_;
-    projected.prizes_revealed_ = engine.prizes_revealed_;
-    projected.state_.vstar_power_used = true;
-    const bool energy_moved = projected.move_deck_to_hand(missing_energy);
-    const bool treasure_played = energy_moved && projected.play_mysterious_treasure(false);
-    const std::size_t payloads_after = static_cast<std::size_t>(std::count_if(
-        projected.state_.hand.begin(), projected.state_.hand.end(), is_payload));
-    std::cerr << "split="
-              << engine.fss_should_split_treasure_vstar_and_next_turn_energy()
-              << " strict=" << engine.strict_payload_timing()
-              << " used=" << engine.state_.vstar_power_used
-              << " item_lock=" << engine.item_locked()
-              << " turn=" << engine.state_.turn
-              << " max_turn=" << engine.scenario_.max_turn
-              << " manual_used=" << engine.state_.manual_energy_used
-              << " need_vstar=" << engine.need_vstar()
-              << " need_energy=" << engine.need_energy()
-              << " grass_needed=" << engine.grass_needed()
-              << " fire_needed=" << engine.fire_needed()
-              << " active=" << (engine.state_.active ? name(engine.state_.active->card) : "none")
-              << " entered=" << (engine.state_.active ? engine.state_.active->entered_turn : -1)
-              << " mt_hand=" << engine.hand_count(Card::MysteriousTreasure)
-              << " vstar_deck=" << engine.deck_count_after_search_started(Card::RegidragoVstar)
-              << " fire_deck=" << engine.deck_count_after_search_started(Card::Fire)
-              << " grass_deck=" << engine.deck_count_after_search_started(Card::Grass)
-              << " payloads_before=" << payloads_before
-              << " energy_moved=" << energy_moved
-              << " shadow_played=" << treasure_played
-              << " shadow_vstar_hand=" << projected.hand_count(Card::RegidragoVstar)
-              << " shadow_mt_hand=" << projected.hand_count(Card::MysteriousTreasure)
-              << " shadow_energy_hand=" << projected.hand_count(missing_energy)
-              << " payloads_after=" << payloads_after << '\n';
+  static Card fss_target(const Engine& engine) {
     return engine.fss_target_after_search_started();
   }
+  static bool play_treasure(Engine& engine) {
+    return engine.play_mysterious_treasure(false);
+  }
+  static const State& state(const Engine& engine) { return engine.state_; }
 };
 }  // namespace sim
 
@@ -66,14 +32,30 @@ void expect(const bool condition, const std::string_view message) {
   if (!condition) throw std::runtime_error(std::string(message));
 }
 
+bool has(const std::vector<sim::Card>& cards, const sim::Card card) {
+  return std::find(cards.begin(), cards.end(), card) != cards.end();
+}
+
+void erase_one(std::vector<sim::Card>& cards, const sim::Card card) {
+  const auto found = std::find(cards.begin(), cards.end(), card);
+  if (found == cards.end()) throw std::runtime_error("test fixture card missing");
+  cards.erase(found);
+}
+
 const sim::DeckRecipe& test_recipe() {
   static const sim::DeckRecipe recipe = sim::baseline_recipe();
   return recipe;
 }
 
+sim::Scenario test_scenario() {
+  return sim::Scenario{"issue-1356-fss-treasure-energy", sim::DciProfile::StrictJit,
+                       sim::LockMode::None, true, 3};
+}
+
 sim::State split_state() {
   sim::State state;
   state.turn = 2;
+  state.supporter_used = true;
   state.manual_energy_used = true;
   state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 0,
                               sim::Tool::ForestSealStone};
@@ -86,22 +68,19 @@ sim::State split_state() {
 }
 
 sim::Card target_for(sim::State state, const std::uint64_t seed) {
-  const sim::Scenario scenario{"issue-1356-fss-treasure-energy", sim::DciProfile::StrictJit,
-                               sim::LockMode::None, true, 3};
   std::mt19937_64 rng(seed);
-  sim::Engine engine(scenario, test_recipe(), rng);
+  sim::Engine engine(test_scenario(), test_recipe(), rng);
   sim::EngineTestAccess::set_state(engine, std::move(state));
-  return sim::EngineTestAccess::diagnosed_fss_target(engine);
+  return sim::EngineTestAccess::fss_target(engine);
 }
 
 void test_treasure_takes_vstar_and_fss_takes_fire() {
-  // The exact public seed-107 hand retains Quick Ball and Lusamine as legal DCI costs.
-  // One Treasure can search Regidrago VSTAR while the second survives to discard the
-  // held Dragon on T3. Star Alchemy should therefore search Fire instead of duplicating VSTAR:
+  // The public seed-107 hand has a prior-turn Active Regidrago V with GG, two
+  // Treasures after Arven, a held Dragon, and one surplus Grass. Star Alchemy
+  // should assign itself to Fire while Treasure supplies Regidrago VSTAR:
   // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
   // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
-  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // Route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
@@ -120,8 +99,8 @@ void test_split_is_symmetric_for_missing_grass() {
   state.deck = {sim::Card::RegidragoVstar, sim::Card::Grass,
                 sim::Card::TapuLeleGX, sim::Card::Dragapult};
 
-  // Forest Seal Stone searches any card, so the same connector allocation applies
-  // when Grass is the sole next-turn attachment instead of Fire:
+  // Forest Seal Stone searches any card, so the connector split is symmetric when
+  // Grass is the sole next-turn attachment and Fire is the surplus cost:
   // https://api.pokemontcg.io/v2/cards/swsh12-156
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://github.com/FlareZ123/pokemon-sims/issues/1356
@@ -129,13 +108,46 @@ void test_split_is_symmetric_for_missing_grass() {
          "Star Alchemy should search the missing next-turn Grass Energy");
 }
 
+void test_resolved_fss_route_spends_surplus_grass() {
+  sim::State state = split_state();
+  state.vstar_power_used = true;
+  erase_one(state.deck, sim::Card::Fire);
+  state.hand.push_back(sim::Card::Fire);
+
+  std::mt19937_64 rng(135606);
+  sim::Engine engine(test_scenario(), test_recipe(), rng);
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // After Star Alchemy resolves, Fire is protected as the T3 attachment. The one
+  // held Grass is surplus for the GG Active and may pay Treasure while the second
+  // Treasure, Dragon payload, Quick Ball, and Bench route remain intact:
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1356
+  expect(sim::EngineTestAccess::play_treasure(engine),
+         "The proved Treasure split route should resolve");
+  const sim::State& result = sim::EngineTestAccess::state(engine);
+  expect(std::count(result.hand.begin(), result.hand.end(), sim::Card::MysteriousTreasure) == 1,
+         "One Treasure must survive for the T3 payload");
+  expect(has(result.hand, sim::Card::RegidragoVstar),
+         "Treasure should search Regidrago VSTAR");
+  expect(has(result.hand, sim::Card::Fire), "The T3 Fire attachment must survive");
+  expect(has(result.hand, sim::Card::MegaDragonite), "The held Dragon payload must survive");
+  expect(has(result.hand, sim::Card::QuickBall), "Quick Ball must remain unspent");
+  expect(has(result.discard, sim::Card::Grass), "The surplus Grass should pay Treasure");
+}
+
 void test_one_treasure_keeps_vstar_priority() {
   sim::State state = split_state();
   state.hand = {sim::Card::MysteriousTreasure, sim::Card::MegaDragonite,
                 sim::Card::Grass, sim::Card::QuickBall, sim::Card::Lusamine};
 
-  // One Treasure cannot both search VSTAR now and remain as the next-turn strict-JIT
-  // payload outlet, so the established Star Alchemy VSTAR priority must remain:
+  // One Treasure cannot search VSTAR now and remain as the next-turn strict-JIT
+  // payload outlet, so the established Star Alchemy VSTAR priority remains:
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/swsh12-156
   // https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -144,18 +156,18 @@ void test_one_treasure_keeps_vstar_priority() {
          "A lone Treasure must not displace the VSTAR target");
 }
 
-void test_unpayable_preservation_route_keeps_vstar_priority() {
+void test_no_surplus_energy_keeps_vstar_priority() {
   sim::State state = split_state();
   state.hand = {sim::Card::MysteriousTreasure, sim::Card::MysteriousTreasure,
                 sim::Card::MegaDragonite};
 
-  // Projecting the real DCI selector proves that spending the second Treasure as the
-  // first Treasure's cost leaves no held outlet. The split route is therefore dead:
+  // Star Alchemy would add the required Fire, leaving no surplus off-type Energy.
+  // The generic DCI correctly spends the duplicate Treasure, so the split is rejected:
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
   // https://github.com/FlareZ123/pokemon-sims/issues/1356
   expect(target_for(std::move(state), 135604) == sim::Card::RegidragoVstar,
-         "The split must require a payable cost that preserves the second Treasure");
+         "The split must require a proved surplus Energy cost");
 }
 
 void test_missing_energy_target_keeps_vstar_priority() {
@@ -163,8 +175,8 @@ void test_missing_energy_target_keeps_vstar_priority() {
   state.deck = {sim::Card::RegidragoVstar, sim::Card::TapuLeleGX,
                 sim::Card::Dragapult};
 
-  // Star Alchemy cannot assign itself to an absent Basic Energy. Treasure therefore
-  // remains a possible later connector while Forest Seal Stone takes Regidrago VSTAR:
+  // Star Alchemy cannot assign itself to an absent Basic Energy, so Forest Seal
+  // Stone keeps the original Regidrago VSTAR target:
   // https://api.pokemontcg.io/v2/cards/swsh12-156
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/issues/1356
@@ -177,8 +189,9 @@ void test_missing_energy_target_keeps_vstar_priority() {
 int main() {
   test_treasure_takes_vstar_and_fss_takes_fire();
   test_split_is_symmetric_for_missing_grass();
+  test_resolved_fss_route_spends_surplus_grass();
   test_one_treasure_keeps_vstar_priority();
-  test_unpayable_preservation_route_keeps_vstar_priority();
+  test_no_surplus_energy_keeps_vstar_priority();
   test_missing_energy_target_keeps_vstar_priority();
   std::cout << "issue_1356_fss_treasure_energy_tests: all checks passed\n";
 }

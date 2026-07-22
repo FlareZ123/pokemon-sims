@@ -1,0 +1,172 @@
+name: Issue 1343 Reconcile Contracts and Reports V2
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Update downstream route contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          quick_ball_test = Path("tests/run_issue_1092_quick_ball_energy_jit_gate.cmake")
+          text = quick_ball_test.read_text(encoding="utf-8")
+          comment_start = text.index("# A payload-only Quick Ball play advances no searched Basic axis.")
+          comment_end_marker = "# Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1092"
+          comment_end = text.index(comment_end_marker, comment_start) + len(comment_end_marker)
+          new_comment = '''# Seed 71 must hold Quick Ball until the manual attachment completes GGF. On T3,
+          # the public Dragon can pay Quick Ball while a legal Basic target remains. This direct
+          # route reaches the same strict-JIT state while preserving Arven and Brilliant Blender:
+          # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+          # Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+          # Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+          # Regidrago VSTAR and GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official Item, attachment, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          # Original energy gate: https://github.com/FlareZ123/pokemon-sims/issues/1092
+          # Resource-preservation fix: https://github.com/FlareZ123/pokemon-sims/issues/1343'''
+          text = text[:comment_start] + new_comment + text[comment_end:]
+          check_start = text.index('if(NOT issue_1092_seed_71 MATCHES "T3 \\| PLAY ITEM \\|.*Brilliant Blender")')
+          check_end = text.index("\nendif()", check_start) + len("\nendif()")
+          new_check = r'''if(NOT issue_1092_seed_71 MATCHES "T3 \| DISCARD \|.*Quick Ball cost")
+            message(FATAL_ERROR "Seed 71 did not use the direct held-payload Quick Ball route:\n${issue_1092_seed_71}")
+          endif()
+          if(issue_1092_seed_71 MATCHES "T3 \| PLAY ITEM \|.*Brilliant Blender")
+            message(FATAL_ERROR "Seed 71 spent Brilliant Blender despite the direct Quick Ball route:\n${issue_1092_seed_71}")
+          endif()'''
+          quick_ball_test.write_text(text[:check_start] + new_check + text[check_end:], encoding="utf-8")
+
+          tate_test = Path("tests/issue_1139_fss_bank_tate_tests.cpp")
+          text = tate_test.read_text(encoding="utf-8")
+          start = text.index("void test_seed_100_reaches_t5_via_tate_and_blender() {")
+          end = text.index("\n}\n\n}  // namespace", start) + 2
+          replacement = r'''void test_seed_100_reaches_t4_via_quick_ball_tate() {
+            const auto scenario = sim::scenario_by_label("strict-jit/go-first");
+            expect(scenario.has_value(), "Missing strict-JIT going-first scenario.");
+            const sim::DeckRecipe recipe = sim::baseline_recipe();
+            std::mt19937_64 rng{100};
+            sim::TraceLog trace{true, {}};
+            sim::Engine engine(*scenario, recipe, rng, &trace);
+            const sim::TrialOutcome outcome = engine.run();
+
+            const bool discarded_payload_t4 = std::any_of(
+                trace.lines.begin(), trace.lines.end(), [](const std::string& line) {
+                  return line.find("T4 | DISCARD") != std::string::npos &&
+                         line.find("R-QB-01") != std::string::npos &&
+                         line.find("Dragapult ex") != std::string::npos;
+                });
+            const bool searched_tate_t4 = std::any_of(
+                trace.lines.begin(), trace.lines.end(), [](const std::string& line) {
+                  return line.find("T4 | WONDER TAG") != std::string::npos &&
+                         line.find("Tate & Liza") != std::string::npos;
+                });
+            const bool switched_t4 = std::any_of(
+                trace.lines.begin(), trace.lines.end(), [](const std::string& line) {
+                  return line.find("T4 | PLAY SUPPORTER") != std::string::npos &&
+                         line.find("R-TATE-01") != std::string::npos;
+                });
+            const bool spent_blender = std::any_of(
+                trace.lines.begin(), trace.lines.end(), [](const std::string& line) {
+                  return line.find("R-BLENDER-01") != std::string::npos;
+                });
+            const bool preserved_resources = std::any_of(
+                trace.lines.begin(), trace.lines.end(), [](const std::string& line) {
+                  return line.find("T4 | POLICY") != std::string::npos &&
+                         line.find("End:") != std::string::npos &&
+                         line.find("Arven") != std::string::npos &&
+                         line.find("Brilliant Blender") != std::string::npos;
+                });
+
+            // Once GGF, VSTAR, and the held Dragon are public on T4, Quick Ball can
+            // discard Dragapult ex, search Tapu Lele-GX, and Wonder Tag for Tate & Liza.
+            // Tate promotes the powered attacker that turn, reaching readiness one turn
+            // earlier while preserving Arven and the singleton ACE SPEC:
+            // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+            // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+            // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+            // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+            // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+            // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+            // Core turn, Item, Ability, Supporter, and switch procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+            // Original T5 recovery contract: https://github.com/FlareZ123/pokemon-sims/issues/1139
+            // Resource-preservation fix: https://github.com/FlareZ123/pokemon-sims/issues/1343
+            expect(outcome.first_ready_turn == 4,
+                   "Seed 100 must use the earliest legal T4 ready state.");
+            expect(discarded_payload_t4,
+                   "Seed 100 must discard Dragapult with Quick Ball on T4.");
+            expect(searched_tate_t4,
+                   "Seed 100 must use Wonder Tag for Tate & Liza on T4.");
+            expect(switched_t4,
+                   "Seed 100 must use Tate switch mode on T4.");
+            expect(!spent_blender,
+                   "Seed 100 must preserve Brilliant Blender.");
+            expect(preserved_resources,
+                   "Seed 100 must preserve Arven and Brilliant Blender in the ready state.");
+          }'''
+          text = text[:start] + replacement + text[end:]
+          old_call = "  test_seed_100_reaches_t5_via_tate_and_blender();"
+          if text.count(old_call) != 1:
+              raise RuntimeError("Issue 1139 seed-100 call changed unexpectedly")
+          tate_test.write_text(
+              text.replace(old_call, "  test_seed_100_reaches_t4_via_quick_ball_tate();", 1),
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Validate reconciled focused contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_unified_tests issue_1343_arven_held_payload_tests
+          ./build/regidrago_unified_tests issue_1139_fss_bank_tate_tests
+          cmake -DSIMULATOR="$PWD/build/regidrago_sim" -P tests/run_issue_1092_quick_ball_energy_jit_gate.cmake
+
+      - name: Regenerate source-bound setup evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Canonical evidence contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
+          # Source-bound report issue: https://github.com/FlareZ123/pokemon-sims/issues/1343
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Commit reconciled contracts and evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm -f .github/workflows/issue-1343-contract-diagnostics.yml
+          git rm -f .github/workflows/issue-1343-reconcile.yml
+          git rm -f .github/workflows/issue-1343-reconcile-v2.yml
+          git rm -f audit/issue_1343_arven_held_payload_probe.cpp
+          git rm -f scripts/apply_issue_1343_probe_lifetime_fix.py
+          git rm -f scripts/apply_issue_1343_probe_ultra_fix.py
+          git add README.md docs results tests/run_issue_1092_quick_ball_energy_jit_gate.cmake tests/issue_1139_fss_bank_tate_tests.cpp
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m "Reconcile issue 1343 route contracts and evidence"
+          git push origin "HEAD:${{ github.head_ref }}"

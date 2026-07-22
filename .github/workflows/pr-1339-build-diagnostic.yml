@@ -1,0 +1,37 @@
+name: PR 1339 Build Diagnostic
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Apply candidate fix
+        run: python scripts/apply_issue_1339_reclaim.py
+      - name: Capture compiler diagnostics
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release 2>&1 | tee configure.log
+          cmake --build build --parallel 2 2>&1 | tee build.log
+      - name: Upload compiler diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1339-build-diagnostic
+          path: |
+            configure.log
+            build.log
+          if-no-files-found: error

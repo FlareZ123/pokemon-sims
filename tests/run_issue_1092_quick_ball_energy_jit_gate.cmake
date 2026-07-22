@@ -15,17 +15,17 @@ function(run_trace scenario seed output_var)
   set(${output_var} "${output}" PARENT_SCOPE)
 endfunction()
 
-# A payload-only Quick Ball play advances no searched Basic axis. Seed 71 has
-# Active Regidrago VSTAR at GG after the manual attachment is spent and no preferred
-# Basic target, so the held payload and Quick Ball must wait while the later ready
-# turn uses the strongest observable legal payload outlet available then:
+# Seed 71 must hold Quick Ball until the manual attachment completes GGF. On T3,
+# the public Dragon can pay Quick Ball while a legal Basic target remains. This direct
+# route reaches the same strict-JIT state while preserving Arven and Brilliant Blender:
 # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-# Regidrago VSTAR and GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+# Arven: https://api.pokemontcg.io/v2/cards/sv1-166
 # Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+# Regidrago VSTAR and GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
 # Official Item, attachment, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
 # Strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-# Energy-axis projection: https://github.com/FlareZ123/pokemon-sims/issues/737
-# Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1092
+# Original energy gate: https://github.com/FlareZ123/pokemon-sims/issues/1092
+# Resource-preservation fix: https://github.com/FlareZ123/pokemon-sims/issues/1343
 run_trace("strict-jit/go-first" 71 issue_1092_seed_71)
 if(issue_1092_seed_71 MATCHES "T2 \\| DISCARD \\|.*Quick Ball cost")
   message(FATAL_ERROR "Seed 71 still spent a payload-only Quick Ball cost before GGF could finish:\n${issue_1092_seed_71}")
@@ -36,8 +36,11 @@ endif()
 if(issue_1092_seed_71 MATCHES "LEGACY STAR")
   message(FATAL_ERROR "Seed 71 still spent the game-wide VSTAR Power after preserving its held resources:\n${issue_1092_seed_71}")
 endif()
-if(NOT issue_1092_seed_71 MATCHES "T3 \\| PLAY ITEM \\|.*Brilliant Blender")
-  message(FATAL_ERROR "Seed 71 did not use the strongest observable T3 payload outlet:\n${issue_1092_seed_71}")
+if(NOT issue_1092_seed_71 MATCHES "T3 \\| DISCARD \\|.*Quick Ball cost")
+  message(FATAL_ERROR "Seed 71 did not use the direct held-payload Quick Ball route:\n${issue_1092_seed_71}")
+endif()
+if(issue_1092_seed_71 MATCHES "T3 \\| PLAY ITEM \\|.*Brilliant Blender")
+  message(FATAL_ERROR "Seed 71 spent Brilliant Blender despite the direct Quick Ball route:\n${issue_1092_seed_71}")
 endif()
 if(NOT issue_1092_seed_71 MATCHES "T3 \\| READY \\|")
   message(FATAL_ERROR "Seed 71 lost its T3 readiness after the target-aware gate:\n${issue_1092_seed_71}")

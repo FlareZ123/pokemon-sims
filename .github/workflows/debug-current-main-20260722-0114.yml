@@ -1,0 +1,74 @@
+name: Current Main Debug Audit 20260722 0114
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  current-main-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run repository test suite
+        run: ctest --test-dir build --output-on-failure
+      - name: Simulate-this pass 1 strict go-second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Earliest deterministic route and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Core turn, search, attachment, evolution, Ability, Supporter, Retreat, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Regidrago V and VSTAR card data: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee debug-pass-1.txt
+      - name: Simulate-this pass 2 strict go-first
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Canonical ready-state definition: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+          # Core evolution and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Regidrago VSTAR Apex Dragon identity: https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee debug-pass-2.txt
+      - name: Simulate-this pass 3 matchup-flex go-second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Repository scenario and policy contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
+          # Direct search and discard costs must be paid exactly: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Mysterious Treasure and Quick Ball card data: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee debug-pass-3.txt
+      - name: Broad static route scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo '=== TODO/FIXME/BUG markers ==='
+            grep -RInE 'TODO|FIXME|XXX|BUG' src tests docs scripts CMakeLists.txt README.md || true
+            echo '=== selectors, costs, locks, prizes, retreat, and payload routes ==='
+            grep -RInE 'fallback|preflight|has_live|preferred|search.*target|target.*search|selector|choose_|reserve|discardable|prize|lock|retreat|attack|payload|Appletun|Forretress|Exploding Energy' src tests docs scripts CMakeLists.txt README.md | head -n 20000 || true
+          } > static-audit.txt
+      - name: Generate paired T2 and T3 setup matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Matrix contract and all 16 conditions: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out current-run-matrix.csv
+      - name: Record tested source
+        run: git rev-parse HEAD > tested-head.txt
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-debug-audit-20260722-0114
+          path: |
+            debug-pass-*.txt
+            static-audit.txt
+            current-run-matrix.csv
+            tested-head.txt
+          if-no-files-found: error

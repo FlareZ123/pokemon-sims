@@ -199,7 +199,7 @@ void test_exact_route_controls() {
                  "The next-turn route requires the VSTAR card already held.");
 }
 
-void test_seed_100_reaches_t5_via_tate_and_blender() {
+void test_seed_100_reaches_t4_via_quick_ball_tate() {
   const auto scenario = sim::scenario_by_label("strict-jit/go-first");
   expect(scenario.has_value(), "Missing strict-JIT going-first scenario.");
   const sim::DeckRecipe recipe = sim::baseline_recipe();
@@ -208,34 +208,59 @@ void test_seed_100_reaches_t5_via_tate_and_blender() {
   sim::Engine engine(*scenario, recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 
-  const bool searched_tate = std::any_of(
+  const bool discarded_payload_t4 = std::any_of(
       trace.lines.begin(), trace.lines.end(), [](const std::string& line) {
-        return line.find("STAR ALCHEMY") != std::string::npos &&
+        return line.find("T4 | DISCARD") != std::string::npos &&
+               line.find("R-QB-01") != std::string::npos &&
+               line.find("Dragapult ex") != std::string::npos;
+      });
+  const bool searched_tate_t4 = std::any_of(
+      trace.lines.begin(), trace.lines.end(), [](const std::string& line) {
+        return line.find("T4 | WONDER TAG") != std::string::npos &&
                line.find("Tate & Liza") != std::string::npos;
       });
-  const bool switched_t5 = std::any_of(
+  const bool switched_t4 = std::any_of(
       trace.lines.begin(), trace.lines.end(), [](const std::string& line) {
-        return line.find("T5 | PLAY SUPPORTER") != std::string::npos &&
+        return line.find("T4 | PLAY SUPPORTER") != std::string::npos &&
                line.find("R-TATE-01") != std::string::npos;
       });
-  const bool blender_t5 = std::any_of(
+  const bool spent_blender = std::any_of(
       trace.lines.begin(), trace.lines.end(), [](const std::string& line) {
-        return line.find("T5 | PLAY ITEM") != std::string::npos &&
-               line.find("R-BLENDER-01") != std::string::npos;
+        return line.find("R-BLENDER-01") != std::string::npos;
+      });
+  const bool preserved_resources = std::any_of(
+      trace.lines.begin(), trace.lines.end(), [](const std::string& line) {
+        return line.find("T4 | POLICY") != std::string::npos &&
+               line.find("End:") != std::string::npos &&
+               line.find("Arven") != std::string::npos &&
+               line.find("Brilliant Blender") != std::string::npos;
       });
 
-  // This deterministic trace is the issue reproduction and validates the complete
-  // banked route at the repository's diagnostic T5 horizon:
-  // https://github.com/FlareZ123/pokemon-sims/issues/1139
-  // https://api.pokemontcg.io/v2/cards/swsh12-156
-  // https://api.pokemontcg.io/v2/cards/sm7-148
-  // https://api.pokemontcg.io/v2/cards/sv8-164
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/T5_FAILURE_POLICY.md
-  expect(outcome.first_ready_turn == 5,
-         "Seed 100 must recover to the earliest legal T5 ready state.");
-  expect(searched_tate, "Seed 100 must bank Tate with Star Alchemy on T4.");
-  expect(switched_t5, "Seed 100 must use Tate switch mode on T5.");
-  expect(blender_t5, "Seed 100 must use held Blender for the T5 payload.");
+  // Once GGF, VSTAR, and the held Dragon are public on T4, Quick Ball can
+  // discard Dragapult ex, search Tapu Lele-GX, and Wonder Tag for Tate & Liza.
+  // Tate promotes the powered attacker that turn, reaching readiness one turn
+  // earlier while preserving Arven and the singleton ACE SPEC:
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+  // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Core turn, Item, Ability, Supporter, and switch procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Original T5 recovery contract: https://github.com/FlareZ123/pokemon-sims/issues/1139
+  // Resource-preservation fix: https://github.com/FlareZ123/pokemon-sims/issues/1343
+  expect(outcome.first_ready_turn == 4,
+         "Seed 100 must use the earliest legal T4 ready state.");
+  expect(discarded_payload_t4,
+         "Seed 100 must discard Dragapult with Quick Ball on T4.");
+  expect(searched_tate_t4,
+         "Seed 100 must use Wonder Tag for Tate & Liza on T4.");
+  expect(switched_t4,
+         "Seed 100 must use Tate switch mode on T4.");
+  expect(!spent_blender,
+         "Seed 100 must preserve Brilliant Blender.");
+  expect(preserved_resources,
+         "Seed 100 must preserve Arven and Brilliant Blender in the ready state.");
 }
 
 }  // namespace
@@ -243,6 +268,6 @@ void test_seed_100_reaches_t5_via_tate_and_blender() {
 int main() {
   test_exact_k1_state_banks_tate_and_completes_t5();
   test_exact_route_controls();
-  test_seed_100_reaches_t5_via_tate_and_blender();
+  test_seed_100_reaches_t4_via_quick_ball_tate();
   return 0;
 }

@@ -1,0 +1,126 @@
+name: Debug Main dc4b 20260722
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify current-main ancestry
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Audited current main: https://github.com/FlareZ123/pokemon-sims/commit/dc4b290f10b09ebee9a8cdfad4b434dd9f8c8c7d
+          git merge-base --is-ancestor dc4b290f10b09ebee9a8cdfad4b434dd9f8c8c7d HEAD
+
+      - name: Package source snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Repository specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md
+          git archive --format=tar.gz --output=source-tree-dc4b-20260722.tar.gz HEAD
+
+      - name: Static repository audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Policy priorities and DCI/JIT rules: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          # Model and lock boundaries: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
+          # Rules traceability contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULES_TRACEABILITY.md
+          test -f docs/RULE_SOURCES.md
+          test -f docs/RULES_TRACEABILITY.md
+          test -f docs/POLICY_DECISIONS.md
+          test -f docs/MODEL_ASSUMPTIONS.md
+          ! git grep -nE 'TODO|FIXME|XXX' -- src tests scripts docs README.md
+          python -m compileall -q scripts
+          git ls-files > tracked-files.txt
+
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Release
+        run: cmake --build build --parallel 2
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Simulate-this pass 1 strict JIT going first
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Ready-state contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Core turn and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 107 --require-ready-by 3 | tee trace-strict-first-107.txt
+          grep -Eq '^T3 \| READY \|' trace-strict-first-107.txt
+
+      - name: Simulate-this pass 2 scheduled Item lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Scheduled Item-lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Core Item procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee trace-item-lock-25.txt
+          grep -Eq '^T2 \| READY \|' trace-item-lock-25.txt
+
+      - name: Simulate-this pass 3 Rule Box Ability lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Rule Box Ability-lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+          # Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+          # Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee trace-rulebox-lock-20.txt
+          grep -Eq '^T[23] \| READY \|' trace-rulebox-lock-20.txt
+
+      - name: Generate paired T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Paired matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out debug-main-dc4b-matrix.csv
+          test "$(wc -l < debug-main-dc4b-matrix.csv)" -eq 33
+
+      - name: Configure ASan and UBSan
+        run: >-
+          cmake -S . -B build-sanitizers -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+
+      - name: Build sanitizer targets
+        run: cmake --build build-sanitizers --parallel 2
+
+      - name: Run complete sanitizer suite
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: ctest --test-dir build-sanitizers --parallel 2 --output-on-failure
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-main-dc4b-20260722
+          path: |
+            source-tree-dc4b-20260722.tar.gz
+            tracked-files.txt
+            trace-*.txt
+            debug-main-dc4b-matrix.csv
+            build/Testing
+            build-sanitizers/Testing
+          if-no-files-found: warn

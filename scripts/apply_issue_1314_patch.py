@@ -36,7 +36,7 @@ def main() -> None:
     replace_once(
         source,
         """    for (const Card repeated : {Card::MegaDragonite, Card::Dragapult,
-                                 Card::GoodraVstar, Card::DialgaGX}) {
+                                Card::GoodraVstar, Card::DialgaGX}) {
 """,
         """    // Appletun follows the same dynamic DCI rule as every other modeled
     // payload when two copies are redundant and a distinct payload remains:
@@ -44,8 +44,8 @@ def main() -> None:
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/issues/1314
     for (const Card repeated : {Card::MegaDragonite, Card::Dragapult,
-                                 Card::GoodraVstar, Card::DialgaGX,
-                                 Card::Appletun}) {
+                                Card::GoodraVstar, Card::DialgaGX,
+                                Card::Appletun}) {
 """,
     )
 

@@ -1,0 +1,101 @@
+name: Issue 1346 Arven Redundant FSS
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Release
+        run: cmake --build build --parallel 2
+
+      - name: Run focused regression
+        run: ./build/regidrago_unified_tests issue_1346_arven_redundant_fss_tests
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Simulate-this pass 1 held VSTAR preserves Forest Seal Stone
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+          # Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+          # Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Resource policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Issue: https://github.com/FlareZ123/pokemon-sims/issues/1346
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 2 | tee issue-1346-pass-held-vstar.txt
+          grep -q 'T2 | READY |' issue-1346-pass-held-vstar.txt
+          if grep -q 'ATTACH TOOL.*Forest Seal Stone' issue-1346-pass-held-vstar.txt; then
+            echo 'Seed 20 still attaches redundant Forest Seal Stone' >&2
+            exit 1
+          fi
+
+      - name: Simulate-this pass 2 original split route remains live
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Original connector issue: https://github.com/FlareZ123/pokemon-sims/issues/745
+          # Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+          # Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+          # Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 3 --require-ready-by 3 | tee issue-1346-pass-split-route.txt
+          grep -q 'ATTACH TOOL.*Forest Seal Stone' issue-1346-pass-split-route.txt
+          grep -q 'T3 | READY |' issue-1346-pass-split-route.txt
+
+      - name: Simulate-this pass 3 scheduled Item lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Lock specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+          # Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee issue-1346-pass-item-lock.txt
+          grep -q 'T2 | READY |' issue-1346-pass-item-lock.txt
+
+      - name: Generate paired T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out issue-1346-t2-t3-matrix.csv
+
+      - name: Configure sanitizers
+        run: >-
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+
+      - name: Build sanitizers
+        run: cmake --build build-sanitize --parallel 2
+
+      - name: Run complete sanitizer suite
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: ctest --test-dir build-sanitize --parallel 2 --output-on-failure
+
+      - name: Upload validation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1346-arven-redundant-fss
+          path: |
+            issue-1346-pass-*.txt
+            issue-1346-t2-t3-matrix.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: error

@@ -74,6 +74,7 @@ void test_no_deck_payload_does_not_invent_the_burnet_route() {
 
   // The Oricorio-over-Tapu compression requires a live deck payload for Burnet.
   // Without one, the ordinary Tapu Lele-GX connector priority remains available:
+  // https://api.pokemontcg.io/v2/cards/swsh10-146
   // https://api.pokemontcg.io/v2/cards/cel25c-60_A
   // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities

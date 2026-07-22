@@ -14,24 +14,24 @@ Seed: `20260705`.
 
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
-| Strict JIT, going first | 11.74% | 38.005% | 55.157% |
-| Matchup-flex JIT, going first | 16.241% | 47.208% | 63.001% |
-| No discard control, going first | 19.936% | 55.391% | 71.503% |
-| Strict JIT, going second | 28.955% | 52.147% | 63.452% |
-| Matchup-flex JIT, going second | 36.984% | 60.679% | 71.015% |
-| No discard control, going second | 39.911% | 66.972% | 78.508% |
+| Strict JIT, going first | 11.804% | 38.093% | 55.154% |
+| Matchup-flex JIT, going first | 16.204% | 47.374% | 62.971% |
+| No discard control, going first | 19.933% | 55.574% | 71.683% |
+| Strict JIT, going second | 28.943% | 52.004% | 63.403% |
+| Matchup-flex JIT, going second | 37.027% | 60.823% | 71.102% |
+| No discard control, going second | 39.845% | 66.994% | 78.455% |
 
 ## Lock stress tests
 
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
-| Strict JIT, turn-two Item lock, first | 4.583% | 10.183% | 17.696% |
-| Strict JIT, full Item lock, first | 2.821% | 7.736% | 15.064% |
-| Strict JIT, Rule Box Ability lock, first | 4.387% | 25.685% | 38.8% |
+| Strict JIT, turn-two Item lock, first | 4.582% | 10.187% | 17.684% |
+| Strict JIT, full Item lock, first | 2.82% | 7.733% | 15.056% |
+| Strict JIT, Rule Box Ability lock, first | 4.403% | 25.593% | 38.721% |
 | Strict JIT, combined lock, first | 0.293% | 3.279% | 7.27% |
-| Strict JIT, turn-two Item lock, second | 14.201% | 28.029% | 35.672% |
-| Strict JIT, full Item lock, second | 10.493% | 22.882% | 30.032% |
-| Strict JIT, Rule Box Ability lock, second | 18.138% | 34.559% | 44.875% |
+| Strict JIT, turn-two Item lock, second | 14.187% | 28.035% | 35.673% |
+| Strict JIT, full Item lock, second | 10.495% | 22.877% | 30.039% |
+| Strict JIT, Rule Box Ability lock, second | 18.075% | 34.483% | 44.784% |
 | Strict JIT, combined lock, second | 2.352% | 11.342% | 15.418% |
 | Strict JIT, Supporter lock, first | 0.002% | 10.065% | 16.99% |
 | Strict JIT, Supporter lock, second | 6.112% | 14.528% | 20.991% |

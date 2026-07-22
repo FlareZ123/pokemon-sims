@@ -495,9 +495,13 @@ bool Engine::play_evolution_incense_for_forretress() {
   record_deck_search_knowledge("Evolution Incense");
   Card target = Card::ForretressEx;
   if (deck_count_after_search_started(target) == 0) {
+    // Evolution Incense searches any Evolution Pokémon, including Appletun:
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/sv8-140
+    // https://github.com/FlareZ123/pokemon-sims/issues/1255
     for (const Card fallback : {Card::RegidragoVstar,
                                 Card::MegaDragonite, Card::Dragapult,
-                                Card::GoodraVstar}) {
+                                Card::GoodraVstar, Card::Appletun}) {
       if (deck_count_after_search_started(fallback) > 0) {
         target = fallback;
         break;

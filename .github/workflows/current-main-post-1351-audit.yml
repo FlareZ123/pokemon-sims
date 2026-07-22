@@ -37,7 +37,7 @@ jobs:
           # Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 1 --require-ready-by 3 | tee audit-pass-no-discard.txt
           grep -q "T1 | WONDER TAG |.*Steven's Resolve" audit-pass-no-discard.txt
-          grep -q 'T1 | PLAY ITEM |.*Brilliant Blender' audit-pass-no-discard.txt
+          grep -q 'T1 | PLAY ITEM | rules: R-BLENDER-01' audit-pass-no-discard.txt
           grep -q 'T2 | PLAY SUPPORTER |.*Regidrago VSTAR, Grass Energy, Latias ex' audit-pass-no-discard.txt
           grep -q 'T3 | READY |' audit-pass-no-discard.txt
 

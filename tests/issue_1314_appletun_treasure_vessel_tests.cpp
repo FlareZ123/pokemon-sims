@@ -65,6 +65,7 @@ void test_two_redundant_appletun_pay_the_paired_searches() {
   // https://api.pokemontcg.io/v2/cards/sv8-140
   // https://api.pokemontcg.io/v2/cards/swsh11-136
   // https://api.pokemontcg.io/v2/cards/swsh12-135
+  // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/issues/1314
   if (!EngineTestAccess::route_live(engine) || !EngineTestAccess::play_route(engine)) {
     throw std::runtime_error("The redundant-Appletun paid-search route was rejected.");

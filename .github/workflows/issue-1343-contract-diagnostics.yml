@@ -1,0 +1,46 @@
+name: Issue 1343 Existing Contract Diagnostics
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Trace seed 100 Tate-Blender contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+          # Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+          # Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+          # Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+          # Current fix: https://github.com/FlareZ123/pokemon-sims/issues/1343
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 100 | tee issue-1343-seed-100.txt
+
+      - name: Trace seed 71 held payload contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Current fix: https://github.com/FlareZ123/pokemon-sims/issues/1343
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 71 | tee issue-1343-seed-71.txt
+
+      - name: Upload diagnostic traces
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1343-contract-diagnostics
+          path: issue-1343-seed-*.txt
+          if-no-files-found: error

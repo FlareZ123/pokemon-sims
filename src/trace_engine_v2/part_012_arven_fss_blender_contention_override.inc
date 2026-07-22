@@ -171,6 +171,7 @@
     // completes that axis. Preserve Forest Seal Stone and the open Tool slot:
     // https://api.pokemontcg.io/v2/cards/sv1-166
     // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Typed deck searches may voluntarily fail: https://compendium.pokegym.net/compendium-bw.html#trainers-in-general
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/1346
     if (!vstar_already_held && move_deck_to_hand(Card::ForestSealStone)) {

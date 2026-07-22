@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import subprocess
 from pathlib import Path
 
 
@@ -7,7 +9,19 @@ from pathlib import Path
 ISSUE_URL = "https://github.com/FlareZ123/pokemon-sims/issues/1339"
 
 
+def sync_main_in_ci() -> None:
+    if os.environ.get("GITHUB_ACTIONS") != "true":
+        return
+    branch = os.environ["GITHUB_HEAD_REF"]
+    subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
+    subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], check=True)
+    subprocess.run(["git", "fetch", "origin", "main"], check=True)
+    subprocess.run(["git", "merge", "--no-edit", "origin/main"], check=True)
+    subprocess.run(["git", "push", "origin", f"HEAD:{branch}"], check=True)
+
+
 def main() -> int:
+    sync_main_in_ci()
     path = Path("src/trace_engine_v2/part_010_blender_thinning_override.inc")
     text = path.read_text(encoding="utf-8")
     if ISSUE_URL in text:

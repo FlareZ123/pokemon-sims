@@ -1,0 +1,77 @@
+name: Current Turn Debug Audit 20260722 0213
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  current-turn-debug-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run full repository tests
+        run: ctest --test-dir build --output-on-failure
+      - name: Simulate-this pass 1 strict JIT go first
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Exact repository regression contract: https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt
+          # Core turn, search, attachment, evolution, Retreat, Ability, and attack rules: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Regidrago VSTAR identity: https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 107 --require-ready-by 3 | tee current-pass-strict-first.txt
+      - name: Simulate-this pass 2 scheduled Item lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Scheduled Item-lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
+          # Core Item, Supporter, search, evolution, attachment, Retreat, Ability, and attack rules: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Mysterious Treasure, Regidrago VSTAR, and Forest Seal Stone identities: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee current-pass-item-lock.txt
+      - name: Simulate-this pass 3 Rule Box Ability lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Rule Box Ability-lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+          # Core Ability, search, attachment, evolution, Retreat, Supporter, and attack rules: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Regidrago VSTAR and Oricorio identities: https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/sm2-55
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee current-pass-rulebox-lock.txt
+      - name: Generate paired T2 and T3 setup matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Two-deck, 32-condition matrix specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out current-turn-matrix.csv
+      - name: Static repository scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Repository scope and policy priorities: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          grep -RInE 'TODO|FIXME|XXX|BUG|fallback|preflight|preferred|choose_|reserve|discardable|prize|lock|retreat|payload|Forretress|Appletun|Secret Box|Ultra Ball|Mysterious Treasure' src tests docs scripts CMakeLists.txt README.md > current-static-scan.txt || true
+      - name: Record exact tested source
+        run: git rev-parse HEAD > current-tested-head.txt
+      - name: Package source and review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-turn-debug-audit-20260722-0213
+          path: |
+            src/
+            tests/
+            docs/
+            scripts/
+            .github/workflows/
+            CMakeLists.txt
+            README.md
+            current-pass-*.txt
+            current-turn-matrix.csv
+            current-static-scan.txt
+            current-tested-head.txt
+          if-no-files-found: error

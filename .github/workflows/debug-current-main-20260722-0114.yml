@@ -61,6 +61,9 @@ jobs:
           ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out current-run-matrix.csv
       - name: Record tested source
         run: git rev-parse HEAD > tested-head.txt
+      - name: Package reviewable source snapshot
+        shell: bash
+        run: tar -czf source-snapshot.tar.gz src tests docs scripts CMakeLists.txt README.md
       - name: Upload audit evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -71,4 +74,5 @@ jobs:
             static-audit.txt
             current-run-matrix.csv
             tested-head.txt
+            source-snapshot.tar.gz
           if-no-files-found: error

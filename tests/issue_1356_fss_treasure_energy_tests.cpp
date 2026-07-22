@@ -1,6 +1,7 @@
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
+#include <cstdint>
 #include <iostream>
 #include <random>
 #include <stdexcept>
@@ -37,7 +38,8 @@ sim::State split_state() {
   state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 0,
                               sim::Tool::ForestSealStone};
   state.hand = {sim::Card::MysteriousTreasure, sim::Card::MysteriousTreasure,
-                sim::Card::MegaDragonite, sim::Card::Grass};
+                sim::Card::MegaDragonite, sim::Card::Grass,
+                sim::Card::QuickBall, sim::Card::Lusamine};
   state.deck = {sim::Card::RegidragoVstar, sim::Card::Fire,
                 sim::Card::TapuLeleGX, sim::Card::Dragapult};
   return state;
@@ -53,12 +55,13 @@ sim::Card target_for(sim::State state, const std::uint64_t seed) {
 }
 
 void test_treasure_takes_vstar_and_fss_takes_fire() {
-  // Two held Treasures let one pay a strict-DCI nonpayload cost and search Regidrago
-  // VSTAR while the second survives to discard the held Dragon on the T3 ready turn.
-  // Star Alchemy should therefore search Fire instead of duplicating the VSTAR axis:
+  // The exact public seed-107 hand retains Quick Ball and Lusamine as legal DCI costs.
+  // One Treasure can search Regidrago VSTAR while the second survives to discard the
+  // held Dragon on T3. Star Alchemy should search Fire instead of duplicating VSTAR:
   // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
   // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // Route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
@@ -71,6 +74,9 @@ void test_split_is_symmetric_for_missing_grass() {
   sim::State state = split_state();
   state.active->grass = 1;
   state.active->fire = 1;
+  state.hand = {sim::Card::MysteriousTreasure, sim::Card::MysteriousTreasure,
+                sim::Card::MegaDragonite, sim::Card::Fire,
+                sim::Card::QuickBall, sim::Card::Lusamine};
   state.deck = {sim::Card::RegidragoVstar, sim::Card::Grass,
                 sim::Card::TapuLeleGX, sim::Card::Dragapult};
 
@@ -86,7 +92,7 @@ void test_split_is_symmetric_for_missing_grass() {
 void test_one_treasure_keeps_vstar_priority() {
   sim::State state = split_state();
   state.hand = {sim::Card::MysteriousTreasure, sim::Card::MegaDragonite,
-                sim::Card::Grass};
+                sim::Card::Grass, sim::Card::QuickBall, sim::Card::Lusamine};
 
   // One Treasure cannot both search VSTAR now and remain as the next-turn strict-JIT
   // payload outlet, so the established Star Alchemy VSTAR priority must remain:

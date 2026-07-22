@@ -71,7 +71,18 @@ jobs:
           if-no-files-found: error
 
       - name: Run complete Release suite
-        run: ctest --test-dir build --parallel 4 --output-on-failure
+        shell: bash
+        run: |
+          set -o pipefail
+          ctest --test-dir build --parallel 4 --output-on-failure 2>&1 | tee issue-1356-release-suite.txt
+
+      - name: Upload Release suite failure output
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1356-release-suite-failure
+          path: issue-1356-release-suite.txt
+          if-no-files-found: error
 
       - name: Simulate-this pass 1 exact seed 107 route
         shell: bash
@@ -154,6 +165,7 @@ jobs:
           path: |
             issue-1356-pass-*.txt
             issue-1356-t2-t3-matrix.csv
+            issue-1356-release-suite.txt
             results/simulation_results.csv
             results/multi_deck_comparison.csv
             build/Testing
@@ -164,7 +176,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf build build-sanitize issue-1356-pass-*.txt issue-1356-t2-t3-matrix.csv issue-1356-focused.txt
+          rm -rf build build-sanitize issue-1356-pass-*.txt issue-1356-t2-t3-matrix.csv issue-1356-focused.txt issue-1356-release-suite.txt
           git rm .github/workflows/issue-1356-fss-treasure-energy.yml scripts/apply_issue_1356_fix.py
           git add src tests README.md docs results
           if git diff --cached --quiet; then

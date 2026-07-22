@@ -124,7 +124,7 @@ void test_known_dead_quick_ball_does_not_suppress_blender() {
 void test_item_lock_blocks_both_item_routes() {
   const sim::Scenario scenario{"issue-1339-item-lock",
                                sim::DciProfile::StrictJit,
-                               sim::LockMode::Item, false, 4};
+                               sim::LockMode::FullItem, false, 4};
   std::mt19937_64 rng{1342};
   sim::Engine engine(scenario, sim::baseline_recipe(), rng);
   sim::EngineTestAccess::set_state(engine, blender_state(true));

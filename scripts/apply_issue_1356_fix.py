@@ -123,7 +123,49 @@ def fss_target_block() -> str:
 
 
 def treasure_override() -> str:
-    return """  bool issue_1356_treasure_vstar_energy_split_available() const {
+    return """  bool issue_1356_complete_next_turn_route_holds_quick_ball() const {
+    if (scenario_.dci != DciProfile::StrictJit || scenario_.locks != LockMode::None ||
+        state_.turn != 2 || !deck_seen_ || !state_.supporter_used ||
+        !state_.manual_energy_used || !state_.vstar_power_used || item_locked() ||
+        !state_.active || state_.active->entered_turn >= state_.turn ||
+        (state_.active->card != Card::RegidragoV &&
+         state_.active->card != Card::RegidragoVstar) ||
+        state_.active->tool != Tool::ForestSealStone ||
+        hand_count(Card::MysteriousTreasure) == 0 ||
+        std::none_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    const bool vstar_axis_complete = active_is_vstar() ||
+        hand_count(Card::RegidragoVstar) > 0;
+    const bool fire_is_held_next_attachment =
+        state_.active->grass >= 2 && state_.active->fire == 0 &&
+        hand_count(Card::Fire) > 0;
+    const bool grass_is_held_next_attachment =
+        state_.active->grass == 1 && state_.active->fire >= 1 &&
+        hand_count(Card::Grass) > 0;
+
+    // The public T3 route is complete: Regidrago VSTAR is held or already Active,
+    // the sole missing Basic Energy is held, and Mysterious Treasure can discard the
+    // held Dragon on the ready turn. Quick Ball into Oricorio spends an extra Item,
+    // an extra discard, a Bench slot, and a support Pokémon without improving T3:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, Bench, Ability, evolution, attachment, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest complete route and resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1335 https://github.com/FlareZ123/pokemon-sims/issues/1356
+    return vstar_axis_complete &&
+        (fire_is_held_next_attachment || grass_is_held_next_attachment);
+  }
+
+  bool play_quick_ball(const bool permit_payload) {
+    if (issue_1356_complete_next_turn_route_holds_quick_ball()) return false;
+    return play_quick_ball_issue1356_original(permit_payload);
+  }
+
+  bool issue_1356_treasure_vstar_energy_split_available() const {
     if (scenario_.dci != DciProfile::StrictJit || scenario_.locks != LockMode::None ||
         state_.turn != 2 || scenario_.max_turn < 3 || !deck_seen_ ||
         !state_.supporter_used || !state_.manual_energy_used ||
@@ -205,9 +247,11 @@ def main() -> int:
     )
     include_block = "\n".join(
         [
+            '#define play_quick_ball play_quick_ball_issue1356_original',
             '#define play_mysterious_treasure play_mysterious_treasure_issue1356_original',
             '#include "trace_engine_v2/part_issue_1235_oricorio_treasure_tapu_override.inc"',
             '#undef play_mysterious_treasure',
+            '#undef play_quick_ball',
             '#include "trace_engine_v2/part_issue_1356_fss_treasure_energy_override.inc"',
             '#include "trace_engine_v2/part_issue_1118_secret_box.inc"',
         ]

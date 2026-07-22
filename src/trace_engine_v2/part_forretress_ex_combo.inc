@@ -215,16 +215,6 @@ bool Engine::use_exploding_energy_for_setup() {
   const auto target_index = exploding_energy_regidrago_target_index();
   if (!target_index || !might_be_unseen(Card::Grass)) return false;
 
-  // Choosing to use the Ability at K0 relies only on fixed-list public-zone
-  // accounting. The exact remaining Grass count becomes available only after
-  // the printed deck search begins:
-  // https://api.pokemontcg.io/v2/cards/sv4pt5-2
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-  // https://github.com/FlareZ123/pokemon-sims/issues/1118
-  record_deck_search_knowledge("Exploding Energy");
-  const int available = std::min(5, deck_count_after_search_started(Card::Grass));
-  if (available <= 0) return false;
-
   std::vector<std::size_t> destinations;
   const bool source_is_active =
       state_.active && state_.active->card == Card::ForretressEx;
@@ -243,29 +233,39 @@ bool Engine::use_exploding_energy_for_setup() {
   const int active_retreat_cost = retreat_available && !skyliner_free_retreat
       ? retreat_cost(state_.active->card) : 0;
   const int target_grass_needed = std::max(0, grass_needed());
+  const bool paid_retreat_route = retreat_available && active_retreat_cost > 0;
+  if (target_grass_needed <= 0 && !paid_retreat_route) return false;
 
-  // Exploding Energy may distribute its five Grass among any Pokémon. When a
-  // non-Regidrago Active blocks a Benched setup target, pay that printed Retreat
-  // Cost from the Ability while retaining enough Grass on Regidrago. This models
-  // the real T2 Tapu, Pineco, and Dialga recovery line rather than leaving a fully
-  // powered VSTAR stranded on the Bench:
+  // Choosing to use the Ability at K0 relies only on fixed-list public-zone
+  // accounting. The exact remaining Grass count becomes available only after
+  // the printed deck search begins:
   // https://api.pokemontcg.io/v2/cards/sv4pt5-2
-  // https://api.pokemontcg.io/v2/cards/sm2-60
-  // https://api.pokemontcg.io/v2/cards/sv4pt5-1
-  // https://api.pokemontcg.io/v2/cards/sm5-100
-  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
   // https://github.com/FlareZ123/pokemon-sims/issues/1118
+  record_deck_search_knowledge("Exploding Energy");
+  const int available = std::min(5, deck_count_after_search_started(Card::Grass));
+  if (available <= 0) return false;
+
+  // Exploding Energy searches for up to five Grass Energy, so select only the
+  // copies that advance the current Grass and paid-Retreat axes. Extra copies do
+  // not improve the earliest ready turn and remain in deck for later attackers:
+  // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // https://github.com/FlareZ123/pokemon-sims/issues/1329
   const bool can_complete_retreat = retreat_available &&
       (active_retreat_cost == 0 ||
        available >= active_retreat_cost + target_grass_needed);
-  if (can_complete_retreat && active_retreat_cost > 0) {
+  const int retreat_grass = can_complete_retreat ? active_retreat_cost : 0;
+  const int target_grass = std::min(
+      target_grass_needed, available - retreat_grass);
+  if (retreat_grass + target_grass <= 0) return false;
+  if (retreat_grass > 0) {
     destinations.insert(destinations.end(),
-                        static_cast<std::size_t>(active_retreat_cost), 0U);
+                        static_cast<std::size_t>(retreat_grass), 0U);
   }
   destinations.insert(destinations.end(),
-                      static_cast<std::size_t>(available -
-                          (can_complete_retreat ? active_retreat_cost : 0)),
-                      *target_index);
+                      static_cast<std::size_t>(target_grass), *target_index);
 
   if (!resolve_exploding_energy(destinations)) return false;
   if (!can_complete_retreat || !state_.active) return true;

@@ -65,6 +65,15 @@ def main() -> int:
             "        state_.vstar_power_used ||",
             "Forest Seal Stone Arven-resolution timing",
         )
+        fss = replace_once(
+            fss,
+            "        scenario_.max_turn < 3 || !deck_seen_ ||\n"
+            "        state_.vstar_power_used ||\n"
+            "        !state_.manual_energy_used || item_locked() || !state_.active ||",
+            "        scenario_.max_turn < 3 || !deck_seen_ ||\n"
+            "        !state_.manual_energy_used || item_locked() || !state_.active ||",
+            "Forest Seal Stone in-progress target timing",
+        )
         atomic_write(FSS_PATH, fss)
 
         fss_use = FSS_USE_PATH.read_text(encoding="utf-8")
@@ -135,8 +144,9 @@ def main() -> int:
             "  sim::Engine engine(test_scenario(), test_recipe(), rng);\n"
             "  sim::EngineTestAccess::set_state(engine, split_state());\n"
             "\n"
-            "  // Star Alchemy is evaluated after the T2 attachment has been used. Fire\n"
-            "  // still advances the complete T3 route because Treasure supplies VSTAR:\n"
+            "  // Star Alchemy marks its VSTAR Power used immediately before choosing the\n"
+            "  // searched card. The split helper must remain valid throughout that legal\n"
+            "  // in-progress resolution and bank Fire for the next modeled turn:\n"
             "  // https://api.pokemontcg.io/v2/cards/swsh12-156\n"
             "  // https://api.pokemontcg.io/v2/cards/sm6-113\n"
             "  // https://github.com/FlareZ123/pokemon-sims/issues/1356\n"

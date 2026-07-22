@@ -48,6 +48,14 @@ jobs:
           # Appletun is the registered discard-only Dragon payload: https://api.pokemontcg.io/v2/cards/sv8-140
           # Evolution Incense searches Evolution Pokemon: https://api.pokemontcg.io/v2/cards/swsh1-163
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 | tee debug-pass-4.txt
+      - name: Simulate-this pass 5 Latias Celestial Roar omission
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Skyliner removes the Retreat Cost of Basic Pokemon in play: https://api.pokemontcg.io/v2/cards/sv8-76
+          # Celestial Roar can advance an energized Regidrago V after promotion: https://api.pokemontcg.io/v2/cards/swsh12-135
+          # Retreat and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 208 | tee debug-pass-5.txt
       - name: Scan source for route enumerations and audit markers
         shell: bash
         run: |

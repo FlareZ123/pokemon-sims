@@ -18,8 +18,25 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Apply held-payload projection fix
         run: python scripts/apply_issue_1335_fix.py
+
+      - name: Commit production fix to PR branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- src/trace_engine_v2/part_009a.inc src/trace_engine_v2/part_009b1.inc; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_009a.inc src/trace_engine_v2/part_009b1.inc
+          git commit -m 'Preserve held payload through costed searches (#1335)'
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
 
       - name: Configure Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -30,8 +47,43 @@ jobs:
       - name: Run focused regression
         run: ./build/regidrago_unified_tests issue_1335_quick_ball_held_payload_tests
 
+      - name: Refresh source-bound canonical baselines
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/regenerate_setup_baselines.py \
+            --exe build/regidrago_sim \
+            --out-dir results \
+            --max-seed 5000 \
+            --trials 100000 \
+            --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 \
+            --out results/multi_deck_comparison.csv
+          python - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          from scripts.baseline_provenance import simulator_policy_source_digest
+
+          root = Path('.').resolve()
+          csv_path = root / 'results' / 'multi_deck_comparison.csv'
+          manifest_path = root / 'results' / 'multi_deck_manifest.json'
+          manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+          manifest['comparison_csv_sha256'] = hashlib.sha256(csv_path.read_bytes()).hexdigest()
+          manifest['simulator_policy_source_sha256'] = simulator_policy_source_digest(root)
+          temporary = manifest_path.with_suffix('.json.tmp')
+          temporary.write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          os.replace(temporary, manifest_path)
+          PY
+          python scripts/update_multi_deck_docs.py --repo-root .
+
       - name: Run complete Release suite
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build --parallel 4 --output-on-failure
 
       - name: Simulate-this pass 1 resource-preserving seed 107
         shell: bash
@@ -78,7 +130,7 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee issue-1335-pass-rulebox-lock.txt
           grep -Eq 'T[23] \| READY \|' issue-1335-pass-rulebox-lock.txt
 
-      - name: Generate paired T2 and T3 matrix
+      - name: Generate current-run paired T2 and T3 matrix
         shell: bash
         run: |
           set -euo pipefail
@@ -86,13 +138,19 @@ jobs:
           ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out issue-1335-matrix.csv
 
       - name: Configure sanitizers
-        run: cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON
+        run: >-
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
 
       - name: Build sanitizers
         run: cmake --build build-sanitize --parallel 2
 
-      - name: Run sanitizer focused regression
-        run: ./build-sanitize/regidrago_unified_tests issue_1335_quick_ball_held_payload_tests
+      - name: Run complete sanitizer suite
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: ctest --test-dir build-sanitize --parallel 2 --output-on-failure
 
       - name: Package validation evidence
         uses: actions/upload-artifact@v4
@@ -101,9 +159,13 @@ jobs:
           path: |
             issue-1335-pass-*.txt
             issue-1335-matrix.csv
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            build/Testing
+            build-sanitize/Testing
           if-no-files-found: error
 
-      - name: Commit validated source fix to PR branch
+      - name: Commit refreshed baselines to PR branch
         shell: bash
         run: |
           set -euo pipefail
@@ -113,6 +175,6 @@ jobs:
           fi
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/trace_engine_v2/part_009a.inc src/trace_engine_v2/part_009b1.inc
-          git commit -m 'Preserve held payload through costed searches (#1335)'
+          git add README.md docs results
+          git commit -m 'Refresh source-bound setup baselines (#1335)'
           git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

@@ -20,6 +20,9 @@ jobs:
       - name: Keep audit recipe alive
         run: python scripts/apply_issue_1343_probe_lifetime_fix.py
 
+      - name: Correct payable Ultra Ball control
+        run: python scripts/apply_issue_1343_probe_ultra_fix.py
+
       - name: Compile exact-state audit probe
         run: g++ -std=c++20 -O0 audit/issue_1343_arven_held_payload_probe.cpp -o issue-1343-probe
 

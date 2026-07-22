@@ -46,7 +46,8 @@ void test_treasure_route_preserves_arven_and_blender() {
                                sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
   std::mt19937_64 rng{1343};
-  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  const auto recipe = sim::baseline_recipe();
+  sim::Engine engine(scenario, recipe, rng);
   sim::State state = ready_payload_state();
   state.hand = {sim::Card::Arven, sim::Card::MysteriousTreasure,
                 sim::Card::MegaDragonite, sim::Card::Grass};
@@ -87,17 +88,20 @@ void test_payable_ultra_ball_preserves_arven() {
                                sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
   std::mt19937_64 rng{1344};
-  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  const auto recipe = sim::baseline_recipe();
+  sim::Engine engine(scenario, recipe, rng);
   sim::State state = ready_payload_state();
   state.hand = {sim::Card::Arven, sim::Card::UltraBall,
-                sim::Card::MegaDragonite, sim::Card::Grass};
+                sim::Card::MegaDragonite, sim::Card::RegidragoVstar};
   state.deck = {sim::Card::BrilliantBlender, sim::Card::Dragapult,
                 sim::Card::TapuLeleGX, sim::Card::RegidragoV};
   sim::EngineTestAccess::set_state(engine, std::move(state));
 
-  // Ultra Ball can pay the Dragon plus one other legal cost and search a Pokémon:
+  // Ultra Ball can pay the Dragon plus a redundant held VSTAR and search a
+  // Pokémon. The Active VSTAR makes the extra copy policy-legal to discard:
   // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://api.pokemontcg.io/v2/cards/sv1-166
   // https://github.com/FlareZ123/pokemon-sims/issues/1343
   sim::EngineTestAccess::choose_supporter(engine);
@@ -110,7 +114,8 @@ void test_no_held_payload_keeps_arven_blender_route() {
                                sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
   std::mt19937_64 rng{1345};
-  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  const auto recipe = sim::baseline_recipe();
+  sim::Engine engine(scenario, recipe, rng);
   sim::State state = ready_payload_state();
   state.hand = {sim::Card::Arven, sim::Card::MysteriousTreasure,
                 sim::Card::Grass};
@@ -138,7 +143,8 @@ void test_target_dead_quick_ball_keeps_arven_blender_route() {
                                sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
   std::mt19937_64 rng{1346};
-  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  const auto recipe = sim::baseline_recipe();
+  sim::Engine engine(scenario, recipe, rng);
   sim::State state = ready_payload_state();
   state.hand = {sim::Card::Arven, sim::Card::QuickBall,
                 sim::Card::MegaDragonite, sim::Card::Grass};
@@ -165,7 +171,8 @@ void test_unpayable_ultra_ball_keeps_arven_blender_route() {
                                sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
   std::mt19937_64 rng{1347};
-  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  const auto recipe = sim::baseline_recipe();
+  sim::Engine engine(scenario, recipe, rng);
   sim::State state = ready_payload_state();
   state.hand = {sim::Card::Arven, sim::Card::UltraBall,
                 sim::Card::MegaDragonite};

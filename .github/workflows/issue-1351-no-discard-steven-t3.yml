@@ -1,0 +1,142 @@
+name: Issue 1351 No Discard Steven T3
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Apply and commit the confirmed source fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Confirmed issue and direct route sources:
+          # https://github.com/FlareZ123/pokemon-sims/issues/1351
+          # https://api.pokemontcg.io/v2/cards/sm2-60
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/sv8-164
+          # https://api.pokemontcg.io/v2/cards/sv8-76
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          python scripts/apply_issue_1351_fix.py
+          if git diff --quiet -- src/trace_engine_v2/part_010_steven_crispin_override.inc; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_010_steven_crispin_override.inc
+          git commit -m 'Fix no-discard Wonder Tag Steven T3 route (#1351)'
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Release
+        run: cmake --build build --parallel 2
+
+      - name: Run focused route regressions
+        run: |
+          # Confirmed bug and repository route contract:
+          # https://github.com/FlareZ123/pokemon-sims/issues/1351
+          # https://github.com/FlareZ123/pokemon-sims/issues/946
+          ./build/regidrago_unified_tests issue_1351_no_discard_steven_tests
+          ./build/regidrago_unified_tests wonder_tag_banked_steven_tests
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Simulate-this pass 1 no-discard T3 Steven route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Wonder Tag, Steven, Blender, Skyliner, and Apex Dragon:
+          # https://api.pokemontcg.io/v2/cards/sm2-60
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/sv8-164
+          # https://api.pokemontcg.io/v2/cards/sv8-76
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official turn, search, attachment, evolution, and Retreat procedure:
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # DCI/JIT route contract and confirmed issue:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          # https://github.com/FlareZ123/pokemon-sims/issues/1351
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 1 --require-ready-by 3 | tee issue-1351-pass-no-discard.txt
+          grep -q "T1 | WONDER TAG |.*Steven's Resolve" issue-1351-pass-no-discard.txt
+          grep -q 'T1 | PLAY ITEM |.*Brilliant Blender' issue-1351-pass-no-discard.txt
+          grep -q "T2 | PLAY SUPPORTER |.*Regidrago VSTAR, Grass Energy, Latias ex" issue-1351-pass-no-discard.txt
+          grep -q 'T3 | READY |' issue-1351-pass-no-discard.txt
+
+      - name: Simulate-this pass 2 strict-JIT control
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Strict JIT requires a ready-turn Dragon discard:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          # Mysterious Treasure and Regidrago VSTAR:
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 3 | tee issue-1351-pass-strict.txt
+          grep -q 'T3 | READY |' issue-1351-pass-strict.txt
+          grep -Eq 'T3 .*DISCARD.*Mega Dragonite ex' issue-1351-pass-strict.txt
+
+      - name: Simulate-this pass 3 Rule Box Ability lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Lock scenario contract and card procedure:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # Regidrago VSTAR and Brilliant Blender:
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://api.pokemontcg.io/v2/cards/sv8-164
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee issue-1351-pass-rulebox-lock.txt
+          grep -q 'T2 | READY |' issue-1351-pass-rulebox-lock.txt
+          grep -q 'Scenario: strict-jit-rulebox-ability-lock/go-second' issue-1351-pass-rulebox-lock.txt
+
+      - name: Generate paired T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Matrix specification:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out issue-1351-t2-t3-matrix.csv
+
+      - name: Configure ASan and UBSan
+        run: >-
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+
+      - name: Build sanitizer targets
+        run: cmake --build build-sanitize --parallel 2
+
+      - name: Run sanitizer focused regressions
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: |
+          ./build-sanitize/regidrago_unified_tests issue_1351_no_discard_steven_tests
+          ./build-sanitize/regidrago_unified_tests wonder_tag_banked_steven_tests
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1351-no-discard-steven-t3
+          path: |
+            issue-1351-pass-*.txt
+            issue-1351-t2-t3-matrix.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn

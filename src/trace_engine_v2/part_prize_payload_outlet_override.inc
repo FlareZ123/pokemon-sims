@@ -59,10 +59,17 @@
     const bool required_energy_still_in_deck =
         (grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
         (fire_needed() == 1 && might_be_unseen(Card::Fire));
+    // Professor Burnet can discard Appletun from deck for Apex Dragon, so
+    // Appletun keeps the same Burnet-preserving Oricorio priority live:
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // https://api.pokemontcg.io/v2/cards/sv8-140
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/issues/1315
     const bool payload_still_in_deck = might_be_unseen(Card::MegaDragonite) ||
                                        might_be_unseen(Card::Dragapult) ||
                                        might_be_unseen(Card::GoodraVstar) ||
-                                       might_be_unseen(Card::DialgaGX);
+                                       might_be_unseen(Card::DialgaGX) ||
+                                       might_be_unseen(Card::Appletun);
     // P-COMPRESS-01: with one missing Energy and Professor Burnet as the live
     // current-turn payload Supporter, Oricorio plus a manual attachment preserves
     // the Supporter slot. Tapu Lele-GX -> Crispin would consume it instead.

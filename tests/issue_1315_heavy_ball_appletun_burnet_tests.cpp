@@ -1,63 +1,4 @@
-from __future__ import annotations
-
-import os
-import tempfile
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-
-
-def atomic_write(path: Path, text: str) -> None:
-    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
-            handle.write(text)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary_name, path)
-    except BaseException:
-        try:
-            os.unlink(temporary_name)
-        except FileNotFoundError:
-            pass
-        raise
-
-
-def replace_once(path: Path, old: str, new: str) -> None:
-    text = path.read_text(encoding="utf-8")
-    count = text.count(old)
-    if count != 1:
-        raise RuntimeError(f"Expected one source anchor in {path}, found {count}")
-    atomic_write(path, text.replace(old, new, 1))
-
-
-def main() -> None:
-    source = ROOT / "src/trace_engine_v2/part_prize_payload_outlet_override.inc"
-    replace_once(
-        source,
-        """    const bool payload_still_in_deck = might_be_unseen(Card::MegaDragonite) ||
-                                       might_be_unseen(Card::Dragapult) ||
-                                       might_be_unseen(Card::GoodraVstar) ||
-                                       might_be_unseen(Card::DialgaGX);
-""",
-        """    // Professor Burnet can discard Appletun from deck for Apex Dragon, so
-    // Appletun keeps the same Burnet-preserving Oricorio priority live:
-    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-    // https://api.pokemontcg.io/v2/cards/sv8-140
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // https://github.com/FlareZ123/pokemon-sims/issues/1315
-    const bool payload_still_in_deck = might_be_unseen(Card::MegaDragonite) ||
-                                       might_be_unseen(Card::Dragapult) ||
-                                       might_be_unseen(Card::GoodraVstar) ||
-                                       might_be_unseen(Card::DialgaGX) ||
-                                       might_be_unseen(Card::Appletun);
-""",
-    )
-
-    test = ROOT / "tests/issue_1315_heavy_ball_appletun_burnet_tests.cpp"
-    atomic_write(
-        test,
-        r'''#define REGIDRAGO_SIM_NO_MAIN
+#define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
 #include <algorithm>
@@ -154,9 +95,3 @@ int main() {
   std::cout << "Issue 1315 Heavy Ball Appletun/Burnet tests passed.\n";
   return 0;
 }
-''',
-    )
-
-
-if __name__ == "__main__":
-    main()

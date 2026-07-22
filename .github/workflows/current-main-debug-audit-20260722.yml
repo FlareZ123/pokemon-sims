@@ -1,0 +1,108 @@
+name: Current Main Debug Audit 20260722
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit-current-main:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out audit branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Release
+        run: cmake --build build --parallel 2
+
+      - name: Run complete Release suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          ctest --test-dir build --parallel 4 --output-on-failure | tee current-main-ctest.txt
+
+      - name: Simulate-this pass 1 strict JIT going first
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Ready-state contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+          # Regidrago VSTAR card data: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 20260721 --require-ready-by 4 | tee current-main-trace-1.txt
+
+      - name: Simulate-this pass 2 scheduled Item lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Scenario lock specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+          # Item procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Regidrago VSTAR card data: https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee current-main-trace-2.txt
+
+      - name: Simulate-this pass 3 Rule Box Ability lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Scenario lock specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+          # Oricorio card data: https://api.pokemontcg.io/v2/cards/sm2-55
+          # Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee current-main-trace-3.txt
+
+      - name: Generate paired T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out current-main-t2-t3-matrix.csv
+
+      - name: Package source snapshot for static review
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Repository specification index: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#audit-status
+          python - <<'PY'
+          from __future__ import annotations
+
+          import os
+          from pathlib import Path
+          from zipfile import ZIP_DEFLATED, ZipFile
+
+          root = Path('.').resolve()
+          excluded_roots = {'.git', 'build', 'build-sanitize'}
+          out = root / 'current-main-source.zip'
+          temporary = out.with_suffix('.zip.tmp')
+          with ZipFile(temporary, 'w', ZIP_DEFLATED) as archive:
+              for path in sorted(root.rglob('*')):
+                  if not path.is_file():
+                      continue
+                  relative = path.relative_to(root)
+                  if relative.parts and relative.parts[0] in excluded_roots:
+                      continue
+                  if relative.name == out.name or relative.name == temporary.name:
+                      continue
+                  archive.write(path, relative.as_posix())
+          os.replace(temporary, out)
+          PY
+
+      - name: Upload debug audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-debug-audit-20260722
+          path: |
+            current-main-ctest.txt
+            current-main-trace-*.txt
+            current-main-t2-t3-matrix.csv
+            current-main-source.zip
+          if-no-files-found: error

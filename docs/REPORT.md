@@ -16,7 +16,7 @@ Seed: `20260705`.
 |---|---:|---:|---:|
 | Strict JIT, going first | 11.808% | 38.046% | 54.987% |
 | Matchup-flex JIT, going first | 16.174% | 47.248% | 63.136% |
-| No discard control, going first | 19.933% | 55.574% | 71.683% |
+| No discard control, going first | 19.931% | 55.711% | 71.713% |
 | Strict JIT, going second | 28.853% | 52.174% | 63.49% |
 | Matchup-flex JIT, going second | 36.753% | 60.649% | 71.109% |
 | No discard control, going second | 39.845% | 66.994% | 78.455% |

@@ -17,7 +17,7 @@ The saved traces are independent audit examples. They are not asserted to use th
 | Matchup-flex JIT, going second | `matchup-flex-jit/go-second`, seed `1` / [`matchup_flex_go_second_seed_1.txt`](../results/traces/matchup_flex_go_second_seed_1.txt) | T2 | Saved executable audit example reproduced from the manifest. |
 | Strict JIT, turn-two Item lock, second | `strict-jit-turn2-item-lock/go-second`, seed `1` / [`strict_turn2_item_lock_go_second_seed_1.txt`](../results/traces/strict_turn2_item_lock_go_second_seed_1.txt) | T2 | Saved executable audit example reproduced from the manifest. |
 | Strict JIT, Rule Box Ability lock, second | `strict-jit-rulebox-ability-lock/go-second`, seed `13` / [`strict_rulebox_lock_go_second_seed_13.txt`](../results/traces/strict_rulebox_lock_go_second_seed_13.txt) | T2 | Saved executable audit example reproduced from the manifest. |
-| No discard control, going first | `no-discard-control/go-first`, seed `1` / [`no_discard_control_go_first_seed_1.txt`](../results/traces/no_discard_control_go_first_seed_1.txt) | T4 | Saved executable audit example reproduced from the manifest. |
+| No discard control, going first | `no-discard-control/go-first`, seed `1` / [`no_discard_control_go_first_seed_1.txt`](../results/traces/no_discard_control_go_first_seed_1.txt) | T3 | Saved executable audit example reproduced from the manifest. |
 
 ## Reproduction
 

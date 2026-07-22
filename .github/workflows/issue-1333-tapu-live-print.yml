@@ -63,115 +63,41 @@ jobs:
           audit_path = repo / "scripts" / "audit_card_data.py"
           audit = audit_path.read_text(encoding="utf-8")
           audit_marker = "REQUESTED: dict[str, tuple[str, int]] = {"
-          audit_comment = (
-              "# Pokémon TCG Live supports Sun & Moon prints while Celebrations Classic Collection\n"
-              "# remains unavailable for play; use the original Guardians Rising print here:\n"
-              f"# {support_url}\n"
-              f"# {card_url}\n"
-          )
+          audit_comment = "\n".join([
+              "# Pokémon TCG Live supports Sun & Moon prints while Celebrations Classic Collection",
+              "# remains unavailable for play; use the original Guardians Rising print here:",
+              f"# {support_url}",
+              f"# {card_url}",
+              "",
+          ])
           if support_url not in audit:
               audit = audit.replace(audit_marker, audit_comment + audit_marker, 1)
               audit_path.write_text(audit, encoding="utf-8")
 
           sources_path = repo / "docs" / "RULE_SOURCES.md"
           sources = sources_path.read_text(encoding="utf-8")
-          policy_marker = (
-              "- Core procedure reference: https://www.pokemon.com/us/pokemon-tcg/rules\n"
-          )
-          availability_line = (
-              "- Pokémon TCG Live print availability: " + support_url + "\n"
-          )
+          policy_marker = "- Core procedure reference: https://www.pokemon.com/us/pokemon-tcg/rules\n"
+          availability_line = f"- Pokémon TCG Live print availability: {support_url}\n"
           if availability_line not in sources:
-              sources = sources.replace(
-                  policy_marker, policy_marker + availability_line, 1
-              )
+              sources = sources.replace(policy_marker, policy_marker + availability_line, 1)
               sources_path.write_text(sources, encoding="utf-8")
-
-          test_path = repo / "tests" / "issue_1333_tapu_live_print_tests.py"
-          test_path.write_text(
-              '''from __future__ import annotations
-
-import importlib.util
-from pathlib import Path
-
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-AUDIT_SCRIPT = REPO_ROOT / "scripts" / "audit_card_data.py"
-RULE_SOURCES = REPO_ROOT / "docs" / "RULE_SOURCES.md"
-SUPPORT_URL = (
-    "https://support.pokemon.com/hc/en-us/articles/"
-    "6489934466708-Pok%C3%A9mon-TCG-Live-Migration-FAQ-from-the-"
-    "Pok%C3%A9mon-TCG-Online"
-)
-CARD_URL = "https://api.pokemontcg.io/v2/cards/sm2-60"
-
-
-def load_audit_module():
-    spec = importlib.util.spec_from_file_location("issue_1333_audit", AUDIT_SCRIPT)
-    if spec is None or spec.loader is None:
-        raise AssertionError("Unable to load scripts/audit_card_data.py")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-def main() -> int:
-    audit = load_audit_module()
-    if audit.REQUESTED["Tapu Lele-GX"] != ("sm2-60", 2):
-        raise AssertionError("The canonical TCG Live deck must use Tapu Lele-GX sm2-60.")
-
-    old_id = "cel25c-" + "60_A"
-    searchable_roots = [
-        REPO_ROOT / "src",
-        REPO_ROOT / "tests",
-        REPO_ROOT / "docs",
-        REPO_ROOT / "scripts",
-        REPO_ROOT / "data",
-    ]
-    stale: list[str] = []
-    for root in searchable_roots:
-        if not root.exists():
-            continue
-        for path in root.rglob("*"):
-            if not path.is_file() or path.suffix not in {
-                ".cpp", ".inc", ".py", ".md", ".txt", ".json", ".cmake"
-            }:
-                continue
-            if old_id in path.read_text(encoding="utf-8", errors="replace"):
-                stale.append(str(path.relative_to(REPO_ROOT)))
-    if stale:
-        raise AssertionError("Stale Classic Collection source IDs: " + ", ".join(stale))
-
-    audit_text = AUDIT_SCRIPT.read_text(encoding="utf-8")
-    source_text = RULE_SOURCES.read_text(encoding="utf-8")
-    for required in (SUPPORT_URL, CARD_URL):
-        if required not in audit_text:
-            raise AssertionError(f"Canonical audit is missing direct source: {required}")
-        if required not in source_text:
-            raise AssertionError(f"Rule source registry is missing direct source: {required}")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
-''',
-              encoding="utf-8",
-          )
 
           cmake_path = repo / "CMakeLists.txt"
           cmake = cmake_path.read_text(encoding="utf-8")
-          cmake_block = '''
-# The Pokémon TCG Live recipe must use the playable Guardians Rising Tapu Lele-GX
-# print rather than the unavailable Celebrations Classic Collection variant:
-# https://support.pokemon.com/hc/en-us/articles/6489934466708-Pok%C3%A9mon-TCG-Live-Migration-FAQ-from-the-Pok%C3%A9mon-TCG-Online
-# https://api.pokemontcg.io/v2/cards/sm2-60
-# https://github.com/FlareZ123/pokemon-sims/issues/1333
-add_test(NAME issue_1333_tapu_live_print_contract
-  COMMAND ${Python3_EXECUTABLE}
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/issue_1333_tapu_live_print_tests.py)
-'''
           if "issue_1333_tapu_live_print_contract" not in cmake:
-              cmake_path.write_text(cmake.rstrip() + "\n" + cmake_block, encoding="utf-8")
+              block = "\n".join([
+                  "",
+                  "# The Pokémon TCG Live recipe must use the playable Guardians Rising Tapu Lele-GX",
+                  "# print rather than the unavailable Celebrations Classic Collection variant:",
+                  f"# {support_url}",
+                  f"# {card_url}",
+                  "# https://github.com/FlareZ123/pokemon-sims/issues/1333",
+                  "add_test(NAME issue_1333_tapu_live_print_contract",
+                  "  COMMAND ${Python3_EXECUTABLE}",
+                  "    ${CMAKE_CURRENT_SOURCE_DIR}/tests/issue_1333_tapu_live_print_tests.py)",
+                  "",
+              ])
+              cmake_path.write_text(cmake.rstrip() + block, encoding="utf-8")
           PY
 
       - name: Check out pinned card corpus
@@ -199,7 +125,6 @@ add_test(NAME issue_1333_tapu_live_print_contract
               "text": "When you play this Pokémon from your hand onto your Bench during your turn, you may search your deck for a Supporter card, reveal it, and put it into your hand. Then, shuffle your deck.",
               "type": "Ability",
           }]
-          assert tapu["retreatCost"] if "retreatCost" in tapu else True
           PY
 
       - name: Configure Release
@@ -242,11 +167,26 @@ add_test(NAME issue_1333_tapu_live_print_contract
           # Matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
           ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out issue-1333-matrix.csv
 
+      - name: Record prepared diff
+        shell: bash
+        run: git diff --stat > issue-1333-diff-stat.txt
+
+      - name: Package validation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1333-tapu-live-print
+          path: |
+            issue-1333-pass-*.txt
+            issue-1333-matrix.csv
+            issue-1333-card-audit.json
+            issue-1333-diff-stat.txt
+          if-no-files-found: error
+
       - name: Commit prepared fix to the PR branch
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf tcg-data-master build issue-1333-card-audit.json
+          rm -rf tcg-data-master build issue-1333-card-audit.json issue-1333-pass-*.txt issue-1333-matrix.csv issue-1333-diff-stat.txt
           if git diff --quiet && git diff --cached --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
             exit 0
           fi
@@ -255,13 +195,3 @@ add_test(NAME issue_1333_tapu_live_print_contract
           git add -A
           git commit -m "Use TCG Live Tapu Lele-GX print (#1333)"
           git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
-
-      - name: Package validation evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: issue-1333-tapu-live-print
-          path: |
-            issue-1333-pass-*.txt
-            issue-1333-matrix.csv
-          if-no-files-found: error

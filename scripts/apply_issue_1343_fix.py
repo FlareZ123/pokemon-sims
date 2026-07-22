@@ -4,6 +4,8 @@ from pathlib import Path
 
 
 ISSUE_URL = "https://github.com/FlareZ123/pokemon-sims/issues/1343"
+# The generated production block carries the direct card, rules, and policy URLs
+# beside the decision it changes: https://github.com/FlareZ123/pokemon-sims/pull/1345
 
 
 def main() -> int:

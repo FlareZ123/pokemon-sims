@@ -44,7 +44,7 @@ sim::State exact_state() {
   return state;
 }
 
-void test_skyliner_preserves_all_exploding_energy_grass() {
+void test_skyliner_preserves_surplus_exploding_energy_grass() {
   const sim::Scenario scenario{"issue-1248-skyliner", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
   std::mt19937_64 rng{1248};
@@ -54,18 +54,21 @@ void test_skyliner_preserves_all_exploding_energy_grass() {
 
   // Latias ex sv8-76 is a Basic Pokémon with printed Retreat Cost 2, while
   // Skyliner gives the player's Basic Pokémon in play no Retreat Cost. Exploding
-  // Energy may therefore attach all three Grass to Regidrago and retreat for free:
+  // Energy therefore selects the two Grass that complete GGF, preserves the third
+  // copy in deck, and retreats for free:
   // https://api.pokemontcg.io/v2/cards/sv8-76
   // https://api.pokemontcg.io/v2/cards/sv4pt5-2
   // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/issues/1329
   if (!sim::EngineTestAccess::use_exploding_energy_for_setup(engine)) {
     throw std::runtime_error("The unlocked Latias Exploding Energy route did not resolve.");
   }
   const sim::State& after = sim::EngineTestAccess::state(engine);
   if (!after.active || after.active->card != sim::Card::RegidragoV ||
-      after.active->grass != 3 || after.active->fire != 1 ||
+      after.active->grass != 2 || after.active->fire != 1 ||
+      count(after.deck, sim::Card::Grass) != 1 ||
       count(after.discard, sim::Card::Grass) != 0 || !after.retreat_used) {
-    throw std::runtime_error("Skyliner did not preserve all three searched Grass during the free retreat.");
+    throw std::runtime_error("Skyliner did not preserve the surplus Grass during the free retreat.");
   }
 }
 
@@ -97,7 +100,7 @@ void test_rule_box_ability_lock_blocks_forretress_route() {
 
 int main() {
   try {
-    test_skyliner_preserves_all_exploding_energy_grass();
+    test_skyliner_preserves_surplus_exploding_energy_grass();
     test_rule_box_ability_lock_blocks_forretress_route();
     std::cout << "Issue 1248 Latias Skyliner tests passed\n";
     return 0;

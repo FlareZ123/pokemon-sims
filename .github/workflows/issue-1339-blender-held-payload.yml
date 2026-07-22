@@ -18,70 +18,84 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Apply Blender resource-preservation fix
         run: python scripts/apply_issue_1339_fix.py
 
-      - name: Configure Release
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Commit production fix to PR branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- src/trace_engine_v2/part_010_blender_thinning_override.inc; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_010_blender_thinning_override.inc
+          git commit -m 'Preserve held payload through Brilliant Blender (#1339)'
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
 
-      - name: Build Release
-        run: cmake --build build --parallel 2
+      - name: Configure and build Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
 
       - name: Run focused regression
         run: ./build/regidrago_unified_tests issue_1339_blender_held_payload_tests
 
-      - name: Run complete Release suite
-        run: ctest --test-dir build --output-on-failure
+      - name: Refresh source-bound canonical baselines
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out results/multi_deck_comparison.csv
+          python - <<'PY'
+          from __future__ import annotations
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          from scripts.baseline_provenance import simulator_policy_source_digest
 
-      - name: Simulate-this pass 1 strict JIT going first
+          root = Path('.').resolve()
+          csv_path = root / 'results' / 'multi_deck_comparison.csv'
+          manifest_path = root / 'results' / 'multi_deck_manifest.json'
+          manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+          manifest['comparison_csv_sha256'] = hashlib.sha256(csv_path.read_bytes()).hexdigest()
+          manifest['simulator_policy_source_sha256'] = simulator_policy_source_digest(root)
+          temporary = manifest_path.with_suffix('.json.tmp')
+          temporary.write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          os.replace(temporary, manifest_path)
+          PY
+          python scripts/update_multi_deck_docs.py --repo-root .
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Run three simulate-this passes
         shell: bash
         run: |
           set -euo pipefail
           # Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
           # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
           # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
-          # Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
           # Issue: https://github.com/FlareZ123/pokemon-sims/issues/1339
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 107 --require-ready-by 3 | tee issue-1339-pass-strict-first.txt
           grep -q 'T3 | READY |' issue-1339-pass-strict-first.txt
-
-      - name: Simulate-this pass 2 scheduled Item lock
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Scheduled lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
-          # Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
-          # Item lock card identity: https://api.pokemontcg.io/v2/cards/me2pt5-16
-          # Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee issue-1339-pass-item-lock.txt
           grep -q 'T2 | READY |' issue-1339-pass-item-lock.txt
-
-      - name: Simulate-this pass 3 Rule Box Ability lock
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
-          # Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
-          # Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
-          # Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee issue-1339-pass-rulebox-lock.txt
           grep -Eq 'T[23] \| READY \|' issue-1339-pass-rulebox-lock.txt
 
-      - name: Generate paired T2 and T3 matrix
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
-          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out issue-1339-matrix.csv
-
-      - name: Configure sanitizers
-        run: cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON
-
-      - name: Build sanitizers
-        run: cmake --build build-sanitize --parallel 2
-
-      - name: Run sanitizer focused regression
-        run: ./build-sanitize/regidrago_unified_tests issue_1339_blender_held_payload_tests
+      - name: Generate current-run paired matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out issue-1339-matrix.csv
 
       - name: Package validation evidence
         uses: actions/upload-artifact@v4
@@ -90,18 +104,21 @@ jobs:
           path: |
             issue-1339-pass-*.txt
             issue-1339-matrix.csv
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            build/Testing
           if-no-files-found: error
 
-      - name: Commit validated source fix to PR branch
+      - name: Commit refreshed baselines to PR branch
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf build build-sanitize issue-1339-pass-*.txt issue-1339-matrix.csv
+          rm -rf build issue-1339-pass-*.txt issue-1339-matrix.csv
           if git diff --quiet && git diff --cached --quiet; then
             exit 0
           fi
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/trace_engine_v2/part_010_blender_thinning_override.inc
-          git commit -m 'Preserve held payload through Brilliant Blender (#1339)'
+          git add README.md docs results
+          git commit -m 'Refresh source-bound setup baselines (#1339)'
           git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

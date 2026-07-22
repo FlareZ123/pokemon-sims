@@ -97,16 +97,16 @@ jobs:
           # Resource policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
           # Issue: https://github.com/FlareZ123/pokemon-sims/issues/1335
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 107 --require-ready-by 3 | tee issue-1335-pass-seed107.txt
-          if grep -q 'T3 | DISCARD | Grass Energy (Quick Ball cost)' issue-1335-pass-seed107.txt; then
+          if grep -Eq 'T3 .*DISCARD.*Grass Energy.*Quick Ball cost' issue-1335-pass-seed107.txt; then
             echo 'Seed 107 still spends the redundant Quick Ball route' >&2
             exit 1
           fi
-          if grep -q 'T3 | DISCARD | Grass Energy (Mysterious Treasure cost)' issue-1335-pass-seed107.txt; then
+          if grep -Eq 'T3 .*DISCARD.*Grass Energy.*Mysterious Treasure cost' issue-1335-pass-seed107.txt; then
             echo 'Seed 107 still spends the symmetric redundant Treasure route' >&2
             exit 1
           fi
-          grep -q 'T3 | DISCARD | Mega Dragonite ex (Mysterious Treasure cost)' issue-1335-pass-seed107.txt
-          grep -q 'T3 | READY |' issue-1335-pass-seed107.txt
+          grep -Eq 'T3 .*DISCARD.*Mega Dragonite ex.*Mysterious Treasure cost' issue-1335-pass-seed107.txt
+          grep -Eq 'T3 .*READY' issue-1335-pass-seed107.txt
 
       - name: Simulate-this pass 2 scheduled Item lock
         shell: bash
@@ -117,7 +117,7 @@ jobs:
           # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
           # Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee issue-1335-pass-item-lock.txt
-          grep -q 'T2 | READY |' issue-1335-pass-item-lock.txt
+          grep -Eq 'T2 .*READY' issue-1335-pass-item-lock.txt
 
       - name: Simulate-this pass 3 Rule Box Ability lock
         shell: bash
@@ -128,7 +128,7 @@ jobs:
           # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
           # Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee issue-1335-pass-rulebox-lock.txt
-          grep -Eq 'T[23] \| READY \|' issue-1335-pass-rulebox-lock.txt
+          grep -Eq 'T[23] .*READY' issue-1335-pass-rulebox-lock.txt
 
       - name: Generate current-run paired T2 and T3 matrix
         shell: bash

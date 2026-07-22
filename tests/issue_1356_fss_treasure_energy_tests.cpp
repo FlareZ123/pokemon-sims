@@ -17,6 +17,7 @@ struct EngineTestAccess {
   }
 
   static Card diagnosed_fss_target(Engine& engine) {
+    const Card missing_energy = engine.grass_needed() == 1 ? Card::Grass : Card::Fire;
     const std::size_t payloads_before = static_cast<std::size_t>(std::count_if(
         engine.state_.hand.begin(), engine.state_.hand.end(), is_payload));
     std::mt19937_64 shadow_rng = engine.rng_;
@@ -24,7 +25,9 @@ struct EngineTestAccess {
     projected.state_ = engine.state_;
     projected.deck_seen_ = engine.deck_seen_;
     projected.prizes_revealed_ = engine.prizes_revealed_;
-    const bool treasure_played = projected.play_mysterious_treasure(false);
+    projected.state_.vstar_power_used = true;
+    const bool energy_moved = projected.move_deck_to_hand(missing_energy);
+    const bool treasure_played = energy_moved && projected.play_mysterious_treasure(false);
     const std::size_t payloads_after = static_cast<std::size_t>(std::count_if(
         projected.state_.hand.begin(), projected.state_.hand.end(), is_payload));
     std::cerr << "split="
@@ -46,9 +49,11 @@ struct EngineTestAccess {
               << " fire_deck=" << engine.deck_count_after_search_started(Card::Fire)
               << " grass_deck=" << engine.deck_count_after_search_started(Card::Grass)
               << " payloads_before=" << payloads_before
+              << " energy_moved=" << energy_moved
               << " shadow_played=" << treasure_played
               << " shadow_vstar_hand=" << projected.hand_count(Card::RegidragoVstar)
               << " shadow_mt_hand=" << projected.hand_count(Card::MysteriousTreasure)
+              << " shadow_energy_hand=" << projected.hand_count(missing_energy)
               << " payloads_after=" << payloads_after << '\n';
     return engine.fss_target_after_search_started();
   }

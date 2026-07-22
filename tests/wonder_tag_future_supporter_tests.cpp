@@ -100,7 +100,7 @@ void test_banks_gladion_for_known_prized_vstar() {
   // Going first prevents playing a Supporter on turn one. Wonder Tag still searches
   // Gladion, and Gladion may remain in hand until turn two to exchange for the known
   // prized Regidrago VSTAR:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sm4-95
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/issues/748
@@ -116,7 +116,7 @@ void test_banks_arven_for_concrete_vstar_chain() {
   // Wonder Tag may bank Arven. On turn two Arven can search Forest Seal Stone,
   // the Tool can attach to the prior-turn Regidrago V, and Star Alchemy can search
   // Regidrago VSTAR:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv1-166
   // https://api.pokemontcg.io/v2/cards/swsh12-156
   // https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -132,7 +132,7 @@ void test_absent_future_target_is_rejected() {
 
   // Wonder Tag is optional and a Bench slot must not be spent when K1 proves that
   // neither the Gladion nor Arven future connector remains in deck:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
   // https://github.com/FlareZ123/pokemon-sims/issues/748
   expect_rejected(std::move(state), "absent future target");
@@ -147,7 +147,7 @@ void test_direct_vstar_connector_is_preferred() {
   // Evolution Incense already searches the Evolution Pokémon directly, so Tapu and
   // a future Supporter should not consume an additional Bench slot and connector:
   // https://api.pokemontcg.io/v2/cards/swsh1-163
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // https://github.com/FlareZ123/pokemon-sims/issues/748
   expect_rejected(std::move(state), "direct Evolution Incense route");
@@ -169,7 +169,7 @@ void test_full_bench_is_rejected() {
   // A player cannot Bench a sixth Pokémon. Future value never overrides the Bench
   // limit:
   // https://www.pokemon.com/us/pokemon-tcg/rules
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://github.com/FlareZ123/pokemon-sims/issues/748
   expect_rejected(std::move(state), "full Bench");
 }
@@ -181,7 +181,7 @@ void test_rule_box_ability_lock_is_rejected() {
 
   // Wonder Tag is an Ability on a Rule Box Pokémon and remains unavailable under
   // the modeled full Rule Box Ability lock:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-scenarios
   // https://github.com/FlareZ123/pokemon-sims/issues/748
   expect_rejected(std::move(state), "Rule Box Ability lock",

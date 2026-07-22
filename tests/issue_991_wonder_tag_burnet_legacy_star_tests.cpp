@@ -56,7 +56,7 @@ void test_legacy_star_complete_route_suppresses_burnet() {
 
   // Held Crispin plus the manual attachment completes GGF. The prior-turn
   // Regidrago V may evolve, then Legacy Star can establish the payload axis:
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -108,7 +108,7 @@ void test_full_trace_skips_redundant_wonder_tag() {
 
   // Issue #1016 strengthens the earlier #991 suppression by rejecting the first
   // optional Wonder Tag before the duplicate Burnet route can be considered:
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Earlier confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/991
   // Superseding route fix: https://github.com/FlareZ123/pokemon-sims/issues/1016

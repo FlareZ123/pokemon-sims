@@ -63,7 +63,7 @@ void test_exact_future_wonder_tag_crispin_contract() {
   // Crispin and hold it. The two held Grass Energy plus the exact K1 Grass/Fire
   // deck pair let the current manual attachment, next-turn Crispin attachment, and
   // next-turn manual attachment complete GGF without Vital Dance or Star Alchemy:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://www.pokemon.com/us/pokemon-tcg/rules
@@ -114,7 +114,7 @@ void test_exact_active_tapu_paid_retreat_contract() {
   // Tapu Lele-GX has a one-Colorless Retreat Cost. With GGF and a Dragon payload
   // already complete, the unused manual attachment may put Fire on the Active,
   // discard it as the retreat payment, and promote the ready Benched VSTAR:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
   // https://www.pokemon.com/us/pokemon-tcg/rules
@@ -170,7 +170,7 @@ void test_rule_box_lock_contract_uses_card_classification() {
   // Vital Dance remains available. This deterministic classification contract replaces
   // an unsupported shuffled-seed T3 readiness deadline:
   // https://api.pokemontcg.io/v2/cards/swsh6-148
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv8-76
   // https://api.pokemontcg.io/v2/cards/sm2-55
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md

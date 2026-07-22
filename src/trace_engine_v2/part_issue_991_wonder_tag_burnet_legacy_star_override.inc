@@ -1,6 +1,6 @@
   // Wonder Tag spends Tapu Lele-GX's entry Ability to search a Supporter. Preserve
   // that exact same-turn Steven's Resolve admission across later legal Item actions:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sm7-145
   // https://github.com/FlareZ123/pokemon-sims/issues/999
   bool wonder_tag_selected_steven_this_turn_{false};
@@ -59,7 +59,7 @@
     // strict-JIT payload axis. Benching the searched second Tapu Lele-GX and using
     // Wonder Tag for Professor Burnet spends a card, Bench slot, and one-shot
     // Ability while that Supporter remains unused:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Regidrago VSTAR and Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -82,7 +82,7 @@
     // is already held and the unused manual attachment completes GGF, another Tapu
     // Lele-GX and Wonder Tag consume a card, Bench slot, and one-shot Ability without
     // advancing any setup axis:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
     // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Turn procedure and manual attachment: https://www.pokemon.com/us/pokemon-tcg/rules
@@ -113,7 +113,7 @@
     // Regidrago VSTAR completes evolution, and the held needed Energy completes GGF
     // through the unused manual attachment. Wonder Tag into Arven then spends Tapu
     // Lele-GX, its Bench slot, and its one-shot Ability without advancing setup:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -181,7 +181,7 @@
     // turn. When a held Gladion has a known Prize route and Crispin is already held,
     // searching a second Crispin cannot improve the current Supporter action and the
     // first copy remains available for the next Energy turn:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
     // One Supporter per turn: https://www.pokemon.com/us/pokemon-tcg/rules
@@ -216,7 +216,7 @@
     // Wonder Tag would select Gladion for the same known Prize axis that the held
     // copy already resolves. A duplicate Gladion cannot create a second Supporter
     // action this turn, so preserve Tapu Lele-GX and its Bench slot:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
     // One Supporter per turn: https://www.pokemon.com/us/pokemon-tcg/rules
     // Knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
@@ -229,7 +229,7 @@
     // Fixed-point stabilization may re-query the same legal retention decision.
     // Emit one public event per exact state while preserving later events after a
     // card, zone, action allowance, or knowledge-relevant state changes:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
     // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/1004
     if (trace_ != nullptr) {
@@ -244,7 +244,7 @@
       // package covers all three manual attachments. Preserve the second
       // Tapu Lele-GX, its Bench slot, and Wonder Tag instead of fetching a
       // redundant Crispin:
-      // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
       // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
       // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
       // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
@@ -275,7 +275,7 @@
     if (wonder_tag_burnet_is_redundant_with_legacy_star_route()) {
       // Keep the second Tapu Lele-GX in hand after Quick Ball has legally searched
       // and shuffled. Every setup axis already has a shorter observable route:
-      // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // https://api.pokemontcg.io/v2/cards/sm2-60
       // https://api.pokemontcg.io/v2/cards/swsh1-179
       // https://github.com/FlareZ123/pokemon-sims/issues/991
       trace_tapu_hold_once(
@@ -287,7 +287,7 @@
     if (wonder_tag_gladion_is_redundant_with_held_manual_energy()) {
       // Preserve Tapu Lele-GX and Wonder Tag because the held Prize-target Energy
       // already completes the final axis through the legal manual attachment:
-      // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // https://api.pokemontcg.io/v2/cards/sm2-60
       // https://api.pokemontcg.io/v2/cards/sm4-95
       // https://github.com/FlareZ123/pokemon-sims/issues/992
       trace_tapu_hold_once(
@@ -299,7 +299,7 @@
     if (wonder_tag_arven_is_redundant_with_held_burnet_route()) {
       // Preserve Tapu Lele-GX because held Energy, Burnet, and VSTAR already form
       // the shortest complete current-turn route:
-      // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // https://api.pokemontcg.io/v2/cards/sm2-60
       // https://api.pokemontcg.io/v2/cards/sv1-166
       // https://github.com/FlareZ123/pokemon-sims/issues/993
       trace_tapu_hold_once(
@@ -314,7 +314,7 @@
     if (benched && hand_count(Card::StevensResolve) > steven_before) {
       // The one-shot Wonder Tag search admitted Steven before later Item actions may
       // alter the mutable setup-axis count. Keep that legal admission for this turn:
-      // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // https://api.pokemontcg.io/v2/cards/sm2-60
       // https://api.pokemontcg.io/v2/cards/sm7-145
       // https://api.pokemontcg.io/v2/cards/swsh1-179
       // https://github.com/FlareZ123/pokemon-sims/issues/999

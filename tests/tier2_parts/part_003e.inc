@@ -45,7 +45,7 @@ void tapu_holds_for_three_ultra_vstar_route() {
   // One Ultra Ball may discard the other two copies and search Regidrago VSTAR,
   // so Wonder Tag must preserve its Bench and Supporter resources:
   // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   expect(!EngineTestAccess::bench_tapu_if_useful(f.engine),
          "Tapu Lele-GX should remain in hand when three Ultra Balls directly cover VSTAR.");
   expect(has(EngineTestAccess::state(f.engine).hand, Card::TapuLeleGX),

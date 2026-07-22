@@ -36,7 +36,7 @@
     // available for Professor Burnet's deck-to-discard payload bridge. A live Item
     // outlet keeps the existing Tapu Lele-GX into Crispin route available:
     // https://api.pokemontcg.io/v2/cards/sm2-55
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/sv7-133
     // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // https://api.pokemontcg.io/v2/cards/sm6-113
@@ -76,7 +76,7 @@
     // A target-legal Mysterious Treasure can discard the held Dragon payload and
     // search the missing Regidrago VSTAR, so Wonder Tag into unused Crispin only
     // spends Tapu Lele-GX, a Bench slot, and a one-shot connector:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
@@ -91,7 +91,7 @@
     // Wonder Tag searches a Supporter. At K1, the Supporter that justifies spending
     // Tapu Lele-GX and a Bench slot must actually remain in the inspected deck;
     // K0 keeps fixed-list uncertainty through might_be_unseen():
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     const bool live_t1_steven = state_.turn == 1 && !scenario_.going_first &&
@@ -125,7 +125,7 @@
     // Burnet is an indirect payload bridge. Do not spend Tapu Lele-GX, a Bench
     // slot, and Wonder Tag when a held Supporter or target-legal discard Item can
     // already discard the permitted Dragon for the same current-turn payload axis:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // https://api.pokemontcg.io/v2/cards/swsh12-164
     // https://api.pokemontcg.io/v2/cards/sm6-113
@@ -165,7 +165,7 @@
     // The active Tapu preflight wraps the original selector. Keep the wrapper's
     // target-validation gate aligned with the new K1 Arven held-payload route, or
     // the original selector's true result is discarded before Wonder Tag resolves:
-    // Wonder Tag: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
@@ -179,7 +179,7 @@
         pokemon_communication_plan_after_wonder_tag_arven().has_value();
     // Wonder Tag may find Arven, which may search Pokémon Communication, only when
     // the exact post-Supporter exchange is live:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/sv1-166
     // https://api.pokemontcg.io/v2/cards/sm9-152
     // https://github.com/FlareZ123/pokemon-sims/issues/701
@@ -210,7 +210,7 @@ bool wonder_tag_can_bank_steven_for_known_t3_active_regi_route() const {
   // supply Grass plus Fire, leaving two Grass and one Fire for the three
   // manual attachments. Steven can therefore reserve Regidrago VSTAR and
   // Brilliant Blender for a deterministic T3 Active-Regidrago route:
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
   // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
   // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
@@ -245,7 +245,7 @@ bool held_banked_steven_has_known_t3_active_regi_route() const {
   // second Tapu and Wonder Tag for
   // Crispin spend a Bench slot and one-shot Ability without advancing the
   // earliest deterministic route:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sm7-145
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://www.pokemon.com/us/pokemon-tcg/rules
@@ -264,7 +264,7 @@ bool held_banked_steven_has_known_t3_active_regi_route() const {
     // Energy axis immediately. Banking a Supporter is future value and must not
     // displace a stronger legal current-turn connector:
     // https://api.pokemontcg.io/v2/cards/sm2-55
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     if (bench_space() == 1 && hand_count(Card::Oricorio) > 0 &&
         !in_play(Card::Oricorio) && needs_oricorio_connector()) {
@@ -359,7 +359,7 @@ bool held_banked_steven_has_known_t3_active_regi_route() const {
       // attachment, and the next turn's manual attachment. This admits the route
       // only when those public resources complete GGF without Vital Dance or Star
       // Alchemy:
-      // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // https://api.pokemontcg.io/v2/cards/sm2-60
       // https://api.pokemontcg.io/v2/cards/sv7-133
       // https://api.pokemontcg.io/v2/cards/swsh12-136
       // https://www.pokemon.com/us/pokemon-tcg/rules
@@ -373,7 +373,7 @@ bool held_banked_steven_has_known_t3_active_regi_route() const {
 
     // Going first prohibits playing a Supporter on turn one. Wonder Tag may still
     // search a concrete Gladion, Arven, or Crispin and leave it in hand for turn two:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/sm4-95
     // https://api.pokemontcg.io/v2/cards/sv1-166
     // https://api.pokemontcg.io/v2/cards/sv7-133
@@ -413,7 +413,7 @@ bool held_banked_steven_has_known_t3_active_regi_route() const {
     // Wonder Tag can search Tate & Liza, whose switch mode immediately promotes a
     // Benched Regidrago VSTAR. Spend the Bench slot and Ability only when the actual
     // promotion target already pays Apex Dragon's GGF cost:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/sm7-148
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // A player may use the still-open Supporter play before attacking:

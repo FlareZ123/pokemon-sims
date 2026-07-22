@@ -50,7 +50,7 @@ void expect_trace_skips_unused_crispin(const sim::Scenario& scenario,
   // These exact main-branch witnesses previously spent Tapu Lele-GX and Wonder Tag
   // for Crispin even though a held Basic Energy/manual attachment plus held payload,
   // evolution, and promotion resources already formed the shortest complete route:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   // https://api.pokemontcg.io/v2/cards/sv8-164

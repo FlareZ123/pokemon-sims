@@ -78,7 +78,7 @@ The modeled Path lock removes Abilities on Rule Box Pokémon. It does not remove
 | Gladion | Inspect Prize cards, take one, then shuffle Gladion into the remaining Prizes. | https://api.pokemontcg.io/v2/cards/sm4-95 |
 | Serena | In draw mode, discard up to three cards, but the print requires at least one discard; then draw until five cards are in hand. | https://api.pokemontcg.io/v2/cards/swsh12-164 |
 | Tate & Liza | Choose shuffle-and-draw-five or switch Active with a Benched Pokémon. | https://api.pokemontcg.io/v2/cards/sm7-148 |
-| Tapu Lele-GX | Wonder Tag triggers only when played from hand to Bench during a turn and is blocked by the Rule Box lock. | https://api.pokemontcg.io/v2/cards/cel25c-60_A |
+| Tapu Lele-GX | Wonder Tag triggers only when played from hand to Bench during a turn and is blocked by the Rule Box lock. | https://api.pokemontcg.io/v2/cards/sm2-60 |
 | Latias ex | Skyliner gives Basic Pokémon in play no Retreat Cost. It does not make a Regidrago VSTAR itself free to retreat. | https://api.pokemontcg.io/v2/cards/sv8-76 |
 | Oricorio | Vital Dance searches for up to two Basic Energy when played from hand to Bench during a turn. It is not blocked by the modeled Rule Box lock. | https://api.pokemontcg.io/v2/cards/sm2-55 |
 

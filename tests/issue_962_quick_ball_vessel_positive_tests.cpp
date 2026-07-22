@@ -12,7 +12,7 @@ void test_quick_ball_connector_precedes_vessel_when_it_compresses_energy() {
   // Wonder Tag for Crispin. A separately payable Earthen Vessel then searches the
   // Basic Energy that Crispin plus the manual attachment compress into GG on T2:
   // https://api.pokemontcg.io/v2/cards/swsh1-179
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://api.pokemontcg.io/v2/cards/sv4-163
   // https://api.pokemontcg.io/v2/cards/swsh12-136

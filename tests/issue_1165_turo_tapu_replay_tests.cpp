@@ -79,7 +79,7 @@ void test_returns_and_replays_tapu_for_future_supporter() {
   // Turo may return the Active Tapu, the powered prior-turn Regidrago V becomes
   // Active, and replaying Tapu from hand triggers Wonder Tag for the future Gladion:
   // https://api.pokemontcg.io/v2/cards/sv4-171
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sm4-95
   // https://api.pokemontcg.io/v2/cards/swsh12-135
   // https://www.pokemon.com/us/pokemon-tcg/rules

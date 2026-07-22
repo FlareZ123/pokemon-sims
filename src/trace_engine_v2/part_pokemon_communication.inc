@@ -31,7 +31,7 @@
     // search route when one of those two would be its only possible exchange. A
     // Dipplin or duplicated Pokémon is a genuinely lower-marginal third card:
     // https://api.pokemontcg.io/v2/cards/sm9-152
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/sm2-55
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/701
@@ -60,7 +60,7 @@
       // shared score already assigns every duplicated Pokémon the lowest marginal
       // exchange cost before card-specific protection:
       // https://api.pokemontcg.io/v2/cards/sm9-152
-      // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // https://api.pokemontcg.io/v2/cards/sm2-60
       // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
       // https://github.com/FlareZ123/pokemon-sims/issues/807
       if (pokemon_communication_return_score(returned, true) < 800) return true;

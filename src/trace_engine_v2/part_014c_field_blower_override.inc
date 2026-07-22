@@ -5,7 +5,7 @@
     // exact counterfactual state after Path to the Peak leaves play. Restore the
     // public lock state before making the real Item decision:
     // https://api.pokemontcg.io/v2/cards/swsh6-148
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/sv8-76
     // https://github.com/FlareZ123/pokemon-sims/issues/791
     const bool path_lock_removed_before = state_.path_lock_removed;

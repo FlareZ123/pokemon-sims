@@ -94,7 +94,7 @@ void test_field_blower_restores_live_wonder_tag_route() {
 
   // Path suppresses Tapu Lele-GX's Wonder Tag. Field Blower is valuable here
   // because removing Path immediately restores a live Burnet payload connector:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   // https://api.pokemontcg.io/v2/cards/sm2-125
   // https://api.pokemontcg.io/v2/cards/swsh6-148

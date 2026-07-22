@@ -82,7 +82,7 @@ void test_exact_route_completes_turn_four() {
 
   // Quick Ball -> Tapu Lele-GX -> Arven -> Mysterious Treasure -> Regidrago VSTAR.
   // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136

@@ -26,7 +26,7 @@ namespace {
 void test_exact_printed_retreat_costs() {
   // Exact printed Retreat Cost records:
   // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
   // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
   // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76

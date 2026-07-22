@@ -3,7 +3,7 @@
         trace("ABILITY BLOCKED", "R-PATH-01", "Tapu Lele-GX Wonder Tag is suppressed by the Rule Box Ability lock.");
         return;
       }
-      // Card text source: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // Card text source: https://api.pokemontcg.io/v2/cards/sm2-60
       // The search permits inspecting the deck to select a Supporter.
       record_deck_search_knowledge("Wonder Tag");
       const Card target = choose_supporter_after_search_started();
@@ -46,7 +46,7 @@
     // setup component. Wonder Tag should bank the known in-deck Gladion, which takes
     // the known prized Treasure on T4. Treasure then discards the protected payload
     // and searches Regidrago VSTAR on T5:
-    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
@@ -124,7 +124,7 @@
     // Energy and the unused manual attachment already complete GGF, Wonder Tag must
     // select that deterministic current-turn payload Supporter before an unused
     // Crispin Energy connector. This preserves the once-per-game Legacy Star:
-    // Wonder Tag: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Regidrago VSTAR and Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -146,7 +146,7 @@
 
     // Wonder Tag may search Arven, Arven may search Earthen Vessel, and Vessel may
     // search the final Basic Energy for this turn's unused manual attachment:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/sv1-166
     // https://api.pokemontcg.io/v2/cards/sv4-163
     // https://www.pokemon.com/us/pokemon-tcg/rules
@@ -164,7 +164,7 @@
     // After Wonder Tag establishes K1, choose Arven for the target-legal
     // held-payload Item bridge recognized by the preflight. A direct held Item stays
     // preferable because it avoids spending Tapu's Bench slot and the Supporter play:
-    // Wonder Tag: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
@@ -193,7 +193,7 @@
     // Wonder Tag can search Tate & Liza, whose switch mode immediately promotes a
     // Benched Regidrago VSTAR. Select Tate when the target already pays GGF and the
     // payload is ready or a payable held one-discard Item can establish it afterward:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/sm7-148
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/sm6-113
@@ -214,7 +214,7 @@
         !benched_vstar_promotion_ready() && !can_free_retreat_with_latias();
     // Wonder Tag is optional. Do not fall through to Tate's switch route after the
     // target-aware branch rejected an Energy-incomplete promotion:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/sm7-148
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     if (deck_count_after_search_started(Card::TateLiza) > 0 &&
@@ -224,7 +224,7 @@
 
     // Wonder Tag may search any Supporter. A completed deck inspection must not
     // nominate an absent hard-coded card while another legal Supporter remains:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     for (const Card fallback : {Card::Dawn, Card::Crispin, Card::Arven,
                                 Card::ProfessorBurnet, Card::StevensResolve,
                                 Card::Gladion, Card::Lusamine, Card::Guzma,

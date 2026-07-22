@@ -32,7 +32,7 @@ void test_late_item_tapu_burnet_connector() {
   state.hand = {Card::MysteriousTreasure, Card::Dipplin};
   state.deck = {Card::MegaDragonite, Card::ProfessorBurnet, Card::TapuLeleGX};
 
-  // Mysterious Treasure can find Tapu Lele-GX, Wonder Tag finds Professor Burnet, and Burnet can discard the current-turn payload: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Mysterious Treasure can find Tapu Lele-GX, Wonder Tag finds Professor Burnet, and Burnet can discard the current-turn payload: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sm2-60 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   EngineTestAccess::run_turn(engine);
   EngineTestAccess::record_ready(engine);
 

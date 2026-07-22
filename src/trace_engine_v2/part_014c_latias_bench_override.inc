@@ -100,7 +100,7 @@
     // already-GGF Regidrago VSTAR. Restrict this route to states where Energy and
     // payload axes are already complete, preserving the attachment for setup when
     // the Benched VSTAR still needs it:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://www.pokemon.com/us/pokemon-tcg/rules
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
@@ -135,7 +135,7 @@
     // Energy-incomplete VSTAR still receives the manual attachment before the free
     // retreat, preserving the legal Earthen Vessel route:
     // https://api.pokemontcg.io/v2/cards/sv8-76
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/sv4-163
     // https://www.pokemon.com/us/pokemon-tcg/rules
     // https://github.com/FlareZ123/pokemon-sims/issues/905
@@ -321,7 +321,7 @@
     // Blender or alter its K1 continuation. Attach the second public Energy, then let
     // Steven search VSTAR, the direct third Grass, and Latias. Steven ends T2, while
     // the T3 Supporter slot remains unused for any later discrete-value action:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/sm7-145
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/sv8-164
@@ -429,7 +429,7 @@
     }
     // A late Item search can put Tapu Lele-GX into hand, and Bench play can then
     // fetch a new Supporter with Wonder Tag. Reconsider that unused Supporter slot
-    // before the ready check: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // before the ready check: https://api.pokemontcg.io/v2/cards/sm2-60
     // Professor Burnet can discard a current-turn deck payload after this chain:
     // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     const bool late_supporter_was_unused = !state_.supporter_used;

@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   audit:
@@ -13,8 +13,11 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
 
-      - name: Apply preparatory source fix
+      - name: Apply confirmed production fix
         run: python scripts/apply_issue_1343_fix.py
 
       - name: Keep audit recipe alive
@@ -34,6 +37,9 @@ jobs:
 
       - name: Build Release
         run: cmake --build build --parallel 2
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
 
       - name: Simulate-this pass 1 strict JIT going second
         shell: bash
@@ -78,6 +84,7 @@ jobs:
       - name: Run sanitizer audit probe
         env:
           ASAN_OPTIONS: detect_leaks=0
+          UBSAN_OPTIONS: halt_on_error=1
         run: ./issue-1343-probe-sanitize
 
       - name: Upload audit evidence
@@ -88,4 +95,19 @@ jobs:
           path: |
             issue-1343-pass-*.txt
             issue-1343-matrix.csv
+            build/Testing
           if-no-files-found: warn
+
+      - name: Commit confirmed production fix
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- src/trace_engine_v2/part_012_override.inc; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_012_override.inc
+          git commit -m 'Preserve Arven through a held payload outlet (#1343)'
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

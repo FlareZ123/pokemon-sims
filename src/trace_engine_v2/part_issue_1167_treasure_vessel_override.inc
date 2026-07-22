@@ -1,6 +1,12 @@
   std::optional<Card> strict_dci_redundant_payload_pair() const {
+    // Appletun follows the same dynamic DCI rule as every other modeled
+    // payload when two copies are redundant and a distinct payload remains:
+    // https://api.pokemontcg.io/v2/cards/sv8-140
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/issues/1314
     for (const Card repeated : {Card::MegaDragonite, Card::Dragapult,
-                                Card::GoodraVstar, Card::DialgaGX}) {
+                                Card::GoodraVstar, Card::DialgaGX,
+                                Card::Appletun}) {
       if (hand_count(repeated) < 2) continue;
       const bool distinct_payload_remains = std::any_of(
           state_.hand.begin(), state_.hand.end(), [repeated](const Card card) {

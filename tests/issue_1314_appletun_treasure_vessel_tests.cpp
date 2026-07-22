@@ -1,58 +1,4 @@
-from __future__ import annotations
-
-import os
-import tempfile
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-
-
-def atomic_write(path: Path, text: str) -> None:
-    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
-            handle.write(text)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary_name, path)
-    except BaseException:
-        try:
-            os.unlink(temporary_name)
-        except FileNotFoundError:
-            pass
-        raise
-
-
-def replace_once(path: Path, old: str, new: str) -> None:
-    text = path.read_text(encoding="utf-8")
-    count = text.count(old)
-    if count != 1:
-        raise RuntimeError(f"Expected one source anchor in {path}, found {count}")
-    atomic_write(path, text.replace(old, new, 1))
-
-
-def main() -> None:
-    source = ROOT / "src/trace_engine_v2/part_issue_1167_treasure_vessel_override.inc"
-    replace_once(
-        source,
-        """    for (const Card repeated : {Card::MegaDragonite, Card::Dragapult,
-                                Card::GoodraVstar, Card::DialgaGX}) {
-""",
-        """    // Appletun follows the same dynamic DCI rule as every other modeled
-    // payload when two copies are redundant and a distinct payload remains:
-    // https://api.pokemontcg.io/v2/cards/sv8-140
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // https://github.com/FlareZ123/pokemon-sims/issues/1314
-    for (const Card repeated : {Card::MegaDragonite, Card::Dragapult,
-                                Card::GoodraVstar, Card::DialgaGX,
-                                Card::Appletun}) {
-""",
-    )
-
-    test = ROOT / "tests/issue_1314_appletun_treasure_vessel_tests.cpp"
-    atomic_write(
-        test,
-        r'''#define REGIDRAGO_SIM_NO_MAIN
+#define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
 #include <algorithm>
@@ -162,9 +108,3 @@ int main() {
   std::cout << "Issue 1314 Appletun Treasure/Vessel tests passed.\n";
   return 0;
 }
-''',
-    )
-
-
-if __name__ == "__main__":
-    main()

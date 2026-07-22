@@ -305,10 +305,16 @@ void test_forest_evolution_and_stadium_procedure() {
     throw std::runtime_error("Forest did not replace the modeled Path and restore Exploding Energy.");
   }
   const sim::State& unlocked = sim::EngineTestAccess::state(locked.engine);
+  // Forest removes the modeled lock, then Exploding Energy selects only the two
+  // Grass needed beside held Fire and leaves the other three in deck:
+  // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/issues/1329
   if (!unlocked.path_lock_removed || unlocked.stadium != sim::Stadium::ForestOfVitality ||
-      !unlocked.active || unlocked.active->grass != 5 || unlocked.active->fire != 1 ||
+      !unlocked.active || unlocked.active->grass != 2 || unlocked.active->fire != 1 ||
+      count(unlocked.deck, sim::Card::Grass) != 3 ||
       count(unlocked.discard, sim::Card::ForretressEx) != 1) {
-    throw std::runtime_error("Forest replacement did not unlock and complete Exploding Energy correctly.");
+    throw std::runtime_error("Forest replacement did not unlock the minimal Exploding Energy route.");
   }
 }
 
@@ -343,13 +349,19 @@ void test_dawn_search_and_immediate_forest_combo() {
     throw std::runtime_error("The exact Dawn plus Forest route made no progress.");
   }
   const sim::State& after = sim::EngineTestAccess::state(engine);
+  // Dawn and Forest still complete the route while Exploding Energy selects the
+  // two missing Grass and preserves the other three for later attackers:
+  // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/issues/1329
   if (!after.supporter_used || after.stadium != sim::Stadium::ForestOfVitality ||
-      !after.active || after.active->grass != 5 || after.active->fire != 1 ||
+      !after.active || after.active->grass != 2 || after.active->fire != 1 ||
+      count(after.deck, sim::Card::Grass) != 3 ||
       !contains(after.hand, sim::Card::MegaDragonite) ||
       count(after.discard, sim::Card::Dawn) != 1 ||
       count(after.discard, sim::Card::Pineco) != 1 ||
       count(after.discard, sim::Card::ForretressEx) != 1) {
-    throw std::runtime_error("Dawn, Forest, or Exploding Energy produced the wrong exact state.");
+    throw std::runtime_error("Dawn, Forest, or minimal Exploding Energy produced the wrong exact state.");
   }
   const bool dawn_trace = std::any_of(trace.lines.begin(), trace.lines.end(),
       [](const std::string& line) {

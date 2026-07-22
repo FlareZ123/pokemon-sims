@@ -27,10 +27,10 @@ T2 | PLAY STADIUM | rules: R-FOREST-VITALITY-01; R-GAME-EVOLUTION | Played Fores
 T2 | PLAY SUPPORTER | rules: R-DAWN-01; R-GAME-SUPPORTER; R-FORRETRESS-01 | Dawn searched and revealed: Pineco, Forretress ex, Dragapult ex.
 T2 | BENCH | rules: R-GAME-BENCH | Pineco from hand.
 T2 | EVOLVE | rules: R-FORRETRESS-01; R-GAME-EVOLUTION; R-FOREST-VITALITY-01 | Forest of Vitality allowed the newly played Pineco to evolve into Forretress ex.
-T2 | USE ABILITY | rules: R-FORRETRESS-01; R-GAME-ABILITY; R-GAME-KO | Exploding Energy attached 4 Basic Grass Energy, shuffled the deck, and Knocked Out Forretress ex. Its Pokémon ex rule would award the opponent 2 Prize cards in a complete two-player game.
+T2 | USE ABILITY | rules: R-FORRETRESS-01; R-GAME-ABILITY; R-GAME-KO | Exploding Energy attached 1 Basic Grass Energy, shuffled the deck, and Knocked Out Forretress ex. Its Pokémon ex rule would award the opponent 2 Prize cards in a complete two-player game.
 T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
 T2 | DISCARD | rules: R-MT-01; R-SECRET-BOX-01; P-DCI-01 | Grass Energy (Mysterious Treasure completion cost)
 T2 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM; R-SECRET-BOX-01 | Mysterious Treasure used the proven dead or payload cost and searched Regidrago VSTAR after GGF became complete.
 T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
-T2 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | Direct Regidrago route completed before future-route banking: Active=Regidrago VSTAR [GGGGGF] | Bench=Tapu Lele-GX [-] | Hand=Dragapult ex | Discard=Wishful Baton, Crispin, Appletun sv8-140, Hisuian Goodra VSTAR, Steven's Resolve, Gladion, Secret Box, Dawn, Forretress ex, Pineco, Mysterious Treasure, Grass Energy
+T2 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | Direct Regidrago route completed before future-route banking: Active=Regidrago VSTAR [GGF] | Bench=Tapu Lele-GX [-] | Hand=Dragapult ex | Discard=Wishful Baton, Crispin, Appletun sv8-140, Hisuian Goodra VSTAR, Steven's Resolve, Gladion, Secret Box, Dawn, Forretress ex, Pineco, Mysterious Treasure, Grass Energy
 T2 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

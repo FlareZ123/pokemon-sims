@@ -1,0 +1,91 @@
+name: Current Main Debug Audit 20260721 2244
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  current-main-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run repository test suite
+        run: ctest --test-dir build --output-on-failure
+      - name: Simulate-this pass 1 shell strict go-first
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Earliest deterministic ready-state policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Core turn, search, attachment, evolution, Ability, Supporter, Retreat, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 20260721 | tee debug-pass-1.txt
+      - name: Simulate-this pass 2 shell matchup-flex go-second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Observable-information boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+          # Strict-JIT and matchup-flex policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 8675309 | tee debug-pass-2.txt
+      - name: Simulate-this pass 3 Pineco strict go-second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Registered Pineco recipe and source identities: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#named-deck-recipes
+          # Forretress ex Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 424242 | tee debug-pass-3.txt
+      - name: Simulate-this pass 4 Pineco Appletun route probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Appletun is the registered discard-only Dragon payload: https://api.pokemontcg.io/v2/cards/sv8-140
+          # Evolution Incense searches Evolution Pokemon: https://api.pokemontcg.io/v2/cards/swsh1-163
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 | tee debug-pass-4.txt
+      - name: Scan source for route enumerations and audit markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo '=== TODO/FIXME/BUG markers ==='
+            grep -RInE 'TODO|FIXME|XXX|BUG' src tests docs scripts CMakeLists.txt README.md || true
+            echo '=== Hardcoded modeled-card route lists ==='
+            grep -RInE 'Card::[A-Za-z0-9_]+.*Card::[A-Za-z0-9_]+' src tests | head -n 5000 || true
+            echo '=== Appletun route references ==='
+            grep -RIn 'Appletun' src tests docs scripts CMakeLists.txt README.md || true
+            echo '=== Search and fallback functions ==='
+            grep -RInE 'fallback|preflight|has_live|preferred|search.*target|target.*search|selector|choose_|reserve|discardable|prize|lock' src/trace_engine_v2 | head -n 8000 || true
+            echo '=== Evolution Incense references ==='
+            grep -RInE 'EvolutionIncense|evolution_incense' src tests docs scripts CMakeLists.txt README.md || true
+            echo '=== Payload enumerations ==='
+            grep -RInE 'payload|Payload|Dragon.*discard|discard.*Dragon' src tests docs scripts | head -n 8000 || true
+          } > static-audit.txt
+      - name: Generate current-run paired setup matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Matrix contract and all 16 conditions: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260721 --out current-run-matrix.csv
+      - name: Export current source snapshot
+        shell: bash
+        run: tar -czf current-source-snapshot.tar.gz src tests docs scripts .github CMakeLists.txt README.md
+      - name: Record tested source
+        run: git rev-parse HEAD > tested-head.txt
+      - name: Upload traces, matrix, source, and static scan
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-debug-audit-20260721-2244
+          path: |
+            debug-pass-*.txt
+            static-audit.txt
+            current-run-matrix.csv
+            current-source-snapshot.tar.gz
+            tested-head.txt
+          if-no-files-found: error

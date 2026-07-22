@@ -1,0 +1,8 @@
+# Repository-relative workflow filenames that are explicitly permanent.
+# Keep one filename per line. Blank lines and lines beginning with # are ignored.
+# Temporary issue-validation workflows must be removed after their issue merges.
+# Incident and repository contract: https://github.com/FlareZ123/pokemon-sims/issues/1360
+# Pull-request workflow behavior: https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request
+# GITHUB_TOKEN permission model: https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication
+#
+# No issue-specific workflows are currently authorized as permanent.

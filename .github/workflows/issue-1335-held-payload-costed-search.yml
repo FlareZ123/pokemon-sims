@@ -1,0 +1,180 @@
+name: Issue 1335 Held Payload Costed Search
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Apply held-payload projection fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          issue_url = "https://github.com/FlareZ123/pokemon-sims/issues/1335"
+
+          treasure_path = Path("src/trace_engine_v2/part_009a.inc")
+          treasure = treasure_path.read_text(encoding="utf-8")
+          treasure_old = """    const bool want_payload = need_payload() && !can_jit_discard &&
+                                      !has_live_serena_hand_payload_line() &&
+                                      has_payable_payload_outlet_after_costed_search(Card::MysteriousTreasure);
+          """
+          treasure_new = """    // A public Dragon payload can pay the surviving hand-discard outlet directly.
+              // Fetching another payload first consumes Mysterious Treasure plus an extra cost
+              // without advancing the current ready turn:
+              // https://api.pokemontcg.io/v2/cards/sm6-113
+              // https://api.pokemontcg.io/v2/cards/swsh1-179
+              // https://api.pokemontcg.io/v2/cards/me2pt5-152
+              // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+              // https://github.com/FlareZ123/pokemon-sims/issues/1335
+              const bool payload_already_held =
+                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+              const bool want_payload = need_payload() && !can_jit_discard &&
+                                        !payload_already_held &&
+                                        !has_live_serena_hand_payload_line() &&
+                                        has_payable_payload_outlet_after_costed_search(Card::MysteriousTreasure);
+          """
+          if issue_url not in treasure:
+              if treasure_old not in treasure:
+                  raise SystemExit("Mysterious Treasure selector changed unexpectedly")
+              treasure_path.write_text(
+                  treasure.replace(treasure_old, treasure_new, 1), encoding="utf-8"
+              )
+
+          quick_path = Path("src/trace_engine_v2/part_009b1.inc")
+          quick = quick_path.read_text(encoding="utf-8")
+          quick_old = """    const bool want_payload = need_payload() && might_be_unseen(Card::DialgaGX) && !can_pay_payload_cost &&
+                                      has_payable_payload_outlet_after_costed_search(Card::QuickBall);
+          """
+          quick_new = """    // When a Dragon payload is already held, the surviving hand-discard outlet can
+              // spend that public payload directly. Fetching a second Dialga-GX first consumes
+              // Quick Ball and an extra discard without advancing readiness:
+              // https://api.pokemontcg.io/v2/cards/swsh1-179
+              // https://api.pokemontcg.io/v2/cards/sm6-113
+              // https://api.pokemontcg.io/v2/cards/sm5-100
+              // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+              // https://github.com/FlareZ123/pokemon-sims/issues/1335
+              const bool payload_already_held =
+                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+              const bool want_payload = need_payload() && !payload_already_held &&
+                                        might_be_unseen(Card::DialgaGX) && !can_pay_payload_cost &&
+                                        has_payable_payload_outlet_after_costed_search(Card::QuickBall);
+          """
+          if issue_url not in quick:
+              if quick_old not in quick:
+                  raise SystemExit("Quick Ball selector changed unexpectedly")
+              quick_path.write_text(
+                  quick.replace(quick_old, quick_new, 1), encoding="utf-8"
+              )
+          PY
+
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Release
+        run: cmake --build build --parallel 2
+
+      - name: Run focused regression
+        run: ./build/regidrago_unified_tests issue_1335_quick_ball_held_payload_tests
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Simulate-this pass 1 resource-preserving seed 107
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Issue: https://github.com/FlareZ123/pokemon-sims/issues/1335
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 107 --require-ready-by 3 | tee issue-1335-pass-seed107.txt
+          if grep -q 'T3 | DISCARD | Grass Energy (Quick Ball cost)' issue-1335-pass-seed107.txt; then
+            echo 'Seed 107 still spends the redundant Quick Ball route' >&2
+            exit 1
+          fi
+          if grep -q 'T3 | DISCARD | Grass Energy (Mysterious Treasure cost)' issue-1335-pass-seed107.txt; then
+            echo 'Seed 107 still spends the symmetric redundant Treasure route' >&2
+            exit 1
+          fi
+          grep -q 'T3 | DISCARD | Mega Dragonite ex (Mysterious Treasure cost)' issue-1335-pass-seed107.txt
+          grep -q 'T3 | READY |' issue-1335-pass-seed107.txt
+
+      - name: Simulate-this pass 2 scheduled Item lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Scheduled lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee issue-1335-pass-item-lock.txt
+          grep -q 'T2 | READY |' issue-1335-pass-item-lock.txt
+
+      - name: Simulate-this pass 3 Rule Box Ability lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+          # Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee issue-1335-pass-rulebox-lock.txt
+          grep -Eq 'T2 | T3' issue-1335-pass-rulebox-lock.txt
+          grep -q '| READY |' issue-1335-pass-rulebox-lock.txt
+
+      - name: Generate paired T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out issue-1335-matrix.csv
+
+      - name: Configure sanitizers
+        run: cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON
+
+      - name: Build sanitizers
+        run: cmake --build build-sanitize --parallel 2
+
+      - name: Run sanitizer focused regression
+        run: ./build-sanitize/regidrago_unified_tests issue_1335_quick_ball_held_payload_tests
+
+      - name: Package validation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1335-held-payload-costed-search
+          path: |
+            issue-1335-pass-*.txt
+            issue-1335-matrix.csv
+          if-no-files-found: error
+
+      - name: Commit validated source fix to PR branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build build-sanitize issue-1335-pass-*.txt issue-1335-matrix.csv
+          if git diff --quiet && git diff --cached --quiet; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_009a.inc src/trace_engine_v2/part_009b1.inc
+          git commit -m 'Preserve held payload through costed searches (#1335)'
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

@@ -110,3 +110,62 @@
           "; remaining discarded: " + join_cards(discarded) + ".");
     return true;
   }
+
+  bool retreat_to_benched_regidrago_v_for_celestial_roar_with_latias() {
+    // Keep no-discard-control on its established deterministic continuation policy.
+    // This promotion fixes the JIT route where an attack now is needed to preserve
+    // the earliest setup window; banking profiles may already have their payload:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://github.com/FlareZ123/pokemon-sims/issues/1325
+    if (!strict_payload_timing() || !can_free_retreat_with_latias()) return false;
+
+    std::optional<std::size_t> best_index;
+    int best_score = -1;
+    for (std::size_t index = 0; index < state_.bench.size(); ++index) {
+      const Pokemon& candidate = state_.bench[index];
+      if (candidate.card != Card::RegidragoV) continue;
+
+      // Reuse the exact Celestial Roar policy on a silent state projection. This
+      // keeps every K0/K1, DCI, Energy, payload, and attack-hold gate identical
+      // before Skyliner spends the once-per-turn Retreat action:
+      // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+      // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+      // Core Retreat and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Earliest legal ready-state policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1325
+      Engine projected = *this;
+      projected.trace_ = nullptr;
+      std::swap(*projected.state_.active, projected.state_.bench[index]);
+      if (!projected.use_celestial_roar()) continue;
+
+      const int score = 100 * std::min(2, candidate.grass) +
+                        100 * std::min(1, candidate.fire);
+      if (!best_index.has_value() || score > best_score) {
+        best_index = index;
+        best_score = score;
+      }
+    }
+    if (!best_index.has_value()) return false;
+
+    std::swap(*state_.active, state_.bench[*best_index]);
+    state_.retreat_used = true;
+    trace("RETREAT", "R-LATIAS-01; R-RV-01; R-GAME-RETREAT",
+          "Latias ex gives the Basic Active no Retreat Cost; promoted an energized "
+          "Benched Regidrago V for the live Celestial Roar route.");
+    return true;
+  }
+
+
+  bool use_celestial_roar_after_latias_promotion() {
+    // The final shell attack phase may first use Skyliner to promote an energized
+    // Benched Regidrago V. Retry Powerglass after that Retreat so the Tool attaches
+    // to the actual Active holder before Celestial Roar resolves:
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://api.pokemontcg.io/v2/cards/swsh12-135
+    // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/issues/1325
+    retreat_to_benched_regidrago_v_for_celestial_roar_with_latias();
+    attach_powerglass();
+    return use_celestial_roar();
+  }

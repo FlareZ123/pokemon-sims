@@ -131,7 +131,17 @@
 #define evolve_best_regi evolve_best_regi_issue_1224
 #define use_legacy_star use_legacy_star_issue_1152
 #define choose_supporter choose_supporter_issue_1152
+// Before the final shell attack phase, allow Skyliner to promote an energized
+// Benched Regidrago V only when the existing Celestial Roar policy is live:
+// Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+// Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+// Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+// Core Retreat and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+// Earliest legal ready-state policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+// Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1325
+#define use_celestial_roar use_celestial_roar_after_latias_promotion
 #include "part_014c_latias_bench_override.inc"
+#undef use_celestial_roar
 #undef choose_supporter
 #undef use_legacy_star
 #undef evolve_best_regi

@@ -89,7 +89,7 @@
     // Lele-GX, Wonder Tag, Forest Seal Stone, and Star Alchemy remain unspent on T1:
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
     // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1199

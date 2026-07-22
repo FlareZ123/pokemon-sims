@@ -11,7 +11,7 @@ This pass rechecked the modeled card text against the supplied `pokemon-tcg-data
 | Celestial Roar | Regidrago V `swsh12-135` | Requires one Colorless Energy, processes top three, attaches every Energy among them to itself, and leaves only non-Energy cards in discard. |
 | Apex Dragon and Legacy Star | Regidrago VSTAR `swsh12-136` | GGF ready predicate; Legacy Star uses the shared VSTAR Power and can recover up to two cards from the discard pile after discarding seven. |
 | Vital Dance | Oricorio `sm2-55` | Triggers only when played from hand to Bench during a turn and is not disabled by a Rule Box lock. |
-| Wonder Tag | Tapu Lele-GX `cel25c-60_A` | Triggers only on play from hand to Bench and is disabled by a Rule Box lock. |
+| Wonder Tag | Tapu Lele-GX `sm2-60` | Triggers only on play from hand to Bench and is disabled by a Rule Box lock. |
 | Skyliner | Latias ex `sv8-76` | Applies only to a Basic Active for retreat purposes. |
 | Brilliant Blender | `sv8-164` | Searches deck and discards selected cards. It never discards from hand. |
 | Mysterious Treasure / Quick Ball / Ultra Ball | `sm6-113` / `swsh1-179` / `swsh12pt5-146` | Pay real hand-discard costs, then inspect the deck and search an eligible target. Basic connector searches are held if the Bench is full. |

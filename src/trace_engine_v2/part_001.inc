@@ -137,7 +137,7 @@ constexpr bool is_payload(const Card card) {
 constexpr int retreat_cost(const Card card) {
   // Printed Retreat Costs for the opening-position recovery modeled by the
   // Pineco/Forretress ex route:
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
   // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
   switch (card) {

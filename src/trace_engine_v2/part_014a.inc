@@ -8,7 +8,7 @@
       // projections prove Tapu Lele-GX -> Wonder Tag -> Crispin preserves both
       // paid Items while Earthen Vessel-first exhausts Quick Ball's legal cost:
       // https://api.pokemontcg.io/v2/cards/swsh1-179
-      // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // https://api.pokemontcg.io/v2/cards/sm2-60
       // https://api.pokemontcg.io/v2/cards/sv7-133
       // https://api.pokemontcg.io/v2/cards/sv4-163
       // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities

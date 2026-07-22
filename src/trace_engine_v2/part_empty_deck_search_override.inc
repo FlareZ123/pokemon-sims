@@ -30,7 +30,7 @@
 
     // Playing the Basic Pokemon remains legal. Wonder Tag and Vital Dance each say
     // "you may search", so decline that optional search when the deck is empty:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/sm2-55
     // https://compendium.pokegym.net/category/7-gameplay/searching-deck-or-discard/
     const bool benched = bench_from_hand_empty_deck_original(card, false);
@@ -50,7 +50,7 @@
 
   bool bench_tapu_if_useful() {
     // Wonder Tag cannot supply a Supporter connector from an empty deck:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://compendium.pokegym.net/category/7-gameplay/searching-deck-or-discard/
     return deck_search_available() && bench_tapu_if_useful_empty_deck_original();
   }

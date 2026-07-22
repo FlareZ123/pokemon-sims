@@ -48,7 +48,7 @@
     // use Legacy Star for the strict-JIT payload axis. Wonder Tag is optional,
     // so searching a duplicate Crispin would spend Tapu Lele-GX, its Bench slot,
     // and its one-shot Ability without advancing the shortest observable route:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Regidrago VSTAR and Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
@@ -113,7 +113,7 @@
     // GGF cost. When held evolution, payload, and Active-position resources complete
     // every other current-turn axis, Wonder Tag into Crispin spends Tapu Lele-GX,
     // a Bench slot, and its one-shot Ability without advancing setup:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
@@ -139,7 +139,7 @@
     // This shared connector gate controls both a held Tapu Lele-GX and search Items
     // considering Tapu as their Basic target. Rejecting the redundant route here
     // prevents the needless Wonder Tag and the needless Quick Ball cost/search:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1016
     if (wonder_tag_is_redundant_with_held_crispin_legacy_star_route()) {
@@ -157,7 +157,7 @@
 
     // Wonder Tag into Tate & Liza remains live only when the promoted Benched VSTAR
     // already pays GGF and the held payload Item retains a legal post-search target:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
     // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113

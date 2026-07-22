@@ -92,7 +92,7 @@ void wonder_tag_prefers_the_deterministic_t3_steven_route() {
   // Wonder Tag can bank a Supporter while the first player is prohibited from using
   // it on turn one. Steven then searches VSTAR, Grass Energy, and Latias for T3. The
   // route deliberately contains no Crispin or future-draw dependency:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sm7-145
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://api.pokemontcg.io/v2/cards/sv8-164

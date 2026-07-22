@@ -39,7 +39,7 @@ int main() {
 
   // One Wonder Tag banks Steven. Earthen Vessel and Vital Dance provide
   // the manual attachments, while Steven reserves evolution and Blender:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sm7-145
   // https://api.pokemontcg.io/v2/cards/sv4-163
   // https://api.pokemontcg.io/v2/cards/sm2-55

@@ -72,7 +72,7 @@ void test_ultra_ball_prefers_tapu_over_irrelevant_fallback() {
   }
 
   // Wonder Tag resolves when Tapu Lele-GX is played from hand onto the Bench and
-  // can search the live Crispin Supporter: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // can search the live Crispin Supporter: https://api.pokemontcg.io/v2/cards/sm2-60
   if (!sim::EngineTestAccess::bench_from_hand(engine, sim::Card::TapuLeleGX, true)) {
     throw std::runtime_error("Tapu Lele-GX should have Bench space for Wonder Tag.");
   }
@@ -233,7 +233,7 @@ void test_tapu_is_preserved_when_ultra_ball_directly_finds_vstar() {
   // Ultra Ball directly finds Regidrago VSTAR after two legal costs. Wonder Tag
   // into Arven would spend a Bench slot and the Supporter route for the same axis:
   // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv1-166
   sim::EngineTestAccess::play_basics_from_hand(engine);
   if (!contains(sim::EngineTestAccess::state(engine).hand, sim::Card::TapuLeleGX) ||
@@ -265,7 +265,7 @@ void test_tapu_remains_live_when_ultra_ball_is_unpayable() {
   // Ultra Ball needs two other cards, so this copy is not a direct VSTAR route:
   // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
   // Wonder Tag may therefore remain the live Arven connector:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   sim::EngineTestAccess::play_basics_from_hand(engine);
   if (!benched(sim::EngineTestAccess::state(engine), sim::Card::TapuLeleGX) ||
       !contains(sim::EngineTestAccess::state(engine).hand, sim::Card::Arven)) {
@@ -292,7 +292,7 @@ void test_wonder_tag_preserves_incomplete_tate_promotion() {
 
   // Wonder Tag may search Tate & Liza, but that route spends a Bench slot, the
   // Ability, and the Supporter before promoting a VSTAR that cannot pay GGF:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sm7-148
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   sim::EngineTestAccess::play_basics_from_hand(engine);
@@ -317,7 +317,7 @@ void test_wonder_tag_preserves_incomplete_tate_promotion() {
 
   // Even if another legal route already put Tapu Lele-GX onto the Bench, Wonder Tag
   // is optional and must not fall through to Tate after rejecting the incomplete switch:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sm7-148
   if (!sim::EngineTestAccess::bench_from_hand(forced_engine, sim::Card::TapuLeleGX, true)) {
     throw std::runtime_error("The forced Wonder Tag selector reproduction should Bench Tapu Lele-GX.");
@@ -348,7 +348,7 @@ void test_wonder_tag_fetches_tate_for_complete_promotion() {
 
   // A complete GGF VSTAR makes Wonder Tag into Tate & Liza a direct Active-position
   // connector, so the existing legal route remains available:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sm7-148
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   sim::EngineTestAccess::play_basics_from_hand(engine);

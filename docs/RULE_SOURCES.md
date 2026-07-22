@@ -5,6 +5,7 @@
 Every modeled game mechanic is tied to a direct source URL. Card-specific behavior uses the exact print's JSON record in the Pokémon TCG API, which is also the identifier used by the supplied card-data corpus. Core game procedures use the official Pokémon TCG rules landing page.
 
 - Core procedure reference: https://www.pokemon.com/us/pokemon-tcg/rules
+- Pokémon TCG Live print availability: https://support.pokemon.com/hc/en-us/articles/6489934466708-Pok%C3%A9mon-TCG-Live-Migration-FAQ-from-the-Pok%C3%A9mon-TCG-Online
 - The simulator's direct raw URLs are placed beside the relevant implementation methods as `// Card text source:` or `// Core procedure source:` comments.
 
 The API records are card-text sources. They do not replace official tournament rulings. Where the model uses a policy choice, it is marked `P-*` in traces and described separately in `POLICY_DECISIONS.md`.
@@ -28,7 +29,7 @@ The API records are card-text sources. They do not replace official tournament r
 | Forest of Vitality | https://api.pokemontcg.io/v2/cards/me1-117 |
 | Pineco | https://api.pokemontcg.io/v2/cards/sv4pt5-1 |
 | Forretress ex — Exploding Energy | https://api.pokemontcg.io/v2/cards/sv4pt5-2 |
-| Tapu Lele-GX — Wonder Tag | https://api.pokemontcg.io/v2/cards/cel25c-60_A |
+| Tapu Lele-GX — Wonder Tag | https://api.pokemontcg.io/v2/cards/sm2-60 |
 | Oricorio GRI 55 — Vital Dance | https://api.pokemontcg.io/v2/cards/sm2-55 |
 | Latias ex — Skyliner | https://api.pokemontcg.io/v2/cards/sv8-76 |
 | Erika's Invitation — opponent-dependent effect is deliberately inert in the single-player model | https://api.pokemontcg.io/v2/cards/sv3pt5-160 |

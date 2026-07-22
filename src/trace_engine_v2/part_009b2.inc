@@ -10,7 +10,7 @@
     }
     // A completed Quick Ball search reveals whether the missing Regidrago remains
     // in deck. A proved Prize target makes Tapu Lele-GX -> Gladion a live fallback:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/sm4-95
+    // https://api.pokemontcg.io/v2/cards/sm2-60 https://api.pokemontcg.io/v2/cards/sm4-95
     const bool prized_regi_axis = deck_count_after_search_started(Card::Gladion) > 0 &&
         ((need_regi() && deck_count_after_search_started(Card::RegidragoV) == 0 &&
           prize_count_after_reveal(Card::RegidragoV) > 0) ||
@@ -39,7 +39,7 @@
     const bool want_oricorio = need_energy() && hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
                                 bench_space() > 0 && needs_oricorio_connector();
     // Tapu Lele-GX may turn this Pokémon search into a live Supporter connector
-    // through Wonder Tag when it is Benched from hand: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // through Wonder Tag when it is Benched from hand: https://api.pokemontcg.io/v2/cards/sm2-60
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
                             bench_space() > 0 && needs_tapu_connector();
     // A fetched Dragon payload can immediately become a strict-JIT payload when a

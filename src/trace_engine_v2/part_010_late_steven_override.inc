@@ -110,7 +110,7 @@
     // https://api.pokemontcg.io/v2/cards/sm6-113
     // https://api.pokemontcg.io/v2/cards/me2pt5-152
     // https://api.pokemontcg.io/v2/cards/sv8-76
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/869
     return before_attachment || after_attachment || after_evolution;

@@ -36,7 +36,7 @@ int main() {
   // Supporter action for the known Prize exchange, while the held Crispin remains
   // available for T3. The second T2 Wonder Tag therefore adds no legal route. A
   // later Wonder Tag for a different live Supporter remains permitted:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://api.pokemontcg.io/v2/cards/sm4-95
   // https://www.pokemon.com/us/pokemon-tcg/rules

@@ -163,7 +163,7 @@
     // estimate. The direct current-turn payload completes Apex Dragon's missing axis,
     // while Wonder Tag is only an indirect connector that may become stale at K1:
     // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Appletun sv8-140 is a Dragon Pokémon and modeled Apex Dragon payload, so it
     // belongs in the preferred payload search sequence:
@@ -189,7 +189,7 @@
     }
     // Once this search proves the needed Regidrago is prized, Tapu Lele-GX can be
     // searched and Benched to find Gladion with Wonder Tag in the same turn:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/sm4-95
+    // https://api.pokemontcg.io/v2/cards/sm2-60 https://api.pokemontcg.io/v2/cards/sm4-95
     const bool prized_regi_axis = deck_count_after_search_started(Card::Gladion) > 0 &&
         ((need_regi() && deck_count_after_search_started(Card::RegidragoV) == 0 &&
           prize_count_after_reveal(Card::RegidragoV) > 0) ||

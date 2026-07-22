@@ -38,7 +38,7 @@
     // same Earthen Vessel route. Projecting the exact K1 state without the second
     // Tapu proves that the held copy completes Energy, evolution, payload, and
     // Active-position axes before suppressing the one-shot Bench connector:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
@@ -63,7 +63,7 @@
 
     // The active empty-deck guard must consult the complete-route-aware connector
     // predicate before delegating to the existing physical bench and search checks:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/989

@@ -62,7 +62,7 @@ void test_duplicate_tapu_is_a_direct_exchange_for_each_missing_axis_target() {
   // Tapu Lele-GX copies preserves the other copy's Wonder Tag role, so the direct
   // Item route remains live for every Pokémon axis checked by connector selection:
   // https://api.pokemontcg.io/v2/cards/sm9-152
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // https://github.com/FlareZ123/pokemon-sims/issues/807
   constexpr std::array<sim::Card, 3> targets{
@@ -91,7 +91,7 @@ void test_singleton_tapu_remains_protected() {
   // the only possible exchange Pokémon. The full play planner separately evaluates
   // whether Pokémon Communication itself makes Wonder Tag unnecessary:
   // https://api.pokemontcg.io/v2/cards/sm9-152
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://github.com/FlareZ123/pokemon-sims/issues/807
   constexpr std::array<sim::Card, 3> targets{
       sim::Card::RegidragoVstar, sim::Card::Oricorio, sim::Card::LatiasEx};

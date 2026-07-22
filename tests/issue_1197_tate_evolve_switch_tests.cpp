@@ -80,7 +80,7 @@ void test_exact_evolve_then_switch_order() {
   // must resolve before Tate's random five-card redraw:
   // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Evolution, switching, and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // Earliest direct route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1197

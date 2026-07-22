@@ -65,7 +65,7 @@
     // Wonder Tag then banks the observable future Supporter connector. The route
     // uses held or K1-known cards through T5 and does not depend on a future draw:
     // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
-    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Regidrago V and VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135
@@ -101,7 +101,7 @@
     // Turo returns the Active Pokémon to hand. A Benched Pokémon becomes Active,
     // then replaying Tapu Lele-GX from hand legally triggers Wonder Tag:
     // https://api.pokemontcg.io/v2/cards/sv4-171
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://www.pokemon.com/us/pokemon-tcg/rules
     // https://github.com/FlareZ123/pokemon-sims/issues/1165
     if (!bench_from_hand(Card::TapuLeleGX, true)) {

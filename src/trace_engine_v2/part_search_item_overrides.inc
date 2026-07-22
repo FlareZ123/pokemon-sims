@@ -158,7 +158,7 @@
                                 bench_space() > 0 && needs_oricorio_connector() &&
                                 might_be_unseen(Card::Oricorio);
     // Tapu Lele-GX may turn this Pokémon search into a live Supporter connector
-    // through Wonder Tag when it is Benched from hand: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // through Wonder Tag when it is Benched from hand: https://api.pokemontcg.io/v2/cards/sm2-60
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
                            bench_space() > 0 && needs_tapu_connector() &&
                            might_be_unseen(Card::TapuLeleGX);

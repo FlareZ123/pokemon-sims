@@ -78,7 +78,7 @@ void test_second_held_copy_resolves_wonder_tag() {
 
   // Wonder Tag is an entry Ability of the individual Tapu Lele-GX played from hand.
   // The setup copy does not exhaust a second held copy's Ability:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/issues/746
   expect(sim::EngineTestAccess::needs_tapu_connector(fixture.engine),
@@ -105,7 +105,7 @@ void test_quick_ball_can_find_second_copy() {
   // Quick Ball may search the second physical Basic even when another Tapu is in
   // play, after which that fetched copy may be Benched for its own Wonder Tag:
   // https://api.pokemontcg.io/v2/cards/swsh1-179
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://github.com/FlareZ123/pokemon-sims/issues/746
   expect(sim::EngineTestAccess::play_quick_ball(fixture.engine),
          "Quick Ball must find the second Tapu copy.");
@@ -127,7 +127,7 @@ void test_dead_target_holds_second_copy() {
   sim::EngineTestAccess::set_state(fixture.engine, std::move(state), true);
 
   // Copy-aware eligibility does not create a connector when the inspected deck has
-  // no live Supporter target: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // no live Supporter target: https://api.pokemontcg.io/v2/cards/sm2-60
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // https://github.com/FlareZ123/pokemon-sims/issues/746
   expect(!sim::EngineTestAccess::needs_tapu_connector(fixture.engine),

@@ -62,7 +62,7 @@ void test_approved_opening_setup_benches_redundant_tapu() {
   // already holds three Supporters, Crispin for Energy, Gladion for Prize recovery,
   // Basic Energy, and Mega Dragonite ex for the strict-JIT payload axis:
   // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://api.pokemontcg.io/v2/cards/sm4-95
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
@@ -127,7 +127,7 @@ void test_seed_one_downstream_policy_characterization() {
   // VSTAR-card connector and remains unready through the T4 fixture deadline. Issue
   // #932 owns the distinct opening-selector correction:
   // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://api.pokemontcg.io/v2/cards/sm4-95
   // https://api.pokemontcg.io/v2/cards/swsh12-136

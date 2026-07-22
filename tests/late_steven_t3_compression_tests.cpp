@@ -92,7 +92,7 @@ void exact_route_reaches_turn_three() {
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
   // https://api.pokemontcg.io/v2/cards/sv8-76
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://github.com/FlareZ123/pokemon-sims/issues/869
   if (!sim::EngineTestAccess::compression_route(engine) ||
       !sim::EngineTestAccess::should_play_steven(engine)) {

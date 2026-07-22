@@ -66,7 +66,7 @@ void test_direct_steven_fetches_missing_regidrago() {
 }
 
 void test_wonder_tag_fetches_steven_for_missing_regidrago() {
-  // Wonder Tag can search the deck for a Supporter when Tapu Lele-GX is Benched from hand: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Wonder Tag can search the deck for a Supporter when Tapu Lele-GX is Benched from hand: https://api.pokemontcg.io/v2/cards/sm2-60
   const sim::DeckRecipe recipe = sim::baseline_recipe();
   const sim::Scenario test_scenario = scenario();
   std::mt19937_64 rng{104};

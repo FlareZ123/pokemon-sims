@@ -125,7 +125,7 @@ void test_seed_14_wonder_tag_selects_steven_and_reaches_t4() {
 
   // Wonder Tag must select the complete Steven route, then Vessel must discard the
   // held Dragon after the Active Regidrago V evolves on T4:
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
   // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136

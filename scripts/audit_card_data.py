@@ -15,6 +15,10 @@ import zipfile
 from contextlib import contextmanager
 from typing import Any, Iterator
 
+# Pokémon TCG Live supports Sun & Moon prints while Celebrations Classic Collection
+# remains unavailable for play; use the original Guardians Rising print here:
+# https://support.pokemon.com/hc/en-us/articles/6489934466708-Pok%C3%A9mon-TCG-Live-Migration-FAQ-from-the-Pok%C3%A9mon-TCG-Online
+# https://api.pokemontcg.io/v2/cards/sm2-60
 REQUESTED: dict[str, tuple[str, int]] = {
     "Regidrago V": ("swsh12-135", 4),
     "Regidrago VSTAR": ("swsh12-136", 3),
@@ -22,7 +26,7 @@ REQUESTED: dict[str, tuple[str, int]] = {
     "Mega Dragonite ex": ("me2pt5-152", 2),
     "Dialga-GX": ("sm5-100", 1),
     "Hisuian Goodra VSTAR": ("swsh11-136", 1),
-    "Tapu Lele-GX": ("cel25c-60_A", 2),
+    "Tapu Lele-GX": ("sm2-60", 2),
     "Latias ex": ("sv8-76", 1),
     "Erika's Invitation": ("sv3pt5-160", 1),
     "Oricorio GRI 55": ("sm2-55", 1),

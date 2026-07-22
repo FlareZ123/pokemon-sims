@@ -78,7 +78,7 @@ void test_ultra_ball_preserves_treasure_when_psychic_target_remains() {
   // When the remaining deck has a Psychic target and no Basic Energy, preserve
   // Mysterious Treasure and spend Earthen Vessel as Ultra Ball's second cost:
   // https://api.pokemontcg.io/v2/cards/sm6-113
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
   assert(EngineTestAccess::play_ultra_ball(engine));
   assert(contains(state.hand, Card::MegaDragonite));

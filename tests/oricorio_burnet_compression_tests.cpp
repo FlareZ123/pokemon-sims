@@ -92,7 +92,7 @@ void test_oricorio_takes_last_bench_slot_over_tapu_for_burnet() {
   state.deck = {sim::Card::Crispin, sim::Card::MegaDragonite, sim::Card::Fire, sim::Card::Grass};
 
   // With one Bench slot left, Wonder Tag into Crispin would consume both that slot
-  // and the single Supporter play: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // and the single Supporter play: https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv7-133 https://www.pokemon.com/us/pokemon-tcg/rules
   // Oricorio's Vital Dance can find the final Fire, leaving Professor Burnet to
   // discard the Dragon payload in the same turn: https://api.pokemontcg.io/v2/cards/sm2-55
@@ -192,7 +192,7 @@ void test_tapu_remains_preferred_with_live_quick_ball_payload_outlet() {
   // final Bench slot and the existing shorter complete route remains selected:
   // https://api.pokemontcg.io/v2/cards/swsh1-179
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
@@ -260,7 +260,7 @@ void test_tapu_takes_final_slot_over_redundant_regidrago() {
   sim::EngineTestAccess::set_state(engine, std::move(state));
 
   // Wonder Tag requires Tapu Lele-GX to be played from hand to Bench and may find
-  // Arven for the missing VSTAR axis: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Arven for the missing VSTAR axis: https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv1-166
   sim::EngineTestAccess::play_basics_from_hand(engine);
   const sim::State& after = sim::EngineTestAccess::state(engine);
@@ -306,7 +306,7 @@ void expect_tapu_active_and_oricorio_held(const sim::LockMode lock_mode,
   // Crispin also supplies the current Supporter route, making Oricorio the scarce
   // on-play Energy connector:
   // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sm2-55
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://api.pokemontcg.io/v2/cards/swsh6-148

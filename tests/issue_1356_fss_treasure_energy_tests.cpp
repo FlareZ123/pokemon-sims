@@ -25,6 +25,9 @@ struct EngineTestAccess {
   static bool play_treasure(Engine& engine) {
     return engine.play_mysterious_treasure(false);
   }
+  static bool play_quick_ball(Engine& engine) {
+    return engine.play_quick_ball(false);
+  }
   static const State& state(const Engine& engine) { return engine.state_; }
 };
 }  // namespace sim
@@ -66,8 +69,15 @@ sim::State split_state() {
                 sim::Card::MegaDragonite, sim::Card::Grass,
                 sim::Card::QuickBall, sim::Card::Lusamine};
   state.deck = {sim::Card::RegidragoVstar, sim::Card::Fire,
-                sim::Card::TapuLeleGX, sim::Card::Dragapult};
+                sim::Card::TapuLeleGX, sim::Card::Dragapult,
+                sim::Card::Oricorio};
   return state;
+}
+
+void resolve_star_alchemy_for_fire(sim::State& state) {
+  state.vstar_power_used = true;
+  erase_one(state.deck, sim::Card::Fire);
+  state.hand.push_back(sim::Card::Fire);
 }
 
 sim::Card target_for(sim::State state, const std::uint64_t seed) {
@@ -100,7 +110,8 @@ void test_split_is_symmetric_for_missing_grass() {
                 sim::Card::MegaDragonite, sim::Card::Fire,
                 sim::Card::QuickBall, sim::Card::Lusamine};
   state.deck = {sim::Card::RegidragoVstar, sim::Card::Grass,
-                sim::Card::TapuLeleGX, sim::Card::Dragapult};
+                sim::Card::TapuLeleGX, sim::Card::Dragapult,
+                sim::Card::Oricorio};
 
   // Forest Seal Stone searches any card, so the connector split is symmetric when
   // Grass is the sole next-turn attachment and Fire is the surplus cost:
@@ -111,13 +122,36 @@ void test_split_is_symmetric_for_missing_grass() {
          "Star Alchemy should search the missing next-turn Grass Energy");
 }
 
-void test_resolved_fss_route_spends_surplus_grass() {
+void test_pending_treasure_bridge_holds_quick_ball() {
   sim::State state = split_state();
-  state.vstar_power_used = true;
-  erase_one(state.deck, sim::Card::Fire);
-  state.hand.push_back(sim::Card::Fire);
+  resolve_star_alchemy_for_fire(state);
 
   std::mt19937_64 rng(135606);
+  sim::Engine engine(test_scenario(), test_recipe(), rng);
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Star Alchemy has supplied Fire, and two Treasures plus surplus Grass provide a
+  // payable VSTAR bridge that preserves the second Treasure for Mega Dragonite ex.
+  // Quick Ball into Oricorio cannot improve T3 and must wait for Treasure:
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1356
+  expect(!sim::EngineTestAccess::play_quick_ball(engine),
+         "Quick Ball should hold for the pending Treasure-to-VSTAR bridge");
+  const sim::State& result = sim::EngineTestAccess::state(engine);
+  expect(has(result.hand, sim::Card::QuickBall), "Quick Ball must remain in hand");
+  expect(has(result.deck, sim::Card::Oricorio), "Oricorio must remain in deck");
+}
+
+void test_resolved_fss_route_spends_surplus_grass() {
+  sim::State state = split_state();
+  resolve_star_alchemy_for_fire(state);
+
+  std::mt19937_64 rng(135607);
   sim::Engine engine(test_scenario(), test_recipe(), rng);
   sim::EngineTestAccess::set_state(engine, std::move(state));
 
@@ -135,6 +169,8 @@ void test_resolved_fss_route_spends_surplus_grass() {
          "The post-Star Alchemy split route should be available");
   expect(sim::EngineTestAccess::play_treasure(engine),
          "The proved Treasure split route should resolve");
+  expect(!sim::EngineTestAccess::play_quick_ball(engine),
+         "Quick Ball should still hold after Treasure supplies VSTAR");
   const sim::State& result = sim::EngineTestAccess::state(engine);
   expect(std::count(result.hand.begin(), result.hand.end(), sim::Card::MysteriousTreasure) == 1,
          "One Treasure must survive for the T3 payload");
@@ -143,6 +179,7 @@ void test_resolved_fss_route_spends_surplus_grass() {
   expect(has(result.hand, sim::Card::Fire), "The T3 Fire attachment must survive");
   expect(has(result.hand, sim::Card::MegaDragonite), "The held Dragon payload must survive");
   expect(has(result.hand, sim::Card::QuickBall), "Quick Ball must remain unspent");
+  expect(has(result.deck, sim::Card::Oricorio), "Oricorio must remain in deck");
   expect(has(result.discard, sim::Card::Grass), "The surplus Grass should pay Treasure");
 }
 
@@ -178,7 +215,7 @@ void test_no_surplus_energy_keeps_vstar_priority() {
 void test_missing_energy_target_keeps_vstar_priority() {
   sim::State state = split_state();
   state.deck = {sim::Card::RegidragoVstar, sim::Card::TapuLeleGX,
-                sim::Card::Dragapult};
+                sim::Card::Dragapult, sim::Card::Oricorio};
 
   // Star Alchemy cannot assign itself to an absent Basic Energy, so Forest Seal
   // Stone keeps the original Regidrago VSTAR target:
@@ -194,6 +231,7 @@ void test_missing_energy_target_keeps_vstar_priority() {
 int main() {
   test_treasure_takes_vstar_and_fss_takes_fire();
   test_split_is_symmetric_for_missing_grass();
+  test_pending_treasure_bridge_holds_quick_ball();
   test_resolved_fss_route_spends_surplus_grass();
   test_one_treasure_keeps_vstar_priority();
   test_no_surplus_energy_keeps_vstar_priority();

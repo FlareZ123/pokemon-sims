@@ -1,0 +1,98 @@
+name: Current Main Post 1351 Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+
+      - name: Run complete repository tests
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Simulate-this pass 1 fixed no-discard Steven route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/1351
+          # Wonder Tag, Steven, Blender, Skyliner, and Apex Dragon:
+          # https://api.pokemontcg.io/v2/cards/sm2-60
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/sv8-164
+          # https://api.pokemontcg.io/v2/cards/sv8-76
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 1 --require-ready-by 3 | tee audit-pass-no-discard.txt
+          grep -q "T1 | WONDER TAG |.*Steven's Resolve" audit-pass-no-discard.txt
+          grep -q 'T1 | PLAY ITEM |.*Brilliant Blender' audit-pass-no-discard.txt
+          grep -q 'T2 | PLAY SUPPORTER |.*Regidrago VSTAR, Grass Energy, Latias ex' audit-pass-no-discard.txt
+          grep -q 'T3 | READY |' audit-pass-no-discard.txt
+
+      - name: Simulate-this pass 2 scheduled Item lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Lock scenario contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
+          # Search, attachment, evolution, Retreat, and attack rules: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Regidrago VSTAR and Brilliant Blender:
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://api.pokemontcg.io/v2/cards/sv8-164
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 1 --require-ready-by 2 | tee audit-pass-item-lock.txt
+          grep -q 'Scenario: strict-jit-turn2-item-lock/go-second' audit-pass-item-lock.txt
+          grep -q 'T2 | READY |' audit-pass-item-lock.txt
+
+      - name: Simulate-this pass 3 Rule Box Ability lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+          # Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Regidrago VSTAR and Oricorio:
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://api.pokemontcg.io/v2/cards/sm2-55
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 2 | tee audit-pass-rulebox-lock.txt
+          grep -q 'Scenario: strict-jit-rulebox-ability-lock/go-second' audit-pass-rulebox-lock.txt
+          grep -q 'T2 | READY |' audit-pass-rulebox-lock.txt
+
+      - name: Generate paired T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out current-main-post-1351-matrix.csv
+
+      - name: Static route and source scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Repository decision priorities: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          git grep -n -E 'TODO|FIXME|XXX|BUG|fallback|preflight|preferred|choose_|reserve|discardable|prize|lock|retreat|payload|Forretress|Appletun|Ultra Ball|Evolution Incense|Brilliant Blender|Arven|Burnet|Steven' -- src tests docs scripts CMakeLists.txt README.md > current-main-static-route-scan.txt || true
+          find src tests docs scripts .github/workflows -type f -print | sort > current-main-source-file-list.txt
+          git rev-parse HEAD > current-main-tested-head.txt
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-post-1351-audit
+          path: |
+            audit-pass-*.txt
+            current-main-post-1351-matrix.csv
+            current-main-static-route-scan.txt
+            current-main-source-file-list.txt
+            current-main-tested-head.txt
+            build/Testing
+          if-no-files-found: error

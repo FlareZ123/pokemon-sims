@@ -83,6 +83,7 @@ The requested success predicate treats the following as valid:
 
 - S tier: Dragapult ex, Mega Dragonite ex.
 - A tier: Dialga-GX, Hisuian Goodra VSTAR.
+- Recipe-gated A/S payload: Appletun `sv8-140` when the selected recipe contains it. Appletun is a Stage 1 Dragon whose attacks are available to Apex Dragon while it is in the discard pile; the registered Pineco recipe treats it as discard-only because Applin is absent: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#L13-L22 https://github.com/FlareZ123/pokemon-sims/issues/1320
 
 Dipplin TWM 127 is a Dragon Pokémon and therefore remains a legal Mysterious Treasure target: https://api.pokemontcg.io/v2/cards/sv6-127. Maintainer policy excludes Syrup Catcher from the A/S game-win-condition set. The attack can create a gust-like target, yet it may take no Prize and leaves an opponent able to switch after the effect. The engine therefore excludes Dipplin from `is_payload`, from the readiness predicate, and from all payload-discard routing.
 

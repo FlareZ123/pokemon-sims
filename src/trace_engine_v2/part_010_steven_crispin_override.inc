@@ -149,8 +149,17 @@
   }
 
   bool wonder_tag_can_bank_steven_for_known_t3_blender_route() const {
+    // Strict JIT holds Blender for T3. No-discard-control may legally bank the
+    // payload with Blender on T1, then carry that completed axis into the same
+    // Steven VSTAR, Grass, and Latias continuation:
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // No-discard-control policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Regression: https://github.com/FlareZ123/pokemon-sims/issues/1351
+    const bool supported_payload_profile =
+        scenario_.dci == DciProfile::StrictJit ||
+        scenario_.dci == DciProfile::NoDiscardControl;
     if (state_.turn != 1 || !scenario_.going_first ||
-        scenario_.dci != DciProfile::StrictJit ||
+        !supported_payload_profile ||
         scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
         !deck_seen_ || state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::TapuLeleGX || bench_space() == 0 ||
@@ -193,15 +202,25 @@
   }
 
   bool banked_steven_has_known_t3_blender_route() const {
+    // Strict JIT still needs the held Blender and a deck payload for T3. Under
+    // no-discard-control, Blender may already be spent and the public discard
+    // pile may already satisfy Apex Dragon before Steven resolves on T2:
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // No-discard-control policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Regression: https://github.com/FlareZ123/pokemon-sims/issues/1351
+    const bool strict_payload_route = scenario_.dci == DciProfile::StrictJit &&
+        hand_count(Card::BrilliantBlender) > 0 && need_payload() &&
+        payload_might_be_in_deck();
+    const bool banked_no_control_payload =
+        scenario_.dci == DciProfile::NoDiscardControl && payload_ready();
     if (state_.turn != 2 || !scenario_.going_first ||
-        scenario_.dci != DciProfile::StrictJit ||
+        (!strict_payload_route && !banked_no_control_payload) ||
         scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
         !supporter_allowed() || !deck_seen_ || !state_.active ||
         state_.active->card != Card::TapuLeleGX || state_.retreat_used ||
         bench_space() == 0 || !ability_available_for_pokemon(Card::LatiasEx) ||
         in_play(Card::LatiasEx) || hand_count(Card::StevensResolve) == 0 ||
-        hand_count(Card::BrilliantBlender) == 0 || !need_payload() ||
-        !payload_might_be_in_deck() ||
         deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
         deck_count_after_search_started(Card::LatiasEx) == 0 ||
         deck_count_after_search_started(Card::Grass) == 0) {

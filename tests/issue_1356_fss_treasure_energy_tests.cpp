@@ -1,6 +1,7 @@
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <iostream>
 #include <random>
@@ -14,7 +15,41 @@ struct EngineTestAccess {
     engine.state_ = std::move(state);
     engine.deck_seen_ = true;
   }
-  static Card fss_target(const Engine& engine) {
+
+  static Card diagnosed_fss_target(Engine& engine) {
+    const std::size_t payloads_before = static_cast<std::size_t>(std::count_if(
+        engine.state_.hand.begin(), engine.state_.hand.end(), is_payload));
+    std::mt19937_64 shadow_rng = engine.rng_;
+    Engine projected(engine.scenario_, engine.recipe_, shadow_rng);
+    projected.state_ = engine.state_;
+    projected.deck_seen_ = engine.deck_seen_;
+    projected.prizes_revealed_ = engine.prizes_revealed_;
+    const bool treasure_played = projected.play_mysterious_treasure(false);
+    const std::size_t payloads_after = static_cast<std::size_t>(std::count_if(
+        projected.state_.hand.begin(), projected.state_.hand.end(), is_payload));
+    std::cerr << "split="
+              << engine.fss_should_split_treasure_vstar_and_next_turn_energy()
+              << " strict=" << engine.strict_payload_timing()
+              << " used=" << engine.state_.vstar_power_used
+              << " item_lock=" << engine.item_locked()
+              << " turn=" << engine.state_.turn
+              << " max_turn=" << engine.scenario_.max_turn
+              << " manual_used=" << engine.state_.manual_energy_used
+              << " need_vstar=" << engine.need_vstar()
+              << " need_energy=" << engine.need_energy()
+              << " grass_needed=" << engine.grass_needed()
+              << " fire_needed=" << engine.fire_needed()
+              << " active=" << (engine.state_.active ? name(engine.state_.active->card) : "none")
+              << " entered=" << (engine.state_.active ? engine.state_.active->entered_turn : -1)
+              << " mt_hand=" << engine.hand_count(Card::MysteriousTreasure)
+              << " vstar_deck=" << engine.deck_count_after_search_started(Card::RegidragoVstar)
+              << " fire_deck=" << engine.deck_count_after_search_started(Card::Fire)
+              << " grass_deck=" << engine.deck_count_after_search_started(Card::Grass)
+              << " payloads_before=" << payloads_before
+              << " shadow_played=" << treasure_played
+              << " shadow_vstar_hand=" << projected.hand_count(Card::RegidragoVstar)
+              << " shadow_mt_hand=" << projected.hand_count(Card::MysteriousTreasure)
+              << " payloads_after=" << payloads_after << '\n';
     return engine.fss_target_after_search_started();
   }
 };
@@ -51,13 +86,13 @@ sim::Card target_for(sim::State state, const std::uint64_t seed) {
   std::mt19937_64 rng(seed);
   sim::Engine engine(scenario, test_recipe(), rng);
   sim::EngineTestAccess::set_state(engine, std::move(state));
-  return sim::EngineTestAccess::fss_target(engine);
+  return sim::EngineTestAccess::diagnosed_fss_target(engine);
 }
 
 void test_treasure_takes_vstar_and_fss_takes_fire() {
   // The exact public seed-107 hand retains Quick Ball and Lusamine as legal DCI costs.
   // One Treasure can search Regidrago VSTAR while the second survives to discard the
-  // held Dragon on T3. Star Alchemy should search Fire instead of duplicating VSTAR:
+  // held Dragon on T3. Star Alchemy should therefore search Fire instead of duplicating VSTAR:
   // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
   // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156

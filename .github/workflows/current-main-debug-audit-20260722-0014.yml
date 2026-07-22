@@ -1,0 +1,82 @@
+name: Current Main Debug Audit 20260722 0014
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  current-main-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run repository test suite
+        run: ctest --test-dir build --output-on-failure
+      - name: Simulate-this pass 1 shell strict go-first
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Earliest deterministic ready-state policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Core turn, search, attachment, evolution, Ability, Supporter, Retreat, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 20260721 | tee debug-pass-1.txt
+      - name: Simulate-this pass 2 Pineco strict go-second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Registered Pineco recipe and source identities: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#named-deck-recipes
+          # Forretress ex Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 424242 | tee debug-pass-2.txt
+      - name: Simulate-this pass 3 Pineco Appletun route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Appletun is the registered discard-only Dragon payload: https://api.pokemontcg.io/v2/cards/sv8-140
+          # Evolution Incense searches Evolution Pokemon: https://api.pokemontcg.io/v2/cards/swsh1-163
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 | tee debug-pass-3.txt
+      - name: Simulate-this pass 4 owned Latias issue reproduction
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Existing owned bug, do not duplicate: https://github.com/FlareZ123/pokemon-sims/issues/1325
+          # Skyliner removes Basic Pokemon Retreat Cost: https://api.pokemontcg.io/v2/cards/sv8-76
+          # Celestial Roar attack text: https://api.pokemontcg.io/v2/cards/swsh12-135
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 208 | tee debug-pass-4.txt
+      - name: Scan source for route omissions and audit markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo '=== TODO/FIXME/BUG markers ==='
+            grep -RInE 'TODO|FIXME|XXX|BUG' src tests docs scripts CMakeLists.txt README.md || true
+            echo '=== Search, selector, lock, Prize, DCI, and fallback logic ==='
+            grep -RInE 'fallback|preflight|has_live|preferred|search.*target|target.*search|selector|choose_|reserve|discardable|prize|lock|retreat|attack' src/trace_engine_v2 | head -n 12000 || true
+            echo '=== Payload and Appletun route enumerations ==='
+            grep -RInE 'Appletun|payload|Payload|Dragon.*discard|discard.*Dragon|EvolutionIncense|evolution_incense' src tests docs scripts CMakeLists.txt README.md | head -n 12000 || true
+          } > static-audit.txt
+      - name: Generate paired setup matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Matrix contract and all 16 conditions: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out current-run-matrix.csv
+      - name: Record tested source
+        run: git rev-parse HEAD > tested-head.txt
+      - name: Upload traces, matrix, and static scan
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-debug-audit-20260722-0014
+          path: |
+            debug-pass-*.txt
+            static-audit.txt
+            current-run-matrix.csv
+            tested-head.txt
+          if-no-files-found: error

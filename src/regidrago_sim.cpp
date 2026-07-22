@@ -193,7 +193,9 @@
 #include "trace_engine_v2/part_011_fss_latias_override.inc"
 #undef use_fss
 #undef use_celestial_roar
+#define use_celestial_roar use_celestial_roar_issue1369_original
 #include "trace_engine_v2/part_celestial_roar_override.inc"
+#undef use_celestial_roar
 #include "trace_engine_v2/part_legacy_star_projection_provenance_override.inc"
 #define remove_one remove_one_legacy_star_projection
 #define pokemon_communication_plan pokemon_communication_plan_legacy_star_projection
@@ -286,6 +288,7 @@
 #undef play_quick_ball
 #include "trace_engine_v2/part_issue_1235_oricorio_treasure_tapu_override.inc"
 #include "trace_engine_v2/part_issue_1118_secret_box.inc"
+#include "trace_engine_v2/part_issue_1369_celestial_roar_secret_box_override.inc"
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #include "trace_engine_v2/part_014c.inc"

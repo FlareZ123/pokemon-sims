@@ -1,0 +1,107 @@
+name: Current Main Debug Audit 2026-07-22
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Release
+        run: cmake --build build --parallel 2
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Static policy and defect scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          git grep -nE 'TODO|FIXME|XXX|HACK' -- src tests docs > audit-markers.txt || true
+          git grep -nE 'return false;|return true;' -- src/trace_engine_v2 > audit-boolean-routes.txt
+          git grep -n 'https://' -- src/trace_engine_v2 tests > audit-source-urls.txt
+
+      - name: Simulate-this pass 1 Latias Celestial Roar route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Latias ex Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+          # Regidrago V Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+          # Regidrago VSTAR Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Core retreat and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Merged specification: https://github.com/FlareZ123/pokemon-sims/issues/1325
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 208 --require-ready-by 2 | tee audit-trace-1.txt
+          grep -q 'T1 | SKYLINER |' audit-trace-1.txt
+          grep -q 'T1 | ATTACK |.*Celestial Roar' audit-trace-1.txt
+          grep -q 'T2 | READY |' audit-trace-1.txt
+
+      - name: Simulate-this pass 2 deterministic strict-JIT route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Strict-JIT definition: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          # Decision priorities: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 20260721 --require-ready-by 4 | tee audit-trace-2.txt
+          grep -q 'T4 | READY |' audit-trace-2.txt
+
+      - name: Simulate-this pass 3 Rule Box Ability lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Rule Box Ability lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+          # Oricorio Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Core Ability and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee audit-trace-3.txt
+          ! grep -q 'WONDER TAG' audit-trace-3.txt
+          ! grep -q 'SKYLINER' audit-trace-3.txt
+          ! grep -q 'LEGACY STAR' audit-trace-3.txt
+          grep -Eq 'T[23] \| READY \|' audit-trace-3.txt
+
+      - name: Generate paired T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out audit-t2-t3-matrix.csv
+
+      - name: Configure ASan and UBSan
+        run: >-
+          cmake -S . -B build-sanitizers -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+
+      - name: Build sanitizer targets
+        run: cmake --build build-sanitizers --parallel 2
+
+      - name: Run complete sanitizer suite
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: ctest --test-dir build-sanitizers --parallel 2 --output-on-failure
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-debug-audit-20260722
+          path: |
+            audit-trace-*.txt
+            audit-t2-t3-matrix.csv
+            audit-markers.txt
+            audit-boolean-routes.txt
+            audit-source-urls.txt
+            build/Testing
+            build-sanitizers/Testing
+          if-no-files-found: warn

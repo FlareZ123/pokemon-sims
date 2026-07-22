@@ -366,8 +366,14 @@
     // Mega Dragonite ex https://api.pokemontcg.io/v2/cards/me2pt5-152
     // Dragapult ex https://api.pokemontcg.io/v2/cards/sv6-130
     // Hisuian Goodra VSTAR https://api.pokemontcg.io/v2/cards/swsh11-136
+    // Appletun is a Stage 1 Evolution Pokémon and modeled Apex Dragon payload:
+    // https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://api.pokemontcg.io/v2/cards/sv8-140
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/issues/1255
     if (!found && want_payload) {
-      for (const Card payload : {Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar}) {
+      for (const Card payload : {Card::MegaDragonite, Card::Dragapult,
+                                 Card::GoodraVstar, Card::Appletun}) {
         if (move_deck_to_hand(payload)) {
           found = true;
           found_card = payload;
@@ -384,8 +390,16 @@
     // Hisuian Goodra VSTAR https://api.pokemontcg.io/v2/cards/swsh11-136
     // Dipplin https://api.pokemontcg.io/v2/cards/sv6-127
     if (!found) {
+      // Evolution Incense searches every modeled Evolution Pokémon, including
+      // Appletun and Forretress ex:
+      // https://api.pokemontcg.io/v2/cards/swsh1-163
+      // https://api.pokemontcg.io/v2/cards/sv8-140
+      // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+      // https://github.com/FlareZ123/pokemon-sims/issues/1255
       for (const Card fallback : {Card::RegidragoVstar, Card::MegaDragonite,
-                                  Card::Dragapult, Card::GoodraVstar, Card::Dipplin}) {
+                                  Card::Dragapult, Card::GoodraVstar,
+                                  Card::Appletun, Card::Dipplin,
+                                  Card::ForretressEx}) {
         if (move_deck_to_hand(fallback)) {
           found = true;
           found_card = fallback;

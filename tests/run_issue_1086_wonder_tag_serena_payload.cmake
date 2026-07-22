@@ -41,7 +41,7 @@ endfunction()
 # Wonder Tag searches any Supporter. Fire in hand and the unused manual attachment
 # already complete GGF, while Serena may discard a held Dragon payload. Serena is the
 # deterministic current-turn completion route and preserves Legacy Star:
-# Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+# Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
 # Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
 # Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
 # Regidrago VSTAR and Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136

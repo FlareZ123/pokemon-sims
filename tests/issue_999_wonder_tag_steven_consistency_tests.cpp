@@ -60,7 +60,7 @@ void test_wonder_tag_admission_survives_later_item_state_change() {
   // Wonder Tag selected Steven before Quick Ball established the Basic. The newly
   // Benched Regidrago V cannot evolve during that same turn, while Steven legally
   // searches up to three cards and ends the turn:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/swsh1-179
   // https://api.pokemontcg.io/v2/cards/sm7-145
   // https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -122,7 +122,7 @@ void test_seed_17_plays_the_searched_steven() {
 
   // Exact confirmed reproduction:
   // https://github.com/FlareZ123/pokemon-sims/issues/999
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sm7-145
   expect(outcome.used_steven,
          "Seed 17 must play the Steven searched by Wonder Tag on turn one.");

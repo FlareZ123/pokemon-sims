@@ -137,7 +137,7 @@ void test_seed_43_treasure_tapu_route_supersedes_star_alchemy() {
   // Mysterious Treasure to discard Dragapult ex and search Tapu Lele-GX. Wonder Tag
   // obtains Crispin, reaching readiness on T2 while preserving the VSTAR Power:
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
   // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
   // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules

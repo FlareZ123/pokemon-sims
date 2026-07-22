@@ -93,7 +93,7 @@ void test_t1_quick_ball_selects_oricorio_after_inspection() {
   // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
   // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
   // Official Item, Ability, Supporter, Bench, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1235

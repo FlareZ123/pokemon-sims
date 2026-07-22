@@ -11,7 +11,7 @@
 // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
 // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
 // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
-// Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+// Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
 // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
 // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
 // Erika's Invitation: https://api.pokemontcg.io/v2/cards/sv3pt5-160
@@ -92,7 +92,7 @@
 #undef play_heavy_ball
 // Wonder Tag is copy-specific. Preserve all existing selector controls while an
 // in-play Tapu no longer suppresses a second physical copy:
-// https://api.pokemontcg.io/v2/cards/cel25c-60_A
+// https://api.pokemontcg.io/v2/cards/sm2-60
 // https://github.com/FlareZ123/pokemon-sims/issues/746
 #define in_play tapu_connector_copy_aware_in_play
 #include "trace_engine_v2/part_009a.inc"

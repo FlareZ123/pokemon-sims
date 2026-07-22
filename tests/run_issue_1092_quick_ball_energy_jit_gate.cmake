@@ -61,7 +61,7 @@ endif()
 # Tapu Lele-GX advances setup through Wonder Tag into Crispin. That live Basic route
 # reaches GG on T2 and preserves the established T3 Blender finish:
 # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-# Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+# Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
 # Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
 # Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
 # Refined bug boundary: https://github.com/FlareZ123/pokemon-sims/issues/1092

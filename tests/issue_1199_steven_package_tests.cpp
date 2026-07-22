@@ -187,7 +187,7 @@ void test_seed_341_uses_steven_before_one_shot_connectors() {
   // Quick Ball, Wonder Tag, Star Alchemy, and Celestial Roar line must be absent:
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
   // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
   // Earlier complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities

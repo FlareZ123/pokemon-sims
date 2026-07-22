@@ -5,7 +5,7 @@
     // Bench. Ignore species-level board presence only when another physical copy is
     // proven in hand or in an inspected deck. K0 uncertainty alone must not displace
     // a stronger deterministic route such as Team Yell's Cheer into Latias ex:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://www.pokemon.com/us/pokemon-tcg/rules
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities

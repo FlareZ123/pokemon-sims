@@ -61,7 +61,7 @@ void test_seed_136_direct_route_emits_no_tapu_hold() {
 
   // The stronger preflight keeps the first Tapu Lele-GX in hand, so the older
   // unchanged-state hold for a searched second copy is no longer reached:
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Prior trace contract: https://github.com/FlareZ123/pokemon-sims/issues/1004
   // Superseding route fix: https://github.com/FlareZ123/pokemon-sims/issues/1016
@@ -77,7 +77,7 @@ void test_seed_143_arven_route_emits_once() {
 
   // Tapu Lele-GX and Arven remain unused when held Burnet, VSTAR, and Energy
   // already complete the route:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv1-166
   // https://github.com/FlareZ123/pokemon-sims/issues/1004
   expect(detail_count(trace, kArvenDetail) == 1U,

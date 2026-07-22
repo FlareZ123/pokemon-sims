@@ -23,7 +23,7 @@ The raw audit is generated locally at `data/card_audit.json` and is intentionall
 | Mega Dragonite ex | `me2pt5-152` | 2 | Stage 2 Dragon Mega ex, Ryuno Glide 330 |
 | Dialga-GX | `sm5-100` | 1 | Dragon Basic GX, Timeless-GX |
 | Hisuian Goodra VSTAR | `swsh11-136` | 1 | Dragon VSTAR, Rolling Iron |
-| Tapu Lele-GX | `cel25c-60_A` | 2 | Basic Psychic GX, Wonder Tag |
+| Tapu Lele-GX | `sm2-60` | 2 | Basic Psychic GX, Wonder Tag |
 | Latias ex | `sv8-76` | 1 | Basic Psychic ex, Skyliner |
 | Oricorio GRI 55 | `sm2-55` | 1 | Basic Psychic, Vital Dance |
 | Dipplin TWM 127 | `sv6-127` | 1 | Stage 1 Dragon, Syrup Catcher |

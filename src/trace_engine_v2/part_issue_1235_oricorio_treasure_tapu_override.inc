@@ -38,7 +38,7 @@
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -116,7 +116,7 @@
     // Mysterious Treasure may pay the current-turn Dragon payload because the
     // searched Tapu Lele-GX obtains Crispin, which deterministically completes GGF:
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official Item, Ability, Supporter, attachment, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
@@ -160,7 +160,7 @@
 
     // Preserve the Supporter play for Treasure -> Tapu Lele-GX -> Crispin:
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official Supporter, Item, Ability, attachment, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules

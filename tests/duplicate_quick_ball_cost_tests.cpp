@@ -83,7 +83,7 @@ void test_duplicate_tapu_is_fallback_quick_ball_cost() {
   // Quick Ball permits any other hand card as its cost. Discarding one of two
   // Tapu Lele-GX preserves the identical future Wonder Tag connector:
   // https://api.pokemontcg.io/v2/cards/swsh1-179
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
   // https://github.com/FlareZ123/pokemon-sims/issues/711
   expect(sim::EngineTestAccess::play_quick_ball(engine, false),
@@ -117,7 +117,7 @@ void test_singleton_tapu_remains_protected() {
 
   // Wonder Tag is available only when Tapu Lele-GX is played from hand to the
   // Bench, so strict DCI must retain the sole copy when no other cost exists:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
   // https://github.com/FlareZ123/pokemon-sims/issues/711
   expect(!sim::EngineTestAccess::play_quick_ball(engine, false),
@@ -149,7 +149,7 @@ void test_duplicate_quick_ball_stays_ahead_of_duplicate_tapu() {
   // Existing duplicate search Items remain lower-DCI fuel than a redundant
   // Wonder Tag connector, so the second Quick Ball must pay first:
   // https://api.pokemontcg.io/v2/cards/swsh1-179
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://github.com/FlareZ123/pokemon-sims/issues/711
   expect(sim::EngineTestAccess::play_quick_ball(engine, false),
          "Quick Ball should remain payable through its duplicate");

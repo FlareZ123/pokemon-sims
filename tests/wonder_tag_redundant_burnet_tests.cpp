@@ -68,7 +68,7 @@ void test_held_serena_payload_makes_burnet_target_redundant() {
   // Wonder Tag costs the Tapu Lele-GX Bench slot and searches a Supporter.
   // Serena can already discard Mega Dragonite ex, so Professor Burnet does not
   // advance the current-turn Apex Dragon payload axis:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/swsh12-164
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
   // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
@@ -100,7 +100,7 @@ void test_held_one_discard_item_makes_burnet_target_redundant() {
     // Each Item can discard the held Mega Dragonite ex and has a known legal search
     // target. Wonder Tag into Burnet would spend a Bench slot and Supporter connector
     // without advancing another setup axis:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // https://api.pokemontcg.io/v2/cards/sm6-113
     // https://api.pokemontcg.io/v2/cards/swsh1-179
@@ -127,7 +127,7 @@ void test_payable_ultra_ball_makes_burnet_target_redundant() {
   // Its exact two-other-card cost therefore makes the indirect Burnet target redundant:
   // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://github.com/FlareZ123/pokemon-sims/issues/942
   if (sim::EngineTestAccess::original_wonder_tag_route_has_live_target(engine)) {
     throw std::runtime_error("Wonder Tag ignored a payable Ultra Ball payload route.");
@@ -164,7 +164,7 @@ void test_burnet_remains_live_when_no_payload_is_held() {
 
   // When no Dragon payload is held, Professor Burnet remains the direct
   // deck-to-discard bridge available through Wonder Tag:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   if (!sim::EngineTestAccess::original_wonder_tag_route_has_live_target(engine)) {
     throw std::runtime_error("The missing-payload control should keep Burnet live.");

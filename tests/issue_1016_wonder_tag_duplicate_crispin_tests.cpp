@@ -70,7 +70,7 @@ void test_held_crispin_legacy_star_route_suppresses_tapu_connector() {
   // Held Crispin can attach one needed Basic Energy and put the other into hand
   // for the unused manual attachment. The prior-turn Active Regidrago V can then
   // evolve and use Legacy Star, so optional Wonder Tag adds no setup axis:
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
@@ -130,7 +130,7 @@ void test_full_trace_skips_first_wonder_tag_and_quick_ball() {
 
   // The confirmed seed must take the direct held Crispin, manual attachment,
   // evolution, and Legacy Star route without spending either optional connector:
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136

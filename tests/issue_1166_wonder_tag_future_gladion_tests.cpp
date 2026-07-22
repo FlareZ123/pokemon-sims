@@ -74,7 +74,7 @@ void test_banks_gladion_over_redundant_crispin() {
 
   // GG is already attached and Fire is held for T4, so Crispin has no marginal
   // setup value. Wonder Tag banks Gladion for the known prized Treasure continuation:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://api.pokemontcg.io/v2/cards/sm4-95
   // https://api.pokemontcg.io/v2/cards/sm6-113

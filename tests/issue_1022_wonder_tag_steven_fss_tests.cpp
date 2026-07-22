@@ -65,7 +65,7 @@ void test_exact_k1_route_selects_steven() {
 
   // Steven reserves the missing Regidrago V, Crispin, and Grass package. Held Arven
   // later finds Forest Seal Stone, which supplies Star Alchemy for the VSTAR axis:
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
   // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
@@ -114,7 +114,7 @@ void test_active_path_rejects_wonder_tag_projection() {
   // Forest Seal Stone remains usable through Path because Star Alchemy is an Ability
   // the Pokémon V can use rather than an Ability that Pokémon has:
   // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
   // TPCi Rules Team ruling: https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1195
@@ -135,7 +135,7 @@ void test_removed_path_admits_projection_and_banked_continuation() {
   // Stone route is legal because Star Alchemy is usable even through Path itself:
   // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
   // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Forest Seal Stone ruling: https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1195
   expect(sim::EngineTestAccess::t4_route(engine),
@@ -225,7 +225,7 @@ void test_seed_293_reaches_turn_four() {
   // Oricorio's future Retreat Cost, Steven establishes the Basic package, and T4
   // Arven plus Forest Seal Stone reaches the VSTAR before a current-turn Item cost
   // discards the Dragon payload:
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
   // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
   // Arven: https://api.pokemontcg.io/v2/cards/sv1-166

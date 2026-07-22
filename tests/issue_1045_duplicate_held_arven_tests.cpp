@@ -152,7 +152,7 @@ void test_exact_k1_route_holds_second_tapu() {
   // Earthen Vessel supplies the final Grass for the unused manual attachment, while
   // the Tool route completes the observable Active-position axis. A second Arven
   // cannot be played in the same turn and remains unused after readiness:
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
   // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
   // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
@@ -216,7 +216,7 @@ void test_missing_held_arven_never_suppresses_wonder_tag() {
   sim::Engine engine = make_engine(*scenario, recipe, rng, nullptr, std::move(state));
 
   // Wonder Tag remains a legal Supporter connector when no Arven is already held:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv1-166
   // https://github.com/FlareZ123/pokemon-sims/issues/1045
   expect(!sim::EngineTestAccess::duplicate_arven_is_redundant(engine),

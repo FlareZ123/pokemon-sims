@@ -13,7 +13,7 @@ void test_vessel_stays_first_when_tapu_is_unavailable() {
 
   // Quick Ball cannot prefer a connector that the inspected deck does not contain:
   // https://api.pokemontcg.io/v2/cards/swsh1-179
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#knowledge-states
   // https://github.com/FlareZ123/pokemon-sims/issues/962
   if (!sim::EngineTestAccess::run_search_step(engine, true)) {
@@ -34,7 +34,7 @@ void test_vessel_stays_first_when_crispin_is_unavailable() {
   sim::EngineTestAccess::set_state(engine, std::move(state));
 
   // Wonder Tag cannot justify the connector when the inspected deck contains no
-  // Crispin target: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // Crispin target: https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // https://github.com/FlareZ123/pokemon-sims/issues/962
@@ -58,7 +58,7 @@ void test_vessel_stays_first_when_bench_is_full() {
   sim::EngineTestAccess::set_state(engine, std::move(state));
 
   // Tapu Lele-GX must be played to an open Bench before Wonder Tag can resolve:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/issues/962
   if (!sim::EngineTestAccess::run_search_step(engine, true)) {

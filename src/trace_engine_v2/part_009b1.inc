@@ -195,7 +195,7 @@
     // A payload-only Quick Ball line advances no searched Basic axis. Preserve the
     // Item and Dragon unless GGF can finish now. A live searched Basic keeps the
     // existing route legal, including Tapu Lele-GX into Wonder Tag into Crispin:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Refined confirmed bug and controls: https://github.com/FlareZ123/pokemon-sims/issues/1092

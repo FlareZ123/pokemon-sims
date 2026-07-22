@@ -64,7 +64,7 @@ void test_redundant_payload_precedes_only_turo_connector() {
   // Active-position connector in this exact state:
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/sv4-171
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv6-130
   // https://api.pokemontcg.io/v2/cards/sm5-100
   // https://api.pokemontcg.io/v2/cards/swsh12-136

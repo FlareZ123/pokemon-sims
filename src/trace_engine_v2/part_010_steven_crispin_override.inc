@@ -17,7 +17,7 @@
     // lock state is cleared. Star Alchemy remains usable through Path itself:
     // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
     // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Forest Seal Stone ruling: https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1195
     if (state_.turn != 1 || !scenario_.going_first ||
@@ -42,7 +42,7 @@
     // Cost, Crispin plus the searched Grass establish GG on T3, and held Arven finds
     // Forest Seal Stone on T4 so Star Alchemy can supply the known VSTAR before
     // Brilliant Blender creates the strict-JIT payload:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
@@ -134,7 +134,7 @@
     // public state proves a payable Mysterious Treasure route to Regidrago VSTAR and
     // Crispin can power the Active Regidrago V while the manual attachment remains.
     // Steven would end the turn and delay the repository's earliest-ready objective:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/sm6-113
     // https://api.pokemontcg.io/v2/cards/sv7-133
     // https://api.pokemontcg.io/v2/cards/swsh12-135
@@ -181,7 +181,7 @@
     // attachments. Steven then takes Regidrago VSTAR, the third Grass Energy, and
     // Latias ex. Held Brilliant Blender supplies the T3 payload, and Skyliner
     // promotes the Benched attacker without consuming the T3 Supporter play:
-    // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // https://api.pokemontcg.io/v2/cards/sm2-60
     // https://api.pokemontcg.io/v2/cards/sm7-145
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/sv8-164
@@ -430,7 +430,7 @@
 if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
   // Prefer the complete Steven package over Crispin, which powers the
   // Basic but leaves both Evolution and strict-JIT payload unresolved:
-  // https://api.pokemontcg.io/v2/cards/cel25c-60_A
+  // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sm7-145
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://github.com/FlareZ123/pokemon-sims/issues/1049
@@ -442,7 +442,7 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
       // though that Supporter cannot be played until T2. Select the complete Steven
       // package instead of Crispin, whose Energy effect is unusable while the Basic
       // Regidrago axis remains unresolved:
-      // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
       // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
       // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
       // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1022
@@ -454,7 +454,7 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
       // Wonder Tag searches a Supporter after legal deck inspection. Prefer Steven's
       // complete next-turn VSTAR-Vessel route over a Burnet target that cannot repair
       // the unresolved Evolution axis:
-      // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+      // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
       // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
       // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
       // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1017
@@ -604,7 +604,7 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
     // turn that cannot produce a ready Regidrago VSTAR because a newly played Basic
     // cannot evolve that turn. Preserve that admission unless the proven #774 faster
     // current route is now live or every setup axis is already complete:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/cel25c-60_A
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Regidrago VSTAR evolution: https://api.pokemontcg.io/v2/cards/swsh12-136

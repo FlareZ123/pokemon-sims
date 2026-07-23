@@ -366,13 +366,17 @@
       if (card == Card::Grass) return 7;
 
       // With VSTAR already held, the Box's independent Item category can take
-      // Quick Ball to discard the Dawn-supplied Dragon. A held Treasure is then
-      // a replaceable cost rather than an irreplaceable connector.
+      // Quick Ball to discard the Dawn-supplied Dragon. The held Treasure is
+      // replaceable, though it remains more valuable than an Earthen Vessel
+      // whose Fire axis is already covered by the same proven combo:
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://github.com/FlareZ123/pokemon-sims/issues/1389
       if (card == Card::MysteriousTreasure &&
           (has_vstar() || hand_count(Card::RegidragoVstar) > 0) &&
           (hand_count(Card::QuickBall) > 0 || might_be_unseen(Card::QuickBall)) &&
           (payload_without_dawn || hand_count(Card::Dawn) > 0 ||
-           might_be_unseen(Card::Dawn))) return 7;
+           might_be_unseen(Card::Dawn))) return 8;
     }
 
     // In the no-discard-control profile, a complete shadow-proven Secret Box

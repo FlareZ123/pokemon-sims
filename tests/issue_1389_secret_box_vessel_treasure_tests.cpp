@@ -178,19 +178,23 @@ void test_seed_35_trace_preserves_the_original_treasure() {
                        });
   };
 
-  // The source-bound trace must spend Vessel, bank Quick Ball, then use the
-  // original Treasure as the strict-JIT payload outlet:
-  // https://api.pokemontcg.io/v2/cards/sv6-163
+  // Issue #1420 found a same-deadline route that preserves the entire Secret
+  // Box package. The original #1389 exact-state tests above still constrain Box
+  // cost ordering whenever Box is used; this full trace now requires the stronger
+  // Steven -> Crispin -> Treasure route and the same strict-JIT T2 result:
+  // https://api.pokemontcg.io/v2/cards/sm7-145
+  // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://api.pokemontcg.io/v2/cards/sm6-113
-  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://api.pokemontcg.io/v2/cards/sv6-130
   // https://github.com/FlareZ123/pokemon-sims/issues/1389
-  if (!has_line("Earthen Vessel (Secret Box cost)") ||
-      !has_line(
-          "Secret Box discarded three other cards and searched: Quick Ball, Dawn") ||
+  // https://github.com/FlareZ123/pokemon-sims/issues/1420
+  if (!has_line("banked Crispin and Dragapult ex") ||
+      has_line("Earthen Vessel (Secret Box cost)") ||
+      has_line("T2 | EXPLODING ENERGY") ||
       !has_line("Dragapult ex (Mysterious Treasure cost)") ||
       !has_line("T2 | READY")) {
     throw std::runtime_error(
-        "Seed 35 lost the corrected resource-preserving trace.");
+        "Seed 35 lost the stronger resource-preserving trace.");
   }
 }
 

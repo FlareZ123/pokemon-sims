@@ -54,6 +54,10 @@ class Engine {
   // K0: no deck/Prize inspection. K1: a legal inspection established Prize knowledge.
   bool deck_seen_{false};
   bool prizes_revealed_{false};
+  // Set only after Steven's legal K1 search proves every next-turn axis for
+  // issue #1420's direct Crispin plus Mysterious Treasure continuation:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1420
+  bool issue_1420_direct_t2_treasure_route_{false};
 
   static int count_of(const std::vector<Card>& zone, const Card card) {
     return static_cast<int>(std::count(zone.begin(), zone.end(), card));

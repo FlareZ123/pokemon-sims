@@ -784,6 +784,52 @@
     const auto take = [this, &selected](const Card card) {
       if (selected.size() < 3 && move_deck_to_hand(card)) selected.push_back(card);
     };
+
+    const bool next_turn_item_locked =
+        scenario_.locks == LockMode::FullItem ||
+        scenario_.locks == LockMode::FullCombined ||
+        (scenario_.locks == LockMode::TurnTwoItem && state_.turn == 1);
+    const int treasure_targets = static_cast<int>(std::count_if(
+        state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic));
+    // Steven may search up to three cards and end the turn. In this complete K1
+    // route, Crispin plus the held manual attachment completes GGF, while the
+    // held Mysterious Treasure discards Steven's Dragapult ex and still has a
+    // legal Psychic or Dragon target. Preserve the ACE SPEC and Forretress line
+    // because both routes reach T2 and the direct route spends fewer resources:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1420
+    const bool direct_t2_treasure_route =
+        deck_seen_ && scenario_.dci == DciProfile::StrictJit &&
+        state_.turn == 1 && !scenario_.going_first &&
+        !next_turn_item_locked && state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->grass == 1 && state_.active->fire == 0 &&
+        hand_count(Card::MysteriousTreasure) > 0 &&
+        hand_count(Card::RegidragoVstar) > 0 &&
+        hand_count(Card::Fire) > 0 &&
+        deck_count_after_search_started(Card::Crispin) > 0 &&
+        deck_count_after_search_started(Card::Dragapult) > 0 &&
+        deck_count_after_search_started(Card::Grass) > 0 &&
+        deck_count_after_search_started(Card::Fire) > 0 &&
+        treasure_targets >= 2;
+    if (direct_t2_treasure_route) {
+      take(Card::Crispin);
+      take(Card::Dragapult);
+      issue_1420_direct_t2_treasure_route_ = true;
+      shuffle(state_.deck);
+      trace("PLAY SUPPORTER", "R-STEVEN-01; R-MT-01; R-CRISPIN-01; P-AXIS-01",
+            "Steven's Resolve banked Crispin and Dragapult ex for the "
+            "resource-preserving direct T2 Mysterious Treasure route; the "
+            "turn ended.");
+      return true;
+    }
+
     if (hand_count(Card::SecretBox) == 0) take(Card::SecretBox);
 
     // Search low-DCI physical costs first, then missing next-turn axes.
@@ -998,6 +1044,34 @@
       use_celestial_roar();
       trace("POLICY", "P-AXIS-01; R-SECRET-BOX-01",
             "End Pineco policy: " + state_line());
+      return;
+    }
+
+    if (issue_1420_direct_t2_treasure_route_) {
+      // Steven already proved this complete K1 continuation on T1. Resolve only
+      // the four actions that establish strict-JIT readiness, preserving Pineco,
+      // Forretress ex, Secret Box, the spare Regidrago V, and Bench capacity:
+      // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Core Energy, Supporter, Item, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1420
+      if (state_.turn != 2 || item_locked() || !play_crispin()) {
+        throw std::logic_error(
+            "Issue 1420 direct route diverged before Crispin");
+      }
+      attach_manual();
+      evolve_best_regi();
+      if (!active_is_vstar() || need_energy() ||
+          !play_mysterious_treasure(true)) {
+        throw std::logic_error(
+            "Issue 1420 direct route diverged before Treasure completion");
+      }
+      trace("POLICY", "R-STEVEN-01; R-CRISPIN-01; R-MT-01; P-AXIS-01",
+            "Completed the resource-preserving direct T2 Mysterious Treasure "
+            "route without advancing the Pineco line: " + state_line());
       return;
     }
 

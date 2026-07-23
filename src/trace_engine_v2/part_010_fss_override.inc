@@ -210,7 +210,6 @@
       return false;
     }
 
-    const Pokemon* regi = target_regi();
     // Star Alchemy takes one Grass while held Crispin takes a second Grass and Fire.
     // The manual attachment supplies the other Grass, Quick Ball searches Latias ex,
     // and Latias replaces Tate & Liza's switch role. Fire, evolution, and Professor
@@ -223,12 +222,10 @@
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // DCI and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1403
     // The generic missing-axis predicates project held connectors and therefore
     // read false in this unevolved two-turn state. This route is admitted from
     // the exact public board, hand, and K1 deck contents instead:
-    // K1 and decision priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // DCI, K1, and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1403
     return state_.active->card != Card::RegidragoV &&
         state_.active->card != Card::RegidragoVstar &&

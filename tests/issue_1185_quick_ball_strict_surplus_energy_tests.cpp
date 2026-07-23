@@ -69,7 +69,6 @@ sim::Engine make_engine(const sim::Scenario& scenario, std::mt19937_64& rng,
   return engine;
 }
 
-
 sim::State seed23_fss_state() {
   sim::State state;
   state.turn = 3;
@@ -179,7 +178,6 @@ void test_strict_jit_route_and_controls() {
   blocked(strict_burnet_route_state(), no_control, 118509,
           "The specialized JIT surplus fallback must remain JIT-only.");
 }
-
 
 void test_seed23_route_admission_controls() {
   const sim::Scenario strict{"issue-1403", sim::DciProfile::StrictJit,

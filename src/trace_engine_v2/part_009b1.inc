@@ -101,21 +101,22 @@
         state_.active->card == Card::RegidragoVstar) {
       return false;
     }
-    const auto regi = std::find_if(
+    const bool energy_route_finishes = std::any_of(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
-          return pokemon.card == Card::RegidragoV &&
-              pokemon.entered_turn == state_.turn;
+          if (pokemon.card != Card::RegidragoV ||
+              pokemon.entered_turn != state_.turn) {
+            return false;
+          }
+          const bool fire_finishes = pokemon.grass >= 2 && pokemon.fire == 0 &&
+              hand_count(Card::Fire) > 0;
+          const bool grass_finishes = pokemon.grass >= 1 && pokemon.fire >= 1 &&
+              hand_count(Card::Grass) > 0;
+          return fire_finishes || grass_finishes;
         });
-    if (regi == state_.bench.end()) return false;
-
-    const bool fire_finishes = regi->grass >= 2 && regi->fire == 0 &&
-        hand_count(Card::Fire) > 0;
-    const bool grass_finishes = regi->grass >= 1 && regi->fire >= 1 &&
-        hand_count(Card::Grass) > 0;
 
     // Latias ex immediately replaces Tate & Liza's remaining switch role. The held
     // Basic Energy, VSTAR, and Professor Burnet then complete Energy, evolution, and
-    // the current-turn Dragon payload on T4. The generic Active-position and Energy
+    // the next-turn Dragon payload on T4. The generic Active-position and Energy
     // predicates project held connectors, so this exact K1 route uses only public
     // physical state and the configured T4 horizon:
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
@@ -127,7 +128,7 @@
     // Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // K1, route priority, and DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1403
-    return fire_finishes || grass_finishes;
+    return energy_route_finishes;
   }
 
   std::optional<Card> quick_ball_latias_replaced_tate_cost() const {

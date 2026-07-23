@@ -94,6 +94,18 @@ void test_exact_projected_and_post_attachment_states_take_latias() {
   completed.manual_energy_used = true;
   expect(target_for(std::move(completed)) == sim::Card::LatiasEx,
          "The actual post-attachment GGF state did not choose Latias.");
+
+  sim::State multiple_regi = post_crispin_state();
+  multiple_regi.bench.insert(
+      multiple_regi.bench.begin() + 1,
+      sim::Pokemon{sim::Card::RegidragoV, 2, 1, 0});
+  // Bench order cannot invalidate a legal evolution and GGF route on another
+  // prior-turn Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/issues/1379
+  expect(target_for(std::move(multiple_regi)) == sim::Card::LatiasEx,
+         "An earlier underpowered Regidrago hid a later eligible attacker.");
 }
 
 void test_route_preserves_blender_when_any_required_axis_is_missing() {

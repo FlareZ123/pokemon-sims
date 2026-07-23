@@ -111,24 +111,26 @@
       return false;
     }
 
-    const Pokemon* evolving_regi = nullptr;
+    bool eligible_regi = false;
     for (const Pokemon& pokemon : state_.bench) {
-      if (pokemon.card == Card::RegidragoV &&
-          pokemon.entered_turn < state_.turn) {
-        evolving_regi = &pokemon;
+      if (pokemon.card != Card::RegidragoV ||
+          pokemon.entered_turn >= state_.turn) {
+        continue;
+      }
+
+      const int missing_grass = std::max(0, 2 - pokemon.grass);
+      const int missing_fire = std::max(0, 1 - pokemon.fire);
+      const bool energy_complete_now = missing_grass == 0 && missing_fire == 0;
+      const bool unused_manual_completes = !state_.manual_energy_used &&
+          missing_grass + missing_fire == 1 &&
+          ((missing_grass == 1 && hand_count(Card::Grass) > 0) ||
+           (missing_fire == 1 && hand_count(Card::Fire) > 0));
+      if (energy_complete_now || unused_manual_completes) {
+        eligible_regi = true;
         break;
       }
     }
-    if (evolving_regi == nullptr) return false;
-
-    const int missing_grass = std::max(0, 2 - evolving_regi->grass);
-    const int missing_fire = std::max(0, 1 - evolving_regi->fire);
-    const bool energy_complete_now = missing_grass == 0 && missing_fire == 0;
-    const bool unused_manual_completes = !state_.manual_energy_used &&
-        missing_grass + missing_fire == 1 &&
-        ((missing_grass == 1 && hand_count(Card::Grass) > 0) ||
-         (missing_fire == 1 && hand_count(Card::Fire) > 0));
-    if (!energy_complete_now && !unused_manual_completes) return false;
+    if (!eligible_regi) return false;
 
     // Professor Burnet already owns the current-turn deck-to-discard payload axis.
     // Star Alchemy should search Latias ex for the unresolved Active-position axis;

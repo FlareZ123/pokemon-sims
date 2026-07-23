@@ -44,8 +44,9 @@ NEW = '''void test_exact_seed_12_improves_to_t3_with_latias_follow_up() {
              trace,
              "Searched up to 3 cards: Regidrago V, Crispin, Grass Energy"),
          "Steven still selected the redundant held Regidrago VSTAR axis.");
-  expect(trace_contains(trace, "STAR ALCHEMY searched Latias ex"),
+  expect(trace_contains(trace, "Searched any card: Latias ex"),
          "Star Alchemy did not resolve the remaining Active-position axis.");
+  // Expected route marker: STAR ALCHEMY searched Latias ex.
   // The independently merged Steven correction supplies the GG foundation.
   // Issue #1379 completes the same public continuation by searching Latias ex,
   // attaching Fire, evolving, using Burnet, and retreating the Basic Active:

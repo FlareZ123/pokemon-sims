@@ -48,7 +48,10 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator and unified tests
         if: steps.gate.outputs.run == 'true'
-        run: cmake --build build --parallel 2
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --build build --parallel 2 2>&1 | tee issue-1425-build.txt
       - name: Run focused regressions
         if: steps.gate.outputs.run == 'true'
         shell: bash

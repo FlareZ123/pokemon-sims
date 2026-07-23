@@ -250,8 +250,11 @@
 #define bench_tapu_if_useful bench_tapu_if_useful_issue989_empty_deck_original
 #define in_play tapu_connector_copy_aware_in_play
 #define play_steven play_steven_issue1002_empty_deck_original
+#define use_fss use_fss_issue1356_original
 #include "trace_engine_v2/part_empty_deck_search_override.inc"
+#undef use_fss
 #undef play_steven
+#include "trace_engine_v2/part_issue_1356_fss_energy_override.inc"
 #undef play_quick_ball
 #undef play_mysterious_treasure
 #undef in_play
@@ -289,7 +292,12 @@
 #undef choose_supporter
 #undef play_mysterious_treasure
 #undef play_quick_ball
+#define play_quick_ball play_quick_ball_issue1356_original
+#define play_mysterious_treasure play_mysterious_treasure_issue1356_original
 #include "trace_engine_v2/part_issue_1235_oricorio_treasure_tapu_override.inc"
+#undef play_mysterious_treasure
+#undef play_quick_ball
+#include "trace_engine_v2/part_issue_1356_fss_treasure_energy_override.inc"
 #include "trace_engine_v2/part_issue_1118_secret_box.inc"
 #include "trace_engine_v2/part_issue_1369_celestial_roar_secret_box_override.inc"
 #define play_field_blower play_field_blower_original

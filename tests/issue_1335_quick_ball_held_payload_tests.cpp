@@ -139,20 +139,25 @@ void test_seed_107_preserves_resources_at_same_ready_turn() {
   const sim::TrialOutcome outcome = engine.run();
   const sim::State& state = engine.state();
 
-  // The current-main witness must keep T3 readiness while preserving Quick Ball,
-  // both surplus Grass Energy cards, and deck-resident Dialga-GX. Mysterious
-  // Treasure alone discards Mega Dragonite ex on the ready turn:
+  // Issue #1356 refines this exact witness by paying one surplus Grass to let
+  // Mysterious Treasure search Regidrago VSTAR, while Star Alchemy supplies Fire.
+  // The core #1335 invariant remains: preserve Quick Ball, Oricorio, the Bench slot,
+  // and deck-resident Dialga-GX instead of manufacturing a redundant payload route:
   // https://api.pokemontcg.io/v2/cards/swsh1-179
   // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/sm2-55
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/issues/1335
+  // https://github.com/FlareZ123/pokemon-sims/issues/1356
   expect(outcome.first_ready_turn == 3,
          "The resource-preserving route must retain T3 readiness.");
   expect(contains(state.hand, sim::Card::QuickBall),
          "Seed 107 must preserve the redundant Quick Ball.");
-  expect(std::count(state.hand.begin(), state.hand.end(), sim::Card::Grass) == 2,
-         "Seed 107 must preserve both surplus Grass Energy cards.");
+  expect(state.bench.empty(),
+         "Seed 107 must preserve the Bench slot instead of playing Oricorio.");
+  expect(contains(state.deck, sim::Card::Oricorio),
+         "Seed 107 must leave Oricorio in deck.");
   expect(contains(state.deck, sim::Card::DialgaGX),
          "Seed 107 must leave Dialga-GX in deck.");
   expect(contains(state.discard, sim::Card::MegaDragonite),

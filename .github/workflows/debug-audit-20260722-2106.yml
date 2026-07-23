@@ -85,6 +85,20 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3 | tee audit-trace-3-rulebox-lock.txt
           grep -Eq '^T[23] \| READY \|' audit-trace-3-rulebox-lock.txt
 
+      - name: Simulate-this pass 4 scheduled Item lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Scheduled Item-lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+          # Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+          # Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee audit-trace-4-item-lock.txt
+          grep -Eq '^T2 \| READY \|' audit-trace-4-item-lock.txt
+
       - name: Generate paired T2 and T3 matrix
         shell: bash
         run: |
@@ -124,6 +138,7 @@ jobs:
             audit-trace-1-shell.txt
             audit-trace-2-pineco.txt
             audit-trace-3-rulebox-lock.txt
+            audit-trace-4-item-lock.txt
             audit-t2-t3-matrix.csv
             audit-source.tar.gz
             audit-source.sha256

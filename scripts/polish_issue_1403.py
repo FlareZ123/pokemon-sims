@@ -15,20 +15,27 @@ def atomic_write(path: Path, content: str) -> None:
 
 
 def replace_once(text: str, old: str, new: str, label: str) -> str:
-    if new in text:
-        return text
     count = text.count(old)
-    if count != 1:
-        raise RuntimeError(f"Unexpected {label} count: {count}")
-    return text.replace(old, new, 1)
+    if count == 1:
+        return text.replace(old, new, 1)
+    if count == 0 and new in text:
+        return text
+    raise RuntimeError(f"Unexpected {label} count: {count}")
+
+
+def remove_once(text: str, old: str, label: str) -> str:
+    count = text.count(old)
+    if count == 1:
+        return text.replace(old, "", 1)
+    if count == 0:
+        return text
+    raise RuntimeError(f"Unexpected {label} count: {count}")
 
 
 def patch_fss(text: str) -> str:
-    text = replace_once(
+    text = remove_once(
         text,
-        "\n    const Pokemon* regi = target_regi();\n"
-        "    // Star Alchemy takes one Grass while held Crispin takes a second Grass and Fire.\n",
-        "\n    // Star Alchemy takes one Grass while held Crispin takes a second Grass and Fire.\n",
+        "    const Pokemon* regi = target_regi();\n",
         "unused FSS target",
     )
     return replace_once(
@@ -84,8 +91,14 @@ def patch_qb(text: str) -> str:
     )
     return replace_once(
         text,
-        "    return fire_finishes || grass_finishes;\n",
-        "    return energy_route_finishes;\n",
+        "    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1403\n"
+        "    return fire_finishes || grass_finishes;\n"
+        "  }\n\n"
+        "  std::optional<Card> quick_ball_latias_replaced_tate_cost() const {",
+        "    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1403\n"
+        "    return energy_route_finishes;\n"
+        "  }\n\n"
+        "  std::optional<Card> quick_ball_latias_replaced_tate_cost() const {",
         "Quick Ball route result",
     )
 

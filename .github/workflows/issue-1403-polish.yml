@@ -1,0 +1,75 @@
+name: Polish Issue 1403 Source
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1403-polish-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  polish:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Apply final source polish
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Confirmed issue: https://github.com/FlareZ123/pokemon-sims/issues/1403
+          # Repository policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          python scripts/polish_issue_1403.py
+
+      - name: Build and validate focused route
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ./build/regidrago_unified_tests issue_1185_quick_ball_strict_surplus_energy_tests
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 23 --require-ready-by 4 | tee issue-1403-seed23.txt
+          grep -F "T3 | STAR ALCHEMY" issue-1403-seed23.txt | grep -F "Grass Energy"
+          grep -F "T3 | DISCARD" issue-1403-seed23.txt | grep -F "Tate & Liza (Quick Ball cost)"
+          grep -F "T4 | PLAY SUPPORTER" issue-1403-seed23.txt | grep -F "R-BURNET-01"
+          grep -F "T4 | READY" issue-1403-seed23.txt
+
+      - name: Regenerate source-bound setup evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Canonical evidence: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-canonical-shell-baseline
+          # Paired evidence: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+
+      - name: Commit polished source and evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build issue-1403-seed23.txt
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src tests results docs README.md
+          if git diff --cached --quiet; then
+            echo "Issue 1403 source and evidence are already polished."
+            exit 0
+          fi
+          git commit -m "Polish seed 23 route and refresh evidence (#1403)"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

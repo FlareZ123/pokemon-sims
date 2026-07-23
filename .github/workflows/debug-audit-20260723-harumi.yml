@@ -1,0 +1,71 @@
+name: Debug Audit 20260723 Harumi
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: debug-audit-20260723-harumi-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile Python support files
+        run: python -m compileall -q scripts tests
+
+      - name: Configure Release with warnings as errors
+        run: >-
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_CXX_FLAGS="-Werror"
+
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Run three independent simulate-this audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Repository trace contract and setup objective:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Official game rules:
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 273 | tee audit-trace-shell-strict-first-273.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-combined-lock/go-second --seed 311 | tee audit-trace-shell-combined-second-311.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 52 | tee audit-trace-pineco-strict-second-52.txt
+
+      - name: Generate paired T2 T3 matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-matrix.csv
+
+      - name: Verify paired matrix is source-bound
+        run: cmp audit-matrix.csv results/multi_deck_comparison.csv
+
+      - name: Record tested source
+        run: git rev-parse HEAD | tee tested-head.txt
+
+      - name: Upload debug evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-audit-20260723-harumi-${{ github.run_attempt }}
+          path: |
+            audit-trace-*.txt
+            audit-matrix.csv
+            tested-head.txt
+            build/Testing
+          if-no-files-found: warn

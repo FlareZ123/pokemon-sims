@@ -29,7 +29,8 @@ jobs:
         run: |
           set -euo pipefail
           preserved=1159d360270d6b2af3ff342b23cc8edc12453e1e
-          git fetch origin "$preserved"
+          git fetch origin refs/pull/1397/head:refs/remotes/origin/issue-1394-preserved
+          git cat-file -e "$preserved^{commit}"
           mkdir -p /tmp/issue-1394-chunks
           for name in 01 02 03 04 05; do
             git show "$preserved:scripts/issue_1394_patch_chunks/${name}.b64" > "/tmp/issue-1394-chunks/${name}.b64"

@@ -91,7 +91,7 @@ void test_no_lock_admits_proven_package_only() {
          "The no-lock generalization leaked into a scheduled-lock policy.");
 }
 
-void test_exact_seed_12_improves_to_t4() {
+void test_exact_seed_12_keeps_steven_package_and_reaches_by_t4() {
   const auto scenario = sim::scenario_by_label("strict-jit/go-second");
   const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
   expect(scenario.has_value() && deck != nullptr,
@@ -102,15 +102,17 @@ void test_exact_seed_12_improves_to_t4() {
   sim::Engine engine(*scenario, deck->recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 
-  expect(outcome.first_ready_turn == 4,
-         "The corrected no-lock seed 12 did not reach the proven T4 state.");
+  // #1378 owns Steven's public K1 target package. #1379 may improve the later
+  // Star Alchemy continuation from the isolated T4 result to T3, so this
+  // upstream regression requires the package to remain ready no later than T4:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1378
+  // https://github.com/FlareZ123/pokemon-sims/issues/1379
+  expect(outcome.first_ready_turn > 0 && outcome.first_ready_turn <= 4,
+         "The corrected no-lock seed 12 did not remain ready by T4.");
   expect(trace_contains(
              trace,
              "Searched up to 3 cards: Regidrago V, Crispin, Grass Energy"),
          "Steven still selected the redundant held Regidrago VSTAR axis.");
-  // This PR intentionally leaves the separately confirmed Star Alchemy target
-  // defect to issue #1379, so T4 is the expected isolated result:
-  // https://github.com/FlareZ123/pokemon-sims/issues/1379
 }
 
 }  // namespace
@@ -118,7 +120,7 @@ void test_exact_seed_12_improves_to_t4() {
 int main() {
   try {
     test_no_lock_admits_proven_package_only();
-    test_exact_seed_12_improves_to_t4();
+    test_exact_seed_12_keeps_steven_package_and_reaches_by_t4();
     std::cout << "Issue 1378 no-lock Steven Grass tests passed\n";
     return 0;
   } catch (const std::exception& error) {

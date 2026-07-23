@@ -95,6 +95,62 @@
     return true;
   }
 
+  bool fss_latias_post_crispin_burnet_route_available() const {
+    const bool latias_ability_available =
+        scenario_.locks != LockMode::FullRuleBoxAbility &&
+        scenario_.locks != LockMode::FullCombined;
+    if (!deck_seen_ || scenario_.dci != DciProfile::StrictJit ||
+        state_.turn != 3 || !supporter_allowed() || state_.retreat_used ||
+        !state_.active || state_.active->card != Card::Oricorio ||
+        bench_space() <= 0 || in_play(Card::LatiasEx) ||
+        hand_count(Card::LatiasEx) > 0 ||
+        deck_count_after_search_started(Card::LatiasEx) == 0 ||
+        !latias_ability_available || hand_count(Card::RegidragoVstar) == 0 ||
+        hand_count(Card::ProfessorBurnet) == 0 ||
+        !payload_might_be_in_deck()) {
+      return false;
+    }
+
+    bool eligible_regi = false;
+    for (const Pokemon& pokemon : state_.bench) {
+      if (pokemon.card != Card::RegidragoV ||
+          pokemon.entered_turn >= state_.turn) {
+        continue;
+      }
+
+      const int missing_grass = std::max(0, 2 - pokemon.grass);
+      const int missing_fire = std::max(0, 1 - pokemon.fire);
+      const bool energy_complete_now = missing_grass == 0 && missing_fire == 0;
+      const bool unused_manual_completes = !state_.manual_energy_used &&
+          missing_grass + missing_fire == 1 &&
+          ((missing_grass == 1 && hand_count(Card::Grass) > 0) ||
+           (missing_fire == 1 && hand_count(Card::Fire) > 0));
+      if (energy_complete_now || unused_manual_completes) {
+        eligible_regi = true;
+        break;
+      }
+    }
+    if (!eligible_regi) return false;
+
+    // Professor Burnet already owns the current-turn deck-to-discard payload axis.
+    // Star Alchemy should search Latias ex for the unresolved Active-position axis;
+    // the held VSTAR evolves the prior-turn Regidrago V, the current or projected
+    // manual attachment establishes GGF, Skyliner gives Oricorio free Retreat, and
+    // Burnet supplies the strict-JIT Dragon payload in the same turn:
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Latias ex and Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Tool, search, attachment, evolution, Bench, Ability, Supporter, and Retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Complementary-axis priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Strict-JIT payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Original turn-two projection: https://github.com/FlareZ123/pokemon-sims/issues/1137
+    // Preceding Steven correction: https://github.com/FlareZ123/pokemon-sims/issues/1378
+    // Confirmed post-Crispin bug: https://github.com/FlareZ123/pokemon-sims/issues/1379
+    return true;
+  }
+
   bool fss_latias_vessel_promotion_route_available() const {
     const bool latias_ability_available =
         scenario_.locks != LockMode::FullRuleBoxAbility &&
@@ -244,7 +300,8 @@
   }
 
   Card fss_target_after_search_started() const {
-    if (fss_latias_over_redundant_burnet_route_available()) {
+    if (fss_latias_over_redundant_burnet_route_available() ||
+        fss_latias_post_crispin_burnet_route_available()) {
       return Card::LatiasEx;
     }
 

@@ -1,0 +1,176 @@
+name: Issue 1393 Crispin Before Gladion
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Reconcile current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Validate against current main: https://github.com/FlareZ123/pokemon-sims/tree/main
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Apply confirmed source fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/apply_issue_1393_fix.py
+
+      - name: Static source audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+          # Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+          # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+          # Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+          # Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Repository policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          git grep -n "issues/1393" -- src tests
+          git grep -n "api.pokemontcg.io/v2/cards/sv7-133" -- src tests
+          git grep -n "api.pokemontcg.io/v2/cards/sm4-95" -- src tests
+          git grep -n "api.pokemontcg.io/v2/cards/swsh1-179" -- src tests
+          git grep -n "api.pokemontcg.io/v2/cards/swsh12-136" -- src tests
+          ! git grep -nE 'TODO|FIXME|XXX' -- src tests docs README.md
+          python -m compileall -q scripts
+
+      - name: Configure and build Release
+        shell: bash
+        run: |
+          set -o pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release 2>&1 | tee issue-1393-build.txt
+          cmake --build build --parallel 2 2>&1 | tee -a issue-1393-build.txt
+
+      - name: Run focused regression
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/regidrago_unified_tests issue_1393_crispin_before_gladion_tests 2>&1 | tee issue-1393-focused.txt
+
+      - name: Simulate-this pass 1 exact seed 61 route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1393
+          # Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+          # Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+          # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+          # Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+          # Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 61 --require-ready-by 2 | tee issue-1393-pass-seed61.txt
+          grep -F "HOLD STAR ALCHEMY" issue-1393-pass-seed61.txt
+          grep -F "R-CRISPIN-01" issue-1393-pass-seed61.txt
+          grep -F "Mega Dragonite ex (Quick Ball cost)" issue-1393-pass-seed61.txt
+          ! grep -F "Recovered known Prize: Oricorio" issue-1393-pass-seed61.txt
+          ! grep -F "STAR ALCHEMY |" issue-1393-pass-seed61.txt
+          grep -E '^T2 \| READY \|' issue-1393-pass-seed61.txt
+
+      - name: Simulate-this pass 2 strict shell control
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Baseline command contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee issue-1393-pass-shell-control.txt
+          grep -E '^T[23] \| READY \|' issue-1393-pass-shell-control.txt
+
+      - name: Simulate-this pass 3 Pineco control
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Named Pineco route: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#named-deck-recipes
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee issue-1393-pass-pineco-control.txt
+          grep -E '^T2 \| READY \|' issue-1393-pass-pineco-control.txt
+
+      - name: Refresh source-bound canonical evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Canonical matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-canonical-shell-baseline
+          # Paired matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+
+      - name: Generate current-run T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Matrix output contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260723 --out issue-1393-t2-t3-matrix.csv
+          test "$(wc -l < issue-1393-t2-t3-matrix.csv)" -eq 33
+
+      - name: Run complete Release suite
+        shell: bash
+        run: |
+          set -o pipefail
+          ctest --test-dir build --parallel 4 --output-on-failure 2>&1 | tee issue-1393-release-suite.txt
+
+      - name: Configure and build sanitizers
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build-sanitize --parallel 2
+
+      - name: Run complete sanitizer suite
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: ctest --test-dir build-sanitize --parallel 2 --output-on-failure
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1393-crispin-before-gladion
+          path: |
+            issue-1393-build.txt
+            issue-1393-focused.txt
+            issue-1393-pass-*.txt
+            issue-1393-t2-t3-matrix.csv
+            issue-1393-release-suite.txt
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn
+
+      - name: Commit validated fix and remove temporary machinery
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build build-sanitize issue-1393-build.txt issue-1393-focused.txt issue-1393-pass-*.txt issue-1393-t2-t3-matrix.csv issue-1393-release-suite.txt
+          git rm .github/workflows/issue-1393-crispin-before-gladion.yml scripts/apply_issue_1393_fix.py
+          git add src tests README.md docs results
+          if git diff --cached --quiet; then
+            echo "No validated source change was produced" >&2
+            exit 1
+          fi
+          git commit -m "Prefer held Crispin over Gladion (#1393)"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

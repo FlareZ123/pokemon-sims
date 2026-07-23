@@ -192,6 +192,7 @@
             // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
             // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1068
             return fss_latias_over_redundant_burnet_route_available() ||
+                fss_latias_post_crispin_burnet_route_available() ||
                 fss_latias_vessel_promotion_route_available() ||
                 (need_active_vstar() && bench_space() > 0 &&
                  ability_available_for_pokemon(Card::LatiasEx));

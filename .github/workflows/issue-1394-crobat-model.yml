@@ -6,15 +6,18 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: issue-1394-main-bootstrap
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   validate-and-commit-implementation:
     runs-on: ubuntu-24.04
     timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - name: Check out main
         uses: actions/checkout@v4
@@ -28,6 +31,11 @@ jobs:
           set -euo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+
+      - name: Record CI start
+        shell: bash
+        run: |
+          gh issue comment 1394 --body "Issue #1394 validation started: https://github.com/FlareZ123/pokemon-sims/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Apply Crobat V implementation
         shell: bash
@@ -166,3 +174,10 @@ jobs:
 
 Validated in CI: https://github.com/FlareZ123/pokemon-sims/actions/runs/${GITHUB_RUN_ID}"
           git push origin HEAD:main
+          gh issue comment 1394 --body "Issue #1394 validation passed and the implementation was committed to main. CI run: https://github.com/FlareZ123/pokemon-sims/actions/runs/${GITHUB_RUN_ID}"
+
+      - name: Record CI failure
+        if: failure()
+        shell: bash
+        run: |
+          gh issue comment 1394 --body "Issue #1394 validation failed before source commit. CI run: https://github.com/FlareZ123/pokemon-sims/actions/runs/${GITHUB_RUN_ID}"

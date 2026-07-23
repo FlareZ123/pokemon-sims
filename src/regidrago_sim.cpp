@@ -281,7 +281,10 @@
 #define play_earthen_vessel play_earthen_vessel_issue1368_original
 #include "trace_engine_v2/part_earthen_vessel_vstar_window_override.inc"
 #undef play_earthen_vessel
+#define play_earthen_vessel play_earthen_vessel_issue1412_original
 #include "trace_engine_v2/part_issue_1368_earthen_vessel_celestial_roar_override.inc"
+#undef play_earthen_vessel
+#include "trace_engine_v2/part_issue_1412_preserve_quick_balls.inc"
 #define play_mysterious_treasure play_mysterious_treasure_issue1209_original
 #include "trace_engine_v2/part_issue_1167_treasure_vessel_override.inc"
 #undef play_mysterious_treasure

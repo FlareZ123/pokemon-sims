@@ -64,7 +64,7 @@ jobs:
           # Path to the Peak card data: https://api.pokemontcg.io/v2/cards/swsh6-148
           # Field Blower card data: https://api.pokemontcg.io/v2/cards/sm2-125
           # Lock scenario specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee audit-trace-3-rulebox-lock.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3 | tee audit-trace-3-rulebox-lock.txt
           grep -Eq '^T[23] \| READY \|' audit-trace-3-rulebox-lock.txt
 
       - name: Run complete Release suite

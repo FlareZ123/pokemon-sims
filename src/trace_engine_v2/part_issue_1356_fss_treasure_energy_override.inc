@@ -1,3 +1,5 @@
+  int issue_1417_treasure_hold_turn_ = 0;
+
   bool issue_1356_treasure_vstar_energy_split_available() const {
     if (scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || state_.turn != 2 ||
@@ -82,6 +84,17 @@
   }
 
   bool play_mysterious_treasure(const bool permit_payload) {
+    if (issue_1417_treasure_hold_turn_ == state_.turn) {
+      // The recovered Mysterious Treasure is a next-turn connector. Playing it on
+      // the Legacy Star turn would discard the held Dragon before GGF is complete,
+      // violating the repository strict-JIT timing contract:
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Official Item and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1417
+      return false;
+    }
     if (!issue_1356_treasure_vstar_energy_split_available()) {
       return play_mysterious_treasure_issue1356_original(permit_payload);
     }

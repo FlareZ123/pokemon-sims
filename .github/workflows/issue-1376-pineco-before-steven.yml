@@ -1,0 +1,176 @@
+name: Issue 1376 Pineco Before Steven
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Reconcile current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Validate against current main: https://github.com/FlareZ123/pokemon-sims/tree/main
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Apply confirmed source fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/apply_issue_1376_fix.py
+
+      - name: Static repository audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Repository specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md
+          # DCI, K1, strict-JIT, locks, and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          # Model boundaries: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
+          test -f docs/RULE_SOURCES.md
+          test -f docs/RULES_TRACEABILITY.md
+          test -f docs/POLICY_DECISIONS.md
+          test -f docs/MODEL_ASSUMPTIONS.md
+          ! git grep -nE 'TODO|FIXME|XXX' -- src tests docs README.md
+          python -m compileall -q scripts
+
+      - name: Configure and build Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Run focused regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_unified_tests issue_1376_t1_pineco_before_steven_tests
+          ./build/regidrago_unified_tests issue_1118_multi_deck_secret_box_tests
+
+      - name: Simulate-this pass 1 exact seed 35 route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Pineco is a Basic and may be Benched before the turn-ending Supporter:
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-1
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # Ordinary evolution preserves Forest of Vitality:
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # https://api.pokemontcg.io/v2/cards/me1-117
+          # Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1376
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee issue-1376-pass-seed35.txt
+          pineco_line="$(grep -n 'T1 | BENCH .* Pineco from hand' issue-1376-pass-seed35.txt | head -1 | cut -d: -f1)"
+          steven_line="$(grep -n 'T1 | PLAY SUPPORTER .*Steven' issue-1376-pass-seed35.txt | head -1 | cut -d: -f1)"
+          test -n "$pineco_line"
+          test -n "$steven_line"
+          test "$pineco_line" -lt "$steven_line"
+          grep -q 'Pineco evolved into Forretress ex under normal prior-turn timing' issue-1376-pass-seed35.txt
+          ! grep -q 'T2 | PLAY STADIUM .*Forest of Vitality' issue-1376-pass-seed35.txt
+          grep -Eq '^T2 \| READY \|' issue-1376-pass-seed35.txt
+
+      - name: Simulate-this pass 2 scheduled Item lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Scheduled lock contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+          # Regidrago VSTAR attack cost: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee issue-1376-pass-item-lock.txt
+          ! grep -q '^T2 | PLAY ITEM |' issue-1376-pass-item-lock.txt
+          grep -Eq '^T2 \| READY \|' issue-1376-pass-item-lock.txt
+
+      - name: Simulate-this pass 3 Rule Box Ability lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Rule Box Ability lock contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+          # Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+          # Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
+          # Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3 | tee issue-1376-pass-rulebox-lock.txt
+          grep -Eq '^T[23] \| READY \|' issue-1376-pass-rulebox-lock.txt
+
+      - name: Refresh source-bound canonical evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Canonical evidence contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-canonical-shell-baseline
+          # Paired matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+
+      - name: Generate current-run T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out issue-1376-t2-t3-matrix.csv
+          test "$(wc -l < issue-1376-t2-t3-matrix.csv)" -eq 33
+
+      - name: Run complete Release suite
+        shell: bash
+        run: |
+          set -o pipefail
+          ctest --test-dir build --parallel 4 --output-on-failure 2>&1 | tee issue-1376-release-suite.txt
+
+      - name: Configure and build sanitizers
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build-sanitize --parallel 2
+
+      - name: Run complete sanitizer suite
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: ctest --test-dir build-sanitize --parallel 2 --output-on-failure
+
+      - name: Upload validation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1376-pineco-before-steven
+          path: |
+            issue-1376-pass-*.txt
+            issue-1376-t2-t3-matrix.csv
+            issue-1376-release-suite.txt
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: error
+
+      - name: Commit validated fix and remove temporary machinery
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build build-sanitize issue-1376-pass-*.txt issue-1376-t2-t3-matrix.csv issue-1376-release-suite.txt
+          git rm .github/workflows/issue-1376-pineco-before-steven.yml scripts/apply_issue_1376_fix.py
+          git add src tests README.md docs results
+          if git diff --cached --quiet; then
+            echo 'No validated source change was produced' >&2
+            exit 1
+          fi
+          git commit -m 'Bench Pineco before turn-ending Steven (#1376)'
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

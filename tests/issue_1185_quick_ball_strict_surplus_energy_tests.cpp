@@ -138,7 +138,7 @@ void test_strict_jit_route_and_controls() {
           "The specialized JIT surplus fallback must remain JIT-only.");
 }
 
-void test_seed_23_records_t5_recovery() {
+void test_seed_23_records_t4_route() {
   const auto scenario = sim::scenario_by_label("strict-jit/go-first");
   if (!scenario) throw std::runtime_error("Missing strict-jit/go-first scenario");
 
@@ -149,36 +149,40 @@ void test_seed_23_records_t5_recovery() {
   sim::Engine engine(*scenario, recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 
-  // The exact deterministic seed must use Quick Ball, Latias ex, Professor Burnet,
-  // and retreat to record T5 readiness while retaining the T5 setup-loss result:
-  // https://api.pokemontcg.io/v2/cards/swsh1-179
-  // https://api.pokemontcg.io/v2/cards/sv8-76
-  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/T5_FAILURE_POLICY.md
-  // https://github.com/FlareZ123/pokemon-sims/issues/1185
-  expect(outcome.first_ready_turn == 5,
-         "Seed 23 must record the deterministic T5 recovery.");
-  expect(outcome.setup_failed,
-         "T5 readiness must retain the repository setup-loss classification.");
-  expect(trace_contains(trace, "T5 | DISCARD", "Fire Energy"),
-         "Seed 23 must spend the final surplus Fire on Quick Ball.");
-  expect(trace_contains(trace, "T5 | PLAY ITEM", "Latias ex"),
-         "Seed 23 must search Latias ex with Quick Ball.");
-  expect(trace_contains(trace, "T5 | PLAY SUPPORTER", "R-BURNET-01"),
-         "Seed 23 must use Professor Burnet during the ready turn.");
-  expect(trace_contains(trace, "T5 | RETREAT", "R-LATIAS-01"),
-         "Seed 23 must retreat the Basic Active through Skyliner.");
-  expect(trace_contains(trace, "T5 | READY"),
-         "Seed 23 must emit T5 readiness.");
-  expect(!trace_contains(trace, "T5 | PLAY SUPPORTER", "Tate & Liza draw mode"),
-         "Blind Tate & Liza draw mode must not preempt the deterministic route.");
+  // Issue #1403 proves an earlier complete route for the same deterministic seed.
+  // Star Alchemy searches Grass, Tate & Liza pays Quick Ball for Latias ex on T3,
+  // and the T4 Fire attachment, evolution, and Professor Burnet action reach Ready:
+  // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+  // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Official turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Confirmed follow-up bug: https://github.com/FlareZ123/pokemon-sims/issues/1403
+  if (outcome.first_ready_turn != 4) {
+    for (const std::string& line : trace.lines) std::cerr << line << '\n';
+  }
+  expect(outcome.first_ready_turn == 4,
+         "Seed 23 must record the deterministic T4 route.");
+  expect(!outcome.setup_failed,
+         "T4 readiness must count as setup success.");
+  expect(trace_contains(trace, "T3 | STAR ALCHEMY", "Grass Energy"),
+         "Seed 23 must search direct Grass with Star Alchemy.");
+  expect(trace_contains(trace, "T3 | DISCARD", "Tate & Liza"),
+         "Seed 23 must spend route-replaced Tate & Liza on Quick Ball.");
+  expect(trace_contains(trace, "T3 | PLAY ITEM", "Latias ex"),
+         "Seed 23 must search Latias ex on turn three.");
+  expect(trace_contains(trace, "T4 | PLAY SUPPORTER", "R-BURNET-01"),
+         "Seed 23 must use Professor Burnet during the T4 ready turn.");
+  expect(trace_contains(trace, "T4 | READY"),
+         "Seed 23 must emit T4 readiness.");
 }
 }  // namespace
 
 int main() {
   try {
     test_strict_jit_route_and_controls();
-    test_seed_23_records_t5_recovery();
+    test_seed_23_records_t4_route();
     std::cout << "Issue 1185 strict-JIT surplus Energy tests passed\n";
     return 0;
   } catch (const std::exception& error) {

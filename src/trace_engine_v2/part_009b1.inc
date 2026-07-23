@@ -78,6 +78,44 @@
     return Card::Grass;
   }
 
+  std::optional<Card> quick_ball_latias_replaces_tate_cost() const {
+    const Pokemon* regi = target_regi();
+    const bool payload_in_deck = std::any_of(
+        state_.deck.begin(), state_.deck.end(), is_payload);
+    if (!deck_seen_ || scenario_.dci != DciProfile::StrictJit ||
+        scenario_.locks != LockMode::None || state_.turn != 3 ||
+        state_.turn >= scenario_.max_turn || state_.turn_ended || item_locked() ||
+        !state_.vstar_power_used || !state_.supporter_used || supporter_allowed() ||
+        !state_.manual_energy_used || state_.retreat_used || !state_.active ||
+        state_.active->card != Card::Oricorio || regi == nullptr ||
+        regi->card != Card::RegidragoV || regi->entered_turn != state_.turn ||
+        regi->grass < 2 || regi->fire != 0 || grass_needed() != 0 ||
+        fire_needed() != 1 || bench_space() == 0 ||
+        !ability_available_for_pokemon(Card::LatiasEx) || in_play(Card::LatiasEx) ||
+        hand_count(Card::LatiasEx) > 0 ||
+        deck_count_after_search_started(Card::LatiasEx) == 0 ||
+        hand_count(Card::QuickBall) == 0 || hand_count(Card::TateLiza) == 0 ||
+        hand_count(Card::RegidragoVstar) == 0 || hand_count(Card::Fire) == 0 ||
+        hand_count(Card::ProfessorBurnet) == 0 || !payload_in_deck) {
+      return std::nullopt;
+    }
+
+    // Latias ex immediately replaces Tate & Liza's remaining switch role. Quick Ball
+    // may therefore use Tate & Liza as a route-conditioned cost only in the exact K1
+    // state where the searched Latias enables the unused Retreat, held Fire supplies
+    // next turn's final GGF attachment, held Regidrago VSTAR can evolve, and held
+    // Professor Burnet supplies that ready turn's strict-JIT payload:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago V and VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official discard-cost, Bench, Ability, Retreat, attachment, evolution, and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Dynamic DCI and earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1403
+    return Card::TateLiza;
+  }
+
   std::optional<Card> quick_ball_final_surplus_energy_cost() const {
     const bool payload_already_ready = payload_ready();
     const bool blender_payload_route =
@@ -157,7 +195,10 @@
     // https://api.pokemontcg.io/v2/cards/swsh1-179
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
     const bool want_regi = need_regi() && bench_space() > 0 && might_be_unseen(Card::RegidragoV);
-    const bool want_latias = need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
+    const bool next_turn_latias_route =
+        quick_ball_latias_replaces_tate_cost().has_value();
+    const bool want_latias = (need_active_vstar() || next_turn_latias_route) &&
+                             bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
                              !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
                              might_be_unseen(Card::LatiasEx);
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 &&
@@ -201,6 +242,9 @@
     // Refined confirmed bug and controls: https://github.com/FlareZ123/pokemon-sims/issues/1092
     if (!has_preferred_search_target && !can_use_payload_only_outlet) return false;
     auto cost = choose_discard(can_pay_payload_cost, true, true, Card::QuickBall);
+    if (!cost && want_latias) {
+      cost = quick_ball_latias_replaces_tate_cost();
+    }
     if (!cost && want_latias) {
       cost = quick_ball_final_surplus_energy_cost();
     }

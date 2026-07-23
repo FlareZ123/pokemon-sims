@@ -1,0 +1,88 @@
+name: Issue 1378 No-Lock Steven Grass
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1378-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-materialize:
+    if: github.head_ref == 'fix/issue-1378-no-lock-steven-grass'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Apply the approved source correction
+        run: python scripts/apply_issue_1378_fix.py
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Run focused no-lock and precedent regressions
+        run: |
+          ./build/regidrago_unified_tests issue_1378_no_lock_steven_grass_tests
+          ./build/regidrago_unified_tests issue_1223_full_item_lock_steven_grass_tests
+          ./build/regidrago_unified_tests issue_1377_preserve_forest_prior_turn_tests
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 12 --require-ready-by 4 | tee issue-1378-trace-no-lock.txt
+          grep -q "Searched up to 3 cards: Regidrago V, Crispin, Grass Energy" issue-1378-trace-no-lock.txt
+          ! grep -q "Searched up to 3 cards: Regidrago V, Crispin, Regidrago VSTAR" issue-1378-trace-no-lock.txt
+          grep -q "T4 | READY" issue-1378-trace-no-lock.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-full-item-lock/go-second --seed 12 --require-ready-by 4 | tee issue-1378-trace-full-item.txt
+          grep -q "Searched up to 3 cards: Regidrago V, Crispin, Grass Energy" issue-1378-trace-full-item.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee issue-1378-trace-control.txt
+      - name: Regenerate canonical source-bound evidence
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out issue-1378-t2-t3-matrix.csv
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Configure and build ASan and UBSan
+        run: |
+          cmake -S . -B build-sanitizers -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build-sanitizers --parallel 2
+      - name: Run complete sanitizer suite
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: ctest --test-dir build-sanitizers --parallel 2 --output-on-failure
+      - name: Commit validated source, tests, and evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "FlareZ123"
+          git config user.email "40903650+FlareZ123@users.noreply.github.com"
+          git rm scripts/apply_issue_1378_fix.py .github/workflows/issue-1378-no-lock-steven-grass.yml
+          git add src/trace_engine_v2/part_issue_1030_steven_turo_override.inc tests/issue_1378_no_lock_steven_grass_tests.cpp README.md docs results
+          git diff --cached --check
+          git commit -m "Generalize Steven Grass target to no-lock state (#1378)"
+          git push origin HEAD:${{ github.head_ref }}
+      - name: Upload issue 1378 validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1378-validation-${{ github.run_attempt }}
+          path: |
+            issue-1378-trace-*.txt
+            issue-1378-t2-t3-matrix.csv
+            build/Testing
+            build-sanitizers/Testing
+          if-no-files-found: warn

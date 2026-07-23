@@ -32,18 +32,14 @@ jobs:
           git fetch origin main
           git merge --no-edit origin/main
 
-      - name: Materialize approved fix and dependent trace prerequisite
+      - name: Materialize approved fix
         shell: bash
         run: |
           set -euo pipefail
-          # The first patch is the isolated #1379 production and regression change.
-          # The second patch reaches the dependent seed through the independently
-          # confirmed #1378 correction and is restored before the final commit:
-          # https://github.com/FlareZ123/pokemon-sims/issues/1378
+          # The source and regression patches are limited to confirmed issue #1379:
           # https://github.com/FlareZ123/pokemon-sims/issues/1379
           git apply .ci/issue-1379-fix.patch
           git apply .ci/issue-1379-test-lifetime.patch
-          git apply .ci/issue-1379-prerequisite-1378.patch
 
       - name: Static source audit
         shell: bash
@@ -82,7 +78,7 @@ jobs:
           # Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
           # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
           # Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-          # Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1378 https://github.com/FlareZ123/pokemon-sims/issues/1379
+          # Confirmed issue: https://github.com/FlareZ123/pokemon-sims/issues/1379
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 12 --require-ready-by 3 | tee issue-1379-pass-seed12.txt
           grep -Eq '^T3 \| READY \|' issue-1379-pass-seed12.txt
           grep -Eq 'STAR ALCHEMY.*Latias ex' issue-1379-pass-seed12.txt
@@ -165,12 +161,11 @@ jobs:
             results/multi_deck_comparison.csv
           if-no-files-found: warn
 
-      - name: Remove validation-only prerequisite and workflow
+      - name: Remove validation-only workflow
         shell: bash
         run: |
           set -euo pipefail
-          git checkout -- src/trace_engine_v2/part_issue_1030_steven_turo_override.inc
-          git rm .ci/issue-1379-fix.patch .ci/issue-1379-test-lifetime.patch .ci/issue-1379-prerequisite-1378.patch .github/workflows/issue-1379-t3-fss-latias.yml
+          git rm .ci/issue-1379-fix.patch .ci/issue-1379-test-lifetime.patch .github/workflows/issue-1379-t3-fss-latias.yml
           git add src tests README.md docs results
           git commit -m 'Choose Latias over redundant Burnet payload (#1379)'
           git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

@@ -58,6 +58,14 @@ def main() -> int:
         "  sim::State one_grass = seed23_fss_state();",
         "Star Alchemy resolver regression",
     )
+    test = replace_once(
+        test,
+        "  expect(trace_contains(trace, \"T3 | RETREAT\", \"R-LATIAS-01\"),\n"
+        "         \"Skyliner must promote the Regidrago line on T3.\");",
+        "  expect(trace_contains(trace, \"T4 | RETREAT\", \"R-LATIAS-01\"),\n"
+        "         \"Skyliner must promote the evolved Regidrago line on T4.\");",
+        "T4 Skyliner regression",
+    )
     atomic_write(TEST, test)
     return 0
 

@@ -301,7 +301,10 @@
 #undef play_mysterious_treasure
 #undef play_quick_ball
 #include "trace_engine_v2/part_issue_1356_fss_treasure_energy_override.inc"
+#include "trace_engine_v2/part_issue_1437_crispin_trace_override.inc"
+#define trace trace_issue_1437_crispin_provenance
 #include "trace_engine_v2/part_issue_1118_secret_box.inc"
+#undef trace
 #include "trace_engine_v2/part_issue_1369_celestial_roar_secret_box_override.inc"
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original

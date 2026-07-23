@@ -21,6 +21,12 @@ struct EngineTestAccess {
   static Card fss_target(const Engine& engine) {
     return engine.fss_target_after_search_started();
   }
+  static bool seed23_fss_route(const Engine& engine) {
+    return engine.fss_should_take_grass_for_seed23_latias_burnet_route();
+  }
+  static bool seed23_latias_route(const Engine& engine) {
+    return engine.quick_ball_seed23_latias_route_ready();
+  }
   static std::optional<Card> latias_tate_cost(const Engine& engine) {
     return engine.quick_ball_latias_replaced_tate_cost();
   }
@@ -192,15 +198,31 @@ void test_seed23_route_admission_controls() {
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/issues/1403
+  expect(sim::EngineTestAccess::seed23_fss_route(fss),
+         "The exact public K1 route must be admitted.");
   expect(sim::EngineTestAccess::fss_target(fss) == sim::Card::Grass,
          "The complete K1 route must search Grass.");
+
+  sim::State resolving_state = seed23_fss_state();
+  resolving_state.vstar_power_used = true;
+  std::mt19937_64 resolving_rng{140306};
+  sim::Engine resolving =
+      make_engine(strict, resolving_rng, std::move(resolving_state));
+  // The Star Alchemy resolver marks the VSTAR Power used before selecting its
+  // searched card, so the same legal route must remain admitted at resolution:
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://github.com/FlareZ123/pokemon-sims/issues/1403
+  expect(sim::EngineTestAccess::seed23_fss_route(resolving),
+         "The route must survive Star Alchemy's used-power resolver state.");
+  expect(sim::EngineTestAccess::fss_target(resolving) == sim::Card::Grass,
+         "Star Alchemy resolution must keep the Grass target.");
 
   sim::State one_grass = seed23_fss_state();
   one_grass.deck.erase(std::find(one_grass.deck.begin(), one_grass.deck.end(),
                                  sim::Card::Grass));
   std::mt19937_64 one_grass_rng{140301};
   sim::Engine blocked_fss = make_engine(strict, one_grass_rng, std::move(one_grass));
-  expect(sim::EngineTestAccess::fss_target(blocked_fss) != sim::Card::Grass,
+  expect(!sim::EngineTestAccess::seed23_fss_route(blocked_fss),
          "Crispin must retain a second searchable Grass.");
 
   sim::State no_latias = seed23_fss_state();
@@ -208,11 +230,13 @@ void test_seed23_route_admission_controls() {
                                  sim::Card::LatiasEx));
   std::mt19937_64 no_latias_rng{140302};
   sim::Engine blocked_latias = make_engine(strict, no_latias_rng, std::move(no_latias));
-  expect(sim::EngineTestAccess::fss_target(blocked_latias) != sim::Card::Grass,
+  expect(!sim::EngineTestAccess::seed23_fss_route(blocked_latias),
          "The route must require searchable Latias ex.");
 
   std::mt19937_64 qb_rng{140303};
   sim::Engine qb = make_engine(strict, qb_rng, seed23_quick_ball_state());
+  expect(sim::EngineTestAccess::seed23_latias_route(qb),
+         "The exact public Latias route must be admitted.");
   expect(sim::EngineTestAccess::latias_tate_cost(qb) == sim::Card::TateLiza,
          "Latias must replace Tate & Liza's switch role.");
 
@@ -261,8 +285,8 @@ void test_seed_23_records_t4_route() {
          "Quick Ball must spend route-replaced Tate & Liza.");
   expect(trace_contains(trace, "T3 | PLAY ITEM", "Latias ex"),
          "Quick Ball must search Latias ex.");
-  expect(trace_contains(trace, "T3 | RETREAT", "R-LATIAS-01"),
-         "Skyliner must promote the Regidrago line on T3.");
+  expect(trace_contains(trace, "T4 | RETREAT", "R-LATIAS-01"),
+         "Skyliner must promote the evolved Regidrago line on T4.");
   expect(trace_contains(trace, "T4 | PLAY SUPPORTER", "R-BURNET-01"),
          "Burnet must establish the T4 payload.");
   expect(trace_contains(trace, "T4 | READY"), "Seed 23 must emit T4 readiness.");

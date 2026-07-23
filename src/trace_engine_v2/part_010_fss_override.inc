@@ -193,19 +193,19 @@
   bool fss_should_take_grass_for_seed23_latias_burnet_route() const {
     if (!deck_seen_ || scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || state_.turn != 3 ||
-        scenario_.max_turn < 4 || state_.vstar_power_used ||
+        scenario_.max_turn < 4 ||
         !supporter_allowed() || state_.manual_energy_used ||
         state_.retreat_used || item_locked() || !state_.active ||
         !is_basic(state_.active->card) || bench_space() == 0 ||
         !ability_available_for_pokemon(Card::LatiasEx) ||
         in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
-        deck_count_after_search_started(Card::LatiasEx) == 0 ||
+        std::count(state_.deck.begin(), state_.deck.end(), Card::LatiasEx) == 0 ||
         hand_count(Card::Crispin) == 0 || hand_count(Card::QuickBall) == 0 ||
         hand_count(Card::TateLiza) == 0 ||
         hand_count(Card::ProfessorBurnet) == 0 ||
         hand_count(Card::RegidragoVstar) == 0 ||
-        deck_count_after_search_started(Card::Grass) < 2 ||
-        deck_count_after_search_started(Card::Fire) == 0 ||
+        std::count(state_.deck.begin(), state_.deck.end(), Card::Grass) < 2 ||
+        std::count(state_.deck.begin(), state_.deck.end(), Card::Fire) == 0 ||
         !std::any_of(state_.deck.begin(), state_.deck.end(), is_payload)) {
       return false;
     }
@@ -225,10 +225,19 @@
     // Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // DCI and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1403
-    return regi != nullptr && regi->card == Card::RegidragoV &&
-        regi->entered_turn == state_.turn && regi->grass == 0 && regi->fire == 0 &&
-        need_energy() && need_active_vstar() && grass_needed() == 2 &&
-        fire_needed() == 1;
+    // The generic missing-axis predicates project held connectors and therefore
+    // read false in this unevolved two-turn state. This route is admitted from
+    // the exact public board, hand, and K1 deck contents instead:
+    // K1 and decision priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1403
+    return state_.active->card != Card::RegidragoV &&
+        state_.active->card != Card::RegidragoVstar &&
+        std::any_of(state_.bench.begin(), state_.bench.end(),
+                    [this](const Pokemon& pokemon) {
+                      return pokemon.card == Card::RegidragoV &&
+                          pokemon.entered_turn == state_.turn &&
+                          pokemon.grass == 0 && pokemon.fire == 0;
+                    });
   }
 
   Card fss_target_after_search_started() const {

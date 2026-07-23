@@ -78,7 +78,7 @@
     return Card::Grass;
   }
 
-  std::optional<Card> quick_ball_latias_replaced_tate_cost() const {
+  bool quick_ball_seed23_latias_route_ready() const {
     if (!deck_seen_ || scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || state_.turn != 3 ||
         scenario_.max_turn < 4 || !state_.vstar_power_used ||
@@ -87,29 +87,37 @@
         !is_basic(state_.active->card) || bench_space() == 0 ||
         !ability_available_for_pokemon(Card::LatiasEx) ||
         in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
-        deck_count_after_search_started(Card::LatiasEx) == 0 ||
+        std::count(state_.deck.begin(), state_.deck.end(), Card::LatiasEx) == 0 ||
         hand_count(Card::TateLiza) == 0 ||
         hand_count(Card::RegidragoVstar) == 0 ||
         hand_count(Card::ProfessorBurnet) == 0 ||
         std::find(state_.discard.begin(), state_.discard.end(), Card::Crispin) ==
             state_.discard.end() ||
         !std::any_of(state_.deck.begin(), state_.deck.end(), is_payload)) {
-      return std::nullopt;
+      return false;
     }
 
-    const Pokemon* regi = target_regi();
-    if (regi == nullptr || regi->card != Card::RegidragoV ||
-        regi->entered_turn != state_.turn || !need_active_vstar()) {
-      return std::nullopt;
+    if (state_.active->card == Card::RegidragoV ||
+        state_.active->card == Card::RegidragoVstar) {
+      return false;
     }
+    const auto regi = std::find_if(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV &&
+              pokemon.entered_turn == state_.turn;
+        });
+    if (regi == state_.bench.end()) return false;
+
     const bool fire_finishes = regi->grass >= 2 && regi->fire == 0 &&
-        hand_count(Card::Fire) > 0 && grass_needed() == 0 && fire_needed() == 1;
+        hand_count(Card::Fire) > 0;
     const bool grass_finishes = regi->grass >= 1 && regi->fire >= 1 &&
-        hand_count(Card::Grass) > 0 && grass_needed() == 1 && fire_needed() == 0;
+        hand_count(Card::Grass) > 0;
 
     // Latias ex immediately replaces Tate & Liza's remaining switch role. The held
     // Basic Energy, VSTAR, and Professor Burnet then complete Energy, evolution, and
-    // the current-turn Dragon payload on T4:
+    // the current-turn Dragon payload on T4. The generic Active-position and Energy
+    // predicates project held connectors, so this exact K1 route uses only public
+    // physical state and the configured T4 horizon:
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
     // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
@@ -117,9 +125,13 @@
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // Route-conditioned DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // K1, route priority, and DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1403
-    return fire_finishes || grass_finishes
+    return fire_finishes || grass_finishes;
+  }
+
+  std::optional<Card> quick_ball_latias_replaced_tate_cost() const {
+    return quick_ball_seed23_latias_route_ready()
         ? std::optional<Card>{Card::TateLiza}
         : std::nullopt;
   }
@@ -203,9 +215,11 @@
     // https://api.pokemontcg.io/v2/cards/swsh1-179
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
     const bool want_regi = need_regi() && bench_space() > 0 && might_be_unseen(Card::RegidragoV);
-    const bool want_latias = need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
-                             !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
-                             might_be_unseen(Card::LatiasEx);
+    const bool want_latias =
+        (need_active_vstar() || quick_ball_seed23_latias_route_ready()) &&
+        bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
+        !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
+        might_be_unseen(Card::LatiasEx);
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 &&
                            needs_tapu_connector() && might_be_unseen(Card::TapuLeleGX);
     const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 &&

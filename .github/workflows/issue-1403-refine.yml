@@ -27,13 +27,14 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Apply exact K1 deck-count refinement
+      - name: Apply exact K1 route refinements
         shell: bash
         run: |
           set -euo pipefail
           # Hidden-information contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
           # Confirmed issue: https://github.com/FlareZ123/pokemon-sims/issues/1403
           python scripts/refine_issue_1403_counts.py
+          python scripts/refine_issue_1403_bench_scan.py
 
       - name: Build and validate focused route
         shell: bash
@@ -97,5 +98,5 @@ jobs:
             echo "Issue 1403 refinement and evidence are already current."
             exit 0
           fi
-          git commit -m "Refine seed 23 K1 counts and refresh evidence (#1403)"
+          git commit -m "Refine seed 23 K1 route and refresh evidence (#1403)"
           git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

@@ -64,7 +64,8 @@ void erase_one(std::vector<sim::Card>& cards, const sim::Card card) {
 
 void test_no_lock_route_and_boundaries() {
   std::mt19937_64 rng{137801};
-  sim::Engine live = make_engine(no_lock_scenario(), rng, route_state());
+  const sim::Scenario live_scenario = no_lock_scenario();
+  sim::Engine live = make_engine(live_scenario, rng, route_state());
 
   // Steven's Resolve searches any three cards. In this K1 state Regidrago VSTAR
   // and Professor Burnet are already held, so Regidrago V, Crispin, and Grass

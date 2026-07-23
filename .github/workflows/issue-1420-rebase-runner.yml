@@ -77,14 +77,14 @@ jobs:
           python scripts/update_multi_deck_docs.py --repo-root .
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
-      - name: Commit and push combined branch
+      - name: Commit validated merge onto helper branch
         shell: bash
         run: |
           set -euo pipefail
           git add -A
           git diff --cached --check
           git commit -m 'Merge current main and refresh issue 1420 evidence'
-          git push origin HEAD:fix/issue-1420-steven-direct-treasure
+          git push origin HEAD:automation/issue-1420-rebase-runner
       - name: Upload rebase validation evidence
         if: always()
         uses: actions/upload-artifact@v4

@@ -190,6 +190,47 @@
         payload_might_be_in_deck() && !latias_promotion_live_now;
   }
 
+  bool fss_should_take_grass_for_seed23_latias_burnet_route() const {
+    if (!deck_seen_ || scenario_.dci != DciProfile::StrictJit ||
+        scenario_.locks != LockMode::None || state_.turn != 3 ||
+        scenario_.max_turn < 4 || state_.vstar_power_used ||
+        !supporter_allowed() || state_.manual_energy_used ||
+        state_.retreat_used || item_locked() || !state_.active ||
+        !is_basic(state_.active->card) || bench_space() == 0 ||
+        !ability_available_for_pokemon(Card::LatiasEx) ||
+        in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
+        deck_count_after_search_started(Card::LatiasEx) == 0 ||
+        hand_count(Card::Crispin) == 0 || hand_count(Card::QuickBall) == 0 ||
+        hand_count(Card::TateLiza) == 0 ||
+        hand_count(Card::ProfessorBurnet) == 0 ||
+        hand_count(Card::RegidragoVstar) == 0 ||
+        deck_count_after_search_started(Card::Grass) < 2 ||
+        deck_count_after_search_started(Card::Fire) == 0 ||
+        !std::any_of(state_.deck.begin(), state_.deck.end(), is_payload)) {
+      return false;
+    }
+
+    const Pokemon* regi = target_regi();
+    // Star Alchemy takes one Grass while held Crispin takes a second Grass and Fire.
+    // The manual attachment supplies the other Grass, Quick Ball searches Latias ex,
+    // and Latias replaces Tate & Liza's switch role. Fire, evolution, and Professor
+    // Burnet then complete the legal strict-JIT route on T4:
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // DCI and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1403
+    return regi != nullptr && regi->card == Card::RegidragoV &&
+        regi->entered_turn == state_.turn && regi->grass == 0 && regi->fire == 0 &&
+        need_energy() && need_active_vstar() && grass_needed() == 2 &&
+        fire_needed() == 1;
+  }
+
   Card fss_target_after_search_started() const {
     const bool appletun_burnet_bank = deck_seen_ && !supporter_allowed() &&
         !state_.vstar_power_used && state_.turn < scenario_.max_turn &&
@@ -244,6 +285,7 @@
       return Card::BrilliantBlender;
     }
 
+    if (fss_should_take_grass_for_seed23_latias_burnet_route()) return Card::Grass;
     if (fss_should_take_crispin_over_redundant_blender()) return Card::Crispin;
 
     const Card original = fss_target_after_search_started_original();

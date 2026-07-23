@@ -78,6 +78,52 @@
     return Card::Grass;
   }
 
+  std::optional<Card> quick_ball_latias_replaced_tate_cost() const {
+    if (!deck_seen_ || scenario_.dci != DciProfile::StrictJit ||
+        scenario_.locks != LockMode::None || state_.turn != 3 ||
+        scenario_.max_turn < 4 || !state_.vstar_power_used ||
+        !state_.supporter_used || !state_.manual_energy_used ||
+        state_.retreat_used || item_locked() || !state_.active ||
+        !is_basic(state_.active->card) || bench_space() == 0 ||
+        !ability_available_for_pokemon(Card::LatiasEx) ||
+        in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
+        deck_count_after_search_started(Card::LatiasEx) == 0 ||
+        hand_count(Card::TateLiza) == 0 ||
+        hand_count(Card::RegidragoVstar) == 0 ||
+        hand_count(Card::ProfessorBurnet) == 0 ||
+        std::find(state_.discard.begin(), state_.discard.end(), Card::Crispin) ==
+            state_.discard.end() ||
+        !std::any_of(state_.deck.begin(), state_.deck.end(), is_payload)) {
+      return std::nullopt;
+    }
+
+    const Pokemon* regi = target_regi();
+    if (regi == nullptr || regi->card != Card::RegidragoV ||
+        regi->entered_turn != state_.turn || !need_active_vstar()) {
+      return std::nullopt;
+    }
+    const bool fire_finishes = regi->grass >= 2 && regi->fire == 0 &&
+        hand_count(Card::Fire) > 0 && grass_needed() == 0 && fire_needed() == 1;
+    const bool grass_finishes = regi->grass >= 1 && regi->fire >= 1 &&
+        hand_count(Card::Grass) > 0 && grass_needed() == 1 && fire_needed() == 0;
+
+    // Latias ex immediately replaces Tate & Liza's remaining switch role. The held
+    // Basic Energy, VSTAR, and Professor Burnet then complete Energy, evolution, and
+    // the current-turn Dragon payload on T4:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Route-conditioned DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1403
+    return fire_finishes || grass_finishes
+        ? std::optional<Card>{Card::TateLiza}
+        : std::nullopt;
+  }
+
   std::optional<Card> quick_ball_final_surplus_energy_cost() const {
     const bool payload_already_ready = payload_ready();
     const bool blender_payload_route =
@@ -203,6 +249,9 @@
     auto cost = choose_discard(can_pay_payload_cost, true, true, Card::QuickBall);
     if (!cost && want_latias) {
       cost = quick_ball_final_surplus_energy_cost();
+    }
+    if (!cost && want_latias) {
+      cost = quick_ball_latias_replaced_tate_cost();
     }
     if (!cost && want_regi && hand_count(Card::RegidragoVstar) >= 2) {
       // One of two public VSTAR copies may pay Quick Ball only while Quick Ball is

@@ -962,6 +962,16 @@
       proactive_tapu_retreat_for_pineco();
       attach_manual();
 
+      // A held Pineco is a public, costless Basic Bench action. Benching it before
+      // Steven's Resolve ends turn one preserves ordinary turn-two evolution and
+      // avoids spending Secret Box's Stadium channel on Forest of Vitality:
+      // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+      // Core Bench, Supporter, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1376
+      bench_pineco_if_useful();
       if (!state_.supporter_used && !play_secret_box_planned_supporter()) {
         advance_forretress_combo();
         if (!state_.supporter_used) choose_supporter();

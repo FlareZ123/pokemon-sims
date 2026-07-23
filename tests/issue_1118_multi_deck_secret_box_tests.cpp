@@ -221,14 +221,22 @@ void expect_seeded_route(const std::uint64_t seed,
 
 void test_reviewed_seeded_routes() {
   // Seed 35 proves strict DCI may spend Grant, Wishful Baton, and a
-  // dynamically replaceable search Item, then use Dawn, Forest, Treasure,
-  // and Forretress. The exact third cost is intentionally policy-flexible.
+  // dynamically replaceable search Item, then Bench the held Pineco before
+  // Steven ends turn one. Dawn, ordinary evolution, Treasure, and Forretress
+  // preserve the T2 route without consuming Forest of Vitality:
+  // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+  // Core Bench, Supporter, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Original route contract: https://github.com/FlareZ123/pokemon-sims/issues/1118
+  // Stronger resource-preserving route: https://github.com/FlareZ123/pokemon-sims/issues/1376
   expect_seeded_route(35, {
       "Grant (Secret Box cost)",
       "Wishful Baton (Secret Box cost)",
       "Secret Box discarded three other cards",
+      "T1 | BENCH | rules: R-GAME-BENCH | Pineco from hand",
       "Dawn searched and revealed: Dragapult ex",
-      "Forest of Vitality allowed the newly played Pineco",
+      "Pineco evolved into Forretress ex under normal prior-turn timing",
       "Mysterious Treasure cost",
       "T2 | READY",
   });

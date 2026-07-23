@@ -2,6 +2,7 @@
 #include "../src/regidrago_sim.cpp"
 
 #include <algorithm>
+#include <cstdint>
 #include <iostream>
 #include <random>
 #include <stdexcept>

@@ -1,5 +1,8 @@
 name: CI
 
+# Audit-only branch provenance; this comment is not intended for merge:
+# https://github.com/FlareZ123/pokemon-sims/pull/1405
+# https://github.com/FlareZ123/pokemon-sims/issues/1403
 on:
   pull_request:
     branches: [main]

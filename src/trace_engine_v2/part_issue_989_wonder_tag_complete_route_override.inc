@@ -127,6 +127,16 @@
   }
 
   bool needs_tapu_connector() {
+    // A full-horizon Supporter lock makes every Wonder Tag target unplayable.
+    // Spending a search Item, Tapu Lele-GX, and a Bench slot cannot advance a
+    // live Supporter axis under that scenario, so preserve those resources:
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Full-Supporter-lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-semantics
+    // Resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1443
+    if (scenario_.locks == LockMode::FullSupporter) return false;
+
     // Preserve the existing Oricorio last-slot protection before the broader
     // complete-route suppression:
     // https://github.com/FlareZ123/pokemon-sims/issues/180

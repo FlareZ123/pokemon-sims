@@ -130,7 +130,7 @@ This captures the central prizing asymmetry: a recovery card can itself be prize
 
 ## Sampling and comparison method
 
-The program uses a fixed 64-bit Mersenne Twister seed. Baseline scenarios use stable derived seeds. The current executable writes only the baseline scenarios from `all_scenarios()`; it does not generate matched-seed deck-swap rows: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L271-L283. The retired `variant_results.csv` must not be reused until a current variant generator, tests, and results are restored: https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7.
+The program uses a fixed 64-bit Mersenne Twister seed. Baseline scenarios use stable derived seeds. Default aggregate mode emits the selected named deck, which defaults to `regidrago-shell`. With `--all-decks`, the executable emits every registered named deck across every `all_scenarios()` entry and gives each deck the same scenario-derived seed for a matched comparison: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L285-L330 https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices. The retired unsupported artifact is the old `variant_results.csv`; it must not be reused until a current variant generator, tests, and results are restored: https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7 https://github.com/FlareZ123/pokemon-sims/issues/1433.
 
 For a binary success count `x` over `n` trials, the displayed Monte Carlo standard error in percentage points is:
 

@@ -15,6 +15,9 @@ struct EngineTestAccess {
     engine.state_ = std::move(state);
   }
   static const State& state(const Engine& engine) { return engine.state_; }
+  static void mark_exploding_energy_used(Engine& engine) {
+    engine.outcome_.used_exploding_energy = true;
+  }
   static bool direct_route(const Engine& engine) {
     return engine.issue_1412_direct_fss_fire_route_visible();
   }
@@ -65,6 +68,7 @@ void test_complete_fss_route_suppresses_redundant_quick_ball() {
   Fixture fixture;
   sim::EngineTestAccess::set_state(fixture.engine,
                                    complete_fss_route_state());
+  sim::EngineTestAccess::mark_exploding_energy_used(fixture.engine);
 
   // Forest Seal Stone plus the unused manual attachment and held VSTAR complete
   // every current T2 axis. Quick Ball must retain its discrete future value and
@@ -83,6 +87,7 @@ void test_missing_direct_axis_keeps_pineco_live() {
   const auto expect_incomplete = [](sim::State state, const char* message) {
     Fixture fixture;
     sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+    sim::EngineTestAccess::mark_exploding_energy_used(fixture.engine);
     expect(!sim::EngineTestAccess::direct_route(fixture.engine), message);
   };
 

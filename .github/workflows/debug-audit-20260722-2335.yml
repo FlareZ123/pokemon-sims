@@ -29,7 +29,7 @@ jobs:
           git ls-files | sort > tracked-files.txt
           git grep -nE 'TODO|FIXME|XXX|HACK' -- src tests docs scripts README.md > static-markers.txt || true
           git grep -nE 'simulate-this|ready_by_turn|Decision priority|DCI|K1|item lock|ability lock|supporter lock' -- src tests docs scripts README.md > policy-touchpoints.txt || true
-          tar --exclude=.git --exclude=build --exclude=build-sanitizers -czf source-snapshot.tar.gz .
+          tar --exclude=.git --exclude=build --exclude=build-sanitizers --exclude=source-snapshot.tar.gz --exclude=audited-head.txt --exclude=tracked-files.txt --exclude=static-markers.txt --exclude=policy-touchpoints.txt -czf source-snapshot.tar.gz .
 
       - name: Configure and build Release
         run: |

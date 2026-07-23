@@ -3,6 +3,7 @@
       #include "part_014a_issue_962_eligibility.inc"
       #include "part_014a_issue_962_projection.inc"
       #include "part_014a_issue_962_decision.inc"
+      #include "part_014a_issue_1447_vessel_hold.inc"
 
       // Prefer the higher-connectivity Quick Ball route only when cost-aware
       // projections prove Tapu Lele-GX -> Wonder Tag -> Crispin preserves both
@@ -15,7 +16,8 @@
       // https://github.com/FlareZ123/pokemon-sims/issues/962
       if (quick_ball_tapu_crispin_route_should_precede_vessel() &&
           play_quick_ball(permit_payload)) return true;
-      if (play_earthen_vessel(permit_payload)) return true;
+      if (!issue_1447_should_hold_vessel() &&
+          play_earthen_vessel(permit_payload)) return true;
       if (play_quick_ball(permit_payload)) return true;
       if (play_mysterious_treasure(permit_payload)) return true;
     }

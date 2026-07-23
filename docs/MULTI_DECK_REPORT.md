@@ -26,15 +26,15 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 | No discard control, going first | 19.954% ± 0.126 | 55.774% ± 0.157 | 71.845% ± 0.142 | 28.155% ± 0.142 |
 | Strict JIT, turn-two Item lock, first | 4.582% ± 0.066 | 10.187% ± 0.096 | 17.684% ± 0.121 | 82.316% ± 0.121 |
 | Strict JIT, full Item lock, first | 2.820% ± 0.052 | 7.733% ± 0.084 | 15.056% ± 0.113 | 84.944% ± 0.113 |
-| Strict JIT, Rule Box Ability lock, first | 4.451% ± 0.065 | 25.901% ± 0.139 | 38.817% ± 0.154 | 61.183% ± 0.154 |
-| Strict JIT, combined lock, first | 0.293% ± 0.017 | 3.279% ± 0.056 | 7.270% ± 0.082 | 92.730% ± 0.082 |
+| Strict JIT, Rule Box Ability lock, first | 4.448% ± 0.065 | 25.895% ± 0.139 | 38.818% ± 0.154 | 61.182% ± 0.154 |
+| Strict JIT, combined lock, first | 0.292% ± 0.017 | 3.275% ± 0.056 | 7.263% ± 0.082 | 92.737% ± 0.082 |
 | Strict JIT, going second | 28.859% ± 0.143 | 52.314% ± 0.158 | 63.603% ± 0.152 | 36.397% ± 0.152 |
 | Matchup-flex JIT, going second | 37.104% ± 0.153 | 60.856% ± 0.154 | 71.247% ± 0.143 | 28.753% ± 0.143 |
 | No discard control, going second | 39.987% ± 0.155 | 66.854% ± 0.149 | 78.162% ± 0.131 | 21.838% ± 0.131 |
 | Strict JIT, turn-two Item lock, second | 14.086% ± 0.110 | 27.977% ± 0.142 | 35.638% ± 0.151 | 64.362% ± 0.151 |
 | Strict JIT, full Item lock, second | 10.488% ± 0.097 | 22.888% ± 0.133 | 30.049% ± 0.145 | 69.951% ± 0.145 |
-| Strict JIT, Rule Box Ability lock, second | 17.971% ± 0.121 | 34.465% ± 0.150 | 44.634% ± 0.157 | 55.366% ± 0.157 |
-| Strict JIT, combined lock, second | 2.352% ± 0.048 | 11.342% ± 0.100 | 15.418% ± 0.114 | 84.582% ± 0.114 |
+| Strict JIT, Rule Box Ability lock, second | 17.979% ± 0.121 | 34.485% ± 0.150 | 44.591% ± 0.157 | 55.409% ± 0.157 |
+| Strict JIT, combined lock, second | 2.361% ± 0.048 | 11.368% ± 0.100 | 15.466% ± 0.114 | 84.534% ± 0.114 |
 | Strict JIT, Supporter lock, first | 0.004% ± 0.002 | 15.257% ± 0.114 | 21.516% ± 0.130 | 78.484% ± 0.130 |
 | Strict JIT, Supporter lock, second | 8.085% ± 0.086 | 19.364% ± 0.125 | 25.257% ± 0.137 | 74.743% ± 0.137 |
 
@@ -160,6 +160,6 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 ## Provenance
 
-Simulator policy digest: `8518e97fbe2e3390db42879ecab9adc367fa6c4f5569c1e76c2994dfd4100c21`.
+Simulator policy digest: `4fd71f04c761f6806e6b06c6c6141307ae134a51b0927fbb88913afca737c268`.
 
-Comparison CSV SHA-256: `e62168cd51121d13d95f05acb6b4cdee300701c3b0cef35f1d6105cac754f44b`.
+Comparison CSV SHA-256: `846c5dbfc2be42e1581f604d9a0f26862a613de3e9d4d1adffecd96884ffcd29`.

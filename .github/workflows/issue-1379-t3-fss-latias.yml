@@ -38,6 +38,7 @@ jobs:
           set -euo pipefail
           # Confirmed issue: https://github.com/FlareZ123/pokemon-sims/issues/1379
           python .ci/apply_issue_1379.py
+          python .ci/update_issue_1378_expectation.py
 
       - name: Static source audit
         shell: bash
@@ -53,6 +54,7 @@ jobs:
           ! git grep -nE 'TODO|FIXME|XXX' -- src tests docs README.md
           grep -q 'issues/1379' src/trace_engine_v2/part_issue_1071_fss_oricorio_treasure_decomposition_override.inc
           grep -q 'issues/1379' tests/issue_1379_fss_turn_three_latias_tests.cpp
+          grep -q 'STAR ALCHEMY searched Latias ex' tests/issue_1378_no_lock_steven_grass_tests.cpp
 
       - name: Configure and build Release
         shell: bash
@@ -65,7 +67,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ./build/regidrago_unified_tests issue_1379_fss_turn_three_latias_tests
+          ./build/regidrago_unified_tests issue_1379_fss_turn_three_latias_tests issue_1378_no_lock_steven_grass_tests
 
       - name: Simulate-this pass 1 exact dependent seed
         shell: bash
@@ -163,7 +165,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git rm .ci/apply_issue_1379.py .ci/issue-1379-fix.patch .ci/issue-1379-test-lifetime.patch .github/workflows/issue-1379-t3-fss-latias.yml
+          git rm .ci/apply_issue_1379.py .ci/update_issue_1378_expectation.py .ci/issue-1379-fix.patch .ci/issue-1379-test-lifetime.patch .github/workflows/issue-1379-t3-fss-latias.yml
           git add src tests README.md docs results
           git commit -m 'Choose Latias over redundant Burnet payload (#1379)'
           git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

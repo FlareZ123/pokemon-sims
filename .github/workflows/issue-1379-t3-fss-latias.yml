@@ -63,11 +63,12 @@ jobs:
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build --parallel 2
 
-      - name: Run focused exact-state regression
+      - name: Run focused exact-state regressions
         shell: bash
         run: |
           set -euo pipefail
-          ./build/regidrago_unified_tests issue_1379_fss_turn_three_latias_tests issue_1378_no_lock_steven_grass_tests
+          ./build/regidrago_unified_tests issue_1379_fss_turn_three_latias_tests
+          ./build/regidrago_unified_tests issue_1378_no_lock_steven_grass_tests
 
       - name: Simulate-this pass 1 exact dependent seed
         shell: bash

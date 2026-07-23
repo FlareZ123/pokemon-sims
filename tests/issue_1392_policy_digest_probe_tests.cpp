@@ -1,5 +1,12 @@
+#define REGIDRAGO_SIM_NO_MAIN
+#include "../src/regidrago_sim.cpp"
+
 #include <cstdlib>
 #include <stdexcept>
+
+namespace sim {
+struct EngineTestAccess {};
+}  // namespace sim
 
 int main() {
   // Temporary source-bound provenance probe for the required baseline refresh:

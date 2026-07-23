@@ -1,3 +1,5 @@
+#include "part_issue_1393_crispin_route_helper.inc"
+
   bool issue_1356_fss_treasure_energy_split_available() const {
     if (scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || state_.turn != 2 ||
@@ -36,6 +38,29 @@
   }
 
   bool use_fss() {
+    const auto live_fss_holder = [](const Pokemon& pokemon) {
+      return pokemon.tool == Tool::ForestSealStone && is_pokemon_v(pokemon.card);
+    };
+    const bool forest_seal_stone_is_live = !state_.vstar_power_used &&
+        ((state_.active && live_fss_holder(*state_.active)) ||
+         std::any_of(state_.bench.begin(), state_.bench.end(), live_fss_holder));
+    if (forest_seal_stone_is_live &&
+        issue_1393_held_crispin_completion_available()) {
+      // A held Crispin can attach one searched Basic Energy and place the other
+      // into hand for the unused manual attachment. When the same public K1 state
+      // already contains the VSTAR card and a legal current-turn Dragon outlet,
+      // Star Alchemy advances no setup axis and must remain unused:
+      // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+      // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Core Supporter, attachment, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Resource-preserving earliest route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1393
+      trace("HOLD VSTAR POWER", "R-FSS-02; R-CRISPIN-01; P-KNOWLEDGE-01; P-COMPRESS-01",
+            "Retained Star Alchemy because held Crispin and the public payload outlet already complete the turn-two route.");
+      return false;
+    }
+
     if (!issue_1356_fss_treasure_energy_split_available()) {
       return use_fss_issue1356_original();
     }

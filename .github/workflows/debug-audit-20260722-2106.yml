@@ -1,0 +1,130 @@
+name: Debug Audit 20260722 2106
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out audited branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Record exact source and static inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee audit-head-sha.txt
+          git status --short | tee audit-status.txt
+          git ls-files | sort | tee audit-file-inventory.txt
+          git grep -nE 'TODO|FIXME|XXX|HACK|BUG' -- src tests docs scripts README.md CMakeLists.txt > audit-static-markers.txt || true
+          git grep -nE 'simulate-this|strict-jit|DCI|K0|K1|item.lock|ability.lock|supporter.lock' -- src tests docs scripts README.md > audit-policy-inventory.txt || true
+          # Repository contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md
+          # DCI, K0/K1, lock, and resource-priority policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          # Model boundaries: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
+
+      - name: Package exact auditable source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git archive --format=tar.gz --output=audit-source.tar.gz HEAD
+          sha256sum audit-source.tar.gz | tee audit-source.sha256
+
+      - name: Configure and build Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Run complete Release suite
+        shell: bash
+        run: |
+          set -o pipefail
+          ctest --test-dir build --parallel 4 --output-on-failure 2>&1 | tee audit-release-suite.txt
+
+      - name: Simulate-this pass 1 shell strict JIT
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Official turn, Trainer, evolution, attachment, Ability, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Repository trace policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee audit-trace-1-shell.txt
+          grep -Eq '^T[23] \| READY \|' audit-trace-1-shell.txt
+
+      - name: Simulate-this pass 2 Pineco strict JIT
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+          # Forretress ex and Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+          # Dawn: https://api.pokemontcg.io/v2/cards/me2-87
+          # Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+          # Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee audit-trace-2-pineco.txt
+          grep -Eq '^T2 \| READY \|' audit-trace-2-pineco.txt
+
+      - name: Simulate-this pass 3 Rule Box Ability lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Rule Box Ability-lock scenario: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+          # Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+          # Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
+          # Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3 | tee audit-trace-3-rulebox-lock.txt
+          grep -Eq '^T[23] \| READY \|' audit-trace-3-rulebox-lock.txt
+
+      - name: Generate paired T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Paired matrix specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out audit-t2-t3-matrix.csv
+          test "$(wc -l < audit-t2-t3-matrix.csv)" -eq 33
+
+      - name: Configure and build sanitizers
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build-sanitize --parallel 2
+
+      - name: Run complete sanitizer suite
+        shell: bash
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: |
+          set -o pipefail
+          ctest --test-dir build-sanitize --parallel 2 --output-on-failure 2>&1 | tee audit-sanitizer-suite.txt
+
+      - name: Upload audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-audit-20260722-2106
+          path: |
+            audit-head-sha.txt
+            audit-status.txt
+            audit-file-inventory.txt
+            audit-static-markers.txt
+            audit-policy-inventory.txt
+            audit-release-suite.txt
+            audit-sanitizer-suite.txt
+            audit-trace-1-shell.txt
+            audit-trace-2-pineco.txt
+            audit-trace-3-rulebox-lock.txt
+            audit-t2-t3-matrix.csv
+            audit-source.tar.gz
+            audit-source.sha256
+          if-no-files-found: error

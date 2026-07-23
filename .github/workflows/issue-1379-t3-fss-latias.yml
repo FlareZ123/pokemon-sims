@@ -36,10 +36,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # The source and regression patches are limited to confirmed issue #1379:
-          # https://github.com/FlareZ123/pokemon-sims/issues/1379
-          git apply .ci/issue-1379-fix.patch
-          git apply .ci/issue-1379-test-lifetime.patch
+          # Confirmed issue: https://github.com/FlareZ123/pokemon-sims/issues/1379
+          python .ci/apply_issue_1379.py
 
       - name: Static source audit
         shell: bash
@@ -96,7 +94,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Path to the Peak disables Rule Box Pokémon Abilities, including Skyliner:
+          # Path to the Peak disables Rule Box Pokemon Abilities, including Skyliner:
           # https://api.pokemontcg.io/v2/cards/swsh6-148
           # https://api.pokemontcg.io/v2/cards/sv8-76
           # Lock contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
@@ -165,7 +163,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git rm .ci/issue-1379-fix.patch .ci/issue-1379-test-lifetime.patch .github/workflows/issue-1379-t3-fss-latias.yml
+          git rm .ci/apply_issue_1379.py .ci/issue-1379-fix.patch .ci/issue-1379-test-lifetime.patch .github/workflows/issue-1379-t3-fss-latias.yml
           git add src tests README.md docs results
           git commit -m 'Choose Latias over redundant Burnet payload (#1379)'
           git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

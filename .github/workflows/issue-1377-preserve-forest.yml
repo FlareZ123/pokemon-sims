@@ -37,6 +37,7 @@ jobs:
         run: |
           set -euo pipefail
           python scripts/apply_issue_1377_fix.py
+          python scripts/apply_issue_1377_compat.py
 
       - name: Static repository audit
         shell: bash
@@ -154,7 +155,7 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf build build-sanitize issue-1377-pass-*.txt issue-1377-t2-t3-matrix.csv issue-1377-release-suite.txt
-          git rm .github/workflows/issue-1377-preserve-forest.yml scripts/apply_issue_1377_fix.py
+          git rm .github/workflows/issue-1377-preserve-forest.yml scripts/apply_issue_1377_fix.py scripts/apply_issue_1377_compat.py
           git add src tests README.md docs results
           if git diff --cached --quiet; then
             echo 'No validated source change was produced' >&2

@@ -10,6 +10,7 @@ LOCK = HELPER.with_suffix(HELPER.suffix + ".lock")
 
 
 # This wrapper corrects the temporary generated fixture before executing it.
+# The publication workflow consumes the already validated patch and evidence.
 def main() -> int:
     LOCK.parent.mkdir(parents=True, exist_ok=True)
     with LOCK.open("a+", encoding="utf-8") as lock_handle:

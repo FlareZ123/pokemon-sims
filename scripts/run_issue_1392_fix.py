@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import runpy
+import subprocess
 from pathlib import Path
 
 
@@ -9,21 +10,25 @@ HELPER = Path("scripts/apply_issue_1392_fix.py")
 LOCK = HELPER.with_suffix(HELPER.suffix + ".lock")
 
 
-def install_one_shot_post_commit_hook() -> None:
-    hook = Path(".git/hooks/post-commit")
-    hook.parent.mkdir(parents=True, exist_ok=True)
+def install_one_shot_pre_commit_hook() -> None:
+    hook_dir = (Path.cwd() / ".git" / "hooks").resolve()
+    hook_dir.mkdir(parents=True, exist_ok=True)
+    hook = hook_dir / "pre-commit"
     hook.write_text(
         "#!/bin/sh\n"
         "set -eu\n"
-        "rm -f .git/hooks/post-commit\n"
-        "git checkout HEAD^ -- "
+        "git restore --source=HEAD --staged --worktree -- "
         ".github/workflows/issue-1392-lusamine-chaotic-swell.yml "
         "scripts/apply_issue_1392_fix.py scripts/run_issue_1392_fix.py\n"
-        "git commit --amend --no-edit --no-verify\n",
+        "rm -f .git/hooks/pre-commit\n",
         encoding="utf-8",
         newline="\n",
     )
     hook.chmod(0o755)
+    subprocess.run(
+        ["git", "config", "core.hooksPath", str(hook_dir)],
+        check=True,
+    )
 
 
 # This wrapper corrects the generated fixture, applies the validated patch, and
@@ -59,7 +64,7 @@ def main() -> int:
 
     namespace = runpy.run_path(str(HELPER), run_name="issue_1392_helper")
     result = int(namespace["main"]())
-    install_one_shot_post_commit_hook()
+    install_one_shot_pre_commit_hook()
     return result
 
 

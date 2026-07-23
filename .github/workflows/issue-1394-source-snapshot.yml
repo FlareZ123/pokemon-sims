@@ -8,9 +8,9 @@ permissions:
   contents: read
 
 jobs:
-  snapshot:
+  rebase:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,22 +24,75 @@ jobs:
           git fetch origin main
           git merge-base --is-ancestor origin/main HEAD
 
-      - name: Static source audit
+      - name: Recover preserved Crobat patch
         shell: bash
         run: |
           set -euo pipefail
-          # Repository source contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md
-          test -f README.md
-          test -f CMakeLists.txt
-          test -d src
-          test -d tests
-          test -d docs
-          python -m compileall -q scripts
+          preserved=1159d360270d6b2af3ff342b23cc8edc12453e1e
+          git fetch origin "$preserved"
+          mkdir -p /tmp/issue-1394-chunks
+          for name in 01 02 03 04 05; do
+            git show "$preserved:scripts/issue_1394_patch_chunks/${name}.b64" > "/tmp/issue-1394-chunks/${name}.b64"
+          done
+          python - <<'PY'
+          import base64
+          import gzip
+          from pathlib import Path
 
-      - name: Upload exact source snapshot
+          chunks = "".join(
+              path.read_text(encoding="ascii").strip()
+              for path in sorted(Path("/tmp/issue-1394-chunks").glob("*.b64"))
+          )
+          patch = gzip.decompress(base64.b64decode(chunks))
+          Path("/tmp/issue-1394-crobat.patch").write_bytes(patch)
+          PY
+          test -s /tmp/issue-1394-crobat.patch
+
+      - name: Rebase Crobat implementation onto current main
+        id: rebase
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104
+          # Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Rule Box lock: https://api.pokemontcg.io/v2/cards/swsh6-148
+          git apply --3way --whitespace=nowarn /tmp/issue-1394-crobat.patch
+          git rm -f scripts/apply_issue_1394_crobat.py
+          git rm -rf scripts/issue_1394_patch_chunks
+          git rm -f .github/workflows/issue-1394-source-snapshot.yml
+          git diff --binary origin/main > /tmp/issue-1394-rebased.patch
+          test -s /tmp/issue-1394-rebased.patch
+
+      - name: Configure and build rebased Release source
+        if: steps.rebase.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Run focused Crobat regressions
+        if: steps.rebase.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_unified_tests issue_1394_crobat_v_model_tests
+          ./build/regidrago_sim --self-test
+
+      - name: Capture rebase diagnostics
+        if: always()
+        shell: bash
+        run: |
+          git status --short > /tmp/issue-1394-status.txt
+          git diff --name-only --diff-filter=U > /tmp/issue-1394-conflicts.txt
+          git diff --binary origin/main > /tmp/issue-1394-current-diff.patch || true
+
+      - name: Upload rebased source and diagnostics
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: issue-1394-current-source
+          name: issue-1394-rebased-source
           path: |
             README.md
             CMakeLists.txt
@@ -48,5 +101,14 @@ jobs:
             scripts
             docs
             results
-            .github/workflows
-          if-no-files-found: error
+            /tmp/issue-1394-crobat.patch
+            /tmp/issue-1394-rebased.patch
+            /tmp/issue-1394-current-diff.patch
+            /tmp/issue-1394-status.txt
+            /tmp/issue-1394-conflicts.txt
+            build/Testing
+          if-no-files-found: warn
+
+      - name: Require clean rebase
+        if: steps.rebase.outcome != 'success'
+        run: exit 1

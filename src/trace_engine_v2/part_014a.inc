@@ -49,7 +49,15 @@
       // Hisuian Heavy Ball is optional, so the policy must retain it once no setup
       // axis remains instead of spending a non-advancing Prize-information action: https://api.pokemontcg.io/v2/cards/swsh10-146
       if (!setup_axis_missing()) break;
-      if (run_forretress_combo_search_step(permit_payload)) continue;
+      // A complete same-turn Forest Seal Stone route makes another Pineco a
+      // future-only connector. Preserve both Quick Balls and the Bench slot:
+      // https://api.pokemontcg.io/v2/cards/swsh1-179
+      // https://api.pokemontcg.io/v2/cards/sv4pt5-1
+      // https://api.pokemontcg.io/v2/cards/swsh12-156
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // https://github.com/FlareZ123/pokemon-sims/issues/1412
+      if (!issue_1412_direct_fss_fire_route_visible() &&
+          run_forretress_combo_search_step(permit_payload)) continue;
       if (play_heavy_ball()) continue;
       if (!run_search_items_one_step(permit_payload)) break;
     }

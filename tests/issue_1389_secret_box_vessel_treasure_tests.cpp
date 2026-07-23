@@ -94,6 +94,7 @@ void test_dead_vessel_precedes_live_treasure() {
   // https://api.pokemontcg.io/v2/cards/sv4-163
   // https://api.pokemontcg.io/v2/cards/sv4pt5-2
   // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/issues/1389
   const auto plan =
       sim::EngineTestAccess::secret_box_cost_plan(fixture.engine);

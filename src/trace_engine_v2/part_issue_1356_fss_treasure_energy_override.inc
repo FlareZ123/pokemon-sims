@@ -156,7 +156,7 @@
       throw std::logic_error("Legacy Star future-turn Treasure target disappeared");
     }
     issue_1417_treasure_hold_turn_ = state_.turn;
-    trace("LEGACY STAR ROUTE", "R-VSTAR-02; R-MT-01; P-DCI-01; P-COMPRESS-01",
+    trace("LEGACY STAR ROUTE", "R-VSTAR-01; R-MT-01; P-DCI-01; P-COMPRESS-01",
           "Recovered Mysterious Treasure for the next-turn strict-JIT Dragon payload.");
     return true;
   }

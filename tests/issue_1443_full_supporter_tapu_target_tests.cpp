@@ -46,7 +46,7 @@ void test_full_supporter_lock_seed_34_preserves_treasure() {
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
   // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
-  // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv8-130
+  // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Full-Supporter-lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-semantics
   // DCI and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities

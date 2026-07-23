@@ -34,7 +34,7 @@ jobs:
         run: |
           ./build/regidrago_unified_tests issue_1378_no_lock_steven_grass_tests
           ./build/regidrago_unified_tests issue_1223_full_item_lock_steven_grass_tests
-          ./build/regidrago_unified_tests issue_1377_preserve_forest_prior_turn_tests
+          ./build/regidrago_unified_tests issue_1377_prior_turn_pineco_forest_tests
       - name: Run three independent simulate-this passes
         shell: bash
         run: |

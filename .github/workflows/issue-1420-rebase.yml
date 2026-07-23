@@ -1,0 +1,117 @@
+name: Issue 1420 Rebase Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1420-rebase-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  merge-main-regenerate-and-publish:
+    if: github.head_ref == 'fix/issue-1420-steven-direct-treasure'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Detect current main ancestry
+        id: gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          if git merge-base --is-ancestor origin/main HEAD; then
+            echo 'run=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'run=true' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.run == 'true'
+        with:
+          python-version: '3.12'
+      - name: Merge current main
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git merge --no-commit --no-ff -X theirs origin/main
+          test -z "$(git diff --name-only --diff-filter=U)"
+      - name: Configure Release
+        if: steps.gate.outputs.run == 'true'
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and unified tests
+        if: steps.gate.outputs.run == 'true'
+        run: cmake --build build --parallel 2
+      - name: Run focused combined regressions
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_unified_tests issue_1420_steven_direct_treasure_tests
+          ./build/regidrago_unified_tests issue_1417_legacy_star_treasure_tests
+          ./build/regidrago_unified_tests issue_1389_secret_box_vessel_treasure_tests
+          ./build/regidrago_unified_tests issue_1376_t1_pineco_before_steven_tests
+          ./build/regidrago_unified_tests issue_1118_multi_deck_secret_box_tests
+          ./build/regidrago_unified_tests forretress_ex_combo_tests
+      - name: Run three independent simulate-this audits
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee issue-1420-seed-35.txt
+          grep -q 'banked Crispin and Dragapult ex' issue-1420-seed-35.txt
+          grep -q 'Dragapult ex (Mysterious Treasure cost)' issue-1420-seed-35.txt
+          ! grep -q 'T2 | PLAY ITEM | rules: R-SECRET-BOX-01' issue-1420-seed-35.txt
+          ! grep -q 'T2 | EXPLODING ENERGY' issue-1420-seed-35.txt
+          ! grep -q 'T2 | EVOLVE | rules: R-FORRETRESS-01' issue-1420-seed-35.txt
+          ! grep -q 'T2 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand' issue-1420-seed-35.txt
+          grep -q 'without advancing the Pineco line' issue-1420-seed-35.txt
+          grep -q 'T2 | READY' issue-1420-seed-35.txt
+
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 18 --require-ready-by 2 | tee issue-1420-seed-18.txt
+          grep -q 'Arven banked the next-turn Secret Box route' issue-1420-seed-18.txt
+          grep -q 'T2 | READY' issue-1420-seed-18.txt
+
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 40 --require-ready-by 2 | tee issue-1420-seed-40.txt
+          grep -q 'Gladion recovered the legally known prized Secret Box' issue-1420-seed-40.txt
+          grep -q 'T2 | READY' issue-1420-seed-40.txt
+      - name: Regenerate current-main evidence
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Run complete Release suite
+        if: steps.gate.outputs.run == 'true'
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Commit merge and regenerated evidence
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -A
+          git diff --cached --check
+          git commit -m 'Merge current main and refresh issue 1420 evidence'
+          git push origin HEAD:${{ github.head_ref }}
+      - name: Upload rebase evidence
+        if: always() && steps.gate.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1420-rebase-${{ github.run_attempt }}
+          path: |
+            issue-1420-seed-*.txt
+            results
+            docs/MULTI_DECK_REPORT.md
+            build/Testing
+          if-no-files-found: warn

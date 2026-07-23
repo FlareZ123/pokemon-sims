@@ -314,9 +314,49 @@ bool Engine::advance_forretress_combo() {
   if (!forretress_combo_enabled()) return false;
   bool changed = false;
 
+  const auto prior_turn_pineco = [this](const Pokemon& pokemon) {
+    return pokemon.card == Card::Pineco &&
+        pokemon.entered_turn < state_.turn;
+  };
+  const bool pineco_can_evolve_normally =
+      (state_.active && prior_turn_pineco(*state_.active)) ||
+      std::any_of(state_.bench.begin(), state_.bench.end(), prior_turn_pineco);
+  const bool current_turn_pineco =
+      (state_.active && state_.active->card == Card::Pineco &&
+       state_.active->entered_turn == state_.turn) ||
+      std::any_of(state_.bench.begin(), state_.bench.end(),
+                  [this](const Pokemon& pokemon) {
+                    return pokemon.card == Card::Pineco &&
+                        pokemon.entered_turn == state_.turn;
+                  });
+  const bool pineco_can_enter_this_turn = in_play_count(Card::Pineco) == 0 &&
+      bench_space() > 0 &&
+      (hand_count(Card::Pineco) > 0 || might_be_unseen(Card::Pineco));
+  const bool forretress_available = hand_count(Card::ForretressEx) > 0 ||
+      might_be_unseen(Card::ForretressEx);
+  // Forest of Vitality changes only entry-turn Grass evolution. Preserve it when
+  // a Pineco is already eligible under ordinary prior-turn timing, and spend it
+  // only for a current-turn or still-to-be-Benched Pineco with a live Forretress:
+  // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+  // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+  // Core evolution and Stadium procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1377
+  // Playing Forest into Chaotic Swell still resolves the established Stadium
+  // replacement interaction and clears both Stadiums:
+  // Chaotic Swell: https://api.pokemontcg.io/v2/cards/sm12-187
+  // Stadium procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Repository contract: https://github.com/FlareZ123/pokemon-sims/issues/1096
+  const bool chaotic_swell_replacement =
+      state_.stadium == Stadium::ChaoticSwell;
   const bool combo_stadium_is_useful = !state_.stadium_used && need_energy() &&
       hand_count(Card::ForestOfVitality) > 0 &&
-      state_.stadium != Stadium::ForestOfVitality;
+      state_.stadium != Stadium::ForestOfVitality &&
+      (chaotic_swell_replacement ||
+       (in_play_count(Card::ForretressEx) == 0 &&
+        !pineco_can_evolve_normally && forretress_available &&
+        (current_turn_pineco || pineco_can_enter_this_turn)));
   if (combo_stadium_is_useful &&
       remove_one(state_.hand, Card::ForestOfVitality)) {
     // Stadiums can be played through Item lock. A player cannot play a Stadium with

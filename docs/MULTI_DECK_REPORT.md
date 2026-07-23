@@ -35,7 +35,7 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 | Strict JIT, full Item lock, second | 10.488% ± 0.097 | 22.888% ± 0.133 | 30.049% ± 0.145 | 69.951% ± 0.145 |
 | Strict JIT, Rule Box Ability lock, second | 17.971% ± 0.121 | 34.465% ± 0.150 | 44.634% ± 0.157 | 55.366% ± 0.157 |
 | Strict JIT, combined lock, second | 2.352% ± 0.048 | 11.342% ± 0.100 | 15.418% ± 0.114 | 84.582% ± 0.114 |
-| Strict JIT, Supporter lock, first | 0.005% ± 0.002 | 13.477% ± 0.108 | 19.697% ± 0.126 | 80.303% ± 0.126 |
+| Strict JIT, Supporter lock, first | 0.004% ± 0.002 | 15.257% ± 0.114 | 21.516% ± 0.130 | 78.484% ± 0.130 |
 | Strict JIT, Supporter lock, second | 8.085% ± 0.086 | 19.364% ± 0.125 | 25.257% ± 0.137 | 74.743% ± 0.137 |
 
 ### First-ready-turn distribution
@@ -67,7 +67,7 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 | Strict JIT, full Item lock, second | 4.389% ± 0.065 | 9.130% ± 0.091 | 14.485% ± 0.111 | 85.515% ± 0.111 |
 | Strict JIT, Rule Box Ability lock, second | 11.725% ± 0.102 | 22.348% ± 0.132 | 31.518% ± 0.147 | 68.482% ± 0.147 |
 | Strict JIT, combined lock, second | 1.164% ± 0.034 | 2.610% ± 0.050 | 4.452% ± 0.065 | 95.548% ± 0.065 |
-| Strict JIT, Supporter lock, first | 1.798% ± 0.042 | 5.459% ± 0.072 | 9.489% ± 0.093 | 90.511% ± 0.093 |
+| Strict JIT, Supporter lock, first | 1.858% ± 0.043 | 5.771% ± 0.074 | 9.912% ± 0.094 | 90.088% ± 0.094 |
 | Strict JIT, Supporter lock, second | 6.004% ± 0.075 | 9.976% ± 0.095 | 14.235% ± 0.110 | 85.765% ± 0.110 |
 
 ### First-ready-turn distribution
@@ -160,6 +160,6 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 ## Provenance
 
-Simulator policy digest: `43b9441c0fbd3c31bd03e67532e0ca87830d1cbd6cbf5e5218b769386e92e338`.
+Simulator policy digest: `dbf5e366fa9e548107f6371b5b94676110d58581b2f136678a2965abf8ea7645`.
 
-Comparison CSV SHA-256: `a7dc1db4095fa18bd0396b042b10e673740be15f33748bef2c83015a32d23cdf`.
+Comparison CSV SHA-256: `a376148d58385da36e1a98bd4c32c0365afcfe65147aa29cbe098b208300b0f3`.

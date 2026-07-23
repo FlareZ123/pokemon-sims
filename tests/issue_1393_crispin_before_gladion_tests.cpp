@@ -14,7 +14,9 @@ struct EngineTestAccess {
     engine.deck_seen_ = true;
     engine.prizes_revealed_ = true;
   }
-  static void choose_supporter(Engine& engine) { engine.choose_supporter(); }
+  static void choose_supporter(Engine& engine) {
+    engine.choose_supporter_issue_1152();
+  }
   static bool route_available(const Engine& engine) {
     return engine.issue_1393_held_crispin_completion_available();
   }

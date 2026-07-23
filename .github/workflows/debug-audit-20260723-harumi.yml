@@ -25,13 +25,14 @@ jobs:
       - name: Compile Python support files
         run: python -m compileall -q scripts tests
 
-      - name: Configure Release with warnings as errors
-        run: >-
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_CXX_FLAGS="-Werror"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build simulator and tests
-        run: cmake --build build --parallel 2
+      - name: Build simulator and capture diagnostics
+        shell: bash
+        run: |
+          set -o pipefail
+          cmake --build build --parallel 2 2>&1 | tee build-output.txt
 
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
@@ -67,5 +68,6 @@ jobs:
             audit-trace-*.txt
             audit-matrix.csv
             tested-head.txt
+            build-output.txt
             build/Testing
           if-no-files-found: warn

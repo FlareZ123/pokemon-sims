@@ -1,0 +1,121 @@
+name: Debug Audit 20260723 0010
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  source-bound-debug-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out exact PR source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Record source and static inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Repository specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md
+          # Policy specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          # Model boundaries: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
+          git rev-parse HEAD | tee audited-head.txt
+          git ls-files | sort > tracked-files.txt
+          git grep -nE 'TODO|FIXME|XXX|HACK' -- src tests docs scripts README.md > static-markers.txt || true
+          git grep -nE 'simulate-this|ready_by_turn|Decision priority|DCI|K1|item lock|ability lock|supporter lock' -- src tests docs scripts README.md > policy-touchpoints.txt || true
+          tar -czf source-snapshot.tar.gz --files-from=tracked-files.txt
+
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: CI simulate-this pass 1 shell no-lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Simulator trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Regidrago VSTAR card data: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee audit-trace-1-shell.txt
+          grep -Eq '^T[123] \| READY \|' audit-trace-1-shell.txt
+
+      - name: CI simulate-this pass 2 Pineco Secret Box
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Secret Box card data: https://api.pokemontcg.io/v2/cards/sv6-163
+          # Pineco card data: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+          # Forretress ex card data: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # Named-deck specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#named-deck-recipes
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee audit-trace-2-pineco.txt
+          grep -q 'Secret Box discarded three other cards' audit-trace-2-pineco.txt
+          grep -Eq '^T2 \| READY \|' audit-trace-2-pineco.txt
+
+      - name: CI simulate-this pass 3 Rule Box Ability lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Path to the Peak card data: https://api.pokemontcg.io/v2/cards/swsh6-148
+          # Field Blower card data: https://api.pokemontcg.io/v2/cards/sm2-125
+          # Lock scenario specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3 | tee audit-trace-3-rulebox-lock.txt
+          grep -Eq '^T[23] \| READY \|' audit-trace-3-rulebox-lock.txt
+
+      - name: Run complete Release suite
+        shell: bash
+        run: |
+          set -o pipefail
+          ctest --test-dir build --parallel 4 --output-on-failure 2>&1 | tee release-suite.txt
+
+      - name: Configure and build sanitizers
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build-sanitize --parallel 2
+
+      - name: Run complete sanitizer suite
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        shell: bash
+        run: |
+          set -o pipefail
+          ctest --test-dir build-sanitize --parallel 2 --output-on-failure 2>&1 | tee sanitizer-suite.txt
+
+      - name: Generate current-run paired T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260723 --out audit-t2-t3-matrix.csv
+          test "$(wc -l < audit-t2-t3-matrix.csv)" -eq 33
+
+      - name: Upload source-bound audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-audit-20260723-0010
+          path: |
+            audited-head.txt
+            tracked-files.txt
+            static-markers.txt
+            policy-touchpoints.txt
+            source-snapshot.tar.gz
+            audit-trace-*.txt
+            release-suite.txt
+            sanitizer-suite.txt
+            audit-t2-t3-matrix.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn

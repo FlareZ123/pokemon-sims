@@ -83,8 +83,8 @@ jobs:
           # Rule Box Ability-lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
           # Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
           # Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3 | tee trace-pass-3-rulebox-lock-seed-13.txt
-          grep -Eq '^T3 \| READY \|' trace-pass-3-rulebox-lock-seed-13.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 2 | tee trace-pass-3-rulebox-lock-seed-13.txt
+          grep -Eq '^T2 \| READY \|' trace-pass-3-rulebox-lock-seed-13.txt
 
       - name: Generate run-specific paired T2/T3 matrix
         shell: bash

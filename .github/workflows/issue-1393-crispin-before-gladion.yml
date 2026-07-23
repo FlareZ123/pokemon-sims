@@ -36,7 +36,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python scripts/apply_issue_1393_fix.py
+          python scripts/run_issue_1393_fix.py
 
       - name: Static source audit
         shell: bash
@@ -166,7 +166,7 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf build build-sanitize issue-1393-build.txt issue-1393-focused.txt issue-1393-pass-*.txt issue-1393-t2-t3-matrix.csv issue-1393-release-suite.txt
-          git rm .github/workflows/issue-1393-crispin-before-gladion.yml scripts/apply_issue_1393_fix.py
+          git rm .github/workflows/issue-1393-crispin-before-gladion.yml scripts/apply_issue_1393_fix.py scripts/run_issue_1393_fix.py
           git add src tests README.md docs results
           if git diff --cached --quiet; then
             echo "No validated source change was produced" >&2

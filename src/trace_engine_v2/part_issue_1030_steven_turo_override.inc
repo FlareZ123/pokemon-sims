@@ -137,9 +137,13 @@
   }
 
   bool issue_1223_full_item_lock_steven_grass_route_available() const {
+    // The reviewed #1223 decomposition also applies in the equivalent no-lock K1
+    // state while every card, Energy, Bench, Latias, payload, and horizon guard
+    // below remains required: https://github.com/FlareZ123/pokemon-sims/issues/1378
+    const bool supported_lock = scenario_.locks == LockMode::FullItem ||
+                                scenario_.locks == LockMode::None;
     if (!deck_seen_ || !supporter_allowed() ||
-        scenario_.dci != DciProfile::StrictJit ||
-        scenario_.locks != LockMode::FullItem ||
+        scenario_.dci != DciProfile::StrictJit || !supported_lock ||
         state_.turn + 2 > scenario_.max_turn || !state_.active ||
         !is_basic(state_.active->card) ||
         state_.active->card == Card::RegidragoV ||
@@ -156,9 +160,10 @@
     }
 
     // Steven's Resolve may search any three cards. With VSTAR and Burnet already
-    // held under permanent Item lock, the deterministic package is Regidrago V,
-    // Crispin, and Grass Energy. A second VSTAR duplicates a completed axis, while
-    // the searched Grass preserves the manual-attachment plus Crispin GGF schedule:
+    // held under permanent Item lock or the equivalent proven no-lock K1 state, the
+    // deterministic package is Regidrago V, Crispin, and Grass Energy. A second
+    // VSTAR duplicates a completed axis, while the searched Grass preserves the
+    // manual-attachment plus Crispin GGF schedule:
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -167,7 +172,7 @@
     // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
     // Official search, attachment, evolution, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // K1, lock, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-model https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1223
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1223 https://github.com/FlareZ123/pokemon-sims/issues/1378
     const bool latias_available =
         hand_count(Card::LatiasEx) > 0 ||
         deck_count_after_search_started(Card::LatiasEx) > 0;
@@ -227,7 +232,7 @@
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Grass Energy and one manual attachment per turn: https://www.pokemon.com/us/pokemon-tcg/rules
-    // Route specification: https://github.com/FlareZ123/pokemon-sims/issues/1223
+    // Route specifications: https://github.com/FlareZ123/pokemon-sims/issues/1223 https://github.com/FlareZ123/pokemon-sims/issues/1378
     if (!remove_one(state_.hand, Card::RegidragoVstar)) {
       throw std::logic_error("Redundant Steven VSTAR target disappeared");
     }

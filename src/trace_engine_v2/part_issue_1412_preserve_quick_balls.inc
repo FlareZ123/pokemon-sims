@@ -27,10 +27,10 @@
     // Core Tool, Ability, attachment, and evolution rules: https://www.pokemon.com/us/pokemon-tcg/rules
     // K0/K1 boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1412
-    return secret_box_combo_enabled() && !state_.turn_ended &&
-        !rule_box_abilities_locked() && !state_.manual_energy_used &&
-        regi != nullptr && regi->grass >= 2 && regi->fire == 0 &&
-        payload_ready() &&
+    return outcome_.used_exploding_energy && secret_box_combo_enabled() &&
+        !state_.turn_ended && !rule_box_abilities_locked() &&
+        !state_.manual_energy_used && regi != nullptr && regi->grass >= 2 &&
+        regi->fire == 0 && payload_ready() &&
         active_evolution_axis_complete && (fire_held || fss_fire_available);
   }
 

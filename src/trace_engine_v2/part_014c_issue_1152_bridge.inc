@@ -65,7 +65,11 @@
   int issue_1152_legacy_star_turn_ = 0;
 
   bool use_legacy_star_issue_1152() {
-    const bool used = use_legacy_star();
+    // Compose the future-turn Treasure recovery before the existing post-Legacy
+    // replay bridge so both confirmed routes remain active:
+    // https://github.com/FlareZ123/pokemon-sims/issues/1417
+    // https://github.com/FlareZ123/pokemon-sims/issues/1152
+    const bool used = use_legacy_star_issue_1417();
     issue_1152_legacy_star_turn_ = used ? state_.turn : 0;
     return used;
   }

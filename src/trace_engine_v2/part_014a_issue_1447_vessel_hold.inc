@@ -36,3 +36,24 @@
         return before_crispin || after_crispin_before_manual ||
             after_crispin_and_manual;
       };
+
+      const auto issue_1447_should_play_vessel_for_ready_turn = [this] {
+        // On T3, the held Vessel itself is the legal same-turn payload outlet. Admit
+        // its Dragon cost before the generic early Item pass disables payload costs;
+        // the searched Grass remains in hand for the unused manual attachment:
+        // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+        // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+        // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+        // Core Item, discard, attachment, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+        // Strict-JIT definition: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1447
+        return scenario_.dci == DciProfile::StrictJit &&
+            scenario_.locks == LockMode::None && state_.turn == 3 &&
+            deck_seen_ && state_.active &&
+            state_.active->card == Card::RegidragoVstar &&
+            state_.active->grass == 1 && state_.active->fire == 1 &&
+            !state_.manual_energy_used && need_energy() && need_payload() &&
+            hand_count(Card::EarthenVessel) > 0 &&
+            deck_count_after_search_started(Card::Grass) > 0 &&
+            std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+      };

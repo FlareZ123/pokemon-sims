@@ -15,6 +15,122 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  issue_1403_implementation:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'bug/issue-1403-seed23-t4-route'
+    permissions:
+      contents: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bug/issue-1403-seed23-t4-route
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check implementation state
+        id: implementation
+        shell: bash
+        run: |
+          if test -f tests/issue_1403_seed23_t4_route_tests.cpp; then
+            echo 'present=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'present=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Apply confirmed issue 1403 patch
+        if: steps.implementation.outputs.present != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Confirmed twice-approved bug: https://github.com/FlareZ123/pokemon-sims/issues/1403
+          python scripts/apply_issue_1403.py
+          git diff --check
+      - name: Configure and build Release
+        if: steps.implementation.outputs.present != 'true'
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Run focused route regressions
+        if: steps.implementation.outputs.present != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+          # Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+          # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+          # Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+          # Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+          # Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_unified_tests issue_1403_seed23_t4_route_tests
+          ./build/regidrago_unified_tests issue_1185_quick_ball_strict_surplus_energy_tests
+          ./build/regidrago_sim --self-test
+      - name: Review five source-bound simulate-this traces
+        if: steps.implementation.outputs.present != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Ready-state contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+          # Lock contracts: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 23 --require-ready-by 4 | tee issue-1403-seed23.txt
+          grep -Fq 'Searched any card: Grass Energy.' issue-1403-seed23.txt
+          grep -Fq 'T3 | DISCARD | Tate & Liza (Quick Ball cost)' issue-1403-seed23.txt
+          grep -Fq 'T4 | READY |' issue-1403-seed23.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee issue-1403-shell-second.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee issue-1403-pineco-second.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee issue-1403-item-lock.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3 | tee issue-1403-rulebox-lock.txt
+      - name: Regenerate canonical and paired matrices
+        if: steps.implementation.outputs.present != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Run complete Release suite
+        if: steps.implementation.outputs.present != 'true'
+        shell: bash
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Configure and run ASan and UBSan
+        if: steps.implementation.outputs.present != 'true'
+        shell: bash
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitizers -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build-sanitizers --parallel 2
+          ctest --test-dir build-sanitizers --parallel 2 --output-on-failure
+      - name: Upload implementation evidence
+        if: always() && steps.implementation.outputs.present != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1403-implementation
+          path: |
+            issue-1403-*.txt
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            build/Testing
+            build-sanitizers/Testing
+          if-no-files-found: warn
+      - name: Commit validated implementation
+        if: steps.implementation.outputs.present != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add README.md src tests docs results
+          git diff --cached --check
+          git commit -m "Reach the legal seed 23 T4 route (#1403)"
+          git push origin HEAD:bug/issue-1403-seed23-t4-route
+
   release:
     runs-on: ubuntu-24.04
     timeout-minutes: 20

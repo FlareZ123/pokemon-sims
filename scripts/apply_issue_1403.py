@@ -7,6 +7,7 @@ from pathlib import Path
 
 # Confirmed route-planning bug and exact source contract:
 # https://github.com/FlareZ123/pokemon-sims/issues/1403
+# The branch-only push workflow applies and removes this helper after validation.
 CHUNK_DIRECTORY = Path("scripts/issue_1403_patch_chunks")
 
 

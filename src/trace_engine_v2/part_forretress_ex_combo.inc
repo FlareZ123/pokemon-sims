@@ -312,6 +312,17 @@ bool Engine::use_exploding_energy_for_setup() {
 
 bool Engine::advance_forretress_combo() {
   if (!forretress_combo_enabled()) return false;
+
+  // Steven's legal K1 search has already committed the complete direct T2
+  // continuation. Preserve Pineco and Forretress ex for the whole turn instead
+  // of re-evaluating their line after Crispin or the manual attachment resolves:
+  // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1420
+  if (issue_1420_direct_t2_treasure_route_ && state_.turn == 2) return false;
+
   bool changed = false;
 
   const auto prior_turn_pineco = [this](const Pokemon& pokemon) {

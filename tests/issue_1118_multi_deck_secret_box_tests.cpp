@@ -220,24 +220,22 @@ void expect_seeded_route(const std::uint64_t seed,
 }
 
 void test_reviewed_seeded_routes() {
-  // Seed 35 proves strict DCI may spend Grant, Wishful Baton, and a
-  // dynamically replaceable search Item, then Bench the held Pineco before
-  // Steven ends turn one. Dawn, ordinary evolution, Treasure, and Forretress
-  // preserve the T2 route without consuming Forest of Vitality:
+  // Seed 35 now proves the route-comparison half of the original policy.
+  // Pineco is still Benched before Steven ends the turn, while Steven banks
+  // Crispin and Dragapult ex because held Treasure and VSTAR reach the same T2
+  // deadline without Secret Box or the Forretress ex self-Knock-Out:
   // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
-  // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
-  // Core Bench, Supporter, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Core Bench, Supporter, attachment, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // Original route contract: https://github.com/FlareZ123/pokemon-sims/issues/1118
-  // Stronger resource-preserving route: https://github.com/FlareZ123/pokemon-sims/issues/1376
+  // Pineco-before-Steven contract: https://github.com/FlareZ123/pokemon-sims/issues/1376
+  // Direct-route correction: https://github.com/FlareZ123/pokemon-sims/issues/1420
   expect_seeded_route(35, {
-      "Grant (Secret Box cost)",
-      "Wishful Baton (Secret Box cost)",
-      "Secret Box discarded three other cards",
       "T1 | BENCH | rules: R-GAME-BENCH | Pineco from hand",
-      "Dawn searched and revealed: Dragapult ex",
-      "Pineco evolved into Forretress ex under normal prior-turn timing",
-      "Mysterious Treasure cost",
+      "banked Crispin and Dragapult ex",
+      "Dragapult ex (Mysterious Treasure cost)",
       "T2 | READY",
   });
 

@@ -83,7 +83,44 @@
     const bool arven_fss_axis = !state_.vstar_power_used && open_fss_holder &&
         might_be_unseen(Card::ForestSealStone) && fss_live_axis;
 
+    const bool chaotic_swell_unlock_axis = [this]() {
+      if (hand_count(Card::Lusamine) == 0 || !rule_box_abilities_locked() ||
+          state_.stadium_used || state_.vstar_power_used ||
+          state_.turn >= scenario_.max_turn ||
+          count_of(state_.discard, Card::ChaoticSwell) == 0 ||
+          !need_payload()) {
+        return false;
+      }
 
+      // Lusamine can recover Chaotic Swell plus another Supporter or Stadium.
+      // Playing Swell replaces the modeled Path to the Peak, immediately restoring
+      // Legacy Star. Project the exact paid state and require Legacy Star itself to
+      // be legal before treating Swell as the advancing first recovery target:
+      // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
+      // Chaotic Swell: https://api.pokemontcg.io/v2/cards/sm12-187
+      // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Stadium, Supporter, evolution, and Ability procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Rule Box lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+      // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1392
+      std::mt19937_64 shadow_rng = rng_;
+      Engine projected(scenario_, recipe_, shadow_rng);
+      projected.state_ = state_;
+      projected.deck_seen_ = deck_seen_;
+      projected.prizes_revealed_ = prizes_revealed_;
+
+      if (!remove_one(projected.state_.hand, Card::Lusamine)) return false;
+      projected.state_.discard.push_back(Card::Lusamine);
+      projected.state_.supporter_used = true;
+      if (!remove_one(projected.state_.discard, Card::ChaoticSwell)) return false;
+      projected.state_.hand.push_back(Card::ChaoticSwell);
+      if (!projected.play_chaotic_swell()) return false;
+      projected.evolve_best_regi();
+      return projected.use_legacy_star();
+    }();
+
+    if (chaotic_swell_unlock_axis) recover_once(Card::ChaoticSwell);
     if (known_gladion_axis) recover_once(Card::Gladion);
     if (arven_vstar_axis || arven_regi_axis || arven_fss_axis ||
         arven_communication_axis) recover_once(Card::Arven);

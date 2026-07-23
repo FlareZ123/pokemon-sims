@@ -45,18 +45,24 @@ sim::State route_state() {
   return state;
 }
 
-sim::Engine make_engine(const sim::LockMode lock, std::mt19937_64& rng) {
-  const sim::Scenario scenario{"issue-1425-lock-boundary",
-                               sim::DciProfile::StrictJit, lock, true, 3};
-  static const sim::DeckRecipe recipe = sim::baseline_recipe();
-  sim::Engine engine(scenario, recipe, rng);
-  sim::EngineTestAccess::set_state(engine, route_state());
-  return engine;
-}
+struct Fixture {
+  sim::Scenario scenario;
+  sim::DeckRecipe recipe;
+  std::mt19937_64 rng;
+  sim::Engine engine;
+
+  Fixture(const sim::LockMode lock, const std::uint64_t seed)
+      : scenario{"issue-1425-lock-boundary", sim::DciProfile::StrictJit,
+                 lock, true, 3},
+        recipe{sim::baseline_recipe()},
+        rng{seed},
+        engine{scenario, recipe, rng} {
+    sim::EngineTestAccess::set_state(engine, route_state());
+  }
+};
 
 void test_rule_box_lock_admits_non_ability_route() {
-  std::mt19937_64 rng{142501};
-  sim::Engine engine = make_engine(sim::LockMode::FullRuleBoxAbility, rng);
+  Fixture fixture{sim::LockMode::FullRuleBoxAbility, 142501};
 
   // Path to the Peak removes Abilities from Rule Box Pokémon. It does not block
   // Supporters, Items, evolution, or Energy attachments. The continuation uses no
@@ -70,7 +76,7 @@ void test_rule_box_lock_admits_non_ability_route() {
   // Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
   // Repository lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1425
-  expect(sim::EngineTestAccess::route_available(engine),
+  expect(sim::EngineTestAccess::route_available(fixture.engine),
          "Rule Box Ability lock incorrectly rejected the non-Ability route.");
 }
 
@@ -78,15 +84,14 @@ void test_item_locks_still_reject_treasure_continuation() {
   for (const sim::LockMode lock : {sim::LockMode::TurnTwoItem,
                                    sim::LockMode::FullItem,
                                    sim::LockMode::FullCombined}) {
-    std::mt19937_64 rng{142502 + static_cast<unsigned>(lock)};
-    sim::Engine engine = make_engine(lock, rng);
+    Fixture fixture{lock, 142502U + static_cast<unsigned>(lock)};
 
     // Mysterious Treasure is an Item. Item lock and combined lock make the planned
     // next-turn continuation illegal even though Steven and Crispin are Supporters:
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Repository Item-lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#full-item-lock
     // Confirmed bug boundary: https://github.com/FlareZ123/pokemon-sims/issues/1425
-    expect(!sim::EngineTestAccess::route_available(engine),
+    expect(!sim::EngineTestAccess::route_available(fixture.engine),
            "An Item-lock scenario admitted the Treasure continuation.");
   }
 }

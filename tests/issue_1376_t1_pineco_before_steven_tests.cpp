@@ -55,8 +55,9 @@ void test_seed35_benches_pineco_before_turn_ending_steven() {
   const sim::TrialOutcome outcome = engine.run();
 
   // Pineco is a Basic already held before Steven's Resolve ends turn one.
-  // Benching it then permits ordinary prior-turn evolution on turn two and
-  // preserves the singleton Forest of Vitality plus the Stadium action:
+  // Benching it preserves ordinary prior-turn evolution as a legal fallback.
+  // The later direct Treasure route keeps Pineco unevolved because it reaches
+  // the same T2 deadline while preserving Forretress ex and Bench capacity:
   // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
   // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
@@ -71,10 +72,11 @@ void test_seed35_benches_pineco_before_turn_ending_steven() {
   const std::size_t steven = trace_index(trace, "T1 | PLAY SUPPORTER | rules: R-STEVEN-01");
   expect(pineco < steven,
          "Pineco was not Benched before Steven's Resolve ended turn one.");
-  expect(trace_contains(trace, "under normal prior-turn timing"),
-         "Pineco did not evolve through ordinary prior-turn timing.");
+  // Stronger route: https://github.com/FlareZ123/pokemon-sims/issues/1420
+  expect(!trace_contains(trace, "under normal prior-turn timing"),
+         "The direct route unnecessarily spent Forretress ex.");
   expect(!trace_contains(trace, "T2 | PLAY STADIUM | rules: R-FOREST-VITALITY-01"),
-         "The preserved prior-turn route still played Forest of Vitality.");
+         "The preserved prior-turn fallback still played Forest of Vitality.");
 }
 
 sim::State helper_state() {

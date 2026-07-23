@@ -63,8 +63,8 @@ jobs:
           # Ready-state contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
           # Regidrago VSTAR and Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
           # Core setup and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 1 --require-ready-by 4 | tee trace-pass-1-strict-first-seed-1.txt
-          grep -Eq '^T4 \| READY \|' trace-pass-1-strict-first-seed-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 1 --require-ready-by 3 | tee trace-pass-1-strict-first-seed-1.txt
+          grep -Eq '^T3 \| READY \|' trace-pass-1-strict-first-seed-1.txt
 
       - name: Simulate-this pass 2 scheduled Item lock
         shell: bash

@@ -137,9 +137,17 @@
   }
 
   bool issue_1223_full_item_lock_steven_grass_route_available() const {
+    // The proven Steven package is determined by public K1 axes, not by Item lock.
+    // Admit the same fully guarded target split when no lock is present, while all
+    // other lock models retain their existing selectors:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Original full-Item-lock route: https://github.com/FlareZ123/pokemon-sims/issues/1223
+    // Confirmed no-lock bug: https://github.com/FlareZ123/pokemon-sims/issues/1378
+    const bool supported_lock_state = scenario_.locks == LockMode::FullItem ||
+        scenario_.locks == LockMode::None;
     if (!deck_seen_ || !supporter_allowed() ||
-        scenario_.dci != DciProfile::StrictJit ||
-        scenario_.locks != LockMode::FullItem ||
+        scenario_.dci != DciProfile::StrictJit || !supported_lock_state ||
         state_.turn + 2 > scenario_.max_turn || !state_.active ||
         !is_basic(state_.active->card) ||
         state_.active->card == Card::RegidragoV ||

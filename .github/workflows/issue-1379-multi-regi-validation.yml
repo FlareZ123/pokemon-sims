@@ -1,0 +1,96 @@
+name: Issue 1379 Multi-Regidrago Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1379-multi-regi-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-materialize:
+    if: github.head_ref == 'fix/issue-1379-t3-fss-latias'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Apply multi-Regidrago correction
+        run: python scripts/apply_issue_1379_multi_regi_fix.py
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Run focused route and precedent regressions
+        run: |
+          ./build/regidrago_unified_tests issue_1379_t3_fss_latias_burnet_tests
+          ./build/regidrago_unified_tests issue_1378_no_lock_steven_grass_tests
+          ./build/regidrago_unified_tests issue_1137_fss_latias_burnet_tests
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Exact post-Crispin route: https://github.com/FlareZ123/pokemon-sims/issues/1379
+          # Forest Seal Stone, Latias, Burnet, and Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/sv8-76 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 12 --require-ready-by 3 | tee issue-1379-multi-regi-exact.txt
+          grep -q 'Searched up to 3 cards: Regidrago V, Crispin, Grass Energy' issue-1379-multi-regi-exact.txt
+          grep -q 'Searched any card: Latias ex' issue-1379-multi-regi-exact.txt
+          grep -q 'Latias ex gives the Basic Active no Retreat Cost' issue-1379-multi-regi-exact.txt
+          grep -Eq '^T3 \| READY \|' issue-1379-multi-regi-exact.txt
+
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee issue-1379-multi-regi-pineco.txt
+          grep -q 'Pineco evolved into Forretress ex under normal prior-turn timing' issue-1379-multi-regi-pineco.txt
+          grep -Eq '^T2 \| READY \|' issue-1379-multi-regi-pineco.txt
+
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3 | tee issue-1379-multi-regi-rulebox.txt
+          grep -Eq '^T[23] \| READY \|' issue-1379-multi-regi-rulebox.txt
+      - name: Regenerate source-bound evidence
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out issue-1379-final-t2-t3-matrix.csv
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Configure and build ASan and UBSan
+        run: |
+          cmake -S . -B build-sanitizers -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build-sanitizers --parallel 2
+      - name: Run complete sanitizer suite
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: ctest --test-dir build-sanitizers --parallel 2 --output-on-failure
+      - name: Upload final validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1379-final-validation
+          path: |
+            issue-1379-multi-regi-*.txt
+            issue-1379-final-t2-t3-matrix.csv
+            build/Testing
+            build-sanitizers/Testing
+          if-no-files-found: warn
+      - name: Commit validated correction and remove temporary machinery
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "FlareZ123"
+          git config user.email "40903650+FlareZ123@users.noreply.github.com"
+          git rm scripts/apply_issue_1379_multi_regi_fix.py .github/workflows/issue-1379-multi-regi-validation.yml
+          git add src/trace_engine_v2/part_issue_1071_fss_oricorio_treasure_decomposition_override.inc tests/issue_1379_t3_fss_latias_burnet_tests.cpp README.md docs results
+          git diff --cached --check
+          git commit -m "Handle any eligible T3 Regidrago route (#1379)"
+          git push origin HEAD:${{ github.head_ref }}

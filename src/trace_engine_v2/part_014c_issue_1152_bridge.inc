@@ -75,6 +75,20 @@
   }
 
   void choose_supporter_issue_1152() {
+    if (issue_1393_held_crispin_completion_available()) {
+      // Crispin completes the proven GGF route before Gladion can consume the only
+      // Supporter play for a slower Prize exchange:
+      // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+      // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+      // Core Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Earliest route and Supporter contention: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1393
+      if (!play_crispin()) {
+        throw std::logic_error(
+            "Proven issue-1393 held Crispin completion became unavailable");
+      }
+      return;
+    }
     if (play_issue_1199_route_after_attachment()) return;
     if (held_quick_ball_latias_completes_current_turn_without_arven()) {
       if (trace_ != nullptr) {

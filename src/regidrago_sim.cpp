@@ -12,6 +12,7 @@
 // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
 // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
 // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+// Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104
 // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
 // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
 // Erika's Invitation: https://api.pokemontcg.io/v2/cards/sv3pt5-160

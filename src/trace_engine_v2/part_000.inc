@@ -37,6 +37,7 @@ enum class Card : std::uint8_t {
   DialgaGX,
   GoodraVstar,
   TapuLeleGX,
+  CrobatV,
   LatiasEx,
   MawileGX,
   Oricorio,
@@ -106,5 +107,6 @@ constexpr std::string_view name(const Card card) {
     case Card::DialgaGX: return "Dialga-GX";
     case Card::GoodraVstar: return "Hisuian Goodra VSTAR";
     case Card::TapuLeleGX: return "Tapu Lele-GX";
+    case Card::CrobatV: return "Crobat V";
     case Card::LatiasEx: return "Latias ex";
     case Card::MawileGX: return "Mawile-GX";

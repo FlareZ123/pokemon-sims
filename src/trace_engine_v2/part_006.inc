@@ -505,4 +505,24 @@
     return bench_from_hand(Card::TapuLeleGX, true);
   }
 
+  bool needs_crobat_connector() {
+    // Dark Asset draws only after Crobat V leaves the hand for the Bench, so a
+    // pre-play hand of seven or more cannot draw a card: https://api.pokemontcg.io/v2/cards/swsh3-104
+    // Deterministic missing-axis connectors retain priority over random draw:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    return (need_regi() || need_vstar() || need_energy() || need_payload() ||
+            need_active_vstar()) &&
+        !state_.dark_asset_used && bench_space() > 0 &&
+        ability_available_for_pokemon(Card::CrobatV) && !state_.deck.empty() &&
+        state_.hand.size() <= 6U &&
+        !(hand_count(Card::Oricorio) > 0 && needs_oricorio_connector()) &&
+        !(hand_count(Card::TapuLeleGX) > 0 && needs_tapu_connector());
+  }
+
+  bool bench_crobat_if_useful() {
+    if (hand_count(Card::CrobatV) == 0 || bench_space() <= 0 ||
+        !needs_crobat_connector()) return false;
+    return bench_from_hand(Card::CrobatV, true);
+  }
+
   void resolve_entry_ability(const Card card) {

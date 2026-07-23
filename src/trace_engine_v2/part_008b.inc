@@ -55,6 +55,8 @@
     else if (oricorio_preserves_burnet && prized(Card::Oricorio)) selected = Card::Oricorio;
     else if (can_bench_recovered_basic && needs_tapu_connector() && prized(Card::TapuLeleGX)) selected = Card::TapuLeleGX;
     else if (can_bench_recovered_basic && needs_oricorio_connector() && prized(Card::Oricorio)) selected = Card::Oricorio;
+    else if (can_bench_recovered_basic && !state_.dark_asset_used && state_.hand.size() <= 5U &&
+             ability_available_for_pokemon(Card::CrobatV) && prized(Card::CrobatV)) selected = Card::CrobatV;
     else if (can_bench_recovered_basic && need_active_vstar() && ability_available_for_pokemon(Card::LatiasEx) && prized(Card::LatiasEx)) selected = Card::LatiasEx;
 
     // Dialga-GX is a Basic Dragon payload. When payload is the only missing axis,
@@ -79,9 +81,9 @@
     // Prefer future connectors whose abilities can function in this scenario.
     if (selected == Card::HisuianHeavyBall) {
       for (const Card candidate : {Card::RegidragoV, Card::Oricorio, Card::TapuLeleGX,
-                                   Card::LatiasEx, Card::DialgaGX, Card::MawileGX}) {
-        if ((candidate == Card::TapuLeleGX || candidate == Card::LatiasEx) &&
-            !ability_available_for_pokemon(candidate)) continue;
+                                   Card::LatiasEx, Card::CrobatV, Card::DialgaGX, Card::MawileGX}) {
+        if ((candidate == Card::TapuLeleGX || candidate == Card::LatiasEx ||
+             candidate == Card::CrobatV) && !ability_available_for_pokemon(candidate)) continue;
         if (prized(candidate)) { selected = candidate; break; }
       }
     }
@@ -90,7 +92,7 @@
     // future legal discard fodder rather than leave it prized.
     if (selected == Card::HisuianHeavyBall) {
       for (const Card candidate : {Card::RegidragoV, Card::TapuLeleGX, Card::Oricorio,
-                                   Card::LatiasEx, Card::DialgaGX, Card::MawileGX}) {
+                                   Card::LatiasEx, Card::CrobatV, Card::DialgaGX, Card::MawileGX}) {
         if (prized(candidate)) { selected = candidate; break; }
       }
     }
@@ -165,7 +167,7 @@
     // https://api.pokemontcg.io/v2/cards/sv6-127
     // https://github.com/FlareZ123/pokemon-sims/issues/1253
     for (const Card target : {Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio,
-                              Card::TapuLeleGX, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
+                              Card::TapuLeleGX, Card::CrobatV, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
                               Card::DialgaGX, Card::Appletun, Card::Dipplin}) {
       if (deck_count_after_search_started(target) > 0) return target;
     }
@@ -174,6 +176,6 @@
 
   Card fallback_quick_ball_target_after_search_started() const {
     for (const Card target : {Card::RegidragoV, Card::LatiasEx, Card::Oricorio, Card::TapuLeleGX,
-                              Card::MawileGX, Card::DialgaGX}) {
+                              Card::CrobatV, Card::MawileGX, Card::DialgaGX}) {
       if (deck_count_after_search_started(target) > 0) return target;
     }

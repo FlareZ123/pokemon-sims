@@ -3,6 +3,8 @@ name: Issue 1394 Crobat V Modeling
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write

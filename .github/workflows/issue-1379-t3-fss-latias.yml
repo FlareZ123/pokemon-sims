@@ -42,6 +42,7 @@ jobs:
           # https://github.com/FlareZ123/pokemon-sims/issues/1378
           # https://github.com/FlareZ123/pokemon-sims/issues/1379
           git apply .ci/issue-1379-fix.patch
+          git apply .ci/issue-1379-test-lifetime.patch
           git apply .ci/issue-1379-prerequisite-1378.patch
 
       - name: Static source audit
@@ -169,7 +170,7 @@ jobs:
         run: |
           set -euo pipefail
           git checkout -- src/trace_engine_v2/part_issue_1030_steven_turo_override.inc
-          git rm .ci/issue-1379-fix.patch .ci/issue-1379-prerequisite-1378.patch .github/workflows/issue-1379-t3-fss-latias.yml
+          git rm .ci/issue-1379-fix.patch .ci/issue-1379-test-lifetime.patch .ci/issue-1379-prerequisite-1378.patch .github/workflows/issue-1379-t3-fss-latias.yml
           git add src tests README.md docs results
           git commit -m 'Choose Latias over redundant Burnet payload (#1379)'
           git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

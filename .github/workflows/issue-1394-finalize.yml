@@ -1,0 +1,179 @@
+name: Issue 1394 Final Current-Main Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile-and-validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - name: Check out Crobat implementation branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Merge latest main
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Validate the implementation against the latest repository source:
+          # https://github.com/FlareZ123/pokemon-sims/tree/main
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Remove generated transport and cache artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Enhancement scope and modeling-only registry requirement:
+          # https://github.com/FlareZ123/pokemon-sims/issues/1394
+          git rm -r --ignore-unmatch scripts/__pycache__
+          rm -f docs/CROBAT_MODEL_REPORT.md.lock results/crobat_variant_model.csv.lock
+          git add -u docs results scripts
+          test ! -e docs/CROBAT_MODEL_REPORT.md.lock
+          test ! -e results/crobat_variant_model.csv.lock
+          ! find scripts -type f -name '*.pyc' -print -quit | grep -q .
+
+      - name: Static source and registry audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Crobat V and Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+          # Named deck contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#named-deck-recipes
+          test -f docs/CROBAT_MODEL_REPORT.md
+          test -f scripts/update_crobat_modeling_docs.py
+          test -f tests/issue_1394_crobat_v_model_tests.cpp
+          ! grep -q 'CrobatV' src/trace_engine_v2/part_014c.inc
+          python -m compileall -q scripts
+          find scripts -type f -name '*.pyc' -delete
+
+      - name: Configure and build Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Run focused Crobat regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Dark Asset timing and once-per-turn limit: https://api.pokemontcg.io/v2/cards/swsh3-104
+          # Official setup and Bench procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_unified_tests issue_1394_crobat_v_model_tests
+          ./build/regidrago_sim --self-test
+
+      - name: Simulate-this pass 1 going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit/go-second --seed 3 --require-ready-by 2 | tee crobat-pass-second-seed3.txt
+          grep -Eq '^T2 \| DARK ASSET \|' crobat-pass-second-seed3.txt
+          grep -Eq '^T2 \| READY \|' crobat-pass-second-seed3.txt
+
+      - name: Simulate-this pass 2 going first
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Turn and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit/go-first --seed 14 --require-ready-by 2 | tee crobat-pass-first-seed14.txt
+          grep -Eq '^T1 \| DARK ASSET \|' crobat-pass-first-seed14.txt
+          grep -Eq '^T2 \| READY \|' crobat-pass-first-seed14.txt
+
+      - name: Simulate-this pass 3 scheduled Item lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Scheduled Item lock: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit-turn2-item-lock/go-second --seed 71 --require-ready-by 3 | tee crobat-pass-item-lock-seed71.txt
+          grep -Eq '^T1 \| DARK ASSET \|' crobat-pass-item-lock-seed71.txt
+          grep -Eq '^T3 \| READY \|' crobat-pass-item-lock-seed71.txt
+
+      - name: Regenerate paired Crobat swap matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Modeling matrix contract: https://github.com/FlareZ123/pokemon-sims/issues/1394
+          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260723 --out results/crobat_variant_model.csv
+          test "$(wc -l < results/crobat_variant_model.csv)" -eq 209
+          python scripts/update_crobat_modeling_docs.py --csv results/crobat_variant_model.csv --out docs/CROBAT_MODEL_REPORT.md
+          rm -f docs/CROBAT_MODEL_REPORT.md.lock results/crobat_variant_model.csv.lock
+
+      - name: Preserve latest registered-deck probabilities
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Canonical and paired registered-deck contracts:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md
+          cp results/simulation_results.csv /tmp/simulation_results.before.csv
+          cp results/multi_deck_comparison.csv /tmp/multi_deck_comparison.before.csv
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+          cmp /tmp/simulation_results.before.csv results/simulation_results.csv
+          cmp /tmp/multi_deck_comparison.before.csv results/multi_deck_comparison.csv
+          rm -f results/*.lock docs/*.lock
+
+      - name: Run complete Release suite
+        shell: bash
+        run: |
+          set -o pipefail
+          ctest --test-dir build --parallel 4 --output-on-failure 2>&1 | tee issue-1394-release-suite.txt
+
+      - name: Configure and build sanitizers
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build-sanitize --parallel 2
+
+      - name: Run complete sanitizer suite
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: ctest --test-dir build-sanitize --parallel 2 --output-on-failure
+
+      - name: Upload final validation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1394-final-current-main-validation
+          path: |
+            crobat-pass-*.txt
+            issue-1394-release-suite.txt
+            results/crobat_variant_model.csv
+            docs/CROBAT_MODEL_REPORT.md
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: error
+
+      - name: Commit reconciled validated implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build build-sanitize crobat-pass-*.txt issue-1394-release-suite.txt
+          git rm .github/workflows/issue-1394-finalize.yml
+          find scripts -type f -name '*.pyc' -delete
+          rm -rf scripts/__pycache__
+          rm -f docs/*.lock results/*.lock
+          git add README.md CMakeLists.txt src tests scripts docs results
+          if git diff --cached --quiet; then
+            echo 'No reconciled source change was produced' >&2
+            exit 1
+          fi
+          git commit -m 'Reconcile Crobat V modeling with current main (#1394)'
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

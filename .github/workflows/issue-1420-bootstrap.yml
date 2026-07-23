@@ -35,13 +35,15 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         with:
           python-version: '3.12'
-      - name: Apply the reviewed source patch
+      - name: Apply the reviewed source patches
         if: steps.gate.outputs.run == 'true'
         shell: bash
         run: |
           set -euo pipefail
           base64 --decode .github/issue-1420.patch.gz.b64 | gzip --decompress > /tmp/issue-1420.patch
           git apply /tmp/issue-1420.patch
+          base64 --decode .github/issue-1420-refinement.patch.gz.b64 | gzip --decompress > /tmp/issue-1420-refinement.patch
+          git apply /tmp/issue-1420-refinement.patch
           git restore .github/workflows/ci.yml
           git diff --check
       - name: Configure Release
@@ -70,6 +72,9 @@ jobs:
           grep -q 'Dragapult ex (Mysterious Treasure cost)' issue-1420-seed-35.txt
           ! grep -q 'T2 | PLAY ITEM | rules: R-SECRET-BOX-01' issue-1420-seed-35.txt
           ! grep -q 'T2 | EXPLODING ENERGY' issue-1420-seed-35.txt
+          ! grep -q 'T2 | EVOLVE | rules: R-FORRETRESS-01' issue-1420-seed-35.txt
+          ! grep -q 'T2 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand' issue-1420-seed-35.txt
+          grep -q 'without advancing the Pineco line' issue-1420-seed-35.txt
           grep -q 'T2 | READY' issue-1420-seed-35.txt
 
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 18 --require-ready-by 2 | tee issue-1420-seed-18.txt
@@ -90,14 +95,6 @@ jobs:
       - name: Run complete Release suite
         if: steps.gate.outputs.run == 'true'
         run: ctest --test-dir build --parallel 4 --output-on-failure
-      - name: Package exact validated files
-        if: steps.gate.outputs.run == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          git diff --name-only --diff-filter=ACM -- CMakeLists.txt src tests docs results > issue-1420-changed-files.txt
-          test -s issue-1420-changed-files.txt
-          tar -czf issue-1420-published-files.tar.gz --files-from=issue-1420-changed-files.txt
       - name: Commit and publish source plus evidence
         if: steps.gate.outputs.run == 'true'
         shell: bash
@@ -105,7 +102,7 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src tests docs results CMakeLists.txt
+          git add src tests docs results
           git diff --cached --check
           git commit -m 'Prefer direct T2 Treasure route over Secret Box'
           git push origin HEAD:${{ github.head_ref }}
@@ -116,8 +113,6 @@ jobs:
           name: issue-1420-bootstrap-${{ github.run_attempt }}
           path: |
             issue-1420-seed-*.txt
-            issue-1420-changed-files.txt
-            issue-1420-published-files.tar.gz
             results
             docs/MULTI_DECK_REPORT.md
             build/Testing

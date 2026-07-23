@@ -78,6 +78,65 @@
     return Card::Grass;
   }
 
+  bool quick_ball_seed23_latias_route_ready() const {
+    if (!deck_seen_ || scenario_.dci != DciProfile::StrictJit ||
+        scenario_.locks != LockMode::None || state_.turn != 3 ||
+        scenario_.max_turn < 4 || !state_.vstar_power_used ||
+        !state_.supporter_used || !state_.manual_energy_used ||
+        state_.retreat_used || item_locked() || !state_.active ||
+        !is_basic(state_.active->card) || bench_space() == 0 ||
+        !ability_available_for_pokemon(Card::LatiasEx) ||
+        in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
+        std::count(state_.deck.begin(), state_.deck.end(), Card::LatiasEx) == 0 ||
+        hand_count(Card::TateLiza) == 0 ||
+        hand_count(Card::RegidragoVstar) == 0 ||
+        hand_count(Card::ProfessorBurnet) == 0 ||
+        std::find(state_.discard.begin(), state_.discard.end(), Card::Crispin) ==
+            state_.discard.end() ||
+        !std::any_of(state_.deck.begin(), state_.deck.end(), is_payload)) {
+      return false;
+    }
+
+    if (state_.active->card == Card::RegidragoV ||
+        state_.active->card == Card::RegidragoVstar) {
+      return false;
+    }
+    const bool energy_route_finishes = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          if (pokemon.card != Card::RegidragoV ||
+              pokemon.entered_turn != state_.turn) {
+            return false;
+          }
+          const bool fire_finishes = pokemon.grass >= 2 && pokemon.fire == 0 &&
+              hand_count(Card::Fire) > 0;
+          const bool grass_finishes = pokemon.grass >= 1 && pokemon.fire >= 1 &&
+              hand_count(Card::Grass) > 0;
+          return fire_finishes || grass_finishes;
+        });
+
+    // Latias ex immediately replaces Tate & Liza's remaining switch role. The held
+    // Basic Energy, VSTAR, and Professor Burnet then complete Energy, evolution, and
+    // the next-turn Dragon payload on T4. The generic Active-position and Energy
+    // predicates project held connectors, so this exact K1 route uses only public
+    // physical state and the configured T4 horizon:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1, route priority, and DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1403
+    return energy_route_finishes;
+  }
+
+  std::optional<Card> quick_ball_latias_replaced_tate_cost() const {
+    return quick_ball_seed23_latias_route_ready()
+        ? std::optional<Card>{Card::TateLiza}
+        : std::nullopt;
+  }
+
   std::optional<Card> quick_ball_final_surplus_energy_cost() const {
     const bool payload_already_ready = payload_ready();
     const bool blender_payload_route =
@@ -157,9 +216,11 @@
     // https://api.pokemontcg.io/v2/cards/swsh1-179
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
     const bool want_regi = need_regi() && bench_space() > 0 && might_be_unseen(Card::RegidragoV);
-    const bool want_latias = need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
-                             !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
-                             might_be_unseen(Card::LatiasEx);
+    const bool want_latias =
+        (need_active_vstar() || quick_ball_seed23_latias_route_ready()) &&
+        bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
+        !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
+        might_be_unseen(Card::LatiasEx);
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 &&
                            needs_tapu_connector() && might_be_unseen(Card::TapuLeleGX);
     const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 &&
@@ -203,6 +264,9 @@
     auto cost = choose_discard(can_pay_payload_cost, true, true, Card::QuickBall);
     if (!cost && want_latias) {
       cost = quick_ball_final_surplus_energy_cost();
+    }
+    if (!cost && want_latias) {
+      cost = quick_ball_latias_replaced_tate_cost();
     }
     if (!cost && want_regi && hand_count(Card::RegidragoVstar) >= 2) {
       // One of two public VSTAR copies may pay Quick Ball only while Quick Ball is

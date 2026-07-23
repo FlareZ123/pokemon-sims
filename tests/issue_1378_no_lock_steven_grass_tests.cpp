@@ -91,7 +91,7 @@ void test_no_lock_admits_proven_package_only() {
          "The no-lock generalization leaked into a scheduled-lock policy.");
 }
 
-void test_exact_seed_12_improves_to_t4() {
+void test_exact_seed_12_improves_to_t3_with_latias_follow_up() {
   const auto scenario = sim::scenario_by_label("strict-jit/go-second");
   const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
   expect(scenario.has_value() && deck != nullptr,
@@ -102,15 +102,24 @@ void test_exact_seed_12_improves_to_t4() {
   sim::Engine engine(*scenario, deck->recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 
-  expect(outcome.first_ready_turn == 4,
-         "The corrected no-lock seed 12 did not reach the proven T4 state.");
+  expect(outcome.first_ready_turn == 3,
+         "The corrected no-lock seed 12 did not reach the complete T3 route.");
   expect(trace_contains(
              trace,
              "Searched up to 3 cards: Regidrago V, Crispin, Grass Energy"),
          "Steven still selected the redundant held Regidrago VSTAR axis.");
-  // This PR intentionally leaves the separately confirmed Star Alchemy target
-  // defect to issue #1379, so T4 is the expected isolated result:
-  // https://github.com/FlareZ123/pokemon-sims/issues/1379
+  expect(trace_contains(trace, "Searched any card: Latias ex"),
+         "Star Alchemy did not resolve the remaining Active-position axis.");
+  // Expected route marker: STAR ALCHEMY searched Latias ex.
+  // The independently merged Steven correction supplies the GG foundation.
+  // Issue #1379 completes the same public continuation by searching Latias ex,
+  // attaching Fire, evolving, using Burnet, and retreating the Basic Active:
+  // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Confirmed dependent improvement: https://github.com/FlareZ123/pokemon-sims/issues/1379
 }
 
 }  // namespace
@@ -118,7 +127,7 @@ void test_exact_seed_12_improves_to_t4() {
 int main() {
   try {
     test_no_lock_admits_proven_package_only();
-    test_exact_seed_12_improves_to_t4();
+    test_exact_seed_12_improves_to_t3_with_latias_follow_up();
     std::cout << "Issue 1378 no-lock Steven Grass tests passed\n";
     return 0;
   } catch (const std::exception& error) {

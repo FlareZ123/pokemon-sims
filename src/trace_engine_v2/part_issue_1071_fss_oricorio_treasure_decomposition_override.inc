@@ -2,6 +2,37 @@
     const bool latias_ability_available =
         scenario_.locks != LockMode::FullRuleBoxAbility &&
         scenario_.locks != LockMode::FullCombined;
+    if (deck_seen_ && scenario_.dci == DciProfile::StrictJit &&
+        state_.turn == 3 && supporter_allowed() &&
+        !state_.manual_energy_used && !state_.retreat_used && state_.active &&
+        state_.active->card == Card::Oricorio && bench_space() > 0 &&
+        !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
+        deck_count_after_search_started(Card::LatiasEx) > 0 &&
+        latias_ability_available && hand_count(Card::RegidragoVstar) > 0 &&
+        hand_count(Card::ProfessorBurnet) > 0 && hand_count(Card::Fire) > 0 &&
+        payload_might_be_in_deck()) {
+      const bool prior_turn_gg_regi = std::any_of(
+          state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+            return pokemon.card == Card::RegidragoV &&
+                pokemon.entered_turn < state_.turn && pokemon.grass >= 2 &&
+                pokemon.fire == 0;
+          });
+      if (prior_turn_gg_regi) {
+        // Professor Burnet already covers the current-turn Dragon-discard axis.
+        // Star Alchemy must search Latias ex, whose Skyliner Ability removes
+        // Oricorio's Retreat Cost after the held Fire attachment and evolution:
+        // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+        // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+        // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+        // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+        // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+        // Supporter, attachment, evolution, Ability, Bench, and Retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+        // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+        // Strict-JIT payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1379
+        return true;
+      }
+    }
     if (!deck_seen_ || scenario_.dci != DciProfile::StrictJit ||
         state_.turn != 2 || state_.turn >= scenario_.max_turn ||
         !supporter_allowed() ||

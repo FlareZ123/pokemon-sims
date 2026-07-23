@@ -35,7 +35,7 @@ jobs:
           # Confirmed issue: https://github.com/FlareZ123/pokemon-sims/issues/1403
           python scripts/refine_issue_1403_counts.py
           python scripts/refine_issue_1403_bench_scan.py
-          python scripts/diagnose_issue_1403_route.py
+          python scripts/refine_issue_1403_resolver.py
 
       - name: Build and validate focused route
         shell: bash

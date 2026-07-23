@@ -75,15 +75,17 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee trace-shell-item-lock-25.txt
           grep -Eq '^T2 \| READY \|' trace-shell-item-lock-25.txt
 
-      - name: Simulate-this pass 4 Rule Box Ability lock
+      - name: Simulate-this pass 4 Rule Box Ability lock failure control
         shell: bash
         run: |
           set -euo pipefail
           # Rule Box Ability-lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+          # Strict JIT requires a payload to enter discard on the ready turn: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
           # Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
-          # Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 --require-ready-by 3 | tee trace-shell-rulebox-lock-20.txt
-          grep -Eq '^T[23] \| READY \|' trace-shell-rulebox-lock-20.txt
+          # Mysterious Treasure searches a Dragon or Psychic Pokémon into hand after discarding its cost: https://api.pokemontcg.io/v2/cards/sm6-113
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 20 | tee trace-shell-rulebox-lock-20.txt
+          grep -Fq 'first-ready turn: not ready through T5' trace-shell-rulebox-lock-20.txt
+          grep -Fq 'T5 | SETUP FAILURE |' trace-shell-rulebox-lock-20.txt
 
       - name: Generate run-specific paired T2/T3 matrix
         shell: bash

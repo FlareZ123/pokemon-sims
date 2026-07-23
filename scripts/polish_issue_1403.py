@@ -23,19 +23,12 @@ def replace_once(text: str, old: str, new: str, label: str) -> str:
     raise RuntimeError(f"Unexpected {label} count: {count}")
 
 
-def remove_once(text: str, old: str, label: str) -> str:
-    count = text.count(old)
-    if count == 1:
-        return text.replace(old, "", 1)
-    if count == 0:
-        return text
-    raise RuntimeError(f"Unexpected {label} count: {count}")
-
-
 def patch_fss(text: str) -> str:
-    text = remove_once(
+    text = replace_once(
         text,
-        "    const Pokemon* regi = target_regi();\n",
+        "    const Pokemon* regi = target_regi();\n"
+        "    // Star Alchemy takes one Grass while held Crispin takes a second Grass and Fire.\n",
+        "    // Star Alchemy takes one Grass while held Crispin takes a second Grass and Fire.\n",
         "unused FSS target",
     )
     return replace_once(

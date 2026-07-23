@@ -21,22 +21,37 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
+      - name: Detect an already-published implementation
+        id: gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f tests/issue_1420_steven_direct_treasure_tests.cpp ]]; then
+            echo 'run=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'run=true' >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/setup-python@v5
+        if: steps.gate.outputs.run == 'true'
         with:
           python-version: '3.12'
-      - name: Apply the reviewed patch and remove bootstrap files
+      - name: Apply the reviewed source patch
+        if: steps.gate.outputs.run == 'true'
         shell: bash
         run: |
           set -euo pipefail
           base64 --decode .github/issue-1420.patch.gz.b64 | gzip --decompress > /tmp/issue-1420.patch
-          git apply --index /tmp/issue-1420.patch
-          git rm .github/issue-1420.patch.gz.b64 .github/workflows/issue-1420-bootstrap.yml
-          git diff --cached --check
+          git apply /tmp/issue-1420.patch
+          git restore .github/workflows/ci.yml
+          git diff --check
       - name: Configure Release
+        if: steps.gate.outputs.run == 'true'
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator and unified tests
+        if: steps.gate.outputs.run == 'true'
         run: cmake --build build --parallel 2
       - name: Run focused policy regressions
+        if: steps.gate.outputs.run == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -46,6 +61,7 @@ jobs:
           ./build/regidrago_unified_tests issue_1118_multi_deck_secret_box_tests
           ./build/regidrago_unified_tests forretress_ex_combo_tests
       - name: Run three independent simulate-this audits
+        if: steps.gate.outputs.run == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -64,6 +80,7 @@ jobs:
           grep -q 'Gladion recovered the legally known prized Secret Box' issue-1420-seed-40.txt
           grep -q 'T2 | READY' issue-1420-seed-40.txt
       - name: Regenerate canonical evidence
+        if: steps.gate.outputs.run == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -71,25 +88,27 @@ jobs:
           python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
           python scripts/update_multi_deck_docs.py --repo-root .
       - name: Run complete Release suite
+        if: steps.gate.outputs.run == 'true'
         run: ctest --test-dir build --parallel 4 --output-on-failure
-      - name: Commit final source and evidence
+      - name: Commit and publish source plus evidence
+        if: steps.gate.outputs.run == 'true'
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
+          git add src tests docs results
           git diff --cached --check
           git commit -m 'Prefer direct T2 Treasure route over Secret Box'
           git push origin HEAD:${{ github.head_ref }}
       - name: Upload bootstrap validation evidence
-        if: always()
+        if: always() && steps.gate.outputs.run == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: issue-1420-bootstrap-${{ github.run_attempt }}
           path: |
             issue-1420-seed-*.txt
-            results/simulation_results.csv
-            results/multi_deck_comparison.csv
+            results
+            docs/MULTI_DECK_REPORT.md
             build/Testing
           if-no-files-found: warn

@@ -78,10 +78,11 @@
         const bool fire_available = hand_count(Card::Fire) > 0 ||
             (might_be_unseen(Card::Fire) &&
              (secret_box_has_live_fss_holder() || fss_attachable));
-        return secret_box_combo_enabled() && !state_.turn_ended &&
-            !rule_box_abilities_locked() && !state_.manual_energy_used &&
-            regi != nullptr && regi->grass >= 2 && regi->fire == 0 &&
-            payload_ready() && evolution_complete && fire_available;
+        return outcome_.used_exploding_energy && secret_box_combo_enabled() &&
+            !state_.turn_ended && !rule_box_abilities_locked() &&
+            !state_.manual_energy_used && regi != nullptr &&
+            regi->grass >= 2 && regi->fire == 0 && payload_ready() &&
+            evolution_complete && fire_available;
       };
       if (!issue_1412_direct_route_visible() &&
           run_forretress_combo_search_step(permit_payload)) continue;

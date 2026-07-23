@@ -1,0 +1,107 @@
+name: Issue 1425 Bootstrap
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1425-bootstrap-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  apply-validate-and-publish:
+    if: github.head_ref == 'fix/issue-1425-rulebox-steven'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Detect published implementation
+        id: gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f tests/issue_1425_rulebox_late_steven_tests.cpp ]]; then
+            echo 'run=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'run=true' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.run == 'true'
+        with:
+          python-version: '3.12'
+      - name: Apply reviewed patch
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 --decode .github/issue-1425.patch.gz.b64 | gzip --decompress > /tmp/issue-1425.patch
+          git apply /tmp/issue-1425.patch
+          git diff --check
+      - name: Configure Release
+        if: steps.gate.outputs.run == 'true'
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and unified tests
+        if: steps.gate.outputs.run == 'true'
+        run: cmake --build build --parallel 2
+      - name: Run focused regressions
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_unified_tests issue_1425_rulebox_late_steven_tests
+          ./build/regidrago_unified_tests issue_1098_late_steven_crispin_treasure_tests
+      - name: Run three simulate-this audits
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-first --seed 44 --require-ready-by 3 | tee issue-1425-rulebox.txt
+          grep -q 'Searched the late Crispin-Treasure route' issue-1425-rulebox.txt
+          grep -q 'T3 | READY' issue-1425-rulebox.txt
+          ! grep -q 'T2 | PLAY SUPPORTER | rules: R-SERENA-01' issue-1425-rulebox.txt
+
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 44 --require-ready-by 3 | tee issue-1425-no-lock.txt
+          grep -q 'Searched the late Crispin-Treasure route' issue-1425-no-lock.txt
+          grep -q 'T3 | READY' issue-1425-no-lock.txt
+
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-full-item-lock/go-first --seed 44 | tee issue-1425-item-lock.txt
+          ! grep -q 'Searched the late Crispin-Treasure route' issue-1425-item-lock.txt
+      - name: Regenerate source-bound evidence
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Run complete Release suite
+        if: steps.gate.outputs.run == 'true'
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Commit source, tests, and evidence
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src tests docs results
+          git diff --cached --check
+          git commit -m 'Admit late Steven route under Rule Box lock'
+          git push origin HEAD:${{ github.head_ref }}
+      - name: Upload validation evidence
+        if: always() && steps.gate.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1425-bootstrap-${{ github.run_attempt }}
+          path: |
+            issue-1425-*.txt
+            results
+            docs/MULTI_DECK_REPORT.md
+            build/Testing
+          if-no-files-found: warn

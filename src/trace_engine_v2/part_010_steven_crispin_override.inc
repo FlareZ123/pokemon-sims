@@ -333,9 +333,20 @@
   }
 
   bool late_steven_active_vstar_crispin_treasure_route_available() const {
+    // Path to the Peak suppresses Rule Box Pokémon Abilities only. This route uses
+    // Steven's Resolve, Crispin, Mysterious Treasure, evolution, and attachments,
+    // so Rule Box Ability lock remains legal. Item and combined locks still block
+    // the required next-turn Mysterious Treasure play:
+    // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Repository lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1425
+    const bool route_lock_allows_items =
+        scenario_.locks == LockMode::None ||
+        scenario_.locks == LockMode::FullRuleBoxAbility;
     if (!deck_seen_ || state_.turn != 2 || !scenario_.going_first ||
         scenario_.dci != DciProfile::StrictJit ||
-        scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
+        !route_lock_allows_items || scenario_.max_turn < 3 ||
         !supporter_allowed() || item_locked() || state_.manual_energy_used ||
         !state_.active || state_.active->card != Card::RegidragoVstar ||
         state_.active->grass != 0 || state_.active->fire < 1 ||

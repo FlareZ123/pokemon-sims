@@ -1,0 +1,160 @@
+diff --git a/src/trace_engine_v2/part_010_steven_crispin_override.inc b/src/trace_engine_v2/part_010_steven_crispin_override.inc
+--- a/src/trace_engine_v2/part_010_steven_crispin_override.inc
++++ b/src/trace_engine_v2/part_010_steven_crispin_override.inc
+@@ -335,9 +335,17 @@
+   }
+ 
+   bool late_steven_active_vstar_crispin_treasure_route_available() const {
++    // Rule Box Ability lock suppresses Pokémon Rule Box Abilities. This route uses
++    // only Supporter, Item, evolution, and manual attachment actions after the
++    // already-spent Forest Seal Stone, so Rule Box lock remains compatible:
++    // Rule Box lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
++    // Core rules: https://www.pokemon.com/us/pokemon-tcg/rules
++    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1425
++    const bool compatible_lock = scenario_.locks == LockMode::None ||
++        scenario_.locks == LockMode::FullRuleBoxAbility;
+     if (!deck_seen_ || state_.turn != 2 || !scenario_.going_first ||
+         scenario_.dci != DciProfile::StrictJit ||
+-        scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
++        !compatible_lock || scenario_.max_turn < 3 ||
+         !supporter_allowed() || item_locked() || state_.manual_energy_used ||
+         !state_.active || state_.active->card != Card::RegidragoVstar ||
+         state_.active->grass != 0 || state_.active->fire < 1 ||
+diff --git a/tests/issue_1425_rulebox_late_steven_tests.cpp b/tests/issue_1425_rulebox_late_steven_tests.cpp
+new file mode 100644
+--- /dev/null
++++ b/tests/issue_1425_rulebox_late_steven_tests.cpp
+@@ -0,0 +1,133 @@
++#define REGIDRAGO_SIM_NO_MAIN
++#include "../src/regidrago_sim.cpp"
++
++#include <algorithm>
++#include <iostream>
++#include <random>
++#include <stdexcept>
++#include <string>
++#include <utility>
++
++namespace sim {
++struct EngineTestAccess {
++  static void set_state(Engine& engine, State state, const bool deck_seen = true) {
++    engine.state_ = std::move(state);
++    engine.deck_seen_ = deck_seen;
++  }
++  static bool route_available(const Engine& engine) {
++    return engine.late_steven_active_vstar_crispin_treasure_route_available();
++  }
++};
++}  // namespace sim
++
++namespace {
++void expect(const bool condition, const char* message) {
++  if (!condition) throw std::runtime_error(message);
++}
++
++bool trace_contains(const sim::TraceLog& trace, const std::string& needle) {
++  return std::any_of(trace.lines.begin(), trace.lines.end(), [&needle](const std::string& line) {
++    return line.find(needle) != std::string::npos;
++  });
++}
++
++sim::State pre_steven_state() {
++  sim::State state;
++  state.turn = 2;
++  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 0, 1};
++  state.hand = {sim::Card::StevensResolve, sim::Card::MysteriousTreasure,
++                sim::Card::MegaDragonite};
++  state.deck = {sim::Card::Crispin, sim::Card::Crispin,
++                sim::Card::Grass, sim::Card::Grass, sim::Card::Grass,
++                sim::Card::Fire, sim::Card::RegidragoV, sim::Card::LatiasEx,
++                sim::Card::FieldBlower};
++  return state;
++}
++
++sim::Engine make_engine(const sim::Scenario& scenario, std::mt19937_64& rng,
++                        sim::State state) {
++  static const sim::DeckRecipe recipe = sim::baseline_recipe();
++  sim::Engine engine(scenario, recipe, rng);
++  sim::EngineTestAccess::set_state(engine, std::move(state));
++  return engine;
++}
++
++void test_rule_box_lock_admits_existing_route() {
++  const sim::Scenario scenario{"issue-1425-rulebox", sim::DciProfile::StrictJit,
++                               sim::LockMode::FullRuleBoxAbility, true, 3};
++  std::mt19937_64 rng{142501};
++  sim::Engine engine = make_engine(scenario, rng, pre_steven_state());
++
++  // Rule Box Ability lock leaves Steven's Resolve, Crispin, Mysterious Treasure,
++  // evolution, manual attachment, and Apex Dragon's GGF attack cost legal:
++  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
++  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
++  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
++  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
++  // Rule Box lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
++  // Core rules: https://www.pokemon.com/us/pokemon-tcg/rules
++  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1425
++  expect(sim::EngineTestAccess::route_available(engine),
++         "Rule Box Ability lock must admit the existing late-Steven route.");
++}
++
++void test_item_locks_still_block_treasure() {
++  for (const sim::LockMode lock :
++       {sim::LockMode::FullItem, sim::LockMode::FullCombined}) {
++    const sim::Scenario scenario{"issue-1425-item-control", sim::DciProfile::StrictJit,
++                                 lock, true, 3};
++    std::mt19937_64 rng{142502 + static_cast<std::uint64_t>(lock)};
++    sim::Engine engine = make_engine(scenario, rng, pre_steven_state());
++
++    // Mysterious Treasure is an Item, so Item and combined lock keep this
++    // continuation illegal:
++    // https://api.pokemontcg.io/v2/cards/sm6-113
++    // https://www.pokemon.com/us/pokemon-tcg/rules
++    // https://github.com/FlareZ123/pokemon-sims/issues/1425
++    expect(!sim::EngineTestAccess::route_available(engine),
++           "Item-bearing locks must continue blocking the Treasure route.");
++  }
++}
++
++void test_rule_box_seed_44_uses_steven_and_reaches_turn_three() {
++  const sim::Scenario scenario{"strict-jit-rulebox-ability-lock/go-first",
++                               sim::DciProfile::StrictJit,
++                               sim::LockMode::FullRuleBoxAbility, true, 5};
++  const sim::DeckRecipe recipe = sim::baseline_recipe();
++  std::mt19937_64 rng{44};
++  sim::TraceLog trace{true, {}};
++  sim::Engine engine(scenario, recipe, rng, &trace);
++  const sim::TrialOutcome outcome = engine.run();
++
++  // The source-bound seed must select the deterministic 41/42 Steven package
++  // rather than Serena's one-card refresh:
++  // https://api.pokemontcg.io/v2/cards/sm7-145
++  // https://api.pokemontcg.io/v2/cards/swsh12-164
++  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
++  // https://github.com/FlareZ123/pokemon-sims/issues/1425
++  expect(outcome.first_ready_turn == 3,
++         "Rule Box lock seed 44 must retain its earliest T3 readiness.");
++  expect(trace_contains(trace, "T2 | PLAY SUPPORTER") &&
++             trace_contains(trace, "Searched the late Crispin-Treasure route"),
++         "Rule Box lock seed 44 must choose Steven's 41/42 route.");
++  expect(!trace_contains(trace, "T2 | PLAY SUPPORTER | rules: R-SERENA-01"),
++         "Rule Box lock seed 44 must not use Serena's draw gamble.");
++  expect(trace_contains(trace, "T3 | DISCARD | rules: R-MT-01 | Mega Dragonite ex"),
++         "The T3 payload must be established through Mysterious Treasure.");
++  expect(trace_contains(trace, "T3 | READY |"),
++         "Rule Box lock seed 44 must record T3 readiness.");
++}
++}  // namespace
++
++int main() {
++  try {
++    test_rule_box_lock_admits_existing_route();
++    test_item_locks_still_block_treasure();
++    test_rule_box_seed_44_uses_steven_and_reaches_turn_three();
++    std::cout << "Issue 1425 Rule Box late-Steven tests passed\n";
++    return 0;
++  } catch (const std::exception& error) {
++    std::cerr << error.what() << '\n';
++    return 1;
++  }
++}

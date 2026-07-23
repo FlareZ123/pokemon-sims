@@ -95,7 +95,7 @@ int main() {
   try {
     test_full_supporter_lock_seed_34_preserves_treasure();
     test_unlocked_seed_52_keeps_live_wonder_tag_route();
-    std::cout << "Issue 1443 full-Supporter-lock target tests passed\n";
+    std::cout << "Issue 1443 target-liveness tests passed\n";
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

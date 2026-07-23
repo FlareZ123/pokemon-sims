@@ -115,3 +115,48 @@
           "Discarded the surplus off-type Energy and searched Regidrago VSTAR; preserved the second Treasure for the T3 Dragon payload.");
     return true;
   }
+
+  bool issue_1417_future_treasure_route_available_before_legacy() const {
+    return scenario_.dci == DciProfile::StrictJit && !item_locked() &&
+        state_.turn < scenario_.max_turn && active_is_vstar() &&
+        state_.manual_energy_used && need_payload() &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
+        count_of(state_.discard, Card::MysteriousTreasure) > 0 &&
+        std::any_of(state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic) &&
+        ((grass_needed() == 1 && fire_needed() == 0 &&
+          hand_count(Card::Grass) > 0) ||
+         (fire_needed() == 1 && grass_needed() == 0 &&
+          hand_count(Card::Fire) > 0));
+  }
+
+  bool use_legacy_star_issue_1417() {
+    const bool recover_future_treasure =
+        issue_1417_future_treasure_route_available_before_legacy();
+    const std::size_t hand_before = state_.hand.size();
+    const bool used = use_legacy_star();
+    if (!used || !recover_future_treasure ||
+        state_.hand.size() >= hand_before + 2U ||
+        count_of(state_.discard, Card::MysteriousTreasure) == 0 ||
+        !std::any_of(state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic)) {
+      return used;
+    }
+
+    // Legacy Star permits up to two recovered cards. When its existing policy has
+    // used fewer than two slots, recover Mysterious Treasure as the deterministic
+    // next-turn payload connector. The held Basic Energy completes GGF by the next
+    // manual attachment, and Treasure can then discard the held Dragon on the same
+    // strict-JIT ready turn:
+    // Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Official attachment, Item, search, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest deterministic route and dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1417
+    if (!recover_discard_to_hand(Card::MysteriousTreasure)) {
+      throw std::logic_error("Legacy Star future-turn Treasure target disappeared");
+    }
+    issue_1417_treasure_hold_turn_ = state_.turn;
+    trace("LEGACY STAR ROUTE", "R-VSTAR-02; R-MT-01; P-DCI-01; P-COMPRESS-01",
+          "Recovered Mysterious Treasure for the next-turn strict-JIT Dragon payload.");
+    return true;
+  }

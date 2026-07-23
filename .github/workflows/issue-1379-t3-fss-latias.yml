@@ -1,0 +1,161 @@
+name: Issue 1379 T3 FSS Latias
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-clean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Reconcile current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Validate the fix against current main: https://github.com/FlareZ123/pokemon-sims/tree/main
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Materialize approved fix and dependent trace prerequisite
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The first patch is the isolated #1379 production and regression change.
+          # The second patch reaches the dependent seed through the independently
+          # confirmed #1378 correction and is restored before the final commit:
+          # https://github.com/FlareZ123/pokemon-sims/issues/1378
+          # https://github.com/FlareZ123/pokemon-sims/issues/1379
+          git apply .ci/issue-1379-fix.patch
+          git apply .ci/issue-1379-prerequisite-1378.patch
+
+      - name: Static source audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Repository specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md
+          # K1, DCI, strict-JIT, locks, and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          # Future-card boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+          test -f docs/RULE_SOURCES.md
+          test -f docs/RULES_TRACEABILITY.md
+          test -f docs/POLICY_DECISIONS.md
+          test -f docs/MODEL_ASSUMPTIONS.md
+          ! git grep -nE 'TODO|FIXME|XXX' -- src tests docs README.md
+          grep -q 'issues/1379' src/trace_engine_v2/part_issue_1071_fss_oricorio_treasure_decomposition_override.inc
+          grep -q 'issues/1379' tests/issue_1379_fss_turn_three_latias_tests.cpp
+
+      - name: Configure and build Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Run focused exact-state regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_unified_tests issue_1379_fss_turn_three_latias_tests
+
+      - name: Simulate-this pass 1 exact dependent seed
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+          # Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+          # Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1378 https://github.com/FlareZ123/pokemon-sims/issues/1379
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 12 --require-ready-by 3 | tee issue-1379-pass-seed12.txt
+          grep -Eq '^T3 \| READY \|' issue-1379-pass-seed12.txt
+          grep -Eq 'STAR ALCHEMY.*Latias ex' issue-1379-pass-seed12.txt
+
+      - name: Simulate-this pass 2 scheduled Item lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Scheduled lock contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+          # Existing regression: https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee issue-1379-pass-item-lock.txt
+          grep -Eq '^T2 \| READY \|' issue-1379-pass-item-lock.txt
+
+      - name: Simulate-this pass 3 Rule Box Ability lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Path to the Peak disables Rule Box Pokémon Abilities, including Skyliner:
+          # https://api.pokemontcg.io/v2/cards/swsh6-148
+          # https://api.pokemontcg.io/v2/cards/sv8-76
+          # Lock contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3 | tee issue-1379-pass-rulebox-lock.txt
+          grep -Eq '^T[23] \| READY \|' issue-1379-pass-rulebox-lock.txt
+
+      - name: Generate current-run T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Paired matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out issue-1379-t2-t3-matrix.csv
+          test "$(wc -l < issue-1379-t2-t3-matrix.csv)" -eq 33
+
+      - name: Run complete Release suite
+        shell: bash
+        run: |
+          set -o pipefail
+          ctest --test-dir build --parallel 4 --output-on-failure 2>&1 | tee issue-1379-release-suite.txt
+
+      - name: Configure and build sanitizers
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build-sanitize --parallel 2
+
+      - name: Run complete sanitizer suite
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        shell: bash
+        run: |
+          set -o pipefail
+          ctest --test-dir build-sanitize --parallel 2 --output-on-failure 2>&1 | tee issue-1379-sanitizer-suite.txt
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1379-t3-fss-latias
+          path: |
+            issue-1379-pass-*.txt
+            issue-1379-t2-t3-matrix.csv
+            issue-1379-release-suite.txt
+            issue-1379-sanitizer-suite.txt
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn
+
+      - name: Remove validation-only prerequisite and workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout -- src/trace_engine_v2/part_issue_1030_steven_turo_override.inc
+          git rm .ci/issue-1379-fix.patch .ci/issue-1379-prerequisite-1378.patch .github/workflows/issue-1379-t3-fss-latias.yml
+          git add src/trace_engine_v2/part_issue_1071_fss_oricorio_treasure_decomposition_override.inc tests/issue_1379_fss_turn_three_latias_tests.cpp
+          git commit -m 'Choose Latias over redundant Burnet payload (#1379)'
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

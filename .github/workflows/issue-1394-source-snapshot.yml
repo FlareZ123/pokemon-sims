@@ -1,0 +1,52 @@
+name: Issue 1394 Current Source Snapshot
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify current main ancestry
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Enhancement specification: https://github.com/FlareZ123/pokemon-sims/issues/1394
+          git fetch origin main
+          git merge-base --is-ancestor origin/main HEAD
+
+      - name: Static source audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Repository source contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md
+          test -f README.md
+          test -f CMakeLists.txt
+          test -d src
+          test -d tests
+          test -d docs
+          python -m compileall -q scripts
+
+      - name: Upload exact source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1394-current-source
+          path: |
+            README.md
+            CMakeLists.txt
+            src
+            tests
+            scripts
+            docs
+            results
+            .github/workflows
+          if-no-files-found: error

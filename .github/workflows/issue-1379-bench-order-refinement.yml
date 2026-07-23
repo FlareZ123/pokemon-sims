@@ -1,0 +1,115 @@
+name: Issue 1379 Bench Order Refinement
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  refine-and-validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out claimed bug branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Configure branch writer
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+
+      - name: Reconcile current main and apply refinement
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git merge --no-edit origin/main
+          git apply .ci/issue-1379-bench-order-refinement.patch
+          # Confirmed issue and review refinement:
+          # https://github.com/FlareZ123/pokemon-sims/issues/1379
+          # https://github.com/FlareZ123/pokemon-sims/pull/1386#pullrequestreview-4760623751
+          grep -q 'const bool eligible_regi = std::any_of' src/trace_engine_v2/part_issue_1071_fss_oricorio_treasure_decomposition_override.inc
+          grep -q 'earlier underpowered Regidrago V masked' tests/issue_1379_t3_fss_latias_burnet_tests.cpp
+
+      - name: Build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Run focused issue regression
+        run: ./build/regidrago_unified_tests issue_1379_t3_fss_latias_burnet_tests
+
+      - name: Simulate-this pass 1 exact corrected route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Forest Seal Stone, Latias ex, Burnet, and Regidrago VSTAR:
+          # https://api.pokemontcg.io/v2/cards/swsh12-156
+          # https://api.pokemontcg.io/v2/cards/sv8-76
+          # https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 12 --require-ready-by 3 | tee issue-1379-refine-trace-1.txt
+          grep -Eq 'STAR ALCHEMY.*Latias ex' issue-1379-refine-trace-1.txt
+          grep -Eq '^T3 \| READY \|' issue-1379-refine-trace-1.txt
+
+      - name: Simulate-this pass 2 scheduled Item lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Scenario contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee issue-1379-refine-trace-2.txt
+          grep -Eq '^T2 \| READY \|' issue-1379-refine-trace-2.txt
+
+      - name: Simulate-this pass 3 Rule Box Ability lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Path to the Peak and lock contract:
+          # https://api.pokemontcg.io/v2/cards/swsh6-148
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3 | tee issue-1379-refine-trace-3.txt
+          grep -Eq '^T[23] \| READY \|' issue-1379-refine-trace-3.txt
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Generate paired T2 and T3 matrix
+        run: |
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260722 --out issue-1379-refined-t2-t3-matrix.csv
+          test "$(wc -l < issue-1379-refined-t2-t3-matrix.csv)" -eq 33
+
+      - name: Build and run sanitizers
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: |
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build-sanitize --parallel 2
+          ctest --test-dir build-sanitize --parallel 2 --output-on-failure
+
+      - name: Upload refinement evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1379-bench-order-refinement
+          path: |
+            issue-1379-refine-trace-*.txt
+            issue-1379-refined-t2-t3-matrix.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn
+
+      - name: Commit validated refinement and remove machinery
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build build-sanitize issue-1379-refine-trace-*.txt issue-1379-refined-t2-t3-matrix.csv
+          git rm .ci/issue-1379-bench-order-refinement.patch .github/workflows/issue-1379-bench-order-refinement.yml
+          git add src/trace_engine_v2/part_issue_1071_fss_oricorio_treasure_decomposition_override.inc tests/issue_1379_t3_fss_latias_burnet_tests.cpp
+          git commit -m 'Handle every eligible Regidrago line (#1379)'
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

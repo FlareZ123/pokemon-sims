@@ -1,3 +1,9 @@
+  // Restore the public Pineco turn-policy name after the issue-1118 body, then
+  // install the exact issue-1439 route comparator before later overrides:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1439
+  #undef run_secret_box_turn
+  #include "part_issue_1439_treasure_tapu_crispin_override.inc"
+
   bool guaranteed_next_turn_secret_box_route_after_hold() const {
     // This hold is restricted to the registered strict-JIT Pineco recipe after
     // legal K1 inspection. Read recipe_ directly because total_copies() deliberately

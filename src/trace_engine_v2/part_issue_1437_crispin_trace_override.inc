@@ -19,3 +19,9 @@
     }
     trace(action, rules, detail);
   }
+
+  // part_issue_1118_secret_box.inc defines the Pineco turn policy. Rename that
+  // implementation so the issue-1439 post-include wrapper can compare its exact
+  // complete route before the original Secret Box action sequence:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1439
+  #define run_secret_box_turn run_secret_box_turn_issue1439_original

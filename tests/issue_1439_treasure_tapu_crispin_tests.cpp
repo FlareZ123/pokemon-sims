@@ -120,8 +120,9 @@ void expect_guarded(sim::State state, const sim::LockMode lock,
                     const std::uint64_t seed, const char* message) {
   const sim::Scenario scenario{"issue-1439-guard", sim::DciProfile::StrictJit,
                                lock, false, 5};
+  sim::DeckRecipe recipe = sim::pineco_recipe();
   std::mt19937_64 rng(seed);
-  sim::Engine engine(scenario, sim::pineco_recipe(), rng);
+  sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, std::move(state), true);
   expect(!sim::EngineTestAccess::play_route(engine), message);
 }

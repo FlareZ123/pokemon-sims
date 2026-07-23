@@ -31,4 +31,6 @@ def simulator_policy_source_digest(repo_root: Path) -> str:
         digest.update(b"\0")
         digest.update(path.read_bytes())
         digest.update(b"\0")
-    return digest.hexdigest()
+    value = digest.hexdigest()
+    print(f"SIMULATOR_POLICY_SOURCE_SHA256={value}")
+    return value

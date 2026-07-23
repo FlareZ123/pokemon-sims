@@ -1,0 +1,154 @@
+name: Source-Bound Debug Audit 20260723 1511
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  release-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out source-bound main
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Record tested source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee tested-head.txt
+          git ls-files | sort > tracked-files.txt
+
+      - name: Static repository audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Repository specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md
+          # Decision priorities, DCI, K0/K1, and strict JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          # Lock and setup boundaries: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
+          # Rule-source registry: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULE_SOURCES.md
+          test -f README.md
+          test -f docs/RULE_SOURCES.md
+          test -f docs/RULES_TRACEABILITY.md
+          test -f docs/POLICY_DECISIONS.md
+          test -f docs/MODEL_ASSUMPTIONS.md
+          ! git grep -nE 'TODO|FIXME|XXX' -- src tests docs README.md
+          git grep -q 'https://api.pokemontcg.io/' -- src tests docs README.md
+          git grep -q 'https://www.pokemon.com/us/pokemon-tcg/rules' -- src tests docs README.md
+          python -m compileall -q scripts tests
+
+      - name: Configure and build Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Simulate-this pass 1 shell strict JIT
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-shell-strict-seed-1.txt
+
+      - name: Simulate-this pass 2 Pineco strict JIT
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Registered Pineco recipe: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#named-deck-recipes
+          # Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+          # Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # Official turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-pineco-strict-seed-35.txt
+
+      - name: Simulate-this pass 3 Rule Box Ability lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Rule Box lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
+          # Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+          # Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-first --seed 44 | tee trace-shell-rulebox-seed-44.txt
+
+      - name: Generate paired T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Paired matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260723 --out ci-t2-t3-matrix.csv
+          test "$(wc -l < ci-t2-t3-matrix.csv)" -eq 33
+
+      - name: Run complete Release suite
+        shell: bash
+        run: |
+          set -o pipefail
+          ctest --test-dir build --parallel 4 --output-on-failure 2>&1 | tee release-suite.txt
+
+      - name: Package source-bound audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -czf current-main-source.tar.gz --files-from=tracked-files.txt
+
+      - name: Upload Release audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-main-20260723-1511-release
+          path: |
+            current-main-source.tar.gz
+            tested-head.txt
+            tracked-files.txt
+            trace-*.txt
+            ci-t2-t3-matrix.csv
+            release-suite.txt
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+          if-no-files-found: error
+
+  sanitizer-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out source-bound main
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+
+      - name: Configure and build ASan UBSan
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Validation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-tests
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build-sanitize --parallel 2
+
+      - name: Run complete sanitizer suite
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        shell: bash
+        run: |
+          set -o pipefail
+          ctest --test-dir build-sanitize --parallel 2 --output-on-failure 2>&1 | tee sanitizer-suite.txt
+
+      - name: Upload sanitizer audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-main-20260723-1511-sanitizer
+          path: |
+            sanitizer-suite.txt
+            build-sanitize/Testing
+          if-no-files-found: error

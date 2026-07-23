@@ -1,5 +1,6 @@
 name: Debug Main d58621b 20260723
 
+# Pull-request synchronization refresh for the source-bound audit.
 on:
   pull_request:
     branches: [main]

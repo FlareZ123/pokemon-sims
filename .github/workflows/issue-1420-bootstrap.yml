@@ -90,6 +90,14 @@ jobs:
       - name: Run complete Release suite
         if: steps.gate.outputs.run == 'true'
         run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Package exact validated files
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --name-only --diff-filter=ACM -- CMakeLists.txt src tests docs results > issue-1420-changed-files.txt
+          test -s issue-1420-changed-files.txt
+          tar -czf issue-1420-published-files.tar.gz --files-from=issue-1420-changed-files.txt
       - name: Commit and publish source plus evidence
         if: steps.gate.outputs.run == 'true'
         shell: bash
@@ -97,7 +105,7 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src tests docs results
+          git add src tests docs results CMakeLists.txt
           git diff --cached --check
           git commit -m 'Prefer direct T2 Treasure route over Secret Box'
           git push origin HEAD:${{ github.head_ref }}
@@ -108,6 +116,8 @@ jobs:
           name: issue-1420-bootstrap-${{ github.run_attempt }}
           path: |
             issue-1420-seed-*.txt
+            issue-1420-changed-files.txt
+            issue-1420-published-files.tar.gz
             results
             docs/MULTI_DECK_REPORT.md
             build/Testing

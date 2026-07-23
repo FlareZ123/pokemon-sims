@@ -1,0 +1,18 @@
+diff --git a/src/trace_engine_v2/part_issue_1030_steven_turo_override.inc b/src/trace_engine_v2/part_issue_1030_steven_turo_override.inc
+index 8e72664..9fc1f83 100644
+--- a/src/trace_engine_v2/part_issue_1030_steven_turo_override.inc
++++ b/src/trace_engine_v2/part_issue_1030_steven_turo_override.inc
+@@ -139,7 +139,12 @@
+   bool issue_1223_full_item_lock_steven_grass_route_available() const {
+     if (!deck_seen_ || !supporter_allowed() ||
+         scenario_.dci != DciProfile::StrictJit ||
+-        scenario_.locks != LockMode::FullItem ||
++        // Temporary source-bound prerequisite for the dependent seed-12 trace:
++        // https://github.com/FlareZ123/pokemon-sims/issues/1378
++        // https://api.pokemontcg.io/v2/cards/sm7-145
++        // https://api.pokemontcg.io/v2/cards/sv7-133
++        (scenario_.locks != LockMode::FullItem &&
++         scenario_.locks != LockMode::None) ||
+         state_.turn + 2 > scenario_.max_turn || !state_.active ||
+         !is_basic(state_.active->card) ||
+         state_.active->card == Card::RegidragoV ||

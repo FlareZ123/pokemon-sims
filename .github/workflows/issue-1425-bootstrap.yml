@@ -40,11 +40,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          base64 --decode .github/issue-1425.patch.gz.b64 | gzip --decompress > /tmp/issue-1425.patch
-          if ! git apply /tmp/issue-1425.patch 2> issue-1425-apply.txt; then
-            cat issue-1425-apply.txt
-            exit 1
-          fi
+          git apply .github/issue-1425.patch
           git diff --check
       - name: Configure Release
         if: steps.gate.outputs.run == 'true'

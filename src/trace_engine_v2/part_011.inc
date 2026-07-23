@@ -163,6 +163,54 @@
            held_quick_ball_payload_route;
   }
 
+  bool steven_held_treasure_crispin_grass_route_available(
+      const std::vector<Card>& wanted, const bool next_turn_item_locked,
+      const bool projected_vstar_available) const {
+    if (scenario_.dci != DciProfile::StrictJit || state_.turn != 1 ||
+        scenario_.going_first || scenario_.locks != LockMode::None ||
+        scenario_.max_turn < 2 || next_turn_item_locked ||
+        !projected_vstar_available || wanted.size() != 1U ||
+        wanted.front() != Card::RegidragoVstar || !state_.active ||
+        state_.active->card != Card::RegidragoV ||
+        state_.active->grass != 0 || state_.active->fire < 1 ||
+        hand_count(Card::MysteriousTreasure) == 0 ||
+        hand_count(Card::Crispin) > 0 || hand_count(Card::Grass) > 0 ||
+        !need_energy() || !need_payload() ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    const int grass_in_deck = deck_count_after_search_started(Card::Grass);
+    const int fire_in_deck = deck_count_after_search_started(Card::Fire);
+    const int crispin_in_deck = deck_count_after_search_started(Card::Crispin);
+    const int projected_treasure_targets = static_cast<int>(std::count_if(
+        state_.deck.begin(), state_.deck.end(), [this, &wanted](const Card card) {
+          return is_dragon_or_psychic(card) &&
+              deck_count_after_search_started(card) >
+                  static_cast<int>(std::count(wanted.begin(), wanted.end(), card));
+        }));
+
+    // Held Mysterious Treasure plus a held Dragon already completes the payload
+    // axis. Steven should therefore reserve VSTAR, Crispin, and Grass instead of
+    // duplicating that axis with Brilliant Blender. Crispin attaches one Grass and
+    // finds Fire, while Steven's Grass supplies the manual attachment. With seed
+    // 44's K1 counts, only the lone Fire topdeck removes Crispin's second Energy
+    // type, so this route succeeds on 41/42 draws instead of Blender's 6/42:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Supporter, Item, Energy attachment, evolution, search, and shuffle rules: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1, DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1426
+    return crispin_in_deck > 0 && grass_in_deck >= 2 && fire_in_deck > 0 &&
+        projected_treasure_targets > 0;
+  }
+
   bool play_steven() {
     if (!supporter_allowed() || hand_count(Card::StevensResolve) == 0 || !should_play_steven()) return false;
     const bool known_t3_compression = late_steven_has_known_t3_compression_route();
@@ -295,8 +343,15 @@
 
     const bool projected_vstar_available = has_vstar() || hand_count(Card::RegidragoVstar) > 0 ||
         projected_vstar_direct || projected_vstar_uses_gladion;
+    const bool held_treasure_crispin_grass_route =
+        steven_held_treasure_crispin_grass_route_available(
+            wanted, next_turn_item_locked, projected_vstar_available);
+    if (held_treasure_crispin_grass_route) {
+      add_wanted(Card::Crispin);
+      add_wanted(Card::Grass);
+    }
     const bool held_routes_complete_next_turn = late_blender_vstar_grass ||
-        late_burnet_vstar_grass ||
+        late_burnet_vstar_grass || held_treasure_crispin_grass_route ||
         steven_held_routes_complete_next_turn(
             wanted, next_turn_item_locked, projected_vstar_available);
 

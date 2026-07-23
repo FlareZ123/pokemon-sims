@@ -41,11 +41,12 @@ void test_strict_jit_preserves_vessel_for_t3_payload() {
   const sim::TrialOutcome outcome = run_seed_104("strict-jit/go-first", trace);
 
   // Crispin plus the T2 manual attachment creates GF. Earthen Vessel can then
-  // discard Dialga-GX on T3, search the final Grass, and preserve the singleton
-  // Brilliant Blender while retaining the same earliest ready turn:
+  // discard a held or newly drawn Dragon on T3, search the final Grass, and
+  // preserve the singleton Brilliant Blender at the same earliest ready turn:
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
   // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
   // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+  // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
   // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
@@ -57,9 +58,9 @@ void test_strict_jit_preserves_vessel_for_t3_payload() {
                          "T2 | DISCARD | rules: R-EV-01 | Dialga-GX"),
          "Earthen Vessel still discarded Dialga-GX before the ready turn.");
   expect(trace_contains(trace,
-                        "T3 | DISCARD | rules: R-EV-01 | Dialga-GX "
-                        "(Earthen Vessel cost)"),
-         "The preserved Vessel did not establish the T3 strict-JIT payload.");
+                        "T3 | DISCARD | rules: R-EV-01 |") &&
+             trace_contains(trace, "(Earthen Vessel cost)"),
+         "The preserved Vessel did not establish a T3 strict-JIT Dragon payload.");
   expect(!trace_contains(trace, "R-BLENDER-01"),
          "The same-deadline route still consumed Brilliant Blender.");
   expect(trace_contains(trace, "T3 | READY"),

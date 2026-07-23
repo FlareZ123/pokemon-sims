@@ -1,3 +1,5 @@
+#include "part_issue_1411_treasure_tapu_steven_override.inc"
+
   int issue_1417_treasure_hold_turn_ = 0;
 
   bool issue_1356_treasure_vstar_energy_split_available() const {
@@ -84,6 +86,7 @@
   }
 
   bool play_mysterious_treasure(const bool permit_payload) {
+    if (issue_1411_play_treasure_tapu_steven_route()) return true;
     if (issue_1417_treasure_hold_turn_ == state_.turn) {
       // The recovered Mysterious Treasure is a next-turn connector. Playing it on
       // the Legacy Star turn would discard the held Dragon before GGF is complete,

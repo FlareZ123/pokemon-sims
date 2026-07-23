@@ -64,6 +64,7 @@
 #define needs_tapu_connector needs_tapu_connector_original
 #define bench_tapu_if_useful bench_tapu_if_useful_original
 #define recover_discard_to_hand recover_discard_to_hand_name_only_original
+#define choose_discard choose_discard_issue1436_original
 #include "trace_engine_v2/part_006.inc"
 #undef recover_discard_to_hand
 #undef bench_tapu_if_useful
@@ -79,6 +80,8 @@
 #include "trace_engine_v2/part_008a.inc"
 #undef play_tate_draw
 #undef play_tate_switch
+#undef choose_discard
+#include "trace_engine_v2/part_issue_1436_full_supporter_dci_override.inc"
 // part_007.inc opens evolve_best_regi(), and part_008a.inc completes it before
 // this member-function override may be included:
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_007.inc#L169-L172

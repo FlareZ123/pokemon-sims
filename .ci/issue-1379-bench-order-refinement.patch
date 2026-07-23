@@ -1,0 +1,69 @@
+diff --git a/src/trace_engine_v2/part_issue_1071_fss_oricorio_treasure_decomposition_override.inc b/src/trace_engine_v2/part_issue_1071_fss_oricorio_treasure_decomposition_override.inc
+--- a/src/trace_engine_v2/part_issue_1071_fss_oricorio_treasure_decomposition_override.inc
++++ b/src/trace_engine_v2/part_issue_1071_fss_oricorio_treasure_decomposition_override.inc
+@@ -113,24 +113,29 @@
+       return false;
+     }
+ 
+-    const Pokemon* evolving_regi = nullptr;
+-    for (const Pokemon& pokemon : state_.bench) {
+-      if (pokemon.card == Card::RegidragoV &&
+-          pokemon.entered_turn < state_.turn) {
+-        evolving_regi = &pokemon;
+-        break;
+-      }
+-    }
+-    if (evolving_regi == nullptr) return false;
+-
+-    const int missing_grass = std::max(0, 2 - evolving_regi->grass);
+-    const int missing_fire = std::max(0, 1 - evolving_regi->fire);
+-    const bool energy_complete_now = missing_grass == 0 && missing_fire == 0;
+-    const bool unused_manual_completes = !state_.manual_energy_used &&
+-        missing_grass + missing_fire == 1 &&
+-        ((missing_grass == 1 && hand_count(Card::Grass) > 0) ||
+-         (missing_fire == 1 && hand_count(Card::Fire) > 0));
+-    if (!energy_complete_now && !unused_manual_completes) return false;
++    // Evaluate every prior-turn Regidrago V. Bench order must not hide a later
++    // line whose public Energy axis is already complete or one attachment away:
++    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
++    // Bench-order review: https://github.com/FlareZ123/pokemon-sims/pull/1386#pullrequestreview-4760623751
++    const bool eligible_regi = std::any_of(
++        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
++          if (pokemon.card != Card::RegidragoV ||
++              pokemon.entered_turn >= state_.turn) {
++            return false;
++          }
++
++          const int missing_grass = std::max(0, 2 - pokemon.grass);
++          const int missing_fire = std::max(0, 1 - pokemon.fire);
++          const bool energy_complete_now =
++              missing_grass == 0 && missing_fire == 0;
++          const bool unused_manual_completes = !state_.manual_energy_used &&
++              missing_grass + missing_fire == 1 &&
++              ((missing_grass == 1 && hand_count(Card::Grass) > 0) ||
++               (missing_fire == 1 && hand_count(Card::Fire) > 0));
++          return energy_complete_now || unused_manual_completes;
++        });
++    if (!eligible_regi) return false;
+ 
+     // Professor Burnet already owns the current-turn deck-to-discard payload axis.
+     // Star Alchemy should search Latias ex for the unresolved Active-position axis;
+diff --git a/tests/issue_1379_t3_fss_latias_burnet_tests.cpp b/tests/issue_1379_t3_fss_latias_burnet_tests.cpp
+--- a/tests/issue_1379_t3_fss_latias_burnet_tests.cpp
++++ b/tests/issue_1379_t3_fss_latias_burnet_tests.cpp
+@@ -91,6 +91,18 @@ void test_exact_projected_and_post_attachment_states_take_latias() {
+   expect(target_for(std::move(completed)) == sim::Card::LatiasEx,
+          "The actual post-attachment GGF state did not choose Latias.");
++
++  sim::State ordered = post_crispin_state();
++  ordered.bench.insert(
++      ordered.bench.begin() + 1,
++      sim::Pokemon{sim::Card::RegidragoV, 2, 0, 0});
++  // A weaker earlier Regidrago V cannot mask the later prior-turn GG line:
++  // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
++  // Bench-order review: https://github.com/FlareZ123/pokemon-sims/pull/1386#pullrequestreview-4760623751
++  expect(target_for(std::move(ordered)) == sim::Card::LatiasEx,
++         "An earlier underpowered Regidrago V masked the eligible GG line.");
+ }
+ 
+ void test_route_preserves_blender_when_any_required_axis_is_missing() {

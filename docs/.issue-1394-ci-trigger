@@ -1,1 +1,1 @@
-This marker exists only to trigger the default-branch Issue 1394 Crobat V validation workflow through a pull-request event. It will not be merged.
+This marker exists only to trigger the default-branch Issue 1394 Crobat V validation workflow through a pull-request synchronize event. It will not be merged.

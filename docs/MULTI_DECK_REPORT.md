@@ -26,7 +26,7 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 | No discard control, going first | 19.954% ± 0.126 | 55.774% ± 0.157 | 71.845% ± 0.142 | 28.155% ± 0.142 |
 | Strict JIT, turn-two Item lock, first | 4.582% ± 0.066 | 10.187% ± 0.096 | 17.684% ± 0.121 | 82.316% ± 0.121 |
 | Strict JIT, full Item lock, first | 2.820% ± 0.052 | 7.733% ± 0.084 | 15.056% ± 0.113 | 84.944% ± 0.113 |
-| Strict JIT, Rule Box Ability lock, first | 4.456% ± 0.065 | 25.920% ± 0.139 | 38.839% ± 0.154 | 61.161% ± 0.154 |
+| Strict JIT, Rule Box Ability lock, first | 4.451% ± 0.065 | 25.901% ± 0.139 | 38.817% ± 0.154 | 61.183% ± 0.154 |
 | Strict JIT, combined lock, first | 0.293% ± 0.017 | 3.279% ± 0.056 | 7.270% ± 0.082 | 92.730% ± 0.082 |
 | Strict JIT, going second | 28.648% ± 0.143 | 51.934% ± 0.158 | 63.260% ± 0.152 | 36.740% ± 0.152 |
 | Matchup-flex JIT, going second | 37.104% ± 0.153 | 60.856% ± 0.154 | 71.247% ± 0.143 | 28.753% ± 0.143 |
@@ -58,7 +58,7 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 | No discard control, going first | 24.568% ± 0.136 | 57.494% ± 0.156 | 73.118% ± 0.140 | 26.882% ± 0.140 |
 | Strict JIT, turn-two Item lock, first | 4.527% ± 0.066 | 7.707% ± 0.084 | 13.293% ± 0.107 | 86.707% ± 0.107 |
 | Strict JIT, full Item lock, first | 2.769% ± 0.052 | 5.672% ± 0.073 | 10.711% ± 0.098 | 89.289% ± 0.098 |
-| Strict JIT, Rule Box Ability lock, first | 4.636% ± 0.066 | 16.469% ± 0.117 | 27.547% ± 0.141 | 72.453% ± 0.141 |
+| Strict JIT, Rule Box Ability lock, first | 4.635% ± 0.066 | 16.467% ± 0.117 | 27.541% ± 0.141 | 72.459% ± 0.141 |
 | Strict JIT, combined lock, first | 0.475% ± 0.022 | 1.337% ± 0.036 | 3.098% ± 0.055 | 96.902% ± 0.055 |
 | Strict JIT, going second | 46.098% ± 0.158 | 60.986% ± 0.154 | 71.063% ± 0.143 | 28.937% ± 0.143 |
 | Matchup-flex JIT, going second | 49.140% ± 0.158 | 64.096% ± 0.152 | 73.646% ± 0.139 | 26.354% ± 0.139 |
@@ -160,6 +160,6 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 ## Provenance
 
-Simulator policy digest: `060af762709093be1e6bd10ff92445790216747fbb67d9ec033ae4bd27b26af6`.
+Simulator policy digest: `5428c0db68f39e8b6177e66a6c332c128e91006721f11951ddae8537448f55b9`.
 
-Comparison CSV SHA-256: `bd640111b8c3311968f1bc7b650a130bff3284dbc0ba7b6b58591824193b414c`.
+Comparison CSV SHA-256: `4e14691aa2b9f67f71ae03b389e244fcddc4288da7aa05d648e9def4c215ae13`.

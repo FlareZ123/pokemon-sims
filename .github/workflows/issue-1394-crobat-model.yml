@@ -3,6 +3,8 @@ name: Issue 1394 Crobat V Modeling
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [enhancement/issue-1394-crobat-v-modeling]
 
 permissions:
   contents: write
@@ -15,7 +17,7 @@ jobs:
       - name: Check out PR branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           fetch-depth: 0
 
       - name: Reconcile current main
@@ -162,4 +164,4 @@ jobs:
             exit 1
           fi
           git commit -m 'Model Crobat V swap variants (#1394)'
-          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}"

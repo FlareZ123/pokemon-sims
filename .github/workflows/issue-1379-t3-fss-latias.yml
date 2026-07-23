@@ -106,6 +106,17 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3 | tee issue-1379-pass-rulebox-lock.txt
           grep -Eq '^T[23] \| READY \|' issue-1379-pass-rulebox-lock.txt
 
+      - name: Refresh source-bound canonical evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Canonical shell baseline: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-canonical-shell-baseline
+          # Paired two-deck evidence: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+
       - name: Generate current-run T2 and T3 matrix
         shell: bash
         run: |
@@ -148,6 +159,9 @@ jobs:
             issue-1379-sanitizer-suite.txt
             build/Testing
             build-sanitize/Testing
+            results/simulation_results.csv
+            results/baseline_manifest.json
+            results/multi_deck_comparison.csv
           if-no-files-found: warn
 
       - name: Remove validation-only prerequisite and workflow
@@ -156,6 +170,6 @@ jobs:
           set -euo pipefail
           git checkout -- src/trace_engine_v2/part_issue_1030_steven_turo_override.inc
           git rm .ci/issue-1379-fix.patch .ci/issue-1379-prerequisite-1378.patch .github/workflows/issue-1379-t3-fss-latias.yml
-          git add src/trace_engine_v2/part_issue_1071_fss_oricorio_treasure_decomposition_override.inc tests/issue_1379_fss_turn_three_latias_tests.cpp
+          git add src tests README.md docs results
           git commit -m 'Choose Latias over redundant Burnet payload (#1379)'
           git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

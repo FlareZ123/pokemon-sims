@@ -6,19 +6,15 @@ on:
 
 permissions:
   contents: write
-  issues: write
-  pull-requests: write
 
 concurrency:
   group: issue-1394-main-bootstrap
   cancel-in-progress: false
 
 jobs:
-  validate-and-open-implementation-pr:
+  validate-and-commit-implementation:
     runs-on: ubuntu-24.04
     timeout-minutes: 240
-    env:
-      GH_TOKEN: ${{ github.token }}
     steps:
       - name: Check out main
         uses: actions/checkout@v4
@@ -154,27 +150,19 @@ jobs:
             build-sanitize/Testing
           if-no-files-found: error
 
-      - name: Open validated implementation PR
+      - name: Commit validated implementation to main
         shell: bash
         run: |
           set -euo pipefail
-          branch='enhancement/issue-1394-crobat-v-implementation'
           rm -rf build build-sanitize crobat-pass-*.txt issue-1394-release-suite.txt
           git rm .github/workflows/issue-1394-crobat-model.yml scripts/apply_issue_1394_crobat.py
           git rm -r scripts/issue_1394_patch_chunks
           git add README.md src tests scripts docs results
-          git checkout -b "$branch"
-          git commit -m 'Model Crobat V swap variants (#1394)'
-          git push origin "$branch"
-          pr_url="$(gh pr create --base main --head "$branch" --title 'Model Crobat V and evaluate shell swaps' --body 'Closes #1394. Adds rules-sourced Crobat V Dark Asset simulation and unregistered regidrago-shell swap modeling. Validated by focused tests, three simulate-this traces, the 100,000-trial all-scenario swap matrix, registered-deck probability preservation, the complete Release suite, and ASan/UBSan. Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104')"
-          gh issue comment 1394 --body "Validated implementation PR ready for merge: $pr_url
+          if git diff --cached --quiet; then
+            echo 'No validated Crobat V implementation was produced' >&2
+            exit 1
+          fi
+          git commit -m "Model Crobat V swap variants (#1394)
 
-CI run: https://github.com/FlareZ123/pokemon-sims/actions/runs/${GITHUB_RUN_ID}
-
-The committed modeling report is docs/CROBAT_MODEL_REPORT.md. Crobat variants remain outside the two-deck registry."
-
-      - name: Record failure on the enhancement issue
-        if: failure()
-        shell: bash
-        run: |
-          gh issue comment 1394 --body "Issue #1394 validation failed before merge. CI run: https://github.com/FlareZ123/pokemon-sims/actions/runs/${GITHUB_RUN_ID}"
+Validated in CI: https://github.com/FlareZ123/pokemon-sims/actions/runs/${GITHUB_RUN_ID}"
+          git push origin HEAD:main

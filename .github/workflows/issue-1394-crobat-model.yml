@@ -1,59 +1,46 @@
 name: Issue 1394 Crobat V Modeling
 
 on:
-  pull_request:
-    branches: [main]
   push:
-    branches: [enhancement/issue-1394-crobat-v-modeling]
+    branches: [main]
 
 permissions:
   contents: write
+  issues: write
+  pull-requests: write
 
 concurrency:
-  group: issue-1394-${{ github.ref }}
-  cancel-in-progress: true
+  group: issue-1394-main-bootstrap
+  cancel-in-progress: false
 
 jobs:
-  implement-model-and-validate:
+  validate-and-open-implementation-pr:
     runs-on: ubuntu-24.04
     timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Check out PR branch
+      - name: Check out main
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          ref: main
           fetch-depth: 0
 
-      - name: Reconcile current main
+      - name: Configure Git identity
         shell: bash
         run: |
           set -euo pipefail
-          # Validate against current main: https://github.com/FlareZ123/pokemon-sims/tree/main
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git fetch origin main
-          git merge --no-edit origin/main
 
-      - name: Bootstrap Crobat V implementation commit
-        id: bootstrap
+      - name: Apply Crobat V implementation
         shell: bash
         run: |
           set -euo pipefail
           # Enhancement specification: https://github.com/FlareZ123/pokemon-sims/issues/1394
-          if git grep -q 'CrobatV' -- src; then
-            echo 'applied=false' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
           python scripts/apply_issue_1394_crobat.py
-          git rm scripts/apply_issue_1394_crobat.py
-          git rm -r scripts/issue_1394_patch_chunks
-          git add README.md src tests scripts docs results
-          git commit -m 'Bootstrap Crobat V modeling implementation (#1394)'
-          git push origin "HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}"
-          echo 'applied=true' >> "$GITHUB_OUTPUT"
 
       - name: Static source and registry audit
-        if: steps.bootstrap.outputs.applied != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -67,7 +54,6 @@ jobs:
           python -m compileall -q scripts
 
       - name: Configure and build Release
-        if: steps.bootstrap.outputs.applied != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -75,7 +61,6 @@ jobs:
           cmake --build build --parallel 2
 
       - name: Run focused Crobat regressions
-        if: steps.bootstrap.outputs.applied != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -85,17 +70,15 @@ jobs:
           ./build/regidrago_sim --self-test
 
       - name: Simulate-this pass 1 going second
-        if: steps.bootstrap.outputs.applied != 'true'
         shell: bash
         run: |
           set -euo pipefail
-          # Crobat modeling variant remains outside the named registry: https://github.com/FlareZ123/pokemon-sims/issues/1394
+          # Modeling variant contract: https://github.com/FlareZ123/pokemon-sims/issues/1394
           ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit/go-second --seed 3 --require-ready-by 2 | tee crobat-pass-second-seed3.txt
           grep -Eq '^T2 \| DARK ASSET \|' crobat-pass-second-seed3.txt
           grep -Eq '^T2 \| READY \|' crobat-pass-second-seed3.txt
 
       - name: Simulate-this pass 2 going first
-        if: steps.bootstrap.outputs.applied != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -105,18 +88,16 @@ jobs:
           grep -Eq '^T2 \| READY \|' crobat-pass-first-seed14.txt
 
       - name: Simulate-this pass 3 scheduled Item lock
-        if: steps.bootstrap.outputs.applied != 'true'
         shell: bash
         run: |
           set -euo pipefail
           # Scheduled Item-lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
-          # Dark Asset is an Ability rather than an Item: https://api.pokemontcg.io/v2/cards/swsh3-104
+          # Dark Asset is an Ability: https://api.pokemontcg.io/v2/cards/swsh3-104
           ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit-turn2-item-lock/go-second --seed 71 --require-ready-by 3 | tee crobat-pass-item-lock-seed71.txt
           grep -Eq '^T1 \| DARK ASSET \|' crobat-pass-item-lock-seed71.txt
           grep -Eq '^T3 \| READY \|' crobat-pass-item-lock-seed71.txt
 
       - name: Generate paired Crobat swap matrix
-        if: steps.bootstrap.outputs.applied != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -126,7 +107,6 @@ jobs:
           python scripts/update_crobat_modeling_docs.py --csv results/crobat_variant_model.csv --out docs/CROBAT_MODEL_REPORT.md
 
       - name: Preserve registered deck probabilities
-        if: steps.bootstrap.outputs.applied != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -141,14 +121,12 @@ jobs:
           cmp /tmp/multi_deck_comparison.before.csv results/multi_deck_comparison.csv
 
       - name: Run complete Release suite
-        if: steps.bootstrap.outputs.applied != 'true'
         shell: bash
         run: |
           set -o pipefail
           ctest --test-dir build --parallel 4 --output-on-failure 2>&1 | tee issue-1394-release-suite.txt
 
       - name: Configure and build sanitizers
-        if: steps.bootstrap.outputs.applied != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -156,14 +134,12 @@ jobs:
           cmake --build build-sanitize --parallel 2
 
       - name: Run complete sanitizer suite
-        if: steps.bootstrap.outputs.applied != 'true'
         env:
           ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
           UBSAN_OPTIONS: halt_on_error=1
         run: ctest --test-dir build-sanitize --parallel 2 --output-on-failure
 
       - name: Upload validation evidence
-        if: steps.bootstrap.outputs.applied != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: issue-1394-crobat-v-modeling
@@ -178,17 +154,27 @@ jobs:
             build-sanitize/Testing
           if-no-files-found: error
 
-      - name: Commit validated report and remove temporary workflow
-        if: steps.bootstrap.outputs.applied != 'true'
+      - name: Open validated implementation PR
         shell: bash
         run: |
           set -euo pipefail
+          branch='enhancement/issue-1394-crobat-v-implementation'
           rm -rf build build-sanitize crobat-pass-*.txt issue-1394-release-suite.txt
-          git rm .github/workflows/issue-1394-crobat-model.yml
+          git rm .github/workflows/issue-1394-crobat-model.yml scripts/apply_issue_1394_crobat.py
+          git rm -r scripts/issue_1394_patch_chunks
           git add README.md src tests scripts docs results
-          if git diff --cached --quiet; then
-            echo 'No validated Crobat V result was produced' >&2
-            exit 1
-          fi
-          git commit -m 'Finalize Crobat V modeling evidence (#1394)'
-          git push origin "HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}"
+          git checkout -b "$branch"
+          git commit -m 'Model Crobat V swap variants (#1394)'
+          git push origin "$branch"
+          pr_url="$(gh pr create --base main --head "$branch" --title 'Model Crobat V and evaluate shell swaps' --body 'Closes #1394. Adds rules-sourced Crobat V Dark Asset simulation and unregistered regidrago-shell swap modeling. Validated by focused tests, three simulate-this traces, the 100,000-trial all-scenario swap matrix, registered-deck probability preservation, the complete Release suite, and ASan/UBSan. Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104')"
+          gh issue comment 1394 --body "Validated implementation PR ready for merge: $pr_url
+
+CI run: https://github.com/FlareZ123/pokemon-sims/actions/runs/${GITHUB_RUN_ID}
+
+The committed modeling report is docs/CROBAT_MODEL_REPORT.md. Crobat variants remain outside the two-deck registry."
+
+      - name: Record failure on the enhancement issue
+        if: failure()
+        shell: bash
+        run: |
+          gh issue comment 1394 --body "Issue #1394 validation failed before merge. CI run: https://github.com/FlareZ123/pokemon-sims/actions/runs/${GITHUB_RUN_ID}"

@@ -56,7 +56,34 @@
       // https://api.pokemontcg.io/v2/cards/swsh12-156
       // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
       // https://github.com/FlareZ123/pokemon-sims/issues/1412
-      if (!issue_1412_direct_fss_fire_route_visible() &&
+      const auto issue_1412_direct_route_visible = [this] {
+        const Pokemon* regi = state_.active ? &*state_.active : nullptr;
+        const bool active_is_regi = regi != nullptr &&
+            (regi->card == Card::RegidragoV ||
+             regi->card == Card::RegidragoVstar);
+        const bool evolution_complete = active_is_regi &&
+            (regi->card == Card::RegidragoVstar ||
+             (regi->card == Card::RegidragoV &&
+              regi->entered_turn < state_.turn &&
+              hand_count(Card::RegidragoVstar) > 0));
+        const auto can_hold_fss = [](const Pokemon& pokemon) {
+          return is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None;
+        };
+        const bool fss_attachable =
+            hand_count(Card::ForestSealStone) > 0 &&
+            !state_.vstar_power_used &&
+            ((state_.active && can_hold_fss(*state_.active)) ||
+             std::any_of(state_.bench.begin(), state_.bench.end(),
+                         can_hold_fss));
+        const bool fire_available = hand_count(Card::Fire) > 0 ||
+            (might_be_unseen(Card::Fire) &&
+             (secret_box_has_live_fss_holder() || fss_attachable));
+        return secret_box_combo_enabled() && !state_.turn_ended &&
+            !rule_box_abilities_locked() && !state_.manual_energy_used &&
+            regi != nullptr && regi->grass >= 2 && regi->fire == 0 &&
+            payload_ready() && evolution_complete && fire_available;
+      };
+      if (!issue_1412_direct_route_visible() &&
           run_forretress_combo_search_step(permit_payload)) continue;
       if (play_heavy_ball()) continue;
       if (!run_search_items_one_step(permit_payload)) break;

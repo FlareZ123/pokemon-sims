@@ -99,6 +99,18 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee audit-trace-4-item-lock.txt
           grep -Eq '^T2 \| READY \|' audit-trace-4-item-lock.txt
 
+      - name: Simulate-this pass 5 prior-turn Pineco
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+          # Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+          # Ordinary evolution timing and Stadium procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee audit-trace-5-prior-turn-pineco.txt
+          grep -Eq '^T2 \| READY \|' audit-trace-5-prior-turn-pineco.txt
+
       - name: Generate paired T2 and T3 matrix
         shell: bash
         run: |
@@ -139,6 +151,7 @@ jobs:
             audit-trace-2-pineco.txt
             audit-trace-3-rulebox-lock.txt
             audit-trace-4-item-lock.txt
+            audit-trace-5-prior-turn-pineco.txt
             audit-t2-t3-matrix.csv
             audit-source.tar.gz
             audit-source.sha256

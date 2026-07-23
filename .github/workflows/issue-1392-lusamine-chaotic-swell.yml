@@ -1,0 +1,13 @@
+name: Issue 1392 Validation Placeholder
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  placeholder:
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "Temporary file restored only for the validated rerun cleanup."

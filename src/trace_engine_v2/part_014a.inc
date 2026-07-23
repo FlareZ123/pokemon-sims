@@ -17,6 +17,8 @@
       if (quick_ball_tapu_crispin_route_should_precede_vessel() &&
           play_quick_ball(permit_payload)) return true;
       if (issue_1447_should_hold_vessel()) return false;
+      if (issue_1447_should_play_vessel_for_ready_turn() &&
+          play_earthen_vessel(true)) return true;
       if (play_earthen_vessel(permit_payload)) return true;
       if (play_quick_ball(permit_payload)) return true;
       if (play_mysterious_treasure(permit_payload)) return true;

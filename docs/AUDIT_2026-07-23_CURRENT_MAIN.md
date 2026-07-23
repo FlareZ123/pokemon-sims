@@ -1,6 +1,6 @@
 # Current-main debug audit, 2026-07-23
 
-This workflow-only audit is bound to `main@d58621bf8814e063a33be2a5e57b0aab46345ea5` and changes no simulator logic.
+This documentation-only audit is bound to `main@d58621bf8814e063a33be2a5e57b0aab46345ea5` and changes no simulator logic.
 
 The permanent repository CI provides the validation surface for this pull request:
 

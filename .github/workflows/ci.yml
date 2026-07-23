@@ -94,12 +94,30 @@ jobs:
           grep -q "T2 | PLAY SUPPORTER.*R-CRISPIN-01" trace-8.txt
           ! grep -q "STAR ALCHEMY" trace-8.txt
           grep -q "T2 | READY" trace-8.txt
-      - name: Run three reviewed Pineco Secret Box audits
+      - name: Run three reviewed Pineco route audits
         shell: bash
         run: |
           set -euo pipefail
+          # Steven may search up to three cards. Held Treasure, VSTAR, and Fire
+          # let Crispin plus Dragapult ex reach the same strict-JIT T2 deadline
+          # while preserving Secret Box and the Forretress ex self-Knock-Out:
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sv6-130
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://api.pokemontcg.io/v2/cards/sv6-163
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # https://github.com/FlareZ123/pokemon-sims/issues/1420
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee pineco-trace-35.txt
-          grep -q "Secret Box discarded three other cards" pineco-trace-35.txt
+          grep -q "banked Crispin and Dragapult ex" pineco-trace-35.txt
+          grep -q "Dragapult ex (Mysterious Treasure cost)" pineco-trace-35.txt
+          ! grep -q "T2 | PLAY ITEM | rules: R-SECRET-BOX-01" pineco-trace-35.txt
+          ! grep -q "T2 | EXPLODING ENERGY" pineco-trace-35.txt
+          ! grep -q "T2 | EVOLVE | rules: R-FORRETRESS-01" pineco-trace-35.txt
+          ! grep -q "T2 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand" pineco-trace-35.txt
+          grep -q "without advancing the Pineco line" pineco-trace-35.txt
           grep -q "T2 | READY" pineco-trace-35.txt
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 18 --require-ready-by 2 | tee pineco-trace-18.txt
           grep -q "Arven banked the next-turn Secret Box route" pineco-trace-18.txt

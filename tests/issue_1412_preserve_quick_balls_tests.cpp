@@ -132,10 +132,10 @@ void test_seed_73_preserves_both_quick_balls_and_bench_slot() {
   const sim::TrialOutcome outcome = engine.run();
   const sim::State& after = sim::EngineTestAccess::state(engine);
 
-  // Exact source-bound regression. Secret Box already discarded Dragapult ex,
-  // Exploding Energy supplied GG, and Star Alchemy searched Fire. The corrected
-  // route reaches the same T2 deadline while preserving both Quick Balls and the
-  // second Pineco Bench slot:
+  // Exact source-bound CI regression for seed 73. Secret Box already discarded
+  // Dragapult ex, Exploding Energy supplied GG, and Star Alchemy searched Fire.
+  // The corrected route reaches the same T2 deadline while preserving both Quick
+  // Balls and the second Pineco Bench slot:
   // https://api.pokemontcg.io/v2/cards/sv6-163
   // https://api.pokemontcg.io/v2/cards/sv4pt5-2
   // https://api.pokemontcg.io/v2/cards/swsh12-156

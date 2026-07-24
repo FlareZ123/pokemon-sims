@@ -83,6 +83,7 @@ struct State {
   bool retreat_used{false};
   bool stadium_used{false};
   bool vstar_power_used{false};
+  bool dark_asset_used{false};  // Once per turn: https://api.pokemontcg.io/v2/cards/swsh3-104
   bool turn_ended{false};
   bool path_lock_removed{false};
   Stadium stadium{Stadium::None};
@@ -98,6 +99,8 @@ struct TrialOutcome {
   int mulligans{0};
   bool started_regi{false};
   bool started_tapu{false};
+  bool used_dark_asset{false};
+  std::uint64_t dark_asset_cards_drawn{0};
   bool used_fss{false};
   bool used_legacy_star{false};
   bool used_steven{false};
@@ -146,6 +149,8 @@ struct Aggregate {
   std::uint64_t setup_failures{0};
   std::uint64_t started_regi{0};
   std::uint64_t started_tapu{0};
+  std::uint64_t dark_asset{0};
+  std::uint64_t dark_asset_cards_drawn{0};
   std::uint64_t fss{0};
   std::uint64_t legacy{0};
   std::uint64_t steven{0};
@@ -225,7 +230,8 @@ struct TraceLog {
     out << "}:" << state.turn << ':' << state.supporter_used << ':'
         << state.manual_energy_used << ':' << state.retreat_used << ':'
         << state.stadium_used << ':'
-        << state.vstar_power_used << ':' << state.turn_ended << ':'
+        << state.vstar_power_used << ':' << state.dark_asset_used << ':'
+        << state.turn_ended << ':'
         << state.path_lock_removed << ':' << static_cast<int>(state.stadium);
     return out.str();
   }

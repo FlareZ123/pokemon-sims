@@ -151,3 +151,8 @@ Deck ownership is separate from action policy. The shell remains the default and
 Appletun `sv8-140` is a Stage 1 Dragon. It satisfies the modeled Apex Dragon payload condition when discarded, while the absence of Applin prevents every in-play Appletun route: https://api.pokemontcg.io/v2/cards/sv8-140.
 
 Secret Box planning uses only observable state. Legal deck inspection may establish K1 Prize knowledge. Gladion can recover a known prized axis, while no policy reads debug-only Prize output. Costs, Bench space, first-turn evolution, Stadium use, Supporter use, Item locks, Rule Box Ability locks, and the shared VSTAR Power are checked before route admission.
+## Crobat V modeling variants
+
+Crobat V `swsh3-104` is modeled as a Basic Rule Box Pokémon V with Retreat Cost 1. Dark Asset resolves only after a hand-to-Bench play during a player turn, draws until the hand contains six cards, and uses one shared per-turn Dark Asset flag. Opening Active or opening Benched Crobat V does not trigger because setup occurs outside a turn. Rule Box Ability lock suppresses the on-play trigger: https://api.pokemontcg.io/v2/cards/swsh3-104 https://api.pokemontcg.io/v2/cards/swsh6-148 https://www.pokemon.com/us/pokemon-tcg/rules
+
+The `--model-crobat` recipes are generated from `regidrago-shell` and are intentionally absent from `deck_registry()` and `--all-decks`. They measure setup speed only. The report separately identifies the recovery, gust, lock-answer, Prize-information, Tool, and matchup value removed by each candidate cut: https://github.com/FlareZ123/pokemon-sims/issues/1394

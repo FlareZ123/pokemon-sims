@@ -85,3 +85,7 @@ Route-aware DCI may spend a normally protected card only when the complete obser
 The policy models proactive Active-position recovery. Tapu Lele-GX can receive a T1 Grass attachment and retreat to an evolution-eligible Regidrago V. Exploding Energy can fund a later retreat when that creates the earliest complete route. Forest Seal Stone and Legacy Star remain mutually exclusive VSTAR Powers.
 
 All route decisions and failure counters are recipe-gated. They do not change the shell action selector.
+
+## Crobat V draw-connector policy
+
+Crobat V is a probabilistic hand-refresh connector. The policy preserves Regidrago V, Tapu Lele-GX, Oricorio, and Latias ex when those cards deterministically complete a visible missing axis. Crobat V is Benched only with available Bench space, an unused Dark Asset, no active Rule Box Ability lock, and a projected post-play hand below six. A Crobat intended for play is UDP and is protected from ordinary discard costs. A redundant copy after Dark Asset has been used, or a lock-dead copy, may become dynamically discardable through the existing DCI policy: https://api.pokemontcg.io/v2/cards/swsh3-104 https://github.com/FlareZ123/pokemon-sims/issues/1394

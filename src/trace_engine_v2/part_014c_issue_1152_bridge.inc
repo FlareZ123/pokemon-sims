@@ -1,4 +1,5 @@
 #include "part_issue_1199_steven_package_override.inc"
+#include "part_issue_1478_arven_vessel_completion.inc"
 
   bool held_quick_ball_latias_completes_current_turn_without_arven() {
     if (!supporter_allowed() || hand_count(Card::Arven) == 0 || item_locked() ||
@@ -75,6 +76,7 @@
   }
 
   void choose_supporter_issue_1152() {
+    if (play_issue_1478_t3_arven_vessel_completion()) return;
     if (issue_1393_held_crispin_completion_available()) {
       // Crispin completes the proven GGF route before Gladion can consume the only
       // Supporter play for a slower Prize exchange:

@@ -97,18 +97,19 @@
       return false;
     }
 
-    // On the exact T1 route, held Brilliant Blender strictly covers Professor
-    // Burnet's remaining deck-payload role. Mysterious Treasure may therefore use
-    // Burnet as dynamic-DCI fuel only when two legal Wonder Tag -> Crispin turns,
-    // in-place VSTAR evolution, both Energy pairs, Bench space, and a future Blender
-    // payload remain publicly possible. Every irreversible cost is paid before the
-    // first legal deck inspection, so this gate uses fixed-list K0 accounting:
+    // Held Brilliant Blender strictly covers Professor Burnet's remaining modeled
+    // deck-payload role. The public T1 hand may therefore spend Burnet to establish
+    // K1 through Mysterious Treasure, bank Crispin through Wonder Tag, then use the
+    // inspected singleton Oricorio route after in-place VSTAR evolution. Every
+    // irreversible cost precedes the first legal inspection, so this gate uses only
+    // fixed-list K0 possibility accounting and preserves two required Bench slots:
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Core first-turn, Item, Supporter, Ability, Bench, evolution, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Dynamic DCI and K0 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
@@ -124,12 +125,16 @@
         hand_count(Card::ProfessorBurnet) > 0 &&
         hand_count(Card::BrilliantBlender) > 0 && !payload_ready() &&
         hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
-        hand_count(Card::Crispin) == 0 && bench_space() >= 2 &&
+        hand_count(Card::Crispin) == 0 &&
+        hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
+        bench_space() >= 2 &&
         ability_available_for_pokemon(Card::TapuLeleGX) &&
-        issue_1419_publicly_possible_count(Card::TapuLeleGX) >= 2 &&
-        issue_1419_publicly_possible_count(Card::Crispin) >= 2 &&
+        ability_available_for_pokemon(Card::Oricorio) &&
+        issue_1419_publicly_possible_count(Card::TapuLeleGX) >= 1 &&
+        issue_1419_publicly_possible_count(Card::Crispin) >= 1 &&
+        issue_1419_publicly_possible_count(Card::Oricorio) >= 1 &&
         issue_1419_publicly_possible_count(Card::Grass) >= 2 &&
-        issue_1419_publicly_possible_count(Card::Fire) >= 2 &&
+        issue_1419_publicly_possible_count(Card::Fire) >= 1 &&
         issue_1419_possible_payload_count() > 0;
   }
 
@@ -145,11 +150,12 @@
 
     if (issue_1476_redundant_burnet_route_available(excluded_from_cost)) {
       // Blender dominates Burnet's only remaining payload axis, while spending
-      // Burnet unlocks the earliest complete legal Tapu Lele-GX -> Crispin route:
+      // Burnet unlocks the confirmed Tapu Lele-GX -> Crispin -> Oricorio route:
       // https://github.com/FlareZ123/pokemon-sims/issues/1476
       // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
       // https://api.pokemontcg.io/v2/cards/sv8-164
       // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://api.pokemontcg.io/v2/cards/sm2-55
       return Card::ProfessorBurnet;
     }
 

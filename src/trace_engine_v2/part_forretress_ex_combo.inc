@@ -244,7 +244,16 @@ bool Engine::use_exploding_energy_for_setup() {
   // https://github.com/FlareZ123/pokemon-sims/issues/1118
   record_deck_search_knowledge("Exploding Energy");
   const int available = std::min(5, deck_count_after_search_started(Card::Grass));
-  if (available <= 0) return false;
+  if (available <= 0) {
+    // A K0 announcement can legally reveal that no Basic Grass Energy remains.
+    // Once the hidden-zone search has begun, finish the printed consequence
+    // instead of retaining K1 knowledge while leaving Forretress ex in play:
+    // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // Core deck-search, shuffle, Knock Out, and promotion procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Knowledge-state contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#knowledge-states
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1460
+    return resolve_exploding_energy({});
+  }
 
   // Exploding Energy searches for up to five Grass Energy, so select only the
   // copies that advance the current Grass and paid-Retreat axes. Extra copies do

@@ -72,9 +72,15 @@
       shuffle(state_.deck);
       trace("PLAY ITEM", "R-MT-01; R-GAME-ITEM; P-DCI-01; P-COMPRESS-01",
             "Spent redundant Professor Burnet and searched Oricorio for the complete T2 route.");
-      if (!bench_from_hand(Card::Oricorio, true)) {
+      if (!bench_from_hand(Card::Oricorio, false)) {
         throw std::logic_error("projected issue-1476 Oricorio Bench action disappeared");
       }
+      // Vital Dance searches up to two Basic Energy only when Oricorio is played
+      // from hand to the Bench. Resolve the same established helper here so the
+      // composite route records the card-name action explicitly in its trace:
+      // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+      // Core Bench and Ability procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      search_energy_to_hand(2, "R-ORICORIO-01", "VITAL DANCE");
 
       attach_manual();
       if (!state_.manual_energy_used ||

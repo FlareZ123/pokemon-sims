@@ -1,0 +1,55 @@
+name: Apply issue 1496 Crobat plan fix
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1496-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  apply-and-validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/issue-1496-crobat-sim-plan-rebased'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Apply the rebased Crobat planning fix
+        run: python scripts/apply_issue_1496.py
+      - name: Configure and build Release outside the checkout
+        run: cmake -S . -B "$RUNNER_TEMP/build-1496" -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build "$RUNNER_TEMP/build-1496" --parallel 2
+      - name: Run focused documentation contract
+        run: "$RUNNER_TEMP/build-1496/regidrago_unified_tests" issue_1496_sim_plan_crobat_contract_tests
+      - name: Run three reviewed simulate-this audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/build-1496/regidrago_sim" --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee "$RUNNER_TEMP/trace-shell-seed1.txt"
+          grep -q "READY" "$RUNNER_TEMP/trace-shell-seed1.txt"
+          "$RUNNER_TEMP/build-1496/regidrago_sim" --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee "$RUNNER_TEMP/trace-pineco-seed35.txt"
+          grep -q "T2 | READY" "$RUNNER_TEMP/trace-pineco-seed35.txt"
+          "$RUNNER_TEMP/build-1496/regidrago_sim" --simulate-this --model-variant crobat1-erika --scenario strict-jit/go-second --seed 1 --require-ready-by 5 | tee "$RUNNER_TEMP/trace-crobat-seed1.txt"
+          grep -q "READY" "$RUNNER_TEMP/trace-crobat-seed1.txt"
+      - name: Run complete Release suite
+        run: ctest --test-dir "$RUNNER_TEMP/build-1496" --parallel 4 --output-on-failure
+      - name: Commit only the validated documentation files
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm scripts/apply_issue_1496.py .github/workflows/apply-issue-1496.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add SIM-PLAN.md tests/issue_1496_sim_plan_crobat_contract_tests.cpp
+          git add -u -- scripts/apply_issue_1496.py .github/workflows/apply-issue-1496.yml
+          git commit -m "Document the supported Crobat modeling surface (#1496)"
+          git push origin HEAD:fix/issue-1496-crobat-sim-plan-rebased

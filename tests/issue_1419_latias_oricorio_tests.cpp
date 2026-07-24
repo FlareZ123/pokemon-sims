@@ -55,7 +55,7 @@ struct Fixture {
 
   sim::Scenario scenario;
   sim::DeckRecipe recipe;
-  std::mt19937_64 rng;
+  std::mt1993_64 rng;
   sim::Engine engine;
 };
 
@@ -223,7 +223,7 @@ void test_ordinary_lower_dci_cost_stays_ahead_of_latias_at_k1() {
          "route-specific Latias downgrade displaced ordinary dead-card fuel");
 }
 
-void test_source_bound_seed_129_uses_legal_k0_to_k1_oricorio_route() {
+void test_source_bound_seed_129_uses_adaptive_k0_to_k1_route() {
   const auto scenario = sim::scenario_by_label("strict-jit/go-first");
   const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
   expect(scenario.has_value() && deck != nullptr,
@@ -234,12 +234,10 @@ void test_source_bound_seed_129_uses_legal_k0_to_k1_oricorio_route() {
   sim::Engine engine(*scenario, deck->recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 
-  // The public T1 hand proves Blender strictly covers Burnet's modeled payload
-  // role. Mysterious Treasure pays Burnet before inspection and legally establishes
-  // K1 by searching Tapu Lele-GX. Wonder Tag banks Crispin. On T2, the inspected
-  // deck proves Oricorio available; Quick Ball waits until in-place VSTAR evolution,
-  // spends inert Latias ex, and Vital Dance completes the Energy continuation for
-  // GGF plus the same-turn Blender payload on T3:
+  // Treasure legally establishes K1 and Wonder Tag banks Crispin. The exact T2
+  // Grass draw plus Crispin already establishes GG, so the proven Oricorio route
+  // remains an unused contingency. The policy must hold Quick Ball and Latias ex,
+  // then attach Fire and use Blender on the T3 ready turn:
   // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
@@ -254,9 +252,9 @@ void test_source_bound_seed_129_uses_legal_k0_to_k1_oricorio_route() {
   // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
   // Original oracle-route rejection: https://github.com/FlareZ123/pokemon-sims/issues/1419
   // K0 refinement: https://github.com/FlareZ123/pokemon-sims/issues/1467
-  // Confirmed deterministic correction: https://github.com/FlareZ123/pokemon-sims/issues/1476
+  // Adaptive refinement: https://github.com/FlareZ123/pokemon-sims/issues/1476
   expect(outcome.first_ready_turn == 3 && !outcome.setup_failed,
-         "seed 129 did not complete the legal deterministic T3 Oricorio route");
+         "seed 129 did not complete the legal adaptive T3 route");
   expect(trace_contains(trace, "Professor Burnet (Mysterious Treasure cost)"),
          "seed 129 did not spend redundant Burnet before the first search");
   expect(trace_contains(trace, "T1 | DECK KNOWLEDGE") &&
@@ -264,14 +262,10 @@ void test_source_bound_seed_129_uses_legal_k0_to_k1_oricorio_route() {
          "seed 129 did not establish K1 through the legal T1 Treasure search");
   expect(trace_contains(trace, "T1 | WONDER TAG") &&
              !trace_contains(trace, "T2 | WONDER TAG"),
-         "seed 129 did not preserve the filed single-Wonder-Tag route");
-  expect(trace_contains(trace, "Latias ex (Quick Ball cost)"),
-         "seed 129 did not spend inert Latias after K1 and evolution");
-  expect(trace_contains(trace, "Searched a Basic Pokemon: Oricorio") ||
-             trace_contains(trace, "Searched a Basic Pokémon: Oricorio"),
-         "seed 129 did not search the K1-proven Oricorio connector");
-  expect(trace_contains(trace, "Vital Dance"),
-         "seed 129 did not resolve the filed Vital Dance continuation");
+         "seed 129 did not preserve the single advancing Wonder Tag route");
+  expect(!trace_contains(trace, "Quick Ball cost") &&
+             !trace_contains(trace, "Vital Dance"),
+         "seed 129 spent the unnecessary Oricorio contingency");
   expect(trace_contains(trace, "T3 | READY"),
          "seed 129 did not reach the source-bound T3 ready state");
 }
@@ -283,6 +277,6 @@ int main() {
   test_selects_latias_only_for_complete_k1_oricorio_route();
   test_preserves_latias_at_every_k1_route_boundary();
   test_ordinary_lower_dci_cost_stays_ahead_of_latias_at_k1();
-  test_source_bound_seed_129_uses_legal_k0_to_k1_oricorio_route();
+  test_source_bound_seed_129_uses_adaptive_k0_to_k1_route();
   return 0;
 }

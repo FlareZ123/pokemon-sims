@@ -2,6 +2,7 @@
 #include "../src/regidrago_sim.cpp"
 
 #include <algorithm>
+#include <cstdlib>
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -186,6 +187,12 @@ void test_seed_47_uses_turo_without_tapu_tate_chain() {
 }  // namespace
 
 int main() {
+  const int digest_status = std::system(
+      "python3 -c \"from pathlib import Path; import sys; "
+      "root=Path('..').resolve(); sys.path.insert(0,str(root)); "
+      "from scripts.baseline_provenance import simulator_policy_source_digest; "
+      "print('ISSUE1513_SOURCE_DIGEST='+simulator_policy_source_digest(root))\"");
+  expect(digest_status == 0, "The source-digest probe failed.");
   test_exact_state_preserves_tapu_and_uses_direct_turo();
   test_route_boundaries_preserve_existing_choices();
   test_seed_47_uses_turo_without_tapu_tate_chain();

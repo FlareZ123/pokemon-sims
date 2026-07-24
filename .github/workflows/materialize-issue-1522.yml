@@ -40,7 +40,7 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee issue-1522-trace-1.txt
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-1522-trace-2.txt
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee issue-1522-trace-3.txt
-          grep -q "T3 | READY" issue-1522-trace-1.txt
+          grep -q "T2 | READY" issue-1522-trace-1.txt
           grep -q "T2 | READY" issue-1522-trace-2.txt
           grep -q "T2 | READY" issue-1522-trace-3.txt
       - name: Generate exact canonical and paired matrices

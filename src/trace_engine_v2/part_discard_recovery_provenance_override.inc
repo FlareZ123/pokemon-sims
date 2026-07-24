@@ -51,6 +51,57 @@
     return std::nullopt;
   }
 
+  std::optional<Card> quick_ball_latias_oricorio_route_cost() const {
+    const int missing_attachments = grass_needed() + fire_needed();
+    const int future_draws_before_payload = missing_attachments;
+    const auto searchable_count = [this](const Card card) {
+      if (deck_seen_ || prizes_revealed_) {
+        return deck_count_after_search_started(card);
+      }
+      return total_copies(card) - hand_count(card) -
+          count_of(state_.discard, card) - in_play_count(card) -
+          attached_public_count(card);
+    };
+    int searchable_payloads = 0;
+    for (const Card card : {Card::Appletun, Card::MegaDragonite,
+                            Card::Dragapult, Card::GoodraVstar,
+                            Card::DialgaGX}) {
+      searchable_payloads += std::max(0, searchable_count(card));
+    }
+    const bool energy_targets_plausible =
+        searchable_count(Card::Grass) >= grass_needed() &&
+        searchable_count(Card::Fire) >= fire_needed();
+
+    // Once the Active attacker is already Regidrago VSTAR, held Latias ex no
+    // longer advances the Active-position setup axis. Quick Ball may spend that
+    // dynamically inert copy to search Oricorio only when Vital Dance supplies
+    // every remaining Basic Energy, the configured horizon contains each future
+    // manual attachment, and a held Brilliant Blender has a guaranteed surviving
+    // Dragon payload for the Energy-complete turn:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, Bench, Ability, attachment, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Dynamic DCI and earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1419
+    const bool complete_public_route =
+        scenario_.dci == DciProfile::StrictJit &&
+        scenario_.locks == LockMode::None &&
+        state_.manual_energy_used && active_is_vstar() && need_energy() &&
+        missing_attachments > 0 && missing_attachments <= 2 &&
+        state_.turn + missing_attachments <= scenario_.max_turn &&
+        hand_count(Card::LatiasEx) > 0 &&
+        hand_count(Card::BrilliantBlender) > 0 && bench_space() > 0 &&
+        !in_play(Card::Oricorio) && hand_count(Card::Oricorio) == 0 &&
+        ability_available_for_pokemon(Card::Oricorio) &&
+        searchable_count(Card::Oricorio) > 0 && energy_targets_plausible &&
+        searchable_payloads > future_draws_before_payload;
+    return complete_public_route ? std::optional<Card>{Card::LatiasEx}
+                                 : std::nullopt;
+  }
+
   std::optional<Card> choose_discard_issue_1237(
       const bool permit_payload, const bool flex_fodder,
       const bool allow_heavy_ball = true,
@@ -60,7 +111,9 @@
                                          allow_heavy_ball, excluded_from_cost,
                                          allow_redundant_payload);
     if (ordinary || excluded_from_cost != Card::QuickBall) return ordinary;
-    return quick_ball_dialga_vessel_route_cost();
+    const auto dialga_vessel = quick_ball_dialga_vessel_route_cost();
+    if (dialga_vessel) return dialga_vessel;
+    return quick_ball_latias_oricorio_route_cost();
   }
 
   bool has_payable_payload_outlet_after_costed_search_issue_1237(

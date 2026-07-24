@@ -56,6 +56,29 @@ def exercise_generator(module: ModuleType, *, fail: bool) -> None:
             raise RuntimeError("A successful generator did not publish the matrix.")
 
 
+def assert_no_tracked_source_locks() -> None:
+    # Source-update locks are process coordination artifacts and must never become
+    # source, package, or evidence state:
+    # https://github.com/FlareZ123/pokemon-sims/issues/1492
+    # https://github.com/FlareZ123/pokemon-sims/issues/1300
+    result = subprocess.run(
+        ["git", "ls-files", "src"],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    tracked_locks = sorted(
+        path for path in result.stdout.splitlines() if path.endswith(".lock")
+    )
+    if tracked_locks:
+        raise RuntimeError(f"Tracked source lock artifacts remain: {tracked_locks}")
+
+    ignore_text = (ROOT / ".gitignore").read_text(encoding="utf-8")
+    if "/src/*.lock" not in ignore_text or "/src/**/*.lock" not in ignore_text:
+        raise RuntimeError("The source-lock ignore contract is missing.")
+
+
 def main() -> None:
     modules = [
         load_module(ROOT / "scripts/generate_multi_deck_comparison.py", "issue1300_multi"),
@@ -64,7 +87,8 @@ def main() -> None:
     for module in modules:
         exercise_generator(module, fail=False)
         exercise_generator(module, fail=True)
-    print("Issue 1300 matrix lock cleanup tests passed.")
+    assert_no_tracked_source_locks()
+    print("Issue 1300 and 1492 lock cleanup tests passed.")
 
 
 if __name__ == "__main__":

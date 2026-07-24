@@ -65,6 +65,7 @@ int main() {
   // Generated report: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CROBAT_MODEL_REPORT.md
   // Completed modeling scope: https://github.com/FlareZ123/pokemon-sims/issues/1394
   // Confirmed documentation bug: https://github.com/FlareZ123/pokemon-sims/issues/1496
+  // Validated correction: https://github.com/FlareZ123/pokemon-sims/pull/1510
   expect_contains(plan, "`--model-crobat`",
                   "SIM-PLAN.md omits the Crobat matrix command.");
   expect_contains(plan, "`--model-variant`",

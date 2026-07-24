@@ -85,7 +85,7 @@ jobs:
           # https://github.com/FlareZ123/pokemon-sims/issues/1516
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 42 | tee issue-1516.txt
           grep -q "Earthen Vessel" issue-1516.txt
-          grep -q "Quick Ball.*Tapu Lele-GX" issue-1516.txt
+          grep -q "Searched a Basic Pokémon: Tapu Lele-GX" issue-1516.txt
           grep -q "WONDER TAG.*Crispin" issue-1516.txt
           grep -q "first-ready turn: 3" issue-1516.txt
       - name: Generate T2 and T3 matrices

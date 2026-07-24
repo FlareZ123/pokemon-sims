@@ -54,7 +54,7 @@ The policy now recognizes two-step payload lines that are legal without a draw-o
 - Ultra Ball is evaluated using its actual two-card hand payment, with the dynamic DCI selector checking both discards.
 - Evolution Incense is included as a deliberately narrow evolution-axis comparator.
 
-Historical variant-builder work is retained here as design context. The current executable does not expose a variant builder or emit deck-swap rows; it writes baseline `all_scenarios()` rows only: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L271-L283. The prior `variant_results.csv` was removed and must not support current claims: https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7.
+Historical generic variant-builder work is retained here as design context. The current supported card-swap surface is the modeling-only Crobat V registry exposed through `--model-crobat` and `--model-variant`; these temporary derivatives remain outside `deck_registry()`, `--all-decks`, and the canonical shell baseline, and they write the source-bound `results/crobat_variant_model.csv` artifact and `docs/CROBAT_MODEL_REPORT.md`: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L250-L330 https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#L72-L86 https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CROBAT_MODEL_REPORT.md https://github.com/FlareZ123/pokemon-sims/issues/1394. The retired generic `variant_results.csv` screen remains withdrawn and cannot support current claims: https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7 https://github.com/FlareZ123/pokemon-sims/issues/1496.
 
 ## Simulation state
 
@@ -184,7 +184,7 @@ Dragapult ex and Mega Dragonite ex are S-tier. Dialga-GX’s Timeless-GX and His
 - `setup_failure_pct` counts every game not ready by the end of T4 and equals `100 - ready_by_t4_pct`: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/T5_FAILURE_POLICY.md https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7-L12 https://github.com/FlareZ123/pokemon-sims/issues/1491
 - Monte Carlo standard error in percentage points for baseline scenario values.
 - Setup-tool use rates and opening Regidrago V rate.
-- Baseline scenario probabilities. Matched-seed card-swap deltas remain a future extension until a current generator and result artifact are restored: https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7.
+- Source-bound paired Crobat V card-swap deltas for T2, T3, and T4 readiness, scenario improvements, Dark Asset use, and cards drawn per using game. The `--model-crobat` generator writes `results/crobat_variant_model.csv`, `--model-variant` reproduces one readable hand, and `docs/CROBAT_MODEL_REPORT.md` records the discrete cut costs and interpretation boundaries: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#L72-L86 https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CROBAT_MODEL_REPORT.md https://api.pokemontcg.io/v2/cards/swsh3-104 https://github.com/FlareZ123/pokemon-sims/issues/1394 https://github.com/FlareZ123/pokemon-sims/issues/1496.
 
 ## Validation plan
 

@@ -19,7 +19,7 @@ The analysis is built around the user-supplied concepts:
 1. Use the exact user-supplied 60-card list as the baseline.
 2. Draw an opening hand, resolve mulligans, select an Active Basic, bench legal opening Basics, and place six Prizes after opening placements.
 3. Draw one card at the beginning of every simulated turn.
-4. Model player turns 1 through 4, separately for going first and going second.
+4. Model player turns 1 through 5, separately for going first and going second. T4 remains the setup-success deadline; unresolved trials continue through diagnostic T5, and first readiness on T5 remains a setup failure: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/T5_FAILURE_POLICY.md https://github.com/FlareZ123/pokemon-sims/issues/1491
 5. Treat a setup as successful only when the Active is Regidrago VSTAR, it carries two Grass and one Fire Energy, and an A/S Dragon target is legally available in the discard pile.
 6. Separate strict JIT, matchup-flex JIT, and no-discard-control profiles.
 7. Add item-lock, Rule Box ability-lock, and combined-lock stress cases.
@@ -179,7 +179,9 @@ Dragapult ex and Mega Dragonite ex are S-tier. Dialga-GX’s Timeless-GX and His
 
 ### Reported metrics
 
-- `P(ready by T2)`, `P(ready by T3)`, and `P(ready by T4)`.
+- `P(ready by T2)`, `P(ready by T3)`, `P(ready by T4)`, and cumulative `P(ready by T5)`.
+- `P(ready on T5)` records diagnostic late recovery; those games remain setup failures.
+- `setup_failure_pct` counts every game not ready by the end of T4 and equals `100 - ready_by_t4_pct`: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/T5_FAILURE_POLICY.md https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7-L12 https://github.com/FlareZ123/pokemon-sims/issues/1491
 - Monte Carlo standard error in percentage points for baseline scenario values.
 - Setup-tool use rates and opening Regidrago V rate.
 - Baseline scenario probabilities. Matched-seed card-swap deltas remain a future extension until a current generator and result artifact are restored: https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7.

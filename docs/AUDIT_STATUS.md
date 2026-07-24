@@ -19,7 +19,7 @@ Pull requests run two compiled lanes from https://github.com/FlareZ123/pokemon-s
 
 The Release lane builds the simulator and unified tests, runs eight shell `--simulate-this` audits and three registered-Pineco audits, generates and byte-compares the canonical shell matrix and paired two-deck matrix, and then runs the complete CTest suite: https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml#L20-L166 https://github.com/FlareZ123/pokemon-sims/issues/1494
 
-The Release artifact contains all eleven traces, both matrices, the tested commit identifier, the simulator policy digest, both binaries, and the CTest evidence directory. The sanitizer lane builds with AddressSanitizer and UndefinedBehaviorSanitizer, runs the complete CTest suite, and uploads its CTest evidence directory. Card-audit and documentation contracts run inside both complete CTest suites after compilation: https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml#L145-L195
+The Release artifact contains all eleven traces, both matrices, the tested commit identifier, the simulator policy digest, both binaries, and the CTest evidence directory. The sanitizer lane builds with AddressSanitizer and UndefinedBehaviorSanitizer, runs the complete CTest suite, and uploads its CTest evidence directory. Card-audit and documentation contracts run inside both complete CTest suites after compilation: https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml#L145-L193
 
 ## Remaining explicit model boundary
 

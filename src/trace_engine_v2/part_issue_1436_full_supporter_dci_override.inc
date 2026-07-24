@@ -99,10 +99,11 @@
 
     // Held Brilliant Blender strictly covers Professor Burnet's remaining modeled
     // deck-payload role. The public T1 hand may therefore spend Burnet to establish
-    // K1 through Mysterious Treasure, bank Crispin through Wonder Tag, then use the
-    // inspected singleton Oricorio route after in-place VSTAR evolution. Every
-    // irreversible cost precedes the first legal inspection, so this gate uses only
-    // fixed-list K0 possibility accounting and preserves two required Bench slots:
+    // K1 through Mysterious Treasure, then use the inspected Oricorio, Quick Ball,
+    // Tapu Lele-GX, and Crispin line to complete GGF on T2. Every irreversible cost
+    // precedes the first legal inspection, so this gate uses only fixed-list K0
+    // possibility accounting and preserves two required Bench slots. A two-turn
+    // horizon is sufficient because the route reaches readiness on T2:
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
@@ -117,7 +118,7 @@
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1476
     return scenario_.dci == DciProfile::StrictJit &&
         scenario_.locks == LockMode::None && state_.turn == 1 &&
-        scenario_.going_first && scenario_.max_turn >= 3 && !item_locked() &&
+        scenario_.going_first && scenario_.max_turn >= 2 && !item_locked() &&
         state_.active && state_.active->card == Card::RegidragoV &&
         hand_count(Card::RegidragoVstar) > 0 &&
         hand_count(Card::MysteriousTreasure) > 0 &&
@@ -150,7 +151,7 @@
 
     if (issue_1476_redundant_burnet_route_available(excluded_from_cost)) {
       // Blender dominates Burnet's only remaining payload axis, while spending
-      // Burnet unlocks the confirmed Tapu Lele-GX -> Crispin -> Oricorio route:
+      // Burnet unlocks the confirmed Oricorio -> Tapu Lele-GX -> Crispin route:
       // https://github.com/FlareZ123/pokemon-sims/issues/1476
       // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
       // https://api.pokemontcg.io/v2/cards/sv8-164

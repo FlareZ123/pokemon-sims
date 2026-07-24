@@ -1,0 +1,61 @@
+name: Debug audit 2026-07-24
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: debug-audit-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.head_ref == 'audit/debug-20260724-main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Run three independent simulate-this audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 290 --require-ready-by 3 | tee audit-trace-shell-290.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 129 --require-ready-by 2 | tee audit-trace-shell-129.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee audit-trace-pineco-35.txt
+          grep -q "READY" audit-trace-shell-290.txt
+          grep -q "READY" audit-trace-shell-129.txt
+          grep -q "READY" audit-trace-pineco-35.txt
+      - name: Generate current-run T2 and T3 matrices
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260724 --out audit-t2-t3-shell.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260724 --out audit-t2-t3-all-decks.csv
+      - name: Record audited source
+        run: git rev-parse HEAD | tee audited-head.txt
+      - name: Package source snapshot
+        shell: bash
+        run: tar --exclude=.git --exclude=build -czf source-snapshot.tgz .
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-audit-20260724-${{ github.run_attempt }}
+          path: |
+            audit-trace-*.txt
+            audit-t2-t3-shell.csv
+            audit-t2-t3-all-decks.csv
+            audited-head.txt
+            source-snapshot.tgz
+            build/Testing
+          if-no-files-found: warn

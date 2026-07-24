@@ -29,18 +29,20 @@ jobs:
       - name: Run three reviewed simulate-this audits
         shell: bash
         run: |
-          set -euo pipefail
+          set +e
           # Field Blower is targetless in the no-lock seed-290 state and may pay Mysterious Treasure before K1:
           # https://api.pokemontcg.io/v2/cards/sm2-125
           # https://api.pokemontcg.io/v2/cards/sm6-113
           # https://github.com/FlareZ123/pokemon-sims/issues/1478
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 290 --require-ready-by 3 | tee trace-290.txt
+          status_290=${PIPESTATUS[0]}
 
           # Preserve the confirmed Oricorio-first T2 route from issue 1476:
           # https://api.pokemontcg.io/v2/cards/sm2-55
           # https://api.pokemontcg.io/v2/cards/sv7-133
           # https://github.com/FlareZ123/pokemon-sims/issues/1476
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 129 --require-ready-by 2 | tee trace-129.txt
+          status_129=${PIPESTATUS[0]}
 
           # Preserve the source-bounded Treasure to Tapu Lele-GX to Crispin T2 route:
           # https://api.pokemontcg.io/v2/cards/sm6-113
@@ -48,11 +50,23 @@ jobs:
           # https://api.pokemontcg.io/v2/cards/sv7-133
           # https://github.com/FlareZ123/pokemon-sims/issues/1209
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee trace-43.txt
+          status_43=${PIPESTATUS[0]}
+
+          printf 'seed_290=%s\nseed_129=%s\nseed_43=%s\n' "$status_290" "$status_129" "$status_43" | tee trace-statuses.txt
+          exit 0
       - name: Upload reviewed traces
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: issue-1478-reviewed-traces
-          path: trace-*.txt
+          path: |
+            trace-*.txt
+            trace-statuses.txt
+      - name: Verify reviewed audit deadlines
+        run: |
+          grep -q '^seed_290=0$' trace-statuses.txt
+          grep -q '^seed_129=0$' trace-statuses.txt
+          grep -q '^seed_43=0$' trace-statuses.txt
       - name: Run focused regression
         run: ./build/regidrago_unified_tests issue_1478_field_blower_direct_regi_tests
       - name: Regenerate source-bound setup evidence

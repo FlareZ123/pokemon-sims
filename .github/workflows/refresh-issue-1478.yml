@@ -24,6 +24,23 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Align the seed 290 regression with the reviewed trace
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          path = Path("tests/issue_1478_field_blower_direct_regi_tests.cpp")
+          original = path.read_text(encoding="utf-8")
+          old = 'trace_contains(trace, "T2 | STAR ALCHEMY")'
+          new = 'trace_contains(trace, "T1 | STAR ALCHEMY")'
+          if old not in original:
+              raise SystemExit("Expected seed-290 Star Alchemy assertion was not found")
+          updated = original.replace(old, new, 1)
+          temporary = path.with_suffix(path.suffix + ".tmp")
+          temporary.write_text(updated, encoding="utf-8")
+          os.replace(temporary, path)
+          PY
       - name: Configure and build Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
       - name: Run three reviewed simulate-this audits

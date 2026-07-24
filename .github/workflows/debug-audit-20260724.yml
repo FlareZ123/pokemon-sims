@@ -1,0 +1,69 @@
+name: Debug audit 20260724
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: debug-audit-20260724-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  source-bound-audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/debug-20260724-t2t3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+
+      - name: Simulate pass 1 shell strict JIT
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-1-shell-strict-jit.txt
+
+      - name: Simulate pass 2 Pineco direct T2
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-2-pineco-strict-jit.txt
+
+      - name: Simulate pass 3 Rule Box Ability lock
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3 | tee trace-3-shell-rulebox-lock.txt
+
+      - name: Generate all-deck all-scenario probability matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260724 --out audit-t2-t3-matrix.csv
+
+      - name: Record source identity
+        run: |
+          git rev-parse HEAD > audit-main-sha.txt
+          git status --short > audit-status.txt
+
+      - name: Upload source, traces, and matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-audit-20260724
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            audit-main-sha.txt
+            audit-status.txt
+            audit-t2-t3-matrix.csv
+            trace-1-shell-strict-jit.txt
+            trace-2-pineco-strict-jit.txt
+            trace-3-shell-rulebox-lock.txt
+            CMakeLists.txt
+            README.md
+            SIM-PLAN.md
+            src
+            docs
+            scripts
+            tests
+            results

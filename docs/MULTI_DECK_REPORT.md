@@ -11,7 +11,7 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 | Scenario | Shell T2 | Pineco T2 | Δ T2 | Shell T3 | Pineco T3 | Δ T3 | Shell T4 | Pineco T4 | Δ T4 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | Strict JIT, going first | 11.941% | 18.685% | +6.744 pp | 38.456% | 44.394% | +5.938 pp | 55.321% | 61.602% | +6.281 pp |
-| Strict JIT, going second | 29.016% | 46.075% | +17.059 pp | 52.427% | 60.933% | +8.506 pp | 63.622% | 71.024% | +7.402 pp |
+| Strict JIT, going second | 29.016% | 46.057% | +17.041 pp | 52.427% | 60.904% | +8.477 pp | 63.622% | 71.017% | +7.395 pp |
 | Matchup-flex JIT, going first | 16.406% | 19.917% | +3.511 pp | 47.384% | 45.441% | -1.943 pp | 63.398% | 62.928% | -0.470 pp |
 | Matchup-flex JIT, going second | 37.104% | 49.140% | +12.036 pp | 60.856% | 64.096% | +3.240 pp | 71.247% | 73.646% | +2.399 pp |
 | No discard control, going first | 19.954% | 24.568% | +4.614 pp | 55.774% | 57.494% | +1.720 pp | 71.845% | 73.118% | +1.273 pp |
@@ -60,12 +60,12 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 | Strict JIT, full Item lock, first | 2.769% ± 0.052 | 5.672% ± 0.073 | 10.711% ± 0.098 | 89.289% ± 0.098 |
 | Strict JIT, Rule Box Ability lock, first | 4.636% ± 0.066 | 16.470% ± 0.117 | 27.547% ± 0.141 | 72.453% ± 0.141 |
 | Strict JIT, combined lock, first | 0.475% ± 0.022 | 1.337% ± 0.036 | 3.098% ± 0.055 | 96.902% ± 0.055 |
-| Strict JIT, going second | 46.075% ± 0.158 | 60.933% ± 0.154 | 71.024% ± 0.143 | 28.976% ± 0.143 |
+| Strict JIT, going second | 46.057% ± 0.158 | 60.904% ± 0.154 | 71.017% ± 0.143 | 28.983% ± 0.143 |
 | Matchup-flex JIT, going second | 49.140% ± 0.158 | 64.096% ± 0.152 | 73.646% ± 0.139 | 26.354% ± 0.139 |
 | No discard control, going second | 58.592% ± 0.156 | 72.511% ± 0.141 | 80.971% ± 0.124 | 19.029% ± 0.124 |
 | Strict JIT, turn-two Item lock, second | 6.600% ± 0.079 | 11.805% ± 0.102 | 17.497% ± 0.120 | 82.503% ± 0.120 |
 | Strict JIT, full Item lock, second | 4.389% ± 0.065 | 9.130% ± 0.091 | 14.485% ± 0.111 | 85.515% ± 0.111 |
-| Strict JIT, Rule Box Ability lock, second | 11.725% ± 0.102 | 22.348% ± 0.132 | 31.518% ± 0.147 | 68.482% ± 0.147 |
+| Strict JIT, Rule Box Ability lock, second | 11.731% ± 0.102 | 22.339% ± 0.132 | 31.509% ± 0.147 | 68.491% ± 0.147 |
 | Strict JIT, combined lock, second | 1.164% ± 0.034 | 2.610% ± 0.050 | 4.452% ± 0.065 | 95.548% ± 0.065 |
 | Strict JIT, Supporter lock, first | 1.858% ± 0.043 | 5.771% ± 0.074 | 9.912% ± 0.094 | 90.088% ± 0.094 |
 | Strict JIT, Supporter lock, second | 6.004% ± 0.075 | 9.976% ± 0.095 | 14.235% ± 0.110 | 85.765% ± 0.110 |
@@ -77,7 +77,7 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 | Strict JIT, going first | 18.685% | 25.709% | 17.208% | 10.309% |
 | Matchup-flex JIT, going first | 19.917% | 25.524% | 17.487% | 10.487% |
 | No discard control, going first | 24.568% | 32.926% | 15.624% | 7.860% |
-| Strict JIT, going second | 46.075% | 14.858% | 10.091% | 6.419% |
+| Strict JIT, going second | 46.057% | 14.847% | 10.113% | 6.430% |
 | Matchup-flex JIT, going second | 49.140% | 14.956% | 9.550% | 5.951% |
 | No discard control, going second | 58.592% | 13.919% | 8.460% | 4.760% |
 
@@ -160,6 +160,6 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 ## Provenance
 
-Simulator policy digest: `e25c6b58702df4e3a32a4e21489c6aab6a7878ec1186eb878bf84def22ede7ce`.
+Simulator policy digest: `e3b7e41150c63811ba59bf9c1bfe7f64e9f63c0e420ef08b8473368c511bb077`.
 
-Comparison CSV SHA-256: `0560d91788aa5f15985d9075741678a1368da20c2a7a6f9d8780b8595bd68683`.
+Comparison CSV SHA-256: `fac239fea0ff6c57d9d8f2129b6539ff06a871204a6726e2e6092386f802cfa6`.

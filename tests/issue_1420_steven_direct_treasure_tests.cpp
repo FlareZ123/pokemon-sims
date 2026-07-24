@@ -111,6 +111,8 @@ sim::State direct_route_state() {
       sim::Card::Crispin,
       sim::Card::Dragapult,
       sim::Card::Grass,
+      sim::Card::Grass,
+      sim::Card::Fire,
       sim::Card::Fire,
       sim::Card::RegidragoV,
       sim::Card::MegaDragonite,

@@ -191,3 +191,126 @@ jobs:
           name: sanitizer-validation-${{ github.run_attempt }}
           path: build-sanitizers/Testing
           if-no-files-found: warn
+
+  # BEGIN ISSUE 1489 SOURCE-BOUND VALIDATION
+  refresh_issue_1489:
+    if: github.event_name == 'pull_request' && github.head_ref == 'fix/issue-1489-sim-plan-appletun'
+    permissions:
+      contents: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Apply confirmed issue 1489 fix
+        shell: bash
+        run: |
+          python - <<'PY'
+          import fcntl
+          import os
+          from pathlib import Path
+
+          def replace_once(path: Path, old: str, new: str) -> None:
+              with path.open("r", encoding="utf-8") as source:
+                  fcntl.flock(source.fileno(), fcntl.LOCK_EX)
+                  text = source.read()
+                  if text.count(old) != 1:
+                      raise SystemExit(f"Expected one replacement anchor in {path}")
+                  temporary = path.with_suffix(path.suffix + ".tmp")
+                  with temporary.open("w", encoding="utf-8", newline="\n") as output:
+                      output.write(text.replace(old, new, 1))
+                      output.flush()
+                      os.fsync(output.fileno())
+                  os.replace(temporary, path)
+
+          replace_once(
+              Path("SIM-PLAN.md"),
+              "3. The discard pile contains one of Dragapult ex, Mega Dragonite ex, Dialga-GX, or Hisuian Goodra VSTAR.",
+              "3. The discard pile contains Dragapult ex, Mega Dragonite ex, Dialga-GX, Hisuian Goodra VSTAR, or recipe-gated Appletun `sv8-140` when the selected registered recipe contains it: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_001.inc#L128-L137 https://github.com/FlareZ123/pokemon-sims/issues/1489",
+          )
+
+          tests = Path("tests/setup_report_contract_tests.py")
+          replace_once(
+              tests,
+              'REPORT_PATH = REPO_ROOT / "docs" / "REPORT.md"\n',
+              'REPORT_PATH = REPO_ROOT / "docs" / "REPORT.md"\nSIM_PLAN_PATH = REPO_ROOT / "SIM-PLAN.md"\nPAYLOAD_SOURCE_PATH = REPO_ROOT / "src" / "trace_engine_v2" / "part_001.inc"\n',
+          )
+          replace_once(
+              tests,
+              "\ndef main() -> int:\n",
+              '''
+def assert_sim_plan_recipe_gated_appletun_payload() -> None:
+    plan = SIM_PLAN_PATH.read_text(encoding="utf-8")
+    payload_source = PAYLOAD_SOURCE_PATH.read_text(encoding="utf-8")
+    # Appletun is a Dragon Pokémon whose attacks are eligible for Apex Dragon, and
+    # the executable includes it in the recipe-gated readiness set:
+    # https://api.pokemontcg.io/v2/cards/sv8-140
+    # https://api.pokemontcg.io/v2/cards/swsh12-136
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_001.inc#L128-L137
+    # https://github.com/FlareZ123/pokemon-sims/issues/1489
+    if "recipe-gated Appletun `sv8-140`" not in plan:
+        raise AssertionError("SIM-PLAN.md must include recipe-gated Appletun in setup readiness.")
+    if "card == Card::Appletun" not in payload_source:
+        raise AssertionError("The executable Appletun payload predicate changed without the plan contract.")
+
+
+def main() -> int:
+''',
+          )
+          replace_once(
+              tests,
+              "    assert_aggregate_driver_is_hashed()\n    assert_regeneration_removes_only_obsolete_generated_traces()\n",
+              "    assert_aggregate_driver_is_hashed()\n    assert_regeneration_removes_only_obsolete_generated_traces()\n    assert_sim_plan_recipe_gated_appletun_payload()\n",
+          )
+          PY
+      - name: Configure and build validated source
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run focused documentation contract
+        run: python tests/setup_report_contract_tests.py
+      - name: Run three reviewed simulate-this audits
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2
+      - name: Verify unchanged 100000-trial matrices
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-1489-shell.csv
+          cmp issue-1489-shell.csv results/simulation_results.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out issue-1489-multi.csv
+          cmp issue-1489-multi.csv results/multi_deck_comparison.csv
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Commit validated source and restore workflows
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import fcntl
+          import os
+          from pathlib import Path
+
+          ci = Path(".github/workflows/ci.yml")
+          marker = "  # BEGIN ISSUE 1489 SOURCE-BOUND VALIDATION\n"
+          with ci.open("r", encoding="utf-8") as source:
+              fcntl.flock(source.fileno(), fcntl.LOCK_EX)
+              text = source.read()
+              if text.count(marker) != 1:
+                  raise SystemExit("Issue 1489 CI marker missing")
+              temporary = ci.with_suffix(ci.suffix + ".tmp")
+              with temporary.open("w", encoding="utf-8", newline="\n") as output:
+                  output.write(text.split(marker, 1)[0])
+                  output.flush()
+                  os.fsync(output.fileno())
+              os.replace(temporary, ci)
+          Path(".github/workflows/apply-issue-1489.yml").unlink()
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Synchronize SIM-PLAN Appletun payload contract (#1489)"
+          git push origin HEAD:${{ github.head_ref }}

@@ -1,0 +1,108 @@
+name: Source-bound debug audit 2026-07-24-2
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: debug-audit-20260724-2-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/debug-20260724-2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run three reviewed perfect-play traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Steven's Resolve may take up to three cards, while Quick Ball and the held
+          # Dragon already cover the remaining axes. Preserve Crispin and Brilliant Blender:
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://api.pokemontcg.io/v2/cards/sv8-164
+          # https://github.com/FlareZ123/pokemon-sims/issues/952
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee perfect-58.txt
+          grep -q "Searched up to 3 cards: Regidrago VSTAR. Turn ended." perfect-58.txt
+          grep -q "T3 | READY" perfect-58.txt
+
+          # Quick Ball must take the live Tapu Lele-GX to Crispin route before Vessel:
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/cel25c-60_A
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          # https://github.com/FlareZ123/pokemon-sims/issues/962
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 104 --require-ready-by 3 | tee perfect-104.txt
+          grep -q "Searched a Basic Pokémon: Tapu Lele-GX" perfect-104.txt
+          grep -q "WONDER TAG.*Crispin" perfect-104.txt
+          grep -q "T3 | READY" perfect-104.txt
+
+          # The source-bounded seed-43 route preserves the T2 Supporter action and uses
+          # Mysterious Treasure to discard Dragapult ex for the Tapu-Crispin connector:
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/cel25c-60_A
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://github.com/FlareZ123/pokemon-sims/issues/1209
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee perfect-43.txt
+          grep -q "T2 | HOLD SUPPORTER.*Mysterious Treasure to Tapu Lele-GX to Crispin" perfect-43.txt
+          grep -q "T2 | READY" perfect-43.txt
+      - name: Reproduce issue 1514 and issue 1516
+        shell: bash
+        run: |
+          set -euo pipefail
+          # K0 cannot use Prize identities before a legal search. Held Crispin already
+          # supplies the Energy Supporter, so the search-first line should preserve Tapu:
+          # https://api.pokemontcg.io/v2/cards/cel25c-60_A
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+          # https://github.com/FlareZ123/pokemon-sims/issues/1514
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-second --seed 33 | tee issue-1514.txt
+          grep -q "T1 | BENCH |.*Tapu Lele-GX" issue-1514.txt
+          grep -q "T1 | WONDER TAG.*Crispin" issue-1514.txt
+          grep -q "first-ready turn: 4" issue-1514.txt
+
+          # Earthen Vessel has already established K1. Held Gladion covers the known
+          # prized payload and held Crispin covers Energy, so Quick Ball-Tapu is redundant:
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/cel25c-60_A
+          # https://api.pokemontcg.io/v2/cards/sm4-95
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://github.com/FlareZ123/pokemon-sims/issues/1516
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 42 | tee issue-1516.txt
+          grep -q "Earthen Vessel" issue-1516.txt
+          grep -q "Quick Ball.*Tapu Lele-GX" issue-1516.txt
+          grep -q "WONDER TAG.*Crispin" issue-1516.txt
+          grep -q "first-ready turn: 3" issue-1516.txt
+      - name: Generate T2 and T3 matrices
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out multi-deck-matrix.csv
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-audit-20260724-2-${{ github.run_attempt }}
+          path: |
+            perfect-*.txt
+            issue-*.txt
+            t2-t3-matrix.csv
+            multi-deck-matrix.csv
+            build/Testing
+          if-no-files-found: warn

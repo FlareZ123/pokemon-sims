@@ -77,20 +77,15 @@ sim::State public_t1_route_state() {
   return state;
 }
 
-sim::Engine make_engine(const sim::LockMode lock, const int max_turn,
-                        std::mt19937_64& rng) {
+bool route_available_from_state(sim::State state, const sim::LockMode lock,
+                                const int max_turn,
+                                const std::uint64_t seed) {
   const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
   expect(deck != nullptr, "The registered shell recipe is unavailable.");
   const sim::Scenario scenario{
       "issue-1478", sim::DciProfile::StrictJit, lock, true, max_turn};
-  return sim::Engine(scenario, deck->recipe, rng);
-}
-
-bool route_available_from_state(sim::State state, const sim::LockMode lock,
-                                const int max_turn,
-                                const std::uint64_t seed) {
   std::mt19937_64 rng(seed);
-  sim::Engine engine = make_engine(lock, max_turn, rng);
+  sim::Engine engine(scenario, deck->recipe, rng);
   sim::EngineTestAccess::set_state(engine, std::move(state));
   return sim::EngineTestAccess::route_available(engine);
 }
@@ -151,8 +146,13 @@ void test_route_boundaries_preserve_field_blower() {
 }
 
 void test_route_pays_cost_before_k1_and_promotes_regidrago() {
+  const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
+  expect(deck != nullptr, "The registered shell recipe is unavailable.");
+  const sim::Scenario scenario{
+      "issue-1478", sim::DciProfile::StrictJit,
+      sim::LockMode::None, true, 3};
   std::mt19937_64 rng(147808);
-  sim::Engine engine = make_engine(sim::LockMode::None, 3, rng);
+  sim::Engine engine(scenario, deck->recipe, rng);
   sim::State state = public_t1_route_state();
   state.deck = {sim::Card::RegidragoV, sim::Card::RegidragoVstar,
                 sim::Card::EarthenVessel, sim::Card::Grass,

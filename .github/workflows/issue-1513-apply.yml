@@ -1,0 +1,402 @@
+name: Apply issue 1513 fix
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1513-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  apply-validate-and-commit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/issue-1513-turo-before-tapu'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Apply the confirmed direct-Turo route fix
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          def replace_once(path: Path, old: str, new: str) -> None:
+              text = path.read_text(encoding="utf-8")
+              if text.count(old) != 1:
+                  raise SystemExit(f"Expected exactly one patch anchor in {path}")
+              temporary = path.with_suffix(path.suffix + ".tmp")
+              temporary.write_text(text.replace(old, new, 1), encoding="utf-8")
+              os.replace(temporary, path)
+
+          turo_path = Path("src/trace_engine_v2/part_turo_oricorio_override.inc")
+          old_turo = '''  bool play_turo_active_promotion_route() {
+    // A direct evolution route requires a prior-turn Regidrago V, the matching
+    // Regidrago VSTAR card in hand, and GGF already attached to that Active line.
+    // Otherwise Professor Turo may promote an already complete Benched VSTAR:
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://api.pokemontcg.io/v2/cards/sv4-171
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    const bool active_regidrago_has_ready_direct_evolution = state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        hand_count(Card::RegidragoVstar) > 0 &&
+        state_.active->grass >= 2 && state_.active->fire >= 1;
+
+    // Under Item lock, Turo may solve the Active axis one turn before Burnet solves
+    // the strict-JIT payload axis. Admit only a held, searchable Burnet line with a
+    // remaining modeled turn, so the current Supporter play has a deterministic
+    // completion rather than merely postponing the missing payload:
+    // https://api.pokemontcg.io/v2/cards/sv4-171
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://github.com/FlareZ123/pokemon-sims/issues/900
+    const bool delayed_burnet_payload_route = strict_payload_timing() && item_locked() &&
+        need_payload() && state_.turn < scenario_.max_turn &&
+        hand_count(Card::ProfessorBurnet) > 0 && payload_might_be_in_deck();
+    if (!supporter_allowed() || hand_count(Card::ProfessorTuro) == 0 || !state_.active ||
+        !is_basic(state_.active->card) || active_regidrago_has_ready_direct_evolution ||
+        !need_active_vstar() || need_regi() || need_vstar() || need_energy() ||
+        (need_payload() && !delayed_burnet_payload_route) || can_free_retreat_with_latias() ||
+        hand_count(Card::TateLiza) > 0) {
+      return false;
+    }
+
+    const auto promoted = std::find_if(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
+      return pokemon.card == Card::RegidragoVstar && pokemon.grass >= 2 && pokemon.fire >= 1;
+    });
+    if (promoted == state_.bench.end()) return false;
+'''
+          new_turo = '''  bool held_turo_direct_active_promotion_route() const {
+    // Professor Turo's Scenario directly removes a Basic Active and forces a
+    // Benched replacement. When a complete Regidrago VSTAR is already Benched,
+    // preserve Tapu Lele-GX and its one-shot Wonder Tag instead of creating a
+    // longer Tapu -> Tate & Liza route for the same Active-position axis:
+    // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Supporter and Active-replacement procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Direct-connector priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1513
+    const bool active_regidrago_has_ready_direct_evolution = state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        hand_count(Card::RegidragoVstar) > 0 &&
+        state_.active->grass >= 2 && state_.active->fire >= 1;
+
+    // Under Item lock, Turo may solve the Active axis one turn before Burnet solves
+    // the strict-JIT payload axis. Admit only a held, searchable Burnet line with a
+    // remaining modeled turn, so the current Supporter play has a deterministic
+    // completion rather than merely postponing the missing payload:
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Prior route contract: https://github.com/FlareZ123/pokemon-sims/issues/900
+    const bool delayed_burnet_payload_route = strict_payload_timing() && item_locked() &&
+        need_payload() && state_.turn < scenario_.max_turn &&
+        hand_count(Card::ProfessorBurnet) > 0 && payload_might_be_in_deck();
+    if (!supporter_allowed() || hand_count(Card::ProfessorTuro) == 0 || !state_.active ||
+        !is_basic(state_.active->card) || active_regidrago_has_ready_direct_evolution ||
+        !need_active_vstar() || need_regi() || need_vstar() || need_energy() ||
+        (need_payload() && !delayed_burnet_payload_route) || can_free_retreat_with_latias() ||
+        hand_count(Card::TateLiza) > 0) {
+      return false;
+    }
+
+    return std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
+      return pokemon.card == Card::RegidragoVstar && pokemon.grass >= 2 && pokemon.fire >= 1;
+    });
+  }
+
+  bool play_turo_active_promotion_route() {
+    if (!held_turo_direct_active_promotion_route()) return false;
+
+    const auto promoted = std::find_if(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
+      return pokemon.card == Card::RegidragoVstar && pokemon.grass >= 2 && pokemon.fire >= 1;
+    });
+    if (promoted == state_.bench.end()) return false;
+'''
+          replace_once(turo_path, old_turo, new_turo)
+
+          tapu_path = Path("src/trace_engine_v2/part_issue_991_wonder_tag_burnet_legacy_star_override.inc")
+          old_tapu = '''  bool bench_tapu_if_useful() {
+    if (held_banked_steven_has_known_t3_active_regi_route()) {
+'''
+          new_tapu = '''  bool bench_tapu_if_useful() {
+    if (held_turo_direct_active_promotion_route()) {
+      // Held Professor Turo already removes the Basic Active and promotes the
+      // complete Benched Regidrago VSTAR. Do not spend Tapu Lele-GX, its Bench
+      // slot, Wonder Tag, and Tate & Liza on the same Active-position axis:
+      // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+      // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+      // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+      // Active-replacement procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Direct-connector priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1513
+      trace_tapu_hold_once(
+          "issue-1513-held-turo-active-promotion",
+          "R-TURO-01; R-TAPU-01; R-TATE-01; R-GAME-SUPPORTER; P-CONNECTOR-01",
+          "Retained Tapu because held Professor Turo directly promotes the complete Benched Regidrago VSTAR.");
+      return false;
+    }
+    if (held_banked_steven_has_known_t3_active_regi_route()) {
+'''
+          replace_once(tapu_path, old_tapu, new_tapu)
+
+          test_path = Path("tests/issue_1513_turo_over_tapu_tests.cpp")
+          test_content = r'''#define REGIDRAGO_SIM_NO_MAIN
+#include "../src/regidrago_sim.cpp"
+
+#include <algorithm>
+#include <random>
+#include <stdexcept>
+#include <string>
+#include <utility>
+
+namespace sim {
+
+struct EngineTestAccess {
+  static void set_state(Engine& engine, State state) {
+    engine.state_ = std::move(state);
+    engine.deck_seen_ = true;
+    engine.prizes_revealed_ = true;
+  }
+
+  static bool held_turo_route(const Engine& engine) {
+    return engine.held_turo_direct_active_promotion_route();
+  }
+
+  static bool bench_tapu(Engine& engine) {
+    return engine.bench_tapu_if_useful();
+  }
+
+  static bool play_turo(Engine& engine) {
+    return engine.play_turo_active_promotion_route();
+  }
+
+  static const State& state(const Engine& engine) {
+    return engine.state_;
+  }
+};
+
+}  // namespace sim
+
+namespace {
+
+void expect(const bool condition, const char* message) {
+  if (!condition) throw std::runtime_error(message);
+}
+
+bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
+  return std::find(cards.begin(), cards.end(), card) != cards.end();
+}
+
+bool trace_contains(const sim::TraceLog& trace, const std::string& text) {
+  return std::any_of(trace.lines.begin(), trace.lines.end(), [&text](const std::string& line) {
+    return line.find(text) != std::string::npos;
+  });
+}
+
+sim::State exact_t3_state() {
+  sim::State state;
+  state.turn = 3;
+  state.active = sim::Pokemon{sim::Card::DialgaGX, 0};
+  state.bench = {
+      sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1, sim::Tool::ForestSealStone},
+      sim::Pokemon{sim::Card::Oricorio, 1},
+      sim::Pokemon{sim::Card::RegidragoV, 1}};
+  state.hand = {
+      sim::Card::TapuLeleGX,
+      sim::Card::ProfessorTuro,
+      sim::Card::Fire,
+      sim::Card::BrilliantBlender};
+  state.discard = {
+      sim::Card::MysteriousTreasure,
+      sim::Card::Dragapult,
+      sim::Card::Crispin};
+  return state;
+}
+
+void test_exact_state_preserves_tapu_and_uses_direct_turo() {
+  const auto scenario = sim::scenario_by_label("no-discard-control/go-first");
+  const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
+  expect(scenario.has_value() && deck != nullptr, "The issue-1513 fixture is unavailable.");
+
+  std::mt19937_64 rng(151301);
+  sim::Engine engine(*scenario, deck->recipe, rng);
+  sim::EngineTestAccess::set_state(engine, exact_t3_state());
+
+  // Turo directly returns the Basic Active and the complete Benched VSTAR becomes
+  // Active. Tapu -> Wonder Tag -> Tate spends extra discrete resources for the same
+  // axis: https://api.pokemontcg.io/v2/cards/sv4-171
+  // https://api.pokemontcg.io/v2/cards/sm2-60
+  // https://api.pokemontcg.io/v2/cards/sm7-148
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/issues/1513
+  expect(sim::EngineTestAccess::held_turo_route(engine),
+         "The direct held-Turo route was not recognized.");
+  expect(!sim::EngineTestAccess::bench_tapu(engine),
+         "Tapu Lele-GX was still Benched before the direct Turo route.");
+  expect(sim::EngineTestAccess::play_turo(engine),
+         "Professor Turo did not execute the direct Active-promotion route.");
+
+  const sim::State& state = sim::EngineTestAccess::state(engine);
+  expect(state.active && state.active->card == sim::Card::RegidragoVstar,
+         "The complete Benched Regidrago VSTAR was not promoted.");
+  expect(contains(state.hand, sim::Card::DialgaGX),
+         "The Basic Active was not returned to hand.");
+  expect(contains(state.hand, sim::Card::TapuLeleGX),
+         "Tapu Lele-GX was not preserved in hand.");
+  expect(contains(state.discard, sim::Card::ProfessorTuro),
+         "Professor Turo was not consumed as the Supporter action.");
+  expect(!state.retreat_used,
+         "The direct Turo route incorrectly consumed the Retreat action.");
+  expect(std::none_of(state.bench.begin(), state.bench.end(), [](const sim::Pokemon& pokemon) {
+           return pokemon.card == sim::Card::TapuLeleGX;
+         }),
+         "Tapu Lele-GX remained as an avoidable two-Prize Bench liability.");
+}
+
+void test_route_boundaries_preserve_existing_choices() {
+  const auto scenario = sim::scenario_by_label("no-discard-control/go-first");
+  const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
+  expect(scenario.has_value() && deck != nullptr, "The boundary fixture is unavailable.");
+
+  auto route_from = [&](sim::State state, const std::uint64_t seed) {
+    std::mt19937_64 rng(seed);
+    sim::Engine engine(*scenario, deck->recipe, rng);
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+    return sim::EngineTestAccess::held_turo_route(engine);
+  };
+
+  sim::State no_turo = exact_t3_state();
+  no_turo.hand.erase(std::remove(no_turo.hand.begin(), no_turo.hand.end(), sim::Card::ProfessorTuro),
+                     no_turo.hand.end());
+  expect(!route_from(std::move(no_turo), 151302),
+         "The route was admitted without Professor Turo.");
+
+  sim::State held_tate = exact_t3_state();
+  held_tate.hand.push_back(sim::Card::TateLiza);
+  expect(!route_from(std::move(held_tate), 151303),
+         "The existing naturally held Tate & Liza preference was displaced.");
+
+  sim::State incomplete_vstar = exact_t3_state();
+  incomplete_vstar.bench.front().grass = 1;
+  expect(!route_from(std::move(incomplete_vstar), 151304),
+         "The route was admitted without a complete Benched GGF VSTAR.");
+
+  sim::State free_retreat = exact_t3_state();
+  free_retreat.bench.push_back(sim::Pokemon{sim::Card::LatiasEx, 1});
+  expect(!route_from(std::move(free_retreat), 151305),
+         "Turo displaced an already-live zero-Retreat Latias route.");
+}
+
+void test_seed_47_uses_turo_without_tapu_tate_chain() {
+  const auto scenario = sim::scenario_by_label("no-discard-control/go-first");
+  const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
+  expect(scenario.has_value() && deck != nullptr, "The seed-47 fixture is unavailable.");
+
+  std::mt19937_64 rng(47);
+  sim::TraceLog trace{true, {}};
+  sim::Engine engine(*scenario, deck->recipe, rng, &trace);
+  const sim::TrialOutcome outcome = engine.run();
+
+  // The source-bound seed must keep its earliest T3 readiness while avoiding the
+  // UDP Tapu, Wonder Tag, and Tate chain: https://api.pokemontcg.io/v2/cards/sv4-171
+  // https://api.pokemontcg.io/v2/cards/sm2-60
+  // https://api.pokemontcg.io/v2/cards/sm7-148
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // https://github.com/FlareZ123/pokemon-sims/issues/1513
+  expect(outcome.first_ready_turn == 3 && !outcome.setup_failed,
+         "Seed 47 did not retain its earliest T3 ready state.");
+  expect(trace_contains(trace, "T3 | HOLD TAPU LELE-GX") &&
+             trace_contains(trace, "T3 | PLAY SUPPORTER") &&
+             trace_contains(trace, "Professor Turo returned the Basic Active Pokémon"),
+         "Seed 47 did not use the preserved-Tapu direct Turo route.");
+  expect(!trace_contains(trace, "T3 | BENCH | Tapu Lele-GX") &&
+             !trace_contains(trace, "T3 | WONDER TAG") &&
+             !trace_contains(trace, "T3 | PLAY SUPPORTER | Tate & Liza"),
+         "Seed 47 still used the longer Tapu -> Tate & Liza chain.");
+
+  const sim::State& state = sim::EngineTestAccess::state(engine);
+  expect(state.active && state.active->card == sim::Card::RegidragoVstar,
+         "Seed 47 did not finish with the complete Regidrago VSTAR Active.");
+  expect(contains(state.hand, sim::Card::DialgaGX),
+         "Seed 47 did not return Dialga-GX to hand.");
+  expect(contains(state.hand, sim::Card::TapuLeleGX),
+         "Seed 47 did not preserve Tapu Lele-GX in hand.");
+  expect(!state.retreat_used,
+         "Seed 47 incorrectly consumed the Retreat action.");
+}
+
+}  // namespace
+
+int main() {
+  test_exact_state_preserves_tapu_and_uses_direct_turo();
+  test_route_boundaries_preserve_existing_choices();
+  test_seed_47_uses_turo_without_tapu_tate_chain();
+  return 0;
+}
+'''
+          test_tmp = test_path.with_suffix(test_path.suffix + ".tmp")
+          test_tmp.write_text(test_content, encoding="utf-8")
+          os.replace(test_tmp, test_path)
+
+          Path(".github/workflows/issue-1513-apply.yml").unlink()
+          PY
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run focused issue 1513 regression
+        run: ./build/regidrago_unified_tests issue_1513_turo_over_tapu_tests
+      - name: Run three reviewed simulate-this audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 47 --require-ready-by 3 | tee issue-1513-trace-47.txt
+          grep -q "T3 | HOLD TAPU LELE-GX" issue-1513-trace-47.txt
+          grep -q "T3 | PLAY SUPPORTER.*Professor Turo returned the Basic Active Pokémon" issue-1513-trace-47.txt
+          ! grep -q "T3 | BENCH | Tapu Lele-GX" issue-1513-trace-47.txt
+          ! grep -q "T3 | WONDER TAG" issue-1513-trace-47.txt
+          ! grep -q "T3 | PLAY SUPPORTER.*Tate & Liza" issue-1513-trace-47.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 104 --require-ready-by 3 | tee issue-1513-control-tapu-crispin.txt
+          grep -q "WONDER TAG.*Crispin" issue-1513-control-tapu-crispin.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 6 --require-ready-by 4 | tee issue-1513-control-no-discard.txt
+          grep -q "READY" issue-1513-control-no-discard.txt
+      - name: Generate CI T2 and T3 matrices
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-1513-t2-t3-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out issue-1513-multi-deck-matrix.csv
+          cmp issue-1513-t2-t3-matrix.csv results/simulation_results.csv
+          cmp issue-1513-multi-deck-matrix.csv results/multi_deck_comparison.csv
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Upload source-bound validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1513-validation-${{ github.run_attempt }}
+          path: |
+            issue-1513-*.txt
+            issue-1513-*.csv
+            build/Testing
+          if-no-files-found: warn
+      - name: Commit validated implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Prefer held Turo over Tapu Tate chain (#1513)"
+          git push origin HEAD:fix/issue-1513-turo-before-tapu

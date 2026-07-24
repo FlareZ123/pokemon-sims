@@ -28,12 +28,11 @@
   bool play_issue_1478_t3_arven_vessel_completion() {
     if (!issue_1478_t3_arven_vessel_completion_available()) return false;
 
-    // The T1 Treasure search has already established K1 by deck inspection and
-    // Prize deduction. Arven searches Earthen Vessel, and the deterministic
-    // current-turn GGF plus Blender finish makes Team Yell's Cheer dynamically
-    // discardable. Vessel may choose one Grass, the unused manual attachment
-    // supplies it, and Blender then establishes the strict-JIT Dragon payload
-    // before the same T3 ready-state check:
+    // The T1 Treasure route has already established K1. Arven searches Earthen
+    // Vessel, and the deterministic current-turn GGF plus Blender finish makes
+    // Team Yell's Cheer dynamically discardable. Vessel may choose one Grass,
+    // the unused manual attachment supplies it, and Blender then establishes the
+    // strict-JIT Dragon payload before the same T3 ready-state check:
     // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Team Yell's Cheer: https://api.pokemontcg.io/v2/cards/swsh9-149

@@ -1,0 +1,146 @@
+name: Issue 1461 Steven next-draw safety
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    if: github.head_ref == 'fix/issue-1461-steven-next-draw'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Synchronize current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          if ! git merge-base --is-ancestor origin/main HEAD; then
+            git merge --no-edit origin/main
+            git push origin "HEAD:${{ github.head_ref }}"
+          fi
+
+      - name: Apply confirmed production fix
+        run: python scripts/apply_issue_1461_fix.py
+
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Release
+        run: cmake --build build --parallel 2
+
+      - name: Regenerate source-bound reports
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Canonical report contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-canonical-shell-baseline
+          # Paired report contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+          if ! git diff --quiet -- results docs; then
+            git add results docs
+            git commit -m "Refresh source-bound reports for issue 1461"
+            git push origin "HEAD:${{ github.head_ref }}"
+          fi
+
+      - name: Run issue 1461 regression
+        id: issue_1461
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/regidrago_unified_tests issue_1461_steven_next_draw_tests 2>&1 | tee issue-1461-focused.log
+
+      - name: Run issue 1420 compatibility regression
+        id: issue_1420
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/regidrago_unified_tests issue_1420_steven_direct_treasure_tests 2>&1 | tee issue-1420-focused.log
+
+      - name: Run issue 1419 compatibility regression
+        id: issue_1419
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/regidrago_unified_tests issue_1419_latias_oricorio_tests 2>&1 | tee issue-1419-focused.log
+
+      - name: Review three Pineco perfect-play traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Core turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-pineco-steven-35.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 18 --require-ready-by 2 | tee trace-pineco-arven-18.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 40 --require-ready-by 2 | tee trace-pineco-gladion-40.txt
+
+      - name: Generate exact paired T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Paired matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          # Confirmed failing stream: https://github.com/FlareZ123/pokemon-sims/issues/1461
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260723 --out issue-1461-matrix.csv
+          test "$(($(wc -l < issue-1461-matrix.csv) - 1))" -eq 32
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Configure ASan and UBSan
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitize -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+
+      - name: Build ASan and UBSan
+        run: cmake --build build-sanitize --parallel 2
+
+      - name: Run complete ASan and UBSan suite
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-sanitize --output-on-failure
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue-1461-validation-final
+          path: |
+            issue-*-focused.log
+            trace-*.txt
+            issue-1461-matrix.csv
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            results/baseline_manifest.json
+            results/multi_deck_manifest.json
+          if-no-files-found: error
+
+      - name: Enforce focused compatibility
+        if: always()
+        shell: bash
+        run: |
+          test "${{ steps.issue_1461.outcome }}" = "success"
+          test "${{ steps.issue_1420.outcome }}" = "success"
+          test "${{ steps.issue_1419.outcome }}" = "success"

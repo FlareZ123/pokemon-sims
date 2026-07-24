@@ -82,7 +82,7 @@ void test_boundaries_keep_live_serena_routes() {
          "Serena was held without Latias ex in play.");
 
   sim::State locked_latias = complete_free_retreat_state();
-  locked_latias.stadium = sim::Stadium::PathToPeak;
+  locked_latias.stadium = sim::Stadium::None;
   expect(!hold_from_state(std::move(locked_latias),
                           sim::LockMode::FullRuleBoxAbility, 148103),
          "Serena was held while Skyliner was locked.");

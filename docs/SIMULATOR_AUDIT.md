@@ -21,7 +21,9 @@ The current `main` branch contains these audited repairs.
 
 ## Validation
 
-The exact staged source was compiled and tested locally in Release and AddressSanitizer/UndefinedBehaviorSanitizer configurations. The current CI runs the complete unified CTest inventory, six deterministic trace regressions, the aggregate smoke test, and sanitizer coverage. The recorded fixture output is in `results/policy_fixture_test_output.txt`.
+The exact staged source is compiled and tested in Release and AddressSanitizer/UndefinedBehaviorSanitizer configurations. Current CI runs eight readable shell `--simulate-this` audits, three registered-Pineco audits, byte-compares the canonical shell and paired two-deck matrices, and runs the complete unified CTest inventory in both compiled lanes: https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml#L20-L193 https://github.com/FlareZ123/pokemon-sims/issues/1494
+
+The recorded fixture output is in `results/policy_fixture_test_output.txt`.
 
 ## Scope boundary
 

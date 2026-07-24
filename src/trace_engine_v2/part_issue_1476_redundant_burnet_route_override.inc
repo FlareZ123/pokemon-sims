@@ -1,6 +1,5 @@
   bool issue_1478_t1_field_blower_direct_regi_route_available() const {
-    if (current_deck_id() != "regidrago-shell" ||
-        scenario_.dci != DciProfile::StrictJit ||
+    if (scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || state_.turn != 1 ||
         !scenario_.going_first || scenario_.max_turn < 3 || item_locked() ||
         state_.supporter_used || state_.manual_energy_used ||

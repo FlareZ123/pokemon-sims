@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <iostream>
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -69,10 +68,11 @@ void expect_crispin_admission(const int grass_count, const int fire_count,
   const sim::Scenario scenario{"issue-1461-crispin-admission",
                                sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::pineco_recipe();
   std::mt19937_64 rng(1461 + static_cast<std::uint64_t>(grass_count * 100 +
                                                        fire_count * 10 +
                                                        third_treasure_target));
-  sim::Engine engine(scenario, sim::pineco_recipe(), rng);
+  sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(
       engine, admission_state(grass_count, fire_count, third_treasure_target),
       true);
@@ -103,9 +103,10 @@ void expect_forretress_admission(const int grass_count, const int fire_count,
   const sim::Scenario scenario{"issue-1461-forretress-admission",
                                sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::pineco_recipe();
   std::mt19937_64 rng(146100 +
                       static_cast<std::uint64_t>(grass_count * 10 + fire_count));
-  sim::Engine engine(scenario, sim::pineco_recipe(), rng);
+  sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(
       engine, forretress_admission_state(grass_count, fire_count), true);
 
@@ -136,9 +137,10 @@ void test_final_fire_draw_uses_forretress_fallback() {
   const sim::Scenario scenario{"strict-jit/go-second",
                                sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
+  const sim::DeckRecipe recipe = sim::pineco_recipe();
   std::mt19937_64 rng(1461001);
   sim::TraceLog trace{true, {}};
-  sim::Engine engine(scenario, sim::pineco_recipe(), rng, &trace);
+  sim::Engine engine(scenario, recipe, rng, &trace);
 
   sim::State state;
   state.turn = 2;
@@ -161,9 +163,6 @@ void test_final_fire_draw_uses_forretress_fallback() {
   // Core draw, Supporter, Ability, attachment, evolution, and Item procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1461
   sim::EngineTestAccess::run_secret_box_turn(engine);
-  if (!sim::EngineTestAccess::used_exploding_energy(engine)) {
-    for (const std::string& line : trace.lines) std::cerr << line << '\n';
-  }
   expect(!sim::EngineTestAccess::direct_route(engine),
          "The final-Fire draw remained marked as a Crispin continuation.");
   expect(sim::EngineTestAccess::used_exploding_energy(engine),

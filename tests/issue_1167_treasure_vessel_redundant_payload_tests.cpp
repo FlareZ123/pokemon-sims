@@ -30,10 +30,10 @@ namespace {
 struct Fixture {
   explicit Fixture(const sim::LockMode locks = sim::LockMode::None,
                    const bool going_first = true, const int max_turn = 5)
-      : scenario{"issue-1167", sim::DciProfile::StrictJit, locks,
+      : scenario{"issue-1167-and-1452", sim::DciProfile::StrictJit, locks,
                  going_first, max_turn},
         recipe{sim::baseline_recipe()},
-        rng{1167},
+        rng{1452},
         engine{scenario, recipe, rng} {}
 
   sim::Scenario scenario;
@@ -78,13 +78,12 @@ void expect_rejected(sim::State state, const std::string_view label,
   }
 }
 
-void test_pays_two_redundant_payloads_and_establishes_regi_gg() {
-  Fixture fixture;
+void expect_route_resolves(const bool going_first) {
+  Fixture fixture{sim::LockMode::None, going_first};
   sim::EngineTestAccess::set_state(fixture.engine, route_state(), true, true);
 
-  // The two repeated Mega Dragonite ex copies pay Treasure and Vessel while the
-  // distinct Goodra payload remains protected. The searches establish Regidrago V
-  // and two Grass Energy without using any future draw identity:
+  // The same public T2 K1 state makes turn order irrelevant. The two repeated
+  // Mega Dragonite ex copies pay Treasure and Vessel while Goodra stays protected:
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/sv4-163
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
@@ -92,9 +91,12 @@ void test_pays_two_redundant_payloads_and_establishes_regi_gg() {
   // https://api.pokemontcg.io/v2/cards/swsh12-135
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // https://github.com/FlareZ123/pokemon-sims/issues/1167
+  // https://github.com/FlareZ123/pokemon-sims/issues/1452
   if (!sim::EngineTestAccess::route_live(fixture.engine) ||
       !sim::EngineTestAccess::play_route(fixture.engine)) {
-    throw std::runtime_error("the paired strict-DCI paid-search route must resolve");
+    throw std::runtime_error(going_first
+                                 ? "going-first paired paid-search route must resolve"
+                                 : "going-second paired paid-search route must resolve");
   }
 
   const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
@@ -107,6 +109,11 @@ void test_pays_two_redundant_payloads_and_establishes_regi_gg() {
       count(after.discard, sim::Card::EarthenVessel) != 1) {
     throw std::runtime_error("paired searches must preserve Goodra and establish Regidrago V plus two Grass");
   }
+}
+
+void test_pays_two_redundant_payloads_in_both_turn_orders() {
+  expect_route_resolves(true);
+  expect_route_resolves(false);
 }
 
 void test_requires_two_redundant_copies_and_distinct_payload() {
@@ -146,25 +153,25 @@ void test_requires_source_bounded_future_chain() {
   expect_rejected(std::move(state), "Treasure unprized");
 
   expect_rejected(route_state(), "unknown locations", sim::LockMode::None, true, 5, false, false);
+  expect_rejected(route_state(), "short horizon", sim::LockMode::None, false, 4);
 }
 
-void test_rejects_locks_wrong_seat_and_lower_dci_cost() {
+void test_rejects_locks_and_lower_dci_cost() {
   expect_rejected(route_state(), "Item lock", sim::LockMode::TurnTwoItem);
   expect_rejected(route_state(), "Rule Box lock", sim::LockMode::FullRuleBoxAbility);
-  expect_rejected(route_state(), "going second", sim::LockMode::None, false);
 
   sim::State state = route_state();
   state.hand.push_back(sim::Card::Dipplin);
-  expect_rejected(std::move(state), "ordinary lower-DCI fodder");
+  expect_rejected(std::move(state), "ordinary lower-DCI fodder", sim::LockMode::None, false);
 }
 
 }  // namespace
 
 int main() {
-  test_pays_two_redundant_payloads_and_establishes_regi_gg();
+  test_pays_two_redundant_payloads_in_both_turn_orders();
   test_requires_two_redundant_copies_and_distinct_payload();
   test_requires_both_search_targets_and_open_bench();
   test_requires_source_bounded_future_chain();
-  test_rejects_locks_wrong_seat_and_lower_dci_cost();
+  test_rejects_locks_and_lower_dci_cost();
   return 0;
 }

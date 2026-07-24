@@ -18,11 +18,15 @@
   }
 
   bool strict_dci_treasure_vessel_chain_live() const {
+    // Turn order is irrelevant once Gladion has produced the same public T2 K1
+    // state and every remaining continuation boundary is already proven:
+    // https://github.com/FlareZ123/pokemon-sims/issues/1452
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     if (scenario_.dci != DciProfile::StrictJit ||
-        scenario_.locks != LockMode::None || !scenario_.going_first ||
-        state_.turn != 2 || scenario_.max_turn < 5 ||
-        !state_.supporter_used || state_.manual_energy_used ||
-        !state_.active || state_.active->card != Card::TapuLeleGX ||
+        scenario_.locks != LockMode::None || state_.turn != 2 ||
+        scenario_.max_turn < 5 || !state_.supporter_used ||
+        state_.manual_energy_used || !state_.active ||
+        state_.active->card != Card::TapuLeleGX ||
         state_.active->grass != 0 || state_.active->fire != 0 ||
         state_.active->tool != Tool::None || bench_space() <= 0 ||
         !prizes_known() ||
@@ -44,7 +48,8 @@
     // when the normal Treasure cost selector has no legal card to spend:
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1167
+    // Confirmed original bug: https://github.com/FlareZ123/pokemon-sims/issues/1167
+    // Confirmed going-second omission: https://github.com/FlareZ123/pokemon-sims/issues/1452
     return !choose_discard(false, true, true, Card::MysteriousTreasure).has_value();
   }
 

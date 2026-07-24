@@ -137,6 +137,16 @@
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1443
     if (scenario_.locks == LockMode::FullSupporter) return false;
 
+    // Quick Ball must choose Oricorio over Tapu Lele-GX when the shared issue-1419
+    // predicate proves that Vital Dance, future attachments, and Blender complete
+    // the route while Wonder Tag into Crispin delays the second Grass attachment:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Confirmed stale-claim bug: https://github.com/FlareZ123/pokemon-sims/issues/1419
+    if (quick_ball_oricorio_latias_route_available()) return false;
+
     // Preserve the existing Oricorio last-slot protection before the broader
     // complete-route suppression:
     // https://github.com/FlareZ123/pokemon-sims/issues/180

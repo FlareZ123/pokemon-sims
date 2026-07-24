@@ -1,6 +1,8 @@
 name: Apply Serena preservation fix
 
 on:
+  push:
+    branches: [fix/issue-1481-preserve-serena]
   pull_request:
     branches: [main]
 
@@ -8,18 +10,18 @@ permissions:
   contents: write
 
 concurrency:
-  group: serena-preservation-${{ github.event.pull_request.number }}
+  group: serena-preservation-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   apply-and-validate:
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/issue-1481-preserve-serena'
+    if: github.ref == 'refs/heads/fix/issue-1481-preserve-serena' || (github.event_name == 'pull_request' && github.head_ref == 'fix/issue-1481-preserve-serena')
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
       - uses: actions/setup-python@v5
         with:
@@ -110,4 +112,4 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/trace_engine_v2/part_014c_issue_1152_bridge.inc tests/issue_1481_serena_preservation_tests.cpp docs/REPORT.md docs/MULTI_DECK_REPORT.md results/baseline_manifest.json results/simulation_results.csv results/multi_deck_manifest.json results/multi_deck_comparison.csv .github/workflows/refresh-serena-preservation.yml
           git commit -m "Preserve Serena for the free Skyliner finish (#1481)"
-          git push origin HEAD:${{ github.head_ref }}
+          git push origin HEAD:${{ github.ref_name }}

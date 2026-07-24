@@ -5,6 +5,7 @@
     state_.retreat_used = false;
     state_.stadium_used = false;
     state_.turn_ended = false;
+    state_.dark_asset_used = false;  // Dark Asset is limited per turn: https://api.pokemontcg.io/v2/cards/swsh3-104
     state_.discarded_this_turn.clear();
 
     // Drawing a card is the first step at the beginning of every turn, including

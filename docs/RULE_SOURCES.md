@@ -30,6 +30,7 @@ The API records are card-text sources. They do not replace official tournament r
 | Pineco | https://api.pokemontcg.io/v2/cards/sv4pt5-1 |
 | Forretress ex — Exploding Energy | https://api.pokemontcg.io/v2/cards/sv4pt5-2 |
 | Tapu Lele-GX — Wonder Tag | https://api.pokemontcg.io/v2/cards/sm2-60 |
+| Crobat V — Dark Asset | https://api.pokemontcg.io/v2/cards/swsh3-104 |
 | Oricorio GRI 55 — Vital Dance | https://api.pokemontcg.io/v2/cards/sm2-55 |
 | Latias ex — Skyliner | https://api.pokemontcg.io/v2/cards/sv8-76 |
 | Erika's Invitation — opponent-dependent effect is deliberately inert in the single-player model | https://api.pokemontcg.io/v2/cards/sv3pt5-160 |

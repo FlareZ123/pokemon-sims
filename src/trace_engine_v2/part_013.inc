@@ -205,7 +205,10 @@
           hand_count(Card::TapuLeleGX) > 0 && !in_play(Card::TapuLeleGX) && needs_tapu_connector();
       const bool preserve_final_slot_for_oricorio = bench_space() == 1 &&
           hand_count(Card::Oricorio) > 0 && !in_play(Card::Oricorio) && needs_oricorio_connector();
-      const bool preserve_final_connector_slot = preserve_final_slot_for_tapu || preserve_final_slot_for_oricorio;
+      const bool preserve_final_slot_for_crobat = bench_space() == 1 &&
+          hand_count(Card::CrobatV) > 0 && needs_crobat_connector();
+      const bool preserve_final_connector_slot = preserve_final_slot_for_tapu ||
+          preserve_final_slot_for_oricorio || preserve_final_slot_for_crobat;
       if (need_regi() && hand_count(Card::RegidragoV) > 0) {
         changed = bench_from_hand(Card::RegidragoV, false);
       } else if (!preserve_final_connector_slot && in_play_count(Card::RegidragoV) < 2 &&
@@ -217,6 +220,8 @@
       } else if (bench_tapu_if_useful()) {
         changed = true;
       } else if (bench_oricorio_if_useful()) {
+        changed = true;
+      } else if (bench_crobat_if_useful()) {
         changed = true;
       }
     }

@@ -46,6 +46,7 @@ constexpr bool is_basic(const Card card) {
     case Card::RegidragoV:
     case Card::DialgaGX:
     case Card::TapuLeleGX:
+    case Card::CrobatV:  // Basic Pokémon V: https://api.pokemontcg.io/v2/cards/swsh3-104
     case Card::LatiasEx:
     case Card::MawileGX:
     case Card::Oricorio:
@@ -68,6 +69,7 @@ constexpr bool is_pokemon(const Card card) {
     case Card::DialgaGX:
     case Card::GoodraVstar:
     case Card::TapuLeleGX:
+    case Card::CrobatV:  // Pokémon identity: https://api.pokemontcg.io/v2/cards/swsh3-104
     case Card::LatiasEx:
     case Card::MawileGX:
     case Card::Oricorio:
@@ -86,7 +88,8 @@ constexpr bool is_pokemon(const Card card) {
 // https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
 // https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
 constexpr bool is_pokemon_v(const Card card) {
-  return card == Card::RegidragoV || card == Card::RegidragoVstar;
+  return card == Card::RegidragoV || card == Card::RegidragoVstar ||
+         card == Card::CrobatV;  // Pokémon V: https://api.pokemontcg.io/v2/cards/swsh3-104
 }
 constexpr bool is_rule_box_pokemon(const Card card) {
   switch (card) {
@@ -97,6 +100,7 @@ constexpr bool is_rule_box_pokemon(const Card card) {
     case Card::DialgaGX:
     case Card::GoodraVstar:
     case Card::TapuLeleGX:
+    case Card::CrobatV:  // Rule Box Pokémon V: https://api.pokemontcg.io/v2/cards/swsh3-104
     case Card::LatiasEx:
     case Card::MawileGX:
     case Card::ForretressEx:
@@ -142,6 +146,7 @@ constexpr int retreat_cost(const Card card) {
   // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
   switch (card) {
     case Card::TapuLeleGX: return 1;
+    case Card::CrobatV: return 1;  // Printed Retreat Cost: https://api.pokemontcg.io/v2/cards/swsh3-104
     case Card::Pineco: return 2;
     case Card::DialgaGX: return 3;
     case Card::RegidragoV: return 3;  // Exact swsh12-135 print: https://api.pokemontcg.io/v2/cards/swsh12-135

@@ -77,6 +77,8 @@ python scripts/update_crobat_modeling_docs.py --csv results/crobat_variant_model
 ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit/go-second --seed 1 --require-ready-by 5
 ```
 
+When `--out` or `--seed` is omitted, `--model-crobat` defaults to `results/crobat_variant_model.csv` and seed `20260723`, preserving the canonical baseline: https://github.com/FlareZ123/pokemon-sims/issues/1394
+
 Dark Asset follows Crobat V `swsh3-104`: it triggers only from a hand-to-Bench play during the turn, draws until six, is limited to one use each turn, and is suppressed by Rule Box Ability lock. Results and discrete cut costs are recorded in [`docs/CROBAT_MODEL_REPORT.md`](docs/CROBAT_MODEL_REPORT.md): https://api.pokemontcg.io/v2/cards/swsh3-104
 
 The current-main validation run includes the full Release and sanitizer suites, three reviewed traces, the 20.8-million-game Crobat matrix, and byte-for-byte registered-deck probability checks: https://github.com/FlareZ123/pokemon-sims/actions/runs/30053497501

@@ -94,13 +94,15 @@ void write_crobat_modeling_matrix(const std::filesystem::path& output,
                                   const std::uint64_t seed) {
   std::ostringstream csv;
   csv << "variant,cuts,crobat_copies,scenario,trials,ready_by_t2_pct,"
-         "ready_by_t3_pct,ready_by_t4_pct,dark_asset_use_pct,avg_dark_asset_draw\n";
+         "ready_by_t3_pct,ready_by_t4_pct,dark_asset_use_pct,avg_dark_asset_cards_drawn_per_game_using\n";
   const auto scenarios = all_scenarios();
   for (std::size_t scenario_index = 0; scenario_index < scenarios.size(); ++scenario_index) {
     const Scenario& scenario = scenarios[scenario_index];
     const std::uint64_t common_seed = seed + 104729ULL * scenario_index;
     for (const CrobatModelingDeck& deck : crobat_modeling_decks()) {
       const Aggregate aggregate = simulate(scenario, deck.recipe, trials, common_seed);
+      // aggregate.dark_asset counts games with at least one use; cards may accumulate
+      // across turns in two-copy variants: https://github.com/FlareZ123/pokemon-sims/issues/1394
       const double average_draw = aggregate.dark_asset == 0 ? 0.0 :
           static_cast<double>(aggregate.dark_asset_cards_drawn) /
           static_cast<double>(aggregate.dark_asset);
@@ -116,6 +118,15 @@ void write_crobat_modeling_matrix(const std::filesystem::path& output,
     }
   }
   write_atomic(output, csv.str());
+}
+
+
+constexpr std::string_view crobat_model_default_output() {
+  return "results/crobat_variant_model.csv";  // Reproduction contract: https://github.com/FlareZ123/pokemon-sims/issues/1394
+}
+
+constexpr std::uint64_t crobat_model_default_seed() {
+  return 20260723ULL;  // Reproduction contract: https://github.com/FlareZ123/pokemon-sims/issues/1394
 }
 
 }  // namespace sim
@@ -270,6 +281,14 @@ int main(int argc, char** argv) {
       (model_crobat ? CliMode::CrobatModel :
        (find_ready_supplied ? CliMode::FindReady :
         (simulate_this ? CliMode::SingleTrace : CliMode::Aggregate)));
+
+  if (mode == CliMode::CrobatModel) {
+    // Keep modeling output separate from the canonical setup baseline and reproduce its registered seed:
+    // https://github.com/FlareZ123/pokemon-sims/issues/1394
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#model-crobat-v-swaps
+    if (!output_supplied) output = std::string(sim::crobat_model_default_output());
+    if (!seed_supplied) seed = sim::crobat_model_default_seed();
+  }
   const auto reject_option = [](const char* option, const char* mode_name) {
     std::cerr << option << " is not valid in " << mode_name << " mode\n";
     return 2;

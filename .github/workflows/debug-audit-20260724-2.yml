@@ -1,0 +1,95 @@
+name: Debug audit 20260724-2
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: debug-audit-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  source-bound-debug-audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/debug-mode-20260724-2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Record source identity
+        shell: bash
+        run: |
+          mkdir -p audit-output
+          git rev-parse HEAD | tee audit-output/commit.txt
+          git status --short | tee audit-output/status.txt
+      - name: Configure and build Release
+        shell: bash
+        run: |
+          set -o pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release 2>&1 | tee audit-output/configure.log
+          cmake --build build --parallel 2 2>&1 | tee audit-output/build.log
+      - name: Run complete Release suite
+        shell: bash
+        run: |
+          set -o pipefail
+          ctest --test-dir build --parallel 4 --output-on-failure 2>&1 | tee audit-output/ctest.log
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 290 --require-ready-by 3 | tee audit-output/trace-1-shell-strict-go-first-seed-290.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-full-item-lock/go-second --seed 127 --require-ready-by 5 | tee audit-output/trace-2-shell-full-item-lock-go-second-seed-127.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 35 --require-ready-by 3 | tee audit-output/trace-3-pineco-matchup-flex-go-second-seed-35.txt
+      - name: Generate fresh all-condition T2 and T3 matrix
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260724 --out audit-output/multi_deck_comparison.csv 2>&1 | tee audit-output/matrix.log
+      - name: Capture strict C++20 diagnostic
+        shell: bash
+        run: |
+          set +e
+          cmake -S . -B build-pedantic -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS=-pedantic-errors > audit-output/strict-configure.log 2>&1
+          configure_status=$?
+          if [ "$configure_status" -eq 0 ]; then
+            cmake --build build-pedantic --parallel 2 > audit-output/strict-build.log 2>&1
+            build_status=$?
+          else
+            build_status=99
+          fi
+          printf 'configure_status=%s\nbuild_status=%s\n' "$configure_status" "$build_status" | tee audit-output/strict-status.txt
+          exit 0
+      - name: Package checked-out source
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZIP_DEFLATED, ZipFile
+
+          root = Path('.')
+          output = root / 'audit-output' / 'source-snapshot.zip'
+          excluded_roots = {'.git', 'build', 'build-pedantic', 'audit-output'}
+          with ZipFile(output, 'w', ZIP_DEFLATED) as archive:
+              for path in sorted(root.rglob('*')):
+                  if not path.is_file():
+                      continue
+                  relative = path.relative_to(root)
+                  if relative.parts and relative.parts[0] in excluded_roots:
+                      continue
+                  archive.write(path, relative.as_posix())
+          PY
+      - name: Upload audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-audit-20260724-2
+          path: audit-output
+          if-no-files-found: error
+          retention-days: 7

@@ -810,27 +810,27 @@
         deck_count_after_search_started(Card::Fire);
     const bool crispin_route_survives_next_draw =
         searchable_grass > 1 && searchable_fire > 1;
-    const bool prior_turn_pineco =
-        (state_.active && state_.active->card == Card::Pineco &&
-         state_.active->entered_turn < state_.turn) ||
+    const bool pineco_evolves_next_turn =
+        (state_.active && state_.active->card == Card::Pineco) ||
         std::any_of(state_.bench.begin(), state_.bench.end(),
-                    [this](const Pokemon& pokemon) {
-          return pokemon.card == Card::Pineco &&
-              pokemon.entered_turn < state_.turn;
+                    [](const Pokemon& pokemon) {
+          return pokemon.card == Card::Pineco;
         });
     const bool forretress_fallback_survives_next_draw =
-        prior_turn_pineco && hand_count(Card::ForretressEx) > 0 &&
+        pineco_evolves_next_turn && hand_count(Card::ForretressEx) > 0 &&
         ability_available_for_pokemon(Card::ForretressEx) &&
         searchable_grass > 1;
 
     // Steven's K1 projection must survive every mandatory turn-two draw. Two
-    // copies of both Energy types preserve the direct Crispin continuation.
-    // A one-copy Fire channel is also safe when a prior-turn Pineco and held
-    // Forretress ex preserve Grass through Exploding Energy while the held Fire
-    // supplies the manual attachment. Three Treasure targets leave one legal
-    // target after Steven takes Dragapult ex and the next draw removes another:
+    // copies of both Energy types preserve the direct Crispin continuation. A
+    // Pineco already in play on turn one may evolve under ordinary timing on
+    // turn two, so held Forretress ex plus two searchable Grass also proves the
+    // continuation where the mandatory draw removes the final searchable Fire.
+    // Three Treasure targets leave one legal target after Steven takes Dragapult
+    // ex and the next draw removes another eligible Pokémon:
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // One-Energy Crispin ruling: https://compendium.pokegym.net/category/5-trainers/crispin/
+    // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
     // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
@@ -1082,12 +1082,14 @@
 
     if (issue_1420_direct_t2_treasure_route_) {
       // Read the exact post-draw K1 state before spending Crispin, the manual
-      // attachment, or the held payload. When both Energy types remain, resolve
-      // the resource-preserving direct route. When the final copy of one type was
-      // drawn, clear the banked flag and let the already proved Forretress route
-      // continue from the untouched public state:
+      // attachment, or the held payload. Resolve the direct Crispin continuation
+      // while both Basic Energy types remain. When the final searchable Fire was
+      // drawn, execute the already proved Pineco, Forretress ex, held Fire, VSTAR,
+      // and Mysterious Treasure continuation before broader selectors can spend a
+      // required resource:
       // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
       // One-Energy Crispin ruling: https://compendium.pokegym.net/category/5-trainers/crispin/
+      // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
       // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
       // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
       // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -1114,13 +1116,23 @@
       }
 
       issue_1420_direct_t2_treasure_route_ = false;
+      if (!both_crispin_types_remain && state_.turn == 2 && !item_locked()) {
+        advance_forretress_combo();
+        attach_manual();
+        evolve_best_regi();
+        route_completed = active_is_vstar() && !need_energy() &&
+            play_mysterious_treasure(true) && !need_payload();
+        if (route_completed) {
+          trace("POLICY", "R-STEVEN-01; R-FORRETRESS-01; R-MT-01; P-AXIS-01",
+                "The mandatory draw removed the final searchable Fire. The "
+                "proved Forretress continuation completed from the untouched "
+                "post-draw state: " + state_line());
+          return;
+        }
+      }
       trace("POLICY", "R-STEVEN-01; R-CRISPIN-01; R-MT-01; P-AXIS-01",
-            both_crispin_types_remain
-                ? "The banked continuation changed after legal resolution. Policy "
-                  "continued from the resolved public state: " + state_line()
-                : "The mandatory draw removed a Crispin Energy type. Policy "
-                  "preserved the untouched hand for the proved Forretress route: " +
-                  state_line());
+            "The banked continuation changed after legal resolution. Policy "
+            "continued from the resolved public state: " + state_line());
     }
 
     // Secret Box must be evaluated before Dawn/Forretress consumes or removes the

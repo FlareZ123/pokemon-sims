@@ -98,7 +98,7 @@ sim::State forretress_admission_state(const int grass_count,
   sim::State state = admission_state(grass_count, fire_count, true);
   state.discard.clear();
   state.hand.push_back(sim::Card::ForretressEx);
-  state.bench = {sim::Pokemon{sim::Card::Pineco, 0, 0, 0}};
+  state.bench = {sim::Pokemon{sim::Card::Pineco, 1, 0, 0}};
   return state;
 }
 

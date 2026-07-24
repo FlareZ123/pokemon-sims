@@ -15,8 +15,11 @@
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1481
     return supporter_allowed() && hand_count(Card::Serena) > 0 &&
         need_active_vstar() && !need_regi() && !need_vstar() &&
-        !need_energy() && !need_payload() &&
-        can_free_retreat_with_latias() && benched_vstar_promotion_ready();
+        !need_energy() && !need_payload() && !state_.retreat_used &&
+        state_.active && is_basic(state_.active->card) &&
+        state_.active->card != Card::RegidragoV &&
+        ability_available_for_pokemon(Card::LatiasEx) &&
+        in_play(Card::LatiasEx) && benched_vstar_promotion_ready();
   }
 
   bool held_quick_ball_latias_completes_current_turn_without_arven() {

@@ -234,18 +234,33 @@ void test_source_bound_seed_129_rejects_k0_oracle_route() {
   sim::Engine engine(*scenario, deck->recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 
-  // Seed 129 has no legal inspection before T2 Quick Ball would pay its discard.
-  // The former T4 route depended on the debug-only fact that Oricorio was unprized.
-  // Correct K0 policy keeps Latias protected and removes that oracle-derived result:
+  // T2 still cannot spend Latias ex through hidden singleton-Oricorio knowledge.
+  // On T3, the public Active VSTAR and Benched Regidrago V establish two lines,
+  // making the newly drawn third Regidrago V legal dynamic-DCI Quick Ball fuel.
+  // That public-zone cost is paid before inspection; Quick Ball then establishes
+  // K1 and reaches the independently legal Crispin plus Blender T4 continuation:
+  // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-  // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
-  // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
-  // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-  // K0 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
-  // Original oracle-dependent route: https://github.com/FlareZ123/pokemon-sims/issues/1419
-  // Refined correction: https://github.com/FlareZ123/pokemon-sims/issues/1467
-  expect(outcome.first_ready_turn == 0 && outcome.setup_failed,
-         "seed 129 retained the oracle-dependent T4 ready result");
+  // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Core evolution, cost, search, and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  // Original oracle-route rejection: https://github.com/FlareZ123/pokemon-sims/issues/1419
+  // K0 refinement: https://github.com/FlareZ123/pokemon-sims/issues/1467
+  // Confirmed public-line correction: https://github.com/FlareZ123/pokemon-sims/issues/1473
+  expect(outcome.first_ready_turn == 4 && !outcome.setup_failed,
+         "seed 129 did not complete the legal public-line T4 route");
+  expect(trace_contains(trace, "Regidrago V (Quick Ball cost)"),
+         "seed 129 did not spend the publicly redundant third Regidrago V");
+  expect(trace_contains(trace, "Quick Ball: deck inspected"),
+         "seed 129 did not establish K1 after paying Quick Ball's public cost");
+  expect(trace_contains(trace, "WONDER TAG") && trace_contains(trace, "Crispin"),
+         "seed 129 did not follow the legal Tapu Lele-GX to Crispin connector");
+  expect(trace_contains(trace, "T4 | READY"),
+         "seed 129 did not reach the source-bound T4 ready state");
   expect(!trace_contains(trace, "Latias ex (Quick Ball cost)"),
          "seed 129 discarded Latias ex before legal inspection");
   expect(!trace_contains(trace, "Searched a Basic Pokemon: Oricorio") &&

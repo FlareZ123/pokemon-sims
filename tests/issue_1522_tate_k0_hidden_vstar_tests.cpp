@@ -1,6 +1,7 @@
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
+// Paired public-state regression: https://github.com/FlareZ123/pokemon-sims/issues/1522
 #include <stdexcept>
 #include <utility>
 
@@ -28,13 +29,13 @@ void expect(const bool condition, const char* message) {
 
 sim::DeckRecipe issue_recipe() {
   return {
-      {sim::Card::RegidragoV, 1},       {sim::Card::RegidragoVstar, 1},
-      {sim::Card::MegaDragonite, 1},    {sim::Card::TateLiza, 1},
+      {sim::Card::RegidragoV, 1},         {sim::Card::RegidragoVstar, 1},
+      {sim::Card::MegaDragonite, 1},      {sim::Card::TateLiza, 1},
       {sim::Card::MysteriousTreasure, 1}, {sim::Card::Crispin, 1},
-      {sim::Card::Serena, 1},           {sim::Card::Gladion, 1},
-      {sim::Card::Arven, 1},            {sim::Card::QuickBall, 1},
-      {sim::Card::EarthenVessel, 1},    {sim::Card::LatiasEx, 1},
-      {sim::Card::TapuLeleGX, 1},       {sim::Card::Grass, 2},
+      {sim::Card::Serena, 1},             {sim::Card::Gladion, 1},
+      {sim::Card::Arven, 1},              {sim::Card::QuickBall, 1},
+      {sim::Card::EarthenVessel, 1},      {sim::Card::LatiasEx, 1},
+      {sim::Card::TapuLeleGX, 1},         {sim::Card::Grass, 2},
       {sim::Card::Fire, 1},
   };
 }

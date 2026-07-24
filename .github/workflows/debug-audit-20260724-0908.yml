@@ -1,0 +1,62 @@
+name: Source-bound debug audit 20260724-0908
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: debug-audit-20260724-0908-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/debug-20260724-0908'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Earliest legal modeled route and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
+          # Trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee audit-trace-shell-go-second-seed-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee audit-trace-shell-go-first-seed-43.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee audit-trace-pineco-go-second-seed-35.txt
+      - name: Generate canonical shell T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-t2-t3-matrix.csv
+      - name: Generate paired deck matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-multi-deck-matrix.csv
+      - name: Verify committed probability evidence
+        run: cmp audit-t2-t3-matrix.csv results/simulation_results.csv && cmp audit-multi-deck-matrix.csv results/multi_deck_comparison.csv
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Record audited source
+        run: git rev-parse HEAD | tee audited-head.txt
+      - name: Upload traces, matrices, and source snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-bound-debug-audit-20260724-0908-${{ github.run_attempt }}
+          path: |
+            audit-trace-*.txt
+            audit-t2-t3-matrix.csv
+            audit-multi-deck-matrix.csv
+            audited-head.txt
+            CMakeLists.txt
+            README.md
+            src
+            tests
+            scripts
+            docs
+            results
+          if-no-files-found: error

@@ -15,9 +15,27 @@
       return false;
     }
 
-    const int grass_in_deck = count_of(state_.deck, Card::Grass);
+    const auto possible_energy_in_deck = [this](const Card energy) {
+      if (deck_seen_ || prizes_revealed_) return count_of(state_.deck, energy);
+      const int public_copies = hand_count(energy) + count_of(state_.discard, energy) +
+          attached_public_count(energy);
+      return std::max(0, total_copies(energy) - public_copies);
+    };
+    const int grass_in_deck = possible_energy_in_deck(Card::Grass);
     const int basic_energy_in_deck =
-        grass_in_deck + count_of(state_.deck, Card::Fire);
+        grass_in_deck + possible_energy_in_deck(Card::Fire);
+    // K0 cannot distinguish Basic Energy in the deck from Basic Energy in Prizes.
+    // Use fixed-list and public-zone possible counts until legal inspection permits
+    // exact deck counts, so hidden placement cannot change an irreversible payload
+    // discard decision:
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv8-130
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core deck, Prize, Item, and search procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K0 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
+    // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed candidate: https://github.com/FlareZ123/pokemon-sims/issues/1471
     // Preserve Vessel and the held Dragon together when T2 has established GF and
     // Latias can promote the Benched VSTAR. On T3, Vessel discards that Dragon during
     // the strict-JIT ready turn, searches the final Grass, and leaves the Supporter

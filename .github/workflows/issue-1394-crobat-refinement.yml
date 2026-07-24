@@ -1,0 +1,290 @@
+name: Issue 1394 Crobat Refinement
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  refine-validate-and-publish:
+    if: github.head_ref == 'fix/issue-1394-crobat-cli-metrics'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - name: Check out refinement branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Capture registered probability baselines
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          cp results/simulation_results.csv /tmp/simulation_results.before.csv
+          cp results/multi_deck_comparison.csv /tmp/multi_deck_comparison.before.csv
+
+      - name: Apply safe defaults and precise game-level metrics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from __future__ import annotations
+
+          import fcntl
+          import os
+          import tempfile
+          from contextlib import contextmanager
+          from pathlib import Path
+          from typing import Iterator
+
+
+          @contextmanager
+          def locked_path(path: Path) -> Iterator[None]:
+              lock_path = path.with_name(path.name + ".lock")
+              with lock_path.open("a+", encoding="utf-8") as handle:
+                  fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+                  try:
+                      yield
+                  finally:
+                      fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+              lock_path.unlink(missing_ok=True)
+
+
+          def atomic_write(path: Path, content: str) -> None:
+              with locked_path(path):
+                  with tempfile.NamedTemporaryFile(
+                      mode="w",
+                      encoding="utf-8",
+                      newline="\n",
+                      dir=path.parent,
+                      delete=False,
+                  ) as handle:
+                      handle.write(content)
+                      temporary = Path(handle.name)
+                  os.replace(temporary, path)
+
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise RuntimeError(f"{label}: expected one anchor, found {count}")
+              return text.replace(old, new, 1)
+
+
+          source_path = Path("src/trace_engine_v2/part_016.inc")
+          source = source_path.read_text(encoding="utf-8")
+          namespace_anchor = "\n}  // namespace sim\n\n#ifndef REGIDRAGO_SIM_NO_MAIN\n"
+          namespace_replacement = """
+
+          constexpr std::string_view crobat_model_default_output() {
+            return "results/crobat_variant_model.csv";  // Reproduction contract: https://github.com/FlareZ123/pokemon-sims/issues/1394
+          }
+
+          constexpr std::uint64_t crobat_model_default_seed() {
+            return 20260723ULL;  // Reproduction contract: https://github.com/FlareZ123/pokemon-sims/issues/1394
+          }
+
+          }  // namespace sim
+
+          #ifndef REGIDRAGO_SIM_NO_MAIN
+          """
+          source = replace_once(source, namespace_anchor, namespace_replacement, "helper insertion")
+          mode_anchor = "        (simulate_this ? CliMode::SingleTrace : CliMode::Aggregate)));\n"
+          mode_block = """
+            if (mode == CliMode::CrobatModel) {
+              // Keep modeling output separate from the canonical setup baseline and reproduce its registered seed:
+              // https://github.com/FlareZ123/pokemon-sims/issues/1394
+              // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#model-crobat-v-swaps
+              if (!output_supplied) output = std::string(sim::crobat_model_default_output());
+              if (!seed_supplied) seed = sim::crobat_model_default_seed();
+            }
+          """
+          source = replace_once(source, mode_anchor, mode_anchor + mode_block, "CLI defaults")
+          source = replace_once(
+              source,
+              "dark_asset_use_pct,avg_dark_asset_draw\\n",
+              "dark_asset_use_pct,avg_dark_asset_cards_drawn_per_game_using\\n",
+              "CSV metric label",
+          )
+          average_anchor = "      const double average_draw = aggregate.dark_asset == 0 ? 0.0 :\n"
+          average_comment = (
+              "      // aggregate.dark_asset counts games with at least one use; cards may accumulate\n"
+              "      // across turns in two-copy variants: https://github.com/FlareZ123/pokemon-sims/issues/1394\n"
+          )
+          source = replace_once(source, average_anchor, average_comment + average_anchor, "metric denominator")
+          atomic_write(source_path, source)
+
+          test_path = Path("tests/issue_1394_crobat_v_model_tests.cpp")
+          test = test_path.read_text(encoding="utf-8")
+          test_anchor = "\n}\n\nvoid test_direct_bench_draws_to_six_and_once_per_turn()"
+          test_defaults = """
+            // Safe defaults preserve the canonical baseline and reproduce the registered matrix:
+            // https://github.com/FlareZ123/pokemon-sims/issues/1394
+            if (sim::crobat_model_default_output() != "results/crobat_variant_model.csv" ||
+                sim::crobat_model_default_seed() != 20260723ULL) {
+              throw std::runtime_error("Crobat modeling defaults do not match the reproduction contract.");
+            }
+
+          }
+
+          void test_direct_bench_draws_to_six_and_once_per_turn()"""
+          test = replace_once(test, test_anchor, "\n" + test_defaults, "default regression")
+          atomic_write(test_path, test)
+
+          script_path = Path("scripts/update_crobat_modeling_docs.py")
+          script = script_path.read_text(encoding="utf-8")
+          script = replace_once(
+              script,
+              'row["avg_dark_asset_draw"]',
+              'row["avg_dark_asset_cards_drawn_per_game_using"]',
+              "report CSV field",
+          )
+          script = replace_once(
+              script,
+              "| Variant | Cuts | Crobat | Mean ΔT2 | Mean ΔT3 | Mean ΔT4 | T3 scenarios improved | Dark Asset use | Mean cards drawn |",
+              "| Variant | Cuts | Crobat | Mean ΔT2 | Mean ΔT3 | Mean ΔT4 | T3 scenarios improved | Games using Dark Asset | Mean cards drawn per using game |",
+              "report table label",
+          )
+          heading_anchor = '            "## Paired all-scenario summary",\n'
+          metric_explanation = (
+              '            "Dark Asset utilization is the percentage of games with at least one legal use. "\n'
+              '            "The draw figure is total cards drawn across every Dark Asset resolution divided by "\n'
+              '            "games with at least one use, so two-copy variants may include uses on different turns: "\n'
+              '            "https://github.com/FlareZ123/pokemon-sims/issues/1394",\n'
+              '            "",\n'
+          )
+          script = replace_once(script, heading_anchor, metric_explanation + heading_anchor, "report explanation")
+          atomic_write(script_path, script)
+
+          csv_path = Path("results/crobat_variant_model.csv")
+          csv_text = csv_path.read_text(encoding="utf-8")
+          csv_text = replace_once(
+              csv_text,
+              "dark_asset_use_pct,avg_dark_asset_draw\n",
+              "dark_asset_use_pct,avg_dark_asset_cards_drawn_per_game_using\n",
+              "committed CSV label",
+          )
+          atomic_write(csv_path, csv_text)
+
+          readme_path = Path("README.md")
+          readme = readme_path.read_text(encoding="utf-8")
+          marker = "\nDark Asset follows Crobat V `swsh3-104`:"
+          insertion = (
+              "\nWhen `--out` or `--seed` is omitted, `--model-crobat` defaults to "
+              "`results/crobat_variant_model.csv` and seed `20260723`, preserving the canonical baseline: "
+              "https://github.com/FlareZ123/pokemon-sims/issues/1394\n"
+          )
+          readme = replace_once(readme, marker, insertion + marker, "README defaults")
+          old_validation = (
+              "The current-main validation run includes the full Release and sanitizer suites, three reviewed traces, "
+              "the 20.8-million-game Crobat matrix, and byte-for-byte registered-deck probability checks: "
+              "https://github.com/FlareZ123/pokemon-sims/actions/runs/30053497501"
+          )
+          run_url = f"https://github.com/FlareZ123/pokemon-sims/actions/runs/{os.environ['GITHUB_RUN_ID']}"
+          new_validation = (
+              "The current-main validation includes the full Release and sanitizer suites, three reviewed traces, "
+              "the 20.8-million-game Crobat matrix, byte-for-byte registered-deck probability checks, safe CLI-default "
+              "validation, and precise game-level Dark Asset statistics: "
+              "https://github.com/FlareZ123/pokemon-sims/actions/runs/30057886658 " + run_url
+          )
+          readme = replace_once(readme, old_validation, new_validation, "README validation source")
+          atomic_write(readme_path, readme)
+          PY
+
+      - name: Build Release and validate exact behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+          # Modeling reproduction contract: https://github.com/FlareZ123/pokemon-sims/issues/1394
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ./build/regidrago_unified_tests issue_1394_crobat_v_model_tests
+          ./build/regidrago_sim --self-test
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit/go-second --seed 3 --require-ready-by 2 | tee crobat-pass-second-seed3.txt
+          grep -Eq '^T2 \| DARK ASSET \|' crobat-pass-second-seed3.txt
+          grep -Eq '^T2 \| READY \|' crobat-pass-second-seed3.txt
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit/go-first --seed 14 --require-ready-by 2 | tee crobat-pass-first-seed14.txt
+          grep -Eq '^T1 \| DARK ASSET \|' crobat-pass-first-seed14.txt
+          grep -Eq '^T2 \| READY \|' crobat-pass-first-seed14.txt
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit-turn2-item-lock/go-second --seed 71 --require-ready-by 3 | tee crobat-pass-item-lock-seed71.txt
+          grep -Eq '^T1 \| DARK ASSET \|' crobat-pass-item-lock-seed71.txt
+          grep -Eq '^T3 \| READY \|' crobat-pass-item-lock-seed71.txt
+          rm -rf build/crobat-cli-default-check
+          mkdir -p build/crobat-cli-default-check
+          pushd build/crobat-cli-default-check
+          ../regidrago_sim --model-crobat --trials 1
+          test -f results/crobat_variant_model.csv
+          test ! -e results/simulation_results.csv
+          ../regidrago_sim --model-crobat --trials 1 --seed 20260723 --out explicit.csv
+          cmp results/crobat_variant_model.csv explicit.csv
+          ../regidrago_sim --model-crobat --trials 1 --seed 7 --out custom.csv
+          test -f custom.csv
+          grep -q 'avg_dark_asset_cards_drawn_per_game_using' results/crobat_variant_model.csv
+          popd
+
+      - name: Regenerate reports and preserve probabilities
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Registered matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md
+          python scripts/update_crobat_modeling_docs.py --csv results/crobat_variant_model.csv --out docs/CROBAT_MODEL_REPORT.md
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+          cmp /tmp/simulation_results.before.csv results/simulation_results.csv
+          cmp /tmp/multi_deck_comparison.before.csv results/multi_deck_comparison.csv
+          rm -f results/*.lock docs/*.lock .update-*.lock
+
+      - name: Run complete Release suite
+        shell: bash
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Run ASan and UBSan suite
+        shell: bash
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitizers -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build-sanitizers --parallel 2
+          ctest --test-dir build-sanitizers --parallel 2 --output-on-failure
+
+      - name: Upload exact-source evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1394-crobat-refinement-validation
+          path: |
+            crobat-pass-*.txt
+            results/crobat_variant_model.csv
+            docs/CROBAT_MODEL_REPORT.md
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            build/Testing
+            build-sanitizers/Testing
+          if-no-files-found: warn
+
+      - name: Publish clean refinement
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build build-sanitizers crobat-pass-*.txt
+          git rm .github/workflows/issue-1394-crobat-refinement.yml
+          rm -f results/*.lock docs/*.lock .update-*.lock
+          find scripts -type f -name '*.pyc' -delete
+          rm -rf scripts/__pycache__
+          git add -A
+          git commit -m 'Harden Crobat model defaults and metrics (#1394)'
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

@@ -12,10 +12,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Archive checked-out source
-        run: tar --exclude=.git -czf source-export.tgz .
+        run: tar --exclude=.git -czf /tmp/source-export.tgz .
       - name: Upload source archive
         uses: actions/upload-artifact@v4
         with:
           name: source-export
-          path: source-export.tgz
+          path: /tmp/source-export.tgz
           if-no-files-found: error

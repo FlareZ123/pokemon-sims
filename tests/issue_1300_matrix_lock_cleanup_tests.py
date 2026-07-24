@@ -79,6 +79,40 @@ def assert_no_tracked_source_locks() -> None:
         raise RuntimeError("The source-lock ignore contract is missing.")
 
 
+def assert_source_locks_do_not_change_provenance() -> None:
+    provenance = load_module(
+        ROOT / "scripts/baseline_provenance.py", "issue1492_provenance"
+    )
+    with tempfile.TemporaryDirectory() as directory_name:
+        repo_root = Path(directory_name)
+        source_dir = repo_root / "src" / "trace_engine_v2"
+        source_dir.mkdir(parents=True)
+        (repo_root / "CMakeLists.txt").write_text(
+            "add_executable(regidrago_sim src/regidrago_sim.cpp)\n", encoding="utf-8"
+        )
+        source = repo_root / "src" / "regidrago_sim.cpp"
+        source.write_text("int main() { return 0; }\n", encoding="utf-8")
+        initial_digest = provenance.simulator_policy_source_digest(repo_root)
+
+        # Runtime lock creation and cleanup cannot change source-bound evidence:
+        # https://github.com/FlareZ123/pokemon-sims/issues/1492
+        # https://github.com/FlareZ123/pokemon-sims/issues/1300
+        source_lock = repo_root / "src" / "regidrago_sim.cpp.lock"
+        nested_lock = source_dir / "part_001.inc.lock"
+        source_lock.write_text("writer-a", encoding="utf-8")
+        nested_lock.write_text("writer-b", encoding="utf-8")
+        locked_digest = provenance.simulator_policy_source_digest(repo_root)
+        source_lock.unlink()
+        nested_lock.unlink()
+        cleaned_digest = provenance.simulator_policy_source_digest(repo_root)
+        if locked_digest != initial_digest or cleaned_digest != initial_digest:
+            raise RuntimeError("Source lock artifacts changed simulator provenance.")
+
+        source.write_text("int main() { return 1; }\n", encoding="utf-8")
+        if provenance.simulator_policy_source_digest(repo_root) == initial_digest:
+            raise RuntimeError("A real simulator source change did not change provenance.")
+
+
 def main() -> None:
     modules = [
         load_module(ROOT / "scripts/generate_multi_deck_comparison.py", "issue1300_multi"),
@@ -88,6 +122,7 @@ def main() -> None:
         exercise_generator(module, fail=False)
         exercise_generator(module, fail=True)
     assert_no_tracked_source_locks()
+    assert_source_locks_do_not_change_provenance()
     print("Issue 1300 and 1492 lock cleanup tests passed.")
 
 

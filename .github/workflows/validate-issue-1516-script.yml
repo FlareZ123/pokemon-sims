@@ -27,11 +27,15 @@ jobs:
         run: |
           python .github/issue-1516-apply.py
           python .github/issue-1516-array-fix.py
+          python .github/issue-1516-target-proof.py
+          python .github/issue-1516-live-print.py
       - name: Build Release
         shell: bash
         run: |
           set -o pipefail
           (cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2) 2>&1 | tee build.log
+      - name: Capture seed 42 diagnostic
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 42 | tee trace-42.txt
       - name: Run focused regression
         shell: bash
         run: |

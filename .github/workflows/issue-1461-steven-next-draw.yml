@@ -43,6 +43,15 @@ jobs:
       - name: Build Release
         run: cmake --build build --parallel 2
 
+      - name: Run focused compatibility regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          set -o pipefail
+          ./build/regidrago_unified_tests issue_1461_steven_next_draw_tests 2>&1 | tee issue-1461-focused.log
+          ./build/regidrago_unified_tests issue_1420_steven_direct_treasure_tests 2>&1 | tee issue-1420-focused.log
+          ./build/regidrago_unified_tests issue_1419_latias_oricorio_tests 2>&1 | tee issue-1419-focused.log
+
       - name: Regenerate source-bound reports
         shell: bash
         run: |
@@ -58,30 +67,6 @@ jobs:
             git commit -m "Refresh source-bound reports for issue 1461"
             git push origin "HEAD:${{ github.head_ref }}"
           fi
-
-      - name: Run issue 1461 regression
-        id: issue_1461
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -o pipefail
-          ./build/regidrago_unified_tests issue_1461_steven_next_draw_tests 2>&1 | tee issue-1461-focused.log
-
-      - name: Run issue 1420 compatibility regression
-        id: issue_1420
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -o pipefail
-          ./build/regidrago_unified_tests issue_1420_steven_direct_treasure_tests 2>&1 | tee issue-1420-focused.log
-
-      - name: Run issue 1419 compatibility regression
-        id: issue_1419
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -o pipefail
-          ./build/regidrago_unified_tests issue_1419_latias_oricorio_tests 2>&1 | tee issue-1419-focused.log
 
       - name: Review three Pineco perfect-play traces
         shell: bash
@@ -136,11 +121,3 @@ jobs:
             results/baseline_manifest.json
             results/multi_deck_manifest.json
           if-no-files-found: error
-
-      - name: Enforce focused compatibility
-        if: always()
-        shell: bash
-        run: |
-          test "${{ steps.issue_1461.outcome }}" = "success"
-          test "${{ steps.issue_1420.outcome }}" = "success"
-          test "${{ steps.issue_1419.outcome }}" = "success"

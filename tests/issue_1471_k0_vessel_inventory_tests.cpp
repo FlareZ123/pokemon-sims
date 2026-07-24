@@ -62,25 +62,24 @@ sim::State vessel_window_state(const bool hidden_fire_in_deck) {
   return state;
 }
 
-sim::Engine make_engine(std::mt19937_64& rng, sim::State state,
-                        const bool deck_seen,
-                        const bool prizes_revealed = false) {
+struct Fixture {
   const sim::Scenario scenario{"issue-1471", sim::DciProfile::StrictJit,
                                sim::LockMode::None, true, 3};
   const sim::DeckRecipe recipe{sim::baseline_recipe()};
-  sim::Engine engine(scenario, recipe, rng);
-  sim::EngineTestAccess::set_state(
-      engine, std::move(state), deck_seen, prizes_revealed);
-  return engine;
-}
+  std::mt19937_64 rng;
+  sim::Engine engine;
+
+  Fixture(const std::uint64_t seed, sim::State state, const bool deck_seen,
+          const bool prizes_revealed = false)
+      : rng(seed), engine(scenario, recipe, rng) {
+    sim::EngineTestAccess::set_state(
+        engine, std::move(state), deck_seen, prizes_revealed);
+  }
+};
 
 void test_paired_k0_hidden_placements_make_same_safe_hold() {
-  std::mt19937_64 rng_a{1471};
-  std::mt19937_64 rng_b{1472};
-  sim::Engine energy_in_deck =
-      make_engine(rng_a, vessel_window_state(true), false);
-  sim::Engine energy_prized =
-      make_engine(rng_b, vessel_window_state(false), false);
+  Fixture energy_in_deck{1471, vessel_window_state(true), false};
+  Fixture energy_prized{1472, vessel_window_state(false), false};
 
   // Before a legal inspection, the player cannot distinguish whether the hidden
   // Fire is in the deck or the Prize cards. Both identical public states must use
@@ -92,16 +91,15 @@ void test_paired_k0_hidden_placements_make_same_safe_hold() {
   // K0 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
   // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1471
-  if (!sim::EngineTestAccess::hold_vessel(energy_in_deck) ||
-      !sim::EngineTestAccess::hold_vessel(energy_prized)) {
+  if (!sim::EngineTestAccess::hold_vessel(energy_in_deck.engine) ||
+      !sim::EngineTestAccess::hold_vessel(energy_prized.engine)) {
     throw std::runtime_error(
         "Paired K0 hidden placements must both preserve Vessel and the payload.");
   }
 }
 
 void test_k0_play_attempt_preserves_vessel_and_payload() {
-  std::mt19937_64 rng{1473};
-  sim::Engine engine = make_engine(rng, vessel_window_state(false), false);
+  Fixture fixture{1473, vessel_window_state(false), false};
 
   // The safe K0 decision is a hold. It must occur before Earthen Vessel can pay
   // the irreversible Dragon discard cost and legally inspect the deck:
@@ -110,10 +108,10 @@ void test_k0_play_attempt_preserves_vessel_and_payload() {
   // Core cost-before-search procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // K0 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1471
-  if (sim::EngineTestAccess::play_vessel(engine)) {
+  if (sim::EngineTestAccess::play_vessel(fixture.engine)) {
     throw std::runtime_error("K0 Vessel should be held for the next strict-JIT turn.");
   }
-  const sim::State& after = sim::EngineTestAccess::state(engine);
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
   if (count_card(after.hand, sim::Card::EarthenVessel) != 1 ||
       count_card(after.hand, sim::Card::Dragapult) != 1 ||
       count_card(after.discard, sim::Card::Dragapult) != 0) {
@@ -123,8 +121,7 @@ void test_k0_play_attempt_preserves_vessel_and_payload() {
 }
 
 void test_k1_uses_exact_sufficient_deck_inventory() {
-  std::mt19937_64 rng{1474};
-  sim::Engine engine = make_engine(rng, vessel_window_state(true), true);
+  Fixture fixture{1474, vessel_window_state(true), true};
 
   // After a legal deck inspection, exact remaining-deck inventory is known. One
   // Grass plus a second Basic Energy keeps the next-turn Vessel route live:
@@ -132,15 +129,14 @@ void test_k1_uses_exact_sufficient_deck_inventory() {
   // K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k1-after-a-legal-deck-or-prize-inspection
   // Existing route: https://github.com/FlareZ123/pokemon-sims/issues/1009
   // Confirmed bug boundary: https://github.com/FlareZ123/pokemon-sims/issues/1471
-  if (!sim::EngineTestAccess::hold_vessel(engine)) {
+  if (!sim::EngineTestAccess::hold_vessel(fixture.engine)) {
     throw std::runtime_error(
         "K1 sufficient Grass and Basic Energy inventory must preserve the Vessel route.");
   }
 }
 
 void test_k1_rejects_exact_insufficient_deck_inventory() {
-  std::mt19937_64 rng{1475};
-  sim::Engine engine = make_engine(rng, vessel_window_state(false), true);
+  Fixture fixture{1475, vessel_window_state(false), true};
 
   // K1 proves that only one Basic Energy remains in the deck. The next draw could
   // remove the sole legal Grass target, so the two-Energy hold requirement fails:
@@ -148,23 +144,21 @@ void test_k1_rejects_exact_insufficient_deck_inventory() {
   // Core deck-search procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k1-after-a-legal-deck-or-prize-inspection
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1471
-  if (sim::EngineTestAccess::hold_vessel(engine)) {
+  if (sim::EngineTestAccess::hold_vessel(fixture.engine)) {
     throw std::runtime_error(
         "K1 insufficient remaining Basic Energy must not preserve the Vessel route.");
   }
 }
 
 void test_prize_reveal_uses_exact_complementary_deck_inventory() {
-  std::mt19937_64 rng{1476};
-  sim::Engine engine =
-      make_engine(rng, vessel_window_state(false), false, true);
+  Fixture fixture{1476, vessel_window_state(false), false, true};
 
   // A legal full Prize reveal also establishes K1 through the fixed recipe and
   // public zones, so the exact one-Energy deck must fail the hold predicate:
   // Core Prize procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k1-after-a-legal-deck-or-prize-inspection
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1471
-  if (sim::EngineTestAccess::hold_vessel(engine)) {
+  if (sim::EngineTestAccess::hold_vessel(fixture.engine)) {
     throw std::runtime_error(
         "Prize-reveal K1 must use the exact complementary deck inventory.");
   }

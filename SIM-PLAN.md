@@ -171,7 +171,7 @@ A trial is setup-ready on turn `t` when all statements are true:
 
 1. The Active Pokémon is Regidrago VSTAR.
 2. It has at least two attached Grass Energy and one attached Fire Energy.
-3. The discard pile contains one of Dragapult ex, Mega Dragonite ex, Dialga-GX, or Hisuian Goodra VSTAR.
+3. The discard pile contains Dragapult ex, Mega Dragonite ex, Dialga-GX, Hisuian Goodra VSTAR, or recipe-gated Appletun `sv8-140` when the selected registered recipe contains it: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_001.inc#L128-L137 https://github.com/FlareZ123/pokemon-sims/issues/1489
 4. In strict and matchup-flex JIT modes, at least one such payload moved to the discard during turn `t`.
 5. `t >= 2`.
 

@@ -22,9 +22,12 @@
 
     // Mysterious Treasure has already paid its cost and legally established K1.
     // The inspected deck can now select the shortest complete line: Oricorio puts
-    // two Basic Energy into hand, one attaches on T1, Quick Ball spends route-inert
-    // Latias ex for Tapu Lele-GX, Wonder Tag banks Crispin, and T2 evolution plus
-    // the second manual attachment and Crispin complete GGF before Blender.
+    // one Grass and one Fire Energy into hand, one attaches on T1, Quick Ball spends
+    // route-inert Latias ex for Tapu Lele-GX, Wonder Tag banks Crispin, and T2
+    // evolution plus the second manual attachment and Crispin complete GGF before
+    // Blender. Crispin says "up to 2", so one remaining Energy of the missing type
+    // is sufficient after Vital Dance; requiring two remaining copies overprotects
+    // resources and rejects a legal complete route.
     // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
@@ -38,8 +41,8 @@
     return deck_count_after_search_started(Card::Oricorio) > 0 &&
         deck_count_after_search_started(Card::TapuLeleGX) > 0 &&
         deck_count_after_search_started(Card::Crispin) > 0 &&
-        deck_count_after_search_started(Card::Grass) >= 3 &&
-        deck_count_after_search_started(Card::Fire) >= 2 && deck_payloads >= 2;
+        deck_count_after_search_started(Card::Grass) >= 2 &&
+        deck_count_after_search_started(Card::Fire) >= 1 && deck_payloads >= 2;
   }
 
   bool play_mysterious_treasure(const bool permit_payload) {
@@ -76,8 +79,8 @@
         throw std::logic_error("projected issue-1476 Oricorio Bench action disappeared");
       }
       // Vital Dance searches up to two Basic Energy only when Oricorio is played
-      // from hand to the Bench. Resolve the same established helper here so the
-      // composite route records the card-name action explicitly in its trace:
+      // from hand to the Bench. Resolve the established helper here so the composite
+      // route records the card-name action explicitly in its trace:
       // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
       // Core Bench and Ability procedure: https://www.pokemon.com/us/pokemon-tcg/rules
       search_energy_to_hand(2, "R-ORICORIO-01", "VITAL DANCE");

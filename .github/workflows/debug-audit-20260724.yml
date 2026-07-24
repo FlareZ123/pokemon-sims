@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  three-trace-audit:
+  four-trace-audit:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/debug-20260724-three-traces'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -41,14 +41,29 @@ jobs:
           # Regidrago VSTAR readiness contract: https://api.pokemontcg.io/v2/cards/swsh12-136
           # Registered source-bound trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt#L131-L143
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3 | tee audit-pass-2.txt
-      - name: CI simulate-this pass 3 - Pineco recipe
+      - name: CI simulate-this pass 3 - Pineco recipe regression discovery
         shell: bash
         run: |
           set -euo pipefail
-          # Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
-          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-          # Registered Pineco route specification: https://github.com/FlareZ123/pokemon-sims/issues/1420
+          # This trace established issue #1497 and remains evidence rather than a perfect-play pass:
+          # https://github.com/FlareZ123/pokemon-sims/issues/1497
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee audit-pass-3.txt
+      - name: CI simulate-this pass 4 - K1 Treasure to Tapu to Crispin
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Quick Ball, Mysterious Treasure, Tapu Lele-GX, Crispin, and Regidrago VSTAR route:
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sm2-60
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Confirmed route specification: https://github.com/FlareZ123/pokemon-sims/issues/1209
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee audit-pass-4.txt
+          grep -q "T2 | HOLD SUPPORTER.*Mysterious Treasure to Tapu Lele-GX to Crispin" audit-pass-4.txt
+          grep -q "T2 | DISCARD.*Dragapult ex (Mysterious Treasure cost)" audit-pass-4.txt
+          grep -q "T2 | WONDER TAG.*Crispin" audit-pass-4.txt
+          grep -q "T2 | READY" audit-pass-4.txt
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
       - name: Generate and verify canonical matrix
@@ -63,7 +78,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: debug-audit-20260724-three-traces-${{ github.run_attempt }}
+          name: debug-audit-20260724-four-traces-${{ github.run_attempt }}
           path: |
             audit-pass-*.txt
             audit-shell-matrix.csv

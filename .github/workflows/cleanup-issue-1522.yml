@@ -1,0 +1,33 @@
+name: Clean issue 1522 generated artifacts
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1522-cleanup-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  clean-and-commit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/issue-1522-tate-k0-hidden-vstar'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Remove generated workspace files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm -r --ignore-unmatch build build-sanitizers scripts/__pycache__
+          git rm --ignore-unmatch issue-1522-trace-1.txt issue-1522-trace-2.txt issue-1522-trace-3.txt
+          git rm .github/workflows/cleanup-issue-1522.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Remove issue 1522 generated validation artifacts"
+          git push origin HEAD:fix/issue-1522-tate-k0-hidden-vstar

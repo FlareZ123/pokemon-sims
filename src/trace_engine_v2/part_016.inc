@@ -17,6 +17,109 @@
 
 }  // namespace sim
 
+namespace sim {
+
+struct CrobatModelingDeck {
+  std::string id;
+  std::string cuts;
+  DeckRecipe recipe;
+};
+
+void adjust_modeling_recipe(DeckRecipe& recipe, const Card card, const int delta) {
+  const auto found = std::find_if(recipe.begin(), recipe.end(), [card](const auto& entry) {
+    return entry.first == card;
+  });
+  if (found == recipe.end()) {
+    if (delta <= 0) throw std::logic_error("modeling cut is absent");
+    recipe.push_back({card, delta});
+    return;
+  }
+  found->second += delta;
+  if (found->second < 0) throw std::logic_error("modeling cut exceeds copies");
+  if (found->second == 0) recipe.erase(found);
+}
+
+CrobatModelingDeck make_crobat_modeling_deck(
+    std::string id, const std::initializer_list<Card> cuts) {
+  DeckRecipe recipe = baseline_recipe();
+  std::ostringstream cut_names;
+  std::size_t index = 0;
+  for (const Card cut : cuts) {
+    adjust_modeling_recipe(recipe, cut, -1);
+    if (index++ > 0) cut_names << " + ";
+    cut_names << name(cut);
+  }
+  adjust_modeling_recipe(recipe, Card::CrobatV, static_cast<int>(cuts.size()));
+  CrobatModelingDeck deck{std::move(id), cut_names.str(), std::move(recipe)};
+  std::string error;
+  if (!validate_recipe({deck.id, deck.recipe}, &error)) throw std::logic_error(error);
+  return deck;
+}
+
+const std::vector<CrobatModelingDeck>& crobat_modeling_decks() {
+  // These temporary recipes are deliberately absent from deck_registry() and
+  // --all-decks: https://github.com/FlareZ123/pokemon-sims/issues/1394
+  static const std::vector<CrobatModelingDeck> decks{
+      {"regidrago-shell", "none", baseline_recipe()},
+      make_crobat_modeling_deck("crobat1-erika", {Card::ErikasInvitation}),
+      make_crobat_modeling_deck("crobat1-channeler", {Card::Channeler}),
+      make_crobat_modeling_deck("crobat1-team-yell", {Card::TeamYellsCheer}),
+      make_crobat_modeling_deck("crobat1-roseanne", {Card::RoseannesBackup}),
+      make_crobat_modeling_deck("crobat1-turo", {Card::ProfessorTuro}),
+      make_crobat_modeling_deck("crobat1-powerglass", {Card::Powerglass}),
+      make_crobat_modeling_deck("crobat1-heavy-ball", {Card::HisuianHeavyBall}),
+      make_crobat_modeling_deck("crobat1-tapu-lele", {Card::TapuLeleGX}),
+      make_crobat_modeling_deck("crobat2-erika-channeler",
+                                {Card::ErikasInvitation, Card::Channeler}),
+      make_crobat_modeling_deck("crobat2-erika-team-yell",
+                                {Card::ErikasInvitation, Card::TeamYellsCheer}),
+      make_crobat_modeling_deck("crobat2-erika-tapu-lele",
+                                {Card::ErikasInvitation, Card::TapuLeleGX}),
+      make_crobat_modeling_deck("crobat2-tapu-lele-both",
+                                {Card::TapuLeleGX, Card::TapuLeleGX}),
+  };
+  return decks;
+}
+
+const CrobatModelingDeck* crobat_modeling_deck_by_id(const std::string_view id) {
+  const auto& decks = crobat_modeling_decks();
+  const auto found = std::find_if(decks.begin(), decks.end(), [id](const auto& deck) {
+    return deck.id == id;
+  });
+  return found == decks.end() ? nullptr : &*found;
+}
+
+void write_crobat_modeling_matrix(const std::filesystem::path& output,
+                                  const std::uint64_t trials,
+                                  const std::uint64_t seed) {
+  std::ostringstream csv;
+  csv << "variant,cuts,crobat_copies,scenario,trials,ready_by_t2_pct,"
+         "ready_by_t3_pct,ready_by_t4_pct,dark_asset_use_pct,avg_dark_asset_draw\n";
+  const auto scenarios = all_scenarios();
+  for (std::size_t scenario_index = 0; scenario_index < scenarios.size(); ++scenario_index) {
+    const Scenario& scenario = scenarios[scenario_index];
+    const std::uint64_t common_seed = seed + 104729ULL * scenario_index;
+    for (const CrobatModelingDeck& deck : crobat_modeling_decks()) {
+      const Aggregate aggregate = simulate(scenario, deck.recipe, trials, common_seed);
+      const double average_draw = aggregate.dark_asset == 0 ? 0.0 :
+          static_cast<double>(aggregate.dark_asset_cards_drawn) /
+          static_cast<double>(aggregate.dark_asset);
+      csv << deck.id << ',' << '"' << deck.cuts << '"' << ','
+          << std::accumulate(deck.recipe.begin(), deck.recipe.end(), 0,
+               [](const int total, const auto& entry) {
+                 return total + (entry.first == Card::CrobatV ? entry.second : 0);
+               }) << ','
+          << scenario.label << ',' << trials << ',' << std::fixed
+          << std::setprecision(6) << pct(aggregate.by2, trials) << ','
+          << pct(aggregate.by3, trials) << ',' << pct(aggregate.by4, trials) << ','
+          << pct(aggregate.dark_asset, trials) << ',' << average_draw << '\n';
+    }
+  }
+  write_atomic(output, csv.str());
+}
+
+}  // namespace sim
+
 #ifndef REGIDRAGO_SIM_NO_MAIN
 std::optional<std::uint64_t> parse_unsigned_decimal(const std::string& text) {
   const bool decimal_digits_only = !text.empty() && std::all_of(
@@ -49,6 +152,7 @@ enum class CliMode : std::uint8_t {
   SingleTrace,
   FindReady,
   SelfTest,
+  CrobatModel,
 };
 
 int main(int argc, char** argv) {
@@ -60,6 +164,8 @@ int main(int argc, char** argv) {
   bool all_decks = false;
   bool self_test = false;
   bool simulate_this = false;
+  bool model_crobat = false;
+  std::string modeling_variant_id;
   int require_ready_by = 0;
   std::uint64_t find_ready = 0;
   std::uint64_t start_seed = 1;
@@ -72,6 +178,7 @@ int main(int argc, char** argv) {
   bool deadline_supplied = false;
   bool find_ready_supplied = false;
   bool start_seed_supplied = false;
+  bool modeling_variant_supplied = false;
 
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
@@ -104,6 +211,11 @@ int main(int argc, char** argv) {
       all_decks = true;
     } else if (arg == "--simulate-this") {
       simulate_this = true;
+    } else if (arg == "--model-crobat") {
+      model_crobat = true;
+    } else if (arg == "--model-variant" && i + 1 < argc) {
+      modeling_variant_id = argv[++i];
+      modeling_variant_supplied = true;
     } else if (arg == "--require-ready-by" && i + 1 < argc) {
       const auto parsed = parse_ready_deadline(argv[++i]);
       if (!parsed) {
@@ -135,7 +247,7 @@ int main(int argc, char** argv) {
           << "Usage: regidrago_sim [--deck ID | --all-decks] [--trials N] "
              "[--seed N] [--out PATH] [--scenario LABEL] [--simulate-this] "
              "[--require-ready-by TURN] [--find-ready N --start-seed N] "
-             "[--self-test]\n\nRegistered decks:\n";
+             "[--model-crobat] [--model-variant ID] [--self-test]\n\nRegistered decks:\n";
       for (const sim::NamedDeck& deck : sim::deck_registry()) {
         std::cout << "  " << deck.id << '\n';
       }
@@ -147,26 +259,33 @@ int main(int argc, char** argv) {
   }
 
   const int explicit_mode_count = static_cast<int>(self_test) +
-      static_cast<int>(simulate_this) + static_cast<int>(find_ready_supplied);
+      static_cast<int>(simulate_this) + static_cast<int>(find_ready_supplied) +
+      static_cast<int>(model_crobat);
   if (explicit_mode_count > 1) {
-    std::cerr << "--self-test, --simulate-this, and --find-ready select incompatible modes\n";
+    std::cerr << "--self-test, --simulate-this, --find-ready, and --model-crobat select incompatible modes\n";
     return 2;
   }
 
   const CliMode mode = self_test ? CliMode::SelfTest :
-      (find_ready_supplied ? CliMode::FindReady :
-       (simulate_this ? CliMode::SingleTrace : CliMode::Aggregate));
+      (model_crobat ? CliMode::CrobatModel :
+       (find_ready_supplied ? CliMode::FindReady :
+        (simulate_this ? CliMode::SingleTrace : CliMode::Aggregate)));
   const auto reject_option = [](const char* option, const char* mode_name) {
     std::cerr << option << " is not valid in " << mode_name << " mode\n";
     return 2;
   };
 
-  if (deck_supplied && all_decks) {
-    std::cerr << "--deck and --all-decks are mutually exclusive\n";
+  if ((deck_supplied && all_decks) ||
+      (modeling_variant_supplied && (deck_supplied || all_decks))) {
+    std::cerr << "--deck, --all-decks, and --model-variant are mutually exclusive\n";
     return 2;
   }
   if (mode != CliMode::Aggregate && all_decks) {
     return reject_option("--all-decks", "trace");
+  }
+  if (modeling_variant_supplied && mode != CliMode::SingleTrace &&
+      mode != CliMode::FindReady) {
+    return reject_option("--model-variant", "non-trace");
   }
   if (mode == CliMode::Aggregate) {
     if (scenario_supplied) return reject_option("--scenario", "aggregate");
@@ -184,7 +303,7 @@ int main(int argc, char** argv) {
       std::cerr << "--require-ready-by 1 cannot be satisfied in find-ready mode; readiness begins on turn 2\n";
       return 2;
     }
-  } else {
+  } else if (mode == CliMode::SelfTest) {
     if (trials_supplied) return reject_option("--trials", "self-test");
     if (seed_supplied) return reject_option("--seed", "self-test");
     if (output_supplied) return reject_option("--out", "self-test");
@@ -193,6 +312,14 @@ int main(int argc, char** argv) {
     if (all_decks) return reject_option("--all-decks", "self-test");
     if (deadline_supplied) return reject_option("--require-ready-by", "self-test");
     if (start_seed_supplied) return reject_option("--start-seed", "self-test");
+    if (modeling_variant_supplied) return reject_option("--model-variant", "self-test");
+  } else {
+    if (scenario_supplied) return reject_option("--scenario", "Crobat-model");
+    if (deck_supplied) return reject_option("--deck", "Crobat-model");
+    if (all_decks) return reject_option("--all-decks", "Crobat-model");
+    if (deadline_supplied) return reject_option("--require-ready-by", "Crobat-model");
+    if (find_ready_supplied) return reject_option("--find-ready", "Crobat-model");
+    if (start_seed_supplied) return reject_option("--start-seed", "Crobat-model");
   }
 
   if (mode == CliMode::SelfTest) {
@@ -223,10 +350,25 @@ int main(int argc, char** argv) {
   }
 
   try {
+    if (mode == CliMode::CrobatModel) {
+      sim::write_crobat_modeling_matrix(output, trials, seed);
+      std::cout << output << '\n';
+      return 0;
+    }
+
     const sim::NamedDeck* selected_deck = sim::deck_by_id(deck_id);
-    if (selected_deck == nullptr) {
+    const sim::CrobatModelingDeck* modeling_deck = modeling_variant_supplied
+        ? sim::crobat_modeling_deck_by_id(modeling_variant_id) : nullptr;
+    if (modeling_variant_supplied && modeling_deck == nullptr) {
+      throw std::runtime_error("unknown modeling variant: " + modeling_variant_id);
+    }
+    if (!modeling_variant_supplied && selected_deck == nullptr) {
       throw std::runtime_error("unknown deck: " + deck_id);
     }
+    const sim::DeckRecipe& selected_recipe = modeling_variant_supplied
+        ? modeling_deck->recipe : selected_deck->recipe;
+    const std::string& selected_id = modeling_variant_supplied
+        ? modeling_deck->id : selected_deck->id;
 
     if (mode == CliMode::SingleTrace || mode == CliMode::FindReady) {
       const std::string selected_scenario =
@@ -240,7 +382,7 @@ int main(int argc, char** argv) {
       while (found < desired) {
         std::mt19937_64 rng(candidate_seed);
         sim::TraceLog trace{true, {}};
-        sim::Engine engine(*scenario, selected_deck->recipe, rng, &trace);
+        sim::Engine engine(*scenario, selected_recipe, rng, &trace);
         const sim::TrialOutcome outcome = engine.run();
         const bool misses_required_deadline = require_ready_by > 0 &&
             (outcome.first_ready_turn == 0 ||
@@ -253,7 +395,7 @@ int main(int argc, char** argv) {
               : std::to_string(outcome.first_ready_turn);
           const std::string setup_result =
               outcome.setup_failed ? "failure" : "success";
-          std::cout << "\nDeck: " << selected_deck->id << " | Seed: "
+          std::cout << "\nDeck: " << selected_id << " | Seed: "
                     << candidate_seed << " | first-ready turn: "
                     << ready_summary << " | setup result: "
                     << setup_result << '\n';

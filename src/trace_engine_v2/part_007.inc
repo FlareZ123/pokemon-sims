@@ -1,3 +1,29 @@
+    if (card == Card::CrobatV) {
+      // Dark Asset resolves only when Crobat V is played from hand to the Bench
+      // during the turn, and no more than one Dark Asset may be used each turn:
+      // https://api.pokemontcg.io/v2/cards/swsh3-104
+      // Path to the Peak suppresses Pokémon V Abilities while it is in play:
+      // https://api.pokemontcg.io/v2/cards/swsh6-148
+      if (!ability_available_for_pokemon(Card::CrobatV)) {
+        trace("ABILITY BLOCKED", "R-PATH-01", "Crobat V Dark Asset is suppressed by the Rule Box Ability lock.");
+        return;
+      }
+      if (state_.dark_asset_used) {
+        trace("ABILITY LIMITED", "R-CROBAT-01", "Dark Asset was already used this turn.");
+        return;
+      }
+      state_.dark_asset_used = true;
+      outcome_.used_dark_asset = true;
+      std::uint64_t drawn = 0;
+      while (state_.hand.size() < 6U && !state_.deck.empty()) {
+        draw_card("Dark Asset");
+        ++drawn;
+      }
+      outcome_.dark_asset_cards_drawn += drawn;
+      trace("DARK ASSET", "R-CROBAT-01", "Drew " + std::to_string(drawn) +
+            " card(s) until the hand contained six cards.");
+      return;
+    }
     if (card == Card::TapuLeleGX) {
       if (!ability_available_for_pokemon(Card::TapuLeleGX)) {
         trace("ABILITY BLOCKED", "R-PATH-01", "Tapu Lele-GX Wonder Tag is suppressed by the Rule Box Ability lock.");

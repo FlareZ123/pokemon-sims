@@ -28,6 +28,9 @@
   bool run_forretress_combo_search_step(bool permit_payload);
 
   std::string current_deck_id() const {
+    if (total_copies(Card::CrobatV) > 0) {
+      return "modeling-crobat-variant";
+    }
     if (total_copies(Card::SecretBox) > 0 && total_copies(Card::Pineco) > 0) {
       return "regidrago-pineco";
     }
@@ -351,7 +354,7 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULES_AND_INTERACTIONS.md#deliberate-bounds
     for (const Card candidate : {Card::RegidragoV, Card::LatiasEx, Card::MawileGX,
                                  Card::Oricorio, Card::DialgaGX, Card::TapuLeleGX,
-                                 Card::Pineco}) {
+                                 Card::CrobatV, Card::Pineco}) {
       if (remove_one(state_.hand, candidate)) {
         state_.active = Pokemon{candidate, 0};
         outcome_.started_regi = candidate == Card::RegidragoV;

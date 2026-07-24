@@ -114,3 +114,7 @@ python scripts/audit_card_data.py C:\path\to\pokemon-tcg-data-master.zip --out d
 ```
 
 The script accepts either the ZIP file or an extracted repository directory. It locks its destination and replaces the JSON atomically. The generated file remains local and may be deleted after review.
+
+### Crobat V modeling identity
+
+Crobat V uses `swsh3-104`, a Basic Darkness Pokémon V with Retreat Cost 1 and Dark Asset. It is not part of either named recipe. Temporary `regidrago-shell` swap variants add one or two copies only through the separate modeling registry: https://api.pokemontcg.io/v2/cards/swsh3-104 https://github.com/FlareZ123/pokemon-sims/issues/1394

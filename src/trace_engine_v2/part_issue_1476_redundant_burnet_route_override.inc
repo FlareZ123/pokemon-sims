@@ -1,16 +1,21 @@
-  bool issue_1476_second_wonder_tag_route_available() const {
-    const bool active_vstar_route = state_.active &&
-        ((state_.active->card == Card::RegidragoVstar) ||
-         (state_.active->card == Card::RegidragoV &&
-          state_.active->entered_turn < state_.turn &&
-          hand_count(Card::RegidragoVstar) > 0));
+  bool issue_1476_should_hold_quick_ball_for_oricorio_route() const {
+    if (!deck_seen_ || !state_.active) return false;
 
-    // After the first Wonder Tag banks Crispin, Quick Ball may spend Latias ex and
-    // fetch the second physical Tapu Lele-GX. The second Wonder Tag banks the second
-    // Crispin, so turns two and three deterministically supply GGF while Blender
-    // supplies the strict-JIT payload on the ready turn:
+    const bool crispin_route_is_live = hand_count(Card::Crispin) > 0 ||
+        (state_.supporter_used && count_of(state_.discard, Card::Crispin) > 0);
+    const int reachable_grass = state_.active->grass + hand_count(Card::Grass) +
+        deck_count_after_search_started(Card::Grass);
+    const int reachable_fire = state_.active->fire + hand_count(Card::Fire) +
+        deck_count_after_search_started(Card::Fire);
+
+    // The T1 Treasure search has established K1 and banked Crispin through Wonder
+    // Tag. Quick Ball must stay in hand during T2's early Item windows because
+    // Latias ex becomes legal dynamic-DCI fuel only after the Active Regidrago V
+    // evolves in place. The later Item window then reuses the existing proven
+    // Quick Ball -> Oricorio -> Vital Dance selector:
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
     // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
@@ -18,21 +23,19 @@
     // Official Item, Ability, Bench, Supporter, evolution, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // K1 and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1476
-    return deck_seen_ && scenario_.dci == DciProfile::StrictJit &&
+    return scenario_.dci == DciProfile::StrictJit &&
         scenario_.locks == LockMode::None && state_.turn == 2 &&
         scenario_.going_first && scenario_.max_turn >= 3 && !item_locked() &&
-        active_vstar_route && supporter_allowed() &&
-        count_of(state_.discard, Card::MysteriousTreasure) > 0 &&
-        count_of(state_.discard, Card::ProfessorBurnet) > 0 &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        hand_count(Card::RegidragoVstar) > 0 &&
         hand_count(Card::QuickBall) > 0 && hand_count(Card::LatiasEx) > 0 &&
-        hand_count(Card::Crispin) > 0 &&
         hand_count(Card::BrilliantBlender) > 0 && !payload_ready() &&
-        in_play_count(Card::TapuLeleGX) == 1 && bench_space() > 0 &&
-        ability_available_for_pokemon(Card::TapuLeleGX) &&
-        deck_count_after_search_started(Card::TapuLeleGX) > 0 &&
-        deck_count_after_search_started(Card::Crispin) > 0 &&
-        deck_count_after_search_started(Card::Grass) >= 2 &&
-        deck_count_after_search_started(Card::Fire) >= 2 &&
+        crispin_route_is_live && in_play_count(Card::TapuLeleGX) == 1 &&
+        hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
+        bench_space() > 0 && ability_available_for_pokemon(Card::Oricorio) &&
+        deck_count_after_search_started(Card::Oricorio) > 0 &&
+        reachable_grass >= 2 && reachable_fire >= 1 &&
         payload_might_be_in_deck();
   }
 
@@ -43,9 +46,9 @@
     }
 
     // Mysterious Treasure pays its printed cost before the first legal inspection.
-    // The complete public route makes Burnet the lowest-DCI cost, and Tapu Lele-GX
-    // is the advancing Psychic target. Benching it immediately is a separate legal
-    // game action after the Item resolves and banks the first Crispin for turn two:
+    // Held Blender strictly covers Burnet's remaining payload role, while Tapu
+    // Lele-GX is the advancing Psychic target. Benching it after the Item resolves
+    // legally establishes Wonder Tag and banks Crispin for turn two:
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
@@ -74,41 +77,21 @@
               : "Spent redundant Professor Burnet; no Psychic or Dragon Pokemon remained after search.");
 
     if (found_tapu && !bench_from_hand(Card::TapuLeleGX, true)) {
-      throw std::logic_error("projected issue-1476 first Tapu Bench action disappeared");
+      throw std::logic_error("projected issue-1476 Tapu Bench action disappeared");
     }
     return true;
   }
 
   bool play_quick_ball(const bool permit_payload) {
-    if (!issue_1476_second_wonder_tag_route_available()) {
-      return play_quick_ball_issue1476_original(permit_payload);
+    if (issue_1476_should_hold_quick_ball_for_oricorio_route()) {
+      // Waiting preserves Quick Ball and Latias ex until evolution makes Skyliner
+      // inert. The post-evolution call delegates to the already source-backed K1
+      // Oricorio selector and pays the printed cost before the new search:
+      // https://api.pokemontcg.io/v2/cards/swsh1-179
+      // https://api.pokemontcg.io/v2/cards/sv8-76
+      // https://api.pokemontcg.io/v2/cards/sm2-55
+      // https://github.com/FlareZ123/pokemon-sims/issues/1476
+      return false;
     }
-
-    // Active Regidrago has replaced Latias ex's movement role. Quick Ball spends
-    // that now-inert singleton, searches the second physical Tapu Lele-GX, and
-    // Benches it so Wonder Tag banks the second Crispin before the T2 Supporter play:
-    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
-    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
-    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
-    // Official Item, discard, search, Bench, and Ability procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // Dynamic DCI and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1476
-    remove_one(state_.hand, Card::QuickBall);
-    state_.discard.push_back(Card::QuickBall);
-    if (!discard_from_hand(Card::LatiasEx, "Quick Ball cost",
-                           "R-QB-01; P-DCI-01")) {
-      throw std::logic_error("projected issue-1476 Latias cost disappeared");
-    }
-    record_deck_search_knowledge("Quick Ball");
-    if (!move_deck_to_hand(Card::TapuLeleGX)) {
-      throw std::logic_error("projected issue-1476 second Tapu target disappeared");
-    }
-    shuffle(state_.deck);
-    trace("PLAY ITEM", "R-QB-01; R-GAME-ITEM; P-DCI-01",
-          "Discarded redundant Latias ex and searched the second Tapu Lele-GX.");
-    if (!bench_from_hand(Card::TapuLeleGX, true)) {
-      throw std::logic_error("projected issue-1476 second Tapu Bench action disappeared");
-    }
-    return true;
+    return play_quick_ball_issue1476_original(permit_payload);
   }

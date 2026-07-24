@@ -304,7 +304,12 @@
 #include "trace_engine_v2/part_issue_1235_oricorio_treasure_tapu_override.inc"
 #undef play_mysterious_treasure
 #undef play_quick_ball
+#define play_quick_ball play_quick_ball_issue1476_original
+#define play_mysterious_treasure play_mysterious_treasure_issue1476_original
 #include "trace_engine_v2/part_issue_1356_fss_treasure_energy_override.inc"
+#undef play_mysterious_treasure
+#undef play_quick_ball
+#include "trace_engine_v2/part_issue_1476_redundant_burnet_route_override.inc"
 #include "trace_engine_v2/part_issue_1437_crispin_trace_override.inc"
 #define trace trace_issue_1437_crispin_provenance
 #include "trace_engine_v2/part_issue_1118_secret_box.inc"
@@ -316,4 +321,4 @@
 #undef run_turn
 #include "trace_engine_v2/part_014c_latias_bench_override.inc"
 #include "trace_engine_v2/part_015.inc"
-#include "trace_engine_v2/part_016.inc"
+#include "trace_engine_v2/part_016.inc"}

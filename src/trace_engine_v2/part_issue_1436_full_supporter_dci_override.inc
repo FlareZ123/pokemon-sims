@@ -91,6 +91,54 @@
         issue_1419_possible_payload_count() > future_turns;
   }
 
+  bool issue_1476_redundant_burnet_route_available(
+      const std::optional<Card> excluded_from_cost) const {
+    if (!excluded_from_cost || *excluded_from_cost != Card::MysteriousTreasure) {
+      return false;
+    }
+
+    // Held Brilliant Blender strictly covers Professor Burnet's remaining modeled
+    // deck-payload role. The public T1 hand may therefore spend Burnet to establish
+    // K1 through Mysterious Treasure, then use the inspected Oricorio, Quick Ball,
+    // Tapu Lele-GX, and Crispin line to complete GGF on T2. Every irreversible cost
+    // precedes the first legal inspection, so this gate uses only fixed-list K0
+    // possibility accounting and preserves two required Bench slots. A two-turn
+    // horizon is sufficient because the route reaches readiness on T2:
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core first-turn, Item, Supporter, Ability, Bench, evolution, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Dynamic DCI and K0 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
+    // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1476
+    return scenario_.dci == DciProfile::StrictJit &&
+        scenario_.locks == LockMode::None && state_.turn == 1 &&
+        scenario_.going_first && scenario_.max_turn >= 2 && !item_locked() &&
+        state_.active && state_.active->card == Card::RegidragoV &&
+        hand_count(Card::RegidragoVstar) > 0 &&
+        hand_count(Card::MysteriousTreasure) > 0 &&
+        hand_count(Card::QuickBall) > 0 && hand_count(Card::LatiasEx) > 0 &&
+        hand_count(Card::ProfessorBurnet) > 0 &&
+        hand_count(Card::BrilliantBlender) > 0 && !payload_ready() &&
+        hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
+        hand_count(Card::Crispin) == 0 &&
+        hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
+        bench_space() >= 2 &&
+        ability_available_for_pokemon(Card::TapuLeleGX) &&
+        ability_available_for_pokemon(Card::Oricorio) &&
+        issue_1419_publicly_possible_count(Card::TapuLeleGX) >= 1 &&
+        issue_1419_publicly_possible_count(Card::Crispin) >= 1 &&
+        issue_1419_publicly_possible_count(Card::Oricorio) >= 1 &&
+        issue_1419_publicly_possible_count(Card::Grass) >= 2 &&
+        issue_1419_publicly_possible_count(Card::Fire) >= 1 &&
+        issue_1419_possible_payload_count() > 0;
+  }
+
   std::optional<Card> choose_discard(
       const bool permit_payload, const bool flex_fodder,
       const bool allow_heavy_ball = true,
@@ -100,6 +148,17 @@
         permit_payload, flex_fodder, allow_heavy_ball, excluded_from_cost,
         allow_redundant_payload);
     if (ordinary) return ordinary;
+
+    if (issue_1476_redundant_burnet_route_available(excluded_from_cost)) {
+      // Blender dominates Burnet's only remaining payload axis, while spending
+      // Burnet unlocks the confirmed Oricorio -> Tapu Lele-GX -> Crispin route:
+      // https://github.com/FlareZ123/pokemon-sims/issues/1476
+      // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+      // https://api.pokemontcg.io/v2/cards/sv8-164
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://api.pokemontcg.io/v2/cards/sm2-55
+      return Card::ProfessorBurnet;
+    }
 
     const int public_regidrago_lines =
         in_play_count(Card::RegidragoV) + in_play_count(Card::RegidragoVstar);

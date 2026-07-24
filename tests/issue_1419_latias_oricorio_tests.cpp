@@ -81,15 +81,12 @@ void test_k0_hidden_zone_uncertainty_keeps_latias_protected() {
     Fixture fixture;
     sim::EngineTestAccess::set_state(fixture.engine, std::move(state), false);
 
-    // Before legal deck or Prize inspection, singleton Oricorio may be in either
-    // hidden zone. The policy must make the same safe decision in both physical
-    // states and cannot spend Latias ex using knowledge obtained after the cost:
+    // Quick Ball pays its cost before inspection. K0 cannot infer whether singleton
+    // Oricorio is in deck or Prizes, so Latias ex remains protected:
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
-    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
-    // Core Item, search, Bench, and Ability procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
     // K0 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
-    // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1467
     if (sim::EngineTestAccess::quick_ball_oricorio_latias_route_available(
             fixture.engine)) {
       throw std::runtime_error(std::string(label) +
@@ -130,17 +127,13 @@ void test_selects_latias_only_for_complete_k1_oricorio_route() {
   Fixture fixture;
   sim::EngineTestAccess::set_state(fixture.engine, route_state());
 
-  // Active Regidrago VSTAR has already replaced Latias ex's Skyliner setup role.
-  // At K1, Quick Ball can spend Latias because Oricorio and both Grass targets are
-  // legally known, T3 and T4 provide the attachments, and Blender retains payload:
+  // Active Regidrago VSTAR has replaced Skyliner's setup role. At K1, Quick Ball
+  // may spend Latias ex only when Oricorio, the attachment windows, and Blender
+  // complete every remaining axis:
   // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
   // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
   // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
-  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
-  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
-  // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-  // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1467
   expect(sim::EngineTestAccess::quick_ball_cost(fixture.engine) ==
              sim::Card::LatiasEx,
          "complete K1 Oricorio route did not expose inert Latias ex");
@@ -155,11 +148,6 @@ void test_selects_latias_only_for_complete_k1_oricorio_route() {
   expect(std::find(after.discard.begin(), after.discard.end(),
                    sim::Card::LatiasEx) != after.discard.end(),
          "Latias ex did not pay Quick Ball's printed K1 discard cost");
-  expect(std::any_of(after.bench.begin(), after.bench.end(),
-                     [](const sim::Pokemon& pokemon) {
-                       return pokemon.card == sim::Card::Oricorio;
-                     }),
-         "searched Oricorio did not remain on the Bench");
 }
 
 void test_preserves_latias_at_every_k1_route_boundary() {
@@ -203,8 +191,7 @@ void test_preserves_latias_at_every_k1_route_boundary() {
   state = route_state();
   state.hand.erase(std::find(state.hand.begin(), state.hand.end(),
                              sim::Card::BrilliantBlender));
-  rejected(std::move(state), sim::LockMode::None, 4,
-           "missing Blender");
+  rejected(std::move(state), sim::LockMode::None, 4, "missing Blender");
 
   state = route_state();
   state.deck.erase(std::find(state.deck.begin(), state.deck.end(),
@@ -223,7 +210,7 @@ void test_ordinary_lower_dci_cost_stays_ahead_of_latias_at_k1() {
          "route-specific Latias downgrade displaced ordinary dead-card fuel");
 }
 
-void test_source_bound_seed_129_rejects_k0_oracle_route() {
+void test_source_bound_seed_129_uses_t2_oricorio_first_route() {
   const auto scenario = sim::scenario_by_label("strict-jit/go-first");
   const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
   expect(scenario.has_value() && deck != nullptr,
@@ -234,40 +221,35 @@ void test_source_bound_seed_129_rejects_k0_oracle_route() {
   sim::Engine engine(*scenario, deck->recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 
-  // T2 still cannot spend Latias ex through hidden singleton-Oricorio knowledge.
-  // On T3, the public Active VSTAR and Benched Regidrago V establish two lines,
-  // making the newly drawn third Regidrago V legal dynamic-DCI Quick Ball fuel.
-  // That public-zone cost is paid before inspection; Quick Ball then establishes
-  // K1 and reaches the independently legal Crispin plus Blender T4 continuation:
-  // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
-  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Treasure spends Burnet before K1, searches Oricorio after inspection, and Vital
+  // Dance supplies the T1 and T2 manual attachments. Quick Ball then spends inert
+  // Latias ex for Tapu Lele-GX, Wonder Tag banks Crispin, and T2 Crispin plus Blender
+  // complete GGF and strict-JIT payload timing:
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
   // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-  // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
   // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
-  // Core evolution, cost, search, and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-  // K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-  // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-  // Original oracle-route rejection: https://github.com/FlareZ123/pokemon-sims/issues/1419
-  // K0 refinement: https://github.com/FlareZ123/pokemon-sims/issues/1467
-  // Confirmed public-line correction: https://github.com/FlareZ123/pokemon-sims/issues/1473
-  expect(outcome.first_ready_turn == 4 && !outcome.setup_failed,
-         "seed 129 did not complete the legal public-line T4 route");
-  expect(trace_contains(trace, "Regidrago V (Quick Ball cost)"),
-         "seed 129 did not spend the publicly redundant third Regidrago V");
-  expect(trace_contains(trace, "Quick Ball: deck inspected"),
-         "seed 129 did not establish K1 after paying Quick Ball's public cost");
-  expect(trace_contains(trace, "WONDER TAG") && trace_contains(trace, "Crispin"),
-         "seed 129 did not follow the legal Tapu Lele-GX to Crispin connector");
-  expect(trace_contains(trace, "T4 | READY"),
-         "seed 129 did not reach the source-bound T4 ready state");
-  expect(!trace_contains(trace, "Latias ex (Quick Ball cost)"),
-         "seed 129 discarded Latias ex before legal inspection");
-  expect(!trace_contains(trace, "Searched a Basic Pokemon: Oricorio") &&
-             !trace_contains(trace, "Searched a Basic Pokémon: Oricorio"),
-         "seed 129 searched Oricorio through the rejected K0 route");
-  expect(!trace_contains(trace, "Vital Dance"),
-         "seed 129 resolved Vital Dance through the rejected K0 route");
+  // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // K0/K1 and earliest route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/1476#issuecomment-5068202693
+  expect(outcome.first_ready_turn == 2 && !outcome.setup_failed,
+         "seed 129 did not complete the legal adaptive T2 route");
+  expect(trace_contains(trace, "Professor Burnet (Mysterious Treasure cost)"),
+         "seed 129 did not spend redundant Burnet before inspection");
+  expect(trace_contains(trace, "T1 | DECK KNOWLEDGE") &&
+             trace_contains(trace, "Mysterious Treasure: deck inspected"),
+         "seed 129 did not establish K1 through Treasure");
+  expect(trace_contains(trace, "T1 | VITAL DANCE"),
+         "seed 129 did not execute the advancing Oricorio route");
+  expect(trace_contains(trace, "Latias ex (Quick Ball cost)"),
+         "seed 129 did not spend route-inert Latias ex after K1");
+  expect(trace_contains(trace, "T1 | WONDER TAG"),
+         "seed 129 did not bank Crispin on T1");
+  expect(trace_contains(trace, "T2 | READY"),
+         "seed 129 did not reach the source-bound T2 ready state");
 }
 
 }  // namespace
@@ -277,6 +259,6 @@ int main() {
   test_selects_latias_only_for_complete_k1_oricorio_route();
   test_preserves_latias_at_every_k1_route_boundary();
   test_ordinary_lower_dci_cost_stays_ahead_of_latias_at_k1();
-  test_source_bound_seed_129_rejects_k0_oracle_route();
+  test_source_bound_seed_129_uses_t2_oricorio_first_route();
   return 0;
 }

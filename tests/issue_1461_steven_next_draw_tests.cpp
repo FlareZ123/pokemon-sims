@@ -68,6 +68,8 @@ void expect_crispin_admission(const int grass_count, const int fire_count,
   const sim::Scenario scenario{"issue-1461-crispin-admission",
                                sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
+  // Engine retains this recipe by reference, so each fixture owns it for the
+  // entire decision under test.
   const sim::DeckRecipe recipe = sim::pineco_recipe();
   std::mt19937_64 rng(1461 + static_cast<std::uint64_t>(grass_count * 100 +
                                                        fire_count * 10 +

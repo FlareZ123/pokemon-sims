@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: issue-1514-public-refinement-${{ github.event.pull_request.number }}
@@ -14,6 +14,8 @@ concurrency:
 jobs:
   refine-validate-and-commit:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/issue-1514-k0-crispin'
+    permissions:
+      contents: write
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -57,6 +59,7 @@ jobs:
           git fetch origin main
           git checkout origin/main -- .github/workflows/ci.yml
           rm .github/issue-1514-public-refinement.py
+          rm -f .github/issue-1514-public-refinement-trigger.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .github/workflows/ci.yml src/trace_engine_v2/part_issue_991_wonder_tag_burnet_legacy_star_override.inc tests/issue_1514_k0_duplicate_crispin_tests.cpp results/simulation_results.csv results/multi_deck_comparison.csv

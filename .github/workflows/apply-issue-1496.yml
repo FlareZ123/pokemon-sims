@@ -1,0 +1,51 @@
+name: Apply issue 1496 Crobat plan fix
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1496-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  apply-and-validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/issue-1496-crobat-sim-plan'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Apply the confirmed Crobat planning fix
+        run: python scripts/apply_issue_1496.py
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run focused documentation contract
+        run: ./build/regidrago_unified_tests issue_1496_sim_plan_crobat_contract_tests
+      - name: Run three reviewed simulate-this audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit/go-second --seed 1 --require-ready-by 5
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Commit validated documentation contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm scripts/apply_issue_1496.py .github/workflows/apply-issue-1496.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Document the supported Crobat modeling surface (#1496)"
+          git push origin HEAD:fix/issue-1496-crobat-sim-plan

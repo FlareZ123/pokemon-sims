@@ -11,15 +11,20 @@
 namespace sim {
 
 struct EngineTestAccess {
-  static void set_state(Engine& engine, State state) {
+  static void set_state(Engine& engine, State state,
+                        const bool deck_seen = false) {
     engine.state_ = std::move(state);
-    engine.deck_seen_ = false;
-    engine.prizes_revealed_ = false;
+    engine.deck_seen_ = deck_seen;
+    engine.prizes_revealed_ = deck_seen;
   }
 
   static std::optional<Card> choose_discard(const Engine& engine) {
     return engine.choose_discard(
         false, false, true, Card::MysteriousTreasure, false);
+  }
+
+  static bool t2_route_available(const Engine& engine) {
+    return engine.issue_1476_t2_oricorio_first_route_available_after_search_started();
   }
 };
 
@@ -60,6 +65,23 @@ sim::State public_t1_route_state() {
   return state;
 }
 
+sim::State inspected_t1_route_state() {
+  sim::State state = public_t1_route_state();
+  state.hand.erase(std::find(state.hand.begin(), state.hand.end(),
+                             sim::Card::MysteriousTreasure));
+  state.hand.erase(std::find(state.hand.begin(), state.hand.end(),
+                             sim::Card::ProfessorBurnet));
+  state.discard = {sim::Card::MysteriousTreasure, sim::Card::ProfessorBurnet};
+  state.deck = {sim::Card::Oricorio, sim::Card::TapuLeleGX, sim::Card::Crispin,
+                sim::Card::Grass, sim::Card::Grass, sim::Card::Grass,
+                sim::Card::Fire, sim::Card::Fire, sim::Card::Dragapult,
+                sim::Card::MegaDragonite, sim::Card::GoodraVstar};
+  state.prizes = {sim::Card::EarthenVessel, sim::Card::ForestSealStone,
+                  sim::Card::Lusamine, sim::Card::Arven,
+                  sim::Card::Gladion, sim::Card::RegidragoV};
+  return state;
+}
+
 std::optional<sim::Card> choose_from_state(
     const sim::LockMode lock, sim::State state, const std::uint64_t seed) {
   const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
@@ -74,18 +96,13 @@ std::optional<sim::Card> choose_from_state(
 
 void test_blender_dominates_burnet_on_complete_public_route() {
   // Held Blender covers Burnet's only modeled deck-payload function. The public
-  // Tapu Lele-GX -> Crispin connector, adaptive K1 Oricorio contingency, in-place
-  // evolution, Energy inventory, and two open Bench slots make Burnet legal fuel:
+  // Oricorio -> Quick Ball -> Tapu Lele-GX -> Crispin route and in-place evolution
+  // make Burnet legal Treasure fuel before any hidden-zone inspection:
   // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-  // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
-  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
-  // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
-  // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
-  // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-  // Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/1476
+  // Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/1476#issuecomment-5068202693
   expect(choose_from_state(sim::LockMode::None, public_t1_route_state(), 147601) ==
              sim::Card::ProfessorBurnet,
          "The complete public T1 route did not expose redundant Burnet as Treasure fuel.");
@@ -108,7 +125,7 @@ void test_route_boundaries_keep_burnet_protected() {
   no_oricorio_possible.discard.push_back(sim::Card::Oricorio);
   expect(!choose_from_state(sim::LockMode::None, std::move(no_oricorio_possible),
                             147604),
-         "Burnet became discardable without a publicly possible Energy contingency.");
+         "Burnet became discardable without a publicly possible Energy connector.");
 
   sim::State crowded_bench = public_t1_route_state();
   crowded_bench.bench.push_back(sim::Pokemon{sim::Card::LatiasEx, 0});
@@ -117,17 +134,65 @@ void test_route_boundaries_keep_burnet_protected() {
   expect(!choose_from_state(sim::LockMode::None, std::move(crowded_bench), 147605),
          "Burnet became discardable without two open Bench slots.");
 
-  // Item lock prevents both the initiating Treasure and the future Blender, so
-  // Burnet retains its singleton protection:
+  // Item lock prevents Treasure, Quick Ball, and Blender:
   // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
   // https://api.pokemontcg.io/v2/cards/sv8-164
-  // https://github.com/FlareZ123/pokemon-sims/issues/1476
   expect(!choose_from_state(sim::LockMode::FullItem, public_t1_route_state(),
                             147606),
          "Item lock incorrectly exposed Burnet as discard fuel.");
 }
 
-void test_seed_129_reaches_t3_and_holds_unneeded_contingency() {
+void test_k1_t2_route_requires_every_inspected_axis() {
+  const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
+  expect(deck != nullptr, "The registered shell recipe is unavailable.");
+  const sim::Scenario scenario{
+      "issue-1476-k1", sim::DciProfile::StrictJit,
+      sim::LockMode::None, true, 2};
+
+  const auto route_available = [&](sim::State state, const std::uint64_t seed) {
+    std::mt19937_64 rng(seed);
+    sim::Engine engine(scenario, deck->recipe, rng);
+    sim::EngineTestAccess::set_state(engine, std::move(state), true);
+    return sim::EngineTestAccess::t2_route_available(engine);
+  };
+
+  expect(route_available(inspected_t1_route_state(), 147610),
+         "The complete inspected T2 route was rejected.");
+
+  const auto rejected_without = [&](const sim::Card card, const char* message,
+                                    const std::uint64_t seed) {
+    sim::State state = inspected_t1_route_state();
+    state.deck.erase(std::find(state.deck.begin(), state.deck.end(), card));
+    expect(!route_available(std::move(state), seed), message);
+  };
+
+  rejected_without(sim::Card::Oricorio,
+                   "The route survived without Oricorio in the inspected deck.",
+                   147611);
+  rejected_without(sim::Card::TapuLeleGX,
+                   "The route survived without Tapu Lele-GX in the inspected deck.",
+                   147612);
+  rejected_without(sim::Card::Crispin,
+                   "The route survived without Crispin in the inspected deck.",
+                   147613);
+  rejected_without(sim::Card::Grass,
+                   "The route survived with insufficient inspected Grass Energy.",
+                   147614);
+  rejected_without(sim::Card::Fire,
+                   "The route survived with insufficient inspected Fire Energy.",
+                   147615);
+
+  sim::State one_payload = inspected_t1_route_state();
+  one_payload.deck.erase(std::find(one_payload.deck.begin(), one_payload.deck.end(),
+                                   sim::Card::MegaDragonite));
+  one_payload.deck.erase(std::find(one_payload.deck.begin(), one_payload.deck.end(),
+                                   sim::Card::GoodraVstar));
+  expect(!route_available(std::move(one_payload), 147616),
+         "The route failed to reserve a Blender payload against the T2 draw.");
+}
+
+void test_seed_129_reaches_t2_through_oricorio_first() {
   const auto scenario = sim::scenario_by_label("strict-jit/go-first");
   const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
   expect(scenario.has_value() && deck != nullptr,
@@ -138,40 +203,38 @@ void test_seed_129_reaches_t3_and_holds_unneeded_contingency() {
   sim::Engine engine(*scenario, deck->recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 
-  // Burnet pays Treasure's cost from the public K0 hand. Treasure establishes K1
-  // and Tapu Lele-GX banks Crispin. The T2 Grass draw plus Crispin establishes GG,
-  // so Quick Ball, Latias ex, Oricorio, and Vital Dance retain zero incremental
-  // value for this exact route and remain unused. T3 Fire plus Blender completes it:
-  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-  // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
-  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Burnet pays Treasure's cost at K0. The resolved Treasure establishes K1 and
+  // searches Oricorio. Vital Dance, one T1 attachment, Quick Ball for Tapu Lele-GX,
+  // Wonder Tag for Crispin, T2 evolution, the second manual attachment, Crispin,
+  // and same-turn Blender complete strict-JIT readiness on T2:
+  // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
   // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
   // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
-  // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
   // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
   // K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-  // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-  // Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/1476
-  expect(outcome.first_ready_turn == 3,
-         "Seed 129 did not improve from failure through T5 to strict-JIT T3 readiness.");
+  // Earliest route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/1476#issuecomment-5068202693
+  expect(outcome.first_ready_turn == 2 && !outcome.setup_failed,
+         "Seed 129 did not complete the legal strict-JIT T2 route.");
   expect(trace_contains(trace, "Professor Burnet (Mysterious Treasure cost)"),
-         "Seed 129 did not spend redundant Burnet on the initiating Treasure.");
-  expect(trace_contains(trace, "T1 | WONDER TAG") &&
-             !trace_contains(trace, "T2 | WONDER TAG"),
-         "Seed 129 did not preserve the single advancing Wonder Tag connector.");
-  expect(!trace_contains(trace, "Quick Ball cost") &&
-             !trace_contains(trace, "Vital Dance"),
-         "Seed 129 spent the unnecessary K1 Energy contingency.");
-  expect(trace_contains(trace, "T3 | READY"),
-         "Seed 129 did not complete GGF and the same-turn Blender payload on T3.");
+         "Seed 129 did not spend redundant Burnet before inspection.");
+  expect(trace_contains(trace, "T1 | VITAL DANCE"),
+         "Seed 129 did not use the inspected Oricorio Energy route.");
+  expect(trace_contains(trace, "Latias ex (Quick Ball cost)"),
+         "Seed 129 did not spend route-inert Latias ex after K1.");
+  expect(trace_contains(trace, "T1 | WONDER TAG"),
+         "Seed 129 did not bank Crispin on T1.");
+  expect(trace_contains(trace, "T2 | READY"),
+         "Seed 129 did not complete GGF and the same-turn payload on T2.");
 
   const std::size_t cost = trace_index(
       trace, "Professor Burnet (Mysterious Treasure cost)");
   const std::size_t knowledge = trace_index(
       trace, "Mysterious Treasure: deck inspected");
   expect(cost < knowledge,
-         "Seed 129 used deck knowledge before paying Mysterious Treasure's cost.");
+         "Seed 129 used deck knowledge before paying Treasure's cost.");
 }
 
 }  // namespace
@@ -179,6 +242,7 @@ void test_seed_129_reaches_t3_and_holds_unneeded_contingency() {
 int main() {
   test_blender_dominates_burnet_on_complete_public_route();
   test_route_boundaries_keep_burnet_protected();
-  test_seed_129_reaches_t3_and_holds_unneeded_contingency();
+  test_k1_t2_route_requires_every_inspected_axis();
+  test_seed_129_reaches_t2_through_oricorio_first();
   return 0;
 }

@@ -15,9 +15,24 @@
       return false;
     }
 
-    const int grass_in_deck = count_of(state_.deck, Card::Grass);
-    const int basic_energy_in_deck =
-        grass_in_deck + count_of(state_.deck, Card::Fire);
+    const auto remaining_energy_count = [this](const Card card) {
+      if (deck_seen_ || prizes_revealed_) return count_of(state_.deck, card);
+      const int publicly_known = hand_count(card) + count_of(state_.discard, card) +
+          attached_public_count(card);
+      // At K0, exact deck-versus-Prize placement is hidden. Use only the fixed-list
+      // count minus public zones, so identical public states cannot make different
+      // irreversible Vessel and Dragon-payload decisions. At K1, the branch above
+      // uses the legally inspected remaining deck exactly:
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Core deck-search and Prize procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // K0 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
+      // Hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1471
+      return std::max(0, total_copies(card) - publicly_known);
+    };
+    const int grass_remaining = remaining_energy_count(Card::Grass);
+    const int basic_energy_remaining =
+        grass_remaining + remaining_energy_count(Card::Fire);
     // Preserve Vessel and the held Dragon together when T2 has established GF and
     // Latias can promote the Benched VSTAR. On T3, Vessel discards that Dragon during
     // the strict-JIT ready turn, searches the final Grass, and leaves the Supporter
@@ -30,7 +45,8 @@
     // Strict JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/1009
-    return grass_in_deck >= 1 && basic_energy_in_deck >= 2;
+    // K0 hidden-inventory correction: https://github.com/FlareZ123/pokemon-sims/issues/1471
+    return grass_remaining >= 1 && basic_energy_remaining >= 2;
   }
 
   bool play_earthen_vessel(const bool permit_payload) {

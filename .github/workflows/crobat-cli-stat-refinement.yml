@@ -37,12 +37,57 @@ jobs:
         run: |
           set -euo pipefail
           python - <<'PY'
+          from __future__ import annotations
+
+          import os
+          import tempfile
+          from contextlib import contextmanager
           from pathlib import Path
+          from typing import Iterator, TextIO
+
+
+          @contextmanager
+          def locked_path(path: Path) -> Iterator[None]:
+              lock_path = path.with_name(path.name + ".lock")
+              lock_path.parent.mkdir(parents=True, exist_ok=True)
+              with lock_path.open("a+", encoding="utf-8") as handle:
+                  import fcntl
+
+                  fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+                  try:
+                      yield
+                  finally:
+                      fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+              lock_path.unlink(missing_ok=True)
+
+
+          def atomic_write(path: Path, content: str) -> None:
+              path.parent.mkdir(parents=True, exist_ok=True)
+              with locked_path(path):
+                  with tempfile.NamedTemporaryFile(
+                      mode="w",
+                      encoding="utf-8",
+                      newline="\n",
+                      dir=path.parent,
+                      delete=False,
+                  ) as handle:
+                      handle.write(content)
+                      temporary = Path(handle.name)
+                  os.replace(temporary, path)
+
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise RuntimeError(f"{label}: expected one anchor, found {count}")
+              return text.replace(old, new, 1)
+
 
           source_path = Path("src/trace_engine_v2/part_016.inc")
           source = source_path.read_text(encoding="utf-8")
-          namespace_needle = "\n}  // namespace sim\n\n#ifndef REGIDRAGO_SIM_NO_MAIN\n"
-          helpers = """
+          namespace_anchor = "\n}  // namespace sim\n\n#ifndef REGIDRAGO_SIM_NO_MAIN\n"
+          namespace_replacement = """
+
           constexpr std::string_view crobat_model_default_output() {
             return "results/crobat_variant_model.csv";  // Reproduction contract: https://github.com/FlareZ123/pokemon-sims/issues/1394
           }
@@ -55,116 +100,124 @@ jobs:
 
           #ifndef REGIDRAGO_SIM_NO_MAIN
           """
-          if source.count(namespace_needle) != 1:
-              raise RuntimeError("Crobat namespace insertion point changed")
-          source = source.replace(namespace_needle, "\n" + helpers, 1)
-
-          mode_needle = """  const CliMode mode = self_test ? CliMode::SelfTest :
-              (model_crobat ? CliMode::CrobatModel :
-               (find_ready_supplied ? CliMode::FindReady :
-                (simulate_this ? CliMode::SingleTrace : CliMode::Aggregate)));
-          """
-          mode_replacement = mode_needle + """
+          source = replace_once(
+              source,
+              namespace_anchor,
+              namespace_replacement,
+              "Crobat helper insertion",
+          )
+          mode_anchor = "        (simulate_this ? CliMode::SingleTrace : CliMode::Aggregate)));\n"
+          mode_block = """
             if (mode == CliMode::CrobatModel) {
-              // Keep the modeling mode away from canonical output and reproduce its registered matrix seed:
+              // Keep modeling output separate from the canonical setup baseline and reproduce its registered seed:
               // https://github.com/FlareZ123/pokemon-sims/issues/1394
               // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#model-crobat-v-swaps
               if (!output_supplied) output = std::string(sim::crobat_model_default_output());
               if (!seed_supplied) seed = sim::crobat_model_default_seed();
             }
           """
-          if source.count(mode_needle) != 1:
-              raise RuntimeError("CLI mode insertion point changed")
-          source = source.replace(mode_needle, mode_replacement, 1)
-
-          header_old = "dark_asset_use_pct,avg_dark_asset_draw\\n"
-          header_new = "dark_asset_use_pct,avg_dark_asset_cards_drawn_per_game_using\\n"
-          if source.count(header_old) != 1:
-              raise RuntimeError("Crobat CSV header changed")
-          source = source.replace(header_old, header_new, 1)
-          average_needle = """      const double average_draw = aggregate.dark_asset == 0 ? 0.0 :
-                  static_cast<double>(aggregate.dark_asset_cards_drawn) /
-                  static_cast<double>(aggregate.dark_asset);
-          """
-          average_replacement = """      // aggregate.dark_asset counts games with one or more uses; cards may accumulate
-              // across turns in two-copy variants: https://github.com/FlareZ123/pokemon-sims/issues/1394
-              const double average_draw = aggregate.dark_asset == 0 ? 0.0 :
-                  static_cast<double>(aggregate.dark_asset_cards_drawn) /
-                  static_cast<double>(aggregate.dark_asset);
-          """
-          if source.count(average_needle) != 1:
-              raise RuntimeError("Crobat average calculation changed")
-          source = source.replace(average_needle, average_replacement, 1)
-          source_path.write_text(source, encoding="utf-8")
+          source = replace_once(
+              source,
+              mode_anchor,
+              mode_anchor + mode_block,
+              "Crobat CLI default insertion",
+          )
+          source = replace_once(
+              source,
+              "dark_asset_use_pct,avg_dark_asset_draw\\n",
+              "dark_asset_use_pct,avg_dark_asset_cards_drawn_per_game_using\\n",
+              "Crobat CSV metric label",
+          )
+          average_anchor = "      const double average_draw = aggregate.dark_asset == 0 ? 0.0 :\n"
+          average_comment = (
+              "      // aggregate.dark_asset counts games with at least one use; cards may accumulate\n"
+              "      // across turns in two-copy variants: https://github.com/FlareZ123/pokemon-sims/issues/1394\n"
+          )
+          source = replace_once(
+              source,
+              average_anchor,
+              average_comment + average_anchor,
+              "Crobat metric denominator comment",
+          )
+          atomic_write(source_path, source)
 
           test_path = Path("tests/issue_1394_crobat_v_model_tests.cpp")
           test = test_path.read_text(encoding="utf-8")
-          test_needle = """  if (sim::deck_registry().size() != 2U ||
-              sim::deck_by_id("crobat1-erika") != nullptr ||
-              sim::crobat_modeling_deck_by_id("crobat1-erika") == nullptr) {
-            throw std::runtime_error("Crobat modeling variants leaked into the named registry.");
-          }
-          """
-          test_replacement = test_needle + """  // Safe defaults keep modeling output separate and reproduce the issue matrix:
+          test_anchor = "\n}\n\nvoid test_direct_bench_draws_to_six_and_once_per_turn()"
+          test_defaults = """
+            // Safe defaults preserve the canonical baseline and reproduce the registered matrix:
             // https://github.com/FlareZ123/pokemon-sims/issues/1394
             if (sim::crobat_model_default_output() != "results/crobat_variant_model.csv" ||
                 sim::crobat_model_default_seed() != 20260723ULL) {
               throw std::runtime_error("Crobat modeling defaults do not match the reproduction contract.");
             }
-          """
-          if test.count(test_needle) != 1:
-              raise RuntimeError("Crobat identity test insertion point changed")
-          test_path.write_text(test.replace(test_needle, test_replacement, 1), encoding="utf-8")
+
+          }
+
+          void test_direct_bench_draws_to_six_and_once_per_turn()"""
+          test = replace_once(
+              test,
+              test_anchor,
+              "\n" + test_defaults,
+              "Crobat default regression insertion",
+          )
+          atomic_write(test_path, test)
 
           script_path = Path("scripts/update_crobat_modeling_docs.py")
           script = script_path.read_text(encoding="utf-8")
-          if script.count('row["avg_dark_asset_draw"]') != 1:
-              raise RuntimeError("Crobat report field changed")
-          script = script.replace(
+          script = replace_once(
+              script,
               'row["avg_dark_asset_draw"]',
               'row["avg_dark_asset_cards_drawn_per_game_using"]',
-              1,
+              "Crobat report CSV field",
           )
-          old_table = "| Variant | Cuts | Crobat | Mean ΔT2 | Mean ΔT3 | Mean ΔT4 | T3 scenarios improved | Dark Asset use | Mean cards drawn |"
-          new_table = "| Variant | Cuts | Crobat | Mean ΔT2 | Mean ΔT3 | Mean ΔT4 | T3 scenarios improved | Games using Dark Asset | Mean cards drawn per using game |"
-          if script.count(old_table) != 1:
-              raise RuntimeError("Crobat report table header changed")
-          script = script.replace(old_table, new_table, 1)
-          paragraph_needle = """            "Those discrete losses remain relevant even when a setup percentage is close.",
-                  "",
-                  "## Paired all-scenario summary",
-          """
-          paragraph_replacement = """            "Those discrete losses remain relevant even when a setup percentage is close.",
-                  "",
-                  "Dark Asset utilization is the percentage of games with at least one legal use. The draw figure is "
-                  "the total cards drawn across all Dark Asset resolutions divided by games with at least one use, "
-                  "so a two-copy variant may include uses on different turns: https://github.com/FlareZ123/pokemon-sims/issues/1394",
-                  "",
-                  "## Paired all-scenario summary",
-          """
-          if script.count(paragraph_needle) != 1:
-              raise RuntimeError("Crobat report paragraph insertion point changed")
-          script_path.write_text(script.replace(paragraph_needle, paragraph_replacement, 1), encoding="utf-8")
+          script = replace_once(
+              script,
+              "| Variant | Cuts | Crobat | Mean ΔT2 | Mean ΔT3 | Mean ΔT4 | T3 scenarios improved | Dark Asset use | Mean cards drawn |",
+              "| Variant | Cuts | Crobat | Mean ΔT2 | Mean ΔT3 | Mean ΔT4 | T3 scenarios improved | Games using Dark Asset | Mean cards drawn per using game |",
+              "Crobat report table label",
+          )
+          heading_anchor = '            "## Paired all-scenario summary",\n'
+          metric_explanation = (
+              '            "Dark Asset utilization is the percentage of games with at least one legal use. "\n'
+              '            "The draw figure is total cards drawn across every Dark Asset resolution divided by "\n'
+              '            "games with at least one use, so two-copy variants may include uses on different turns: "\n'
+              '            "https://github.com/FlareZ123/pokemon-sims/issues/1394",\n'
+              '            "",\n'
+          )
+          script = replace_once(
+              script,
+              heading_anchor,
+              metric_explanation + heading_anchor,
+              "Crobat report metric explanation",
+          )
+          atomic_write(script_path, script)
 
           csv_path = Path("results/crobat_variant_model.csv")
           csv_text = csv_path.read_text(encoding="utf-8")
-          csv_old = "dark_asset_use_pct,avg_dark_asset_draw\n"
-          csv_new = "dark_asset_use_pct,avg_dark_asset_cards_drawn_per_game_using\n"
-          if csv_text.count(csv_old) != 1:
-              raise RuntimeError("Committed Crobat CSV header changed")
-          csv_path.write_text(csv_text.replace(csv_old, csv_new, 1), encoding="utf-8")
+          csv_text = replace_once(
+              csv_text,
+              "dark_asset_use_pct,avg_dark_asset_draw\n",
+              "dark_asset_use_pct,avg_dark_asset_cards_drawn_per_game_using\n",
+              "Committed Crobat CSV metric label",
+          )
+          atomic_write(csv_path, csv_text)
 
           readme_path = Path("README.md")
           readme = readme_path.read_text(encoding="utf-8")
-          marker = "\nDark Asset follows Crobat V `swsh3-104`:"
-          insertion = (
+          readme_marker = "\nDark Asset follows Crobat V `swsh3-104`:"
+          readme_insertion = (
               "\nWhen `--out` or `--seed` is omitted, `--model-crobat` defaults to "
               "`results/crobat_variant_model.csv` and seed `20260723`, preserving the canonical baseline: "
               "https://github.com/FlareZ123/pokemon-sims/issues/1394\n"
           )
-          if readme.count(marker) != 1:
-              raise RuntimeError("README Crobat insertion point changed")
-          readme_path.write_text(readme.replace(marker, insertion + marker, 1), encoding="utf-8")
+          readme = replace_once(
+              readme,
+              readme_marker,
+              readme_insertion + readme_marker,
+              "README Crobat defaults",
+          )
+          atomic_write(readme_path, readme)
           PY
 
       - name: Build and validate focused behavior

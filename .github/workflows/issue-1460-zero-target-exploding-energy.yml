@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   validate:
-    if: github.head_ref == 'fix/issue-1460-zero-target-exploding-energy'
+    if: github.head_ref == 'fix/issue-1460-zero-target-exploding-energy-current'
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     steps:

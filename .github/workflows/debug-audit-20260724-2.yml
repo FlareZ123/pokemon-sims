@@ -45,15 +45,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 290 --require-ready-by 3 | tee audit-output/trace-1-shell-strict-go-first-seed-290.txt
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-full-item-lock/go-second --seed 127 --require-ready-by 5 | tee audit-output/trace-2-shell-full-item-lock-go-second-seed-127.txt
-          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 35 --require-ready-by 3 | tee audit-output/trace-3-pineco-matchup-flex-go-second-seed-35.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee audit-output/trace-1-shell-strict-go-second-seed-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee audit-output/trace-2-shell-flex-go-second-seed-3.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee audit-output/trace-3-pineco-strict-go-second-seed-35.txt
       - name: Generate fresh all-condition T2 and T3 matrix
+        if: always()
         shell: bash
         run: |
           set -o pipefail
           ./build/regidrago_sim --all-decks --trials 100000 --seed 20260724 --out audit-output/multi_deck_comparison.csv 2>&1 | tee audit-output/matrix.log
       - name: Capture strict C++20 diagnostic
+        if: always()
         shell: bash
         run: |
           set +e
@@ -68,6 +70,7 @@ jobs:
           printf 'configure_status=%s\nbuild_status=%s\n' "$configure_status" "$build_status" | tee audit-output/strict-status.txt
           exit 0
       - name: Package checked-out source
+        if: always()
         shell: bash
         run: |
           python - <<'PY'
@@ -87,6 +90,7 @@ jobs:
                   archive.write(path, relative.as_posix())
           PY
       - name: Upload audit evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: debug-audit-20260724-2

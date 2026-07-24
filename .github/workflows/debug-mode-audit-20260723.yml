@@ -85,17 +85,31 @@ jobs:
             --out-dir audit-results \
             --trials 100000 \
             --matrix-seed 20260723
-      - name: Generate paired two-deck matrix
+      - name: Audit paired generator and generate direct matrix
         shell: bash
         run: |
-          set -euo pipefail
-          # Paired matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          set -uo pipefail
+          mkdir -p audit-results
+          # Paired generator contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
           python scripts/generate_multi_deck_comparison.py \
             --exe build/regidrago_sim \
             --out-dir audit-results \
             --trials 100000 \
-            --matrix-seed 20260723
+            --matrix-seed 20260723 \
+            > audit-results/paired-generator.log 2>&1
+          generator_status=$?
+          cat audit-results/paired-generator.log
+          printf '%s\n' "$generator_status" > audit-results/paired-generator-status.txt
+
+          # Direct paired matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim \
+            --all-decks \
+            --trials 100000 \
+            --seed 20260723 \
+            --out audit-results/multi_deck_comparison_direct.csv
+          test -s audit-results/multi_deck_comparison_direct.csv
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: debug-mode-probability-matrices
           path: audit-results

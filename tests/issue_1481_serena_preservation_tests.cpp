@@ -48,6 +48,7 @@ sim::State complete_free_retreat_state() {
   state.discard = {sim::Card::Dragapult};
   state.discarded_this_turn = {sim::Card::Dragapult};
   state.stadium = sim::Stadium::ChaoticSwell;
+  state.path_lock_removed = true;
   return state;
 }
 
@@ -83,6 +84,7 @@ void test_boundaries_keep_live_serena_routes() {
 
   sim::State locked_latias = complete_free_retreat_state();
   locked_latias.stadium = sim::Stadium::None;
+  locked_latias.path_lock_removed = false;
   expect(!hold_from_state(std::move(locked_latias),
                           sim::LockMode::FullRuleBoxAbility, 148103),
          "Serena was held while Skyliner was locked.");

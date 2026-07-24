@@ -1,1 +1,1 @@
-Regenerate issue 1513 source-bound matrices and reports.
+Regenerate issue 1513 source-bound matrices and reports after hardening the atomic refresh.

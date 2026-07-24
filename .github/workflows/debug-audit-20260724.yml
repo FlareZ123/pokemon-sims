@@ -45,7 +45,7 @@ jobs:
         run: git rev-parse HEAD | tee audited-head.txt
       - name: Package source snapshot
         shell: bash
-        run: tar --exclude=.git --exclude=build -czf source-snapshot.tgz .
+        run: tar --exclude=.git --exclude=build --exclude=source-snapshot.tgz -czf source-snapshot.tgz .
       - name: Upload audit evidence
         if: always()
         uses: actions/upload-artifact@v4

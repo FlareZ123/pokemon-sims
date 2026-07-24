@@ -55,7 +55,7 @@ struct Fixture {
 
   sim::Scenario scenario;
   sim::DeckRecipe recipe;
-  std::mt1993_64 rng;
+  std::mt19937_64 rng;
   sim::Engine engine;
 };
 

@@ -1,0 +1,94 @@
+name: Debug audit 2026-07-24
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: debug-audit-20260724-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/debug-mode-20260724'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run source-bound simulate-this audits
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Known shell T2 compression route. Core setup procedure and the repository's earliest-ready objective:
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee shell-seed-1.txt
+          grep -q "T2 | READY" shell-seed-1.txt
+
+          # Known Pineco direct route that preserves the slower self-KO line when it is unnecessary:
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee pineco-seed-35.txt
+          grep -q "without advancing the Pineco line" pineco-seed-35.txt
+          grep -q "T2 | READY" pineco-seed-35.txt
+
+          # Known Oricorio-first T2 route. Oricorio has no Rule Box and Vital Dance is a legal setup connector:
+          # https://api.pokemontcg.io/v2/cards/sm2-55
+          # https://github.com/FlareZ123/pokemon-sims/issues/1476
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 129 --require-ready-by 2 | tee shell-seed-129.txt
+          grep -q "T2 | READY" shell-seed-129.txt
+
+          # Candidate weak-action trace. Once Chaotic Swell restores Skyliner, held Latias can move the completed
+          # Regidrago VSTAR Active; Serena should not need to consume the Supporter slot or discard another VSTAR:
+          # https://api.pokemontcg.io/v2/cards/sm12-187
+          # https://api.pokemontcg.io/v2/cards/sv5-220
+          # https://api.pokemontcg.io/v2/cards/sm7-148
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 8 --require-ready-by 4 | tee shell-seed-8-rulebox.txt
+          grep -q "T4 | READY" shell-seed-8-rulebox.txt
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Export checked source and evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > tested-head.txt
+          git archive --format=zip --output=repository-source.zip HEAD
+      - name: Upload debug evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-audit-20260724-${{ github.run_attempt }}
+          path: |
+            shell-seed-1.txt
+            pineco-seed-35.txt
+            shell-seed-129.txt
+            shell-seed-8-rulebox.txt
+            tested-head.txt
+            repository-source.zip
+            build/Testing
+          if-no-files-found: warn
+      - name: Remove temporary workflow
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/debug-audit-20260724.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Remove temporary debug audit workflow"
+          git push origin HEAD:${{ github.head_ref }}

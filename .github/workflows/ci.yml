@@ -191,3 +191,64 @@ jobs:
           name: sanitizer-validation-${{ github.run_attempt }}
           path: build-sanitizers/Testing
           if-no-files-found: warn
+
+  # BEGIN ISSUE 1481 EVIDENCE REFRESH
+  refresh_issue_1481:
+    if: github.event_name == 'pull_request' && github.head_ref == 'fix/issue-1481-preserve-serena'
+    permissions:
+      contents: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build validated source
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run focused issue 1481 regression
+        run: ./build/regidrago_unified_tests issue_1481_serena_preservation_tests
+      - name: Run three reviewed simulate-this audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 8 --require-ready-by 4 | tee trace-8.txt
+          ! grep -q "Serena chosen discard" trace-8.txt
+          ! grep -q "Used Serena draw mode" trace-8.txt
+          grep -q "T4 | HOLD SUPPORTER" trace-8.txt
+          grep -q "T4 | READY" trace-8.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 290 --require-ready-by 3
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 129 --require-ready-by 2
+      - name: Regenerate source-bound evidence
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Commit refreshed evidence and restore CI
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          path = Path('.github/workflows/ci.yml')
+          text = path.read_text(encoding='utf-8')
+          marker = '  # BEGIN ISSUE 1481 EVIDENCE REFRESH\n'
+          if text.count(marker) != 1:
+              raise SystemExit('Issue 1481 refresh marker missing')
+          restored = text.split(marker, 1)[0]
+          tmp = path.with_suffix(path.suffix + '.tmp')
+          tmp.write_text(restored, encoding='utf-8')
+          os.replace(tmp, path)
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/ci.yml docs/REPORT.md docs/MULTI_DECK_REPORT.md results/baseline_manifest.json results/simulation_results.csv results/multi_deck_manifest.json results/multi_deck_comparison.csv
+          git commit -m "Refresh issue 1481 validation evidence"
+          git push origin HEAD:${{ github.head_ref }}

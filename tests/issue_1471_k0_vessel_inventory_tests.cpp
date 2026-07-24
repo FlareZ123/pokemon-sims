@@ -85,7 +85,7 @@ void test_paired_k0_hidden_placements_make_same_safe_hold() {
   // Fire is in the deck or the Prize cards. Both identical public states must use
   // fixed-list/public-zone possibility and preserve Vessel plus the Dragon:
   // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-  // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv8-130
+  // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
   // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
   // Core deck-search and Prize procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // K0 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection

@@ -1,6 +1,0 @@
-/home/runner/work/pokemon-sims/pokemon-sims/build-sanitizers/CMakeFiles/regidrago_sim.dir
-/home/runner/work/pokemon-sims/pokemon-sims/build-sanitizers/CMakeFiles/regidrago_unified_tests.dir
-/home/runner/work/pokemon-sims/pokemon-sims/build-sanitizers/CMakeFiles/regidrago_release_assertion_tests.dir
-/home/runner/work/pokemon-sims/pokemon-sims/build-sanitizers/CMakeFiles/test.dir
-/home/runner/work/pokemon-sims/pokemon-sims/build-sanitizers/CMakeFiles/edit_cache.dir
-/home/runner/work/pokemon-sims/pokemon-sims/build-sanitizers/CMakeFiles/rebuild_cache.dir

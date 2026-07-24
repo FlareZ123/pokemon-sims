@@ -101,6 +101,22 @@
         allow_redundant_payload);
     if (ordinary) return ordinary;
 
+    const int public_regidrago_lines =
+        in_play_count(Card::RegidragoV) + in_play_count(Card::RegidragoVstar);
+    if (hand_count(Card::RegidragoV) > 0 && public_regidrago_lines >= 2) {
+      // A public Regidrago VSTAR stack contains the Regidrago V it evolved from.
+      // Once that evolved line and a second public Regidrago line already exist,
+      // a third held Basic is redundant for the modeled setup objective and may
+      // pay a legal discard cost under dynamic DCI:
+      // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Core evolution and public-board procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1473
+      return Card::RegidragoV;
+    }
+
     if (excluded_from_cost && *excluded_from_cost == Card::QuickBall &&
         quick_ball_oricorio_latias_route_available()) {
       // Active Regidrago VSTAR has already replaced Latias ex's setup role. The

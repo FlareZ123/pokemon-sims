@@ -225,6 +225,13 @@
                            needs_tapu_connector() && might_be_unseen(Card::TapuLeleGX);
     const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 &&
                                   needs_oricorio_connector() && might_be_unseen(Card::Oricorio);
+    // Quick Ball pays one discard, searches Crobat V, then Crobat leaves the hand
+    // for the Bench before Dark Asset counts the hand: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/swsh3-104
+    const bool want_crobat = hand_count(Card::CrobatV) == 0 && bench_space() > 0 &&
+                               !state_.dark_asset_used && ability_available_for_pokemon(Card::CrobatV) &&
+                               state_.hand.size() <= 7U && might_be_unseen(Card::CrobatV) &&
+                               !want_regi && !want_latias && !want_tapu && !want_oricorio;
     // Quick Ball searches only a Basic Pokémon. Dialga-GX is the only modeled
     // Dragon payload that is Basic; Mega Dragonite ex and Dragapult ex are Stage 2,
     // and Hisuian Goodra VSTAR is a VSTAR Evolution Pokémon:
@@ -250,7 +257,7 @@
                               might_be_unseen(Card::DialgaGX) && !can_pay_payload_cost &&
                               has_payable_payload_outlet_after_costed_search(Card::QuickBall);
     const bool has_preferred_search_target =
-        want_regi || want_latias || want_tapu || want_oricorio || want_payload;
+        want_regi || want_latias || want_tapu || want_oricorio || want_crobat || want_payload;
     const bool can_use_payload_only_outlet =
         can_pay_payload_cost && blender_energy_axis_can_finish_this_turn();
     // A payload-only Quick Ball line advances no searched Basic axis. Preserve the
@@ -302,9 +309,11 @@
     discard_from_hand(*cost, "Quick Ball cost", "R-QB-01");
     // Card text source: https://api.pokemontcg.io/v2/cards/swsh1-179
     record_deck_search_knowledge("Quick Ball");
-    const std::array<Card, 6> targets{Card::RegidragoV, Card::LatiasEx, Card::TapuLeleGX, Card::Oricorio, Card::DialgaGX, Card::MawileGX};
+    const std::array<Card, 7> targets{Card::RegidragoV, Card::LatiasEx, Card::TapuLeleGX,
+                                        Card::Oricorio, Card::CrobatV, Card::DialgaGX, Card::MawileGX};
     for (const Card target : targets) {
       const bool desired = (target == Card::RegidragoV && want_regi) ||
                            (target == Card::LatiasEx && want_latias) ||
                            (target == Card::TapuLeleGX && want_tapu) ||
                            (target == Card::Oricorio && want_oricorio) ||
+                           (target == Card::CrobatV && want_crobat) ||

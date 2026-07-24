@@ -162,6 +162,14 @@
     const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
                            bench_space() > 0 && needs_tapu_connector() &&
                            might_be_unseen(Card::TapuLeleGX);
+    // Ultra Ball's three-card hand expenditure can make Dark Asset a live draw
+    // connector. Deterministic missing-axis targets remain higher priority:
+    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // https://api.pokemontcg.io/v2/cards/swsh3-104
+    const bool want_crobat = hand_count(Card::CrobatV) == 0 && bench_space() > 0 &&
+                             !state_.dark_asset_used && ability_available_for_pokemon(Card::CrobatV) &&
+                             state_.hand.size() <= 8U && might_be_unseen(Card::CrobatV) &&
+                             !want_regi && !want_vstar && !want_latias && !want_oricorio && !want_tapu;
     // A fetched Dragon becomes a strict-JIT payload only when a surviving discard
     // outlet remains legal after Ultra Ball removes that Dragon from the deck:
     // Apex Dragon https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -178,7 +186,8 @@
                                                might_be_unseen(Card::Appletun);
     const bool want_payload = need_payload() && payload_might_be_searchable &&
                               !can_jit_discard && has_live_hand_payload_outlet;
-    if (!want_regi && !want_vstar && !want_latias && !want_oricorio && !want_tapu && !want_payload && !can_jit_discard) return false;
+    if (!want_regi && !want_vstar && !want_latias && !want_oricorio && !want_tapu &&
+        !want_crobat && !want_payload && !can_jit_discard) return false;
 
     // The Ultra Ball being played cannot pay its own cost. Two other Ultra Ball
     // copies are legal first and second cost cards when all three copies are held:
@@ -301,15 +310,16 @@
     // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     // https://api.pokemontcg.io/v2/cards/sv8-140
     // https://github.com/FlareZ123/pokemon-sims/issues/1254
-    const std::array<Card, 10> targets{Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio,
-                                       Card::TapuLeleGX, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
-                                       Card::DialgaGX, Card::Appletun};
+    const std::array<Card, 11> targets{Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio,
+                                       Card::TapuLeleGX, Card::CrobatV, Card::MegaDragonite, Card::Dragapult,
+                                       Card::GoodraVstar, Card::DialgaGX, Card::Appletun};
     for (const Card target : targets) {
       const bool desired = (target == Card::RegidragoV && want_regi) ||
                            (target == Card::RegidragoVstar && want_vstar) ||
                            (target == Card::LatiasEx && want_latias) ||
                            (target == Card::Oricorio && want_oricorio) ||
                            (target == Card::TapuLeleGX && want_tapu) ||
+                           (target == Card::CrobatV && want_crobat) ||
                            (want_payload && is_payload(target));
       if (desired && move_deck_to_hand(target)) {
         shuffle(state_.deck);

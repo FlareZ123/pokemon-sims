@@ -1,0 +1,32 @@
+
+Deck: regidrago-shell | Seed: 129 | first-ready turn: 2 | setup result: success
+Seed: 129 | first-ready turn: 2 | setup result: success
+===== SIMULATE THIS =====
+Deck: regidrago-shell
+Scenario: strict-jit/go-first | DCI: strict-JIT | Locks: none
+Mulligans: 3
+Opening player-known state: Active=Regidrago V [-] | Bench=Regidrago V [-] | Hand=Regidrago VSTAR, Mysterious Treasure, Quick Ball, Professor Burnet, Brilliant Blender | Discard=(none)
+DEBUG ONLY: prizes=Earthen Vessel, Dragapult ex, Mega Dragonite ex, Forest Seal Stone, Grass Energy, Lusamine. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Latias ex
+T1 | TURN START | rules: R-GAME-FIRST-TURN | Going first: drew for the turn; no Supporter or attack is permitted.
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [-] | Bench=Regidrago V [-] | Hand=Regidrago VSTAR, Mysterious Treasure, Quick Ball, Professor Burnet, Brilliant Blender, Latias ex | Discard=(none)
+T1 | DISCARD | rules: R-MT-01; P-DCI-01 | Professor Burnet (Mysterious Treasure cost)
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Mysterious Treasure: deck inspected; Prize identities are now deducible for later decisions.
+T1 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM; P-DCI-01; P-COMPRESS-01 | Spent redundant Professor Burnet and searched Oricorio for the complete T2 route.
+T1 | BENCH | rules: R-GAME-BENCH | Oricorio GRI 55 from hand.
+T1 | VITAL DANCE | rules: R-ORICORIO-01 | Searched up to 2 Basic Energy: Grass Energy, Fire Energy.
+T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T1 | DISCARD | rules: R-QB-01; P-DCI-01; P-COMPRESS-01 | Latias ex (Quick Ball cost)
+T1 | PLAY ITEM | rules: R-QB-01; R-GAME-ITEM; P-DCI-01; P-COMPRESS-01 | Discarded route-inert Latias ex and searched Tapu Lele-GX for the T2 Crispin finish.
+T1 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
+T1 | WONDER TAG | rules: R-TAPU-01; P-COMPRESS-01 | Searched and revealed Crispin for the complete T2 route.
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [G] | Bench=Regidrago V [-]; Oricorio GRI 55 [-]; Tapu Lele-GX [-] | Hand=Regidrago VSTAR, Brilliant Blender, Fire Energy, Crispin | Discard=Mysterious Treasure, Professor Burnet, Quick Ball, Latias ex
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Field Blower
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [G] | Bench=Regidrago V [-]; Oricorio GRI 55 [-]; Tapu Lele-GX [-] | Hand=Regidrago VSTAR, Brilliant Blender, Fire Energy, Crispin, Field Blower | Discard=Mysterious Treasure, Professor Burnet, Quick Ball, Latias ex
+T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T2 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dialga-GX, Dipplin TWM 127.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Regidrago V [-]; Oricorio GRI 55 [-]; Tapu Lele-GX [-] | Hand=Field Blower, Fire Energy | Discard=Mysterious Treasure, Professor Burnet, Quick Ball, Latias ex, Crispin, Brilliant Blender, Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dialga-GX, Dipplin TWM 127
+T2 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

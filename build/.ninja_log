@@ -1,0 +1,8 @@
+# ninja log v7
+2	9	1784895827307680654	/home/runner/work/pokemon-sims/pokemon-sims/build/CMakeFiles/cmake.verify_globs	299e1206821b07eb
+10	15363	1784895827315956558	CMakeFiles/regidrago_unified_tests.dir/generated/regidrago_unified_tests.cpp.o	26f2e976f474823b
+15364	15389	1784895842669691343	CMakeFiles/regidrago_release_assertion_tests.dir/tests/release_assertion_tests.cpp.o	2d6b4d3aaa7a2ca
+15389	15529	1784895842694541041	regidrago_unified_tests	896ccfca92119d79
+15529	15559	1784895842834541484	regidrago_release_assertion_tests	9bb7aff01a58f101
+10	42164	1784895827315260055	CMakeFiles/regidrago_sim.dir/src/regidrago_sim.cpp.o	d2acd32a25a89a35
+42164	42230	1784895869469052723	regidrago_sim	47cced2776284ec5

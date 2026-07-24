@@ -217,7 +217,7 @@ void test_seed_290_reaches_strict_jit_t3() {
          "Seed 290 did not spend setup-dead Field Blower.");
   expect(trace_contains(trace, "T1 | RETREAT"),
          "Seed 290 did not promote Regidrago V on T1.");
-  expect(trace_contains(trace, "T2 | STAR ALCHEMY"),
+  expect(trace_contains(trace, "T1 | STAR ALCHEMY"),
          "Seed 290 did not use Forest Seal Stone for the VSTAR axis.");
   expect(trace_contains(trace, "T3 | PLAY SUPPORTER") &&
              trace_contains(trace, "Arven"),

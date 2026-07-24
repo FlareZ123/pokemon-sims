@@ -2,6 +2,7 @@
 #include "../src/regidrago_sim.cpp"
 
 #include <algorithm>
+#include <cctype>
 #include <optional>
 #include <random>
 #include <stdexcept>
@@ -43,6 +44,23 @@ bool trace_contains(const sim::TraceLog& trace, const std::string& text) {
                      });
 }
 
+std::string lowercase(std::string value) {
+  std::transform(value.begin(), value.end(), value.begin(),
+                 [](const unsigned char character) {
+                   return static_cast<char>(std::tolower(character));
+                 });
+  return value;
+}
+
+bool trace_contains_case_insensitive(const sim::TraceLog& trace,
+                                     const std::string& text) {
+  const std::string expected = lowercase(text);
+  return std::any_of(trace.lines.begin(), trace.lines.end(),
+                     [&expected](const std::string& line) {
+                       return lowercase(line).find(expected) != std::string::npos;
+                     });
+}
+
 std::size_t trace_index(const sim::TraceLog& trace, const std::string& text) {
   const auto it = std::find_if(trace.lines.begin(), trace.lines.end(),
                                [&text](const std::string& line) {
@@ -72,10 +90,14 @@ sim::State inspected_t1_route_state() {
   state.hand.erase(std::find(state.hand.begin(), state.hand.end(),
                              sim::Card::ProfessorBurnet));
   state.discard = {sim::Card::MysteriousTreasure, sim::Card::ProfessorBurnet};
+  // Vital Dance takes one Grass and one Fire. Crispin says "up to 2" and may
+  // search only the remaining Grass, so G,G,F is the minimum legal deck inventory:
+  // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
   state.deck = {sim::Card::Oricorio, sim::Card::TapuLeleGX, sim::Card::Crispin,
-                sim::Card::Grass, sim::Card::Grass, sim::Card::Grass,
-                sim::Card::Fire, sim::Card::Fire, sim::Card::Dragapult,
-                sim::Card::MegaDragonite, sim::Card::GoodraVstar};
+                sim::Card::Grass, sim::Card::Grass, sim::Card::Fire,
+                sim::Card::Dragapult, sim::Card::MegaDragonite,
+                sim::Card::GoodraVstar};
   state.prizes = {sim::Card::EarthenVessel, sim::Card::ForestSealStone,
                   sim::Card::Lusamine, sim::Card::Arven,
                   sim::Card::Gladion, sim::Card::RegidragoV};
@@ -83,21 +105,22 @@ sim::State inspected_t1_route_state() {
 }
 
 std::optional<sim::Card> choose_from_state(
-    const sim::LockMode lock, sim::State state, const std::uint64_t seed) {
+    const sim::LockMode lock, sim::State state, const std::uint64_t seed,
+    const int max_turn = 2) {
   const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
   expect(deck != nullptr, "The registered shell recipe is unavailable.");
   const sim::Scenario scenario{
-      "issue-1476", sim::DciProfile::StrictJit, lock, true, 5};
+      "issue-1476", sim::DciProfile::StrictJit, lock, true, max_turn};
   std::mt19937_64 rng(seed);
   sim::Engine engine(scenario, deck->recipe, rng);
   sim::EngineTestAccess::set_state(engine, std::move(state));
   return sim::EngineTestAccess::choose_discard(engine);
 }
 
-void test_blender_dominates_burnet_on_complete_public_route() {
+void test_blender_dominates_burnet_on_complete_public_t2_route() {
   // Held Blender covers Burnet's only modeled deck-payload function. The public
   // Oricorio -> Quick Ball -> Tapu Lele-GX -> Crispin route and in-place evolution
-  // make Burnet legal Treasure fuel before any hidden-zone inspection:
+  // make Burnet legal Treasure fuel at K0 with a T2 deadline:
   // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
@@ -105,33 +128,36 @@ void test_blender_dominates_burnet_on_complete_public_route() {
   // Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/1476#issuecomment-5068202693
   expect(choose_from_state(sim::LockMode::None, public_t1_route_state(), 147601) ==
              sim::Card::ProfessorBurnet,
-         "The complete public T1 route did not expose redundant Burnet as Treasure fuel.");
+         "The complete public T2 route did not expose redundant Burnet as Treasure fuel.");
+  expect(!choose_from_state(sim::LockMode::None, public_t1_route_state(),
+                            147602, 1),
+         "Burnet became discardable without a T2 action window.");
 }
 
 void test_route_boundaries_keep_burnet_protected() {
   sim::State no_blender = public_t1_route_state();
   no_blender.hand.erase(std::find(no_blender.hand.begin(), no_blender.hand.end(),
                                   sim::Card::BrilliantBlender));
-  expect(!choose_from_state(sim::LockMode::None, std::move(no_blender), 147602),
+  expect(!choose_from_state(sim::LockMode::None, std::move(no_blender), 147603),
          "Burnet became discardable without the dominating Blender outlet.");
 
   sim::State no_vstar = public_t1_route_state();
   no_vstar.hand.erase(std::find(no_vstar.hand.begin(), no_vstar.hand.end(),
                                 sim::Card::RegidragoVstar));
-  expect(!choose_from_state(sim::LockMode::None, std::move(no_vstar), 147603),
+  expect(!choose_from_state(sim::LockMode::None, std::move(no_vstar), 147604),
          "Burnet became discardable without the held VSTAR card axis.");
 
   sim::State no_oricorio_possible = public_t1_route_state();
   no_oricorio_possible.discard.push_back(sim::Card::Oricorio);
   expect(!choose_from_state(sim::LockMode::None, std::move(no_oricorio_possible),
-                            147604),
+                            147605),
          "Burnet became discardable without a publicly possible Energy connector.");
 
   sim::State crowded_bench = public_t1_route_state();
   crowded_bench.bench.push_back(sim::Pokemon{sim::Card::LatiasEx, 0});
   crowded_bench.bench.push_back(sim::Pokemon{sim::Card::Oricorio, 0});
   crowded_bench.bench.push_back(sim::Pokemon{sim::Card::CrobatV, 0});
-  expect(!choose_from_state(sim::LockMode::None, std::move(crowded_bench), 147605),
+  expect(!choose_from_state(sim::LockMode::None, std::move(crowded_bench), 147606),
          "Burnet became discardable without two open Bench slots.");
 
   // Item lock prevents Treasure, Quick Ball, and Blender:
@@ -139,7 +165,7 @@ void test_route_boundaries_keep_burnet_protected() {
   // https://api.pokemontcg.io/v2/cards/swsh1-179
   // https://api.pokemontcg.io/v2/cards/sv8-164
   expect(!choose_from_state(sim::LockMode::FullItem, public_t1_route_state(),
-                            147606),
+                            147607),
          "Item lock incorrectly exposed Burnet as discard fuel.");
 }
 
@@ -158,7 +184,7 @@ void test_k1_t2_route_requires_every_inspected_axis() {
   };
 
   expect(route_available(inspected_t1_route_state(), 147610),
-         "The complete inspected T2 route was rejected.");
+         "The minimum legal inspected T2 route was rejected.");
 
   const auto rejected_without = [&](const sim::Card card, const char* message,
                                     const std::uint64_t seed) {
@@ -177,10 +203,10 @@ void test_k1_t2_route_requires_every_inspected_axis() {
                    "The route survived without Crispin in the inspected deck.",
                    147613);
   rejected_without(sim::Card::Grass,
-                   "The route survived with insufficient inspected Grass Energy.",
+                   "The route survived with only one inspected Grass Energy.",
                    147614);
   rejected_without(sim::Card::Fire,
-                   "The route survived with insufficient inspected Fire Energy.",
+                   "The route survived without inspected Fire Energy.",
                    147615);
 
   sim::State one_payload = inspected_t1_route_state();
@@ -220,7 +246,7 @@ void test_seed_129_reaches_t2_through_oricorio_first() {
          "Seed 129 did not complete the legal strict-JIT T2 route.");
   expect(trace_contains(trace, "Professor Burnet (Mysterious Treasure cost)"),
          "Seed 129 did not spend redundant Burnet before inspection.");
-  expect(trace_contains(trace, "T1 | VITAL DANCE"),
+  expect(trace_contains_case_insensitive(trace, "T1 | Vital Dance"),
          "Seed 129 did not use the inspected Oricorio Energy route.");
   expect(trace_contains(trace, "Latias ex (Quick Ball cost)"),
          "Seed 129 did not spend route-inert Latias ex after K1.");
@@ -240,7 +266,7 @@ void test_seed_129_reaches_t2_through_oricorio_first() {
 }  // namespace
 
 int main() {
-  test_blender_dominates_burnet_on_complete_public_route();
+  test_blender_dominates_burnet_on_complete_public_t2_route();
   test_route_boundaries_keep_burnet_protected();
   test_k1_t2_route_requires_every_inspected_axis();
   test_seed_129_reaches_t2_through_oricorio_first();

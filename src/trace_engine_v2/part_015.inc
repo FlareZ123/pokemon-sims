@@ -16,6 +16,8 @@ Aggregate simulate(const Scenario& scenario, const DeckRecipe& recipe, const std
     aggregate.setup_failures += outcome.setup_failed ? 1U : 0U;
     aggregate.started_regi += outcome.started_regi ? 1U : 0U;
     aggregate.started_tapu += outcome.started_tapu ? 1U : 0U;
+    aggregate.dark_asset += outcome.used_dark_asset ? 1U : 0U;
+    aggregate.dark_asset_cards_drawn += outcome.dark_asset_cards_drawn;
     aggregate.fss += outcome.used_fss ? 1U : 0U;
     aggregate.legacy += outcome.used_legacy_star ? 1U : 0U;
     aggregate.steven += outcome.used_steven ? 1U : 0U;
@@ -186,6 +188,12 @@ bool self_test() {
   if (!is_ace_spec(Card::SecretBox) || !is_item(Card::SecretBox)) return false;
   if (is_rule_box_pokemon(Card::Oricorio)) return false;
   if (!is_rule_box_pokemon(Card::TapuLeleGX)) return false;
+  // Crobat V is a Basic Pokémon V with Retreat Cost 1:
+  // https://api.pokemontcg.io/v2/cards/swsh3-104
+  if (!is_basic(Card::CrobatV) || !is_pokemon(Card::CrobatV) ||
+      !is_rule_box_pokemon(Card::CrobatV) ||
+      retreat_cost(Card::CrobatV) != 1) return false;
   // Pokémon V includes Pokémon VSTAR: https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
-  if (!is_pokemon_v(Card::RegidragoV) || !is_pokemon_v(Card::RegidragoVstar)) return false;
+  if (!is_pokemon_v(Card::RegidragoV) || !is_pokemon_v(Card::RegidragoVstar) ||
+      !is_pokemon_v(Card::CrobatV)) return false;
   // Trace smoke validates a complete single-game setup and rule ID output path.

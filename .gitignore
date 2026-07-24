@@ -1,0 +1,4 @@
+# Source-update locks are runtime coordination artifacts, not repository state.
+# https://github.com/FlareZ123/pokemon-sims/issues/1492
+/src/*.lock
+/src/**/*.lock

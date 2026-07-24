@@ -1,0 +1,102 @@
+name: Debug Mode Audit 2026-07-23
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  simulate-this:
+    name: simulate-this ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: shell-strict-second
+            deck: regidrago-shell
+            scenario: strict-jit/go-second
+            seed: 1
+            ready_by: 3
+          - name: shell-strict-first
+            deck: regidrago-shell
+            scenario: strict-jit/go-first
+            seed: 2
+            ready_by: 4
+          - name: shell-rulebox-lock
+            deck: regidrago-shell
+            scenario: strict-jit-rulebox-ability-lock/go-second
+            seed: 13
+            ready_by: 3
+          - name: pineco-strict-second
+            deck: regidrago-pineco
+            scenario: strict-jit/go-second
+            seed: 35
+            ready_by: 2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2 --target regidrago_sim
+      - name: Run source-bound trace
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Simulator trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          # Core turn, setup, search, Bench, attachment, evolution, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this \
+            --deck "${{ matrix.deck }}" \
+            --scenario "${{ matrix.scenario }}" \
+            --seed "${{ matrix.seed }}" \
+            --require-ready-by "${{ matrix.ready_by }}" \
+            | tee "trace-${{ matrix.name }}.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trace-${{ matrix.name }}
+          path: trace-${{ matrix.name }}.txt
+          if-no-files-found: error
+
+  probability-matrices:
+    name: Fresh 100k probability matrices
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2 --target regidrago_sim
+      - name: Run simulator self-test
+        run: ./build/regidrago_sim --self-test
+      - name: Generate shell matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Canonical matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-canonical-shell-baseline
+          python scripts/regenerate_setup_baselines.py \
+            --exe build/regidrago_sim \
+            --out-dir audit-results \
+            --trials 100000 \
+            --matrix-seed 20260723
+      - name: Generate paired two-deck matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Paired matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          python scripts/generate_multi_deck_comparison.py \
+            --exe build/regidrago_sim \
+            --out-dir audit-results \
+            --trials 100000 \
+            --matrix-seed 20260723
+      - uses: actions/upload-artifact@v4
+        with:
+          name: debug-mode-probability-matrices
+          path: audit-results
+          if-no-files-found: error

@@ -18,6 +18,17 @@
   }
 
   bool quick_ball_oricorio_latias_route_available() const {
+    // This route may spend protected singleton Latias ex and suppress Wonder Tag
+    // only after a legal deck or Prize inspection proves singleton Oricorio is in
+    // the deck. K0 public accounting cannot distinguish deck from Prize cards:
+    // Quick Ball cost-before-search text: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Core Item, search, Bench, and Ability procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K0 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1467
+    if (!deck_seen_ && !prizes_revealed_) return false;
+
     const int missing_grass = grass_needed();
     const int missing_fire = fire_needed();
     const int missing_energy = missing_grass + missing_fire;

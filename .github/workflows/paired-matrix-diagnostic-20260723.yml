@@ -1,0 +1,128 @@
+name: Paired Matrix Diagnostic 2026-07-23
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose-pineco-aggregate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build source-bound diagnostic
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > paired_matrix_diagnostic.cpp <<'CPP'
+          #define REGIDRAGO_SIM_NO_MAIN
+          #include "src/regidrago_sim.cpp"
+
+          #include <cstdint>
+          #include <exception>
+          #include <iostream>
+          #include <optional>
+          #include <string>
+
+          struct Failure {
+            std::size_t scenario_index{};
+            std::uint64_t trial{};
+            std::string message;
+          };
+
+          int main() {
+            constexpr std::uint64_t trials = 100000;
+            constexpr std::uint64_t matrix_seed = 20260723;
+            constexpr std::uint64_t seed_stride = 104729;
+            const sim::NamedDeck* deck = sim::deck_by_id("regidrago-pineco");
+            if (deck == nullptr) {
+              std::cerr << "registered Pineco deck is missing\n";
+              return 2;
+            }
+
+            const std::vector<sim::Scenario> scenarios = sim::all_scenarios();
+            std::optional<Failure> failure;
+            for (std::size_t scenario_index = 0;
+                 scenario_index < scenarios.size() && !failure;
+                 ++scenario_index) {
+              const sim::Scenario& scenario = scenarios[scenario_index];
+              std::mt19937_64 rng(matrix_seed + seed_stride * scenario_index);
+              for (std::uint64_t trial = 0; trial < trials; ++trial) {
+                try {
+                  sim::Engine engine(scenario, deck->recipe, rng);
+                  static_cast<void>(engine.run());
+                } catch (const std::exception& error) {
+                  failure = Failure{scenario_index, trial, error.what()};
+                  break;
+                }
+              }
+              if (!failure) {
+                std::cout << "PASS deck=" << deck->id
+                          << " scenario=" << scenario.label
+                          << " trials=" << trials << '\n';
+              }
+            }
+
+            if (!failure) {
+              std::cout << "No Pineco aggregate exception reproduced.\n";
+              return 0;
+            }
+
+            const sim::Scenario& failed_scenario = scenarios[failure->scenario_index];
+            std::cout << "FAIL deck=" << deck->id
+                      << " scenario=" << failed_scenario.label
+                      << " trial_index_zero_based=" << failure->trial
+                      << " error=" << failure->message << '\n';
+
+            std::mt19937_64 replay_rng(
+                matrix_seed + seed_stride * failure->scenario_index);
+            for (std::uint64_t trial = 0; trial <= failure->trial; ++trial) {
+              const bool target = trial == failure->trial;
+              sim::TraceLog trace{target, {}};
+              try {
+                sim::Engine engine(
+                    failed_scenario, deck->recipe, replay_rng,
+                    target ? &trace : nullptr);
+                static_cast<void>(engine.run());
+              } catch (const std::exception& error) {
+                if (!target) {
+                  std::cerr << "Replay failed before target trial at " << trial
+                            << ": " << error.what() << '\n';
+                  return 3;
+                }
+                std::cout << "===== FAILING TRIAL TRACE =====\n";
+                for (const std::string& line : trace.lines) {
+                  std::cout << line << '\n';
+                }
+                std::cout << "===== EXCEPTION =====\n" << error.what() << '\n';
+                return 1;
+              }
+            }
+
+            std::cerr << "Target trial unexpectedly completed during replay.\n";
+            return 4;
+          }
+          CPP
+          # Diagnostic includes the production translation unit and uses its exact
+          # scenario seed schedule: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_015.inc
+          # Paired matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/generate_multi_deck_comparison.py
+          g++ -std=c++20 -O2 -I. paired_matrix_diagnostic.cpp -o paired_matrix_diagnostic
+      - name: Locate first aggregate exception
+        id: diagnose
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          ./paired_matrix_diagnostic 2>&1 | tee paired-matrix-diagnostic.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: paired-matrix-diagnostic
+          path: paired-matrix-diagnostic.log
+          if-no-files-found: error
+      - name: Require diagnostic completion
+        if: steps.diagnose.outcome == 'failure'
+        run: exit 1

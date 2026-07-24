@@ -1,0 +1,21 @@
+name: Source Export Audit
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Archive checked-out source
+        run: tar --exclude=.git -czf source-export.tgz .
+      - name: Upload source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-export
+          path: source-export.tgz
+          if-no-files-found: error

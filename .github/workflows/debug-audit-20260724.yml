@@ -1,0 +1,72 @@
+name: Debug audit 2026-07-24
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: debug-audit-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  three-trace-audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/debug-20260724-three-traces'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: CI simulate-this pass 1 - scheduled Item lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Mysterious Treasure and Professor Burnet route contract: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Regidrago VSTAR readiness contract: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Confirmed route specification: https://github.com/FlareZ123/pokemon-sims/issues/925
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee audit-pass-1.txt
+      - name: CI simulate-this pass 2 - Rule Box Ability lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Path-style Rule Box Ability-lock model: https://api.pokemontcg.io/v2/cards/swsh6-148
+          # Regidrago VSTAR readiness contract: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Registered source-bound trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt#L131-L143
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3 | tee audit-pass-2.txt
+      - name: CI simulate-this pass 3 - Pineco recipe
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Registered Pineco route specification: https://github.com/FlareZ123/pokemon-sims/issues/1420
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee audit-pass-3.txt
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Generate and verify canonical matrix
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-shell-matrix.csv
+          cmp audit-shell-matrix.csv results/simulation_results.csv
+      - name: Generate and verify paired matrix
+        run: |
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-multi-deck-matrix.csv
+          cmp audit-multi-deck-matrix.csv results/multi_deck_comparison.csv
+      - name: Upload debug audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-audit-20260724-three-traces-${{ github.run_attempt }}
+          path: |
+            audit-pass-*.txt
+            audit-shell-matrix.csv
+            audit-multi-deck-matrix.csv
+            build/Testing
+          if-no-files-found: warn

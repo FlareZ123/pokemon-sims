@@ -1,0 +1,85 @@
+name: Post-1522 repository debug audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  static-audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/debug-post-1522-20260724'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Scan all tracked repository text
+        shell: bash
+        run: |
+          python - <<'PY' | tee static-audit.txt
+          import re
+          import subprocess
+          from pathlib import Path
+
+          tracked = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0")
+          suffixes = {".cpp", ".cxx", ".cc", ".h", ".hpp", ".inc", ".py", ".yml", ".yaml", ".md", ".txt"}
+          files = [Path(name) for name in tracked if name and Path(name).suffix.lower() in suffixes]
+          print(f"tracked_text_files={len(files)}")
+          print(f"tracked_text_lines={sum(len(path.read_text(encoding='utf-8', errors='replace').splitlines()) for path in files)}")
+
+          checks = {
+              "malformed_include": re.compile(r'^\s*#\s*include\s*(?:<[^>]+>|"[^"]+")\s+\S'),
+              "temporary_array_algorithm_range": re.compile(r'std::(?:any_of|all_of|find_if)\s*\(\s*std::array\{'),
+              "todo_fixme_hack": re.compile(r'\b(?:TODO|FIXME|HACK|XXX)\b'),
+              "shadow_state_copy": re.compile(r'\b(?:projected|shadow|probe|trial)\.state_\s*=\s*state_\s*;'),
+              "hidden_zone_reference": re.compile(r'\bstate_\.(?:deck|prizes)\b'),
+              "knowledge_flag_reference": re.compile(r'\b(?:deck_seen_|prizes_revealed_)\b'),
+          }
+
+          matches = {name: [] for name in checks}
+          for path in files:
+              text = path.read_text(encoding="utf-8", errors="replace")
+              for line_number, line in enumerate(text.splitlines(), 1):
+                  for name, pattern in checks.items():
+                      if pattern.search(line):
+                          matches[name].append((str(path), line_number, line.strip()))
+
+          for name, found in matches.items():
+              print(f"\n[{name}] count={len(found)}")
+              for path, line_number, line in found[:300]:
+                  print(f"{path}:{line_number}: {line}")
+
+          print("\n[known-issue-map]")
+          print("malformed final include -> https://github.com/FlareZ123/pokemon-sims/issues/1482")
+          print("duplicate Crispin K0 projection -> https://github.com/FlareZ123/pokemon-sims/issues/1514")
+          print("duplicate Crispin K1 projection UB -> https://github.com/FlareZ123/pokemon-sims/issues/1516")
+          print("Skyliner Serena gate -> https://github.com/FlareZ123/pokemon-sims/issues/1481")
+          print("K0 Tate hidden VSTAR oracle fixed -> https://github.com/FlareZ123/pokemon-sims/issues/1522")
+          PY
+      - name: Record strict C++20 diagnostic
+        shell: bash
+        run: |
+          set +e
+          cmake -S . -B build-pedantic -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS=-pedantic-errors >strict-configure.txt 2>&1
+          cmake --build build-pedantic --parallel 2 >strict-build.txt 2>&1
+          status=$?
+          echo "strict_build_exit=$status" | tee strict-summary.txt
+          grep -n "extra tokens at end of #include directive" strict-build.txt | tee -a strict-summary.txt || true
+          echo "Known owner: https://github.com/FlareZ123/pokemon-sims/issues/1482" | tee -a strict-summary.txt
+          exit 0
+      - name: Upload audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-post-1522-${{ github.run_attempt }}
+          path: |
+            static-audit.txt
+            strict-summary.txt
+            strict-build.txt
+          if-no-files-found: error

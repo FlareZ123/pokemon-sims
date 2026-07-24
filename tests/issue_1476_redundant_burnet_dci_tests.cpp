@@ -73,14 +73,15 @@ std::optional<sim::Card> choose_from_state(
 }
 
 void test_blender_dominates_burnet_on_complete_public_route() {
-  // Held Blender covers Burnet's only modeled deck-payload function. Two public
-  // Wonder Tag -> Crispin connections, in-place VSTAR evolution, the required
-  // Energy pairs, and open Bench slots make Burnet legal dynamic-DCI fuel:
+  // Held Blender covers Burnet's only modeled deck-payload function. The public
+  // Tapu Lele-GX -> Crispin connector, K1 Oricorio route, in-place evolution,
+  // Energy inventory, and two open Bench slots make Burnet legal dynamic-DCI fuel:
   // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
   // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
   // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
   // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
@@ -103,11 +104,11 @@ void test_route_boundaries_keep_burnet_protected() {
   expect(!choose_from_state(sim::LockMode::None, std::move(no_vstar), 147603),
          "Burnet became discardable without the held VSTAR card axis.");
 
-  sim::State one_tapu_possible = public_t1_route_state();
-  one_tapu_possible.discard.push_back(sim::Card::TapuLeleGX);
-  expect(!choose_from_state(sim::LockMode::None, std::move(one_tapu_possible),
+  sim::State no_oricorio_possible = public_t1_route_state();
+  no_oricorio_possible.discard.push_back(sim::Card::Oricorio);
+  expect(!choose_from_state(sim::LockMode::None, std::move(no_oricorio_possible),
                             147604),
-         "Burnet became discardable when two Wonder Tag copies were not publicly possible.");
+         "Burnet became discardable without a publicly possible Oricorio connector.");
 
   sim::State crowded_bench = public_t1_route_state();
   crowded_bench.bench.push_back(sim::Pokemon{sim::Card::LatiasEx, 0});
@@ -137,13 +138,17 @@ void test_seed_129_reaches_t3_without_k0_oracle_use() {
   sim::Engine engine(*scenario, deck->recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 
-  // The cost is paid from the public K0 hand before Treasure legally inspects the
-  // deck. Wonder Tag then stores one Crispin on T1 and another on T2; Blender
-  // supplies the strict-JIT payload on the T3 GGF ready turn:
+  // Burnet pays Treasure's cost from the public K0 hand. Treasure establishes K1,
+  // Tapu Lele-GX banks Crispin, and the post-evolution Quick Ball spends inert
+  // Latias ex to fetch Oricorio. Vital Dance supplies the final Energy channel and
+  // Blender supplies the same-turn T3 payload:
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
   // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+  // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
   // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
   // K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
   // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
@@ -153,8 +158,15 @@ void test_seed_129_reaches_t3_without_k0_oracle_use() {
   expect(trace_contains(trace, "Professor Burnet (Mysterious Treasure cost)"),
          "Seed 129 did not spend redundant Burnet on the initiating Treasure.");
   expect(trace_contains(trace, "T1 | WONDER TAG") &&
-             trace_contains(trace, "T2 | WONDER TAG"),
-         "Seed 129 did not use the two copy-specific Wonder Tag connections.");
+             !trace_contains(trace, "T2 | WONDER TAG"),
+         "Seed 129 did not preserve the single approved Wonder Tag connector.");
+  expect(trace_contains(trace, "Latias ex (Quick Ball cost)"),
+         "Seed 129 did not wait for evolution before spending inert Latias ex.");
+  expect(trace_contains(trace, "Searched a Basic Pokemon: Oricorio") ||
+             trace_contains(trace, "Searched a Basic Pokémon: Oricorio"),
+         "Seed 129 did not search the K1-proven Oricorio connector.");
+  expect(trace_contains(trace, "Vital Dance"),
+         "Seed 129 did not resolve Oricorio's Energy search.");
   expect(trace_contains(trace, "T3 | READY"),
          "Seed 129 did not complete GGF and the same-turn Blender payload on T3.");
 

@@ -75,7 +75,7 @@ def main() -> int:
             improvements += d3 > 0
         use_total = sum(float(row["dark_asset_use_pct"]) for row in variant_rows)
         weighted_draw = sum(
-            float(row["dark_asset_use_pct"]) * float(row["avg_dark_asset_draw"])
+            float(row["dark_asset_use_pct"]) * float(row["avg_dark_asset_cards_drawn_per_game_using"])
             for row in variant_rows
         )
         summaries.append(
@@ -131,9 +131,14 @@ def main() -> int:
             "remove cards with recovery, lock-answer, gust, Tool, Prize-information, or matchup value. "
             "Those discrete losses remain relevant even when a setup percentage is close.",
             "",
+            "Dark Asset utilization is the percentage of games with at least one legal use. "
+            "The draw figure is total cards drawn across every Dark Asset resolution divided by "
+            "games with at least one use, so two-copy variants may include uses on different turns: "
+            "https://github.com/FlareZ123/pokemon-sims/issues/1394",
+            "",
             "## Paired all-scenario summary",
             "",
-            "| Variant | Cuts | Crobat | Mean ΔT2 | Mean ΔT3 | Mean ΔT4 | T3 scenarios improved | Dark Asset use | Mean cards drawn |",
+            "| Variant | Cuts | Crobat | Mean ΔT2 | Mean ΔT3 | Mean ΔT4 | T3 scenarios improved | Games using Dark Asset | Mean cards drawn per using game |",
             "|---|---|---:|---:|---:|---:|---:|---:|---:|",
         ]
     )

@@ -1,4 +1,4 @@
-variant,cuts,crobat_copies,scenario,trials,ready_by_t2_pct,ready_by_t3_pct,ready_by_t4_pct,dark_asset_use_pct,avg_dark_asset_draw
+variant,cuts,crobat_copies,scenario,trials,ready_by_t2_pct,ready_by_t3_pct,ready_by_t4_pct,dark_asset_use_pct,avg_dark_asset_cards_drawn_per_game_using
 regidrago-shell,"none",0,strict-jit/go-first,100000,12.009000,38.327000,55.249000,0.000000,0.000000
 crobat1-erika,"Erika's Invitation",1,strict-jit/go-first,100000,11.910000,38.053000,55.017000,15.223000,1.398673
 crobat1-channeler,"Channeler",1,strict-jit/go-first,100000,11.902000,37.579000,54.738000,15.218000,1.380799

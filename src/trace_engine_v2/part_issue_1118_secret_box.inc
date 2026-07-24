@@ -761,6 +761,53 @@
     return true;
   }
 
+  bool should_hold_pineco_for_direct_t2_treasure_route() const {
+    if (!secret_box_combo_enabled() || !supporter_allowed() ||
+        hand_count(Card::StevensResolve) == 0 ||
+        state_.turn >= scenario_.max_turn ||
+        (!has_any_regi() && hand_count(Card::RegidragoV) == 0)) {
+      return false;
+    }
+
+    const bool secret_box_available = hand_count(Card::SecretBox) > 0 ||
+        might_be_unseen(Card::SecretBox);
+    const bool arven_preempts_steven = hand_count(Card::Arven) > 0 &&
+        hand_count(Card::SecretBox) == 0 && might_be_unseen(Card::SecretBox);
+    const bool next_turn_item_locked =
+        scenario_.locks == LockMode::FullItem ||
+        scenario_.locks == LockMode::FullCombined ||
+        (scenario_.locks == LockMode::TurnTwoItem && state_.turn == 1);
+    const int treasure_targets = static_cast<int>(std::count_if(
+        state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic));
+    const int searchable_grass = deck_count_after_search_started(Card::Grass);
+    const int searchable_fire = deck_count_after_search_started(Card::Fire);
+
+    // K1 proves that Steven can bank Crispin and Dragapult ex, both Energy types
+    // survive every mandatory T2 draw, and Mysterious Treasure retains a legal
+    // target after paying the Dragon cost. Pineco therefore stays in hand as a
+    // flexible discard or later Bench resource instead of becoming UDP in play:
+    // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Bench, draw, Supporter, Item, and Energy procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Resource-preservation priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1497
+    return secret_box_available && !arven_preempts_steven && deck_seen_ &&
+        scenario_.dci == DciProfile::StrictJit && state_.turn == 1 &&
+        !scenario_.going_first && !next_turn_item_locked && state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->grass == 1 && state_.active->fire == 0 &&
+        hand_count(Card::MysteriousTreasure) > 0 &&
+        hand_count(Card::RegidragoVstar) > 0 &&
+        hand_count(Card::Fire) > 0 &&
+        deck_count_after_search_started(Card::Crispin) > 0 &&
+        deck_count_after_search_started(Card::Dragapult) > 0 &&
+        searchable_grass > 1 && searchable_fire > 1 &&
+        treasure_targets >= 3;
+  }
+
   bool play_steven_for_secret_box_bank() {
     if (!secret_box_combo_enabled() || !supporter_allowed() ||
         hand_count(Card::StevensResolve) == 0 ||
@@ -1054,7 +1101,23 @@
       // Core Bench, Supporter, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
       // Resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
       // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1376
-      bench_pineco_if_useful();
+      // The confirmed no-Pineco direct route keeps Pineco in hand and preserves
+      // one Bench slot. Every incomplete route still benches Pineco before Steven
+      // so ordinary T2 evolution and the Forretress ex fallback remain legal:
+      // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+      // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Core Bench and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Resource-preservation priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1497
+      if (should_hold_pineco_for_direct_t2_treasure_route()) {
+        trace("HOLD BASIC", "R-GAME-BENCH; P-DCI-01; P-AXIS-01",
+              "Held Pineco in hand because the complete K1 direct T2 route "
+              "does not use the Pineco or Forretress ex line.");
+      } else {
+        bench_pineco_if_useful();
+      }
       if (!state_.supporter_used && !play_secret_box_planned_supporter()) {
         advance_forretress_combo();
         if (!state_.supporter_used) choose_supporter();

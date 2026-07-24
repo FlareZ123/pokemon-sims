@@ -17,6 +17,9 @@ struct EngineTestAccess {
   static bool play_steven_bank(Engine& engine) {
     return engine.play_steven_for_secret_box_bank();
   }
+  static bool should_hold_pineco(const Engine& engine) {
+    return engine.should_hold_pineco_for_direct_t2_treasure_route();
+  }
   static bool advance_forretress(Engine& engine) {
     return engine.advance_forretress_combo();
   }
@@ -72,6 +75,17 @@ void test_seed35_uses_direct_t2_route() {
          "Steven did not choose the direct Treasure route.");
   expect(trace_contains(trace, "Dragapult ex (Mysterious Treasure cost)"),
          "Mysterious Treasure did not establish the T2 payload.");
+  // The same deterministic route has no use for Pineco. Keeping it in hand
+  // preserves a Bench slot and a future hand-discard candidate:
+  // https://api.pokemontcg.io/v2/cards/sv4pt5-1
+  // https://api.pokemontcg.io/v2/cards/sm7-145
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // https://github.com/FlareZ123/pokemon-sims/issues/1497
+  expect(!trace_contains(trace, "T1 | BENCH | rules: R-GAME-BENCH | Pineco from hand"),
+         "The direct route still converted Pineco into an in-play UDP card.");
+  expect(trace_contains(trace, "Held Pineco in hand because the complete K1 direct T2 route"),
+         "The direct-route Pineco hold was not recorded.");
   expect(!trace_contains(trace, "T2 | PLAY ITEM | rules: R-SECRET-BOX-01"),
          "The direct route still spent Secret Box.");
   expect(!trace_contains(trace, "T2 | EXPLODING ENERGY"),
@@ -84,13 +98,13 @@ void test_seed35_uses_direct_t2_route() {
          "The direct route still spent the spare Regidrago V and Bench slot.");
 
   const sim::State& final_state = engine.state();
-  expect(final_state.bench.size() == 2 &&
-             final_state.bench[0].card == sim::Card::TapuLeleGX &&
-             final_state.bench[1].card == sim::Card::Pineco,
-         "The direct route did not preserve the original two-Pokemon Bench.");
-  expect(contains(final_state.hand, sim::Card::ForretressEx) &&
+  expect(final_state.bench.size() == 1 &&
+             final_state.bench[0].card == sim::Card::TapuLeleGX,
+         "The direct route did not preserve the unused Pineco Bench slot.");
+  expect(contains(final_state.hand, sim::Card::Pineco) &&
+             contains(final_state.hand, sim::Card::ForretressEx) &&
              contains(final_state.hand, sim::Card::RegidragoV),
-         "The direct route did not preserve Forretress ex and the spare Regidrago V.");
+         "The direct route did not preserve Pineco, Forretress ex, and the spare Regidrago V.");
 }
 
 sim::State direct_route_state() {
@@ -118,6 +132,106 @@ sim::State direct_route_state() {
       sim::Card::MegaDragonite,
   };
   return state;
+}
+
+void test_pineco_hold_preflight_requires_complete_no_pineco_route() {
+  const sim::Scenario scenario{"issue-1497-controls", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 5};
+  const sim::DeckRecipe recipe = sim::pineco_recipe();
+
+  const auto expect_preflight = [&recipe](
+      const sim::Scenario& selected_scenario, sim::State state,
+      const bool expected, const std::uint64_t seed, const char* message) {
+    std::mt19937_64 rng(seed);
+    sim::Engine engine(selected_scenario, recipe, rng);
+    sim::EngineTestAccess::set_state(engine, std::move(state), true);
+    expect(sim::EngineTestAccess::should_hold_pineco(engine) == expected,
+           message);
+  };
+
+  // Pineco may be omitted only when K1 proves the complete Steven, Crispin,
+  // manual Fire, VSTAR, payload-cost, and post-cost Treasure-target route:
+  // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1497
+  expect_preflight(scenario, direct_route_state(), true, 149701,
+                   "The complete no-Pineco direct route was not recognized.");
+
+  sim::State missing_treasure = direct_route_state();
+  missing_treasure.hand.erase(std::find(
+      missing_treasure.hand.begin(), missing_treasure.hand.end(),
+      sim::Card::MysteriousTreasure));
+  expect_preflight(scenario, std::move(missing_treasure), false, 149702,
+                   "Missing Treasure still suppressed Pineco.");
+
+  sim::State missing_vstar = direct_route_state();
+  missing_vstar.hand.erase(std::find(missing_vstar.hand.begin(),
+                                    missing_vstar.hand.end(),
+                                    sim::Card::RegidragoVstar));
+  expect_preflight(scenario, std::move(missing_vstar), false, 149703,
+                   "Missing VSTAR still suppressed Pineco.");
+
+  sim::State missing_fire = direct_route_state();
+  missing_fire.hand.erase(std::find(missing_fire.hand.begin(),
+                                   missing_fire.hand.end(), sim::Card::Fire));
+  expect_preflight(scenario, std::move(missing_fire), false, 149704,
+                   "Missing held Fire still suppressed Pineco.");
+
+  sim::State missing_crispin = direct_route_state();
+  missing_crispin.deck.erase(std::find(missing_crispin.deck.begin(),
+                                      missing_crispin.deck.end(),
+                                      sim::Card::Crispin));
+  expect_preflight(scenario, std::move(missing_crispin), false, 149705,
+                   "Missing Crispin still suppressed Pineco.");
+
+  sim::State missing_payload = direct_route_state();
+  missing_payload.deck.erase(std::find(missing_payload.deck.begin(),
+                                      missing_payload.deck.end(),
+                                      sim::Card::Dragapult));
+  expect_preflight(scenario, std::move(missing_payload), false, 149706,
+                   "Missing searched payload still suppressed Pineco.");
+
+  sim::State no_remaining_target = direct_route_state();
+  no_remaining_target.deck.erase(std::find(
+      no_remaining_target.deck.begin(), no_remaining_target.deck.end(),
+      sim::Card::MegaDragonite));
+  no_remaining_target.deck.erase(std::find(
+      no_remaining_target.deck.begin(), no_remaining_target.deck.end(),
+      sim::Card::RegidragoV));
+  expect_preflight(scenario, std::move(no_remaining_target), false, 149707,
+                   "Treasure without a post-cost target still suppressed Pineco.");
+
+  sim::State one_grass = direct_route_state();
+  one_grass.deck.erase(std::find(one_grass.deck.begin(), one_grass.deck.end(),
+                                 sim::Card::Grass));
+  expect_preflight(scenario, std::move(one_grass), false, 149708,
+                   "A route vulnerable to drawing the last Grass still suppressed Pineco.");
+
+  sim::State one_fire = direct_route_state();
+  one_fire.deck.erase(std::find(one_fire.deck.begin(), one_fire.deck.end(),
+                                sim::Card::Fire));
+  expect_preflight(scenario, std::move(one_fire), false, 149709,
+                   "A route vulnerable to drawing the last Fire still suppressed Pineco.");
+
+  sim::State missing_prior_grass = direct_route_state();
+  missing_prior_grass.active->grass = 0;
+  expect_preflight(scenario, std::move(missing_prior_grass), false, 149710,
+                   "Missing prior Grass still suppressed Pineco.");
+
+  sim::State arven_preempts = direct_route_state();
+  arven_preempts.hand.push_back(sim::Card::Arven);
+  expect_preflight(scenario, std::move(arven_preempts), false, 149711,
+                   "An earlier Arven route still suppressed Pineco for Steven.");
+
+  const sim::Scenario item_lock{"issue-1497-item-lock",
+                                sim::DciProfile::StrictJit,
+                                sim::LockMode::TurnTwoItem, false, 5};
+  expect_preflight(item_lock, direct_route_state(), false, 149712,
+                   "Scheduled T2 Item lock still suppressed the Forretress fallback.");
 }
 
 void test_steven_search_establishes_k1_and_requires_every_axis() {
@@ -222,6 +336,7 @@ void test_item_lock_preserves_forretress_fallback() {
 int main() {
   try {
     test_seed35_uses_direct_t2_route();
+    test_pineco_hold_preflight_requires_complete_no_pineco_route();
     test_steven_search_establishes_k1_and_requires_every_axis();
     test_item_lock_preserves_forretress_fallback();
     std::cout << "Issue 1420 Steven direct-Treasure tests passed\n";

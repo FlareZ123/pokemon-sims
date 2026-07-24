@@ -1,0 +1,3 @@
+[ RUN      ] issue_1420_steven_direct_treasure_tests
+The direct route still converted Pineco into an in-play UDP card.
+[  FAILED  ] issue_1420_steven_direct_treasure_tests (status 1)

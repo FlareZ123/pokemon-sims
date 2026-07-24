@@ -1,324 +1,62 @@
-  // Wonder Tag spends Tapu Lele-GX's entry Ability to search a Supporter. Preserve
-  // that exact same-turn Steven's Resolve admission across later legal Item actions:
-  // https://api.pokemontcg.io/v2/cards/sm2-60
-  // https://api.pokemontcg.io/v2/cards/sm7-145
-  // https://github.com/FlareZ123/pokemon-sims/issues/999
-  bool wonder_tag_selected_steven_this_turn_{false};
+#define bench_tapu_if_useful bench_tapu_if_useful_issue_1513_original
+#include "part_issue_991_wonder_tag_burnet_legacy_star_override_base.inc"
+#undef bench_tapu_if_useful
 
-  bool wonder_tag_burnet_is_redundant_with_legacy_star_route() const {
-    if (!deck_seen_ || !supporter_allowed() || state_.manual_energy_used ||
-        state_.vstar_power_used || !need_energy() || has_vstar() ||
-        !need_payload() || need_regi() || hand_count(Card::TapuLeleGX) == 0 ||
-        hand_count(Card::Crispin) == 0 ||
-        hand_count(Card::ProfessorBurnet) > 0 ||
-        hand_count(Card::RegidragoVstar) == 0 || !state_.active ||
-        state_.active->card != Card::RegidragoV ||
-        state_.active->entered_turn >= state_.turn ||
-        !ability_available_for_pokemon(Card::RegidragoVstar) ||
-        !payload_might_be_in_deck()) {
-      return false;
-    }
-
-    const bool grass_available = deck_count_after_search_started(Card::Grass) > 0;
-    const bool fire_available = deck_count_after_search_started(Card::Fire) > 0;
-    int grass_remaining = grass_needed();
-    int fire_remaining = fire_needed();
-    int grass_in_hand = hand_count(Card::Grass);
-    int fire_in_hand = hand_count(Card::Fire);
-
-    if (grass_available && fire_available) {
-      // The simulator's legal Crispin policy attaches the currently needed type,
-      // preferring Grass while any Grass requirement remains:
-      // https://api.pokemontcg.io/v2/cards/sv7-133
-      const Card attached = grass_remaining > 0 ? Card::Grass : Card::Fire;
-      if (attached == Card::Grass) {
-        grass_remaining = std::max(0, grass_remaining - 1);
-        ++fire_in_hand;
-      } else {
-        fire_remaining = std::max(0, fire_remaining - 1);
-        ++grass_in_hand;
-      }
-    } else if (grass_available) {
-      // With one searchable type, the modeled ruling puts it into hand and attaches
-      // none, leaving the unused manual attachment to advance GGF:
-      // https://api.pokemontcg.io/v2/cards/sv7-133
-      ++grass_in_hand;
-    } else if (fire_available) {
-      ++fire_in_hand;
-    } else {
-      return false;
-    }
-
-    const bool crispin_and_manual_complete_ggf =
-        (grass_remaining == 0 && fire_remaining == 0) ||
-        (grass_remaining == 1 && fire_remaining == 0 && grass_in_hand > 0) ||
-        (grass_remaining == 0 && fire_remaining == 1 && fire_in_hand > 0);
-
-    // Held Crispin plus the unused manual attachment can complete GGF. The
-    // prior-turn Active Regidrago V may then evolve and use Legacy Star for the
-    // strict-JIT payload axis. Benching the searched second Tapu Lele-GX and using
-    // Wonder Tag for Professor Burnet spends a card, Bench slot, and one-shot
-    // Ability while that Supporter remains unused:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
-    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
-    // Regidrago VSTAR and Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/991
-    return crispin_and_manual_complete_ggf;
-  }
-
-  bool wonder_tag_gladion_is_redundant_with_held_manual_energy() const {
-    if (!deck_seen_ || !supporter_allowed() || state_.manual_energy_used ||
-        hand_count(Card::TapuLeleGX) == 0 || hand_count(Card::Gladion) > 0 ||
-        !might_be_unseen(Card::Gladion)) {
-      return false;
-    }
-
-    const std::optional<Card> prized_energy = final_prized_energy_for_gladion();
-
-    // Gladion exchanges itself for a Prize card. When the exact Prize-target type
-    // is already held and the unused manual attachment completes GGF, another Tapu
-    // Lele-GX and Wonder Tag consume a card, Bench slot, and one-shot Ability without
-    // advancing any setup axis:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
-    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  bool held_turo_direct_active_promotion_route() const {
+    // Professor Turo's Scenario directly removes a Basic Active and forces a
+    // Benched replacement. When a complete Regidrago VSTAR is already Benched,
+    // preserve Tapu Lele-GX and its one-shot Wonder Tag instead of creating a
+    // longer Tapu -> Tate & Liza route for the same Active-position axis:
+    // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
     // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Turn procedure and manual attachment: https://www.pokemon.com/us/pokemon-tcg/rules
-    // Knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/992
-    return prized_energy && hand_count(*prized_energy) > 0;
-  }
+    // Supporter and Active-replacement procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Direct-connector priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1513
+    const bool active_regidrago_has_ready_direct_evolution = state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        hand_count(Card::RegidragoVstar) > 0 &&
+        state_.active->grass >= 2 && state_.active->fire >= 1;
 
-  bool wonder_tag_arven_is_redundant_with_held_burnet_route() const {
-    if (!deck_seen_ || !supporter_allowed() || state_.manual_energy_used ||
-        !need_energy() || has_vstar() || !need_payload() || need_regi() ||
-        hand_count(Card::TapuLeleGX) == 0 || hand_count(Card::Arven) > 0 ||
-        hand_count(Card::ProfessorBurnet) == 0 ||
-        hand_count(Card::RegidragoVstar) == 0 || !state_.active ||
-        state_.active->card != Card::RegidragoV ||
-        state_.active->entered_turn >= state_.turn ||
-        !can_play_payload_this_turn() || !payload_might_be_in_deck()) {
-      return false;
-    }
-
-    const bool held_manual_completes_energy =
-        grass_needed() + fire_needed() == 1 &&
-        ((grass_needed() == 1 && hand_count(Card::Grass) > 0) ||
-         (fire_needed() == 1 && hand_count(Card::Fire) > 0));
-
-    // Held Professor Burnet directly supplies the same-turn payload, the held
-    // Regidrago VSTAR completes evolution, and the held needed Energy completes GGF
-    // through the unused manual attachment. Wonder Tag into Arven then spends Tapu
-    // Lele-GX, its Bench slot, and its one-shot Ability without advancing setup:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
-    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Under Item lock, Turo may solve the Active axis one turn before Burnet solves
+    // the strict-JIT payload axis. Preserve the existing delayed-Burnet contract:
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // JIT payload policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/993
-    return held_manual_completes_energy;
-  }
-
-  bool wonder_tag_duplicate_held_crispin_has_no_marginal_route() const {
-    if (!deck_seen_ || !supporter_allowed() ||
-        hand_count(Card::TapuLeleGX) == 0 ||
-        hand_count(Card::Crispin) == 0 ||
-        deck_count_after_search_started(Card::Crispin) == 0 ||
-        !need_energy() || !prizes_known()) {
+    // Strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Prior route contract: https://github.com/FlareZ123/pokemon-sims/issues/900
+    const bool delayed_burnet_payload_route = strict_payload_timing() && item_locked() &&
+        need_payload() && state_.turn < scenario_.max_turn &&
+        hand_count(Card::ProfessorBurnet) > 0 && payload_might_be_in_deck();
+    if (!supporter_allowed() || hand_count(Card::ProfessorTuro) == 0 || !state_.active ||
+        !is_basic(state_.active->card) || active_regidrago_has_ready_direct_evolution ||
+        !need_active_vstar() || need_regi() || need_vstar() || need_energy() ||
+        (need_payload() && !delayed_burnet_payload_route) || can_free_retreat_with_latias() ||
+        hand_count(Card::TateLiza) > 0) {
       return false;
     }
 
-    int grass_remaining = grass_needed();
-    int fire_remaining = fire_needed();
-    int grass_in_hand = hand_count(Card::Grass);
-    int fire_in_hand = hand_count(Card::Fire);
-    const bool grass_available = deck_count_after_search_started(Card::Grass) > 0;
-    const bool fire_available = deck_count_after_search_started(Card::Fire) > 0;
-    const bool needed_energy_searchable =
-        (grass_needed() > 0 && grass_available) ||
-        (fire_needed() > 0 && fire_available);
-    if (!needed_energy_searchable) return false;
-
-    const bool held_crispin_covers_next_turn_one_type_route =
-        !state_.manual_energy_used && grass_remaining == 1 &&
-        fire_remaining == 1 &&
-        ((grass_available && !fire_available && fire_in_hand > 0) ||
-         (fire_available && !grass_available && grass_in_hand > 0));
-
-    if (grass_available && fire_available) {
-      if (grass_remaining > 0) {
-        --grass_remaining;
-        ++fire_in_hand;
-      } else if (fire_remaining > 0) {
-        --fire_remaining;
-        ++grass_in_hand;
-      }
-    } else if (grass_available) {
-      ++grass_in_hand;
-    } else if (fire_available) {
-      ++fire_in_hand;
-    }
-    if (!state_.manual_energy_used && grass_remaining + fire_remaining == 1) {
-      if (grass_remaining == 1 && grass_in_hand > 0) --grass_remaining;
-      if (fire_remaining == 1 && fire_in_hand > 0) --fire_remaining;
-    }
-    const bool held_crispin_completes_ggf =
-        grass_remaining == 0 && fire_remaining == 0;
-
-    const bool held_gladion_has_known_axis = hand_count(Card::Gladion) > 0 &&
-        ((need_regi() && bench_space() > 0 &&
-          prize_count_after_reveal(Card::RegidragoV) > 0) ||
-         (need_vstar() && prize_count_after_reveal(Card::RegidragoVstar) > 0) ||
-         prize_count_after_reveal(Card::Grass) > 0 ||
-         prize_count_after_reveal(Card::Fire) > 0);
-
-    // Wonder Tag searches one Supporter, and only one Supporter may be played this
-    // turn. When a held Gladion has a known Prize route and Crispin is already held,
-    // searching a second Crispin cannot improve the current Supporter action and the
-    // first copy remains available for the next Energy turn:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
-    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
-    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
-    // One Supporter per turn: https://www.pokemon.com/us/pokemon-tcg/rules
-    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // The held Fire manual on T4 plus the held Crispin's one-type Grass search and
-    // next manual attachment cover the exact T5 Energy route without a second copy:
-    // https://github.com/FlareZ123/pokemon-sims/issues/1051
-    // Confirmed original duplicate route:
-    // https://github.com/FlareZ123/pokemon-sims/issues/1038
-    return held_crispin_completes_ggf ||
-        held_crispin_covers_next_turn_one_type_route ||
-        held_gladion_has_known_axis;
-  }
-
-  bool wonder_tag_duplicate_held_gladion_has_no_marginal_route() const {
-    if (!deck_seen_ || !prizes_known() || !supporter_allowed() ||
-        hand_count(Card::TapuLeleGX) == 0 ||
-        hand_count(Card::Gladion) == 0 ||
-        deck_count_after_search_started(Card::Gladion) == 0) {
-      return false;
-    }
-
-    const bool prized_regi = need_regi() &&
-        deck_count_after_search_started(Card::RegidragoV) == 0 &&
-        prize_count_after_reveal(Card::RegidragoV) > 0;
-    const bool prized_vstar = need_vstar() &&
-        deck_count_after_search_started(Card::RegidragoVstar) == 0 &&
-        prize_count_after_reveal(Card::RegidragoVstar) > 0;
-    const bool prized_final_energy =
-        final_prized_energy_for_gladion().has_value();
-
-    // Wonder Tag would select Gladion for the same known Prize axis that the held
-    // copy already resolves. A duplicate Gladion cannot create a second Supporter
-    // action this turn, so preserve Tapu Lele-GX and its Bench slot:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
-    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
-    // One Supporter per turn: https://www.pokemon.com/us/pokemon-tcg/rules
-    // Knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1039
-    return prized_regi || prized_vstar || prized_final_energy;
-  }
-
-  void trace_tapu_hold_once(std::string_view key, std::string_view rules,
-                            std::string_view detail) {
-    // Fixed-point stabilization may re-query the same legal retention decision.
-    // Emit one public event per exact state while preserving later events after a
-    // card, zone, action allowance, or knowledge-relevant state changes:
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
-    // Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
-    // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/1004
-    if (trace_ != nullptr) {
-      trace_->add_policy_once(state_, key, state_.turn, "HOLD TAPU LELE-GX",
-                              rules, detail);
-    }
+    return std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
+      return pokemon.card == Card::RegidragoVstar && pokemon.grass >= 2 && pokemon.fire >= 1;
+    });
   }
 
   bool bench_tapu_if_useful() {
-    if (held_banked_steven_has_known_t3_active_regi_route()) {
-      // The first Wonder Tag already banked Steven and the public Energy
-      // package covers all three manual attachments. Preserve the second
-      // Tapu Lele-GX, its Bench slot, and Wonder Tag instead of fetching a
-      // redundant Crispin:
-      // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
-      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
-      // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
-      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-      // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
-      // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-      // Earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1049
+    if (held_turo_direct_active_promotion_route()) {
+      // Held Professor Turo already removes the Basic Active and promotes the
+      // complete Benched Regidrago VSTAR. Do not spend Tapu Lele-GX, its Bench
+      // slot, Wonder Tag, and Tate & Liza on the same Active-position axis:
+      // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+      // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+      // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+      // Active-replacement procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Direct-connector priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1513
       trace_tapu_hold_once(
-          "issue-1049-banked-steven-route",
-          "R-TAPU-01; R-STEVEN-01; P-CONNECTOR-01; P-KNOWLEDGE-01",
-          "Retained the second Tapu because banked Steven and the public Energy package already complete the deterministic T3 route.");
+          "issue-1513-held-turo-active-promotion",
+          "R-TURO-01; R-TAPU-01; R-TATE-01; R-GAME-SUPPORTER; P-CONNECTOR-01",
+          "Retained Tapu because held Professor Turo directly promotes the complete Benched Regidrago VSTAR.");
       return false;
     }
-    if (wonder_tag_duplicate_held_gladion_has_no_marginal_route()) {
-      trace_tapu_hold_once(
-          "issue-1039-duplicate-held-gladion",
-          "R-TAPU-01; R-GAME-SUPPORTER; P-CONNECTOR-01; P-KNOWLEDGE-01",
-          "Retained the second Tapu because held Gladion already resolves the same known Prize route.");
-      return false;
-    }
-    if (wonder_tag_duplicate_held_crispin_has_no_marginal_route()) {
-      trace_tapu_hold_once(
-          "issue-1038-duplicate-held-crispin",
-          "R-TAPU-01; R-GAME-SUPPORTER; P-CONNECTOR-01; P-KNOWLEDGE-01",
-          "Retained the second Tapu because held Crispin already covers the current or next Energy route.");
-      return false;
-    }
-    if (wonder_tag_burnet_is_redundant_with_legacy_star_route()) {
-      // Keep the second Tapu Lele-GX in hand after Quick Ball has legally searched
-      // and shuffled. Every setup axis already has a shorter observable route:
-      // https://api.pokemontcg.io/v2/cards/sm2-60
-      // https://api.pokemontcg.io/v2/cards/swsh1-179
-      // https://github.com/FlareZ123/pokemon-sims/issues/991
-      trace_tapu_hold_once(
-          "issue-1004-tapu-legacy-star-route",
-          "R-TAPU-01; P-DCI-01; P-KNOWLEDGE-01",
-          "Retained the second Tapu because held Crispin, evolution, manual attachment, and Legacy Star already complete setup.");
-      return false;
-    }
-    if (wonder_tag_gladion_is_redundant_with_held_manual_energy()) {
-      // Preserve Tapu Lele-GX and Wonder Tag because the held Prize-target Energy
-      // already completes the final axis through the legal manual attachment:
-      // https://api.pokemontcg.io/v2/cards/sm2-60
-      // https://api.pokemontcg.io/v2/cards/sm4-95
-      // https://github.com/FlareZ123/pokemon-sims/issues/992
-      trace_tapu_hold_once(
-          "issue-1004-tapu-gladion-route",
-          "R-TAPU-01; P-KNOWLEDGE-01; P-DCI-01",
-          "Retained Tapu because the held needed Energy and manual attachment already complete setup.");
-      return false;
-    }
-    if (wonder_tag_arven_is_redundant_with_held_burnet_route()) {
-      // Preserve Tapu Lele-GX because held Energy, Burnet, and VSTAR already form
-      // the shortest complete current-turn route:
-      // https://api.pokemontcg.io/v2/cards/sm2-60
-      // https://api.pokemontcg.io/v2/cards/sv1-166
-      // https://github.com/FlareZ123/pokemon-sims/issues/993
-      trace_tapu_hold_once(
-          "issue-1004-tapu-arven-burnet-route",
-          "R-TAPU-01; P-DCI-01; P-KNOWLEDGE-01",
-          "Retained Tapu because held Energy, Professor Burnet, and Regidrago VSTAR already complete setup.");
-      return false;
-    }
-
-    const int steven_before = hand_count(Card::StevensResolve);
-    const bool benched = bench_tapu_if_useful_issue_991_original();
-    if (benched && hand_count(Card::StevensResolve) > steven_before) {
-      // The one-shot Wonder Tag search admitted Steven before later Item actions may
-      // alter the mutable setup-axis count. Keep that legal admission for this turn:
-      // https://api.pokemontcg.io/v2/cards/sm2-60
-      // https://api.pokemontcg.io/v2/cards/sm7-145
-      // https://api.pokemontcg.io/v2/cards/swsh1-179
-      // https://github.com/FlareZ123/pokemon-sims/issues/999
-      wonder_tag_selected_steven_this_turn_ = true;
-    }
-    return benched;
+    return bench_tapu_if_useful_issue_1513_original();
   }

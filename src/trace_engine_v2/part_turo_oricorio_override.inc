@@ -262,30 +262,52 @@
     return true;
   }
 
+  std::vector<Card> tate_k0_public_projection_deck() const {
+    std::vector<Card> projected_deck;
+    for (const auto& [card, copies] : recipe_) {
+      const int evolved_regidrago_bases =
+          card == Card::RegidragoV ? in_play_count(Card::RegidragoVstar) : 0;
+      const int evolved_pineco_bases =
+          card == Card::Pineco ? in_play_count(Card::ForretressEx) : 0;
+      const int public_known = hand_count(card) + count_of(state_.discard, card) +
+          in_play_count(card) + evolved_regidrago_bases +
+          evolved_pineco_bases + attached_public_count(card);
+      for (int unseen = std::max(0, copies - public_known); unseen > 0; --unseen) {
+        projected_deck.push_back(card);
+      }
+    }
+    return projected_deck;
+  }
+
   bool tate_draw_has_held_non_supporter_completion() const {
     if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 ||
         !setup_axis_missing()) {
       return false;
     }
 
-    // Remove Tate & Liza from the shadow hand and reserve the Supporter play. The
-    // exact public remainder of the turn must still complete Active VSTAR, GGF, and
-    // the ready-turn payload through held non-Supporter cards. At K0, search actions
-    // retain only targets still plausible from the fixed deck list; at K1, the exact
-    // inspected deck is used by the same action selectors:
-    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
-    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
-    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Supporter, Item, evolution, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // Hidden-information and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1057
     std::mt19937_64 shadow_rng = rng_;
     Engine projected(scenario_, recipe_, shadow_rng);
     projected.state_ = state_;
-    projected.deck_seen_ = deck_seen_;
-    projected.prizes_revealed_ = prizes_revealed_;
+    if (deck_seen_ || prizes_revealed_) {
+      projected.deck_seen_ = deck_seen_;
+      projected.prizes_revealed_ = prizes_revealed_;
+    } else {
+      // Before a legal inspection, assign every card still possible from fixed copy
+      // counts to one synthetic search zone. This keeps the held-route classifier
+      // identical for equal public K0 states while retaining exact K1 behavior after
+      // a real deck or Prize inspection:
+      // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Supporter, Item, evolution, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // K0/K1 contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+      // Future-card-oracle boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1522
+      projected.state_.deck = tate_k0_public_projection_deck();
+      projected.state_.prizes.clear();
+      projected.deck_seen_ = false;
+      projected.prizes_revealed_ = false;
+    }
     while (remove_one(projected.state_.hand, Card::TateLiza)) {
     }
     projected.state_.supporter_used = true;
@@ -295,10 +317,11 @@
     // that the public held non-Supporter cards deterministically complete the turn:
     // Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
-    // Hidden-order policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    // Future-card-oracle boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
     // Earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1110
+    // Prior fixes: https://github.com/FlareZ123/pokemon-sims/issues/1057
     // https://github.com/FlareZ123/pokemon-sims/issues/1130
+    // Confirmed hidden-placement bug: https://github.com/FlareZ123/pokemon-sims/issues/1522
     if (projected.outcome_.used_legacy_star) return false;
 
     return projected.active_is_vstar() && projected.state_.active->grass >= 2 &&

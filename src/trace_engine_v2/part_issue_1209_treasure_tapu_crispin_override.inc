@@ -225,6 +225,26 @@
   }
 
   void choose_supporter() {
+    if (issue_1419_oricorio_route_should_hold_supporter()) {
+      // Vital Dance has already supplied every missing Energy, and the remaining
+      // attachment windows plus held Blender complete the earliest route. Preserve
+      // those exact cards instead of shuffling them away with Tate & Liza:
+      // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
+      // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+      // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Core Supporter and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Confirmed stale-claim bug: https://github.com/FlareZ123/pokemon-sims/issues/1419
+      if (trace_ != nullptr) {
+        trace_->add_policy_once(
+            state_, "issue-1419-hold-supporter-for-vital-dance-route",
+            state_.turn, "HOLD SUPPORTER",
+            "R-ORICORIO-01; R-GAME-SUPPORTER; P-DCI-01",
+            "Preserved Vital Dance Energy and Brilliant Blender for the scheduled attachment route.");
+      }
+      return;
+    }
+
     if (issue_1209_t2_treasure_tapu_crispin_completion_available()) {
       // Preserve the one Supporter play until Mysterious Treasure pays its current-turn
       // Dragon cost, searches Tapu Lele-GX, and Wonder Tag obtains Crispin. Spending

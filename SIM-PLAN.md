@@ -54,7 +54,7 @@ The policy now recognizes two-step payload lines that are legal without a draw-o
 - Ultra Ball is evaluated using its actual two-card hand payment, with the dynamic DCI selector checking both discards.
 - Evolution Incense is included as a deliberately narrow evolution-axis comparator.
 
-Historical variant-builder work is retained here as design context. The current executable does not expose a variant builder or emit deck-swap rows; it writes baseline `all_scenarios()` rows only: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L271-L283. The prior `variant_results.csv` was removed and must not support current claims: https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7.
+The executable registers `regidrago-shell` and `regidrago-pineco`. Aggregate `--all-decks` runs the same scenario matrix for both recipes and emits one row per recipe and scenario: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#registered-decks https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L250-L330 https://github.com/FlareZ123/pokemon-sims/blob/main/results/multi_deck_comparison.csv https://github.com/FlareZ123/pokemon-sims/issues/1493. Historical generic variant-builder work remains design context; the retired `variant_results.csv` must not support current claims: https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7.
 
 ## Simulation state
 
@@ -184,7 +184,7 @@ Dragapult ex and Mega Dragonite ex are S-tier. Dialga-GX’s Timeless-GX and His
 - `setup_failure_pct` counts every game not ready by the end of T4 and equals `100 - ready_by_t4_pct`: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/T5_FAILURE_POLICY.md https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7-L12 https://github.com/FlareZ123/pokemon-sims/issues/1491
 - Monte Carlo standard error in percentage points for baseline scenario values.
 - Setup-tool use rates and opening Regidrago V rate.
-- Baseline scenario probabilities. Matched-seed card-swap deltas remain a future extension until a current generator and result artifact are restored: https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7.
+- Registered-deck scenario probabilities for `regidrago-shell` and `regidrago-pineco`, including the paired `--all-decks` artifact: https://github.com/FlareZ123/pokemon-sims/blob/main/results/multi_deck_comparison.csv https://github.com/FlareZ123/pokemon-sims/issues/1493
 
 ## Validation plan
 
@@ -193,7 +193,7 @@ Dragapult ex and Mega Dragonite ex are S-tier. Dialga-GX’s Timeless-GX and His
 3. Unit-test deck total and category totals.
 4. Build with warnings enabled.
 5. Run `ctest`.
-6. Smoke-test every implemented baseline scenario. A future variant generator must add its own executable coverage before variant claims return: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L271-L283.
+6. Smoke-test both registered recipes and byte-compare the aggregate `--all-decks` matrix. The retired generic `variant_results.csv` remains excluded: https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml#L133-L140 https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7 https://github.com/FlareZ123/pokemon-sims/issues/1493
 7. Run a fixed-seed large trial count for reproducible final CSV files.
 8. Inspect any implausible result by checking timing gates, Supporter contention, and same-turn discard markers.
 9. Record known omissions before interpreting the percentages.

@@ -1,0 +1,117 @@
+name: Diagnostic T2 T3 Matrix 2026-07-23
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostic-matrix:
+    if: github.head_ref == 'audit/debug-mode-20260723'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build source-bound diagnostic matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > diagnostic_t2_t3_matrix.cpp <<'CPP'
+          #define REGIDRAGO_SIM_NO_MAIN
+          #include "src/regidrago_sim.cpp"
+
+          #include <cstdint>
+          #include <exception>
+          #include <fstream>
+          #include <iomanip>
+          #include <iostream>
+          #include <string>
+
+          int main() {
+            constexpr std::uint64_t trials = 100000;
+            constexpr std::uint64_t matrix_seed = 20260723;
+            constexpr std::uint64_t seed_stride = 104729;
+
+            std::ofstream csv("diagnostic_t2_t3_matrix.csv", std::ios::trunc);
+            if (!csv) return 2;
+            csv << "deck,scenario,trials,completed_trials,exceptions,exception_pct,"
+                   "ready_by_t2_pct,ready_by_t3_pct\n";
+            csv << std::fixed << std::setprecision(6);
+
+            for (const sim::NamedDeck& deck : sim::deck_registry()) {
+              const std::vector<sim::Scenario> scenarios = sim::all_scenarios();
+              for (std::size_t scenario_index = 0;
+                   scenario_index < scenarios.size();
+                   ++scenario_index) {
+                const sim::Scenario& scenario = scenarios[scenario_index];
+                // Registered decks use common random numbers through the same
+                // scenario-derived seed schedule:
+                // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
+                // https://github.com/FlareZ123/pokemon-sims/issues/1118
+                std::mt19937_64 rng(matrix_seed + seed_stride * scenario_index);
+                std::uint64_t completed = 0;
+                std::uint64_t exceptions = 0;
+                std::uint64_t ready_by_t2 = 0;
+                std::uint64_t ready_by_t3 = 0;
+                for (std::uint64_t trial = 0; trial < trials; ++trial) {
+                  try {
+                    sim::Engine engine(scenario, deck.recipe, rng);
+                    const sim::TrialOutcome outcome = engine.run();
+                    ++completed;
+                    ready_by_t2 += outcome.ready_by_2 ? 1U : 0U;
+                    ready_by_t3 += outcome.ready_by_3 ? 1U : 0U;
+                  } catch (const std::exception& error) {
+                    // A reachable game-state exception is reported separately and
+                    // counted as an incomplete trial. It is never converted into a
+                    // successful setup result:
+                    // https://github.com/FlareZ123/pokemon-sims/issues/1461
+                    ++exceptions;
+                    if (exceptions <= 3) {
+                      std::cerr << "exception deck=" << deck.id
+                                << " scenario=" << scenario.label
+                                << " trial=" << trial
+                                << " error=" << error.what() << '\n';
+                    }
+                  }
+                }
+                const auto pct = [](const std::uint64_t count,
+                                    const std::uint64_t total) {
+                  return total == 0 ? 0.0
+                      : 100.0 * static_cast<double>(count) /
+                            static_cast<double>(total);
+                };
+                csv << '"' << deck.id << "\",\"" << scenario.label << "\","
+                    << trials << ',' << completed << ',' << exceptions << ','
+                    << pct(exceptions, trials) << ','
+                    << pct(ready_by_t2, trials) << ','
+                    << pct(ready_by_t3, trials) << '\n';
+                std::cout << deck.id << " | " << scenario.label
+                          << " | T2=" << pct(ready_by_t2, trials)
+                          << "% | T3=" << pct(ready_by_t3, trials)
+                          << "% | exceptions=" << exceptions << '\n';
+              }
+            }
+            csv.flush();
+            return csv ? 0 : 3;
+          }
+          CPP
+          # Simulator and matrix specifications:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/generate_multi_deck_comparison.py
+          g++ -std=c++20 -O2 -I. diagnostic_t2_t3_matrix.cpp -o diagnostic_t2_t3_matrix
+      - name: Run all 32 conditions
+        shell: bash
+        run: |
+          set -o pipefail
+          ./diagnostic_t2_t3_matrix 2>&1 | tee diagnostic_t2_t3_matrix.log
+          test -s diagnostic_t2_t3_matrix.csv
+          test "$(($(wc -l < diagnostic_t2_t3_matrix.csv) - 1))" -eq 32
+      - uses: actions/upload-artifact@v4
+        with:
+          name: diagnostic-t2-t3-matrix
+          path: |
+            diagnostic_t2_t3_matrix.csv
+            diagnostic_t2_t3_matrix.log
+          if-no-files-found: error

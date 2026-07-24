@@ -1,3 +1,113 @@
+  bool issue_1478_t1_field_blower_direct_regi_route_available() const {
+    if (current_deck_id() != "regidrago-shell" ||
+        scenario_.dci != DciProfile::StrictJit ||
+        scenario_.locks != LockMode::None || state_.turn != 1 ||
+        !scenario_.going_first || scenario_.max_turn < 3 || item_locked() ||
+        state_.supporter_used || state_.manual_energy_used ||
+        state_.retreat_used || state_.vstar_power_used || !state_.active ||
+        state_.active->card != Card::Oricorio ||
+        state_.active->grass != 0 || state_.active->fire != 0 ||
+        state_.active->tool != Tool::None || bench_space() <= 0 ||
+        state_.stadium != Stadium::None ||
+        hand_count(Card::MysteriousTreasure) == 0 ||
+        hand_count(Card::FieldBlower) == 0 ||
+        hand_count(Card::ForestSealStone) == 0 ||
+        hand_count(Card::Crispin) == 0 ||
+        hand_count(Card::Arven) == 0 ||
+        hand_count(Card::BrilliantBlender) == 0 ||
+        hand_count(Card::Fire) == 0 ||
+        hand_count(Card::RegidragoV) > 0 ||
+        hand_count(Card::RegidragoVstar) > 0) {
+      return false;
+    }
+    const bool benched_tool_target = std::any_of(
+        state_.bench.begin(), state_.bench.end(),
+        [](const Pokemon& pokemon) { return pokemon.tool != Tool::None; });
+    if (benched_tool_target) return false;
+
+    // Field Blower has no Tool or Stadium target in this exact public no-lock
+    // state. Mysterious Treasure may spend it to establish Regidrago V, then the
+    // held Fire pays Oricorio's one-Energy Retreat Cost. Forest Seal Stone,
+    // Crispin, Arven, Earthen Vessel, and Brilliant Blender provide a complete
+    // public T3 strict-JIT continuation without reading future draws or Prizes:
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
+    // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Core Item, search, Bench, attachment, retreat, Supporter, Tool, evolution, and Ability procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K0/K1, dynamic DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1478
+    return issue_1419_publicly_possible_count(Card::RegidragoV) >= 1 &&
+        issue_1419_publicly_possible_count(Card::RegidragoVstar) >= 1 &&
+        issue_1419_publicly_possible_count(Card::EarthenVessel) >= 1 &&
+        issue_1419_publicly_possible_count(Card::Grass) >= 2 &&
+        issue_1419_publicly_possible_count(Card::Fire) >= 1 &&
+        issue_1419_possible_payload_count() >= 1;
+  }
+
+  bool issue_1478_play_t1_field_blower_direct_regi_route() {
+    if (!issue_1478_t1_field_blower_direct_regi_route_available()) {
+      return false;
+    }
+
+    remove_one(state_.hand, Card::MysteriousTreasure);
+    state_.discard.push_back(Card::MysteriousTreasure);
+    if (!discard_from_hand(Card::FieldBlower,
+                           "Mysterious Treasure direct-Regidrago cost",
+                           "R-MT-01; P-DCI-01; P-COMPRESS-01")) {
+      throw std::logic_error("projected issue-1478 Field Blower cost disappeared");
+    }
+    record_deck_search_knowledge("Mysterious Treasure");
+
+    if (!move_deck_to_hand(Card::RegidragoV)) {
+      const Card fallback = fallback_mysterious_target_after_search_started();
+      const bool found_fallback = move_deck_to_hand(fallback);
+      shuffle(state_.deck);
+      trace("PLAY ITEM", "R-MT-01; R-GAME-ITEM; P-DCI-01",
+            found_fallback
+                ? "Spent setup-dead Field Blower; Regidrago V was unavailable after inspection, so Mysterious Treasure searched " +
+                      std::string(name(fallback)) + "."
+                : "Spent setup-dead Field Blower; no Psychic or Dragon Pokemon remained after inspection.");
+      return true;
+    }
+    shuffle(state_.deck);
+    trace("PLAY ITEM", "R-MT-01; R-GAME-ITEM; P-DCI-01; P-COMPRESS-01",
+          "Discarded setup-dead Field Blower and searched Regidrago V for the complete T3 route.");
+
+    if (!bench_from_hand(Card::RegidragoV, false)) {
+      throw std::logic_error("projected issue-1478 Regidrago V Bench action disappeared");
+    }
+    if (!remove_one(state_.hand, Card::Fire)) {
+      throw std::logic_error("projected issue-1478 retreat Energy disappeared");
+    }
+    ++state_.active->fire;
+    state_.manual_energy_used = true;
+    trace("ATTACH", "R-GAME-ENERGY",
+          "Fire Energy manually to Active Oricorio for its Retreat Cost.");
+
+    --state_.active->fire;
+    state_.discard.push_back(Card::Fire);
+    const auto promoted = std::find_if(
+        state_.bench.rbegin(), state_.bench.rend(),
+        [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV &&
+              pokemon.entered_turn == state_.turn;
+        });
+    if (promoted == state_.bench.rend()) {
+      throw std::logic_error("projected issue-1478 retreat target disappeared");
+    }
+    std::swap(*state_.active, *promoted);
+    state_.retreat_used = true;
+    trace("RETREAT", "R-GAME-RETREAT",
+          "Paid Oricorio's one-Energy Retreat Cost and promoted Regidrago V.");
+    return true;
+  }
+
   bool issue_1476_t2_oricorio_first_route_available_after_search_started() const {
     if (!deck_seen_ || state_.turn != 1 || !scenario_.going_first ||
         scenario_.dci != DciProfile::StrictJit ||
@@ -46,6 +156,7 @@
   }
 
   bool play_mysterious_treasure(const bool permit_payload) {
+    if (issue_1478_play_t1_field_blower_direct_regi_route()) return true;
     if (!issue_1476_redundant_burnet_route_available(
             Card::MysteriousTreasure)) {
       return play_mysterious_treasure_issue1476_original(permit_payload);

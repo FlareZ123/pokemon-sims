@@ -11,7 +11,15 @@ def simulator_policy_source_paths(repo_root: Path) -> tuple[Path, ...]:
     # and CSV fields, so excluding it would permit stale fixed-seed output:
     # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
     # https://github.com/FlareZ123/pokemon-sims/issues/642
-    source_paths = [path for path in (repo_root / "src").rglob("*") if path.is_file()]
+    # Source-update lock files coordinate writers and cannot affect compilation or
+    # simulator behavior, so they must stay outside source-bound evidence:
+    # https://github.com/FlareZ123/pokemon-sims/issues/1492
+    # https://github.com/FlareZ123/pokemon-sims/issues/1300
+    source_paths = [
+        path
+        for path in (repo_root / "src").rglob("*")
+        if path.is_file() and path.suffix != ".lock"
+    ]
 
     # The executable target and compile configuration are also simulator inputs:
     # https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt#L1-L11

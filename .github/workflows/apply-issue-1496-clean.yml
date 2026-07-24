@@ -50,3 +50,5 @@ jobs:
           git add -u -- scripts/apply_issue_1496.py .github/workflows/apply-issue-1496-clean.yml
           git commit -m "Document the supported Crobat modeling surface (#1496)"
           git push origin HEAD:fix/issue-1496-crobat-sim-plan-clean
+
+# This source-bound bootstrap is intentionally self-removing after validation.

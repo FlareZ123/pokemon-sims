@@ -2,10 +2,9 @@
     if (scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || !scenario_.going_first ||
         state_.turn != 3 || scenario_.max_turn < 3 || item_locked() ||
-        !deck_seen_ || !prizes_revealed_ || !supporter_allowed() ||
-        state_.supporter_used || state_.manual_energy_used ||
-        !state_.vstar_power_used || !state_.active ||
-        state_.active->card != Card::RegidragoVstar ||
+        !deck_seen_ || !supporter_allowed() || state_.supporter_used ||
+        state_.manual_energy_used || !state_.vstar_power_used ||
+        !state_.active || state_.active->card != Card::RegidragoVstar ||
         state_.active->grass != 1 || state_.active->fire != 1 ||
         state_.active->tool != Tool::ForestSealStone ||
         hand_count(Card::Arven) == 0 ||

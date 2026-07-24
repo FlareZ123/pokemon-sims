@@ -7,6 +7,16 @@
     return std::max(0, total_copies(card) - known);
   }
 
+  int issue_1419_possible_payload_count() const {
+    int possible_payloads = 0;
+    for (const Card card : {Card::Appletun, Card::MegaDragonite,
+                            Card::Dragapult, Card::GoodraVstar,
+                            Card::DialgaGX}) {
+      possible_payloads += issue_1419_publicly_possible_count(card);
+    }
+    return possible_payloads;
+  }
+
   bool quick_ball_oricorio_latias_route_available() const {
     const int missing_grass = grass_needed();
     const int missing_fire = fire_needed();
@@ -14,12 +24,6 @@
     const int future_turns = std::max(0, scenario_.max_turn - state_.turn);
     const int attachment_windows = future_turns +
         (state_.manual_energy_used ? 0 : 1);
-    int possible_payloads = 0;
-    for (const Card card : {Card::Appletun, Card::MegaDragonite,
-                            Card::Dragapult, Card::GoodraVstar,
-                            Card::DialgaGX}) {
-      possible_payloads += issue_1419_publicly_possible_count(card);
-    }
 
     // The shared route gate controls both Quick Ball's dynamic DCI cost and its
     // Basic-target priority. Keeping one predicate prevents Wonder Tag into Crispin
@@ -45,7 +49,35 @@
         issue_1419_publicly_possible_count(Card::Grass) >= missing_grass &&
         issue_1419_publicly_possible_count(Card::Fire) >= missing_fire &&
         hand_count(Card::BrilliantBlender) > 0 && !payload_ready() &&
-        possible_payloads > future_turns;
+        issue_1419_possible_payload_count() > future_turns;
+  }
+
+  bool issue_1419_oricorio_route_should_hold_supporter() const {
+    const int missing_grass = grass_needed();
+    const int missing_fire = fire_needed();
+    const int missing_energy = missing_grass + missing_fire;
+    const int future_turns = std::max(0, scenario_.max_turn - state_.turn);
+    const int attachment_windows = future_turns +
+        (state_.manual_energy_used ? 0 : 1);
+
+    // After Vital Dance has put the exact missing Energy into hand, a draw-mode
+    // Supporter can only damage the proven route by shuffling away those Energy or
+    // Brilliant Blender. Preserve the hand until the scheduled attachments finish:
+    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Tate & Liza draw mode: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // One-Supporter-per-turn and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest deterministic route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed stale-claim bug: https://github.com/FlareZ123/pokemon-sims/issues/1419
+    return scenario_.dci == DciProfile::StrictJit &&
+        scenario_.locks == LockMode::None && active_is_vstar() &&
+        in_play(Card::Oricorio) && missing_energy > 0 &&
+        hand_count(Card::Grass) >= missing_grass &&
+        hand_count(Card::Fire) >= missing_fire &&
+        attachment_windows >= missing_energy &&
+        hand_count(Card::BrilliantBlender) > 0 && !payload_ready() &&
+        issue_1419_possible_payload_count() > future_turns;
   }
 
   std::optional<Card> choose_discard(

@@ -1,0 +1,66 @@
+name: Issue 1471 Baseline Refresh
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: issue-1471-baseline-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    if: github.event.pull_request.head.ref == 'fix/issue-1471-k0-vessel-inventory'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2 --target regidrago_sim
+      - name: Regenerate canonical baselines
+        run: >-
+          python scripts/regenerate_setup_baselines.py
+          --exe build/regidrago_sim
+          --out-dir results
+          --trials 100000
+          --matrix-seed 20260705
+      - name: Regenerate paired baselines
+        run: >-
+          python scripts/generate_multi_deck_comparison.py
+          --exe build/regidrago_sim
+          --out-dir results
+          --trials 100000
+          --matrix-seed 20260705
+      - name: Regenerate reports
+        run: |
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Record generated diff
+        shell: bash
+        run: |
+          git diff --name-only -- README.md docs results > generated-changed-files.txt
+          git diff -- README.md docs results > generated.patch
+      - name: Upload exact generated outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1471-generated-baselines
+          path: |
+            generated-changed-files.txt
+            generated.patch
+            README.md
+            docs/REPORT.md
+            docs/MULTI_DECK_REPORT.md
+            results/baseline_manifest.json
+            results/simulation_results.csv
+            results/traces
+            results/multi_deck_manifest.json
+            results/multi_deck_comparison.csv
+            results/multi_deck_traces

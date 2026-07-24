@@ -223,7 +223,7 @@ void test_ordinary_lower_dci_cost_stays_ahead_of_latias_at_k1() {
          "route-specific Latias downgrade displaced ordinary dead-card fuel");
 }
 
-void test_source_bound_seed_129_uses_legal_k0_to_k1_route() {
+void test_source_bound_seed_129_uses_legal_k0_to_k1_oricorio_route() {
   const auto scenario = sim::scenario_by_label("strict-jit/go-first");
   const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
   expect(scenario.has_value() && deck != nullptr,
@@ -235,11 +235,11 @@ void test_source_bound_seed_129_uses_legal_k0_to_k1_route() {
   const sim::TrialOutcome outcome = engine.run();
 
   // The public T1 hand proves Blender strictly covers Burnet's modeled payload
-  // role. Mysterious Treasure may pay Burnet before inspection, then legally
-  // establishes K1 by searching the first Tapu Lele-GX. Wonder Tag banks Crispin.
-  // On T2, the inspected deck proves the second Tapu and Crispin route, so Quick
-  // Ball may spend now-inert Latias ex, bank the second Crispin, and reach GGF plus
-  // the same-turn Blender payload on T3 without singleton-Oricorio oracle use:
+  // role. Mysterious Treasure pays Burnet before inspection and legally establishes
+  // K1 by searching Tapu Lele-GX. Wonder Tag banks Crispin. On T2, the inspected
+  // deck proves Oricorio available; Quick Ball waits until in-place VSTAR evolution,
+  // spends inert Latias ex, and Vital Dance completes the Energy continuation for
+  // GGF plus the same-turn Blender payload on T3:
   // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
@@ -247,6 +247,7 @@ void test_source_bound_seed_129_uses_legal_k0_to_k1_route() {
   // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
   // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Core cost, search, Bench, Ability, Supporter, evolution, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
@@ -255,24 +256,24 @@ void test_source_bound_seed_129_uses_legal_k0_to_k1_route() {
   // K0 refinement: https://github.com/FlareZ123/pokemon-sims/issues/1467
   // Confirmed deterministic correction: https://github.com/FlareZ123/pokemon-sims/issues/1476
   expect(outcome.first_ready_turn == 3 && !outcome.setup_failed,
-         "seed 129 did not complete the legal deterministic T3 route");
+         "seed 129 did not complete the legal deterministic T3 Oricorio route");
   expect(trace_contains(trace, "Professor Burnet (Mysterious Treasure cost)"),
          "seed 129 did not spend redundant Burnet before the first search");
   expect(trace_contains(trace, "T1 | DECK KNOWLEDGE") &&
              trace_contains(trace, "Mysterious Treasure: deck inspected"),
          "seed 129 did not establish K1 through the legal T1 Treasure search");
   expect(trace_contains(trace, "T1 | WONDER TAG") &&
-             trace_contains(trace, "T2 | WONDER TAG"),
-         "seed 129 did not use both physical Wonder Tag connectors");
+             !trace_contains(trace, "T2 | WONDER TAG"),
+         "seed 129 did not preserve the filed single-Wonder-Tag route");
   expect(trace_contains(trace, "Latias ex (Quick Ball cost)"),
-         "seed 129 did not spend inert Latias after K1 proved the second connector");
+         "seed 129 did not spend inert Latias after K1 and evolution");
+  expect(trace_contains(trace, "Searched a Basic Pokemon: Oricorio") ||
+             trace_contains(trace, "Searched a Basic Pokémon: Oricorio"),
+         "seed 129 did not search the K1-proven Oricorio connector");
+  expect(trace_contains(trace, "Vital Dance"),
+         "seed 129 did not resolve the filed Vital Dance continuation");
   expect(trace_contains(trace, "T3 | READY"),
          "seed 129 did not reach the source-bound T3 ready state");
-  expect(!trace_contains(trace, "Searched a Basic Pokemon: Oricorio") &&
-             !trace_contains(trace, "Searched a Basic Pokémon: Oricorio"),
-         "seed 129 searched Oricorio through the rejected singleton route");
-  expect(!trace_contains(trace, "Vital Dance"),
-         "seed 129 resolved Vital Dance through the rejected singleton route");
 }
 
 }  // namespace
@@ -282,6 +283,6 @@ int main() {
   test_selects_latias_only_for_complete_k1_oricorio_route();
   test_preserves_latias_at_every_k1_route_boundary();
   test_ordinary_lower_dci_cost_stays_ahead_of_latias_at_k1();
-  test_source_bound_seed_129_uses_legal_k0_to_k1_route();
+  test_source_bound_seed_129_uses_legal_k0_to_k1_oricorio_route();
   return 0;
 }

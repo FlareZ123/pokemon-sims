@@ -33,11 +33,11 @@ jobs:
 
           source_path = Path("src/regidrago_sim.cpp")
           source = source_path.read_text(encoding="utf-8")
-          old = '#include "trace_engine_v2/part_016.inc"}\n'
+          old = '#include "trace_engine_v2/part_016.inc"}'
           new = (
               '// C++ preprocessing include grammar: https://eel.is/c++draft/cpp.include\n'
               '// Confirmed portability bug: https://github.com/FlareZ123/pokemon-sims/issues/1482\n'
-              '#include "trace_engine_v2/part_016.inc"\n'
+              '#include "trace_engine_v2/part_016.inc"'
           )
           if source.count(old) != 1:
               raise SystemExit("Expected one malformed part_016 include")

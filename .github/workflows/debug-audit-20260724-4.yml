@@ -44,13 +44,13 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee pass-1-item-lock.txt
           grep -q "T2 | READY" pass-1-item-lock.txt
 
-          # Path to the Peak, Chaotic Swell, Forest Seal Stone, and Ability/Stadium procedure:
+          # Path to the Peak, Mysterious Treasure, Regidrago VSTAR, and Ability procedure:
           # https://api.pokemontcg.io/v2/cards/swsh6-148
-          # https://api.pokemontcg.io/v2/cards/sm12-187
-          # https://api.pokemontcg.io/v2/cards/swsh12-156
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
           # https://www.pokemon.com/us/pokemon-tcg/rules
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3 | tee pass-2-rulebox-lock.txt
-          grep -q "T3 | READY" pass-2-rulebox-lock.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 2 | tee pass-2-rulebox-lock.txt
+          grep -q "T2 | READY" pass-2-rulebox-lock.txt
 
           # Steven's Resolve, Mysterious Treasure, Secret Box, Forretress ex, and Supporter procedure:
           # https://api.pokemontcg.io/v2/cards/sm7-145

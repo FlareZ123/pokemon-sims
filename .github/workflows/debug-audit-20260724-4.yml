@@ -1,0 +1,84 @@
+name: Source-bound debug audit 2026-07-24-4
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: debug-audit-20260724-4-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/debug-20260724-4'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Capture tested source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee tested-head.txt
+          tar --exclude=.git --exclude='*.lock' -czf repository-snapshot.tar.gz CMakeLists.txt README.md .github src tests scripts docs results
+
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Mysterious Treasure, Regidrago VSTAR, Forest Seal Stone, and turn procedure:
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://api.pokemontcg.io/v2/cards/swsh12-156
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee pass-1-item-lock.txt
+          grep -q "T2 | READY" pass-1-item-lock.txt
+
+          # Path to the Peak, Chaotic Swell, Forest Seal Stone, and Ability/Stadium procedure:
+          # https://api.pokemontcg.io/v2/cards/swsh6-148
+          # https://api.pokemontcg.io/v2/cards/sm12-187
+          # https://api.pokemontcg.io/v2/cards/swsh12-156
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3 | tee pass-2-rulebox-lock.txt
+          grep -q "T3 | READY" pass-2-rulebox-lock.txt
+
+          # Steven's Resolve, Mysterious Treasure, Secret Box, Forretress ex, and Supporter procedure:
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sv6-163
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee pass-3-pineco.txt
+          grep -q "T2 | READY" pass-3-pineco.txt
+
+      - name: Generate current T2 and T3 matrices
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out multi-deck-matrix.csv
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-audit-20260724-4-${{ github.run_attempt }}
+          path: |
+            pass-*.txt
+            tested-head.txt
+            repository-snapshot.tar.gz
+            t2-t3-matrix.csv
+            multi-deck-matrix.csv
+            build/Testing
+          if-no-files-found: warn

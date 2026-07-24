@@ -54,6 +54,14 @@ void test_identity_registry_and_modeling_boundary() {
       sim::crobat_modeling_deck_by_id("crobat1-erika") == nullptr) {
     throw std::runtime_error("Crobat modeling variants leaked into the named registry.");
   }
+
+  // Safe defaults preserve the canonical baseline and reproduce the registered matrix:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1394
+  if (sim::crobat_model_default_output() != "results/crobat_variant_model.csv" ||
+      sim::crobat_model_default_seed() != 20260723ULL) {
+    throw std::runtime_error("Crobat modeling defaults do not match the reproduction contract.");
+  }
+
 }
 
 void test_direct_bench_draws_to_six_and_once_per_turn() {

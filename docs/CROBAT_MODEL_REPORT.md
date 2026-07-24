@@ -12,9 +12,11 @@ No tested Crobat swap made the shell faster. The least damaging variant was `cro
 
 Dark Asset is a probabilistic hand-refresh connector with a Bench cost. The tested cuts remove cards with recovery, lock-answer, gust, Tool, Prize-information, or matchup value. Those discrete losses remain relevant even when a setup percentage is close.
 
+Dark Asset utilization is the percentage of games with at least one legal use. The draw figure is total cards drawn across every Dark Asset resolution divided by games with at least one use, so two-copy variants may include uses on different turns: https://github.com/FlareZ123/pokemon-sims/issues/1394
+
 ## Paired all-scenario summary
 
-| Variant | Cuts | Crobat | Mean ΔT2 | Mean ΔT3 | Mean ΔT4 | T3 scenarios improved | Dark Asset use | Mean cards drawn |
+| Variant | Cuts | Crobat | Mean ΔT2 | Mean ΔT3 | Mean ΔT4 | T3 scenarios improved | Games using Dark Asset | Mean cards drawn per using game |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
 | `regidrago-shell` | none | 0 | +0.000 pp | +0.000 pp | +0.000 pp | 0/16 | 0.000% | 0.000 |
 | `crobat1-erika` | Erika's Invitation | 1 | -0.391 pp | -0.595 pp | -0.517 pp | 2/16 | 12.873% | 1.471 |

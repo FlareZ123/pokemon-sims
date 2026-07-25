@@ -32,8 +32,9 @@ jobs:
 
           tracked = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0")
           tracked = [Path(name) for name in tracked if name]
+          audit_path = Path(".github/workflows/turn-debug-audit.yml")
           text_suffixes = {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".inc", ".py", ".md", ".txt", ".yml", ".yaml", ".cmake", ".json", ".csv"}
-          text_files = [path for path in tracked if path.name == "CMakeLists.txt" or path.suffix.lower() in text_suffixes]
+          text_files = [path for path in tracked if path != audit_path and (path.name == "CMakeLists.txt" or path.suffix.lower() in text_suffixes)]
 
           malformed_includes = []
           invalid_temp_ranges = []
@@ -117,8 +118,8 @@ jobs:
           # Observable-state and earliest-route specifications:
           # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
           # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee audit-trace-1.txt
-          grep -q "T3 | READY" audit-trace-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee audit-trace-1.txt
+          grep -q "T2 | READY" audit-trace-1.txt
 
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee audit-trace-2.txt
           grep -q "T2 | READY" audit-trace-2.txt

@@ -66,13 +66,22 @@ jobs:
       - name: Run three independent simulate-this reviews
         shell: bash
         run: |
-          set -euo pipefail
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee issue-1526-trace-1.txt
-          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-1526-trace-2.txt
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee issue-1526-trace-3.txt
-          grep -q "T3 | READY" issue-1526-trace-1.txt
-          grep -q "T2 | READY" issue-1526-trace-2.txt
-          grep -q "T2 | READY" issue-1526-trace-3.txt
+          set +e
+          status=0
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee issue-1526-trace-1.txt || status=1
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-1526-trace-2.txt || status=1
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee issue-1526-trace-3.txt || status=1
+          grep -q "T3 | READY" issue-1526-trace-1.txt || status=1
+          grep -q "T2 | READY" issue-1526-trace-2.txt || status=1
+          grep -q "T2 | READY" issue-1526-trace-3.txt || status=1
+          exit $status
+      - name: Upload trace diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1526-traces-${{ github.run_attempt }}
+          path: issue-1526-trace-*.txt
+          if-no-files-found: warn
       - name: Regenerate source-bound probability evidence
         run: |
           python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705

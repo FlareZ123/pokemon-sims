@@ -26,7 +26,7 @@ replacement = """  static const State& state(const Engine& engine) {
       projected.deck_seen_ = false;
       projected.prizes_revealed_ = false;
     }
-    while (remove_one(projected.state_.hand, Card::TateLiza)) {
+    while (Engine::remove_one(projected.state_.hand, Card::TateLiza)) {
     }
     projected.state_.supporter_used = true;
     projected.run_turn();

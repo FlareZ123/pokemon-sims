@@ -1,0 +1,165 @@
+name: Turn debug audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: turn-debug-audit-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/turn-20260724-debug-3pass'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Scan every tracked text source
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import py_compile
+          import re
+          import subprocess
+
+          tracked = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0")
+          tracked = [Path(name) for name in tracked if name]
+          text_suffixes = {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".inc", ".py", ".md", ".txt", ".yml", ".yaml", ".cmake", ".json", ".csv"}
+          text_files = [path for path in tracked if path.name == "CMakeLists.txt" or path.suffix.lower() in text_suffixes]
+
+          malformed_includes = []
+          invalid_temp_ranges = []
+          unresolved_markers = []
+          projection_hotspots = []
+          random_hotspots = []
+          selector_hotspots = []
+
+          include_pattern = re.compile(r'^\s*#\s*include\s+(?:<[^>\n]+>|"[^"\n]+")\s+\S')
+          temp_range_pattern = re.compile(
+              r'std::(?:any_of|all_of|none_of|find_if|count_if)\s*\(\s*std::array\s*\{[^;\n]*\}\s*\.begin\s*\(\s*\)\s*,\s*std::array\s*\{',
+              re.DOTALL,
+          )
+          marker_pattern = re.compile(r'\b(?:TODO|FIXME|XXX|HACK)\b')
+
+          for path in text_files:
+              try:
+                  text = path.read_text(encoding="utf-8")
+              except UnicodeDecodeError:
+                  continue
+              lines = text.splitlines()
+              for number, line in enumerate(lines, 1):
+                  if include_pattern.search(line):
+                      malformed_includes.append(f"{path}:{number}:{line.strip()}")
+                  if marker_pattern.search(line):
+                      unresolved_markers.append(f"{path}:{number}:{line.strip()}")
+                  if "projected.state_ = state_" in line or "shadow.state_ = state_" in line:
+                      projection_hotspots.append(f"{path}:{number}:{line.strip()}")
+                  if "rng_" in line or "shuffle(" in line or "uniform_" in line:
+                      random_hotspots.append(f"{path}:{number}:{line.strip()}")
+                  if "choose_supporter" in line or "play_quick_ball" in line or "bench_tapu_if_useful" in line:
+                      selector_hotspots.append(f"{path}:{number}:{line.strip()}")
+              for match in temp_range_pattern.finditer(text):
+                  line = text.count("\n", 0, match.start()) + 1
+                  invalid_temp_ranges.append(f"{path}:{line}:{match.group(0)[:180]}")
+
+          python_files = [path for path in tracked if path.suffix == ".py"]
+          for path in python_files:
+              py_compile.compile(str(path), doraise=True)
+
+          report = [
+              f"tracked_files={len(tracked)}",
+              f"tracked_text_files={len(text_files)}",
+              f"python_files_compiled={len(python_files)}",
+              f"malformed_includes={len(malformed_includes)}",
+              f"invalid_temporary_algorithm_ranges={len(invalid_temp_ranges)}",
+              f"unresolved_markers={len(unresolved_markers)}",
+              f"projection_hotspots={len(projection_hotspots)}",
+              f"randomness_hotspots={len(random_hotspots)}",
+              f"selector_hotspots={len(selector_hotspots)}",
+              "",
+              "[malformed includes]",
+              *malformed_includes,
+              "",
+              "[invalid temporary algorithm ranges]",
+              *invalid_temp_ranges,
+              "",
+              "[unresolved markers]",
+              *unresolved_markers,
+              "",
+              "[projection hotspots]",
+              *projection_hotspots,
+              "",
+              "[randomness hotspots]",
+              *random_hotspots,
+              "",
+              "[selector hotspots]",
+              *selector_hotspots,
+          ]
+          Path("audit-static-report.txt").write_text("\n".join(report) + "\n", encoding="utf-8")
+          print("\n".join(report[:12]))
+          PY
+      - name: Configure and build current source
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run five independent perfect-play trace reviews
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Core one-Supporter, one-attachment, search, evolution, Ability, and retreat procedure:
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # Observable-state and earliest-route specifications:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee audit-trace-1.txt
+          grep -q "T3 | READY" audit-trace-1.txt
+
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee audit-trace-2.txt
+          grep -q "T2 | READY" audit-trace-2.txt
+
+          # Steven, Mysterious Treasure, Secret Box, Forretress ex, and Regidrago VSTAR sources:
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sv6-163
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee audit-trace-3.txt
+          grep -q "banked Crispin and Dragapult ex" audit-trace-3.txt
+          grep -q "Dragapult ex (Mysterious Treasure cost)" audit-trace-3.txt
+          ! grep -q "Secret Box discarded three other cards" audit-trace-3.txt
+          ! grep -q "T2 | EXPLODING ENERGY" audit-trace-3.txt
+          grep -q "T2 | READY" audit-trace-3.txt
+
+          # Steven searches only the missing VSTAR card when held Quick Ball and Fire
+          # already complete the strict-JIT payload and Energy route:
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee audit-trace-4.txt
+          grep -q "Searched up to 3 cards: Regidrago VSTAR. Turn ended." audit-trace-4.txt
+          ! grep -q "Searched up to 3 cards: Regidrago VSTAR, Crispin" audit-trace-4.txt
+          grep -q "T3 | READY" audit-trace-4.txt
+
+          # The source-bounded seed-43 route preserves the Supporter action and uses
+          # Mysterious Treasure into Tapu Lele-GX and Crispin for the legal T2 finish:
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sm2-60
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee audit-trace-5.txt
+          grep -q "T2 | WONDER TAG.*Crispin" audit-trace-5.txt
+          grep -q "T2 | READY" audit-trace-5.txt
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turn-debug-audit-${{ github.run_attempt }}
+          path: |
+            audit-static-report.txt
+            audit-trace-*.txt
+          if-no-files-found: error

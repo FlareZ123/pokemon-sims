@@ -288,6 +288,18 @@
     std::mt19937_64 shadow_rng = rng_;
     Engine projected(scenario_, recipe_, shadow_rng);
     projected.state_ = state_;
+
+    // The held-route classifier may prove completion from public held cards, while
+    // unresolved Dark Asset cards remain probabilistic until Crobat V is played.
+    // Disable a new shadow Dark Asset resolution; a Dark Asset that already resolved
+    // in the real state remains represented by its public hand and board result:
+    // Crobat V / Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Core Bench, Ability, draw, and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Future-card-oracle boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+    // Crobat probabilistic-connector policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#crobat-v-draw-connector-policy
+    // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/1526
+    projected.state_.dark_asset_used = true;
     if (deck_seen_ || prizes_revealed_) {
       projected.deck_seen_ = deck_seen_;
       projected.prizes_revealed_ = prizes_revealed_;

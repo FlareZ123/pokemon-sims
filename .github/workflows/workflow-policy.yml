@@ -90,28 +90,12 @@ jobs:
           python scripts/update_multi_deck_docs.py --repo-root .
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
-      - name: Commit validated fix and restore workflow policy
+      - name: Commit validated source and probability evidence
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
-          import os
-          from pathlib import Path
-
-          path = Path('.github/workflows/workflow-policy.yml')
-          text = path.read_text(encoding='utf-8')
-          marker = '  # BEGIN ISSUE 1526 TRUSTED MATERIALIZER\n'
-          if text.count(marker) != 1:
-              raise SystemExit('Issue 1526 materializer marker missing')
-          restored = text.split(marker, 1)[0]
-          temporary = path.with_suffix(path.suffix + '.tmp')
-          temporary.write_text(restored, encoding='utf-8')
-          os.replace(temporary, path)
-          PY
-          rm .github/issue-1526-materialize.py .github/issue-1526-debug-append.py .github/issue-1526-fixture-patch.py
-          rm .github/workflows/refresh-issue-1526.yml .github/workflows/materialize-issue-1526.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .github/workflows/workflow-policy.yml .github/issue-1526-materialize.py .github/issue-1526-debug-append.py .github/issue-1526-fixture-patch.py .github/workflows/refresh-issue-1526.yml .github/workflows/materialize-issue-1526.yml src/trace_engine_v2/part_turo_oricorio_override.inc tests/issue_1526_tate_dark_asset_tests.cpp docs/REPORT.md docs/MULTI_DECK_REPORT.md results/baseline_manifest.json results/simulation_results.csv results/multi_deck_manifest.json results/multi_deck_comparison.csv
-          git commit -m "Reject unresolved Dark Asset Tate shadows (#1526)"
+          git add src/trace_engine_v2/part_turo_oricorio_override.inc tests/issue_1526_tate_dark_asset_tests.cpp docs/REPORT.md docs/MULTI_DECK_REPORT.md results/baseline_manifest.json results/simulation_results.csv results/multi_deck_manifest.json results/multi_deck_comparison.csv
+          git commit -m "Reject unresolved Dark Asset Tate shadows (#1526) [skip ci]"
           git push origin HEAD:${{ github.head_ref }}

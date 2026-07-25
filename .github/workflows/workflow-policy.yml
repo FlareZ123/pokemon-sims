@@ -71,7 +71,7 @@ jobs:
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee issue-1526-trace-1.txt || status=1
           ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-1526-trace-2.txt || status=1
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee issue-1526-trace-3.txt || status=1
-          grep -q "T3 | READY" issue-1526-trace-1.txt || status=1
+          grep -q "T2 | READY" issue-1526-trace-1.txt || status=1
           grep -q "T2 | READY" issue-1526-trace-2.txt || status=1
           grep -q "T2 | READY" issue-1526-trace-3.txt || status=1
           exit $status

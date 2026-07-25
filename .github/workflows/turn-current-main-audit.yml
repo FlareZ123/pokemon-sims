@@ -1,0 +1,98 @@
+name: Current-main Crobat shadow audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: current-main-crobat-shadow-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  focused-audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/current-main-crobat-shadow-20260724'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure and build current source
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run three Crobat shadow simulate-this audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Dark Asset is a hand-to-Bench, draw-to-six, once-per-turn Ability:
+          # https://api.pokemontcg.io/v2/cards/swsh3-104
+          # Observable-state and future-card-oracle boundary:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+          # Current shadow-classifier fix under audit:
+          # https://github.com/FlareZ123/pokemon-sims/issues/1526
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit/go-second --seed 1 | tee crobat-trace-1.txt
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit-rulebox-ability-lock/go-second --seed 1 | tee crobat-trace-2.txt
+          ./build/regidrago_sim --simulate-this --model-variant crobat2-erika-channeler --scenario matchup-flex-jit/go-first --seed 17 | tee crobat-trace-3.txt
+      - name: Scan the complete tracked source surface
+        shell: bash
+        run: |
+          python - <<'PY' | tee current-main-static-audit.txt
+          import re
+          import subprocess
+          from pathlib import Path
+
+          tracked = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0")
+          suffixes = {".cpp", ".cxx", ".cc", ".h", ".hpp", ".inc", ".py", ".yml", ".yaml", ".md", ".txt"}
+          files = [Path(name) for name in tracked if name and Path(name).suffix.lower() in suffixes]
+          print(f"tracked_text_files={len(files)}")
+          print(f"tracked_text_lines={sum(len(path.read_text(encoding='utf-8', errors='replace').splitlines()) for path in files)}")
+
+          checks = {
+              "malformed_include": re.compile(r'^\s*#\s*include\s*(?:<[^>]+>|"[^"]+")\s+\S'),
+              "temporary_array_algorithm_range": re.compile(r'std::(?:any_of|all_of|none_of|find|find_if|count|count_if)\s*\(\s*std::array\{'),
+              "unfinished_marker": re.compile(r'\b(?:TODO|FIXME|HACK|XXX)\b'),
+              "disabled_test_or_code": re.compile(r'\b(?:DISABLED_|GTEST_SKIP|#\s*if\s+0)\b'),
+              "shadow_state_copy": re.compile(r'\b(?:projected|shadow|probe|trial)\.state_\s*=\s*state_\s*;'),
+              "hidden_zone_read": re.compile(r'\bstate_\.(?:deck|prizes)\b'),
+              "knowledge_flag": re.compile(r'\b(?:deck_seen_|prizes_revealed_)\b'),
+              "randomness_hotspot": re.compile(r'\b(?:std::shuffle|rng_|random_device|mt19937)\b'),
+              "selector_hotspot": re.compile(r'\b(?:choose|should|needs|prefer|select)_[A-Za-z0-9_]+\s*\('),
+          }
+
+          for name, pattern in checks.items():
+              found = []
+              for path in files:
+                  text = path.read_text(encoding="utf-8", errors="replace")
+                  for line_number, line in enumerate(text.splitlines(), 1):
+                      if pattern.search(line):
+                          found.append((str(path), line_number, line.strip()))
+              print(f"\n[{name}] count={len(found)}")
+              for path, line_number, line in found[:2000]:
+                  print(f"{path}:{line_number}: {line}")
+
+          print("\n[known-open-issue-map]")
+          print("malformed final include -> https://github.com/FlareZ123/pokemon-sims/issues/1482")
+          print("Skyliner Serena gate -> https://github.com/FlareZ123/pokemon-sims/issues/1481")
+          print("K0 duplicate Crispin route -> https://github.com/FlareZ123/pokemon-sims/issues/1514")
+          print("K1 Quick Ball duplicate Crispin route -> https://github.com/FlareZ123/pokemon-sims/issues/1516")
+          PY
+      - name: Compile Python sources
+        run: python -m compileall -q scripts
+      - name: Record tested source
+        run: git rev-parse HEAD | tee tested-head.txt
+      - name: Upload focused audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-crobat-shadow-audit-${{ github.run_attempt }}
+          path: |
+            crobat-trace-*.txt
+            current-main-static-audit.txt
+            tested-head.txt
+          if-no-files-found: warn

@@ -8,7 +8,7 @@ helper = dedent(
     '''\
       bool complete_issue_1533_blender_treasure_latias_route() {
         const Pokemon* target = target_regi();
-        if (!strict_payload_timing() || item_locked() || !deck_seen_ ||
+        if (!strict_payload_timing() || item_locked() || !prizes_known() ||
             target == nullptr || target->card != Card::RegidragoVstar ||
             target->grass < 2 || target->fire < 1 ||
             !need_active_vstar() || !need_payload() || state_.retreat_used ||

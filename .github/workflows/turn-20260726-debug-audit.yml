@@ -106,7 +106,7 @@ jobs:
         run: |
           set -euo pipefail
           git rev-parse HEAD > turn-20260726-tested-head.txt
-          tar --exclude=.git --exclude=build --exclude=turn-20260726-source.tar.gz -czf turn-20260726-source.tar.gz .
+          git archive --format=tar.gz --output=turn-20260726-source.tar.gz HEAD
       - uses: actions/upload-artifact@v4
         with:
           name: turn-20260726-release-matrix-source

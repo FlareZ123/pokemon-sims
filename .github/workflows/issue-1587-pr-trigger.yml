@@ -1,27 +1,84 @@
-name: Trigger issue 1587 materializer
+name: Execute issue 1587 materializer
 
 on:
   pull_request:
     branches: [main]
-    types: [opened]
+    types: [synchronize]
 
 permissions:
   contents: write
 
+concurrency:
+  group: issue-1587-pr-materializer
+  cancel-in-progress: false
+
 jobs:
-  trigger:
+  materialize:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
-      - name: Trigger the branch push workflow once
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Execute the source-bound materializer steps
         shell: bash
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit --allow-empty -m "Trigger issue 1587 materializer"
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          python - <<'PY'
+          from __future__ import annotations
+
+          import os
+          import subprocess
+          from pathlib import Path
+
+          workflow = Path(".github/workflows/issue-1587-materialize.yml")
+          lines = workflow.read_text(encoding="utf-8").splitlines()
+          commands: list[str] = []
+          index = 0
+          while index < len(lines):
+              line = lines[index]
+              indent = len(line) - len(line.lstrip(" "))
+              stripped = line.strip()
+              if indent != 8 or not stripped.startswith("run:"):
+                  index += 1
+                  continue
+
+              value = stripped[4:].strip()
+              if value in {"|", "|-", ">", ">-"}:
+                  index += 1
+                  block: list[str] = []
+                  while index < len(lines):
+                      candidate = lines[index]
+                      candidate_indent = len(candidate) - len(candidate.lstrip(" "))
+                      if candidate.strip() and candidate_indent <= 8:
+                          break
+                      block.append(candidate[10:] if len(candidate) >= 10 else "")
+                      index += 1
+                  if value.startswith(">"):
+                      command = " ".join(part.strip() for part in block if part.strip())
+                  else:
+                      command = "\n".join(block)
+                  commands.append(command)
+                  continue
+
+              commands.append(value)
+              index += 1
+
+          if not commands:
+              raise RuntimeError("No materializer run blocks were found.")
+
+          environment = os.environ.copy()
+          for command_index, command in enumerate(commands):
+              print(f"\n===== materializer command {command_index + 1}/{len(commands)} =====", flush=True)
+              subprocess.run(["bash", "-lc", command], check=True, env=environment)
+              if command_index == 0:
+                  marker = Path(".issue-1587-changed")
+                  if marker.read_text(encoding="utf-8").strip() != "1":
+                      print("Issue 1587 source is already materialized.", flush=True)
+                      raise SystemExit(0)
+          PY

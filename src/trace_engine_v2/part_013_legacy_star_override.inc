@@ -179,6 +179,64 @@
       recovered.push_back(Card::ProfessorBurnet);
     }
 
+    // K1 proves a complete Earthen Vessel -> Mysterious Treasure -> Quick
+    // Ball finish when Legacy Star recovers both Items. Vessel spends the
+    // now-inert Steven's Resolve and searches two Grass Energy, Treasure
+    // spends one Grass while preserving the other manual attachment, and
+    // Quick Ball discards the searched Dragon payload:
+    // Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Core Item, Supporter, search, discard, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1, dynamic DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed reproduction: https://github.com/FlareZ123/pokemon-sims/issues/1576
+    const bool issue_1576_legacy_star_payload_bridge =
+        recovered.empty() && scenario_.dci == DciProfile::NoDiscardControl &&
+        state_.turn == 2 && !item_locked() && deck_seen_ &&
+        state_.supporter_used && !state_.manual_energy_used &&
+        active_is_vstar() && grass_needed() == 1 && fire_needed() == 0 &&
+        need_payload() && hand_count(Card::EarthenVessel) > 0 &&
+        hand_count(Card::StevensResolve) > 0 &&
+        count_of(state_.discard, Card::MysteriousTreasure) > 0 &&
+        count_of(state_.discard, Card::QuickBall) > 0 &&
+        deck_count_after_search_started(Card::Grass) >= 2;
+    if (issue_1576_legacy_star_payload_bridge) {
+      std::vector<Card> projected_deck = state_.deck;
+      const auto erase_one = [&projected_deck](const Card card) {
+        const auto it = std::find(
+            projected_deck.begin(), projected_deck.end(), card);
+        if (it == projected_deck.end()) return false;
+        projected_deck.erase(it);
+        return true;
+      };
+      const bool energy_targets_exist =
+          erase_one(Card::Grass) && erase_one(Card::Grass);
+      const auto payload = std::find_if(
+          projected_deck.begin(), projected_deck.end(),
+          [](const Card card) {
+            return is_payload(card) && is_dragon_or_psychic(card);
+          });
+      const bool payload_target_exists = payload != projected_deck.end();
+      if (payload_target_exists) projected_deck.erase(payload);
+      const bool distinct_basic_target_exists = std::any_of(
+          projected_deck.begin(), projected_deck.end(), is_basic);
+      if (energy_targets_exist && payload_target_exists &&
+          distinct_basic_target_exists) {
+        if (!recover_discard_to_hand(Card::MysteriousTreasure)) {
+          throw std::logic_error(
+              "Legacy Star Mysterious Treasure bridge target disappeared");
+        }
+        if (!recover_discard_to_hand(Card::QuickBall)) {
+          throw std::logic_error(
+              "Legacy Star Quick Ball bridge target disappeared");
+        }
+        recovered.push_back(Card::MysteriousTreasure);
+        recovered.push_back(Card::QuickBall);
+      }
+    }
+
     // Legacy Star may return Latias ex from discard, and Skyliner then gives the
     // Basic Active no Retreat Cost: https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/sv8-76

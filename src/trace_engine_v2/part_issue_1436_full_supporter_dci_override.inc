@@ -188,6 +188,61 @@
       return Card::LatiasEx;
     }
 
+    const bool issue_1576_vessel_finish =
+        excluded_from_cost == Card::EarthenVessel &&
+        scenario_.dci == DciProfile::NoDiscardControl &&
+        scenario_.locks == LockMode::None && state_.turn == 2 &&
+        deck_seen_ && state_.supporter_used && !state_.manual_energy_used &&
+        active_is_vstar() && grass_needed() == 1 && fire_needed() == 0 &&
+        need_payload() && hand_count(Card::EarthenVessel) > 0 &&
+        hand_count(Card::MysteriousTreasure) > 0 &&
+        hand_count(Card::QuickBall) > 0 &&
+        hand_count(Card::StevensResolve) > 0 &&
+        deck_count_after_search_started(Card::Grass) >= 2 &&
+        std::any_of(state_.deck.begin(), state_.deck.end(),
+                    [](const Card card) {
+                      return is_payload(card) &&
+                          is_dragon_or_psychic(card);
+                    });
+    if (issue_1576_vessel_finish) {
+      // Crispin has consumed the Supporter play, so Steven cannot resolve
+      // this turn. Spending it through Vessel unlocks the deterministic T2
+      // finish and dominates preserving it for a later setup turn:
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // One-Supporter and Item cost procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Dynamic DCI and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed reproduction: https://github.com/FlareZ123/pokemon-sims/issues/1576
+      return Card::StevensResolve;
+    }
+
+    const bool issue_1576_treasure_finish =
+        excluded_from_cost == Card::MysteriousTreasure &&
+        scenario_.dci == DciProfile::NoDiscardControl &&
+        scenario_.locks == LockMode::None && state_.turn == 2 &&
+        deck_seen_ && state_.supporter_used && !state_.manual_energy_used &&
+        active_is_vstar() && grass_needed() == 1 && fire_needed() == 0 &&
+        need_payload() && hand_count(Card::MysteriousTreasure) > 0 &&
+        hand_count(Card::QuickBall) > 0 &&
+        hand_count(Card::Grass) >= 2 &&
+        count_of(state_.discard, Card::EarthenVessel) > 0 &&
+        count_of(state_.discard, Card::StevensResolve) > 0;
+    if (issue_1576_treasure_finish) {
+      // Vessel searched two Grass Energy. One pays Treasure while the other
+      // remains for the unused manual attachment; Quick Ball then discards
+      // the searched Dragon payload:
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Dynamic DCI and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed reproduction: https://github.com/FlareZ123/pokemon-sims/issues/1576
+      return Card::Grass;
+    }
+
     if (scenario_.locks != LockMode::FullSupporter) return std::nullopt;
 
     // Full Supporter lock disables every Supporter effect for the complete

@@ -2,6 +2,20 @@
 
   int issue_1417_treasure_hold_turn_ = 0;
 
+  bool issue_1549_mysterious_treasure_target_available() const {
+    // At K0, might_be_unseen() uses only the fixed recipe and public zones. After
+    // a legal deck or Prize inspection, it uses the exact remaining deck instead:
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // K0 and K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Hidden-information specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1549
+    return std::any_of(
+        recipe_.begin(), recipe_.end(), [this](const auto& entry) {
+          return entry.second > 0 && is_dragon_or_psychic(entry.first) &&
+              might_be_unseen(entry.first);
+        });
+  }
+
   bool issue_1356_treasure_vstar_energy_split_available() const {
     if (scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || state_.turn != 2 ||
@@ -125,7 +139,7 @@
         state_.manual_energy_used && need_payload() &&
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
         count_of(state_.discard, Card::MysteriousTreasure) > 0 &&
-        std::any_of(state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic) &&
+        issue_1549_mysterious_treasure_target_available() &&
         ((grass_needed() == 1 && fire_needed() == 0 &&
           hand_count(Card::Grass) > 0) ||
          (fire_needed() == 1 && grass_needed() == 0 &&
@@ -140,7 +154,7 @@
     if (!used || !recover_future_treasure ||
         state_.hand.size() >= hand_before + 2U ||
         count_of(state_.discard, Card::MysteriousTreasure) == 0 ||
-        !std::any_of(state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic)) {
+        !issue_1549_mysterious_treasure_target_available()) {
       return used;
     }
 

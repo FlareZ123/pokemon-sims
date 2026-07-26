@@ -1,0 +1,131 @@
+name: Harumi turn debug audit 2026-07-26
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harumi-turn-debug-audit-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/harumi-20260726-0918'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Record exact source
+        run: |
+          git rev-parse HEAD | tee tested-head.txt
+          git rev-parse origin/main | tee tested-main.txt
+          git diff --name-status origin/main...HEAD | tee audit-diff.txt
+          git archive --format=tar.gz --output=source.tar.gz HEAD
+
+      - name: Static source audit
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+
+          tracked = subprocess.check_output(['git', 'ls-files'], text=True).splitlines()
+          suffixes = {'.cc', '.cpp', '.cxx', '.h', '.hpp', '.inc', '.md', '.py', '.txt', '.yml', '.yaml', '.cmake', '.json', '.csv'}
+          rows = []
+          for name in tracked:
+              path = Path(name)
+              if path.suffix.lower() not in suffixes and path.name != 'CMakeLists.txt':
+                  continue
+              try:
+                  text = path.read_text(encoding='utf-8')
+              except UnicodeDecodeError:
+                  continue
+              for line_no, line in enumerate(text.splitlines(), 1):
+                  if re.search(r'^\s*#\s*include\s+[^<"\s].*\.inc', line):
+                      rows.append(f'malformed include {name}:{line_no}:{line.strip()}')
+                  if re.search(r'\b(?:rand|random_shuffle)\s*\(', line):
+                      rows.append(f'legacy random {name}:{line_no}:{line.strip()}')
+          Path('static-audit.txt').write_text('\n'.join(rows) + ('\n' if rows else 'no blocking static findings\n'), encoding='utf-8')
+          if rows:
+              raise SystemExit('\n'.join(rows))
+          PY
+          cat static-audit.txt
+
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+
+      - name: CI simulate-this pass one
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Steven's Resolve ends the turn after searching up to three cards, and this trace reaches the earliest legal T3 state: https://api.pokemontcg.io/v2/cards/sm7-145 https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee pass-1.txt
+          grep -q 'T3 | READY' pass-1.txt
+
+      - name: CI simulate-this pass two
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The registered Pineco recipe uses only printed legal effects and reaches T2 through the direct Mysterious Treasure payload line: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sv6-130 https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#registered-decks
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee pass-2.txt
+          grep -q 'T2 | READY' pass-2.txt
+
+      - name: CI simulate-this pass three
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Mysterious Treasure supplies Tapu Lele-GX, Wonder Tag supplies Crispin, and Latias ex gives the Basic Active free retreat: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/sv8-76
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee pass-3.txt
+          grep -q 'T2 | HOLD SUPPORTER.*Mysterious Treasure to Tapu Lele-GX to Crispin' pass-3.txt
+          grep -q 'T2 | READY' pass-3.txt
+
+      - name: Debug trace sweep
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p debug-traces
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 5 > debug-traces/shell-no-control-seed-5.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 17 > debug-traces/pineco-flex-seed-17.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-first --seed 83 > debug-traces/pineco-strict-seed-83.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 67 > debug-traces/pineco-flex-seed-67.txt
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-roseanne --scenario strict-jit/go-second --seed 6 > debug-traces/crobat-roseanne-seed-6.txt
+          grep -H 'first-ready turn' debug-traces/*.txt | tee debug-summary.txt
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Generate T2 and T3 matrices
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260726 --out shell-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260726 --out all-decks-matrix.csv
+          cat shell-matrix.csv
+          cat all-decks-matrix.csv
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harumi-turn-debug-audit-${{ github.run_attempt }}
+          path: |
+            tested-head.txt
+            tested-main.txt
+            audit-diff.txt
+            source.tar.gz
+            static-audit.txt
+            pass-*.txt
+            debug-traces
+            debug-summary.txt
+            shell-matrix.csv
+            all-decks-matrix.csv
+            build/Testing
+          if-no-files-found: warn

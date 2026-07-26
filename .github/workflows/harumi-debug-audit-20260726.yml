@@ -60,7 +60,7 @@ jobs:
                       hidden_reads.append((name, line_no, line.strip()))
 
           target = 'src/trace_engine_v2/part_issue_1356_fss_treasure_energy_override.inc'
-          target_reads = [row for row in hidden_reads if row[0] == target and row[1] in {130, 145}]
+          target_reads = [row for row in hidden_reads if row[0] == target and row[1] in {128, 143}]
           with open('static-audit.txt', 'w', encoding='utf-8') as out:
               out.write(f'tracked_text_files={len(texts)}\n')
               out.write(f'tracked_text_lines={sum(text.count(chr(10)) + 1 for text in texts.values())}\n')

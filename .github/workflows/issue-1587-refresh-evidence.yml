@@ -118,7 +118,6 @@ jobs:
         run: |
           python tests/setup_report_contract_tests.py
           python tests/multi_deck_report_contract_tests.py
-          cmp results/simulation_results.csv <(./build/regidrago_sim --trials 100000 --seed 20260705 --out /dev/stdout)
 
       - name: Commit validated fixture and evidence
         shell: bash

@@ -11,13 +11,17 @@
 namespace sim {
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state, const bool deck_seen,
-                        const bool prizes_revealed) {
+              const bool prizes_revealed) {
     engine.state_ = std::move(state);
     engine.deck_seen_ = deck_seen;
     engine.prizes_revealed_ = prizes_revealed;
   }
   static bool use_exploding_energy_for_setup(Engine& engine) {
     return engine.use_exploding_energy_for_setup();
+  }
+  static bool resolve_exploding_energy(
+      Engine& engine, const std::vector<std::size_t>& destinations) {
+    return engine.resolve_exploding_energy(destinations);
   }
   static const State& state(const Engine& engine) { return engine.state_; }
   static bool deck_seen(const Engine& engine) { return engine.deck_seen_; }
@@ -28,10 +32,6 @@ struct EngineTestAccess {
 }  // namespace sim
 
 namespace {
-
-int count(const std::vector<sim::Card>& cards, const sim::Card card) {
-  return static_cast<int>(std::count(cards.begin(), cards.end(), card));
-}
 
 const sim::DeckRecipe& pineco_recipe() {
   const sim::NamedDeck* deck = sim::deck_by_id("regidrago-pineco");
@@ -44,8 +44,8 @@ const sim::DeckRecipe& pineco_recipe() {
 struct Fixture {
   explicit Fixture(const std::string& label)
       : scenario{label, sim::DciProfile::StrictJit, sim::LockMode::None,
-                 false, 4},
-        rng{1460},
+       false, 4},
+        rng{1587},
         trace{true, {}},
         engine{scenario, pineco_recipe(), rng, &trace} {}
 
@@ -67,50 +67,81 @@ sim::State zero_grass_state(const bool source_active) {
   }
   state.deck = {sim::Card::Fire, sim::Card::Crispin};
   state.prizes = {sim::Card::Grass, sim::Card::Grass, sim::Card::Grass,
-                  sim::Card::Grass, sim::Card::Grass, sim::Card::Grass};
+        sim::Card::Grass, sim::Card::Grass, sim::Card::Grass};
   return state;
 }
 
-void verify_resolved_zero_target_search(const bool source_active) {
-  Fixture fixture(source_active ? "issue-1460-active-source"
-                                : "issue-1460-benched-source");
+void verify_k0_empty_search_retains_board(const bool source_active) {
+  Fixture fixture(source_active ? "issue-1587-active-source"
+                      : "issue-1587-benched-source");
   sim::EngineTestAccess::set_state(
       fixture.engine, zero_grass_state(source_active), false, false);
 
-  // The K0 policy may announce Exploding Energy from fixed-list public-zone
-  // accounting. When the hidden search then finds zero valid Basic Grass targets,
-  // Forretress ex still resolves the printed shuffle and self-Knock-Out consequence:
-  // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
-  // Core Ability, deck-search, shuffle, Knock Out, Evolution-stack, and promotion procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // The K0 policy may begin a hidden-zone search from public copy accounting.
+  // Once the search reveals zero Basic Grass Energy, the February 2026 ruling
+  // leaves no legal 1-through-5 Ability selection. K1 remains acquired while
+  // Forretress ex, its stack, and the board remain unchanged:
+  // Official February 2026 ruling: https://professorprogram.pokemon.com/news/11473085
+  // Forretress ex / Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
   // Knowledge-state contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#knowledge-states
-  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1460
-  if (!sim::EngineTestAccess::use_exploding_energy_for_setup(fixture.engine)) {
+  // Confirmed superseding bug: https://github.com/FlareZ123/pokemon-sims/issues/1587
+  if (sim::EngineTestAccess::use_exploding_energy_for_setup(fixture.engine)) {
     throw std::runtime_error(
-        "A legal K0 zero-target Exploding Energy search did not resolve.");
+        "A K0 empty Exploding Energy search resolved an illegal zero-card selection.");
   }
 
   const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  const sim::Card expected_active = source_active
+      ? sim::Card::ForretressEx : sim::Card::RegidragoV;
+  const sim::Card expected_bench = source_active
+      ? sim::Card::RegidragoV : sim::Card::ForretressEx;
   if (!sim::EngineTestAccess::deck_seen(fixture.engine) ||
-      !sim::EngineTestAccess::used_exploding_energy(fixture.engine) ||
-      !after.active || after.active->card != sim::Card::RegidragoV ||
-      !after.bench.empty() ||
-      count(after.discard, sim::Card::ForretressEx) != 1 ||
-      count(after.discard, sim::Card::Pineco) != 1) {
+      sim::EngineTestAccess::used_exploding_energy(fixture.engine) ||
+      !after.active || after.active->card != expected_active ||
+      after.bench.size() != 1U ||
+      after.bench.front().card != expected_bench ||
+      !after.discard.empty()) {
     throw std::runtime_error(
-        "The zero-target search failed to retain K1 while resolving the self-Knock-Out stack and promotion.");
+        "The K0 empty search failed to retain K1 without resolving Exploding Energy.");
+  }
+}
+
+void verify_resolver_rejects_empty_destinations() {
+  Fixture fixture("issue-1587-empty-resolver");
+  sim::State state = zero_grass_state(false);
+  state.deck.push_back(sim::Card::Grass);
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state), true, true);
+
+  // The low-level resolver also enforces the Ability's 1-through-5 minimum:
+  // Official February 2026 ruling: https://professorprogram.pokemon.com/news/11473085
+  // Forretress ex / Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1587
+  if (sim::EngineTestAccess::resolve_exploding_energy(fixture.engine, {})) {
+    throw std::runtime_error(
+        "The Exploding Energy resolver accepted an empty destination list.");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  if (!after.active || after.active->card != sim::Card::RegidragoV ||
+      after.bench.size() != 1U ||
+      after.bench.front().card != sim::Card::ForretressEx ||
+      sim::EngineTestAccess::used_exploding_energy(fixture.engine) ||
+      !after.discard.empty()) {
+    throw std::runtime_error(
+        "Rejecting the empty resolver input mutated the board or outcome.");
   }
 }
 
 void verify_known_zero_declines_announcement() {
-  Fixture fixture("issue-1460-k1-control");
+  Fixture fixture("issue-1587-k1-control");
   sim::EngineTestAccess::set_state(
       fixture.engine, zero_grass_state(false), true, true);
 
-  // Once K1 already proves that no Basic Grass Energy remains in the deck, policy
-  // declines to announce the setup Ability and leaves the board unchanged:
-  // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  // K1 already proves that no legal Basic Grass Energy selection exists, so
+  // policy declines to announce the Ability and leaves every zone unchanged:
+  // Official February 2026 ruling: https://professorprogram.pokemon.com/news/11473085
+  // Forretress ex / Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
   // Knowledge-state contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#knowledge-states
-  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1460
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1587
   if (sim::EngineTestAccess::use_exploding_energy_for_setup(fixture.engine)) {
     throw std::runtime_error(
         "K1 policy announced Exploding Energy with a known zero-target deck.");
@@ -130,7 +161,8 @@ void verify_known_zero_declines_announcement() {
 }  // namespace
 
 int main() {
-  verify_resolved_zero_target_search(false);
-  verify_resolved_zero_target_search(true);
+  verify_k0_empty_search_retains_board(false);
+  verify_k0_empty_search_retains_board(true);
+  verify_resolver_rejects_empty_destinations();
   verify_known_zero_declines_announcement();
 }

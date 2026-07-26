@@ -116,8 +116,14 @@ void Engine::discard_forretress_ex_stack(const Pokemon& knocked_out) {
 
 bool Engine::resolve_exploding_energy(
     const std::vector<std::size_t>& attachment_destinations) {
+  // Ability effects using "up to X" require a choice from 1 through X.
+  // Reject an empty destination list before mutating knowledge or the board:
+  // Official February 2026 ruling: https://professorprogram.pokemon.com/news/11473085
+  // Forretress ex / Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1587
   if (!forretress_combo_enabled() ||
       !ability_available_for_pokemon(Card::ForretressEx) ||
+      attachment_destinations.empty() ||
       attachment_destinations.size() > 5U) {
     return false;
   }
@@ -143,13 +149,13 @@ bool Engine::resolve_exploding_energy(
     return false;
   }
 
-  // Exploding Energy searches for up to five Basic Grass Energy, attaches them
-  // in any distribution, shuffles, then Knocks Out Forretress ex. The search is
-  // optional, while using it with zero selected cards still performs the deck
-  // search and the printed self-Knock-Out instruction:
-  // https://api.pokemontcg.io/v2/cards/sv4pt5-2
-  // https://www.pokemon.com/us/pokemon-tcg/rules
-  // https://github.com/FlareZ123/pokemon-sims/issues/972
+  // Exploding Energy searches for one through five Basic Grass Energy,
+  // attaches them in any distribution, shuffles, then Knocks Out Forretress ex.
+  // The February 2026 rule update permits zero only for attack effects:
+  // Official February 2026 ruling: https://professorprogram.pokemon.com/news/11473085
+  // Forretress ex / Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  // Core Ability, search, attachment, shuffle, and Knock Out procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1587
   record_deck_search_knowledge("Exploding Energy");
   outcome_.used_exploding_energy = true;
   for (const std::size_t destination : attachment_destinations) {
@@ -263,14 +269,14 @@ bool Engine::use_exploding_energy_for_setup() {
   record_deck_search_knowledge("Exploding Energy");
   const int available = std::min(5, deck_count_after_search_started(Card::Grass));
   if (available <= 0) {
-    // A K0 announcement can legally reveal that no Basic Grass Energy remains.
-    // Once the hidden-zone search has begun, finish the printed consequence
-    // instead of retaining K1 knowledge while leaving Forretress ex in play:
-    // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
-    // Core deck-search, shuffle, Knock Out, and promotion procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // A K0 announcement may legally inspect the hidden deck and establish K1.
+    // With no Basic Grass Energy found, there is no legal 1-through-5 Ability
+    // selection, so do not mark the Ability used or apply its self-Knock-Out:
+    // Official February 2026 ruling: https://professorprogram.pokemon.com/news/11473085
+    // Forretress ex / Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
     // Knowledge-state contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#knowledge-states
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1460
-    return resolve_exploding_energy({});
+    // Confirmed superseding bug: https://github.com/FlareZ123/pokemon-sims/issues/1587
+    return false;
   }
 
   // Exploding Energy searches for up to five Grass Energy, so select only the

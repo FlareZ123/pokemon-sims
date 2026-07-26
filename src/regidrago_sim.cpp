@@ -321,4 +321,6 @@
 #undef run_turn
 #include "trace_engine_v2/part_014c_latias_bench_override.inc"
 #include "trace_engine_v2/part_015.inc"
-#include "trace_engine_v2/part_016.inc"}
+// A preprocessing include directive ends after its header name: https://eel.is/c++draft/cpp.include
+// Confirmed strict-C++20 build defect: https://github.com/FlareZ123/pokemon-sims/issues/1482
+#include "trace_engine_v2/part_016.inc"

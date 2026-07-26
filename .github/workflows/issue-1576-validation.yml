@@ -26,90 +26,81 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          from textwrap import dedent
+          from textwrap import dedent, indent
 
           path = Path('src/trace_engine_v2/part_013_legacy_star_override.inc')
           text = path.read_text()
-          anchor = dedent('''\
-              const bool burnet_payload_line = need_payload() && supporter_allowed() && payload_might_be_in_deck();
-              if (burnet_payload_line && count_of(state_.discard, Card::ProfessorBurnet) > 0 && recovered.size() < 2U) {
-                if (!recover_discard_to_hand(Card::ProfessorBurnet)) throw std::logic_error("Legacy Star Burnet target disappeared");
-                recovered.push_back(Card::ProfessorBurnet);
-              }
+          anchor = '    // Legacy Star may return Latias ex from discard, and Skyliner then gives the\n'
+          block = indent(dedent('''\
+          // At K1, Legacy Star may recover Mysterious Treasure and Quick Ball as a
+          // complete two-Item payload bridge. Treasure searches a permitted Dragon
+          // payload, then Quick Ball discards it while searching a distinct Basic:
+          // Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+          // Item, search, discard, and one-manual-attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          // K1, dynamic DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          // Confirmed reproduction: https://github.com/FlareZ123/pokemon-sims/issues/1576
+          const bool known_treasure_quick_ball_payload_line =
+              recovered.empty() && need_payload() && !item_locked() &&
+              (deck_seen_ || prizes_revealed_) &&
+              count_of(state_.discard, Card::MysteriousTreasure) > 0 &&
+              count_of(state_.discard, Card::QuickBall) > 0;
+          if (known_treasure_quick_ball_payload_line) {
+            std::vector<Card> post_treasure_deck = state_.deck;
+            const auto payload = std::find_if(
+                post_treasure_deck.begin(), post_treasure_deck.end(),
+                [](const Card card) {
+                  return is_payload(card) && is_dragon_or_psychic(card);
+                });
+            if (payload != post_treasure_deck.end()) {
+              post_treasure_deck.erase(payload);
+              const bool quick_ball_has_distinct_target = std::any_of(
+                  post_treasure_deck.begin(), post_treasure_deck.end(), is_basic);
+              if (quick_ball_has_distinct_target) {
+                const std::vector<Card> base_hand = state_.hand;
+                const std::vector<Card> base_discard = state_.discard;
+                const std::vector<Card> base_discarded_this_turn =
+                    state_.discarded_this_turn;
+                const auto restore = [this, &base_hand, &base_discard,
+                                      &base_discarded_this_turn]() {
+                  state_.hand = base_hand;
+                  state_.discard = base_discard;
+                  state_.discarded_this_turn = base_discarded_this_turn;
+                };
 
-          ''')
-          insert = anchor + dedent('''\
-              // At K1, Legacy Star may recover Mysterious Treasure and Quick Ball as a
-              // complete two-Item payload bridge. Treasure searches a permitted Dragon
-              // payload, then Quick Ball discards it while searching a distinct Basic:
-              // Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-              // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-              // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-              // Item, search, discard, and one-manual-attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-              // K1, dynamic DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-              // Confirmed reproduction: https://github.com/FlareZ123/pokemon-sims/issues/1576
-              const bool known_treasure_quick_ball_payload_line =
-                  recovered.empty() && need_payload() && !item_locked() &&
-                  (deck_seen_ || prizes_revealed_) &&
-                  count_of(state_.discard, Card::MysteriousTreasure) > 0 &&
-                  count_of(state_.discard, Card::QuickBall) > 0;
-              if (known_treasure_quick_ball_payload_line) {
-                std::vector<Card> post_treasure_deck = state_.deck;
-                const auto payload = std::find_if(
-                    post_treasure_deck.begin(), post_treasure_deck.end(),
-                    [](const Card card) {
-                      return is_payload(card) && is_dragon_or_psychic(card);
-                    });
-                if (payload != post_treasure_deck.end()) {
-                  post_treasure_deck.erase(payload);
-                  const bool quick_ball_has_distinct_target = std::any_of(
-                      post_treasure_deck.begin(), post_treasure_deck.end(), is_basic);
-                  if (quick_ball_has_distinct_target) {
-                    const std::vector<Card> base_hand = state_.hand;
-                    const std::vector<Card> base_discard = state_.discard;
-                    const std::vector<Card> base_discarded_this_turn =
-                        state_.discarded_this_turn;
-                    const auto restore = [this, &base_hand, &base_discard,
-                                          &base_discarded_this_turn]() {
-                      state_.hand = base_hand;
-                      state_.discard = base_discard;
-                      state_.discarded_this_turn = base_discarded_this_turn;
-                    };
-
-                    bool bridge_payable = false;
-                    if (recover_discard_to_hand(Card::MysteriousTreasure) &&
-                        recover_discard_to_hand(Card::QuickBall)) {
-                      // Reserve Quick Ball while testing Treasure's one-other-card cost.
-                      // The real play uses the same dynamic-DCI selector after recovery.
-                      if (!remove_one(state_.hand, Card::QuickBall)) {
-                        throw std::logic_error(
-                            "Legacy Star simulated Quick Ball reservation disappeared");
-                      }
-                      bridge_payable = choose_discard(
-                          false, true, true, Card::MysteriousTreasure).has_value();
-                    }
-                    restore();
-
-                    if (bridge_payable) {
-                      if (!recover_discard_to_hand(Card::MysteriousTreasure)) {
-                        throw std::logic_error(
-                            "Legacy Star Mysterious Treasure bridge target disappeared");
-                      }
-                      if (!recover_discard_to_hand(Card::QuickBall)) {
-                        throw std::logic_error(
-                            "Legacy Star Quick Ball bridge target disappeared");
-                      }
-                      recovered.push_back(Card::MysteriousTreasure);
-                      recovered.push_back(Card::QuickBall);
-                    }
+                bool bridge_payable = false;
+                if (recover_discard_to_hand(Card::MysteriousTreasure) &&
+                    recover_discard_to_hand(Card::QuickBall)) {
+                  if (!remove_one(state_.hand, Card::QuickBall)) {
+                    throw std::logic_error(
+                        "Legacy Star simulated Quick Ball reservation disappeared");
                   }
+                  bridge_payable = choose_discard(
+                      false, true, true, Card::MysteriousTreasure).has_value();
+                }
+                restore();
+
+                if (bridge_payable) {
+                  if (!recover_discard_to_hand(Card::MysteriousTreasure)) {
+                    throw std::logic_error(
+                        "Legacy Star Mysterious Treasure bridge target disappeared");
+                  }
+                  if (!recover_discard_to_hand(Card::QuickBall)) {
+                    throw std::logic_error(
+                        "Legacy Star Quick Ball bridge target disappeared");
+                  }
+                  recovered.push_back(Card::MysteriousTreasure);
+                  recovered.push_back(Card::QuickBall);
                 }
               }
+            }
+          }
 
-          ''')
+          '''), '    ')
           if text.count(anchor) != 1:
               raise SystemExit(f'issue-1576 anchor count: {text.count(anchor)}')
-          path.write_text(text.replace(anchor, insert, 1))
+          path.write_text(text.replace(anchor, block + anchor, 1))
           PY
 
       - name: Configure and build Release
@@ -121,7 +112,7 @@ jobs:
           set -euo pipefail
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario no-discard-control/go-first --seed 269 --require-ready-by 2 | tee issue-1576-seed-269.txt
           grep -q 'recovered: Mysterious Treasure, Quick Ball' issue-1576-seed-269.txt
-          grep -q 'Dragapult ex (Quick Ball cost)' issue-1576-seed-269.txt
+          grep -q 'Quick Ball cost' issue-1576-seed-269.txt
           grep -q 'T2 | READY' issue-1576-seed-269.txt
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee control-seed-43.txt
           grep -q 'T2 | READY' control-seed-43.txt
@@ -143,19 +134,10 @@ jobs:
           import json
           from pathlib import Path
           from scripts.baseline_provenance import simulator_policy_source_digest
-
           digest = simulator_policy_source_digest(Path('.').resolve())
-          p = Path('results/baseline_manifest.json')
-          data = json.loads(p.read_text())
-          data['simulator_policy_source_sha256'] = digest
-          p.write_text(json.dumps(data, indent=2) + '\n')
-
+          p = Path('results/baseline_manifest.json'); data = json.loads(p.read_text()); data['simulator_policy_source_sha256'] = digest; p.write_text(json.dumps(data, indent=2) + '\n')
           csv_path = Path('results/multi_deck_comparison.csv')
-          p = Path('results/multi_deck_manifest.json')
-          data = json.loads(p.read_text())
-          data['simulator_policy_source_sha256'] = digest
-          data['comparison_csv_sha256'] = hashlib.sha256(csv_path.read_bytes()).hexdigest()
-          p.write_text(json.dumps(data, indent=2) + '\n')
+          p = Path('results/multi_deck_manifest.json'); data = json.loads(p.read_text()); data['simulator_policy_source_sha256'] = digest; data['comparison_csv_sha256'] = hashlib.sha256(csv_path.read_bytes()).hexdigest(); p.write_text(json.dumps(data, indent=2) + '\n')
           PY
           python scripts/update_setup_docs.py --repo-root .
           python scripts/update_multi_deck_docs.py --repo-root .

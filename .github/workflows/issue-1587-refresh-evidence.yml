@@ -1,0 +1,132 @@
+name: Refresh issue 1587 evidence
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1587-refresh-evidence
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Update the superseded legacy fixture atomically
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from __future__ import annotations
+
+          import fcntl
+          import os
+          import tempfile
+          from pathlib import Path
+
+          path = Path("tests/forretress_ex_combo_tests.cpp")
+          old = '''  // "Up to 5" permits selecting zero cards. The deck was still searched, so the
+            // printed self-Knock-Out clause resolves:
+            // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+            // https://www.pokemon.com/us/pokemon-tcg/rules
+            // https://github.com/FlareZ123/pokemon-sims/issues/972
+            if (!sim::EngineTestAccess::resolve_exploding_energy(fixture.engine, {})) {
+              throw std::runtime_error("Exploding Energy rejected its legal zero-card search.");
+            }
+            const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+            if (!after.active || after.active->card != sim::Card::RegidragoV ||
+                !after.bench.empty() || count(after.discard, sim::Card::ForretressEx) != 1 ||
+                count(after.discard, sim::Card::Pineco) != 1) {
+              throw std::runtime_error("A zero-card Exploding Energy search did not self-KO correctly.");
+            }
+          '''
+          new = '''  // Ability effects using "up to X" require a selection from 1 through X.
+            // An empty destination list is rejected before deck knowledge, Ability-use,
+            // self-Knock-Out, or zone state can change:
+            // Official February 2026 ruling: https://professorprogram.pokemon.com/news/11473085
+            // Forretress ex / Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+            // Core Ability, search, attachment, shuffle, and Knock Out procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+            // Confirmed superseding bug: https://github.com/FlareZ123/pokemon-sims/issues/1587
+            if (sim::EngineTestAccess::resolve_exploding_energy(fixture.engine, {})) {
+              throw std::runtime_error("Exploding Energy accepted an illegal zero-card selection.");
+            }
+            const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+            if (!after.active || after.active->card != sim::Card::RegidragoV ||
+                after.bench.size() != 1U ||
+                after.bench.front().card != sim::Card::ForretressEx ||
+                !after.discard.empty() ||
+                sim::EngineTestAccess::deck_seen(fixture.engine)) {
+              throw std::runtime_error("Rejecting zero targets mutated Exploding Energy state.");
+            }
+          '''
+
+          text = path.read_text(encoding="utf-8")
+          if new not in text:
+              if text.count(old) != 1:
+                  raise RuntimeError(f"Expected one legacy zero-target fixture, found {text.count(old)}")
+              text = text.replace(old, new, 1)
+              lock_path = path.with_name(path.name + ".lock")
+              with lock_path.open("w", encoding="utf-8") as lock_file:
+                  fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+                  fd, temp_name = tempfile.mkstemp(prefix=path.name + ".", dir=path.parent)
+                  try:
+                      with os.fdopen(fd, "w", encoding="utf-8", newline="") as temp_file:
+                          temp_file.write(text)
+                          temp_file.flush()
+                          os.fsync(temp_file.fileno())
+                      os.replace(temp_name, path)
+                  finally:
+                      if os.path.exists(temp_name):
+                          os.unlink(temp_name)
+                  fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+              lock_path.unlink(missing_ok=True)
+          PY
+          git diff --check
+
+      - name: Build the corrected simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Run focused Forretress regressions
+        run: |
+          ./build/regidrago_unified_tests forretress_ex_combo_tests
+          ./build/regidrago_unified_tests issue_1460_zero_target_exploding_energy_tests
+
+      - name: Regenerate source-bound setup evidence
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+
+      - name: Validate refreshed contracts
+        run: |
+          python tests/setup_report_contract_tests.py
+          python tests/multi_deck_report_contract_tests.py
+          cmp results/simulation_results.csv <(./build/regidrago_sim --trials 100000 --seed 20260705 --out /dev/stdout)
+
+      - name: Commit validated fixture and evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/forretress_ex_combo_tests.cpp results \
+                  docs/REPORT.md docs/MULTI_DECK_REPORT.md
+          git commit -m "Refresh Exploding Energy evidence (#1587)"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}

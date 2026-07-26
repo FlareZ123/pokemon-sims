@@ -25,10 +25,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Apply isolated issue 1596 patch
-        shell: bash
-        run: |
-          set -o pipefail
-          python scripts/apply_issue_1596_patch.py 2>&1 | tee patch.log
+        run: python scripts/apply_issue_1596_patch_v2.py
       - name: Configure and build Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
       - name: Run focused regression and three reviewed traces
@@ -64,8 +61,8 @@ jobs:
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/trace_engine_v2/part_014c_latias_bench_override.inc tests/issue_1596_turo_vessel_dialga_tests.cpp README.md docs/REPORT.md docs/TRACE_AUDIT.md docs/MULTI_DECK_REPORT.md results/simulation_results.csv results/baseline_manifest.json results/traces results/multi_deck_comparison.csv results/multi_deck_manifest.json results/multi_deck_traces
-          git rm .github/workflows/fix-1596-materialize.yml scripts/apply_issue_1596_patch.py
+          git add src/trace_engine_v2/part_issue_1439_treasure_tapu_crispin_override.inc tests/issue_1596_turo_vessel_dialga_tests.cpp README.md docs/REPORT.md docs/TRACE_AUDIT.md docs/MULTI_DECK_REPORT.md results/simulation_results.csv results/baseline_manifest.json results/traces results/multi_deck_comparison.csv results/multi_deck_manifest.json results/multi_deck_traces
+          git rm .github/workflows/fix-1596-materialize.yml scripts/apply_issue_1596_patch.py scripts/apply_issue_1596_patch_v2.py
           git commit -m 'Play Turo before Vessel for seed 26 T3'
           git push origin HEAD:${GITHUB_HEAD_REF}
       - name: Upload validation evidence
@@ -74,7 +71,6 @@ jobs:
         with:
           name: issue-1596-validation-${{ github.run_attempt }}
           path: |
-            patch.log
             simulate-*.txt
             results/simulation_results.csv
             results/multi_deck_comparison.csv

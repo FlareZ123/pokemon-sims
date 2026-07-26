@@ -1,11 +1,11 @@
-name: Validate issue 1516 script
+name: Materialize issue 1516 fix
 
 on:
   pull_request:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: issue-1516-script-${{ github.event.pull_request.number }}
@@ -19,11 +19,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Apply patch
+      - name: Apply source patch
         run: |
           python .github/issue-1516-apply.py
           python .github/issue-1516-array-fix.py
@@ -34,14 +35,12 @@ jobs:
         run: |
           set -o pipefail
           (cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2) 2>&1 | tee build.log
-      - name: Capture seed 42 diagnostic
-        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 42 | tee trace-42.txt
       - name: Run focused regression
         shell: bash
         run: |
           set -o pipefail
           ./build/regidrago_unified_tests issue_1516_quick_ball_tapu_crispin_tests 2>&1 | tee focused-test.log
-      - name: Run reviewed no-control and strict-JIT traces
+      - name: Run three reviewed connector traces
         shell: bash
         run: |
           set -euo pipefail
@@ -52,22 +51,17 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 104 --require-ready-by 3 | tee trace-104.txt
           grep -q "Searched a Basic Pokémon: Tapu Lele-GX" trace-104.txt
           grep -q "T3 | READY" trace-104.txt
-      - name: Find and replay a matchup-flex Tapu control
-        shell: bash
-        run: |
-          set -euo pipefail
           : > matchup-control.txt
           for seed in $(seq 1 500); do
             ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed "$seed" > candidate.txt
             if grep -q "Searched a Basic Pokémon: Tapu Lele-GX" candidate.txt && grep -q "WONDER TAG" candidate.txt && grep -q "Crispin" candidate.txt; then
               printf 'seed=%s\n' "$seed" | tee matchup-control.txt
               cat candidate.txt | tee trace-matchup.txt
-              exit 0
+              break
             fi
           done
-          echo "No matchup-flex Tapu-Crispin control found in seeds 1-500" >&2
-          exit 1
-      - name: Regenerate matrices
+          test -s matchup-control.txt
+      - name: Regenerate source-bound matrices and reports
         run: |
           python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
           python scripts/update_setup_docs.py --repo-root .
@@ -75,18 +69,26 @@ jobs:
           python scripts/update_multi_deck_docs.py --repo-root .
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
-      - name: Upload validated files
+      - name: Commit validated fix and remove temporary machinery
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/issue-1516-apply.py .github/issue-1516-array-fix.py .github/issue-1516-live-print.py .github/issue-1516-target-proof-trigger.txt .github/issue-1516-target-proof.py .github/workflows/validate-issue-1516-script.yml
+          git add src tests README.md docs results
+          git commit -m "Preserve Quick Ball before duplicate Crispin route (#1516)"
+          git push origin HEAD:${{ github.head_ref }}
+      - name: Upload validated evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: issue-1516-script-${{ github.run_attempt }}
+          name: issue-1516-source-bound-${{ github.run_attempt }}
           path: |
             src/regidrago_sim.cpp
             src/trace_engine_v2/part_issue_991_wonder_tag_burnet_legacy_star_override_base.inc
             src/trace_engine_v2/part_issue_1516_quick_ball_tapu_crispin_override.inc
             tests/issue_1516_quick_ball_tapu_crispin_tests.cpp
-            docs/REPORT.md
-            docs/MULTI_DECK_REPORT.md
             results/baseline_manifest.json
             results/simulation_results.csv
             results/multi_deck_manifest.json

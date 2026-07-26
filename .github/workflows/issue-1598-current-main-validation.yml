@@ -36,8 +36,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ./build/regidrago_unified_tests issue_1598_prized_treasure_route_tests
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 14 --require-ready-by 3 | tee simulate-14.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 14 | tee simulate-14.txt
+          ./build/regidrago_unified_tests issue_1598_prized_treasure_route_tests | tee focused.log
           grep -q 'exchanged Gladion for Mysterious Treasure' simulate-14.txt
           grep -q 'Mega Dragonite ex (Mysterious Treasure cost)' simulate-14.txt
           grep -q 'T3 | READY' simulate-14.txt
@@ -80,6 +80,7 @@ jobs:
           path: |
             configure.log
             build.log
+            focused.log
             src/trace_engine_v2/part_012.inc
             tests/issue_1598_prized_treasure_route_tests.cpp
             simulate-*.txt

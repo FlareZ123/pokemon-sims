@@ -288,6 +288,66 @@
     return true;
   }
 
+
+bool complete_issue_1599_quick_ball_tapu_crispin_route() {
+  if (scenario_.dci != DciProfile::MatchupFlexJit || state_.turn != 2 ||
+      item_locked() || !supporter_allowed() || !deck_seen_ ||
+      !state_.active || state_.active->card != Card::RegidragoVstar ||
+      state_.active->grass < 2 || state_.active->fire != 0 ||
+      need_regi() || need_vstar() || need_active_vstar() || need_payload() ||
+      hand_count(Card::QuickBall) == 0 || hand_count(Card::GoodraVstar) == 0 ||
+      bench_space() == 0 || !ability_available_for_pokemon(Card::TapuLeleGX) ||
+      in_play(Card::TapuLeleGX) ||
+      deck_count_after_search_started(Card::TapuLeleGX) == 0 ||
+      deck_count_after_search_started(Card::Crispin) == 0 ||
+      deck_count_after_search_started(Card::Grass) == 0 ||
+      deck_count_after_search_started(Card::Fire) == 0) {
+    return false;
+  }
+
+  // Reopen the costed Basic-search channel after Mysterious Treasure has
+  // established the VSTAR and current-turn payload axes. Goodra is then a
+  // route-proven high-DCI cost, Tapu Lele-GX supplies Wonder Tag, and Crispin
+  // attaches the sole missing Fire Energy during the unused Supporter action:
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Core Item, discard, search, Bench, Ability, Supporter, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Dynamic DCI and earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1599
+  remove_one(state_.hand, Card::QuickBall);
+  state_.discard.push_back(Card::QuickBall);
+  if (!discard_from_hand(Card::GoodraVstar,
+                         "Quick Ball issue-1599 Tapu-Crispin route cost",
+                         "R-QB-01; P-DCI-01; P-COMPRESS-01")) {
+    throw std::logic_error("Issue-1599 Quick Ball cost disappeared");
+  }
+  record_deck_search_knowledge("Quick Ball issue-1599 Tapu-Crispin route");
+  if (!move_deck_to_hand(Card::TapuLeleGX)) {
+    throw std::logic_error("Issue-1599 Tapu Lele-GX target disappeared");
+  }
+  shuffle(state_.deck);
+  trace("PLAY ITEM", "R-QB-01; R-GAME-ITEM; P-DCI-01",
+        "Spent Hisuian Goodra VSTAR and searched Tapu Lele-GX for the immediate Crispin finish.");
+
+  if (!bench_from_hand(Card::TapuLeleGX, false)) {
+    throw std::logic_error("Issue-1599 Tapu Lele-GX Bench action failed");
+  }
+  record_deck_search_knowledge("Wonder Tag issue-1599 Crispin route");
+  if (!move_deck_to_hand(Card::Crispin)) {
+    throw std::logic_error("Issue-1599 Crispin target disappeared");
+  }
+  shuffle(state_.deck);
+  trace("WONDER TAG", "R-TAPU-01; R-CRISPIN-01; P-COMPRESS-01",
+        "Searched and revealed Crispin for the missing Fire Energy axis.");
+  if (!play_crispin()) {
+    throw std::logic_error("Issue-1599 Crispin completion disappeared");
+  }
+  return active_is_vstar() && !need_energy() && !need_payload();
+}
+
   void run_turn() {
     if (secret_box_combo_enabled()) {
       run_secret_box_turn();
@@ -419,6 +479,10 @@
     // Retry evolution so a Regidrago V that entered play on a prior turn can evolve
     // before this turn's ready check under the core evolution procedure (https://www.pokemon.com/us/pokemon-tcg/rules).
     evolve_best_regi();
+    if (complete_issue_1599_quick_ball_tapu_crispin_route()) {
+      trace("POLICY", "P-AXIS-01", "End: " + state_line());
+      return;
+    }
     if (late_steven_active_vstar_crispin_treasure_route_available() &&
         play_late_steven_active_vstar_crispin_treasure_route()) {
       // Steven's Resolve ends the turn immediately after the two-card route search.

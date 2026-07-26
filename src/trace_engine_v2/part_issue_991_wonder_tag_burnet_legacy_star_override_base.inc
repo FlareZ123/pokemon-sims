@@ -170,12 +170,22 @@
     const bool held_crispin_completes_ggf =
         grass_remaining == 0 && fire_remaining == 0;
 
+    constexpr std::array<Card, 5> kAcceptedPayloads{
+        Card::Dragapult, Card::MegaDragonite, Card::DialgaGX,
+        Card::GoodraVstar, Card::Appletun};
+    const bool known_prized_payload_axis =
+        scenario_.dci == DciProfile::NoDiscardControl &&
+        std::any_of(kAcceptedPayloads.begin(), kAcceptedPayloads.end(),
+                    [this](const Card card) {
+                      return prize_count_after_reveal(card) > 0;
+                    });
     const bool held_gladion_has_known_axis = hand_count(Card::Gladion) > 0 &&
         ((need_regi() && bench_space() > 0 &&
           prize_count_after_reveal(Card::RegidragoV) > 0) ||
          (need_vstar() && prize_count_after_reveal(Card::RegidragoVstar) > 0) ||
          prize_count_after_reveal(Card::Grass) > 0 ||
-         prize_count_after_reveal(Card::Fire) > 0);
+         prize_count_after_reveal(Card::Fire) > 0 ||
+         known_prized_payload_axis);
 
     // Wonder Tag searches one Supporter, and only one Supporter may be played this
     // turn. When a held Gladion has a known Prize route and Crispin is already held,
@@ -184,8 +194,10 @@
     // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Accepted Apex Dragon payloads: https://api.pokemontcg.io/v2/cards/sv6-130 https://api.pokemontcg.io/v2/cards/me2pt5-152 https://api.pokemontcg.io/v2/cards/sm5-100 https://api.pokemontcg.io/v2/cards/swsh11-136 https://api.pokemontcg.io/v2/cards/sv8-140
     // One Supporter per turn: https://www.pokemon.com/us/pokemon-tcg/rules
-    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // No-control payload banking and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed payload-axis extension: https://github.com/FlareZ123/pokemon-sims/issues/1516
     // The held Fire manual on T4 plus the held Crispin's one-type Grass search and
     // next manual attachment cover the exact T5 Energy route without a second copy:
     // https://github.com/FlareZ123/pokemon-sims/issues/1051

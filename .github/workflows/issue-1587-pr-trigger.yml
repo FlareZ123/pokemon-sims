@@ -1,4 +1,4 @@
-name: Execute issue 1587 materializer
+name: Materialize issue 1587 source
 
 on:
   pull_request:
@@ -9,14 +9,14 @@ permissions:
   contents: write
 
 concurrency:
-  group: issue-1587-pr-materializer
+  group: issue-1587-source-materializer
   cancel-in-progress: false
 
 jobs:
   materialize:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,7 +25,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Execute the source-bound materializer steps
+      - name: Apply the atomic source patch
         shell: bash
         run: |
           set -euo pipefail
@@ -38,18 +38,12 @@ jobs:
 
           workflow = Path(".github/workflows/issue-1587-materialize.yml")
           lines = workflow.read_text(encoding="utf-8").splitlines()
-          commands: list[str] = []
+          command: str | None = None
           index = 0
           while index < len(lines):
               line = lines[index]
               indent = len(line) - len(line.lstrip(" "))
-              stripped = line.strip()
-              if indent != 8 or not stripped.startswith("run:"):
-                  index += 1
-                  continue
-
-              value = stripped[4:].strip()
-              if value in {"|", "|-", ">", ">-"}:
+              if indent == 8 and line.strip() == "run: |":
                   index += 1
                   block: list[str] = []
                   while index < len(lines):
@@ -59,26 +53,25 @@ jobs:
                           break
                       block.append(candidate[10:] if len(candidate) >= 10 else "")
                       index += 1
-                  if value.startswith(">"):
-                      command = " ".join(part.strip() for part in block if part.strip())
-                  else:
-                      command = "\n".join(block)
-                  commands.append(command)
-                  continue
-
-              commands.append(value)
+                  command = "\n".join(block)
+                  break
               index += 1
 
-          if not commands:
-              raise RuntimeError("No materializer run blocks were found.")
-
-          environment = os.environ.copy()
-          for command_index, command in enumerate(commands):
-              print(f"\n===== materializer command {command_index + 1}/{len(commands)} =====", flush=True)
-              subprocess.run(["bash", "-lc", command], check=True, env=environment)
-              if command_index == 0:
-                  marker = Path(".issue-1587-changed")
-                  if marker.read_text(encoding="utf-8").strip() != "1":
-                      print("Issue 1587 source is already materialized.", flush=True)
-                      raise SystemExit(0)
+          if command is None:
+              raise RuntimeError("The source materializer run block was not found.")
+          subprocess.run(["bash", "-lc", command], check=True, env=os.environ.copy())
           PY
+          test "$(cat .issue-1587-changed)" = "1"
+          rm -f .issue-1587-changed
+          git diff --check
+      - name: Commit the focused correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/trace_engine_v2/part_forretress_ex_combo.inc \
+                  tests/issue_1460_zero_target_exploding_energy_tests.cpp \
+                  docs/RULES_TRACEABILITY.md
+          git commit -m "Require an Exploding Energy target (#1587)"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}

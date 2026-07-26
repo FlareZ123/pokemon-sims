@@ -8,6 +8,8 @@ The repository contains a rules-mapped simulator, deterministic `simulate-this` 
 
 The model is deliberately a single-player setup model. It does not resolve every Expanded card or opponent-dependent game state.
 
+<a name="registered-decks"></a>
+
 ## Named deck recipes
 
 The validated registry contains exactly two decks:
@@ -30,6 +32,16 @@ cmake --build build --parallel 2
 
 Each trace prints the selected deck ID, opening player-known state, debug-only Prize cards, every cost, search, attachment, evolution, retreat, VSTAR Power, attack, and ready-state check. Policy never reads debug Prize output before a legal deck or Prize inspection.
 
+## Find known-good trace seeds
+
+Use `--find-ready N` to locate deterministic seeds that satisfy a scenario and optional readiness deadline. `--start-seed` selects the first candidate seed:
+
+```bash
+./build/regidrago_sim --find-ready 3 --start-seed 1 --scenario strict-jit/go-second --require-ready-by 3
+```
+
+The mode is source-defined and rejects incompatible trace or aggregate options: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L238-L437 https://github.com/FlareZ123/pokemon-sims/blob/main/tests/run_cli_mode_contract.cmake#L58-L184 https://github.com/FlareZ123/pokemon-sims/issues/1542
+
 ## Run tests
 
 ```bash
@@ -38,6 +50,8 @@ ctest --test-dir build --output-on-failure
 ```
 
 The issue-specific suite covers recipe validation, unknown or withdrawn deck identities, Appletun stage and payload identity, the complete Secret Box route, strict DCI cost protection, Mysterious Treasure cost reservation, Bench limits, turn-one evolution, locks, legal Prize recovery, and reviewed seeded traces.
+
+<a name="run-aggregate-smoke-test"></a>
 
 ## Generate the canonical shell baseline
 

@@ -207,13 +207,31 @@ bool Engine::resolve_exploding_energy(
 }
 
 bool Engine::use_exploding_energy_for_setup() {
-  if (!forretress_combo_enabled() || !need_energy() ||
+  const bool promotion_only_finish = prizes_known() && state_.active &&
+      state_.active->card == Card::ForretressEx && need_active_vstar() &&
+      benched_vstar_promotion_ready() && !need_payload() && !need_energy();
+  if (!forretress_combo_enabled() ||
+      (!need_energy() && !promotion_only_finish) ||
       in_play_count(Card::ForretressEx) == 0 ||
       !ability_available_for_pokemon(Card::ForretressEx)) {
     return false;
   }
   const auto target_index = exploding_energy_regidrago_target_index();
   if (!target_index || !might_be_unseen(Card::Grass)) return false;
+
+  if (promotion_only_finish) {
+    // This K1-only completion attaches one known deck-resident Basic Grass Energy,
+    // then applies Exploding Energy's printed self-Knock-Out and promotion. Ability
+    // effects using "up to X" require a selection from 1 through X under the
+    // February 2026 rule update, so this route never relies on a zero-card search:
+    // Official February 2026 ruling: https://professorprogram.pokemon.com/news/11473085
+    // Forretress ex / Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Ability, search, attachment, Knock Out, and promotion procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1, current-turn payload, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/1561
+    return resolve_exploding_energy({*target_index});
+  }
 
   std::vector<std::size_t> destinations;
   const bool source_is_active =

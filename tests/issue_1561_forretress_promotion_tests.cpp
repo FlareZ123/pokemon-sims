@@ -19,6 +19,8 @@ void test_seed_17_uses_zero_search_for_promotion() {
   sim::TraceLog trace{true, {}};
   sim::Engine engine(*scenario, deck->recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
+  // Exploding Energy searches for up to five cards and self-KOs when the deck was
+  // searched in this way, so a legal zero-card search still performs the self-KO:
   // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Core Knock Out and promotion procedure: https://www.pokemon.com/us/pokemon-tcg/rules

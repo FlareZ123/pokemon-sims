@@ -1,0 +1,83 @@
+name: Validate issue 1597 on latest main
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1597-latest-main-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/issue-1597-wonder-tag-steven'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply isolated patch
+        run: python scripts/apply_issue_1597_patch.py
+      - name: Build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Validate regression and three perfect-play traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_unified_tests issue_1597_wonder_tag_steven_turo_tests
+          ./build/regidrago_sim --simulate-this --model-variant crobat2-erika-channeler --scenario no-discard-control/go-first --seed 27 --require-ready-by 4 | tee simulate-27.txt
+          grep -q "Searched and revealed Steven's Resolve" simulate-27.txt
+          grep -q 'banked Regidrago VSTAR and Crispin' simulate-27.txt
+          grep -q 'READY' simulate-27.txt
+          ./build/regidrago_sim --simulate-this --model-variant crobat2-erika-channeler --scenario no-discard-control/go-second --seed 27 | tee simulate-control-second.txt
+          ! grep -q 'banked Regidrago VSTAR and Crispin' simulate-control-second.txt
+          ./build/regidrago_sim --simulate-this --model-variant crobat2-erika-channeler --scenario strict-jit/go-first --seed 27 | tee simulate-control-strict.txt
+          ! grep -q 'banked Regidrago VSTAR and Crispin' simulate-control-strict.txt
+      - name: Release suite before reports
+        run: ctest --test-dir build --parallel 4 --output-on-failure -E 'setup_report_contract|multi_deck_report_contract|crobat_model_report_contract'
+      - name: Regenerate source-bound matrices
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260723 --out results/crobat_variant_model.csv
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+          python scripts/update_crobat_modeling_docs.py --csv results/crobat_variant_model.csv --out docs/CROBAT_MODEL_REPORT.md
+      - name: Complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Complete sanitizer suite
+        run: |
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build-sanitize --parallel 2
+          ASAN_OPTIONS=detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 ctest --test-dir build-sanitize --parallel 2 --output-on-failure
+      - name: Materialize validated source and reports
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          rm -f docs/CROBAT_MODEL_REPORT.md.lock results/crobat_variant_model.csv.lock
+          git add src/trace_engine_v2/part_010_steven_crispin_override.inc src/trace_engine_v2/part_014c_latias_bench_override.inc tests/issue_1597_wonder_tag_steven_turo_tests.cpp README.md docs results
+          git rm .github/workflows/issue-1597-latest-main-validation.yml scripts/apply_issue_1597_patch.py
+          git commit -m 'Bank Steven for the seed 27 T4 schedule'
+          git push origin HEAD:${GITHUB_HEAD_REF}
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1597-latest-main-${{ github.run_attempt }}
+          path: |
+            simulate-*.txt
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            results/crobat_variant_model.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn

@@ -1,0 +1,42 @@
+name: Harumi current-main Crobat seed 7 audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/harumi-20260726-crobat7'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Record exact source identity
+        run: |
+          git rev-parse HEAD | tee tested-head.txt
+          git rev-parse origin/main | tee tested-main.txt
+          git diff --name-status origin/main...HEAD | tee audit-diff.txt
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Reproduce public duplicate-payload route
+        run: |
+          # Arven searches an Item and Tool; Quick Ball pays one discard and searches a Basic; Crobat V Dark Asset draws to six after a hand-to-Bench play; duplicate Dragon payloads are dynamically expendable when another complete payload remains protected: https://api.pokemontcg.io/v2/cards/sv1-166 https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/swsh3-104 https://api.pokemontcg.io/v2/cards/me2pt5-152 https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit/go-second --seed 7 | tee candidate-crobat-7.txt
+      - name: Run focused policy tests
+        run: ./build/regidrago_unified_tests regidrago_policy_tests
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harumi-current-main-crobat7-${{ github.run_attempt }}
+          path: |
+            tested-head.txt
+            tested-main.txt
+            audit-diff.txt
+            candidate-crobat-7.txt
+          if-no-files-found: error

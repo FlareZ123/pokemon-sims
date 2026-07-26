@@ -1,0 +1,154 @@
+name: Issue 1561 source-bound validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/issue-1561-forretress-promotion'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply isolated source and regression patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/trace_engine_v2/part_forretress_ex_combo.inc')
+          text = path.read_text()
+          old = '''bool Engine::use_exploding_energy_for_setup() {
+            if (!forretress_combo_enabled() || !need_energy() ||
+                in_play_count(Card::ForretressEx) == 0 ||
+                !ability_available_for_pokemon(Card::ForretressEx)) {
+              return false;
+            }
+          '''
+          new = '''bool Engine::use_exploding_energy_for_setup() {
+            const bool promotion_only_finish = state_.active &&
+                state_.active->card == Card::ForretressEx && need_active_vstar() &&
+                benched_vstar_promotion_ready() && !need_payload();
+            if (!forretress_combo_enabled() ||
+                (!need_energy() && !promotion_only_finish) ||
+                in_play_count(Card::ForretressEx) == 0 ||
+                !ability_available_for_pokemon(Card::ForretressEx)) {
+              return false;
+            }
+            if (promotion_only_finish && !need_energy()) {
+              // Exploding Energy may search for zero Basic Grass Energy, then still applies
+              // its printed self-Knock-Out. When Active Forretress ex is the final position
+              // blocker, that legal zero-card resolution promotes the already-GGF Benched
+              // Regidrago VSTAR on the earliest ready turn:
+              // Forretress ex / Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+              // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+              // Core search, Knock Out, and promotion procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+              // Strict-JIT and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+              // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1561
+              return resolve_exploding_energy({});
+            }
+          '''
+          if text.count(old) != 1:
+              raise SystemExit('issue-1561 source anchor was not unique')
+          path.write_text(text.replace(old, new, 1))
+
+          Path('tests/issue_1561_forretress_promotion_tests.cpp').write_text(r'''#define REGIDRAGO_SIM_NO_MAIN
+          #include "../src/regidrago_sim.cpp"
+          #include <algorithm>
+          #include <iostream>
+          #include <random>
+          #include <stdexcept>
+          #include <string>
+          namespace sim { struct EngineTestAccess {}; }
+          namespace {
+          void expect(bool value, const char* message) { if (!value) throw std::runtime_error(message); }
+          bool contains(const sim::TraceLog& trace, const std::string& needle) {
+            return std::any_of(trace.lines.begin(), trace.lines.end(), [&](const std::string& line) { return line.find(needle) != std::string::npos; });
+          }
+          void test_seed_17_uses_zero_search_for_promotion() {
+            const auto scenario = sim::scenario_by_label("matchup-flex-jit/go-second");
+            const sim::NamedDeck* deck = sim::deck_by_id("regidrago-pineco");
+            expect(scenario.has_value() && deck != nullptr, "Issue-1561 fixture unavailable");
+            std::mt19937_64 rng{17};
+            sim::TraceLog trace{true, {}};
+            sim::Engine engine(*scenario, deck->recipe, rng, &trace);
+            const sim::TrialOutcome outcome = engine.run();
+            // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+            // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+            // Core Knock Out and promotion procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+            // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1561
+            expect(outcome.first_ready_turn == 3 && !outcome.setup_failed, "Seed 17 missed T3 readiness");
+            expect(contains(trace, "Exploding Energy attached 0 Basic Grass Energy") && contains(trace, "T3 | PROMOTE") && contains(trace, "T3 | READY"), "Seed 17 missed the zero-search promotion route");
+          }
+          }
+          int main() { try { test_seed_17_uses_zero_search_for_promotion(); std::cout << "Issue 1561 tests passed\n"; return 0; } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; } }
+          ''')
+          PY
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 17 --require-ready-by 3 | tee simulate-17.txt
+          grep -q 'Exploding Energy attached 0 Basic Grass Energy' simulate-17.txt
+          grep -q 'T3 | READY' simulate-17.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee simulate-35.txt
+          grep -q 'T2 | READY' simulate-35.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee simulate-43.txt
+          grep -q 'T2 | READY' simulate-43.txt
+      - name: Run Release suite excluding generated-report contracts
+        run: ctest --test-dir build --parallel 4 --output-on-failure -E 'setup_report_contract|multi_deck_report_contract'
+      - name: Regenerate matrices and provenance
+        shell: bash
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out results/simulation_results.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out results/multi_deck_comparison.csv
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          from scripts.baseline_provenance import simulator_policy_source_digest
+          digest = simulator_policy_source_digest(Path('.').resolve())
+          p = Path('results/baseline_manifest.json'); d = json.loads(p.read_text()); d['simulator_policy_source_sha256'] = digest; p.write_text(json.dumps(d, indent=2) + '\n')
+          c = Path('results/multi_deck_comparison.csv'); p = Path('results/multi_deck_manifest.json'); d = json.loads(p.read_text()); d['simulator_policy_source_sha256'] = digest; d['comparison_csv_sha256'] = hashlib.sha256(c.read_bytes()).hexdigest(); p.write_text(json.dumps(d, indent=2) + '\n')
+          PY
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Run sanitizer suite
+        run: |
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build-sanitize --parallel 2
+          ASAN_OPTIONS=detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 ctest --test-dir build-sanitize --parallel 2 --output-on-failure
+      - name: Materialize fix and remove workflow
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_forretress_ex_combo.inc tests/issue_1561_forretress_promotion_tests.cpp docs/REPORT.md docs/MULTI_DECK_REPORT.md results/simulation_results.csv results/baseline_manifest.json results/multi_deck_comparison.csv results/multi_deck_manifest.json
+          git rm .github/workflows/issue-1561-validation.yml
+          git commit -m 'Use Exploding Energy for final promotion'
+          git push origin HEAD:${GITHUB_HEAD_REF}
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1561-validation-${{ github.run_attempt }}
+          path: |
+            simulate-*.txt
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn

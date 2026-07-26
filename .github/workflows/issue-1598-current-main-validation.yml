@@ -25,7 +25,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Apply smallest complete source patch
-        run: python scripts/apply_issue_1598_patch.py
+        run: |
+          python scripts/apply_issue_1598_patch.py
+          python scripts/refine_issue_1017_for_1598.py
       - name: Build Release
         shell: bash
         run: |
@@ -38,6 +40,7 @@ jobs:
           set -euo pipefail
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 14 | tee simulate-14.txt
           ./build/regidrago_unified_tests issue_1598_prized_treasure_route_tests | tee focused.log
+          ./build/regidrago_unified_tests issue_1017_late_steven_vstar_vessel_tests | tee refined.log
           grep -q 'exchanged Gladion for Mysterious Treasure' simulate-14.txt
           grep -q 'T3 | DISCARD.*Mega Dragonite ex (Mysterious Treasure cost)' simulate-14.txt
           grep -q 'T3 | READY' simulate-14.txt
@@ -68,8 +71,8 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           rm -f docs/CROBAT_MODEL_REPORT.md.lock results/crobat_variant_model.csv.lock
-          git add src/trace_engine_v2/part_009a.inc src/trace_engine_v2/part_012.inc tests/issue_1598_prized_treasure_route_tests.cpp README.md docs results
-          git rm .github/workflows/issue-1598-current-main-validation.yml scripts/apply_issue_1598_patch.py
+          git add src/trace_engine_v2/part_009a.inc src/trace_engine_v2/part_012.inc tests/issue_1598_prized_treasure_route_tests.cpp tests/issue_1017_late_steven_vstar_vessel_tests.cpp README.md docs results
+          git rm .github/workflows/issue-1598-current-main-validation.yml scripts/apply_issue_1598_patch.py scripts/refine_issue_1017_for_1598.py
           git commit -m 'Prefer prized Treasure for seed 14 T3'
           git push origin HEAD:${GITHUB_HEAD_REF}
       - name: Upload evidence
@@ -81,9 +84,11 @@ jobs:
             configure.log
             build.log
             focused.log
+            refined.log
             src/trace_engine_v2/part_009a.inc
             src/trace_engine_v2/part_012.inc
             tests/issue_1598_prized_treasure_route_tests.cpp
+            tests/issue_1017_late_steven_vstar_vessel_tests.cpp
             simulate-*.txt
             results/simulation_results.csv
             results/multi_deck_comparison.csv

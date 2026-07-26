@@ -28,6 +28,7 @@ void test_seed_191_uses_prized_fss_oricorio_route() {
   expect(scenario.has_value() && deck != nullptr,
          "The issue-1578 fixture is unavailable.");
 
+  // Keep the source-bound reproduction seed exact: https://github.com/FlareZ123/pokemon-sims/issues/1578
   std::mt19937_64 rng{191};
   sim::TraceLog trace{true, {}};
   sim::Engine engine(*scenario, deck->recipe, rng, &trace);

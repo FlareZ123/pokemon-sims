@@ -15,12 +15,12 @@ jobs:
   apply-and-validate:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/issue-1482-strict-include'
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 1
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -74,9 +74,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 290 --require-ready-by 3
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 129 --require-ready-by 2
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 290 --require-ready-by 3 | tee issue-1482-trace-290.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 129 --require-ready-by 2 | tee issue-1482-trace-129.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee issue-1482-trace-43.txt
       - name: Regenerate source-bound evidence
         run: |
           python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
@@ -91,6 +91,22 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/refresh-strict-include.yml
           git add src/regidrago_sim.cpp .github/workflows/ci.yml docs/REPORT.md docs/MULTI_DECK_REPORT.md results/baseline_manifest.json results/simulation_results.csv results/multi_deck_manifest.json results/multi_deck_comparison.csv
           git commit -m "Fix strict C++20 include directive (#1482)"
-          git push origin HEAD:fix/issue-1482-strict-include
+          git push --force-with-lease origin HEAD:${{ github.head_ref }}
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1482-source-bound-${{ github.run_attempt }}
+          path: |
+            issue-1482-trace-*.txt
+            results/baseline_manifest.json
+            results/simulation_results.csv
+            results/multi_deck_manifest.json
+            results/multi_deck_comparison.csv
+            docs/REPORT.md
+            docs/MULTI_DECK_REPORT.md
+            build/Testing
+          if-no-files-found: warn

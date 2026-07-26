@@ -28,6 +28,7 @@ void test_seed_269_recovers_and_executes_the_full_payload_bridge() {
   expect(scenario.has_value() && deck != nullptr,
          "The issue-1576 fixture is unavailable.");
 
+  // Keep the source-bound reproduction seed exact: https://github.com/FlareZ123/pokemon-sims/issues/1576
   std::mt19937_64 rng{269};
   sim::TraceLog trace{true, {}};
   sim::Engine engine(*scenario, deck->recipe, rng, &trace);

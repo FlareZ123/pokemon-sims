@@ -16,6 +16,8 @@ It does not model opponent turns, damage, prizes taken, or a global two-player g
 
 Maintainer policy excludes Dipplin's Syrup Catcher from the A/S win-condition set. The attack can create a gust-like target, yet it may take no Prize and allows an opponent to switch after the effect. That line is insufficient for this deck's modeled ready-state definition. Dipplin therefore never completes the payload axis, never makes `payload_ready()` true, and never becomes a payload-discard target.
 
+<a name="policy-versus-future-card-oracle"></a>
+
 ## Knowledge states
 
 ### K0: before a legal inspection
@@ -59,6 +61,8 @@ K1 begins only during a legal effect resolution. It does not grant prior knowled
 - Item lock prevents Items from being played from hand. It does not retroactively remove an already attached Forest Seal Stone from play.
 - Rule Box Ability lock suppresses Tapu Lele-GX Wonder Tag, Latias ex Skyliner, and Regidrago VSTAR Legacy Star. It does not suppress Oricorio Vital Dance because Oricorio has no Rule Box.
 - Under a Rule Box Ability lock, the engine does not Bench or search for Tapu Lele-GX or Latias ex as an Ability connector. If a benched VSTAR must become Active, it can search for or use Tate & Liza's switch mode instead.
+
+<a name="discard-capability-index-dci"></a>
 
 ## DCI/JIT treatment
 

@@ -23,6 +23,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      # GitHub custom-anchor and section-link contract: https://docs.github.com/en/enterprise-cloud@latest/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#custom-anchors
+      # Confirmed repository traceability defect: https://github.com/FlareZ123/pokemon-sims/issues/1542
+      - name: Validate internal Markdown source anchors
+        run: python tests/source_anchor_contract_tests.py
       - name: Configure Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator and unified tests

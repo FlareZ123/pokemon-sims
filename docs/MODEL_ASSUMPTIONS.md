@@ -63,6 +63,9 @@ Their discrete value is still preserved in the DCI profiles and swap discussion.
 
 Matched-seed named-deck comparisons are available through `--all-decks` and `scripts/generate_multi_deck_comparison.py`. The registry contains `regidrago-shell` and `regidrago-pineco`. Both decks use the same derived seed for each scenario, every row includes the deck ID, and the committed comparison is bound to the complete simulator source digest.
 
+<a name="hidden-information-policy"></a>
+<a name="knowledge-states"></a>
+
 ### Policy versus future-card oracle
 
 A player can inspect the deck when a search effect resolves. A player cannot inspect the future top cards before selecting an action. The code allows exact legal card selection from the remaining deck, then uses a shuffled deck for draws. The policy selects its action from hand, public board, remaining deck composition, Prize cards only when an effect reveals them, and the scenario configuration. It does not branch on future draw identity.
@@ -100,6 +103,10 @@ The model assigns cards to strategic discard categories rather than treating eve
 | No discard control | only resources needed immediately | the matchup-flex set plus pre-attack A/S payloads |
 
 This is a principled approximation. DCI in a real match depends on opponent deck information, prizes, turn sequence, bench capacity, known hand, and current board. The source code centralizes its choices in `choose_discard` for later refinement.
+
+<a name="lock-scenarios"></a>
+<a name="lock-semantics"></a>
+<a name="lock-model"></a>
 
 ## Lock interpretation
 

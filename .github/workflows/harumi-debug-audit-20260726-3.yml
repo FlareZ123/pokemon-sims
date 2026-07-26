@@ -42,7 +42,11 @@ jobs:
           excluded = {'.git', 'build', 'build-sanitize'}
           with zipfile.ZipFile('source-snapshot.zip', 'w', zipfile.ZIP_DEFLATED) as archive:
               for path in sorted(root.rglob('*')):
-                  if not path.is_file() or any(part in excluded for part in path.parts):
+                  if (
+                      not path.is_file()
+                      or path.name == 'source-snapshot.zip'
+                      or any(part in excluded for part in path.parts)
+                  ):
                       continue
                   archive.write(path, path.as_posix())
           PY

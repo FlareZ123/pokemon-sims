@@ -1,0 +1,52 @@
+name: Harumi Debug Pass 5
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+      - name: Run three independent perfect-play audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee perfect-shell-seed-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee perfect-pineco-seed-35.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee perfect-flex-seed-3.txt
+      - name: Reverify every open bug trace on current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 17 | tee issue-1561-seed-17.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 5 | tee issue-1564-seed-5.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 67 | tee issue-1563-seed-67.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 104 | tee issue-1552-seed-104.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-second --seed 33 | tee issue-1514-seed-33.txt
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit/go-second --seed 1 | tee issue-1533-seed-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 42 | tee issue-1516-seed-42.txt
+      - name: Generate T2 and T3 matrices
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out multi-deck-matrix.csv
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harumi-debug-pass5-${{ github.run_attempt }}
+          path: |
+            perfect-*.txt
+            issue-*.txt
+            t2-t3-matrix.csv
+            multi-deck-matrix.csv
+          if-no-files-found: error

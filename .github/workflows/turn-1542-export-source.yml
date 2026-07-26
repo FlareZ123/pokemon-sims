@@ -1,0 +1,36 @@
+name: Issue 1542 source export
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: turn-1542-export-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  export:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/issue-1542-source-anchors'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+      - name: Package tracked base source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > issue-1542-base-head.txt
+          git ls-files -z > issue-1542-base-files.txt
+          tar --null -T issue-1542-base-files.txt -czf issue-1542-base-source.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue-1542-base-source
+          path: |
+            issue-1542-base-head.txt
+            issue-1542-base-source.tar.gz
+          if-no-files-found: error

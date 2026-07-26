@@ -1,0 +1,40 @@
+name: Audit stale issue 1516 history
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  history:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/issue-1516-stale-history'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Inspect every related commit and final source
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="$(git merge-base origin/main HEAD^)"
+          echo "merge-base=$base" | tee issue-1516-history.txt
+          git log --reverse --format='COMMIT %H%nAUTHOR %aI%nSUBJECT %s%nBODY %b' "$base..HEAD^" | tee -a issue-1516-history.txt
+          while read -r sha; do
+            echo "===== $sha =====" | tee -a issue-1516-history.txt
+            git show --stat --summary --format=fuller "$sha" | tee -a issue-1516-history.txt
+          done < <(git rev-list --reverse "$base..HEAD^")
+          git diff --check "$base..HEAD^" | tee issue-1516-diff-check.txt
+          git diff --stat "$base..HEAD^" | tee issue-1516-final-stat.txt
+          # Branch source is checked against Quick Ball, Wonder Tag, Crispin, Gladion, K1, DCI, and earliest-route specifications: https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sm2-60 https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/sm4-95 https://www.pokemon.com/us/pokemon-tcg/rules https://github.com/FlareZ123/pokemon-sims/issues/1516
+          grep -R "constexpr std::array<Card, 5> kAcceptedPayloads" src/trace_engine_v2/part_issue_1516_quick_ball_tapu_crispin_override.inc src/trace_engine_v2/part_issue_991_wonder_tag_burnet_legacy_star_override_base.inc
+      - name: Upload history evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1516-stale-history
+          path: |
+            issue-1516-history.txt
+            issue-1516-diff-check.txt
+            issue-1516-final-stat.txt

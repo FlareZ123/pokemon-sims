@@ -77,7 +77,7 @@ Path("src/trace_engine_v2/part_issue_1608_burnet_before_dead_crispin_override.in
 
 Path("tests/issue_1608_burnet_before_dead_crispin_tests.cpp").write_text(
     dedent(
-        r'''\
+        '''\
         #define REGIDRAGO_SIM_NO_MAIN
         #include "../src/regidrago_sim.cpp"
 

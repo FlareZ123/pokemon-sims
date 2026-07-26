@@ -91,10 +91,9 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm .github/workflows/refresh-strict-include.yml
-          git add src/regidrago_sim.cpp .github/workflows/ci.yml docs/REPORT.md docs/MULTI_DECK_REPORT.md results/baseline_manifest.json results/simulation_results.csv results/multi_deck_manifest.json results/multi_deck_comparison.csv
+          git add src/regidrago_sim.cpp docs/REPORT.md docs/MULTI_DECK_REPORT.md results/baseline_manifest.json results/simulation_results.csv results/multi_deck_manifest.json results/multi_deck_comparison.csv
           git commit -m "Fix strict C++20 include directive (#1482)"
-          git push --force-with-lease origin HEAD:${{ github.head_ref }}
+          git push origin HEAD:${{ github.head_ref }}
       - name: Upload validation evidence
         if: always()
         uses: actions/upload-artifact@v4

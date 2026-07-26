@@ -330,5 +330,51 @@
       return played;
     }
 
+    const bool issue_1578_prized_fss_energy_route =
+        supporter_allowed() && prizes_known() &&
+        scenario_.dci == DciProfile::MatchupFlexJit &&
+        scenario_.locks == LockMode::None && state_.turn == 3 &&
+        state_.turn < scenario_.max_turn && !item_locked() &&
+        !rule_box_abilities_locked() && !state_.vstar_power_used &&
+        !state_.manual_energy_used && active_is_vstar() &&
+        state_.active->tool == Tool::None &&
+        state_.active->grass == 0 && state_.active->fire == 1 &&
+        need_energy() && need_payload() &&
+        hand_count(Card::Gladion) > 0 &&
+        hand_count(Card::BrilliantBlender) > 0 &&
+        prize_count_after_reveal(Card::ForestSealStone) > 0 &&
+        deck_count_after_search_started(Card::Oricorio) > 0 &&
+        deck_count_after_search_started(Card::Grass) >= 2 &&
+        bench_space() > 0 && ability_available_for_pokemon(Card::Oricorio) &&
+        payload_might_be_in_deck();
+    if (issue_1578_prized_fss_energy_route) {
+      // Gladion recovers the known prized Forest Seal Stone. Star Alchemy
+      // searches Oricorio, Vital Dance searches two Grass Energy for the T3
+      // and T4 attachments, and held Blender supplies the T4 JIT payload:
+      // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+      // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+      // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+      // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Core Prize, Supporter, Tool, Ability, Bench, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // K1 and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed reproduction: https://github.com/FlareZ123/pokemon-sims/issues/1578
+      remove_one(state_.hand, Card::Gladion);
+      state_.supporter_used = true;
+      prizes_revealed_ = true;
+      const auto prize = std::find(
+          state_.prizes.begin(), state_.prizes.end(), Card::ForestSealStone);
+      if (prize == state_.prizes.end()) {
+        throw std::logic_error("Known prized Forest Seal Stone disappeared");
+      }
+      *prize = Card::Gladion;
+      state_.hand.push_back(Card::ForestSealStone);
+      shuffle(state_.prizes);
+      trace("PLAY SUPPORTER",
+            "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
+            "Exchanged Gladion for Forest Seal Stone to guarantee the T4 Oricorio and Brilliant Blender route.");
+      return true;
+    }
+
     return play_gladion_original();
   }

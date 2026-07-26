@@ -1,0 +1,140 @@
+name: Harumi source-bound debug audit 2026-07-26
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harumi-debug-audit-20260726-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/harumi-20260726-2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Record exact source identity
+        run: |
+          git rev-parse HEAD | tee tested-head.txt
+          git rev-parse origin/main | tee tested-main.txt
+          git diff --name-status origin/main...HEAD | tee audit-diff.txt
+      - name: Scan the tracked repository
+        shell: bash
+        run: |
+          python - <<'PY'
+          import pathlib
+          import re
+          import subprocess
+
+          root = pathlib.Path('.')
+          tracked = subprocess.check_output(['git', 'ls-files'], text=True).splitlines()
+          suffixes = {'.cc', '.cpp', '.cxx', '.h', '.hpp', '.inc', '.md', '.py', '.txt', '.yml', '.yaml', '.cmake', '.json', '.csv'}
+          files = [root / name for name in tracked if (root / name).suffix.lower() in suffixes or (root / name).name == 'CMakeLists.txt']
+          texts = {}
+          for path in files:
+              try:
+                  texts[path.as_posix()] = path.read_text(encoding='utf-8')
+              except UnicodeDecodeError:
+                  pass
+
+          malformed = []
+          unfinished = []
+          hidden_reads = []
+          for name, text in texts.items():
+              for line_no, line in enumerate(text.splitlines(), 1):
+                  if re.search(r'^\s*#\s*include\s+[^<"\s].*\.inc', line):
+                      malformed.append((name, line_no, line.strip()))
+                  if name != '.github/workflows/harumi-debug-audit-20260726.yml' and re.search(r'\b(?:TODO|FIXME|HACK|XXX)\b', line):
+                      unfinished.append((name, line_no, line.strip()))
+                  if 'state_.deck' in line or 'state_.prizes' in line:
+                      hidden_reads.append((name, line_no, line.strip()))
+
+          target = 'src/trace_engine_v2/part_issue_1356_fss_treasure_energy_override.inc'
+          target_reads = [row for row in hidden_reads if row[0] == target and row[1] in {130, 145}]
+          with open('static-audit.txt', 'w', encoding='utf-8') as out:
+              out.write(f'tracked_text_files={len(texts)}\n')
+              out.write(f'tracked_text_lines={sum(text.count(chr(10)) + 1 for text in texts.values())}\n')
+              out.write(f'malformed_include={len(malformed)}\n')
+              out.write(f'unfinished_marker={len(unfinished)}\n')
+              out.write(f'hidden_zone_read_inventory={len(hidden_reads)}\n')
+              out.write(f'issue_1549_exact_reads={len(target_reads)}\n')
+              out.write('issue_1549=https://github.com/FlareZ123/pokemon-sims/issues/1549\n')
+              out.write('k0_spec=https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection\n')
+              for label, rows in [('malformed_include', malformed), ('unfinished_marker', unfinished), ('issue_1549_exact_reads', target_reads), ('hidden_zone_read_inventory', hidden_reads)]:
+                  out.write(f'\n[{label}]\n')
+                  for row in rows:
+                      out.write(':'.join(map(str, row)) + '\n')
+          if malformed:
+              raise SystemExit('malformed include directives remain')
+          if len(target_reads) != 2:
+              raise SystemExit('issue 1549 hidden-deck reads changed; re-review required')
+          PY
+          sed -n '1,260p' static-audit.txt
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Perfect-play pass one
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Steven's Resolve can search up to three cards while held Quick Ball and the Dragon payload cover the remaining axes: https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/swsh1-179 https://github.com/FlareZ123/pokemon-sims/issues/952
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee perfect-58.txt
+          grep -q "Searched up to 3 cards: Regidrago VSTAR. Turn ended." perfect-58.txt
+          grep -q "T3 | READY" perfect-58.txt
+      - name: Perfect-play pass two
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Quick Ball into Tapu Lele-GX and Wonder Tag for Crispin is the shortest visible energy connector with separate legal discard costs: https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/sv7-133 https://github.com/FlareZ123/pokemon-sims/issues/962
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 104 --require-ready-by 3 | tee perfect-104.txt
+          grep -q "Searched a Basic Pokémon: Tapu Lele-GX" perfect-104.txt
+          grep -q "WONDER TAG.*Crispin" perfect-104.txt
+          grep -q "T3 | READY" perfect-104.txt
+      - name: Perfect-play pass three
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Mysterious Treasure can discard Dragapult ex, search Tapu Lele-GX, and preserve the Supporter action for Crispin: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sv6-130 https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/sv7-133 https://github.com/FlareZ123/pokemon-sims/issues/1209
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee perfect-43.txt
+          grep -q "T2 | HOLD SUPPORTER.*Mysterious Treasure to Tapu Lele-GX to Crispin" perfect-43.txt
+          grep -q "T2 | READY" perfect-43.txt
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Generate and print T2 and T3 matrices
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260726 --out shell-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260726 --out all-decks-matrix.csv
+          echo '--- shell matrix ---'
+          cat shell-matrix.csv
+          echo '--- all-decks matrix ---'
+          cat all-decks-matrix.csv
+      - name: Run sanitizer suite
+        run: |
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build-sanitize --parallel 2
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 ctest --test-dir build-sanitize --parallel 2 --output-on-failure
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harumi-debug-audit-20260726-${{ github.run_attempt }}
+          path: |
+            tested-head.txt
+            tested-main.txt
+            audit-diff.txt
+            static-audit.txt
+            perfect-*.txt
+            shell-matrix.csv
+            all-decks-matrix.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn

@@ -27,6 +27,13 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator and unified tests
         run: cmake --build build --parallel 2
+      - name: Build strict C++20 contract
+        shell: bash
+        run: |
+          # C++ include grammar: https://eel.is/c++draft/cpp.include
+          # Confirmed strict-build defect: https://github.com/FlareZ123/pokemon-sims/issues/1482
+          cmake -S . -B build-pedantic -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS=-pedantic-errors
+          cmake --build build-pedantic --parallel 2
       - name: Run eight independent simulate-this audits
         shell: bash
         run: |

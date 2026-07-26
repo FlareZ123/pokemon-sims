@@ -41,7 +41,7 @@ jobs:
           set -euo pipefail
           # Registered trace command and ready-state contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee simulate-shell-seed-1.txt
-          grep -q 'T3 | READY' simulate-shell-seed-1.txt
+          grep -q 'T2 | READY' simulate-shell-seed-1.txt
       - name: CI simulate-this pass two, Pineco going second
         shell: bash
         run: |

@@ -28,6 +28,7 @@ jobs:
         run: |
           python scripts/fix_issue_1605_anchor.py
           python scripts/apply_issue_1605_patch.py
+          python scripts/diagnose_issue_1605_route.py
       - name: Build Release
         shell: bash
         run: |
@@ -39,7 +40,7 @@ jobs:
         run: |
           set -euo pipefail
           ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit/go-second --seed 7 | tee simulate-7.txt
-          ./build/regidrago_unified_tests issue_1605_arven_redundant_payload_tests | tee focused.log
+          ./build/regidrago_unified_tests issue_1605_arven_redundant_payload_tests 2>&1 | tee focused.log
           grep -q 'T1 | PLAY SUPPORTER.*Arven' simulate-7.txt
           grep -q 'T1 | DISCARD.*Mega Dragonite ex' simulate-7.txt
           grep -q 'T1 | BENCH.*Regidrago V' simulate-7.txt
@@ -72,7 +73,7 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           rm -f docs/CROBAT_MODEL_REPORT.md.lock results/crobat_variant_model.csv.lock
           git add src/trace_engine_v2/part_006.inc src/trace_engine_v2/part_009a.inc src/trace_engine_v2/part_009b1.inc src/trace_engine_v2/part_012.inc tests/issue_1605_arven_redundant_payload_tests.cpp README.md docs results
-          git rm .github/workflows/issue-1605-validation.yml scripts/apply_issue_1605_patch.py scripts/fix_issue_1605_anchor.py
+          git rm .github/workflows/issue-1605-validation.yml scripts/apply_issue_1605_patch.py scripts/fix_issue_1605_anchor.py scripts/diagnose_issue_1605_route.py
           git commit -m 'Use Arven-Crobat route for seed 7'
           git push origin HEAD:${GITHUB_HEAD_REF}
       - name: Upload evidence

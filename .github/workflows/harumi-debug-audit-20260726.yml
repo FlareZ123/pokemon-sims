@@ -94,11 +94,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Quick Ball into Tapu Lele-GX and Wonder Tag for Crispin is the shortest visible energy connector with separate legal discard costs: https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/sv7-133 https://github.com/FlareZ123/pokemon-sims/issues/962
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 104 --require-ready-by 3 | tee perfect-104.txt
-          grep -q "Searched a Basic Pokémon: Tapu Lele-GX" perfect-104.txt
-          grep -q "WONDER TAG.*Crispin" perfect-104.txt
-          grep -q "T3 | READY" perfect-104.txt
+          # Brilliant Blender establishes the current-turn payload and Latias ex gives the Basic Active no Retreat Cost, so Serena must be preserved before the free T4 promotion: https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/sv8-76 https://api.pokemontcg.io/v2/cards/swsh12-164 https://github.com/FlareZ123/pokemon-sims/issues/1481 https://github.com/FlareZ123/pokemon-sims/pull/1543
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 8 --require-ready-by 4 | tee perfect-8.txt
+          grep -q "T4 | HOLD SUPPORTER" perfect-8.txt
+          grep -q "T4 | RETREAT" perfect-8.txt
+          grep -q "T4 | READY" perfect-8.txt
+          if grep -q "Serena chosen discard\|Used Serena draw mode" perfect-8.txt; then
+            exit 1
+          fi
       - name: Perfect-play pass three
         shell: bash
         run: |

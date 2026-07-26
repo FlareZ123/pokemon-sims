@@ -25,7 +25,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Apply isolated patch
-        run: python scripts/apply_issue_1597_patch.py
+        run: |
+          python scripts/fix_issue_1597_anchor.py
+          python scripts/apply_issue_1597_patch.py
       - name: Build Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
       - name: Validate regression and three perfect-play traces
@@ -65,7 +67,7 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           rm -f docs/CROBAT_MODEL_REPORT.md.lock results/crobat_variant_model.csv.lock
           git add src/trace_engine_v2/part_010_steven_crispin_override.inc src/trace_engine_v2/part_014c_latias_bench_override.inc tests/issue_1597_wonder_tag_steven_turo_tests.cpp README.md docs results
-          git rm .github/workflows/issue-1597-latest-main-validation.yml scripts/apply_issue_1597_patch.py
+          git rm .github/workflows/issue-1597-latest-main-validation.yml scripts/apply_issue_1597_patch.py scripts/fix_issue_1597_anchor.py
           git commit -m 'Bank Steven for the seed 27 T4 schedule'
           git push origin HEAD:${GITHUB_HEAD_REF}
       - name: Upload evidence

@@ -467,19 +467,23 @@ void test_exploding_energy_zero_selection_and_lock_boundary() {
   state.deck = {sim::Card::Fire};
   sim::EngineTestAccess::set_state(fixture.engine, state);
 
-  // "Up to 5" permits selecting zero cards. The deck was still searched, so the
-  // printed self-Knock-Out clause resolves:
-  // https://api.pokemontcg.io/v2/cards/sv4pt5-2
-  // https://www.pokemon.com/us/pokemon-tcg/rules
-  // https://github.com/FlareZ123/pokemon-sims/issues/972
-  if (!sim::EngineTestAccess::resolve_exploding_energy(fixture.engine, {})) {
-    throw std::runtime_error("Exploding Energy rejected its legal zero-card search.");
+  // Ability effects using "up to X" require a selection from 1 through X.
+  // An empty destination list is rejected before deck knowledge, Ability-use,
+  // self-Knock-Out, or zone state can change:
+  // Official February 2026 ruling: https://professorprogram.pokemon.com/news/11473085
+  // Forretress ex / Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  // Core Ability, search, attachment, shuffle, and Knock Out procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Confirmed superseding bug: https://github.com/FlareZ123/pokemon-sims/issues/1587
+  if (sim::EngineTestAccess::resolve_exploding_energy(fixture.engine, {})) {
+    throw std::runtime_error("Exploding Energy accepted an illegal zero-card selection.");
   }
   const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
   if (!after.active || after.active->card != sim::Card::RegidragoV ||
-      !after.bench.empty() || count(after.discard, sim::Card::ForretressEx) != 1 ||
-      count(after.discard, sim::Card::Pineco) != 1) {
-    throw std::runtime_error("A zero-card Exploding Energy search did not self-KO correctly.");
+      after.bench.size() != 1U ||
+      after.bench.front().card != sim::Card::ForretressEx ||
+      !after.discard.empty() ||
+      sim::EngineTestAccess::deck_seen(fixture.engine)) {
+    throw std::runtime_error("Rejecting zero targets mutated Exploding Energy state.");
   }
 
   Fixture locked("forretress-rulebox-lock", sim::LockMode::FullRuleBoxAbility);

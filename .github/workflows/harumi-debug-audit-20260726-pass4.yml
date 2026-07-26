@@ -1,0 +1,61 @@
+name: Harumi debug audit pass 4
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  perfect-play-audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/harumi-debug-20260726-pass4'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run three independent perfect-play traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Regidrago V may use Celestial Roar on the first turn going second; Path-style Rule Box Ability lock does not suppress attacks: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh6-148 https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 2 | tee pass-1-rulebox-lock.txt
+          grep -q "T1 | ATTACK.*Celestial Roar" pass-1-rulebox-lock.txt
+          grep -q "T2 | READY" pass-1-rulebox-lock.txt
+
+          # Secret Box may search one Item, one Tool, one Supporter, and one Stadium after discarding three cards; Dawn and Exploding Energy form the documented Pineco setup line: https://api.pokemontcg.io/v2/cards/sv6-163 https://api.pokemontcg.io/v2/cards/me2-87 https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 35 --require-ready-by 2 | tee pass-2-pineco-second.txt
+          grep -q "Secret Box discarded three other cards" pass-2-pineco-second.txt
+          grep -q "Exploding Energy" pass-2-pineco-second.txt
+          grep -q "T2 | READY" pass-2-pineco-second.txt
+
+          # Arven can search an Item and Tool, Forest Seal Stone supplies one legal VSTAR Power, and Forest of Vitality permits the modeled same-turn Grass evolution line: https://api.pokemontcg.io/v2/cards/sv1-166 https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-first --seed 9 --require-ready-by 3 | tee pass-3-pineco-first.txt
+          grep -q "Arven banked the next-turn Secret Box route" pass-3-pineco-first.txt
+          grep -q "Forest of Vitality allowed the newly played Pineco to evolve" pass-3-pineco-first.txt
+          grep -q "T3 | READY" pass-3-pineco-first.txt
+      - name: Generate T2 and T3 setup matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+      - name: Record exact source
+        run: |
+          git rev-parse HEAD > tested-head.txt
+          git rev-parse origin/main > tested-main.txt
+          git archive --format=tar.gz --output=pokemon-sims-source.tar.gz HEAD
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harumi-debug-audit-20260726-pass4-${{ github.run_attempt }}
+          path: |
+            pass-*.txt
+            t2-t3-matrix.csv
+            tested-head.txt
+            tested-main.txt
+            pokemon-sims-source.tar.gz
+            build/regidrago_sim
+          if-no-files-found: warn

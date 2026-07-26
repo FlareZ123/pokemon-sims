@@ -92,6 +92,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
       - name: Build Release
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -100,9 +101,17 @@ jobs:
         run: ctest --test-dir build --parallel 4 --output-on-failure
       - name: Generate all-decks T2/T3 matrix
         run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out turn-20260726-all-decks.csv
+      - name: Package exact audited source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > turn-20260726-tested-head.txt
+          tar --exclude=.git --exclude=build --exclude=turn-20260726-source.tar.gz -czf turn-20260726-source.tar.gz .
       - uses: actions/upload-artifact@v4
         with:
-          name: turn-20260726-release-and-matrix
+          name: turn-20260726-release-matrix-source
           path: |
             turn-20260726-all-decks.csv
+            turn-20260726-tested-head.txt
+            turn-20260726-source.tar.gz
             build/Testing

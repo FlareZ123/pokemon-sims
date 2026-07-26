@@ -1,0 +1,53 @@
+name: Harumi issue 1516 stale history audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  history:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/harumi-20260726-1240'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Inspect every stale claim commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin fix/issue-1516-qb-tapu-crispin
+          head_ref=origin/fix/issue-1516-qb-tapu-crispin
+          base="$(git merge-base origin/main "$head_ref")"
+          echo "main=$(git rev-parse origin/main)" | tee issue-1516-history.txt
+          echo "head=$(git rev-parse "$head_ref")" | tee -a issue-1516-history.txt
+          echo "merge-base=$base" | tee -a issue-1516-history.txt
+          echo "ahead=$(git rev-list --count "$base..$head_ref")" | tee -a issue-1516-history.txt
+          echo "behind=$(git rev-list --count "$base..origin/main")" | tee -a issue-1516-history.txt
+          git log --reverse --format='COMMIT %H%nAUTHOR %aI%nSUBJECT %s%nBODY %b' "$base..$head_ref" | tee -a issue-1516-history.txt
+          while read -r sha; do
+            echo "===== $sha =====" | tee -a issue-1516-per-commit.txt
+            git show --stat --summary --format=fuller "$sha" | tee -a issue-1516-per-commit.txt
+          done < <(git rev-list --reverse "$base..$head_ref")
+          git diff --check "$base..$head_ref" | tee issue-1516-diff-check.txt
+          git diff --stat "$base..$head_ref" | tee issue-1516-final-stat.txt
+          git show "$head_ref:src/trace_engine_v2/part_issue_1516_quick_ball_tapu_crispin_override.inc" > issue-1516-final-override.inc
+          git show "$head_ref:src/trace_engine_v2/part_issue_991_wonder_tag_burnet_legacy_star_override_base.inc" > issue-1516-final-base.inc
+          # Quick Ball, Wonder Tag, Crispin, Gladion, K1, DCI, and route priority sources: https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sm2-60 https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/sm4-95 https://www.pokemon.com/us/pokemon-tcg/rules https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/issues/1516
+          grep -q "constexpr std::array<Card, 5> kAcceptedPayloads" issue-1516-final-override.inc
+          grep -q "known_prized_payload_axis" issue-1516-final-base.inc
+      - name: Upload history evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1516-stale-history
+          path: |
+            issue-1516-history.txt
+            issue-1516-per-commit.txt
+            issue-1516-diff-check.txt
+            issue-1516-final-stat.txt
+            issue-1516-final-override.inc
+            issue-1516-final-base.inc

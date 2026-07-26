@@ -1,0 +1,30 @@
+name: Harumi registered-deck T2 T3 matrix 2026-07-26 2000
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/harumi-matrix-20260726-2000'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Generate all registered-deck conditions
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Registered recipes and the 16 scenario conditions are repository-defined: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#registered-decks https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#sampling-and-comparison-method
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260726 --out registered-deck-matrix.csv
+      - name: Upload matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: registered-deck-matrix-20260726
+          path: registered-deck-matrix.csv
+          if-no-files-found: error

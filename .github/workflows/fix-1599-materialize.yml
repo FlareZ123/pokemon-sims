@@ -1,0 +1,80 @@
+name: Fix 1599 source-bound validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fix-1599-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/issue-1599-quick-ball-tapu-crispin'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply isolated issue 1599 patch
+        run: python scripts/apply_issue_1599_patch.py
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run focused regression and three reviewed traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_unified_tests issue_1599_quick_ball_tapu_crispin_tests
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 24 --require-ready-by 2 | tee simulate-24.txt
+          grep -q 'Quick Ball issue-1599 Tapu-Crispin route cost' simulate-24.txt
+          grep -q 'T2 | WONDER TAG' simulate-24.txt
+          grep -q 'T2 | READY' simulate-24.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee simulate-43.txt
+          grep -q 'T2 | READY' simulate-43.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 42 --require-ready-by 3 | tee simulate-42.txt
+          grep -q 'HOLD QUICK BALL' simulate-42.txt
+          grep -q 'T3 | READY' simulate-42.txt
+      - name: Run Release suite before report refresh
+        run: ctest --test-dir build --parallel 4 --output-on-failure -E 'setup_report_contract|multi_deck_report_contract'
+      - name: Regenerate canonical matrices and documentation
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Run sanitizer suite
+        run: |
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build-sanitize --parallel 2
+          ASAN_OPTIONS=detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 ctest --test-dir build-sanitize --parallel 2 --output-on-failure
+      - name: Materialize validated source and evidence
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_014c_latias_bench_override.inc tests/issue_1599_quick_ball_tapu_crispin_tests.cpp README.md docs/REPORT.md docs/TRACE_AUDIT.md docs/MULTI_DECK_REPORT.md results/simulation_results.csv results/baseline_manifest.json results/traces results/multi_deck_comparison.csv results/multi_deck_manifest.json results/multi_deck_traces
+          git rm .github/workflows/fix-1599-materialize.yml scripts/apply_issue_1599_patch.py
+          git commit -m 'Use Quick Ball-Tapu-Crispin for seed 24 T2'
+          git push origin HEAD:${GITHUB_HEAD_REF}
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1599-validation-${{ github.run_attempt }}
+          path: |
+            simulate-*.txt
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn

@@ -699,6 +699,43 @@
     return true;
   }
 
+  bool use_fss_for_issue_1593_treasure_route() {
+    if (!secret_box_combo_enabled() || !secret_box_has_live_fss_holder() ||
+        scenario_.dci != DciProfile::StrictJit || state_.turn != 2 ||
+        !deck_seen_ || state_.manual_energy_used || !state_.active ||
+        state_.active->card != Card::RegidragoV ||
+        state_.active->entered_turn != state_.turn ||
+        state_.active->grass < 2 || state_.active->fire != 0 ||
+        hand_count(Card::Fire) == 0 || hand_count(Card::RegidragoVstar) == 0 ||
+        hand_count(Card::GoodraVstar) == 0 ||
+        deck_count_after_search_started(Card::MysteriousTreasure) == 0) {
+      return false;
+    }
+
+    // The held Fire Energy already completes the Energy axis through the unused
+    // manual attachment. Star Alchemy therefore advances the remaining next-turn
+    // strict-JIT payload outlet by searching Mysterious Treasure. On T3, Treasure
+    // discards Hisuian Goodra VSTAR and the prior-turn Regidrago V may evolve:
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
+    // Regidrago V and VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core VSTAR Power, search, attachment, Item, discard, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest complete route and strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1593
+    record_deck_search_knowledge("Star Alchemy issue-1593 Treasure route");
+    if (!move_deck_to_hand(Card::MysteriousTreasure)) {
+      shuffle(state_.deck);
+      return false;
+    }
+    shuffle(state_.deck);
+    state_.vstar_power_used = true;
+    outcome_.used_fss = true;
+    trace("USE VSTAR POWER", "R-FSS-01; R-MT-01; P-COMPRESS-01",
+          "Star Alchemy searched Mysterious Treasure because held Fire already completed the Energy axis.");
+    return true;
+  }
+
   bool use_fss_for_secret_box_fire() {
     if (!secret_box_combo_enabled() || !secret_box_has_live_fss_holder() ||
         fire_needed() == 0 || !might_be_unseen(Card::Fire)) {
@@ -1148,7 +1185,8 @@
     play_items_until_stable(!strict_payload_timing());
 
     attach_live_fss();
-    if (!use_fss_for_secret_box_fire()) {
+    if (!use_fss_for_issue_1593_treasure_route() &&
+        !use_fss_for_secret_box_fire()) {
       if (!use_fss_for_secret_box_bank()) use_fss();
     }
 
@@ -1200,7 +1238,10 @@
     bench_tapu_for_secret_box_connector();
     play_basics_from_hand();
     attach_live_fss();
-    if (!use_fss_for_secret_box_fire()) use_fss();
+    if (!use_fss_for_issue_1593_treasure_route() &&
+        !use_fss_for_secret_box_fire()) {
+      use_fss();
+    }
     if (play_secret_box()) advance_forretress_combo();
     play_items_until_stable(!strict_payload_timing());
 

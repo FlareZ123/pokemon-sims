@@ -25,7 +25,10 @@ jobs:
         with:
           python-version: '3.12'
       - name: Apply isolated issue 1599 patch
-        run: python scripts/apply_issue_1599_patch.py
+        shell: bash
+        run: |
+          set -o pipefail
+          python scripts/apply_issue_1599_patch.py 2>&1 | tee patch.log
       - name: Configure and build Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
       - name: Run focused regression and three reviewed traces
@@ -72,6 +75,7 @@ jobs:
         with:
           name: issue-1599-validation-${{ github.run_attempt }}
           path: |
+            patch.log
             simulate-*.txt
             results/simulation_results.csv
             results/multi_deck_comparison.csv

@@ -32,7 +32,8 @@ jobs:
           grep -RInE 'TODO|FIXME|XXX|HACK|deck_seen_|prizes_known|item_locked|supporter_locked|ability_available|choose_discard|allow_redundant_payload|need_(energy|payload|active_vstar)' src tests docs > static-hotspots.txt || true
           grep -RInE 'https://(api\.pokemontcg\.io|www\.pokemon\.com|github\.com/FlareZ123/pokemon-sims)' src tests docs > direct-source-urls.txt || true
           git grep -nE 'random|shuffle|seed|mt19937|uniform_' -- src tests > randomness-scan.txt || true
-          tar --exclude=.git --exclude=build --exclude=build-sanitize --exclude='*.lock' -czf source-tree.tar.gz .
+          tar --exclude=.git --exclude=build --exclude=build-sanitize --exclude='*.lock' -czf /tmp/source-tree.tar.gz .
+          mv /tmp/source-tree.tar.gz source-tree.tar.gz
 
       - name: Build Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2

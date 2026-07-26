@@ -48,13 +48,15 @@ jobs:
       - name: Release suite before refreshed reports
         run: ctest --test-dir build --parallel 4 --output-on-failure -E 'setup_report_contract|multi_deck_report_contract|crobat_model_report_contract'
       - name: Refresh 100000-trial matrices
+        shell: bash
         run: |
-          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
-          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
-          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260723 --out results/crobat_variant_model.csv
-          python scripts/update_setup_docs.py --repo-root .
-          python scripts/update_multi_deck_docs.py --repo-root .
-          python scripts/update_crobat_modeling_docs.py --csv results/crobat_variant_model.csv --out docs/CROBAT_MODEL_REPORT.md
+          set -o pipefail
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705 2>&1 | tee matrix-setup.log
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705 2>&1 | tee matrix-multi.log
+          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260723 --out results/crobat_variant_model.csv 2>&1 | tee matrix-crobat.log
+          python scripts/update_setup_docs.py --repo-root . 2>&1 | tee docs-setup.log
+          python scripts/update_multi_deck_docs.py --repo-root . 2>&1 | tee docs-multi.log
+          python scripts/update_crobat_modeling_docs.py --csv results/crobat_variant_model.csv --out docs/CROBAT_MODEL_REPORT.md 2>&1 | tee docs-crobat.log
       - name: Complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
       - name: Complete sanitizer suite
@@ -80,6 +82,8 @@ jobs:
           path: |
             configure.log
             build.log
+            matrix-*.log
+            docs-*.log
             src/trace_engine_v2/part_014c_latias_bench_override.inc
             tests/issue_1533_blender_treasure_latias_tests.cpp
             simulate-*.txt

@@ -221,7 +221,10 @@
 #define play_gladion play_gladion_issue1191_original
 #include "trace_engine_v2/part_issue_1030_gladion_turo_override.inc"
 #undef play_gladion
+#define play_gladion play_gladion_issue1595_original
 #include "trace_engine_v2/part_issue_1191_gladion_steven_override.inc"
+#undef play_gladion
+#include "trace_engine_v2/part_issue_1595_gladion_grass_turo_blender_override.inc"
 #define play_arven play_arven_powerglass_original
 #include "trace_engine_v2/part_012_override.inc"
 #undef play_arven
@@ -312,7 +315,10 @@
 #define play_quick_ball play_quick_ball_issue1516_original
 #include "trace_engine_v2/part_issue_1476_redundant_burnet_route_override.inc"
 #undef play_quick_ball
+#define play_quick_ball play_quick_ball_issue1595_original
 #include "trace_engine_v2/part_issue_1516_quick_ball_tapu_crispin_override.inc"
+#undef play_quick_ball
+#include "trace_engine_v2/part_issue_1595_preserve_turo_over_quick_ball_override.inc"
 #include "trace_engine_v2/part_issue_1437_crispin_trace_override.inc"
 #define trace trace_issue_1437_crispin_provenance
 #include "trace_engine_v2/part_issue_1118_secret_box.inc"

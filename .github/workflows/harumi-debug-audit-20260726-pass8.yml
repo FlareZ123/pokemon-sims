@@ -1,0 +1,133 @@
+name: Harumi source-bound debug audit 2026-07-26 pass 8
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harumi-debug-audit-pass8-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/harumi-20260726-1805-pass8'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Record exact source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee tested-head.txt
+          git rev-parse origin/main | tee tested-main.txt
+          git diff --name-status origin/main...HEAD | tee audit-diff.txt
+
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+
+      - name: Perfect-play pass one - current-main Star Alchemy route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Held Fire already covers the unused manual attachment, so Star Alchemy must advance the remaining strict-JIT payload outlet through Mysterious Treasure. The prior-turn Regidrago V may first evolve on T3, making T3 the earliest legal deadline for this public state.
+          # Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Hisuian Goodra VSTAR payload: https://api.pokemontcg.io/v2/cards/swsh11-136
+          # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Core evolution, Tool VSTAR Power, Item, discard, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Confirmed implementation: https://github.com/FlareZ123/pokemon-sims/issues/1593 https://github.com/FlareZ123/pokemon-sims/pull/1607
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-first --seed 16 --require-ready-by 3 | tee perfect-star-alchemy-16.txt
+          grep -q 'Star Alchemy searched Mysterious Treasure' perfect-star-alchemy-16.txt
+          grep -q 'Hisuian Goodra VSTAR (Mysterious Treasure cost)' perfect-star-alchemy-16.txt
+          grep -q 'T3 | EVOLVE' perfect-star-alchemy-16.txt
+          grep -q 'T3 | READY' perfect-star-alchemy-16.txt
+
+      - name: Perfect-play pass two - Rule Box Ability lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Going second permits T1 Celestial Roar, while evolution remains unavailable until T2. Under full Rule Box Ability lock, the public manual-attachment plus Mysterious Treasure route completes on the earliest legal T2 without using Wonder Tag, Skyliner, or Legacy Star.
+          # Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+          # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Path to the Peak Rule Box Ability lock: https://api.pokemontcg.io/v2/cards/swsh6-148
+          # Core first-turn attack, evolution, Item, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 2 | tee perfect-rulebox-13.txt
+          grep -q 'T1 | ATTACK.*Celestial Roar' perfect-rulebox-13.txt
+          grep -q 'T2 | EVOLVE' perfect-rulebox-13.txt
+          grep -q 'Mega Dragonite ex (Mysterious Treasure cost)' perfect-rulebox-13.txt
+          grep -q 'T2 | READY' perfect-rulebox-13.txt
+          ! grep -q 'WONDER TAG' perfect-rulebox-13.txt
+          ! grep -q 'LEGACY STAR' perfect-rulebox-13.txt
+          ! grep -q 'RETREAT.*Latias' perfect-rulebox-13.txt
+
+      - name: Perfect-play pass three - no-discard-control
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Going first blocks the T1 Supporter and attack. Heavy Ball establishes K1, Brilliant Blender legally banks payloads, T2 Steven resolves the prized VSTAR plus Energy and Active-position axes, and T3 evolution plus Skyliner promotion completes the earliest public route.
+          # Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+          # Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+          # Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+          # Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+          # Oricorio adds Energy to hand rather than attaching it, preventing a T2 GGF plus Active-position finish: https://api.pokemontcg.io/v2/cards/sm2-55
+          # Core first-turn Supporter restriction, Prize inspection, evolution, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 1 --require-ready-by 3 | tee perfect-no-control-1.txt
+          grep -q 'T1 | PLAY ITEM.*Heavy Ball' perfect-no-control-1.txt
+          grep -q 'T1 | PLAY ITEM.*R-BLENDER-01' perfect-no-control-1.txt
+          grep -q 'T2 | PLAY SUPPORTER.*R-STEVEN-01' perfect-no-control-1.txt
+          grep -q 'T3 | EVOLVE' perfect-no-control-1.txt
+          grep -q 'T3 | RETREAT.*Latias ex' perfect-no-control-1.txt
+          grep -q 'T3 | READY' perfect-no-control-1.txt
+
+      - name: Generate fresh all-condition T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260726 --out all-decks-matrix.csv
+          python - <<'PY'
+          import csv
+          with open('all-decks-matrix.csv', newline='', encoding='utf-8') as source:
+              rows = list(csv.DictReader(source))
+          assert len(rows) == 32, f'expected 32 deck/scenario rows, got {len(rows)}'
+          with open('t2-t3-matrix.csv', 'w', newline='', encoding='utf-8') as target:
+              fields = ['deck', 'scenario', 'trials', 'ready_by_t2_pct', 'ready_by_t3_pct']
+              writer = csv.DictWriter(target, fieldnames=fields)
+              writer.writeheader()
+              for row in rows:
+                  writer.writerow({key: row[key] for key in fields})
+          PY
+          cat t2-t3-matrix.csv
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Run complete sanitizer suite
+        if: always()
+        run: |
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build-sanitize --parallel 2
+          ASAN_OPTIONS=detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 ctest --test-dir build-sanitize --parallel 2 --output-on-failure
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harumi-debug-audit-20260726-pass8-${{ github.run_attempt }}
+          path: |
+            tested-head.txt
+            tested-main.txt
+            audit-diff.txt
+            perfect-*.txt
+            all-decks-matrix.csv
+            t2-t3-matrix.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn

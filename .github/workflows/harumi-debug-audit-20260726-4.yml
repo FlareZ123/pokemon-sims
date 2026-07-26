@@ -1,0 +1,103 @@
+name: Harumi debug audit 20260726-4
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harumi-debug-audit-20260726-4-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/harumi-debug-20260726-4'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Record source identity and repository inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee tested-head.txt
+          git rev-parse origin/main | tee tested-main.txt
+          git diff --name-status origin/main...HEAD | tee validation-diff.txt
+          find src tests scripts docs -type f -print | sort | tee source-files.txt
+          grep -RInE 'TODO|FIXME|XXX|HACK|throw std::logic_error|return false' src tests scripts docs > static-hotspots.txt || true
+
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+
+      - name: CI simulate-this pass one, shell going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Repository trace contract and ready-state specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee simulate-pass-1.txt
+          grep -q 'READY' simulate-pass-1.txt
+
+      - name: CI simulate-this pass two, Pineco going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Registered Pineco recipe and deterministic trace seed: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#registered-decks https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee simulate-pass-2.txt
+          grep -q 'READY' simulate-pass-2.txt
+
+      - name: CI simulate-this pass three, shell going first
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Mysterious Treasure, Tapu Lele-GX, Crispin, and Regidrago VSTAR route sources: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sm2-60 https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee simulate-pass-3.txt
+          grep -q 'READY' simulate-pass-3.txt
+
+      - name: Generate T2 and T3 setup matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          cat results/simulation_results.csv
+          cat results/multi_deck_comparison.csv
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure | tee ctest-release.txt
+
+      - name: Upload source-bound audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harumi-debug-audit-20260726-4
+          path: |
+            tested-head.txt
+            tested-main.txt
+            validation-diff.txt
+            source-files.txt
+            static-hotspots.txt
+            README.md
+            CMakeLists.txt
+            src
+            tests
+            scripts
+            docs
+            simulate-pass-*.txt
+            results/simulation_results.csv
+            results/baseline_manifest.json
+            results/traces/*.txt
+            results/multi_deck_comparison.csv
+            results/multi_deck_manifest.json
+            results/multi_deck_traces/*.txt
+            ctest-release.txt
+            build/Testing
+          if-no-files-found: warn

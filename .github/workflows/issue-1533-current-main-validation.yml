@@ -25,9 +25,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Apply smallest complete source patch
-        run: |
-          python scripts/apply_issue_1533_patch.py
-          python scripts/tighten_issue_1533_route.py
+        run: python scripts/apply_issue_1533_patch.py
       - name: Build Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
       - name: Validate focused regression and three perfect-play traces
@@ -67,7 +65,7 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           rm -f docs/CROBAT_MODEL_REPORT.md.lock results/crobat_variant_model.csv.lock
           git add src/trace_engine_v2/part_014c_latias_bench_override.inc tests/issue_1533_blender_treasure_latias_tests.cpp README.md docs results
-          git rm .github/workflows/issue-1533-current-main-validation.yml scripts/apply_issue_1533_patch.py scripts/tighten_issue_1533_route.py
+          git rm .github/workflows/issue-1533-current-main-validation.yml scripts/apply_issue_1533_patch.py
           git commit -m 'Use Treasure-Latias-Blender for seed 1 T4'
           git push origin HEAD:${GITHUB_HEAD_REF}
       - name: Upload evidence

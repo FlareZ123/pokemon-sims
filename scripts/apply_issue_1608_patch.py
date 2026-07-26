@@ -4,17 +4,17 @@ from textwrap import dedent
 source_path = Path("src/regidrago_sim.cpp")
 source = source_path.read_text(encoding="utf-8")
 anchor = (
-    '#define play_gladion play_gladion_issue1191_original\n'
-    '#include "trace_engine_v2/part_issue_1030_gladion_turo_override.inc"\n'
-    '#undef play_gladion\n'
+    '#define play_gladion play_gladion_issue1595_original\n'
     '#include "trace_engine_v2/part_issue_1191_gladion_steven_override.inc"\n'
+    '#undef play_gladion\n'
+    '#include "trace_engine_v2/part_issue_1595_gladion_grass_turo_blender_override.inc"\n'
 )
 replacement = (
-    '#define play_gladion play_gladion_issue1191_original\n'
-    '#include "trace_engine_v2/part_issue_1030_gladion_turo_override.inc"\n'
+    '#define play_gladion play_gladion_issue1595_original\n'
+    '#include "trace_engine_v2/part_issue_1191_gladion_steven_override.inc"\n'
     '#undef play_gladion\n'
     '#define play_gladion play_gladion_issue1608_original\n'
-    '#include "trace_engine_v2/part_issue_1191_gladion_steven_override.inc"\n'
+    '#include "trace_engine_v2/part_issue_1595_gladion_grass_turo_blender_override.inc"\n'
     '#undef play_gladion\n'
     '#include "trace_engine_v2/part_issue_1608_burnet_before_dead_crispin_override.inc"\n'
 )

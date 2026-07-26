@@ -3,6 +3,20 @@ from textwrap import dedent
 
 selector_path = Path("src/trace_engine_v2/part_012.inc")
 selector = selector_path.read_text(encoding="utf-8")
+member_anchor = "  bool play_gladion() {\n"
+member_insert = dedent(
+    '''\
+      bool issue_1598_bank_prized_treasure_{false};
+
+      bool play_gladion() {
+    '''
+)
+if selector.count(member_anchor) != 1:
+    raise SystemExit(
+        f"issue-1598 member anchor count: {selector.count(member_anchor)}"
+    )
+selector = selector.replace(member_anchor, member_insert, 1)
+
 selector_anchor = (
     "    if (!known_target && revealed_missing_axis_target) known_target = revealed_missing_axis_target;\n\n"
     "    // Gladion reveals every Prize before selecting the exchange, so a newly revealed\n"
@@ -46,8 +60,29 @@ if selector.count(selector_anchor) != 1:
     raise SystemExit(
         f"issue-1598 selector anchor count: {selector.count(selector_anchor)}"
     )
+selector = selector.replace(selector_anchor, selector_insert, 1)
+
+exchange_anchor = "    if (known_target && exchange(*known_target)) return true;\n"
+exchange_insert = dedent(
+    '''\
+        if (known_target && exchange(*known_target)) {
+          // Record only the exact Gladion recovery that creates this deferred route.
+          // This keeps unrelated Steven and Treasure states on their established policy:
+          // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+          // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1598
+          issue_1598_bank_prized_treasure_ =
+              *known_target == Card::MysteriousTreasure;
+          return true;
+        }
+    '''
+)
+if selector.count(exchange_anchor) != 1:
+    raise SystemExit(
+        f"issue-1598 exchange anchor count: {selector.count(exchange_anchor)}"
+    )
 selector_path.write_text(
-    selector.replace(selector_anchor, selector_insert, 1), encoding="utf-8"
+    selector.replace(exchange_anchor, exchange_insert, 1), encoding="utf-8"
 )
 
 item_path = Path("src/trace_engine_v2/part_009a.inc")
@@ -61,20 +96,21 @@ item_insert = dedent(
       bool play_mysterious_treasure(const bool permit_payload) {
         if (item_locked() || hand_count(Card::MysteriousTreasure) == 0) return false;
         const bool bank_for_deterministic_next_turn_payload =
-            strict_payload_timing() && state_.turn < scenario_.max_turn &&
-            state_.manual_energy_used && state_.active &&
-            state_.active->card == Card::RegidragoV &&
+            issue_1598_bank_prized_treasure_ && strict_payload_timing() &&
+            state_.turn < scenario_.max_turn && state_.manual_energy_used &&
+            state_.active && state_.active->card == Card::RegidragoV &&
             state_.active->entered_turn < state_.turn &&
             state_.active->grass >= 2 && state_.active->fire == 0 &&
             need_vstar() && need_payload() && hand_count(Card::Fire) > 0 &&
             std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
             might_be_unseen(Card::RegidragoVstar);
         if (bank_for_deterministic_next_turn_payload) {
-          // Preserve Treasure after Gladion exposes the complete public route. Playing
-          // it now would discard the held Dragon one turn before strict-JIT permits it
-          // and would make T3 depend on an unknown Legacy Star mill. On the next turn,
-          // attach the held Fire, discard the held Dragon to Treasure, search VSTAR,
-          // evolve the prior-turn Active, and reach deterministic readiness:
+          // Preserve the Treasure recovered by Gladion for the exact public route.
+          // Playing it now would discard the held Dragon one turn before strict-JIT
+          // permits that cost and would make T3 depend on an unknown Legacy Star mill.
+          // On the next turn, attach Fire, discard the held Dragon to Treasure, search
+          // VSTAR, evolve the prior-turn Active, and reach deterministic readiness:
+          // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
           // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
           // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2-166
           // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
@@ -90,8 +126,22 @@ if item_source.count(item_anchor) != 1:
     raise SystemExit(
         f"issue-1598 Treasure anchor count: {item_source.count(item_anchor)}"
     )
+item_source = item_source.replace(item_anchor, item_insert, 1)
+clear_anchor = (
+    "    remove_one(state_.hand, Card::MysteriousTreasure);\n"
+    "    state_.discard.push_back(Card::MysteriousTreasure);\n"
+)
+clear_insert = (
+    "    remove_one(state_.hand, Card::MysteriousTreasure);\n"
+    "    issue_1598_bank_prized_treasure_ = false;\n"
+    "    state_.discard.push_back(Card::MysteriousTreasure);\n"
+)
+if item_source.count(clear_anchor) != 1:
+    raise SystemExit(
+        f"issue-1598 clear anchor count: {item_source.count(clear_anchor)}"
+    )
 item_path.write_text(
-    item_source.replace(item_anchor, item_insert, 1), encoding="utf-8"
+    item_source.replace(clear_anchor, clear_insert, 1), encoding="utf-8"
 )
 
 test_source = dedent(

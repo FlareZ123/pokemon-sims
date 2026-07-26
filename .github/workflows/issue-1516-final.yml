@@ -1,0 +1,88 @@
+name: Materialize final issue 1516 fix
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1516-final-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  focused-validation:
+    if: github.head_ref == 'fix/issue-1516-final'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compose Quick Ball override into current source
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          path = Path("src/regidrago_sim.cpp")
+          text = path.read_text(encoding="utf-8")
+          old = '#include "trace_engine_v2/part_issue_1476_redundant_burnet_route_override.inc"'
+          new = (
+              '#define play_quick_ball play_quick_ball_issue1516_original\n'
+              '#include "trace_engine_v2/part_issue_1476_redundant_burnet_route_override.inc"\n'
+              '#undef play_quick_ball\n'
+              '#include "trace_engine_v2/part_issue_1516_quick_ball_tapu_crispin_override.inc"'
+          )
+          if text.count(old) != 1:
+              raise SystemExit("Expected one issue-1476 include anchor")
+          temporary = path.with_suffix(path.suffix + ".tmp")
+          temporary.write_text(text.replace(old, new, 1), encoding="utf-8")
+          os.replace(temporary, path)
+          PY
+      - name: Build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run focused regression
+        run: ./build/regidrago_unified_tests issue_1516_quick_ball_tapu_crispin_tests
+      - name: Review three connector traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 42 --require-ready-by 3 | tee issue-1516-seed-42.txt
+          grep -q "T1 | HOLD QUICK BALL" issue-1516-seed-42.txt
+          ! grep -q "T1 | WONDER TAG" issue-1516-seed-42.txt
+          grep -q "T3 | READY" issue-1516-seed-42.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 104 --require-ready-by 3 | tee issue-1516-seed-104.txt
+          grep -q "Searched a Basic Pokémon: Tapu Lele-GX" issue-1516-seed-104.txt
+          grep -q "WONDER TAG" issue-1516-seed-104.txt
+          grep -q "T3 | READY" issue-1516-seed-104.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee issue-1516-seed-43.txt
+          grep -q "T2 | READY" issue-1516-seed-43.txt
+      - name: Build and run focused sanitizer regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitizers -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build-sanitizers --parallel 2
+          ASAN_OPTIONS=detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 ./build-sanitizers/regidrago_unified_tests issue_1516_quick_ball_tapu_crispin_tests
+      - name: Commit composed source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/regidrago_sim.cpp
+          git commit -m "Preserve Quick Ball before duplicate Crispin route (#1516)"
+          git push origin HEAD:${{ github.head_ref }}
+      - name: Upload focused evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1516-final-${{ github.run_attempt }}
+          path: issue-1516-seed-*.txt
+          if-no-files-found: warn

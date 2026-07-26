@@ -1,0 +1,108 @@
+name: Turn 2026-07-26 debug audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: turn-20260726-debug-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  trace-one-shell-second:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/turn-20260726-debug'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Review shell going-second trace
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee trace-shell-second-seed-1.txt
+          grep -q 'T2 | READY' trace-shell-second-seed-1.txt
+          # Readiness contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trace-shell-second-seed-1
+          path: trace-shell-second-seed-1.txt
+
+  trace-two-shell-first:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/turn-20260726-debug'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Review shell going-first trace
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 3 | tee trace-shell-first-seed-2.txt
+          grep -q 'T3 | READY' trace-shell-first-seed-2.txt
+          # Readiness contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trace-shell-first-seed-2
+          path: trace-shell-first-seed-2.txt
+
+  trace-three-pineco-second:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/turn-20260726-debug'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Review Pineco going-second trace
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-pineco-second-seed-35.txt
+          grep -q 'T2 | READY' trace-pineco-second-seed-35.txt
+          # Registered-deck specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#named-deck-recipes
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trace-pineco-second-seed-35
+          path: trace-pineco-second-seed-35.txt
+
+  release-and-matrix:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/turn-20260726-debug'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Generate all-decks T2/T3 matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out turn-20260726-all-decks.csv
+      - uses: actions/upload-artifact@v4
+        with:
+          name: turn-20260726-release-and-matrix
+          path: |
+            turn-20260726-all-decks.csv
+            build/Testing

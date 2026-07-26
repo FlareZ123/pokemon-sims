@@ -15,7 +15,7 @@ jobs:
   audit:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/debug-20260726-harumi-1'
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -70,7 +70,7 @@ jobs:
           ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-shell-matrix.csv
           ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out t2-t3-all-decks-matrix.csv
 
-      - name: Upload audit evidence
+      - name: Upload audit evidence and source snapshot
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -80,4 +80,13 @@ jobs:
             t2-t3-shell-matrix.csv
             t2-t3-all-decks-matrix.csv
             build/Testing
+            src
+            tests
+            scripts
+            docs
+            results
+            .github/workflows
+            CMakeLists.txt
+            README.md
+            SIM-PLAN.md
           if-no-files-found: warn

@@ -29,6 +29,7 @@ jobs:
         run: |
           set -o pipefail
           python scripts/apply_issue_1599_patch_v2.py
+          python scripts/fix_issue_1599_direct_wonder_tag.py
           python scripts/fix_issue_1599_test_access.py 2>&1 | tee patch.log
       - name: Configure and build Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
@@ -67,7 +68,7 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add src/trace_engine_v2/part_014c_latias_bench_override.inc tests/issue_1599_quick_ball_tapu_crispin_tests.cpp README.md docs/REPORT.md docs/TRACE_AUDIT.md docs/MULTI_DECK_REPORT.md results/simulation_results.csv results/baseline_manifest.json results/traces results/multi_deck_comparison.csv results/multi_deck_manifest.json results/multi_deck_traces
-          git rm .github/workflows/fix-1599-materialize.yml .github/workflows/fix-1599-compile-diagnostic.yml .github/workflows/source-snapshot.yml scripts/apply_issue_1599_patch.py scripts/apply_issue_1599_patch_v2.py scripts/fix_issue_1599_test_access.py
+          git rm .github/workflows/fix-1599-materialize.yml .github/workflows/fix-1599-compile-diagnostic.yml .github/workflows/source-snapshot.yml scripts/apply_issue_1599_patch.py scripts/apply_issue_1599_patch_v2.py scripts/fix_issue_1599_direct_wonder_tag.py scripts/fix_issue_1599_test_access.py
           git commit -m 'Use Quick Ball-Tapu-Crispin for seed 24 T2'
           git push origin HEAD:${GITHUB_HEAD_REF}
       - name: Upload validation evidence

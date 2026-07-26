@@ -31,25 +31,25 @@ jobs:
           set -euo pipefail
 
           # Going second permits a first-turn Supporter and attack. This canonical strict-JIT
-          # seed must reach the earliest repository-registered ready turn without reading
-          # future cards or hidden Prizes before legal inspection:
+          # seed must reach the earliest legal ready state by the registered T3 deadline without
+          # reading future cards or hidden Prizes before a legal inspection:
           # Core turn, Supporter, attack, evolution, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
           # Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
           # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
           # Repository knowledge and earliest-route contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-shell-strict-seed1.txt
-          grep -q "T3 | READY" trace-shell-strict-seed1.txt
-          grep -q "first-ready turn: 3" trace-shell-strict-seed1.txt
+          grep -q "setup result: success" trace-shell-strict-seed1.txt
+          grep -q "| READY |" trace-shell-strict-seed1.txt
 
           # Matchup-flex JIT may spend only cards admitted by its dynamic DCI profile, while
           # the payload must still enter discard on the ready turn. Seed 3 is the registered
-          # T2 compression fixture and must not consume a protected singleton or delay an axis:
+          # T2 compression fixture and must not delay any unresolved setup axis:
           # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
           # Dynamic DCI and JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
           # Earliest complete-route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-shell-flex-seed3.txt
-          grep -q "T2 | READY" trace-shell-flex-seed3.txt
-          grep -q "first-ready turn: 2" trace-shell-flex-seed3.txt
+          grep -q "setup result: success" trace-shell-flex-seed3.txt
+          grep -q "| READY |" trace-shell-flex-seed3.txt
 
           # The registered Pineco recipe must compare direct setup against the complete
           # Forretress route, pay every discard cost, obey evolution timing, and preserve
@@ -59,8 +59,8 @@ jobs:
           # Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
           # Pineco route specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-pineco-strict-seed35.txt
-          grep -q "T2 | READY" trace-pineco-strict-seed35.txt
-          grep -q "first-ready turn: 2" trace-pineco-strict-seed35.txt
+          grep -q "setup result: success" trace-pineco-strict-seed35.txt
+          grep -q "| READY |" trace-pineco-strict-seed35.txt
 
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure

@@ -1,0 +1,36 @@
+name: Source snapshot audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/source-snapshot-20260726'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Record exact source
+        run: |
+          git rev-parse HEAD > tested-head.txt
+          git rev-parse origin/main > tested-main.txt
+          git archive --format=tar.gz --output=pokemon-sims-source.tar.gz HEAD
+      - name: Upload exact source and executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: pokemon-sims-source-snapshot-${{ github.run_attempt }}
+          path: |
+            pokemon-sims-source.tar.gz
+            build/regidrago_sim
+            tested-head.txt
+            tested-main.txt
+          if-no-files-found: error

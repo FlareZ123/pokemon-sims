@@ -25,7 +25,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Apply isolated patch
-        run: python scripts/apply_issue_1605_patch.py
+        run: |
+          python scripts/fix_issue_1605_anchor.py
+          python scripts/apply_issue_1605_patch.py
       - name: Build Release
         shell: bash
         run: |
@@ -70,7 +72,7 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           rm -f docs/CROBAT_MODEL_REPORT.md.lock results/crobat_variant_model.csv.lock
           git add src/trace_engine_v2/part_006.inc src/trace_engine_v2/part_009a.inc src/trace_engine_v2/part_009b1.inc src/trace_engine_v2/part_012.inc tests/issue_1605_arven_redundant_payload_tests.cpp README.md docs results
-          git rm .github/workflows/issue-1605-validation.yml scripts/apply_issue_1605_patch.py
+          git rm .github/workflows/issue-1605-validation.yml scripts/apply_issue_1605_patch.py scripts/fix_issue_1605_anchor.py
           git commit -m 'Use Arven-Crobat route for seed 7'
           git push origin HEAD:${GITHUB_HEAD_REF}
       - name: Upload evidence

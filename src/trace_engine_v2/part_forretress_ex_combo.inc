@@ -207,10 +207,26 @@ bool Engine::resolve_exploding_energy(
 }
 
 bool Engine::use_exploding_energy_for_setup() {
-  if (!forretress_combo_enabled() || !need_energy() ||
+  const bool promotion_only_finish = state_.active &&
+      state_.active->card == Card::ForretressEx && need_active_vstar() &&
+      benched_vstar_promotion_ready() && !need_payload();
+  if (!forretress_combo_enabled() ||
+      (!need_energy() && !promotion_only_finish) ||
       in_play_count(Card::ForretressEx) == 0 ||
       !ability_available_for_pokemon(Card::ForretressEx)) {
     return false;
+  }
+  if (promotion_only_finish && !need_energy()) {
+    // Exploding Energy may search for zero Basic Grass Energy, then still applies
+    // its printed self-Knock-Out. When Active Forretress ex is the final position
+    // blocker, that legal zero-card resolution promotes the already-GGF Benched
+    // Regidrago VSTAR on the earliest ready turn:
+    // Forretress ex / Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core search, Knock Out, and promotion procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Strict-JIT and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1561
+    return resolve_exploding_energy({});
   }
   const auto target_index = exploding_energy_regidrago_target_index();
   if (!target_index || !might_be_unseen(Card::Grass)) return false;

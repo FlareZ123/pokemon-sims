@@ -1,3 +1,4 @@
+# Human-triggered final verification after report materialization.
 name: Refresh issue 1593 evidence
 
 on:

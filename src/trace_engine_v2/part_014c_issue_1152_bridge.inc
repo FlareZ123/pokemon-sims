@@ -1,6 +1,26 @@
 #include "part_issue_1199_steven_package_override.inc"
 #include "part_issue_1478_arven_vessel_completion.inc"
 
+  bool issue_1481_hold_serena_for_free_latias_completion() const {
+    // Once Brilliant Blender has established the strict-JIT payload and a Benched
+    // Regidrago VSTAR already pays GGF, Skyliner resolves the sole remaining Active
+    // axis for zero. Preserve Serena, its mandatory discard, the Supporter action,
+    // and the random draw state:
+    // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+    // Latias ex / Skyliner applies to every Basic Active: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Supporter, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest resource-preserving route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1481
+    return supporter_allowed() && hand_count(Card::Serena) > 0 &&
+        need_active_vstar() && !need_regi() && !need_vstar() &&
+        !need_energy() && !need_payload() && !state_.retreat_used &&
+        state_.active && is_basic(state_.active->card) &&
+        ability_available_for_pokemon(Card::LatiasEx) &&
+        in_play(Card::LatiasEx) && benched_vstar_promotion_ready();
+  }
+
   bool held_quick_ball_latias_completes_current_turn_without_arven() {
     if (!supporter_allowed() || hand_count(Card::Arven) == 0 || item_locked() ||
         !deck_seen_ || hand_count(Card::QuickBall) == 0 ||
@@ -76,6 +96,11 @@
   }
 
   void choose_supporter_issue_1152() {
+    if (issue_1481_hold_serena_for_free_latias_completion()) {
+      trace("HOLD SUPPORTER", "P-DCI-01; P-COMPRESS-01",
+            "Preserved Serena because Skyliner already completes the sole remaining Active axis.");
+      return;
+    }
     if (play_issue_1478_t3_arven_vessel_completion()) return;
     if (issue_1393_held_crispin_completion_available()) {
       // Crispin completes the proven GGF route before Gladion can consume the only

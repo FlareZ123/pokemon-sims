@@ -9,6 +9,7 @@
       return false;
     }
 
+    // Accepted Apex Dragon payload card data: https://api.pokemontcg.io/v2/cards/sv6-130 https://api.pokemontcg.io/v2/cards/me2pt5-152 https://api.pokemontcg.io/v2/cards/sm5-100 https://api.pokemontcg.io/v2/cards/swsh11-136 https://api.pokemontcg.io/v2/cards/sv8-140
     constexpr std::array<Card, 5> kAcceptedPayloads{
         Card::Dragapult, Card::MegaDragonite, Card::DialgaGX,
         Card::GoodraVstar, Card::Appletun};

@@ -1,1 +1,0 @@
-Trigger issue 1516 validation with the exact Wonder Tag target proof.

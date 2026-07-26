@@ -309,7 +309,10 @@
 #include "trace_engine_v2/part_issue_1356_fss_treasure_energy_override.inc"
 #undef play_mysterious_treasure
 #undef play_quick_ball
+#define play_quick_ball play_quick_ball_issue1516_original
 #include "trace_engine_v2/part_issue_1476_redundant_burnet_route_override.inc"
+#undef play_quick_ball
+#include "trace_engine_v2/part_issue_1516_quick_ball_tapu_crispin_override.inc"
 #include "trace_engine_v2/part_issue_1437_crispin_trace_override.inc"
 #define trace trace_issue_1437_crispin_provenance
 #include "trace_engine_v2/part_issue_1118_secret_box.inc"

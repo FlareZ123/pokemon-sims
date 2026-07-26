@@ -64,7 +64,7 @@ jobs:
           # Earliest-route and strict-JIT repository specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee perfect-pineco-35.txt
           grep -q "Steven's Resolve banked Crispin and Dragapult ex" perfect-pineco-35.txt
-          grep -q 'T2 | PLAY SUPPORTER.*Crispin' perfect-pineco-35.txt
+          grep -q 'T2 | PLAY SUPPORTER.*R-CRISPIN-01' perfect-pineco-35.txt
           grep -q 'Dragapult ex (Mysterious Treasure cost)' perfect-pineco-35.txt
           grep -q 'T2 | READY' perfect-pineco-35.txt
 

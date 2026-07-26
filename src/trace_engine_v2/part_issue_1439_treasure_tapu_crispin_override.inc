@@ -88,7 +88,69 @@
     return true;
   }
 
+
+bool complete_issue_1596_turo_vessel_dialga_route() {
+  if (scenario_.dci != DciProfile::MatchupFlexJit || state_.turn != 3 ||
+      item_locked() || !supporter_allowed() || state_.manual_energy_used ||
+      !deck_seen_ || !state_.active || state_.active->card != Card::DialgaGX ||
+      hand_count(Card::ProfessorTuro) == 0 ||
+      hand_count(Card::EarthenVessel) == 0 ||
+      deck_count_after_search_started(Card::Fire) == 0 ||
+      need_regi() || need_vstar() || !need_active_vstar() || !need_payload()) {
+    return false;
+  }
+  auto promoted = std::find_if(
+      state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
+        return pokemon.card == Card::RegidragoVstar &&
+               pokemon.grass >= 2 && pokemon.fire == 0;
+      });
+  if (promoted == state_.bench.end()) return false;
+
+  // Professor Turo must resolve before Earthen Vessel. Returning the Active
+  // Dialga-GX both promotes the established Regidrago VSTAR and converts Dialga
+  // into a route-proven current-turn payload cost for Vessel. Vessel then searches
+  // Fire for the unused manual attachment:
+  // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Core Supporter, return, promotion, Item, discard, search, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Dynamic DCI and earliest route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1596
+  const Pokemon returned = *state_.active;
+  remove_one(state_.hand, Card::ProfessorTuro);
+  state_.discard.push_back(Card::ProfessorTuro);
+  state_.supporter_used = true;
+  for (int energy = 0; energy < returned.grass; ++energy) {
+    discard_turo_attachment(Card::Grass);
+  }
+  for (int energy = 0; energy < returned.fire; ++energy) {
+    discard_turo_attachment(Card::Fire);
+  }
+  if (returned.tool == Tool::ForestSealStone) {
+    discard_turo_attachment(Card::ForestSealStone);
+  }
+  if (returned.tool == Tool::Powerglass) {
+    discard_turo_attachment(Card::Powerglass);
+  }
+  state_.hand.push_back(returned.card);
+  state_.active = *promoted;
+  state_.bench.erase(promoted);
+  trace("PLAY SUPPORTER", "R-GAME-SUPPORTER; P-COMPRESS-01",
+        "Professor Turo returned Active Dialga-GX and promoted Regidrago VSTAR before Earthen Vessel.");
+  if (!play_earthen_vessel(true)) {
+    throw std::logic_error("Issue-1596 Earthen Vessel route disappeared");
+  }
+  attach_manual();
+  return active_is_vstar() && !need_energy() && !need_payload();
+}
+
   void run_secret_box_turn() {
+    if (complete_issue_1596_turo_vessel_dialga_route()) {
+      trace("POLICY", "P-AXIS-01; R-SECRET-BOX-01",
+            "End Pineco policy: " + state_line());
+      return;
+    }
     if (!issue_1439_treasure_tapu_crispin_available()) {
       run_secret_box_turn_issue1439_original();
       return;

@@ -1,7 +1,6 @@
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
-#include <algorithm>
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -11,7 +10,7 @@
 namespace sim {
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state, const bool deck_seen,
-              const bool prizes_revealed) {
+                        const bool prizes_revealed) {
     engine.state_ = std::move(state);
     engine.deck_seen_ = deck_seen;
     engine.prizes_revealed_ = prizes_revealed;
@@ -44,7 +43,7 @@ const sim::DeckRecipe& pineco_recipe() {
 struct Fixture {
   explicit Fixture(const std::string& label)
       : scenario{label, sim::DciProfile::StrictJit, sim::LockMode::None,
-       false, 4},
+                 false, 4},
         rng{1587},
         trace{true, {}},
         engine{scenario, pineco_recipe(), rng, &trace} {}
@@ -67,13 +66,13 @@ sim::State zero_grass_state(const bool source_active) {
   }
   state.deck = {sim::Card::Fire, sim::Card::Crispin};
   state.prizes = {sim::Card::Grass, sim::Card::Grass, sim::Card::Grass,
-        sim::Card::Grass, sim::Card::Grass, sim::Card::Grass};
+                  sim::Card::Grass, sim::Card::Grass, sim::Card::Grass};
   return state;
 }
 
 void verify_k0_empty_search_retains_board(const bool source_active) {
   Fixture fixture(source_active ? "issue-1587-active-source"
-                      : "issue-1587-benched-source");
+                                : "issue-1587-benched-source");
   sim::EngineTestAccess::set_state(
       fixture.engine, zero_grass_state(source_active), false, false);
 
@@ -92,9 +91,11 @@ void verify_k0_empty_search_retains_board(const bool source_active) {
 
   const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
   const sim::Card expected_active = source_active
-      ? sim::Card::ForretressEx : sim::Card::RegidragoV;
+      ? sim::Card::ForretressEx
+      : sim::Card::RegidragoV;
   const sim::Card expected_bench = source_active
-      ? sim::Card::RegidragoV : sim::Card::ForretressEx;
+      ? sim::Card::RegidragoV
+      : sim::Card::ForretressEx;
   if (!sim::EngineTestAccess::deck_seen(fixture.engine) ||
       sim::EngineTestAccess::used_exploding_energy(fixture.engine) ||
       !after.active || after.active->card != expected_active ||

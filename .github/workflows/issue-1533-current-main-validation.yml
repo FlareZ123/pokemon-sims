@@ -25,13 +25,11 @@ jobs:
         with:
           python-version: '3.12'
       - name: Apply smallest complete source patch
-        run: python scripts/apply_issue_1533_patch.py
-      - name: Build Release
-        shell: bash
         run: |
-          set -o pipefail
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release 2>&1 | tee configure.log
-          cmake --build build --parallel 2 2>&1 | tee build.log
+          python scripts/apply_issue_1533_patch.py
+          python scripts/tighten_issue_1533_route.py
+      - name: Build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
       - name: Validate focused regression and three perfect-play traces
         shell: bash
         run: |
@@ -45,23 +43,16 @@ jobs:
           grep -q 'T3 | READY' simulate-6.txt
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee simulate-43.txt
           grep -q 'T2 | READY' simulate-43.txt
-      - name: Release suite before refreshed reports
+      - name: Release suite before reports
         run: ctest --test-dir build --parallel 4 --output-on-failure -E 'setup_report_contract|multi_deck_report_contract|crobat_model_report_contract'
-      - name: Expose aggregate failure
-        shell: bash
+      - name: Regenerate source-bound matrices
         run: |
-          set -o pipefail
-          ./build/regidrago_sim --trials 100000 --seed 20260705 --out results/issue_1533_direct.csv 2>&1 | tee aggregate-direct.log
-      - name: Refresh 100000-trial matrices
-        shell: bash
-        run: |
-          set -o pipefail
-          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705 2>&1 | tee matrix-setup.log
-          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705 2>&1 | tee matrix-multi.log
-          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260723 --out results/crobat_variant_model.csv 2>&1 | tee matrix-crobat.log
-          python scripts/update_setup_docs.py --repo-root . 2>&1 | tee docs-setup.log
-          python scripts/update_multi_deck_docs.py --repo-root . 2>&1 | tee docs-multi.log
-          python scripts/update_crobat_modeling_docs.py --csv results/crobat_variant_model.csv --out docs/CROBAT_MODEL_REPORT.md 2>&1 | tee docs-crobat.log
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260723 --out results/crobat_variant_model.csv
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+          python scripts/update_crobat_modeling_docs.py --csv results/crobat_variant_model.csv --out docs/CROBAT_MODEL_REPORT.md
       - name: Complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
       - name: Complete sanitizer suite
@@ -69,15 +60,14 @@ jobs:
           cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
           cmake --build build-sanitize --parallel 2
           ASAN_OPTIONS=detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 ctest --test-dir build-sanitize --parallel 2 --output-on-failure
-      - name: Materialize validated source and evidence
+      - name: Materialize validated source and reports
         shell: bash
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           rm -f docs/CROBAT_MODEL_REPORT.md.lock results/crobat_variant_model.csv.lock
-          rm -f results/issue_1533_direct.csv results/issue_1533_direct.csv.lock
           git add src/trace_engine_v2/part_014c_latias_bench_override.inc tests/issue_1533_blender_treasure_latias_tests.cpp README.md docs results
-          git rm .github/workflows/issue-1533-current-main-validation.yml scripts/apply_issue_1533_patch.py
+          git rm .github/workflows/issue-1533-current-main-validation.yml scripts/apply_issue_1533_patch.py scripts/tighten_issue_1533_route.py
           git commit -m 'Use Treasure-Latias-Blender for seed 1 T4'
           git push origin HEAD:${GITHUB_HEAD_REF}
       - name: Upload evidence
@@ -86,15 +76,7 @@ jobs:
         with:
           name: issue-1533-current-main-${{ github.run_attempt }}
           path: |
-            configure.log
-            build.log
-            aggregate-direct.log
-            matrix-*.log
-            docs-*.log
-            src/trace_engine_v2/part_014c_latias_bench_override.inc
-            tests/issue_1533_blender_treasure_latias_tests.cpp
             simulate-*.txt
-            results/issue_1533_direct.csv
             results/simulation_results.csv
             results/multi_deck_comparison.csv
             results/crobat_variant_model.csv

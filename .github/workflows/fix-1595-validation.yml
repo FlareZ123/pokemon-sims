@@ -28,6 +28,7 @@ jobs:
           cat scripts/issue-1595.patch.b64.part-00 scripts/issue-1595.patch.b64.part-01 scripts/issue-1595.patch.b64.part-02 | base64 -d > /tmp/issue-1595.patch
           git apply --check /tmp/issue-1595.patch
           git apply /tmp/issue-1595.patch
+          python scripts/fix_issue_1595_rule_id.py
       - name: Configure and build Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
       - name: Focused regression and three reviewed traces
@@ -64,7 +65,7 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add src/regidrago_sim.cpp src/trace_engine_v2/part_issue_1595_gladion_grass_turo_blender_override.inc src/trace_engine_v2/part_issue_1595_preserve_turo_over_quick_ball_override.inc tests/issue_1595_gladion_grass_turo_blender_tests.cpp
-          git rm .github/workflows/fix-1595-validation.yml scripts/issue-1595.patch.b64.part-00 scripts/issue-1595.patch.b64.part-01 scripts/issue-1595.patch.b64.part-02
+          git rm .github/workflows/fix-1595-validation.yml scripts/issue-1595.patch.b64.part-00 scripts/issue-1595.patch.b64.part-01 scripts/issue-1595.patch.b64.part-02 scripts/fix_issue_1595_rule_id.py
           git commit -m 'Use prized Grass for the Blender-Turo route'
           git push origin HEAD:${GITHUB_HEAD_REF}
       - name: Upload validation evidence

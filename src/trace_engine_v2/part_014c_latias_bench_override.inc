@@ -451,6 +451,22 @@
       // A player may use one available Supporter during the turn before attacking:
       // https://www.pokemon.com/us/pokemon-tcg/rules
       if (!state_.supporter_used && setup_axis_missing()) choose_supporter();
+      // A Supporter recovered by Legacy Star may search an Item that is immediately
+      // legal later in the same turn. Reopen the Item fixed point after Arven so a
+      // searched Brilliant Blender can establish the current-turn payload before
+      // the ready-state check:
+      // Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+      // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+      // Core Supporter and Item procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1565
+      if (!state_.turn_ended) {
+        play_chaotic_swell();
+        play_field_blower();
+        play_basics_from_hand();
+        play_items_until_stable(true);
+      }
     }
     resolve_final_promotion_and_attachment();
     if (need_active_vstar() && !state_.supporter_used) play_tate_switch();

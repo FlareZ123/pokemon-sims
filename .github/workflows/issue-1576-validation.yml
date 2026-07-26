@@ -21,86 +21,143 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Apply isolated Legacy Star bridge fix
+      - name: Apply complete Legacy Star payload bridge fix
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
           from textwrap import dedent, indent
 
-          path = Path('src/trace_engine_v2/part_013_legacy_star_override.inc')
-          text = path.read_text()
+          legacy = Path('src/trace_engine_v2/part_013_legacy_star_override.inc')
+          text = legacy.read_text()
           anchor = '    // Legacy Star may return Latias ex from discard, and Skyliner then gives the\n'
           block = indent(dedent('''\
-          // At K1, Legacy Star may recover Mysterious Treasure and Quick Ball as a
-          // complete two-Item payload bridge. Treasure searches a permitted Dragon
-          // payload, then Quick Ball discards it while searching a distinct Basic:
+          // K1 proves a complete Earthen Vessel -> Mysterious Treasure -> Quick
+          // Ball finish when Legacy Star recovers both Items. Vessel spends the
+          // now-inert Steven's Resolve and searches two Grass Energy, Treasure
+          // spends one Grass while preserving the other manual attachment, and
+          // Quick Ball discards the searched Dragon payload:
           // Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
           // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
           // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-          // Item, search, discard, and one-manual-attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+          // Core Item, Supporter, search, discard, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
           // K1, dynamic DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
           // Confirmed reproduction: https://github.com/FlareZ123/pokemon-sims/issues/1576
-          const bool known_treasure_quick_ball_payload_line =
-              recovered.empty() && need_payload() && !item_locked() &&
-              (deck_seen_ || prizes_revealed_) &&
+          const bool issue_1576_legacy_star_payload_bridge =
+              recovered.empty() && scenario_.dci == DciProfile::NoDiscardControl &&
+              state_.turn == 2 && !item_locked() && deck_seen_ &&
+              state_.supporter_used && !state_.manual_energy_used &&
+              active_is_vstar() && grass_needed() == 1 && fire_needed() == 0 &&
+              need_payload() && hand_count(Card::EarthenVessel) > 0 &&
+              hand_count(Card::StevensResolve) > 0 &&
               count_of(state_.discard, Card::MysteriousTreasure) > 0 &&
-              count_of(state_.discard, Card::QuickBall) > 0;
-          if (known_treasure_quick_ball_payload_line) {
-            std::vector<Card> post_treasure_deck = state_.deck;
+              count_of(state_.discard, Card::QuickBall) > 0 &&
+              deck_count_after_search_started(Card::Grass) >= 2;
+          if (issue_1576_legacy_star_payload_bridge) {
+            std::vector<Card> projected_deck = state_.deck;
+            const auto erase_one = [&projected_deck](const Card card) {
+              const auto it = std::find(
+                  projected_deck.begin(), projected_deck.end(), card);
+              if (it == projected_deck.end()) return false;
+              projected_deck.erase(it);
+              return true;
+            };
+            const bool energy_targets_exist =
+                erase_one(Card::Grass) && erase_one(Card::Grass);
             const auto payload = std::find_if(
-                post_treasure_deck.begin(), post_treasure_deck.end(),
+                projected_deck.begin(), projected_deck.end(),
                 [](const Card card) {
                   return is_payload(card) && is_dragon_or_psychic(card);
                 });
-            if (payload != post_treasure_deck.end()) {
-              post_treasure_deck.erase(payload);
-              const bool quick_ball_has_distinct_target = std::any_of(
-                  post_treasure_deck.begin(), post_treasure_deck.end(), is_basic);
-              if (quick_ball_has_distinct_target) {
-                const std::vector<Card> base_hand = state_.hand;
-                const std::vector<Card> base_discard = state_.discard;
-                const std::vector<Card> base_discarded_this_turn =
-                    state_.discarded_this_turn;
-                const auto restore = [this, &base_hand, &base_discard,
-                                      &base_discarded_this_turn]() {
-                  state_.hand = base_hand;
-                  state_.discard = base_discard;
-                  state_.discarded_this_turn = base_discarded_this_turn;
-                };
-
-                bool bridge_payable = false;
-                if (recover_discard_to_hand(Card::MysteriousTreasure) &&
-                    recover_discard_to_hand(Card::QuickBall)) {
-                  if (!remove_one(state_.hand, Card::QuickBall)) {
-                    throw std::logic_error(
-                        "Legacy Star simulated Quick Ball reservation disappeared");
-                  }
-                  bridge_payable = choose_discard(
-                      false, true, true, Card::MysteriousTreasure).has_value();
-                }
-                restore();
-
-                if (bridge_payable) {
-                  if (!recover_discard_to_hand(Card::MysteriousTreasure)) {
-                    throw std::logic_error(
-                        "Legacy Star Mysterious Treasure bridge target disappeared");
-                  }
-                  if (!recover_discard_to_hand(Card::QuickBall)) {
-                    throw std::logic_error(
-                        "Legacy Star Quick Ball bridge target disappeared");
-                  }
-                  recovered.push_back(Card::MysteriousTreasure);
-                  recovered.push_back(Card::QuickBall);
-                }
+            const bool payload_target_exists = payload != projected_deck.end();
+            if (payload_target_exists) projected_deck.erase(payload);
+            const bool distinct_basic_target_exists = std::any_of(
+                projected_deck.begin(), projected_deck.end(), is_basic);
+            if (energy_targets_exist && payload_target_exists &&
+                distinct_basic_target_exists) {
+              if (!recover_discard_to_hand(Card::MysteriousTreasure)) {
+                throw std::logic_error(
+                    "Legacy Star Mysterious Treasure bridge target disappeared");
               }
+              if (!recover_discard_to_hand(Card::QuickBall)) {
+                throw std::logic_error(
+                    "Legacy Star Quick Ball bridge target disappeared");
+              }
+              recovered.push_back(Card::MysteriousTreasure);
+              recovered.push_back(Card::QuickBall);
             }
           }
 
           '''), '    ')
           if text.count(anchor) != 1:
-              raise SystemExit(f'issue-1576 anchor count: {text.count(anchor)}')
-          path.write_text(text.replace(anchor, block + anchor, 1))
+              raise SystemExit(f'issue-1576 Legacy Star anchor count: {text.count(anchor)}')
+          legacy.write_text(text.replace(anchor, block + anchor, 1))
+
+          dci = Path('src/trace_engine_v2/part_issue_1436_full_supporter_dci_override.inc')
+          text = dci.read_text()
+          anchor = '    if (scenario_.locks != LockMode::FullSupporter) return std::nullopt;\n'
+          block = indent(dedent('''\
+          const bool issue_1576_vessel_finish =
+              excluded_from_cost == Card::EarthenVessel &&
+              scenario_.dci == DciProfile::NoDiscardControl &&
+              scenario_.locks == LockMode::None && state_.turn == 2 &&
+              deck_seen_ && state_.supporter_used && !state_.manual_energy_used &&
+              active_is_vstar() && grass_needed() == 1 && fire_needed() == 0 &&
+              need_payload() && hand_count(Card::EarthenVessel) > 0 &&
+              hand_count(Card::MysteriousTreasure) > 0 &&
+              hand_count(Card::QuickBall) > 0 &&
+              hand_count(Card::StevensResolve) > 0 &&
+              deck_count_after_search_started(Card::Grass) >= 2 &&
+              std::any_of(state_.deck.begin(), state_.deck.end(),
+                          [](const Card card) {
+                            return is_payload(card) &&
+                                is_dragon_or_psychic(card);
+                          });
+          if (issue_1576_vessel_finish) {
+            // Crispin has consumed the Supporter play, so Steven cannot resolve
+            // this turn. Spending it through Vessel unlocks the deterministic T2
+            // finish and dominates preserving it for a later setup turn:
+            // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+            // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+            // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+            // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+            // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+            // One-Supporter and Item cost procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+            // Dynamic DCI and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+            // Confirmed reproduction: https://github.com/FlareZ123/pokemon-sims/issues/1576
+            return Card::StevensResolve;
+          }
+
+          const bool issue_1576_treasure_finish =
+              excluded_from_cost == Card::MysteriousTreasure &&
+              scenario_.dci == DciProfile::NoDiscardControl &&
+              scenario_.locks == LockMode::None && state_.turn == 2 &&
+              deck_seen_ && state_.supporter_used && !state_.manual_energy_used &&
+              active_is_vstar() && grass_needed() == 1 && fire_needed() == 0 &&
+              need_payload() && hand_count(Card::MysteriousTreasure) > 0 &&
+              hand_count(Card::QuickBall) > 0 &&
+              hand_count(Card::Grass) >= 2 &&
+              count_of(state_.discard, Card::EarthenVessel) > 0 &&
+              count_of(state_.discard, Card::StevensResolve) > 0;
+          if (issue_1576_treasure_finish) {
+            // Vessel searched two Grass Energy. One pays Treasure while the other
+            // remains for the unused manual attachment; Quick Ball then discards
+            // the searched Dragon payload:
+            // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+            // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+            // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+            // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+            // Dynamic DCI and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+            // Confirmed reproduction: https://github.com/FlareZ123/pokemon-sims/issues/1576
+            return Card::Grass;
+          }
+
+          '''), '    ')
+          if text.count(anchor) != 1:
+              raise SystemExit(f'issue-1576 DCI anchor count: {text.count(anchor)}')
+          dci.write_text(text.replace(anchor, block + anchor, 1))
           PY
 
       - name: Configure and build Release
@@ -112,7 +169,9 @@ jobs:
           set -euo pipefail
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario no-discard-control/go-first --seed 269 --require-ready-by 2 | tee issue-1576-seed-269.txt
           grep -q 'recovered: Mysterious Treasure, Quick Ball' issue-1576-seed-269.txt
-          grep -q 'Quick Ball cost' issue-1576-seed-269.txt
+          grep -q "Steven's Resolve (Earthen Vessel cost)" issue-1576-seed-269.txt
+          grep -q 'Grass Energy (Mysterious Treasure cost)' issue-1576-seed-269.txt
+          grep -q 'Mega Dragonite ex (Quick Ball cost)' issue-1576-seed-269.txt
           grep -q 'T2 | READY' issue-1576-seed-269.txt
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee control-seed-43.txt
           grep -q 'T2 | READY' control-seed-43.txt
@@ -156,7 +215,7 @@ jobs:
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/trace_engine_v2/part_013_legacy_star_override.inc docs/REPORT.md docs/MULTI_DECK_REPORT.md results/simulation_results.csv results/baseline_manifest.json results/multi_deck_comparison.csv results/multi_deck_manifest.json
+          git add src/trace_engine_v2/part_013_legacy_star_override.inc src/trace_engine_v2/part_issue_1436_full_supporter_dci_override.inc docs/REPORT.md docs/MULTI_DECK_REPORT.md results/simulation_results.csv results/baseline_manifest.json results/multi_deck_comparison.csv results/multi_deck_manifest.json
           git rm .github/workflows/issue-1576-validation.yml
           git commit -m 'Recover Legacy Star payload bridge for seed 269'
           git push origin HEAD:${GITHUB_HEAD_REF}

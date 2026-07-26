@@ -1,0 +1,26 @@
+name: Harumi audited source snapshot 2026-07-26
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/harumi-20260726-1008'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Record and package audited source
+        run: |
+          git rev-parse HEAD > snapshot-head.txt
+          git rev-parse origin/main > snapshot-main.txt
+          tar -czf pokemon-sims-source.tgz CMakeLists.txt src tests docs scripts results README.md snapshot-head.txt snapshot-main.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: harumi-pokemon-sims-source-${{ github.run_attempt }}
+          path: pokemon-sims-source.tgz

@@ -32,7 +32,7 @@ jobs:
           git diff --name-status origin/main...HEAD | tee audit-diff.txt
           find . -path ./.git -prune -o -type f -print | sort > repository-files.txt
           grep -RInE 'TODO|FIXME|HACK|XXX|simulate-this|choose_discard|deck_seen_|prizes_known|supporter_allowed|item_locked|ability_available' src tests docs scripts CMakeLists.txt README.md > static-scan.txt || true
-          tar --exclude=.git --exclude=build --exclude=build-sanitizers -czf source-snapshot.tar.gz .
+          git archive --format=tar.gz --output=source-snapshot.tar.gz HEAD
       - name: Configure and build Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
       - name: CI simulate-this pass one, shell going second

@@ -47,6 +47,11 @@ jobs:
           grep -q 'T2 | READY' simulate-43.txt
       - name: Release suite before refreshed reports
         run: ctest --test-dir build --parallel 4 --output-on-failure -E 'setup_report_contract|multi_deck_report_contract|crobat_model_report_contract'
+      - name: Expose aggregate failure
+        shell: bash
+        run: |
+          set -o pipefail
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out results/issue_1533_direct.csv 2>&1 | tee aggregate-direct.log
       - name: Refresh 100000-trial matrices
         shell: bash
         run: |
@@ -70,6 +75,7 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           rm -f docs/CROBAT_MODEL_REPORT.md.lock results/crobat_variant_model.csv.lock
+          rm -f results/issue_1533_direct.csv results/issue_1533_direct.csv.lock
           git add src/trace_engine_v2/part_014c_latias_bench_override.inc tests/issue_1533_blender_treasure_latias_tests.cpp README.md docs results
           git rm .github/workflows/issue-1533-current-main-validation.yml scripts/apply_issue_1533_patch.py
           git commit -m 'Use Treasure-Latias-Blender for seed 1 T4'
@@ -82,11 +88,13 @@ jobs:
           path: |
             configure.log
             build.log
+            aggregate-direct.log
             matrix-*.log
             docs-*.log
             src/trace_engine_v2/part_014c_latias_bench_override.inc
             tests/issue_1533_blender_treasure_latias_tests.cpp
             simulate-*.txt
+            results/issue_1533_direct.csv
             results/simulation_results.csv
             results/multi_deck_comparison.csv
             results/crobat_variant_model.csv

@@ -12,6 +12,9 @@ namespace sim {
 struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
   static void set_deck_seen(Engine& engine) { engine.deck_seen_ = true; }
+  static bool future_treasure_route_available(Engine& engine) {
+    return engine.issue_1417_future_treasure_route_available_before_legacy();
+  }
   static bool use_legacy_star(Engine& engine) { return engine.use_legacy_star_issue_1417(); }
   static bool play_mysterious_treasure(Engine& engine) {
     return engine.play_mysterious_treasure(true);
@@ -38,6 +41,21 @@ std::vector<sim::Card> treasure_route_deck() {
           sim::Card::FieldBlower, sim::Card::GoodraVstar};
 }
 
+sim::DeckRecipe paired_hidden_target_recipe() {
+  // One Regidrago V is the public lower stage under the Active VSTAR. The second
+  // copy is the only hidden legal Treasure target in the paired K0 fixtures:
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // K0 fixed-list accounting: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1549
+  return {{sim::Card::RegidragoV, 2},
+          {sim::Card::RegidragoVstar, 1},
+          {sim::Card::Dragapult, 1},
+          {sim::Card::MysteriousTreasure, 1},
+          {sim::Card::Grass, 1},
+          {sim::Card::FieldBlower, 1}};
+}
+
 struct Fixture {
   sim::Scenario scenario;
   sim::DeckRecipe recipe;
@@ -59,6 +77,77 @@ void seed_future_treasure_state(sim::Engine& engine) {
   state.discard = {sim::Card::MysteriousTreasure};
   state.deck = treasure_route_deck();
   sim::EngineTestAccess::set_deck_seen(engine);
+}
+
+void seed_paired_hidden_target_state(sim::Engine& engine,
+                                     const bool target_in_deck) {
+  sim::State& state = sim::EngineTestAccess::state(engine);
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 1, 1,
+                              sim::Tool::None};
+  state.manual_energy_used = true;
+  state.hand = {sim::Card::Grass, sim::Card::Dragapult};
+  state.discard = {sim::Card::MysteriousTreasure};
+  state.deck = {target_in_deck ? sim::Card::RegidragoV
+                               : sim::Card::FieldBlower};
+  state.prizes = {target_in_deck ? sim::Card::FieldBlower
+                                 : sim::Card::RegidragoV};
+}
+
+void test_k0_hidden_target_location_does_not_change_policy() {
+  const sim::Scenario scenario{"issue-1549-k0", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, true, 4};
+  const sim::DeckRecipe recipe = paired_hidden_target_recipe();
+  std::mt19937_64 deck_rng{1549};
+  std::mt19937_64 prize_rng{1549};
+  sim::Engine deck_target_engine(scenario, recipe, deck_rng);
+  sim::Engine prize_target_engine(scenario, recipe, prize_rng);
+  seed_paired_hidden_target_state(deck_target_engine, true);
+  seed_paired_hidden_target_state(prize_target_engine, false);
+
+  // At K0, moving the only unseen legal target between the deck and unrevealed
+  // Prizes cannot change the action policy. Both locations are still plausible
+  // under fixed-list copy counts and identical public zones:
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // K0 contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
+  // Hidden-information specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1549
+  const bool deck_target =
+      sim::EngineTestAccess::future_treasure_route_available(deck_target_engine);
+  const bool prize_target =
+      sim::EngineTestAccess::future_treasure_route_available(prize_target_engine);
+  if (!deck_target || !prize_target || deck_target != prize_target) {
+    throw std::runtime_error(
+        "K0 Legacy Star policy changed solely from hidden Treasure target location.");
+  }
+}
+
+void test_k1_uses_exact_remaining_deck_target() {
+  const sim::Scenario scenario{"issue-1549-k1", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, true, 4};
+  const sim::DeckRecipe recipe = paired_hidden_target_recipe();
+  std::mt19937_64 deck_rng{1549};
+  std::mt19937_64 prize_rng{1549};
+  sim::Engine deck_target_engine(scenario, recipe, deck_rng);
+  sim::Engine prize_target_engine(scenario, recipe, prize_rng);
+  seed_paired_hidden_target_state(deck_target_engine, true);
+  seed_paired_hidden_target_state(prize_target_engine, false);
+  sim::EngineTestAccess::set_deck_seen(deck_target_engine);
+  sim::EngineTestAccess::set_deck_seen(prize_target_engine);
+
+  // Once a legal deck search establishes K1, Mysterious Treasure target legality
+  // uses the exact remaining deck. A target in Prizes is then known unavailable:
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // K1 contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k1-after-a-legal-deck-or-prize-inspection
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1549
+  if (!sim::EngineTestAccess::future_treasure_route_available(
+          deck_target_engine) ||
+      sim::EngineTestAccess::future_treasure_route_available(
+          prize_target_engine)) {
+    throw std::runtime_error(
+        "K1 Legacy Star policy did not use exact remaining-deck target availability.");
+  }
 }
 
 void test_recovers_and_holds_treasure_for_t3_payload() {
@@ -203,12 +292,14 @@ void test_exact_seed_389_reaches_t3() {
 
 int main() {
   try {
+    test_k0_hidden_target_location_does_not_change_policy();
+    test_k1_uses_exact_remaining_deck_target();
     test_recovers_and_holds_treasure_for_t3_payload();
     test_rejects_future_treasure_under_item_lock();
     test_rejects_future_treasure_without_held_payload();
     test_rejects_future_treasure_when_two_attachments_are_missing();
     test_exact_seed_389_reaches_t3();
-    std::cout << "issue 1417 Legacy Star Treasure tests passed\n";
+    std::cout << "issue 1417 and 1549 Legacy Star Treasure tests passed\n";
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

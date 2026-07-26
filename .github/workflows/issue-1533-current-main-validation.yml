@@ -27,7 +27,11 @@ jobs:
       - name: Apply smallest complete source patch
         run: python scripts/apply_issue_1533_patch.py
       - name: Build Release
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+        shell: bash
+        run: |
+          set -o pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release 2>&1 | tee configure.log
+          cmake --build build --parallel 2 2>&1 | tee build.log
       - name: Validate focused regression and three perfect-play traces
         shell: bash
         run: |
@@ -74,6 +78,10 @@ jobs:
         with:
           name: issue-1533-current-main-${{ github.run_attempt }}
           path: |
+            configure.log
+            build.log
+            src/trace_engine_v2/part_014c_latias_bench_override.inc
+            tests/issue_1533_blender_treasure_latias_tests.cpp
             simulate-*.txt
             results/simulation_results.csv
             results/multi_deck_comparison.csv

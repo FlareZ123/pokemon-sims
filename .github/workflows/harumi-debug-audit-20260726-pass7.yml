@@ -82,7 +82,7 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 1 --require-ready-by 3 | tee perfect-no-control-1.txt
           grep -q 'T1 | PLAY ITEM.*Heavy Ball' perfect-no-control-1.txt
           grep -q 'T1 | PLAY ITEM.*R-BLENDER-01' perfect-no-control-1.txt
-          grep -q "T2 | PLAY SUPPORTER.*Steven's Resolve" perfect-no-control-1.txt
+          grep -q 'T2 | PLAY SUPPORTER.*R-STEVEN-01' perfect-no-control-1.txt
           grep -q 'T3 | EVOLVE' perfect-no-control-1.txt
           grep -q 'T3 | RETREAT.*Latias ex' perfect-no-control-1.txt
           grep -q 'T3 | READY' perfect-no-control-1.txt

@@ -224,7 +224,10 @@
 #define play_gladion play_gladion_issue1595_original
 #include "trace_engine_v2/part_issue_1191_gladion_steven_override.inc"
 #undef play_gladion
+#define play_gladion play_gladion_issue1608_original
 #include "trace_engine_v2/part_issue_1595_gladion_grass_turo_blender_override.inc"
+#undef play_gladion
+#include "trace_engine_v2/part_issue_1608_burnet_before_dead_crispin_override.inc"
 #define play_arven play_arven_powerglass_original
 #include "trace_engine_v2/part_012_override.inc"
 #undef play_arven

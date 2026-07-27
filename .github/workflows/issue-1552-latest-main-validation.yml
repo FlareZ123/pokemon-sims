@@ -25,7 +25,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Apply isolated patch
-        run: python scripts/apply_issue_1552_latest_patch.py
+        run: |
+          python scripts/apply_issue_1552_latest_patch.py
+          python scripts/refine_issue_1552_superseded_tests.py
       - name: Build Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
       - name: Validate focused regression and three perfect-play traces
@@ -63,8 +65,8 @@ jobs:
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/trace_engine_v2/part_014a.inc src/trace_engine_v2/part_tate_blender_attachment_override.inc tests/issue_1552_t1_vessel_route_tests.cpp
-          git rm .github/workflows/issue-1552-latest-main-validation.yml scripts/apply_issue_1552_latest_patch.py
+          git add src/trace_engine_v2/part_014a.inc src/trace_engine_v2/part_tate_blender_attachment_override.inc tests/issue_1552_t1_vessel_route_tests.cpp tests/issue_1447_vessel_timing_tests.cpp tests/issue_1516_quick_ball_tapu_crispin_tests.cpp tests/run_issue_1092_quick_ball_energy_jit_gate.cmake
+          git rm .github/workflows/issue-1552-latest-main-validation.yml scripts/apply_issue_1552_latest_patch.py scripts/refine_issue_1552_superseded_tests.py
           git commit -m 'Use T1 Earthen Vessel for deterministic seed-104 T2'
           git push origin HEAD:${GITHUB_HEAD_REF}
       - name: Upload evidence

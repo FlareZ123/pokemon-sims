@@ -1,0 +1,83 @@
+name: Issue 1645 Latest Main Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: issue-1645-latest-main-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.head_ref == 'audit/issue-1645-latest-main-20260727' # PR source-branch semantics: https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#github-context
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Configure and build latest main derivative
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run three independent reviewed perfect-play traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Repository trace contract and examples: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee perfect-shell-strict-seed1.txt
+          grep -q 'T2 | READY' perfect-shell-strict-seed1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee perfect-shell-flex-seed3.txt
+          grep -q 'T2 | READY' perfect-shell-flex-seed3.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 18 --require-ready-by 2 | tee perfect-pineco-strict-seed18.txt
+          grep -q 'T2 | READY' perfect-pineco-strict-seed18.txt
+      - name: Reproduce refined issue 1645 witness
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Confirmed scope: https://github.com/FlareZ123/pokemon-sims/issues/1645
+          # Steven, Gladion, Crispin, Vessel, Latias, Blender, and Regidrago VSTAR card data:
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/sm4-95
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          # https://api.pokemontcg.io/v2/cards/sv8-76
+          # https://api.pokemontcg.io/v2/cards/sv8-164
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # One-type Crispin ruling: https://compendium.pokegym.net/category/5-trainers/crispin/
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-heavy-ball --scenario matchup-flex-jit/go-second --seed 218 | tee issue-1645-seed218.txt
+          grep -q 'Searched up to 3 cards: Regidrago V, Regidrago VSTAR, Gladion' issue-1645-seed218.txt
+          grep -q 'SETUP FAILURE' issue-1645-seed218.txt
+      - name: Generate all-condition T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Canonical fixed-seed matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          mkdir -p audit-results
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-results/latest-main-t2-t3.csv
+      - name: Record source binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git rev-parse origin/main > tested-main.txt
+          git diff --name-only origin/main...HEAD > audit-diff.txt
+      - name: Upload traces, matrix, and executable
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1645-latest-main-audit-${{ github.run_attempt }}
+          path: |
+            perfect-*.txt
+            issue-1645-seed218.txt
+            audit-results/*.csv
+            tested-main.txt
+            audit-diff.txt
+            build/regidrago_sim
+          if-no-files-found: error

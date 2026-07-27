@@ -5,7 +5,7 @@ items_path = Path("src/trace_engine_v2/part_014a.inc")
 items = items_path.read_text(encoding="utf-8")
 items_anchor = (
     "      if (bench_oricorio_if_useful()) return true;\n"
-    "      if (play_pokemon_communication(permit_payload)) return true;\n\n"
+    "      if (play_pokemon_communication(permit_payload)) return true;\n"
 )
 items_insert = dedent(
     '''\

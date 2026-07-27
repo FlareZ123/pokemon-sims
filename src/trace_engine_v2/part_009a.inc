@@ -64,8 +64,33 @@
            hand_count(Card::ErikasInvitation) > 0;
   }
 
-  bool play_mysterious_treasure(const bool permit_payload) {
-    if (item_locked() || hand_count(Card::MysteriousTreasure) == 0) return false;
+bool play_mysterious_treasure(const bool permit_payload) {
+  if (item_locked() || hand_count(Card::MysteriousTreasure) == 0) return false;
+  const bool bank_for_deterministic_next_turn_payload =
+      issue_1598_bank_prized_treasure_ && strict_payload_timing() &&
+      state_.turn < scenario_.max_turn && state_.manual_energy_used &&
+      state_.active && state_.active->card == Card::RegidragoV &&
+      state_.active->entered_turn < state_.turn &&
+      state_.active->grass >= 2 && state_.active->fire == 0 &&
+      need_vstar() && need_payload() && hand_count(Card::Fire) > 0 &&
+      std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
+      might_be_unseen(Card::RegidragoVstar);
+  if (bank_for_deterministic_next_turn_payload) {
+    // Preserve the Treasure recovered by Gladion for the exact public route.
+    // Playing it now would discard the held Dragon one turn before strict-JIT
+    // permits that cost and would make T3 depend on an unknown Legacy Star mill.
+    // On the next turn, attach Fire, discard the held Dragon to Treasure, search
+    // VSTAR, evolve the prior-turn Active, and reach deterministic readiness:
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2-166
+    // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Item, discard, attachment, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Dynamic DCI and strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1598
+    return false;
+  }
     // is_payload is the A/S readiness set. Dipplin is a legal Dragon search
     // target, while maintainer policy keeps it out of payload-discard routing:
     // https://api.pokemontcg.io/v2/cards/sv6-127
@@ -164,6 +189,7 @@
     if (!cost) return false;
 
     remove_one(state_.hand, Card::MysteriousTreasure);
+    issue_1598_bank_prized_treasure_ = false;
     state_.discard.push_back(Card::MysteriousTreasure);
     discard_from_hand(*cost, "Mysterious Treasure cost", "R-MT-01");
 

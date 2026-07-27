@@ -1,0 +1,115 @@
+name: Harumi source-bound debug audit 2026-07-26 pass 8
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/harumi-20260726-2108'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Record exact source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee tested-head.txt
+          git rev-parse origin/main | tee tested-main.txt
+          git diff --name-status origin/main...HEAD | tee audit-diff.txt
+
+      - name: Inventory and static policy scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          find src tests docs scripts -type f | sort > source-files.txt
+          grep -RInE 'TODO|FIXME|XXX|HACK|deck_seen_|prizes_known|item_locked|supporter_locked|ability_available|choose_discard|allow_redundant_payload|need_(energy|payload|active_vstar)|Celestial Roar|Secret Box|Wonder Tag|Gladion|Steven' src tests docs > static-hotspots.txt || true
+          grep -RInE 'https://(api\.pokemontcg\.io|www\.pokemon\.com|github\.com/FlareZ123/pokemon-sims)' src tests docs > direct-source-urls.txt || true
+          git grep -nE 'random|shuffle|seed|mt19937|uniform_' -- src tests > randomness-scan.txt || true
+
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+
+      - name: Perfect-play pass one
+        shell: bash
+        run: |
+          set -euo pipefail
+          # This repository-defined strict-JIT trace must establish an Active Regidrago VSTAR with GGF and a current-turn Dragon payload by T3: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee perfect-shell-1.txt
+          grep -q 'T3 | READY' perfect-shell-1.txt
+
+      - name: Perfect-play pass two
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Secret Box, Dawn, Forest of Vitality, and Exploding Energy form the registered Pineco setup line under their printed effects: https://api.pokemontcg.io/v2/cards/sv6-163 https://api.pokemontcg.io/v2/cards/me2-87 https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#registered-decks
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee perfect-pineco-35.txt
+          grep -q 'T2 | READY' perfect-pineco-35.txt
+
+      - name: Perfect-play pass three
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Mysterious Treasure may discard a Dragon payload, search Tapu Lele-GX, and preserve the Supporter action for Crispin: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sv6-130 https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/sv7-133 https://github.com/FlareZ123/pokemon-sims/issues/1209
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee perfect-shell-43.txt
+          grep -q 'T2 | READY' perfect-shell-43.txt
+
+      - name: Exploratory trace one
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 202 | tee candidate-shell-202.txt
+
+      - name: Exploratory trace two
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario no-discard-control/go-first --seed 303 | tee candidate-pineco-303.txt
+
+      - name: Exploratory trace three
+        run: ./build/regidrago_sim --simulate-this --model-variant crobat1-roseanne --scenario strict-jit/go-second --seed 404 | tee candidate-crobat-404.txt
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Generate fresh T2 and T3 matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --trials 100000 --seed 20260726 --out shell-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260726 --out all-decks-matrix.csv
+          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260726 --out crobat-matrix.csv
+          cat shell-matrix.csv
+          cat all-decks-matrix.csv
+          cat crobat-matrix.csv
+
+      - name: Run sanitizer suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build-sanitize --parallel 2
+          ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ctest --test-dir build-sanitize --parallel 2 --output-on-failure
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harumi-debug-audit-20260726-pass8-${{ github.run_attempt }}
+          path: |
+            tested-head.txt
+            tested-main.txt
+            audit-diff.txt
+            source-files.txt
+            static-hotspots.txt
+            direct-source-urls.txt
+            randomness-scan.txt
+            perfect-*.txt
+            candidate-*.txt
+            shell-matrix.csv
+            all-decks-matrix.csv
+            crobat-matrix.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn

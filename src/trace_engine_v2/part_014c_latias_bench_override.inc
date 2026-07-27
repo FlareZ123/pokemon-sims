@@ -457,13 +457,56 @@ bool complete_issue_1599_quick_ball_tapu_crispin_route() {
   return active_is_vstar() && !need_energy() && !need_payload();
 }
 
-  void run_turn() {
-    if (secret_box_combo_enabled()) {
-      run_secret_box_turn();
-      return;
-    }
-    trace("POLICY", "P-AXIS-01", "Start: " + state_line());
-    if (complete_late_steven_vstar_vessel_continuation()) return;
+bool complete_issue_1597_banked_steven_turn() {
+  if (scenario_.dci != DciProfile::NoDiscardControl ||
+      !scenario_.going_first || scenario_.locks != LockMode::None ||
+      state_.turn != 2 || !supporter_allowed() || state_.manual_energy_used ||
+      !deck_seen_ || !state_.active || state_.active->card != Card::Oricorio ||
+      !std::any_of(state_.discard.begin(), state_.discard.end(), is_payload) ||
+      hand_count(Card::StevensResolve) == 0 || hand_count(Card::Fire) == 0 ||
+      hand_count(Card::ProfessorTuro) == 0 || !need_vstar() || !need_energy() ||
+      deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
+      deck_count_after_search_started(Card::Crispin) == 0) {
+    return false;
+  }
+
+  // The T1 Wonder Tag banked Steven because the first player could not play a
+  // Supporter. Attach the held Fire, then Steven searches the missing VSTAR and
+  // the next-turn Crispin while preserving the later Active-position connector:
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Core Supporter, search, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Supporter schedule and earliest route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1597
+  attach_manual();
+  remove_one(state_.hand, Card::StevensResolve);
+  state_.discard.push_back(Card::StevensResolve);
+  state_.supporter_used = true;
+  record_deck_search_knowledge("Steven's Resolve issue-1597 schedule");
+  if (!move_deck_to_hand(Card::RegidragoVstar) ||
+      !move_deck_to_hand(Card::Crispin)) {
+    throw std::logic_error("Issue-1597 Steven targets disappeared");
+  }
+  shuffle(state_.deck);
+  state_.turn_ended = true;
+  trace("PLAY SUPPORTER", "R-STEVEN-01; P-COMPRESS-01",
+        "Steven's Resolve banked Regidrago VSTAR and Crispin for the next Energy turn; the turn ended.");
+  return true;
+}
+
+void run_turn() {
+  if (secret_box_combo_enabled()) {
+    run_secret_box_turn();
+    return;
+  }
+  trace("POLICY", "P-AXIS-01", "Start: " + state_line());
+  if (complete_issue_1597_banked_steven_turn()) {
+    trace("TURN END", "R-STEVEN-01", state_line());
+    return;
+  }
+  if (complete_late_steven_vstar_vessel_continuation()) return;
     play_chaotic_swell();
     play_field_blower();
     if (complete_issue_1533_blender_treasure_latias_route()) {

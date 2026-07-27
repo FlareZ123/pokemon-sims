@@ -1,0 +1,40 @@
+name: Harumi source snapshot 20260727
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/source-snapshot-20260727'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Verify source boundary and package tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee tested-head.txt
+          git rev-parse origin/main | tee tested-main.txt
+          git diff --name-only origin/main...HEAD | tee snapshot-diff.txt
+          test "$(wc -l < snapshot-diff.txt)" -eq 1
+          grep -qx '.github/workflows/harumi-source-snapshot-20260727.yml' snapshot-diff.txt
+          git ls-files | tee source-files.txt
+          git archive --format=tar.gz --output=source-head.tar.gz HEAD
+      - uses: actions/upload-artifact@v4
+        with:
+          name: harumi-source-snapshot-20260727-${{ github.run_attempt }}
+          path: |
+            tested-head.txt
+            tested-main.txt
+            snapshot-diff.txt
+            source-files.txt
+            source-head.tar.gz
+          if-no-files-found: error

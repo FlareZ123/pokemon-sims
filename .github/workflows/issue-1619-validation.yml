@@ -33,8 +33,9 @@ jobs:
           git rev-parse HEAD | tee staged-head.txt
           git rev-parse origin/main | tee tested-main.txt
           python scripts/apply_issue_1619_patch.py
+          python scripts/apply_issue_1619_vessel_cost_patch.py
           git diff --check
-          git diff -- src/trace_engine_v2/part_issue_1118_secret_box.inc tests/issue_1118_multi_deck_secret_box_tests.cpp | tee issue-1619.patch
+          git diff -- src/trace_engine_v2/part_issue_1118_secret_box.inc src/trace_engine_v2/part_010.inc tests/issue_1118_multi_deck_secret_box_tests.cpp | tee issue-1619.patch
 
       - name: Build Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
@@ -48,6 +49,7 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-first --seed 89 --require-ready-by 2 | tee simulate-89.txt
           grep -q 'Secret Box discarded three other cards' simulate-89.txt
           grep -q 'Dawn searched' simulate-89.txt
+          grep -q 'Dragapult ex (Earthen Vessel cost)' simulate-89.txt
           grep -q 'T2 | READY' simulate-89.txt
           # Independent Pineco ALS control: https://api.pokemontcg.io/v2/cards/sv6-163 https://api.pokemontcg.io/v2/cards/me2-87 https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#registered-decks
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee simulate-35.txt
@@ -94,9 +96,9 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           rm -f docs/CROBAT_MODEL_REPORT.md.lock results/crobat_variant_model.csv.lock
-          git add src/trace_engine_v2/part_issue_1118_secret_box.inc tests/issue_1118_multi_deck_secret_box_tests.cpp README.md docs results
-          git rm .github/workflows/issue-1619-validation.yml scripts/apply_issue_1619_patch.py
-          git commit -m 'Admit route-replaced Regidrago V cost for Secret Box'
+          git add src/trace_engine_v2/part_issue_1118_secret_box.inc src/trace_engine_v2/part_010.inc tests/issue_1118_multi_deck_secret_box_tests.cpp README.md docs results
+          git rm .github/workflows/issue-1619-validation.yml scripts/apply_issue_1619_patch.py scripts/apply_issue_1619_vessel_cost_patch.py
+          git commit -m 'Complete Secret Box Dawn Vessel route for seed 89'
           git push origin HEAD:${GITHUB_HEAD_REF}
 
       - name: Upload validation evidence

@@ -1,0 +1,155 @@
+name: Harumi Issue 1552 Current Main Validation v4
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: harumi-issue-1552-current-main-v4-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: github.head_ref == 'fix/issue-1552-current-main-v3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply approved production source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin fix/issue-1552-current-main-v2
+          git show origin/fix/issue-1552-current-main-v2:scripts/apply_issue_1552_current_main.py > /tmp/apply.py
+          python /tmp/apply.py
+          git diff --check
+      - name: Update superseded C++ regression expectations
+        shell: bash
+        run: |
+          set -euo pipefail
+          git show origin/fix/issue-1552-current-main-v2:scripts/refine_issue_1552_current_main_tests.py > /tmp/refine.py
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('/tmp/refine.py')
+          source = path.read_text(encoding='utf-8')
+          marker = '\nreplace_once(\n    "tests/run_issue_1092_quick_ball_energy_jit_gate.cmake",\n'
+          if source.count(marker) != 1:
+              raise SystemExit(f'refinement split count: {source.count(marker)}')
+          path.write_text(source.split(marker, 1)[0].rstrip() + '\n', encoding='utf-8')
+          PY
+          python /tmp/refine.py
+          git diff --check
+      - name: Update seed-104 CMake expectation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tests/run_issue_1092_quick_ball_energy_jit_gate.cmake')
+          source = path.read_text(encoding='utf-8')
+          old = '''# Connector control: Quick Ball may still pay a redundant Dragon when its searched
+          # Tapu Lele-GX advances setup through Wonder Tag into Crispin. That live Basic route
+          # reaches GG on T2 and preserves the established T3 Blender finish:
+          # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+          # Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+          # Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+          # Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+          # Refined bug boundary: https://github.com/FlareZ123/pokemon-sims/issues/1092
+          run_trace("strict-jit/go-first" 104 issue_1092_seed_104_connector)
+          if(NOT issue_1092_seed_104_connector MATCHES "T2 \\| PLAY ITEM \\|.*Tapu Lele-GX")
+            message(FATAL_ERROR "Seed 104 lost the live Quick Ball into Tapu Lele-GX connector:\n${issue_1092_seed_104_connector}")
+          endif()
+          if(NOT issue_1092_seed_104_connector MATCHES "T2 \\| WONDER TAG \\|.*Crispin")
+            message(FATAL_ERROR "Seed 104 lost Wonder Tag into Crispin:\n${issue_1092_seed_104_connector}")
+          endif()
+          if(NOT issue_1092_seed_104_connector MATCHES "T3 \\| READY \\|")
+            message(FATAL_ERROR "Seed 104 lost its established T3 ready route:\n${issue_1092_seed_104_connector}")
+          endif()
+          '''
+          new = '''# Connector control: issue #1552 advances the same live Basic route to T2.
+          # T1 Earthen Vessel establishes K1; T2 Quick Ball discards the Dragon payload,
+          # searches Tapu Lele-GX, and Wonder Tag finds Crispin before the manual Fire:
+          # Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+          # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+          # Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+          # Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Original gate: https://github.com/FlareZ123/pokemon-sims/issues/1092
+          # Confirmed faster route: https://github.com/FlareZ123/pokemon-sims/issues/1552
+          run_trace("strict-jit/go-first" 104 issue_1092_seed_104_connector)
+          if(NOT issue_1092_seed_104_connector MATCHES "T2 \\| PLAY ITEM \\|.*Tapu Lele-GX")
+            message(FATAL_ERROR "Seed 104 lost the live Quick Ball into Tapu Lele-GX connector:\n${issue_1092_seed_104_connector}")
+          endif()
+          if(NOT issue_1092_seed_104_connector MATCHES "T2 \\| WONDER TAG \\|.*Crispin")
+            message(FATAL_ERROR "Seed 104 lost Wonder Tag into Crispin:\n${issue_1092_seed_104_connector}")
+          endif()
+          if(NOT issue_1092_seed_104_connector MATCHES "T2 \\| READY \\|")
+            message(FATAL_ERROR "Seed 104 lost its established T2 ready route:\n${issue_1092_seed_104_connector}")
+          endif()
+          '''
+          if source.count(old) != 1:
+              raise SystemExit(f'CMake block count: {source.count(old)}')
+          path.write_text(source.replace(old, new, 1), encoding='utf-8')
+          PY
+          git diff --check
+      - name: Build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Validate focused regression and four traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_unified_tests issue_1552_t1_vessel_route_tests
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 104 --require-ready-by 2 | tee trace-seed-104.txt
+          grep -q 'T1 | DISCARD | rules: R-EV-01; P-DCI-01; P-COMPRESS-01 | Mysterious Treasure' trace-seed-104.txt
+          grep -q 'T2 | DISCARD | rules: R-QB-01; P-DCI-01; P-JIT-01 | Dialga-GX' trace-seed-104.txt
+          grep -q 'T2 | READY' trace-seed-104.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee trace-seed-43.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-seed-35.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 58 --require-ready-by 2 | tee trace-seed-58.txt
+      - name: Run Release suite excluding separately filed main blockers
+        run: ctest --test-dir build --parallel 4 --output-on-failure -E 'regidrago_issue_1494_ci_audit_inventory_tests|setup_report_contract|multi_deck_report_contract|setup_docs_generator_contract'
+      - name: Run ASan and UBSan suite excluding separately filed main blockers
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build-sanitize --parallel 2
+          ctest --test-dir build-sanitize --parallel 4 --output-on-failure -E 'regidrago_issue_1494_ci_audit_inventory_tests|setup_report_contract|multi_deck_report_contract|setup_docs_generator_contract'
+      - name: Generate T2 and T3 matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit-results
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-results/t2-t3-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-results/multi-deck-matrix.csv
+      - name: Materialize validated source and regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/harumi-issue-1552-current-main-v4.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_014a.inc src/trace_engine_v2/part_tate_blender_attachment_override.inc tests/issue_1552_t1_vessel_route_tests.cpp tests/issue_1447_vessel_timing_tests.cpp tests/issue_1516_quick_ball_tapu_crispin_tests.cpp tests/run_issue_1092_quick_ball_energy_jit_gate.cmake .github/workflows/harumi-issue-1552-current-main-v4.yml
+          git commit -m 'Use the seed 104 T1 Vessel route on current main'
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1552-current-main-v4-${{ github.run_attempt }}
+          path: |
+            trace-*.txt
+            audit-results/*.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn

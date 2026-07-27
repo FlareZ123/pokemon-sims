@@ -165,7 +165,19 @@ bool play_mysterious_treasure(const bool permit_payload) {
     // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     std::optional<Card> cost =
         choose_discard(can_jit_discard, true, true, Card::MysteriousTreasure);
-    if (!cost && want_regi && issue_1304_t1_treasure_erika_cost_available()) {
+if (!cost && want_regi && issue_1605_arven_redundant_payload_route_) {
+  // Arven already established K1 and selected this exact one-discard search
+  // Item. Spend only the duplicated payload identity, after all ordinary DCI
+  // costs fail, while two distinct Dragon payloads survive for later strict-JIT:
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
+  // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+  // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1605
+  cost = issue_1605_redundant_payload_cost();
+}
+if (!cost && want_regi && issue_1304_t1_treasure_erika_cost_available()) {
       // Erika's Invitation cannot advance this single-player setup state, while
       // Mysterious Treasure establishes the prior-turn Regidrago V required by
       // the complete T2 Forest Seal Stone plus Exploding Energy route:
@@ -190,6 +202,7 @@ bool play_mysterious_treasure(const bool permit_payload) {
 
     remove_one(state_.hand, Card::MysteriousTreasure);
     issue_1598_bank_prized_treasure_ = false;
+    issue_1605_arven_redundant_payload_route_ = false;
     state_.discard.push_back(Card::MysteriousTreasure);
     discard_from_hand(*cost, "Mysterious Treasure cost", "R-MT-01");
 

@@ -22,6 +22,9 @@ struct EngineTestAccess {
   static void run_secret_box_turn(Engine& engine) {
     engine.run_secret_box_turn();
   }
+  static void set_deck_seen(Engine& engine, const bool seen = true) {
+    engine.deck_seen_ = seen;
+  }
   static bool play_combo_ultra_ball(Engine& engine) {
     return engine.play_ultra_ball_for_forretress_combo();
   }
@@ -49,6 +52,22 @@ sim::State complete_route_state() {
       sim::Card::Grass, sim::Card::Grass, sim::Card::Grass,
       sim::Card::Grass, sim::Card::Grass,
   };
+  return state;
+}
+
+sim::State direct_treasure_route_state() {
+  sim::State state;
+  state.turn = 4;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 2, 3, 1,
+                              sim::Tool::ForestSealStone};
+  state.hand = {
+      sim::Card::SecretBox, sim::Card::Dragapult, sim::Card::Grass,
+      sim::Card::Grass, sim::Card::ForestOfVitality,
+      sim::Card::ForestOfVitality, sim::Card::Guzma,
+      sim::Card::WishfulBaton,
+  };
+  state.deck = {sim::Card::MysteriousTreasure,
+                sim::Card::RegidragoVstar, sim::Card::Grant};
   return state;
 }
 
@@ -300,6 +319,88 @@ void test_combo_ultra_ball_fallback_includes_appletun() {
   }
 }
 
+void test_direct_secret_box_treasure_completion() {
+  Fixture reservation(sim::LockMode::None, sim::DciProfile::MatchupFlexJit);
+  sim::EngineTestAccess::set_state(reservation.engine,
+                                   direct_treasure_route_state());
+  sim::EngineTestAccess::set_deck_seen(reservation.engine);
+
+  // Secret Box and Mysterious Treasure have separate printed discard costs. The
+  // sole held Dragapult ex must survive the three-card Box payment so Treasure can
+  // discard it on the actual ready turn and search the Dragon VSTAR:
+  // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Core discard, search, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1563
+  if (!sim::EngineTestAccess::play_secret_box(reservation.engine)) {
+    throw std::runtime_error(
+        "The Energy-complete direct Secret Box route was still blocked.");
+  }
+  const sim::State& paid = sim::EngineTestAccess::state(reservation.engine);
+  if (!contains(paid.hand, sim::Card::Dragapult) ||
+      !contains(paid.hand, sim::Card::MysteriousTreasure) ||
+      contains(paid.discard, sim::Card::Dragapult)) {
+    throw std::runtime_error(
+        "Secret Box failed to reserve the sole Treasure payload cost.");
+  }
+
+  Fixture complete(sim::LockMode::None, sim::DciProfile::MatchupFlexJit);
+  sim::State state = direct_treasure_route_state();
+  for (int index = 0; index < 5; ++index) {
+    state.bench.push_back(sim::Pokemon{sim::Card::TapuLeleGX, 1});
+  }
+  sim::EngineTestAccess::set_state(complete.engine, std::move(state));
+  sim::EngineTestAccess::set_deck_seen(complete.engine);
+  sim::EngineTestAccess::run_secret_box_turn(complete.engine);
+  const sim::State& final_state = sim::EngineTestAccess::state(complete.engine);
+  if (!final_state.active ||
+      final_state.active->card != sim::Card::RegidragoVstar ||
+      !contains(final_state.discard, sim::Card::Dragapult) ||
+      !contains(final_state.discard, sim::Card::MysteriousTreasure) ||
+      !sim::EngineTestAccess::outcome(complete.engine).used_secret_box) {
+    throw std::runtime_error(
+        "The direct Box-Treasure-VSTAR route did not complete on a full Bench.");
+  }
+
+  const auto must_reject = [](sim::State state, const sim::LockMode lock,
+                              const char* message) {
+    Fixture fixture(lock, sim::DciProfile::MatchupFlexJit);
+    sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+    sim::EngineTestAccess::set_deck_seen(fixture.engine);
+    if (sim::EngineTestAccess::play_secret_box(fixture.engine)) {
+      throw std::runtime_error(message);
+    }
+  };
+
+  state = direct_treasure_route_state();
+  state.deck.erase(std::remove(state.deck.begin(), state.deck.end(),
+                               sim::Card::MysteriousTreasure),
+                   state.deck.end());
+  must_reject(std::move(state), sim::LockMode::None,
+              "The direct route ignored a K1-missing Treasure target.");
+
+  state = direct_treasure_route_state();
+  state.active->fire = 0;
+  must_reject(std::move(state), sim::LockMode::None,
+              "The direct route ignored an incomplete Energy axis.");
+
+  state = direct_treasure_route_state();
+  state.active->entered_turn = state.turn;
+  must_reject(std::move(state), sim::LockMode::None,
+              "The direct route ignored the evolution timing window.");
+
+  state = direct_treasure_route_state();
+  state.hand = {sim::Card::SecretBox, sim::Card::Dragapult,
+                sim::Card::WishfulBaton, sim::Card::ForestOfVitality};
+  must_reject(std::move(state), sim::LockMode::None,
+              "The direct route spent its reserved payload with too few Box costs.");
+
+  must_reject(direct_treasure_route_state(), sim::LockMode::FullItem,
+              "Item lock admitted the direct Secret Box route.");
+}
+
 void test_route_lock_and_bench_controls() {
   Fixture no_bench;
   sim::State state = complete_route_state();
@@ -342,5 +443,6 @@ int main() {
   test_secret_box_cost_reservation_and_dci();
   test_reviewed_seeded_routes();
   test_combo_ultra_ball_fallback_includes_appletun();
+  test_direct_secret_box_treasure_completion();
   test_route_lock_and_bench_controls();
 }

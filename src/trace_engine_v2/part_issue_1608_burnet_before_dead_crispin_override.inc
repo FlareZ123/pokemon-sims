@@ -1,4 +1,50 @@
 bool play_gladion() {
+  const bool issue_1644_has_held_vstar_route =
+      hand_count(Card::ForestSealStone) > 0 || hand_count(Card::Arven) > 0 ||
+      hand_count(Card::EvolutionIncense) > 0 ||
+      hand_count(Card::MysteriousTreasure) > 0 ||
+      hand_count(Card::UltraBall) > 0 ||
+      hand_count(Card::PokemonCommunication) > 0;
+  const bool issue_1644_prized_fss_vstar_route =
+      prizes_known() && supporter_allowed() && !rule_box_abilities_locked() &&
+      !state_.vstar_power_used && state_.active &&
+      state_.active->card == Card::RegidragoV &&
+      state_.active->entered_turn < state_.turn &&
+      state_.active->tool == Tool::None && state_.active->grass >= 2 &&
+      state_.active->fire >= 1 && need_vstar() && !need_energy() &&
+      !need_payload() && hand_count(Card::Gladion) > 0 &&
+      prize_count_after_reveal(Card::ForestSealStone) > 0 &&
+      deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
+      !issue_1644_has_held_vstar_route;
+  if (issue_1644_prized_fss_vstar_route) {
+    // Gladion exchanges itself for the known prized Forest Seal Stone. The Tool
+    // attaches to the prior-turn Active Regidrago V, and Star Alchemy searches
+    // the inspected deck for Regidrago VSTAR before the legal same-turn evolution.
+    // This advances the only unresolved setup axis while the GGF Energy and
+    // payload axes remain complete:
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Prize exchange, Tool, VSTAR Power, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1 and earliest-completion policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1644
+    remove_one(state_.hand, Card::Gladion);
+    state_.supporter_used = true;
+    prizes_revealed_ = true;
+    const auto prize = std::find(
+        state_.prizes.begin(), state_.prizes.end(), Card::ForestSealStone);
+    if (prize == state_.prizes.end()) {
+      throw std::logic_error("Known prized Forest Seal Stone disappeared");
+    }
+    *prize = Card::Gladion;
+    state_.hand.push_back(Card::ForestSealStone);
+    shuffle(state_.prizes);
+    trace("PLAY SUPPORTER",
+          "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
+          "Exchanged Gladion for Forest Seal Stone to complete the same-turn Regidrago VSTAR route.");
+    return true;
+  }
+
   const bool issue_1633_crispin_before_gladion =
       scenario_.dci == DciProfile::NoDiscardControl && prizes_known() &&
       supporter_allowed() && state_.manual_energy_used && !need_payload() &&

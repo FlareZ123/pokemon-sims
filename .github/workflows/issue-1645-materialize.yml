@@ -1,0 +1,248 @@
+name: Fix issue 1645 Steven prized Crispin route
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1645-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: github.head_ref == 'fix/issue-1645-prized-crispin-t4' # PR source branch: https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#github-context
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Materialize focused production fix and regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import fcntl
+          import os
+          import tempfile
+          from pathlib import Path
+
+          root = Path.cwd()
+          lock_path = root / '.issue-1645-write.lock'
+
+          def atomic_write(path: Path, content: str) -> None:
+              path.parent.mkdir(parents=True, exist_ok=True)
+              fd, temporary_name = tempfile.mkstemp(prefix=f'.{path.name}.', dir=path.parent)
+              try:
+                  with os.fdopen(fd, 'w', encoding='utf-8', newline='') as handle:
+                      handle.write(content)
+                      handle.flush()
+                      os.fsync(handle.fileno())
+                  os.replace(temporary_name, path)
+              finally:
+                  if os.path.exists(temporary_name):
+                      os.unlink(temporary_name)
+
+          with lock_path.open('w', encoding='utf-8') as lock:
+              fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+
+              source_path = root / 'src/trace_engine_v2/part_011.inc'
+              source = source_path.read_text(encoding='utf-8')
+              marker = 'issue_1645_prized_crispin_t4_route'
+              anchor = '''    const auto add_wanted = [&wanted](const Card card) {
+                if (std::find(wanted.begin(), wanted.end(), card) == wanted.end()) wanted.push_back(card);
+              };
+          '''
+              block = '''    const bool issue_1645_prized_crispin_t4_route =
+                  scenario_.dci == DciProfile::MatchupFlexJit && state_.turn == 1 &&
+                  !scenario_.going_first && scenario_.locks == LockMode::None &&
+                  prizes_known() && need_energy() && need_active_vstar() &&
+                  need_payload() && state_.active && is_basic(state_.active->card) &&
+                  state_.active->card != Card::RegidragoV && bench_space() > 0 &&
+                  hand_count(Card::RegidragoVstar) > 0 &&
+                  hand_count(Card::EarthenVessel) > 0 &&
+                  hand_count(Card::BrilliantBlender) > 0 &&
+                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
+                  prize_count_after_reveal(Card::Crispin) >= 2 &&
+                  deck_count_after_search_started(Card::Crispin) == 0 &&
+                  deck_count_after_search_started(Card::Gladion) > 0 &&
+                  deck_count_after_search_started(Card::LatiasEx) > 0 &&
+                  deck_count_after_search_started(Card::Grass) >= 3 &&
+                  deck_count_after_search_started(Card::Fire) > 0 &&
+                  payload_might_be_in_deck() && !in_play(Card::LatiasEx) &&
+                  hand_count(Card::LatiasEx) == 0 &&
+                  ability_available_for_pokemon(Card::LatiasEx) &&
+                  std::any_of(state_.bench.begin(), state_.bench.end(),
+                              [this](const Pokemon& pokemon) {
+                                return pokemon.card == Card::RegidragoV &&
+                                       pokemon.entered_turn == state_.turn;
+                              });
+              if (issue_1645_prized_crispin_t4_route) {
+                // Steven searches three unrestricted cards. Latias ex supplies the
+                // Basic Active's free retreat, Gladion recovers a known prized Crispin,
+                // and the reserved Grass keeps the Vessel plus one-type Crispin line
+                // deterministic through the T4 GGF and current-turn Blender finish:
+                // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+                // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+                // Crispin card text: https://api.pokemontcg.io/v2/cards/sv7-133
+                // One-type Crispin ruling: https://compendium.pokegym.net/category/5-trainers/crispin/
+                // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+                // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+                // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+                // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+                // Core Supporter, Item, attachment, evolution, and retreat rules: https://www.pokemon.com/us/pokemon-tcg/rules
+                // K1, DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+                // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1645
+                add_wanted(Card::LatiasEx);
+                add_wanted(Card::Gladion);
+                add_wanted(Card::Grass);
+              }
+          '''
+              if marker not in source:
+                  if source.count(anchor) != 1:
+                      raise RuntimeError('Steven wanted-target anchor changed unexpectedly')
+                  source = source.replace(anchor, anchor + block, 1)
+                  atomic_write(source_path, source)
+
+              test_path = root / 'tests/issue_1645_steven_prized_crispin_tests.cpp'
+              test_source = r'''#define REGIDRAGO_SIM_NO_MAIN
+          #include "../src/regidrago_sim.cpp"
+
+          #include <stdexcept>
+          #include <string>
+
+          namespace sim {
+
+          struct EngineTestAccess {};
+
+          }  // namespace sim
+
+          namespace {
+
+          bool trace_contains(const sim::TraceLog& trace, const std::string& expected) {
+            return std::any_of(trace.lines.begin(), trace.lines.end(),
+                               [&expected](const std::string& line) {
+                                 return line.find(expected) != std::string::npos;
+                               });
+          }
+
+          }  // namespace
+
+          int main() {
+            using namespace sim;
+
+            const auto scenario = scenario_by_label("matchup-flex-jit/go-second");
+            const CrobatModelingDeck* deck =
+                crobat_modeling_deck_by_id("crobat1-heavy-ball");
+            if (!scenario || deck == nullptr) {
+              throw std::runtime_error("Issue 1645 registered setup is unavailable.");
+            }
+
+            std::mt19937_64 rng(218);
+            TraceLog trace{true, {}};
+            Engine engine(*scenario, deck->recipe, rng, &trace);
+            const TrialOutcome outcome = engine.run();
+
+            // Steven may reserve any three cards. Gladion exchanges itself for one
+            // known Prize, one-type Crispin puts that Energy into hand and attaches
+            // none, Latias ex removes the Basic Active's Retreat Cost, and Regidrago
+            // VSTAR reaches Apex Dragon readiness after GGF plus a current-turn payload:
+            // https://api.pokemontcg.io/v2/cards/sm7-145
+            // https://api.pokemontcg.io/v2/cards/sm4-95
+            // https://api.pokemontcg.io/v2/cards/sv7-133
+            // https://compendium.pokegym.net/category/5-trainers/crispin/
+            // https://api.pokemontcg.io/v2/cards/sv8-76
+            // https://api.pokemontcg.io/v2/cards/sv8-164
+            // https://api.pokemontcg.io/v2/cards/swsh12-136
+            // https://www.pokemon.com/us/pokemon-tcg/rules
+            // Refined regression: https://github.com/FlareZ123/pokemon-sims/issues/1645
+            if (outcome.first_ready_turn != 4 ||
+                !trace_contains(trace,
+                                "Searched up to 3 cards: Latias ex, Gladion, Grass Energy") ||
+                !trace_contains(trace,
+                                "Only one Basic Energy type was searchable; put it into hand and attached none") ||
+                !trace_contains(trace, "T4 | READY")) {
+              throw std::runtime_error(
+                  "Seed 218 did not complete the refined Steven-Latias-Gladion-Crispin route on T4.");
+            }
+
+            if (trace_contains(
+                    trace,
+                    "Searched up to 3 cards: Regidrago V, Regidrago VSTAR, Gladion")) {
+              throw std::runtime_error(
+                  "Seed 218 still selected the redundant Steven package.");
+            }
+          }
+          '''
+              if not test_path.exists() or test_path.read_text(encoding='utf-8') != test_source:
+                  atomic_write(test_path, test_source)
+
+              fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+
+          lock_path.unlink(missing_ok=True)
+          PY
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run focused regression
+        run: ./build/regidrago_unified_tests issue_1645_steven_prized_crispin_tests
+      - name: Run three reviewed perfect-play traces and fixed witness
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee perfect-shell-strict-seed1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee perfect-shell-flex-seed3.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 18 --require-ready-by 2 | tee perfect-pineco-strict-seed18.txt
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-heavy-ball --scenario matchup-flex-jit/go-second --seed 218 --require-ready-by 4 | tee issue-1645-fixed-seed218.txt
+          grep -q 'Searched up to 3 cards: Latias ex, Gladion, Grass Energy' issue-1645-fixed-seed218.txt
+          grep -q 'Only one Basic Energy type was searchable; put it into hand and attached none' issue-1645-fixed-seed218.txt
+          grep -q 'T4 | READY' issue-1645-fixed-seed218.txt
+      - name: Run applicable complete Release suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Unrelated current-main blockers are tracked by #1649 and #1651:
+          # https://github.com/FlareZ123/pokemon-sims/issues/1649
+          # https://github.com/FlareZ123/pokemon-sims/issues/1651
+          ctest --test-dir build --parallel 4 --output-on-failure -E 'regidrago_issue_1494_ci_audit_inventory_tests|setup_docs_generator_contract|setup_report_contract|multi_deck_report_contract'
+      - name: Generate all-condition T2 and T3 matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out issue-1645-t2-t3-matrix.csv
+      - name: Configure and run ASan UBSan suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build-sanitize --parallel 2
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 ctest --test-dir build-sanitize --parallel 2 --output-on-failure -E 'regidrago_issue_1494_ci_audit_inventory_tests|setup_docs_generator_contract|setup_report_contract|multi_deck_report_contract'
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1645-validation-${{ github.run_attempt }}
+          path: |
+            perfect-*.txt
+            issue-1645-fixed-seed218.txt
+            issue-1645-t2-t3-matrix.csv
+            build/regidrago_sim
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn
+      - name: Commit materialized fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- src/trace_engine_v2/part_011.inc tests/issue_1645_steven_prized_crispin_tests.cpp; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_011.inc tests/issue_1645_steven_prized_crispin_tests.cpp
+          git commit -m 'Fix Steven prized Crispin route for issue 1645'
+          git push origin "HEAD:${GITHUB_HEAD_REF}"

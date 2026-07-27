@@ -24,18 +24,43 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Recover and apply the approved current-main patch scripts
+      - name: Recover and apply the approved current-main source and test patch
         shell: bash
         run: |
           set -euo pipefail
           git fetch origin fix/issue-1552-current-main-v2
           git show origin/fix/issue-1552-current-main-v2:scripts/apply_issue_1552_current_main.py > scripts/apply_issue_1552_current_main.py
-          git show origin/fix/issue-1552-current-main-v2:scripts/prepare_issue_1552_refinement.py > scripts/prepare_issue_1552_refinement.py
           git show origin/fix/issue-1552-current-main-v2:scripts/refine_issue_1552_current_main_tests.py > scripts/refine_issue_1552_current_main_tests.py
           python scripts/apply_issue_1552_current_main.py
-          python scripts/prepare_issue_1552_refinement.py
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/refine_issue_1552_current_main_tests.py')
+          source = path.read_text(encoding='utf-8')
+          marker = '\nreplace_once(\n    "tests/run_issue_1092_quick_ball_energy_jit_gate.cmake",\n'
+          if source.count(marker) != 1:
+              raise SystemExit(f'issue-1552 refinement split count: {source.count(marker)}')
+          path.write_text(source.split(marker, 1)[0].rstrip() + '\n', encoding='utf-8')
+          PY
           python scripts/refine_issue_1552_current_main_tests.py
-          rm scripts/apply_issue_1552_current_main.py scripts/prepare_issue_1552_refinement.py scripts/refine_issue_1552_current_main_tests.py
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tests/run_issue_1092_quick_ball_energy_jit_gate.cmake')
+          source = path.read_text(encoding='utf-8')
+          replacements = {
+              '# reaches GG on T2 and preserves the established T3 Blender finish:':
+                  '# reaches GGF on T2 and completes strict-JIT on that same earliest turn:',
+              'if(NOT issue_1092_seed_104_connector MATCHES "T3 \\| READY \\|")':
+                  'if(NOT issue_1092_seed_104_connector MATCHES "T2 \\| READY \\|")',
+              'Seed 104 lost its established T3 ready route:':
+                  'Seed 104 lost its established T2 ready route:',
+          }
+          for old, new in replacements.items():
+              if source.count(old) != 1:
+                  raise SystemExit(f'issue-1552 CMake replacement count for {old!r}: {source.count(old)}')
+              source = source.replace(old, new, 1)
+          path.write_text(source, encoding='utf-8')
+          PY
+          rm scripts/apply_issue_1552_current_main.py scripts/refine_issue_1552_current_main_tests.py
           git diff --check
       - name: Configure and build Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2

@@ -29,12 +29,13 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin fix/issue-1552-current-main-v2
-          git show origin/fix/issue-1552-current-main-v2:scripts/apply_issue_1552_current_main.py > /tmp/apply_issue_1552_current_main.py
-          git show origin/fix/issue-1552-current-main-v2:scripts/prepare_issue_1552_refinement.py > /tmp/prepare_issue_1552_refinement.py
-          git show origin/fix/issue-1552-current-main-v2:scripts/refine_issue_1552_current_main_tests.py > /tmp/refine_issue_1552_current_main_tests.py
-          python /tmp/apply_issue_1552_current_main.py
-          python /tmp/prepare_issue_1552_refinement.py
-          python /tmp/refine_issue_1552_current_main_tests.py
+          git show origin/fix/issue-1552-current-main-v2:scripts/apply_issue_1552_current_main.py > scripts/apply_issue_1552_current_main.py
+          git show origin/fix/issue-1552-current-main-v2:scripts/prepare_issue_1552_refinement.py > scripts/prepare_issue_1552_refinement.py
+          git show origin/fix/issue-1552-current-main-v2:scripts/refine_issue_1552_current_main_tests.py > scripts/refine_issue_1552_current_main_tests.py
+          python scripts/apply_issue_1552_current_main.py
+          python scripts/prepare_issue_1552_refinement.py
+          python scripts/refine_issue_1552_current_main_tests.py
+          rm scripts/apply_issue_1552_current_main.py scripts/prepare_issue_1552_refinement.py scripts/refine_issue_1552_current_main_tests.py
           git diff --check
       - name: Configure and build Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2

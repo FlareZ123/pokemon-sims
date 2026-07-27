@@ -1,0 +1,40 @@
+name: Harumi Issue 1605 Patch Diagnostic
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.head_ref == 'fix/issue-1605-current-main-v2'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Capture exact patch failure
+        shell: bash
+        run: |
+          set +e
+          git fetch origin fix/issue-1605-arven-redundant-payload
+          git checkout origin/fix/issue-1605-arven-redundant-payload -- scripts/fix_issue_1605_anchor.py scripts/apply_issue_1605_patch.py
+          python scripts/fix_issue_1605_anchor.py 2>&1 | tee anchor.log
+          anchor_status=${PIPESTATUS[0]}
+          python scripts/apply_issue_1605_patch.py 2>&1 | tee apply.log
+          apply_status=${PIPESTATUS[0]}
+          printf 'anchor=%s\napply=%s\n' "$anchor_status" "$apply_status" > status.txt
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue-1605-patch-diagnostic-${{ github.run_attempt }}
+          path: |
+            anchor.log
+            apply.log
+            status.txt

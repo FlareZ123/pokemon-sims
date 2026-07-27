@@ -1,0 +1,74 @@
+name: Harumi debug audit 20260726 pass 8
+
+on:
+  pull_request:
+    branches: [main]
+
+# Read-only audit. The workflow tests the exact PR head and uploads evidence.
+permissions:
+  contents: read
+
+concurrency:
+  group: harumi-debug-audit-20260726-pass8-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/debug-mode-20260726-pass8'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Record source boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee tested-head.txt
+          git rev-parse origin/main | tee tested-main.txt
+          git diff --name-only origin/main...HEAD | tee audit-diff.txt
+          test "$(wc -l < audit-diff.txt)" -eq 1
+          grep -qx '.github/workflows/harumi-debug-audit-20260726-pass8.yml' audit-diff.txt
+      - name: Build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Earliest legal ready-state objective and K0/K1 boundary:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+          # Core turn, search, Supporter, attachment, evolution, Bench, retreat, and attack procedure:
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 137 | tee debug-trace-shell-137.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 123 | tee debug-trace-pineco-123.txt
+          ./build/regidrago_sim --simulate-this --model-variant crobat2-erika-channeler --scenario no-discard-control/go-first --seed 83 | tee debug-trace-crobat-83.txt
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Generate fresh T2 and T3 matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-shell-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-multi-deck-matrix.csv
+      - name: Upload debug evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harumi-debug-audit-20260726-pass8-${{ github.run_attempt }}
+          path: |
+            tested-head.txt
+            tested-main.txt
+            audit-diff.txt
+            debug-trace-*.txt
+            audit-shell-matrix.csv
+            audit-multi-deck-matrix.csv
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+          if-no-files-found: warn

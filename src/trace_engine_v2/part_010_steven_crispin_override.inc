@@ -457,6 +457,37 @@
 
   Card choose_supporter_after_search_started() {
 
+    const bool issue_1597_banked_steven_turo_route =
+        scenario_.dci == DciProfile::NoDiscardControl &&
+        scenario_.going_first && state_.turn == 1 &&
+        scenario_.locks == LockMode::None && scenario_.max_turn >= 4 &&
+        !supporter_allowed() && deck_seen_ && state_.active &&
+        state_.active->card == Card::Oricorio &&
+        in_play_count(Card::RegidragoV) > 0 &&
+        hand_count(Card::ProfessorTuro) > 0 &&
+        hand_count(Card::EarthenVessel) > 0 && !item_locked() &&
+        deck_count_after_search_started(Card::Grass) > 0 &&
+        deck_count_after_search_started(Card::Fire) > 0 &&
+        need_vstar() && need_energy() &&
+        std::any_of(state_.discard.begin(), state_.discard.end(), is_payload) &&
+        deck_count_after_search_started(Card::StevensResolve) > 0 &&
+        deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
+        deck_count_after_search_started(Card::Crispin) > 0;
+    if (issue_1597_banked_steven_turo_route) {
+      // Going first prevents the T1 Supporter play, so Wonder Tag banks Steven's
+      // Resolve for T2. Steven searches Regidrago VSTAR and Crispin, Crispin supplies
+      // the final Grass on T3, and the already-held Professor Turo promotes the
+      // complete attacker on T4 without same-turn Supporter contention:
+      // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+      // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+      // Core first-turn Supporter, search, attachment, evolution, return, and promotion procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Supporter schedule, K1, and earliest route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1597
+      return Card::StevensResolve;
+    }
+
 if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
   // Prefer the complete Steven package over Crispin, which powers the
   // Basic but leaves both Evolution and strict-JIT payload unresolved:

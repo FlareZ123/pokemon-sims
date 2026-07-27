@@ -40,6 +40,7 @@ jobs:
         run: |
           set -o pipefail
           python scripts/apply_issue_1552_current_main.py 2>&1 | tee apply-issue-1552.log
+          python scripts/prepare_issue_1552_refinement.py 2>&1 | tee -a apply-issue-1552.log
           python scripts/refine_issue_1552_current_main_tests.py 2>&1 | tee -a apply-issue-1552.log
           git diff --check
       - name: Build Release
@@ -105,7 +106,7 @@ jobs:
             git config user.name github-actions[bot]
             git config user.email 41898282+github-actions[bot]@users.noreply.github.com
             git add src/trace_engine_v2/part_014a.inc src/trace_engine_v2/part_tate_blender_attachment_override.inc tests/issue_1552_t1_vessel_route_tests.cpp tests/issue_1447_vessel_timing_tests.cpp tests/issue_1516_quick_ball_tapu_crispin_tests.cpp tests/run_issue_1092_quick_ball_energy_jit_gate.cmake README.md docs results
-            git rm -f scripts/apply_issue_1552_current_main.py scripts/refine_issue_1552_current_main_tests.py
+            git rm -f scripts/apply_issue_1552_current_main.py scripts/prepare_issue_1552_refinement.py scripts/refine_issue_1552_current_main_tests.py
             git commit -m 'Use the seed 104 T1 Vessel route'
             git push origin HEAD:${GITHUB_HEAD_REF}
           } 2>&1 | tee materialize-issue-1552.log

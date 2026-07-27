@@ -128,7 +128,9 @@
     return true;
   }
 
-  bool play_gladion() {
+bool issue_1598_bank_prized_treasure_{false};
+
+bool play_gladion() {
     if (late_steven_vstar_with_held_blender_route_available()) {
       // Gladion exchanges for one Prize card, while the confirmed route already has
       // the prior-turn Active and GGF Energy axes complete. Preserve the Supporter
@@ -281,9 +283,37 @@
             : need_vstar() && prize_count_after_reveal(Card::RegidragoVstar) > 0
                   ? std::optional<Card>{Card::RegidragoVstar}
                   : std::nullopt;
-    if (!known_target && revealed_missing_axis_target) known_target = revealed_missing_axis_target;
+if (!known_target && revealed_missing_axis_target) known_target = revealed_missing_axis_target;
 
-    // Gladion reveals every Prize before selecting the exchange, so a newly revealed
+const bool revealed_treasure_next_turn_completion =
+    !known_target && !revealed_missing_axis_target && strict_payload_timing() &&
+    !item_locked() && state_.turn < scenario_.max_turn && state_.active &&
+    state_.active->card == Card::RegidragoV &&
+    state_.active->entered_turn < state_.turn &&
+    state_.active->grass >= 2 && state_.active->fire == 0 &&
+    need_vstar() && need_energy() && need_payload() &&
+    hand_count(Card::Fire) > 0 &&
+    std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
+    prize_count_after_reveal(Card::MysteriousTreasure) > 0 &&
+    deck_count_after_search_started(Card::RegidragoVstar) > 0;
+if (revealed_treasure_next_turn_completion) {
+  // Gladion has revealed a deterministic next-turn route without consulting
+  // Celestial Roar's hidden top cards. The held Fire completes GGF next turn,
+  // while the recovered Mysterious Treasure discards the held Dragon payload,
+  // searches Regidrago VSTAR, and permits evolution of the prior-turn Active:
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2-166
+  // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Core Prize exchange, Item cost, Energy attachment, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // K1 and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Strict-JIT payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1598
+  known_target = Card::MysteriousTreasure;
+}
+
+// Gladion reveals every Prize before selecting the exchange, so a newly revealed
     // prized Crispin can be chosen after the current Regidrago V has already solved
     // the Basic axis. Require both different Basic Energy types to remain in the
     // inspected deck, preventing a dead Crispin from displacing a real missing axis:
@@ -314,7 +344,16 @@
       trace("PLAY SUPPORTER", "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01", "Looked at Prize cards and exchanged Gladion for " + std::string(name(chosen)) + ".");
       return true;
     };
-    if (known_target && exchange(*known_target)) return true;
+if (known_target && exchange(*known_target)) {
+  // Record only the exact Gladion recovery that creates this deferred route.
+  // This keeps unrelated Steven and Treasure states on their established policy:
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1598
+  issue_1598_bank_prized_treasure_ =
+      *known_target == Card::MysteriousTreasure;
+  return true;
+}
     for (const Card target : {Card::RegidragoVstar, Card::RegidragoV, Card::ProfessorBurnet, Card::Crispin, Card::MegaDragonite}) {
       if (exchange(target)) return true;
     }

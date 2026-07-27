@@ -1,0 +1,82 @@
+name: Harumi debug audit 20260727 pass 9
+
+on:
+  pull_request:
+    branches: [main]
+
+# Read-only source-bound audit. Repository objective and knowledge contract:
+# https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
+# https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+permissions:
+  contents: read
+
+concurrency:
+  group: harumi-debug-audit-20260727-pass9-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/debug-mode-20260727-pass9'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Record source boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee tested-head.txt
+          git rev-parse origin/main | tee tested-main.txt
+          git diff --name-only origin/main...HEAD | tee audit-diff.txt
+          test "$(wc -l < audit-diff.txt)" -eq 1
+          grep -qx '.github/workflows/harumi-debug-audit-20260727-pass9.yml' audit-diff.txt
+      - name: Build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Crispin, Celestial Roar, Gladion, and Apex Dragon card text:
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://api.pokemontcg.io/v2/cards/swsh12-135
+          # https://api.pokemontcg.io/v2/cards/sm4-95
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --model-variant crobat2-erika-channeler --scenario no-discard-control/go-first --seed 83 | tee debug-trace-crobat-83.txt
+          # Secret Box, Mysterious Treasure, Latias ex, Professor Burnet, and Dialga-GX card text:
+          # https://api.pokemontcg.io/v2/cards/sv6-163
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sv8-76
+          # https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+          # https://api.pokemontcg.io/v2/cards/sm5-100
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 123 | tee debug-trace-pineco-123.txt
+          # Independent registered-shell route review under the same earliest-ready contract:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 137 | tee debug-trace-shell-137.txt
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Generate fresh T2 and T3 matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-shell-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-multi-deck-matrix.csv
+          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260705 --out audit-crobat-matrix.csv
+      - name: Upload debug evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harumi-debug-audit-20260727-pass9-${{ github.run_attempt }}
+          path: |
+            tested-head.txt
+            tested-main.txt
+            audit-diff.txt
+            debug-trace-*.txt
+            audit-*-matrix.csv
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+          if-no-files-found: warn

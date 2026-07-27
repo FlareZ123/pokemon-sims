@@ -1,0 +1,84 @@
+name: Harumi open-bug audit 2026-07-27
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harumi-open-bug-audit-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.head_ref == 'audit/harumi-20260727-open-bugs'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Record tested source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee tested-head.txt
+          git diff --name-status origin/main...HEAD | tee audit-diff.txt
+      - name: Build Release simulator
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run three current-main bug traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Gladion may exchange one Prize, and Supporters are limited to one per turn: https://api.pokemontcg.io/v2/cards/sm4-95 https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --model-variant crobat2-erika-channeler --scenario no-discard-control/go-first --seed 83 | tee issue-1644-seed-83.txt
+          # Steven's Resolve searches three cards and ends the turn; Latias ex provides Free Retreat: https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/sv8-76
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-heavy-ball --scenario matchup-flex-jit/go-second --seed 218 | tee issue-1645-seed-218.txt
+          # Quick Ball discards one card to search a Basic, Earthen Vessel discards one card to search Basic Energy, and Professor Burnet discards two cards from deck: https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sv4-163 https://api.pokemontcg.io/v2/cards/swshp-SWSH167
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit/go-first --seed 245 | tee issue-1646-seed-245.txt
+      - name: Run three independent perfect-play trace checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Registered shell trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee perfect-pass-1-shell-seed-1.txt
+          # Registered Pineco trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee perfect-pass-2-pineco-seed-35.txt
+          # Existing current-main combined-route contract: https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml#L48-L49
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 137 --require-ready-by 2 | tee perfect-pass-3-shell-seed-137.txt
+      - name: Generate current T2 and T3 probability matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Paired registered-deck matrix mode and scenario coverage: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          mkdir -p audit-results
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260727 --out audit-results/t2-t3-all-decks.csv
+      - name: Run complete Release suite and preserve status
+        shell: bash
+        run: |
+          set +e
+          ctest --test-dir build --parallel 4 --output-on-failure 2>&1 | tee release-ctest.txt
+          status=${PIPESTATUS[0]}
+          echo "$status" > release-ctest-status.txt
+          exit 0
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harumi-open-bug-audit-${{ github.run_attempt }}
+          path: |
+            tested-head.txt
+            audit-diff.txt
+            issue-*.txt
+            perfect-pass-*.txt
+            audit-results/*.csv
+            release-ctest.txt
+            release-ctest-status.txt
+            build/Testing
+          if-no-files-found: error

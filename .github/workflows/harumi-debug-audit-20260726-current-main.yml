@@ -1,0 +1,124 @@
+name: Harumi current-main debug audit 2026-07-26
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/harumi-20260726-current-main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Record exact source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee tested-head.txt
+          git rev-parse origin/main | tee tested-main.txt
+          git diff --name-status origin/main...HEAD | tee audit-diff.txt
+
+      - name: Inventory and static policy scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          find src tests docs scripts -type f | sort > source-files.txt
+          grep -RInE 'TODO|FIXME|XXX|HACK|deck_seen_|prizes_known|item_locked|supporter_locked|ability_available|choose_discard|secret_box_cost|use_celestial_roar|need_(energy|payload|active_vstar)' src tests docs > static-hotspots.txt || true
+          grep -RInE 'https://(api\.pokemontcg\.io|www\.pokemon\.com|professorprogram\.pokemon\.com|github\.com/FlareZ123/pokemon-sims)' src tests docs > direct-source-urls.txt || true
+          git grep -nE 'random|shuffle|seed|mt19937|uniform_' -- src tests > randomness-scan.txt || true
+
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+
+      - name: Perfect-play pass one
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Steven's Resolve, Quick Ball, and the repository's earliest-route policy define this reviewed T3 continuation: https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/swsh1-179 https://github.com/FlareZ123/pokemon-sims/issues/952 https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee perfect-shell-58.txt
+          grep -q 'T3 | READY' perfect-shell-58.txt
+
+      - name: Perfect-play pass two
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Secret Box, Dawn, Forest of Vitality, and Exploding Energy are the registered Pineco ALS under their printed effects: https://api.pokemontcg.io/v2/cards/sv6-163 https://api.pokemontcg.io/v2/cards/me2-87 https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#registered-decks
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee perfect-pineco-35.txt
+          grep -q 'T2 | READY' perfect-pineco-35.txt
+
+      - name: Perfect-play pass three
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Mysterious Treasure may discard a Dragon payload, search Tapu Lele-GX, and preserve the Supporter action for Crispin: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sv6-130 https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/sv7-133 https://github.com/FlareZ123/pokemon-sims/issues/1209
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee perfect-shell-43.txt
+          grep -q 'T2 | READY' perfect-shell-43.txt
+
+      - name: Reverify confirmation-pending Pineco bug
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The asserted route follows Secret Box, Dawn, ordinary evolution, Exploding Energy, Earthen Vessel, manual attachment, and Apex Dragon timing: https://api.pokemontcg.io/v2/cards/sv6-163 https://api.pokemontcg.io/v2/cards/me2-87 https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://api.pokemontcg.io/v2/cards/sv4-163 https://api.pokemontcg.io/v2/cards/swsh12-136 https://www.pokemon.com/us/pokemon-tcg/rules https://github.com/FlareZ123/pokemon-sims/issues/1619
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-first --seed 89 | tee candidate-pineco-89.txt
+          grep -q 'Secret Box was held because DCI did not admit three other costs' candidate-pineco-89.txt
+
+      - name: Reverify confirmation-pending Celestial Roar bug
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Celestial Roar discards the top three and attaches any Energy; repository policy only admits it when Energy or a permitted payload axis can advance: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136 https://www.pokemon.com/us/pokemon-tcg/rules https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#fully-modeled-parts https://github.com/FlareZ123/pokemon-sims/issues/1623
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-second --seed 91 | tee candidate-shell-91.txt
+          grep -q 'Regidrago V used Celestial Roar' candidate-shell-91.txt
+          grep -q 'attached Energy: (none)' candidate-shell-91.txt
+          grep -q 'T2 | READY' candidate-shell-91.txt
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Generate fresh T2 and T3 matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --trials 100000 --seed 20260726 --out shell-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260726 --out all-decks-matrix.csv
+          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260726 --out crobat-matrix.csv
+          cat shell-matrix.csv
+          cat all-decks-matrix.csv
+          cat crobat-matrix.csv
+
+      - name: Run sanitizer suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build-sanitize --parallel 2
+          ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ctest --test-dir build-sanitize --parallel 2 --output-on-failure
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harumi-current-main-audit-${{ github.run_attempt }}
+          path: |
+            tested-head.txt
+            tested-main.txt
+            audit-diff.txt
+            source-files.txt
+            static-hotspots.txt
+            direct-source-urls.txt
+            randomness-scan.txt
+            perfect-*.txt
+            candidate-*.txt
+            shell-matrix.csv
+            all-decks-matrix.csv
+            crobat-matrix.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn

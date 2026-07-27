@@ -4,6 +4,13 @@
   #undef run_secret_box_turn
   #include "part_issue_1439_treasure_tapu_crispin_override.inc"
 
+  // Restore the public Secret Box action name after the issue-1118 body, then
+  // install the K1 Latias-Burnet completion before the Celestial Roar policy:
+  // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1634
+  #undef play_secret_box
+  #include "part_issue_1634_secret_box_latias_burnet_override.inc"
+
   bool guaranteed_next_turn_secret_box_route_after_hold() const {
     // This hold is restricted to the registered strict-JIT Pineco recipe after
     // legal K1 inspection. Read recipe_ directly because total_copies() deliberately

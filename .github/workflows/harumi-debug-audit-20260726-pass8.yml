@@ -43,7 +43,7 @@ jobs:
           set -euo pipefail
           # This repository-defined strict-JIT trace must establish an Active Regidrago VSTAR with GGF and a current-turn Dragon payload by T3: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee perfect-shell-1.txt
-          grep -q 'T3 | READY' perfect-shell-1.txt
+          grep -Eq 'T[123] \| READY' perfect-shell-1.txt
 
       - name: Perfect-play pass two
         shell: bash

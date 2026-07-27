@@ -1,0 +1,57 @@
+name: Sync issue 1533 provenance metadata
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1533-provenance-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/issue-1533-current-main-v3'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+      - name: Detect provenance script
+        id: gate
+        shell: bash
+        run: |
+          if [[ -f scripts/sync_issue_1533_manifests.py ]]; then
+            echo 'run=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'run=false' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.run == 'true'
+        with:
+          python-version: '3.12'
+      - name: Sync provenance and reports
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/sync_issue_1533_manifests.py
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+          python tests/setup_report_contract_tests.py
+          python tests/multi_deck_report_contract_tests.py
+          git diff --check
+      - name: Commit provenance metadata
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add results/baseline_manifest.json results/multi_deck_manifest.json docs/REPORT.md docs/MULTI_DECK_REPORT.md
+          git rm -f scripts/sync_issue_1533_manifests.py
+          git commit -m 'Sync issue 1533 report provenance'
+          git push origin HEAD:${GITHUB_HEAD_REF}

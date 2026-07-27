@@ -4,71 +4,49 @@ from textwrap import dedent
 source_path = Path("src/trace_engine_v2/part_issue_1118_secret_box.inc")
 source = source_path.read_text(encoding="utf-8")
 
-visibility_anchor = dedent(
-    """\
-        const bool treasure_available = hand_count(Card::MysteriousTreasure) > 0 ||
-            might_be_unseen(Card::MysteriousTreasure);
-        const bool needs_treasure = !vstar_held_or_play || !payload_already;
-        if (!vstar_available || !payload_available ||
-            (needs_treasure && !treasure_available)) {
-    """
+visibility_anchor = (
+    "    const bool needs_treasure = !vstar_held_or_play || !payload_already;\n"
 )
-visibility_insert = dedent(
-    """\
-        const bool treasure_available = hand_count(Card::MysteriousTreasure) > 0 ||
-            might_be_unseen(Card::MysteriousTreasure);
-        const bool dawn_payload_line = dawn_line && !payload_already &&
-            payload_might_be_in_deck();
-        // Dawn can search Forretress ex as its Stage 1 and Dragapult ex as its Stage 2
-        // in the same resolution. When VSTAR is already held, that public route makes
-        // Mysterious Treasure unnecessary and leaves Secret Box's Item search free for
-        // Earthen Vessel, which discards the Dawn-searched payload and finds Fire:
-        // Dawn: https://api.pokemontcg.io/v2/cards/me2-87
-        // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
-        // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-        // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-        // Core search and discard procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1619
-        const bool needs_treasure =
-            !vstar_held_or_play || (!payload_already && !dawn_payload_line);
-        if (!vstar_available || !payload_available ||
-            (needs_treasure && !treasure_available)) {
-    """
+visibility_insert = (
+    "    const bool dawn_payload_line = dawn_line && !payload_already &&\n"
+    "        payload_might_be_in_deck();\n"
+    "    // Dawn can search Forretress ex as its Stage 1 and Dragapult ex as its Stage 2\n"
+    "    // in the same resolution. When VSTAR is already held, that public route makes\n"
+    "    // Mysterious Treasure unnecessary and leaves Secret Box's Item search free for\n"
+    "    // Earthen Vessel, which discards the Dawn-searched payload and finds Fire:\n"
+    "    // Dawn: https://api.pokemontcg.io/v2/cards/me2-87\n"
+    "    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130\n"
+    "    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113\n"
+    "    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163\n"
+    "    // Core search and discard procedure: https://www.pokemon.com/us/pokemon-tcg/rules\n"
+    "    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1619\n"
+    "    const bool needs_treasure =\n"
+    "        !vstar_held_or_play || (!payload_already && !dawn_payload_line);\n"
 )
-if source.count(visibility_anchor) != 1:
+if source.count(visibility_anchor) < 1:
     raise SystemExit(
         f"issue-1619 visibility anchor count: {source.count(visibility_anchor)}"
     )
 source = source.replace(visibility_anchor, visibility_insert, 1)
 
-selection_anchor = dedent(
-    """\
-        const bool vstar_held_or_play = has_vstar() ||
-            hand_count(Card::RegidragoVstar) > 0;
-        const bool needs_treasure = !vstar_held_or_play || !payload_ready();
-        const bool needs_fire = fire_needed() > 0 && hand_count(Card::Fire) == 0;
-    """
+selection_anchor = (
+    "    const bool needs_treasure = !vstar_held_or_play || !payload_ready();\n"
 )
-selection_insert = dedent(
-    """\
-        const bool vstar_held_or_play = has_vstar() ||
-            hand_count(Card::RegidragoVstar) > 0;
-        const bool dawn_will_supply_payload = needs_dawn && supporter_allowed() &&
-            (hand_count(Card::Dawn) > 0 || might_be_unseen(Card::Dawn)) &&
-            payload_might_be_in_deck();
-        // Preserve Secret Box's Item channel for Earthen Vessel when held VSTAR and
-        // Dawn's independent Stage 1 plus Stage 2 searches already cover evolution and
-        // payload. This is the direct same-turn route, so Treasure would add a redundant
-        // connector and strand the Fire axis:
-        // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
-        // Dawn: https://api.pokemontcg.io/v2/cards/me2-87
-        // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
-        // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1619
-        const bool needs_treasure = !vstar_held_or_play ||
-            (!payload_ready() && !dawn_will_supply_payload);
-        const bool needs_fire = fire_needed() > 0 && hand_count(Card::Fire) == 0;
-    """
+selection_insert = (
+    "    const bool dawn_will_supply_payload = needs_dawn && supporter_allowed() &&\n"
+    "        (hand_count(Card::Dawn) > 0 || might_be_unseen(Card::Dawn)) &&\n"
+    "        payload_might_be_in_deck();\n"
+    "    // Preserve Secret Box's Item channel for Earthen Vessel when held VSTAR and\n"
+    "    // Dawn's independent Stage 1 plus Stage 2 searches already cover evolution and\n"
+    "    // payload. This is the direct same-turn route, so Treasure would add a redundant\n"
+    "    // connector and strand the Fire axis:\n"
+    "    // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163\n"
+    "    // Dawn: https://api.pokemontcg.io/v2/cards/me2-87\n"
+    "    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130\n"
+    "    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163\n"
+    "    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1619\n"
+    "    const bool needs_treasure = !vstar_held_or_play ||\n"
+    "        (!payload_ready() && !dawn_will_supply_payload);\n"
 )
 if source.count(selection_anchor) != 1:
     raise SystemExit(

@@ -1,0 +1,91 @@
+name: Issue 1646 dead Quick Ball Vessel
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: issue-1646-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: github.head_ref == 'fix/issue-1646-dead-quick-ball-vessel'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Record tested source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee tested-head.txt
+          git diff --name-status origin/main...HEAD | tee issue-1646-diff.txt
+      - name: Build Release simulator and unified tests
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Validate issue 1646 exact regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          ctest --test-dir build -R '^regidrago_issue_1646_dead_quick_ball_vessel_tests$' --output-on-failure 2>&1 | tee issue-1646-focused-ctest.txt
+          # Earthen Vessel pays one discard and searches up to two Basic Energy; Quick Ball is the dominated legal cost: https://api.pokemontcg.io/v2/cards/sv4-163 https://api.pokemontcg.io/v2/cards/swsh1-179
+          # Professor Burnet supplies the current-turn strict-JIT payload while preserving Brilliant Blender: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 https://api.pokemontcg.io/v2/cards/sv8-164
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit/go-first --seed 245 --require-ready-by 3 | tee issue-1646-seed-245.txt
+          grep -q 'Quick Ball (Earthen Vessel cost)' issue-1646-seed-245.txt
+          grep -q 'T3 | PLAY SUPPORTER | rules: R-BURNET-01' issue-1646-seed-245.txt
+          grep -q 'T3 | READY' issue-1646-seed-245.txt
+          ! grep -q 'T3 | PLAY ITEM | rules: R-BLENDER-01' issue-1646-seed-245.txt
+      - name: Run three independent simulate-this checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Public trace and deadline contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit/go-first --seed 245 --require-ready-by 3 | tee pass-1-issue-1646.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee pass-2-shell.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee pass-3-pineco.txt
+      - name: Run complete applicable Release suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Current-main CI/report defects are independently tracked in #1649 and #1651; run every unaffected test here: https://github.com/FlareZ123/pokemon-sims/issues/1649 https://github.com/FlareZ123/pokemon-sims/issues/1651
+          ctest --test-dir build --parallel 4 --output-on-failure -E 'regidrago_issue_1494_ci_audit_inventory_tests|setup_report_contract|multi_deck_report_contract|setup_docs_generator_contract' | tee release-ctest.txt
+      - name: Build and test with address and undefined behavior sanitizers
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build-sanitize --parallel 2
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 ctest --test-dir build-sanitize -R '^regidrago_issue_1646_dead_quick_ball_vessel_tests$' --output-on-failure | tee sanitizer-ctest.txt
+      - name: Generate source-bound T2 and T3 probability matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Registered paired-deck matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          mkdir -p issue-1646-results
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260727 --out issue-1646-results/t2-t3-all-decks.csv
+      - name: Upload issue 1646 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1646-evidence-${{ github.run_attempt }}
+          path: |
+            tested-head.txt
+            issue-1646-diff.txt
+            issue-1646-focused-ctest.txt
+            issue-1646-seed-245.txt
+            pass-*.txt
+            release-ctest.txt
+            sanitizer-ctest.txt
+            issue-1646-results/t2-t3-all-decks.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: error

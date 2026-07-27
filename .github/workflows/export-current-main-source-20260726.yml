@@ -1,0 +1,33 @@
+name: Export current main source 2026-07-26
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/export-current-main-source-20260726'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Record source identity
+        run: |
+          git rev-parse HEAD > tested-head.txt
+          git rev-parse origin/main > tested-main.txt
+      - name: Package exact source
+        run: |
+          zip -qr pokemon-sims-source.zip . -x '.git/*' 'build/*' 'build-*/*'
+      - name: Upload exact source
+        uses: actions/upload-artifact@v4
+        with:
+          name: pokemon-sims-current-main-source-${{ github.run_attempt }}
+          path: |
+            pokemon-sims-source.zip
+            tested-head.txt
+            tested-main.txt
+          if-no-files-found: error

@@ -1,0 +1,82 @@
+name: Validate issue 1552 on latest main
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1552-latest-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/issue-1552-t1-vessel-route'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply isolated patch
+        run: python scripts/apply_issue_1552_latest_patch.py
+      - name: Build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Validate focused regression and three perfect-play traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_unified_tests issue_1552_t1_vessel_route_tests
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 104 --require-ready-by 2 | tee simulate-104.txt
+          grep -q 'Earthen Vessel issue-1552 route cost' simulate-104.txt
+          grep -q 'Quick Ball issue-1552 route cost' simulate-104.txt
+          grep -q 'T2 | READY' simulate-104.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee simulate-43.txt
+          grep -q 'T2 | READY' simulate-43.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-first --seed 16 --require-ready-by 3 | tee simulate-16.txt
+          grep -q 'T3 | READY' simulate-16.txt
+      - name: Release suite before reports
+        run: ctest --test-dir build --parallel 4 --output-on-failure -E 'setup_report_contract|multi_deck_report_contract|crobat_model_report_contract'
+      - name: Generate source-bound matrices
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260723 --out results/crobat_variant_model.csv
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+          python scripts/update_crobat_modeling_docs.py --csv results/crobat_variant_model.csv --out docs/CROBAT_MODEL_REPORT.md
+      - name: Complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Complete sanitizer suite
+        run: |
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build-sanitize --parallel 2
+          ASAN_OPTIONS=detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 ctest --test-dir build-sanitize --parallel 2 --output-on-failure
+      - name: Materialize validated source only
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_014a.inc src/trace_engine_v2/part_tate_blender_attachment_override.inc tests/issue_1552_t1_vessel_route_tests.cpp
+          git rm .github/workflows/issue-1552-latest-main-validation.yml scripts/apply_issue_1552_latest_patch.py
+          git commit -m 'Use T1 Earthen Vessel for deterministic seed-104 T2'
+          git push origin HEAD:${GITHUB_HEAD_REF}
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1552-latest-${{ github.run_attempt }}
+          path: |
+            simulate-*.txt
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            results/crobat_variant_model.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn

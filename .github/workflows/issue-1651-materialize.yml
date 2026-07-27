@@ -1,0 +1,82 @@
+name: Refresh issue 1651 setup reports
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1651-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    if: github.head_ref == 'fix/issue-1651-refresh-setup-reports'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build source-bound Release simulator
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Regenerate setup and named-deck evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Canonical setup reproduction scripts: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/update_setup_docs.py
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results
+          python scripts/update_setup_docs.py --repo-root .
+          # Named-deck comparison reproduction scripts: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/generate_multi_deck_comparison.py https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/update_multi_deck_docs.py
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results
+          python scripts/update_multi_deck_docs.py --repo-root .
+          # Confirmed stale-evidence bug: https://github.com/FlareZ123/pokemon-sims/issues/1651
+      - name: Review three independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Readable trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee issue-1651-pass-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee issue-1651-pass-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 137 --require-ready-by 2 | tee issue-1651-pass-3.txt
+      - name: Validate refreshed evidence and applicable Release suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The two excluded tests inspect the independently tracked truncated permanent workflow and its stale line anchors: https://github.com/FlareZ123/pokemon-sims/issues/1649
+          ctest --test-dir build --parallel 4 --output-on-failure -E 'regidrago_issue_1494_ci_audit_inventory_tests|setup_docs_generator_contract'
+      - name: Preserve refreshed matrices and traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1651-refreshed-evidence-${{ github.run_attempt }}
+          path: |
+            issue-1651-pass-*.txt
+            results/simulation_results.csv
+            results/baseline_manifest.json
+            results/traces
+            docs/REPORT.md
+            docs/TRACE_AUDIT.md
+            results/multi_deck_comparison.csv
+            results/multi_deck_manifest.json
+            results/multi_deck_traces
+            docs/MULTI_DECK_REPORT.md
+            README.md
+            build/Testing
+          if-no-files-found: error
+      - name: Materialize refreshed source-bound evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/issue-1651-materialize.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add results docs/REPORT.md docs/TRACE_AUDIT.md docs/MULTI_DECK_REPORT.md README.md .github/workflows/issue-1651-materialize.yml
+          git commit -m "Refresh setup evidence for issue 1651"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"

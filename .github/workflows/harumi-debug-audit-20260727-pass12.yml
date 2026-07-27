@@ -45,6 +45,7 @@ jobs:
           import re
           import subprocess
 
+          audit_path = '.github/workflows/harumi-debug-audit-20260727-pass12.yml'
           files = subprocess.check_output(['git', 'ls-files'], text=True).splitlines()
           text_suffixes = {'.cpp', '.hpp', '.h', '.inc', '.cmake', '.py', '.md', '.yml', '.yaml', '.json', '.txt'}
           findings = []
@@ -53,7 +54,7 @@ jobs:
           issue_urls = 0
           for name in files:
               path = Path(name)
-              if path.suffix.lower() not in text_suffixes or not path.is_file():
+              if name == audit_path or path.suffix.lower() not in text_suffixes or not path.is_file():
                   continue
               try:
                   text = path.read_text(encoding='utf-8')
@@ -85,20 +86,23 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Pass 1: Quick Ball, Mysterious Treasure, Regidrago V/VSTAR, and the
-          # official turn procedure support the registered strict-JIT shell route:
-          # https://api.pokemontcg.io/v2/cards/swsh1-179
-          # https://api.pokemontcg.io/v2/cards/sm6-113
-          # https://api.pokemontcg.io/v2/cards/swsh12-135
+          # Pass 1. The direct T2 shell route uses Steven, Crispin, Latias ex,
+          # Brilliant Blender, and ordinary evolution and retreat procedure:
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://api.pokemontcg.io/v2/cards/sv8-76
+          # https://api.pokemontcg.io/v2/cards/sv8-164
           # https://api.pokemontcg.io/v2/cards/swsh12-136
           # https://www.pokemon.com/us/pokemon-tcg/rules
           # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee audit-pass1-shell-seed1.txt
-          grep -q 'T3 | READY' audit-pass1-shell-seed1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee audit-pass1-shell-seed1.txt
+          grep -q 'T1 | PLAY SUPPORTER.*Regidrago VSTAR, Crispin, Latias ex' audit-pass1-shell-seed1.txt
+          grep -q 'T2 | PLAY ITEM.*Brilliant Blender' audit-pass1-shell-seed1.txt
+          grep -q 'T2 | RETREAT.*Latias ex' audit-pass1-shell-seed1.txt
+          grep -q 'T2 | READY' audit-pass1-shell-seed1.txt
 
-          # Pass 2: Secret Box may pay route-replaced cards only because the complete
-          # K1 Dawn, Forretress ex, Earthen Vessel, payload, Energy, and evolution
-          # route preserves one VSTAR and the established Regidrago line:
+          # Pass 2. Route-aware DCI permits the complete K1 Secret Box, Dawn,
+          # Forretress ex, Earthen Vessel, payload, Energy, and evolution route:
           # https://api.pokemontcg.io/v2/cards/sv6-163
           # https://api.pokemontcg.io/v2/cards/me2-87
           # https://api.pokemontcg.io/v2/cards/sv4pt5-1
@@ -109,14 +113,13 @@ jobs:
           # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
           # https://github.com/FlareZ123/pokemon-sims/issues/1619
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-first --seed 89 --require-ready-by 2 | tee audit-pass2-pineco-seed89.txt
-          grep -q 'T2 | SECRET BOX' audit-pass2-pineco-seed89.txt
-          grep -q 'T2 | PLAY SUPPORTER.*Dawn' audit-pass2-pineco-seed89.txt
-          grep -q 'T2 | EXPLODING ENERGY' audit-pass2-pineco-seed89.txt
+          grep -q 'T2 | PLAY ITEM.*Secret Box discarded three other cards' audit-pass2-pineco-seed89.txt
+          grep -q 'T2 | PLAY SUPPORTER.*Dawn searched' audit-pass2-pineco-seed89.txt
+          grep -q 'T2 | USE ABILITY.*Exploding Energy attached' audit-pass2-pineco-seed89.txt
           grep -q 'T2 | READY' audit-pass2-pineco-seed89.txt
 
-          # Pass 3: Steven's Resolve legally searches only Latias ex and Grass Energy.
-          # Held VSTAR, Earthen Vessel, a Dragon cost, and Brilliant Blender already
-          # cover the other axes, while Skyliner gives the Basic Active free Retreat:
+          # Pass 3. Steven legally searches only Latias ex and Grass Energy because
+          # held VSTAR, Vessel, Dragon cost, and Blender cover every other axis:
           # https://api.pokemontcg.io/v2/cards/sm7-145
           # https://api.pokemontcg.io/v2/cards/sv8-76
           # https://api.pokemontcg.io/v2/cards/sv4-163

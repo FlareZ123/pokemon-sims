@@ -1,0 +1,421 @@
+name: Validate issue 1634 Secret Box Latias Burnet
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/issue-1634-secret-box-latias-burnet'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply isolated source and regression patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          source_path = Path('src/trace_engine_v2/part_issue_1118_secret_box.inc')
+          source = source_path.read_text(encoding='utf-8')
+
+          helper_anchor = "  bool secret_box_full_combo_axes_visible() const {\n"
+          helper = r'''  bool issue_1634_secret_box_latias_burnet_axes_visible() const {
+    const bool complete_benched_vstar = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoVstar && pokemon.grass >= 2 &&
+              pokemon.fire >= 1;
+        });
+    return secret_box_combo_enabled() && deck_seen_ && !item_locked() &&
+        supporter_allowed() && !state_.retreat_used && state_.active &&
+        is_basic(state_.active->card) && bench_space() > 0 &&
+        complete_benched_vstar && need_active_vstar() && !need_energy() &&
+        need_payload() && can_play_payload_this_turn() &&
+        ability_available_for_pokemon(Card::LatiasEx) &&
+        deck_count_after_search_started(Card::MysteriousTreasure) > 0 &&
+        deck_count_after_search_started(Card::LatiasEx) > 0 &&
+        deck_count_after_search_started(Card::ProfessorBurnet) > 0 &&
+        payload_might_be_in_deck();
+  }
+
+  std::optional<Card> issue_1634_treasure_cost_after_box(
+      const std::array<Card, 3>& box_costs) const {
+    if (!issue_1634_secret_box_latias_burnet_axes_visible()) {
+      return std::nullopt;
+    }
+    std::map<Card, int> remaining;
+    for (const Card card : state_.hand) ++remaining[card];
+    if (--remaining[Card::SecretBox] < 0) return std::nullopt;
+    for (const Card cost : box_costs) {
+      if (--remaining[cost] < 0) return std::nullopt;
+    }
+
+    // The powered Benched VSTAR already satisfies the Pokémon and GGF axes.
+    // Burnet owns the Supporter slot, Latias owns the Bench and Retreat axis,
+    // and Treasure owns the Item channel. These listed cards therefore have a
+    // public replacement and may pay Treasure only inside this complete route:
+    // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Item, Supporter, Bench, Retreat, search, and discard procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Dynamic DCI and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1634
+    for (const Card card : {
+             Card::Grant, Card::WishfulBaton, Card::ErikasInvitation,
+             Card::Guzma, Card::Channeler, Card::FieldBlower,
+             Card::ChaoticSwell, Card::PathToPeak, Card::TeamYellsCheer,
+             Card::RoseannesBackup, Card::Lusamine, Card::ProfessorTuro,
+             Card::Powerglass, Card::StevensResolve, Card::Arven,
+             Card::Crispin, Card::Dawn, Card::ForestOfVitality,
+             Card::Pineco, Card::ForretressEx, Card::QuickBall,
+             Card::EarthenVessel, Card::Grass, Card::Fire,
+             Card::RegidragoV, Card::RegidragoVstar, Card::Appletun,
+             Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
+             Card::DialgaGX}) {
+      if (remaining[card] > 0) return card;
+    }
+    return std::nullopt;
+  }
+
+'''
+          if source.count(helper_anchor) != 1:
+              raise SystemExit('issue-1634 helper anchor mismatch')
+          source = source.replace(helper_anchor, helper + helper_anchor, 1)
+
+          full_combo_anchor = '''  bool secret_box_full_combo_axes_visible() const {
+    if (!secret_box_combo_enabled() || item_locked() || state_.turn <= 1 ||
+'''
+          full_combo_replacement = '''  bool secret_box_full_combo_axes_visible() const {
+    if (issue_1634_secret_box_latias_burnet_axes_visible()) return true;
+    if (!secret_box_combo_enabled() || item_locked() || state_.turn <= 1 ||
+'''
+          if source.count(full_combo_anchor) != 1:
+              raise SystemExit('issue-1634 full-combo anchor mismatch')
+          source = source.replace(full_combo_anchor, full_combo_replacement, 1)
+
+          cost_anchor = '''    const auto costs = secret_box_cost_plan();
+    if (!costs) {
+      ++outcome_.secret_box_cost_blocked;
+      trace("HOLD ITEM", "R-SECRET-BOX-01; P-DCI-01",
+            "Secret Box was held because DCI did not admit three other costs.");
+      return false;
+    }
+
+    remove_one(state_.hand, Card::SecretBox);
+'''
+          cost_replacement = '''    const bool issue_1634_route =
+        issue_1634_secret_box_latias_burnet_axes_visible();
+    const auto costs = secret_box_cost_plan();
+    if (!costs) {
+      ++outcome_.secret_box_cost_blocked;
+      trace("HOLD ITEM", "R-SECRET-BOX-01; P-DCI-01",
+            "Secret Box was held because DCI did not admit three other costs.");
+      return false;
+    }
+    const std::optional<Card> issue_1634_treasure_cost =
+        issue_1634_route ? issue_1634_treasure_cost_after_box(*costs)
+                         : std::nullopt;
+    if (issue_1634_route && !issue_1634_treasure_cost) {
+      ++outcome_.secret_box_cost_blocked;
+      trace("HOLD ITEM", "R-SECRET-BOX-01; R-MT-01; P-DCI-01",
+            "Secret Box was held because the complete Latias-Burnet route lacked Treasure's separate discard cost.");
+      return false;
+    }
+
+    remove_one(state_.hand, Card::SecretBox);
+'''
+          if source.count(cost_anchor) != 1:
+              raise SystemExit('issue-1634 cost anchor mismatch')
+          source = source.replace(cost_anchor, cost_replacement, 1)
+
+          route_anchor = '''    // Secret Box independently searches up to one Item, Tool, Supporter,
+'''
+          route = r'''    if (issue_1634_route) {
+      take(Card::MysteriousTreasure);
+      take(Card::ProfessorBurnet);
+      shuffle(state_.deck);
+      trace("PLAY ITEM", "R-SECRET-BOX-01; R-GAME-ITEM; P-KNOWLEDGE-01",
+            "Secret Box discarded three other cards and searched the route-required Mysterious Treasure and Professor Burnet; optional Tool and Stadium searches were left unused.");
+
+      if (!remove_one(state_.hand, Card::MysteriousTreasure) ||
+          !issue_1634_treasure_cost ||
+          !discard_from_hand(*issue_1634_treasure_cost,
+                             "Mysterious Treasure cost for Latias-Burnet route",
+                             "R-MT-01; P-DCI-01")) {
+        throw std::logic_error("Issue-1634 Treasure cost plan diverged");
+      }
+      state_.discard.push_back(Card::MysteriousTreasure);
+      record_deck_search_knowledge("Mysterious Treasure issue-1634 route");
+      if (!move_deck_to_hand(Card::LatiasEx)) {
+        throw std::logic_error("Issue-1634 Latias target disappeared");
+      }
+      shuffle(state_.deck);
+      trace("PLAY ITEM", "R-MT-01; R-GAME-ITEM; P-KNOWLEDGE-01",
+            "Mysterious Treasure discarded the reserved fourth cost and searched Latias ex.");
+      if (!bench_from_hand(Card::LatiasEx, true)) {
+        throw std::logic_error("Issue-1634 Latias bench route diverged");
+      }
+      if (need_payload() && !play_professor_burnet()) {
+        throw std::logic_error("Issue-1634 Burnet payload route diverged");
+      }
+      if (!retreat_to_benched_vstar_with_latias()) {
+        throw std::logic_error("Issue-1634 Skyliner retreat route diverged");
+      }
+      trace("ROUTE", "R-SECRET-BOX-01; R-MT-01; R-LATIAS-01; R-BURNET-01; R-RVS-01; P-COMPRESS-01",
+            "Completed the K1 Secret Box to Treasure, Latias, Burnet, and free-retreat route.");
+      return true;
+    }
+
+'''
+          if source.count(route_anchor) != 1:
+              raise SystemExit('issue-1634 route anchor mismatch')
+          source = source.replace(route_anchor, route + route_anchor, 1)
+          source_path.write_text(source, encoding='utf-8')
+
+          test_path = Path('tests/issue_1118_multi_deck_secret_box_tests.cpp')
+          tests = test_path.read_text(encoding='utf-8')
+          access_anchor = '''  static bool play_combo_ultra_ball(Engine& engine) {
+    return engine.play_ultra_ball_for_forretress_combo();
+  }
+'''
+          access_replacement = '''  static bool play_combo_ultra_ball(Engine& engine) {
+    return engine.play_ultra_ball_for_forretress_combo();
+  }
+  static void establish_k1(Engine& engine) {
+    engine.deck_seen_ = true;
+    engine.prizes_revealed_ = true;
+  }
+'''
+          if tests.count(access_anchor) != 1:
+              raise SystemExit('issue-1634 access anchor mismatch')
+          tests = tests.replace(access_anchor, access_replacement, 1)
+
+          fixture_anchor = '''struct Fixture {
+'''
+          state_helper = r'''sim::State issue_1634_route_state() {
+  sim::State state;
+  state.turn = 4;
+  state.active = sim::Pokemon{sim::Card::DialgaGX, 1, 0, 0,
+                              sim::Tool::None};
+  state.bench = {
+      sim::Pokemon{sim::Card::RegidragoVstar, 2, 2, 1,
+                   sim::Tool::None},
+      sim::Pokemon{sim::Card::TapuLeleGX, 1, 0, 0,
+                   sim::Tool::None},
+  };
+  state.hand = {
+      sim::Card::SecretBox, sim::Card::StevensResolve, sim::Card::Fire,
+      sim::Card::Guzma, sim::Card::Fire, sim::Card::Crispin,
+      sim::Card::Arven, sim::Card::Pineco,
+  };
+  state.deck = {
+      sim::Card::MysteriousTreasure, sim::Card::LatiasEx,
+      sim::Card::ProfessorBurnet, sim::Card::Dragapult,
+      sim::Card::Grass, sim::Card::Grass, sim::Card::Fire,
+      sim::Card::QuickBall, sim::Card::ForestSealStone,
+  };
+  return state;
+}
+
+'''
+          if tests.count(fixture_anchor) != 1:
+              raise SystemExit('issue-1634 fixture anchor mismatch')
+          tests = tests.replace(fixture_anchor, state_helper + fixture_anchor, 1)
+
+          test_anchor = '''void test_combo_ultra_ball_fallback_includes_appletun() {
+'''
+          new_tests = r'''void test_issue_1634_exact_latias_burnet_route() {
+  Fixture fixture(sim::LockMode::None, sim::DciProfile::MatchupFlexJit);
+  sim::EngineTestAccess::set_state(fixture.engine, issue_1634_route_state());
+  sim::EngineTestAccess::establish_k1(fixture.engine);
+  if (!sim::EngineTestAccess::play_secret_box(fixture.engine)) {
+    throw std::runtime_error("The exact issue-1634 Secret Box route was not admitted.");
+  }
+  const sim::State& state = sim::EngineTestAccess::state(fixture.engine);
+  const sim::TrialOutcome& outcome = sim::EngineTestAccess::outcome(fixture.engine);
+  if (!state.active || state.active->card != sim::Card::RegidragoVstar ||
+      state.active->grass < 2 || state.active->fire < 1 ||
+      !contains(state.discard, sim::Card::Dragapult) ||
+      !contains(state.discard, sim::Card::MysteriousTreasure) ||
+      !contains(state.discard, sim::Card::ProfessorBurnet) ||
+      !contains(state.bench | std::views::transform([](const sim::Pokemon& pokemon) { return pokemon.card; }), sim::Card::LatiasEx) ||
+      !state.supporter_used || !state.retreat_used || !outcome.used_secret_box ||
+      outcome.used_exploding_energy) {
+    throw std::runtime_error("The exact issue-1634 Latias-Burnet completion diverged.");
+  }
+}
+
+void test_issue_1634_route_gates() {
+  const auto expect_blocked = [](sim::State state, const sim::LockMode lock,
+                                 const bool establish_k1,
+                                 const char* message) {
+    Fixture fixture(lock, sim::DciProfile::MatchupFlexJit);
+    sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+    if (establish_k1) sim::EngineTestAccess::establish_k1(fixture.engine);
+    if (sim::EngineTestAccess::play_secret_box(fixture.engine)) {
+      throw std::runtime_error(message);
+    }
+  };
+
+  expect_blocked(issue_1634_route_state(), sim::LockMode::None, false,
+                 "The issue-1634 route ignored K0.");
+  expect_blocked(issue_1634_route_state(), sim::LockMode::FullItem, true,
+                 "The issue-1634 route ignored Item lock.");
+  expect_blocked(issue_1634_route_state(), sim::LockMode::FullSupporter, true,
+                 "The issue-1634 route ignored Supporter lock.");
+  expect_blocked(issue_1634_route_state(),
+                 sim::LockMode::FullRuleBoxAbility, true,
+                 "The issue-1634 route ignored Rule Box Ability lock.");
+
+  sim::State no_fourth_cost = issue_1634_route_state();
+  no_fourth_cost.hand = {sim::Card::SecretBox, sim::Card::Grant,
+                         sim::Card::WishfulBaton,
+                         sim::Card::ErikasInvitation};
+  expect_blocked(std::move(no_fourth_cost), sim::LockMode::None, true,
+                 "The issue-1634 route ignored Treasure's separate cost.");
+
+  sim::State retreat_spent = issue_1634_route_state();
+  retreat_spent.retreat_used = true;
+  expect_blocked(std::move(retreat_spent), sim::LockMode::None, true,
+                 "The issue-1634 route ignored a spent Retreat action.");
+
+  sim::State missing_latias = issue_1634_route_state();
+  missing_latias.deck.erase(std::find(missing_latias.deck.begin(),
+                                     missing_latias.deck.end(),
+                                     sim::Card::LatiasEx));
+  expect_blocked(std::move(missing_latias), sim::LockMode::None, true,
+                 "The issue-1634 route ignored a missing Latias target.");
+
+  sim::State missing_burnet = issue_1634_route_state();
+  missing_burnet.deck.erase(std::find(missing_burnet.deck.begin(),
+                                     missing_burnet.deck.end(),
+                                     sim::Card::ProfessorBurnet));
+  expect_blocked(std::move(missing_burnet), sim::LockMode::None, true,
+                 "The issue-1634 route ignored a missing Burnet target.");
+
+  sim::State missing_payload = issue_1634_route_state();
+  missing_payload.deck.erase(std::find(missing_payload.deck.begin(),
+                                      missing_payload.deck.end(),
+                                      sim::Card::Dragapult));
+  expect_blocked(std::move(missing_payload), sim::LockMode::None, true,
+                 "The issue-1634 route ignored a missing deck payload.");
+}
+
+void test_issue_1634_seed_123_route() {
+  const auto scenario = sim::scenario_by_label("matchup-flex-jit/go-second");
+  const sim::NamedDeck* deck = sim::deck_by_id("regidrago-pineco");
+  if (!scenario || deck == nullptr) {
+    throw std::runtime_error("The issue-1634 seed fixture is unavailable.");
+  }
+  std::mt19937_64 rng(123);
+  sim::TraceLog trace{true, {}};
+  sim::Engine engine(*scenario, deck->recipe, rng, &trace);
+  const sim::TrialOutcome outcome = engine.run();
+  const auto has_line = [&trace](const std::string& needle) {
+    return std::any_of(trace.lines.begin(), trace.lines.end(),
+                       [&needle](const std::string& line) {
+                         return line.find(needle) != std::string::npos;
+                       });
+  };
+
+  // Secret Box may leave its optional Tool and Stadium searches unused. Its
+  // Item and Supporter channels fetch Treasure and Burnet, Treasure pays a
+  // separate fourth discard to find Latias, Burnet establishes strict-JIT
+  // payload, and Skyliner supplies the free retreat into the powered VSTAR:
+  // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1634
+  if (outcome.first_ready_turn != 4 ||
+      !has_line("route-required Mysterious Treasure and Professor Burnet") ||
+      !has_line("Mysterious Treasure discarded the reserved fourth cost and searched Latias ex") ||
+      !has_line("T4 | PLAY SUPPORTER | rules: R-BURNET-01") ||
+      !has_line("T4 | RETREAT |") || !has_line("T4 | READY |") ||
+      has_line("T4 | PLAY SUPPORTER | rules: R-STEVEN-01")) {
+    throw std::runtime_error("Pineco seed 123 did not use the legal T4 Latias-Burnet route.");
+  }
+}
+
+'''
+          if tests.count(test_anchor) != 1:
+              raise SystemExit('issue-1634 test anchor mismatch')
+          tests = tests.replace(test_anchor, new_tests + test_anchor, 1)
+
+          main_anchor = '''  test_reviewed_seeded_routes();
+  test_combo_ultra_ball_fallback_includes_appletun();
+'''
+          main_replacement = '''  test_reviewed_seeded_routes();
+  test_issue_1634_exact_latias_burnet_route();
+  test_issue_1634_route_gates();
+  test_issue_1634_seed_123_route();
+  test_combo_ultra_ball_fallback_includes_appletun();
+'''
+          if tests.count(main_anchor) != 1:
+              raise SystemExit('issue-1634 main anchor mismatch')
+          tests = tests.replace(main_anchor, main_replacement, 1)
+          test_path.write_text(tests, encoding='utf-8')
+          PY
+      - name: Correct C++20 range assertion helper
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tests/issue_1118_multi_deck_secret_box_tests.cpp')
+          text = path.read_text(encoding='utf-8')
+          old = '''      !contains(state.bench | std::views::transform([](const sim::Pokemon& pokemon) { return pokemon.card; }), sim::Card::LatiasEx) ||
+'''
+          new = '''      !std::any_of(state.bench.begin(), state.bench.end(),
+                   [](const sim::Pokemon& pokemon) {
+                     return pokemon.card == sim::Card::LatiasEx;
+                   }) ||
+'''
+          if text.count(old) != 1:
+              raise SystemExit('issue-1634 range helper anchor mismatch')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+      - name: Build and validate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build --output-on-failure
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 123 | tee issue-1634-seed-123.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 137 | tee issue-1634-control-shell-137.txt
+          ./build/regidrago_sim --simulate-this --model-variant crobat2-erika-channeler --scenario no-discard-control/go-first --seed 83 | tee issue-1634-control-crobat-83.txt
+      - name: Materialize validated source
+        shell: bash
+        env:
+          BRANCH: fix/issue-1634-secret-box-latias-burnet
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_issue_1118_secret_box.inc tests/issue_1118_multi_deck_secret_box_tests.cpp
+          git rm .github/workflows/validate-issue-1634.yml
+          git commit -m "Use Secret Box Latias Burnet route for seed 123"
+          git push origin "HEAD:${BRANCH}"
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1634-validation-${{ github.run_attempt }}
+          path: |
+            issue-1634-*.txt
+            build/Testing
+          if-no-files-found: warn

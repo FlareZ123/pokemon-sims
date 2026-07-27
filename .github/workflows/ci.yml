@@ -53,14 +53,10 @@ jobs:
           python scripts/update_setup_docs.py --repo-root .
           python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results
           python scripts/update_multi_deck_docs.py --repo-root .
-          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260705 --out results/crobat_variant_model.csv
-          shopt -s nullglob
-          for script in scripts/*crobat*.py; do
-            name=$(basename "$script")
-            case "$name" in
-              update*) python "$script" --repo-root . ;;
-            esac
-          done
+          # Crobat matrix and report reproduction contract:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/update_crobat_modeling_docs.py#L47-L51
+          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260723 --out results/crobat_variant_model.csv
+          python scripts/update_crobat_modeling_docs.py --csv results/crobat_variant_model.csv --out docs/CROBAT_MODEL_REPORT.md
       - name: Run complete refreshed Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
       - name: Commit generated evidence and restore CI

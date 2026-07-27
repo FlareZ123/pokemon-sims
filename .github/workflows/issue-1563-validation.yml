@@ -5,38 +5,51 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: issue-1563-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   validate:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/issue-1563-secret-box-treasure-t4'
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.head_ref }}
 
-      - name: Record exact source identity
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Apply isolated issue 1563 patch
         shell: bash
         run: |
           set -euo pipefail
-          git rev-parse HEAD | tee tested-head.txt
+          git rev-parse HEAD | tee staged-head.txt
           git rev-parse origin/main | tee tested-main.txt
-          git diff --name-status origin/main...HEAD | tee branch-diff.txt
+          python scripts/apply_issue_1563_patch.py
+          git diff --check
+          git diff -- src/trace_engine_v2/part_issue_1118_secret_box.inc tests/issue_1118_multi_deck_secret_box_tests.cpp | tee issue-1563.patch
 
-      - name: Configure and build Release
+      - name: Build Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
 
-      - name: Reverify issue 1563 on current source
+      - name: Validate focused regression and exact seed 67
         shell: bash
         run: |
           set -euo pipefail
-          # Secret Box pays three other cards and independently searches an Item, Tool, Supporter, and Stadium; Mysterious Treasure then pays one discard to search a Dragon Pokémon: https://api.pokemontcg.io/v2/cards/sv6-163 https://api.pokemontcg.io/v2/cards/sm6-113
-          # Dragapult ex is a legal current-turn Dragon payload and Regidrago VSTAR evolves a prior-turn Regidrago V to use Apex Dragon for GGF: https://api.pokemontcg.io/v2/cards/sv6-130 https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
-          # Core discard, search, Item, evolution, and attack-readiness procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-          # Confirmed bug and repository policy: https://github.com/FlareZ123/pokemon-sims/issues/1563 https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 67 | tee issue-1563-seed-67.txt
+          ./build/regidrago_unified_tests issue_1118_multi_deck_secret_box_tests | tee focused.log
+          # Secret Box pays three other cards and may search only Mysterious Treasure; Treasure then discards Dragapult ex and searches the Dragon VSTAR: https://api.pokemontcg.io/v2/cards/sv6-163 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sv6-130 https://api.pokemontcg.io/v2/cards/swsh12-136
+          # The prior-turn Regidrago V already has GGGF, so this direct route does not require Bench space, Forretress ex, Dawn, or another Supporter: https://api.pokemontcg.io/v2/cards/swsh12-135 https://www.pokemon.com/us/pokemon-tcg/rules https://github.com/FlareZ123/pokemon-sims/issues/1563
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 67 --require-ready-by 4 | tee issue-1563-seed-67.txt
+          grep -q 'T4 | PLAY ITEM.*direct Mysterious Treasure completion channel' issue-1563-seed-67.txt
+          grep -q 'T4 | DISCARD.*Dragapult ex (Mysterious Treasure completion cost)' issue-1563-seed-67.txt
+          grep -q 'T4 | READY' issue-1563-seed-67.txt
 
       - name: Perfect-play pass one
         shell: bash
@@ -62,18 +75,30 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee perfect-shell-43.txt
           grep -q 'T2 | READY' perfect-shell-43.txt
 
-      - name: Run complete Release suite
-        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Release suite before generated reports
+        run: ctest --test-dir build --parallel 4 --output-on-failure -E 'setup_report_contract|multi_deck_report_contract|crobat_model_report_contract'
 
-      - name: Generate fresh T2 and T3 matrices
+      - name: Regenerate canonical evidence and fresh run matrices
         shell: bash
         run: |
           set -euo pipefail
-          ./build/regidrago_sim --trials 100000 --seed 20260726 --out shell-matrix.csv
-          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260726 --out all-decks-matrix.csv
-          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260726 --out crobat-matrix.csv
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260723 --out results/crobat_variant_model.csv
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+          python scripts/update_crobat_modeling_docs.py --csv results/crobat_variant_model.csv --out docs/CROBAT_MODEL_REPORT.md
+          ./build/regidrago_sim --trials 100000 --seed 20260726 --out shell-matrix-run.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260726 --out all-decks-matrix-run.csv
+          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260726 --out crobat-matrix-run.csv
+          cat shell-matrix-run.csv
+          cat all-decks-matrix-run.csv
+          cat crobat-matrix-run.csv
 
-      - name: Run sanitizer suite
+      - name: Complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Complete sanitizer suite
         shell: bash
         run: |
           set -euo pipefail
@@ -81,20 +106,36 @@ jobs:
           cmake --build build-sanitize --parallel 2
           ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ctest --test-dir build-sanitize --parallel 2 --output-on-failure
 
+      - name: Materialize validated source and evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          rm -f docs/CROBAT_MODEL_REPORT.md.lock results/crobat_variant_model.csv.lock
+          git add src/trace_engine_v2/part_issue_1118_secret_box.inc tests/issue_1118_multi_deck_secret_box_tests.cpp README.md docs results
+          git rm .github/workflows/issue-1563-validation.yml scripts/apply_issue_1563_patch.py
+          git commit -m 'Use direct Secret Box-Treasure route for seed 67'
+          git push origin HEAD:${GITHUB_HEAD_REF}
+
       - name: Upload validation evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: issue-1563-validation-${{ github.run_attempt }}
           path: |
-            tested-head.txt
+            staged-head.txt
             tested-main.txt
-            branch-diff.txt
+            issue-1563.patch
+            focused.log
             issue-1563-seed-67.txt
             perfect-*.txt
-            shell-matrix.csv
-            all-decks-matrix.csv
-            crobat-matrix.csv
+            shell-matrix-run.csv
+            all-decks-matrix-run.csv
+            crobat-matrix-run.csv
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            results/crobat_variant_model.csv
             build/Testing
             build-sanitize/Testing
           if-no-files-found: warn

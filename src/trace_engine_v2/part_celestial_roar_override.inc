@@ -31,12 +31,28 @@
         (deck_seen_ && hand_count(Card::ProfessorBurnet) > 0 &&
          std::any_of(state_.deck.begin(), state_.deck.end(), is_payload)) ||
         held_gladion_prized_treasure_route;
+    const bool held_needed_energy =
+        (missing_grass == 1 && hand_count(Card::Grass) > 0) ||
+        (missing_fire == 1 && hand_count(Card::Fire) > 0);
+    const bool strict_held_payload_route =
+        strict_payload_timing() && held_supporter_payload_route;
+    // No-discard-control must also preserve the random top-three attack when a
+    // payload is already banked, Regidrago VSTAR is held, and one held Basic
+    // Energy guarantees GGF at the next legal manual-attachment and evolution
+    // window. In that state Celestial Roar cannot improve the ready turn and can
+    // only discard still-useful connectors:
+    // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core attachment, evolution, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // No-control payload timing and resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1623
+    const bool no_control_banked_payload_route =
+        !strict_payload_timing() && !need_payload() &&
+        hand_count(Card::RegidragoVstar) > 0;
     const bool held_energy_and_payload_route_guarantee_next_window =
-        strict_payload_timing() && state_.manual_energy_used &&
-        state_.turn < scenario_.max_turn && missing_grass + missing_fire == 1 &&
-        ((missing_grass == 1 && hand_count(Card::Grass) > 0) ||
-         (missing_fire == 1 && hand_count(Card::Fire) > 0)) &&
-        held_supporter_payload_route;
+        state_.manual_energy_used && state_.turn < scenario_.max_turn &&
+        missing_grass + missing_fire == 1 && held_needed_energy &&
+        (strict_held_payload_route || no_control_banked_payload_route);
     if (held_energy_and_payload_route_guarantee_next_window) {
       // The unevolved Regidrago V cannot become Regidrago VSTAR before a later legal
       // evolution window. One held Basic Energy already guarantees GGF through that
@@ -57,7 +73,7 @@
       // Existing confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1079
       // Confirmed Gladion-Treasure continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/1174
       trace("HOLD ATTACK", "R-RV-01; R-GAME-ENERGY; R-SERENA-01; R-BURNET-01; R-GLADION-01; R-MT-01; P-JIT-01; P-COMPRESS-01",
-            "Held Energy and a held Supporter payload route already cover the next legal ready window.");
+            "Held Energy and a guaranteed payload route already cover the next legal ready window.");
       return false;
     }
 

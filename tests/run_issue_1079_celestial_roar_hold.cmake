@@ -48,11 +48,36 @@ if(NOT strict_seed_4 MATCHES "T1 \\| ATTACK \\|.*Celestial Roar")
   message(FATAL_ERROR "Strict seed 4 incorrectly suppressed a live Celestial Roar route:\n${strict_seed_4}")
 endif()
 
-# No-discard-control may bank an early Dragon payload, so the held-route suppression
-# must remain limited to strict and matchup-flex JIT:
+# Once no-discard-control already has its Dragon payload in discard, held Fire and
+# a held Regidrago VSTAR guarantee the next legal T2 ready window. Seed 91 must
+# preserve the random top three because the attack cannot improve Energy or payload:
+# Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+# Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+# Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+# Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+# Core attachment, evolution, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+# No-control timing and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+# Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1623
+run_trace("no-discard-control/go-second" 91 no_control_seed_91)
+if(NOT no_control_seed_91 MATCHES "T1 \| HOLD ATTACK \|")
+  message(FATAL_ERROR "No-control seed 91 did not hold Celestial Roar:
+${no_control_seed_91}")
+endif()
+if(no_control_seed_91 MATCHES "T1 \| ATTACK \|.*Celestial Roar")
+  message(FATAL_ERROR "No-control seed 91 still used Celestial Roar:
+${no_control_seed_91}")
+endif()
+if(NOT no_control_seed_91 MATCHES "T2 \| READY \|")
+  message(FATAL_ERROR "No-control seed 91 lost T2 readiness:
+${no_control_seed_91}")
+endif()
+
+# No-discard-control may still bank an early Dragon payload when that axis is
+# missing, so the existing seed-19 attack remains a required positive control:
 # https://api.pokemontcg.io/v2/cards/swsh12-135
 # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
 # https://github.com/FlareZ123/pokemon-sims/issues/1079
+# https://github.com/FlareZ123/pokemon-sims/issues/1623
 run_trace("no-discard-control/go-second" 19 control_seed_19)
 if(NOT control_seed_19 MATCHES "T1 \\| ATTACK \\|.*Celestial Roar")
   message(FATAL_ERROR "No-discard-control seed 19 lost its permitted payload-banking attack:\n${control_seed_19}")

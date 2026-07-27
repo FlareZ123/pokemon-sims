@@ -116,19 +116,19 @@ crobat2-erika-channeler,"Erika's Invitation + Channeler",2,matchup-flex-jit/go-s
 crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,matchup-flex-jit/go-second,100000,35.204000,59.244000,70.093000,30.594000,1.499640
 crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,matchup-flex-jit/go-second,100000,34.245000,57.484000,67.933000,31.534000,1.516141
 crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,matchup-flex-jit/go-second,100000,27.597000,51.792000,63.119000,36.487000,1.566037
-regidrago-shell,"none",0,no-discard-control/go-second,100000,40.244000,67.197000,78.392000,0.000000,0.000000
-crobat1-erika,"Erika's Invitation",1,no-discard-control/go-second,100000,38.972000,66.227000,77.759000,19.125000,1.592366
-crobat1-channeler,"Channeler",1,no-discard-control/go-second,100000,38.987000,66.362000,77.886000,18.987000,1.601780
-crobat1-team-yell,"Team Yell's Cheer",1,no-discard-control/go-second,100000,39.151000,66.226000,77.763000,18.907000,1.594436
-crobat1-roseanne,"Roseanne's Backup",1,no-discard-control/go-second,100000,39.151000,66.226000,77.763000,18.907000,1.594436
-crobat1-turo,"Professor Turo's Scenario",1,no-discard-control/go-second,100000,39.161000,65.644000,77.079000,19.031000,1.601755
-crobat1-powerglass,"Powerglass",1,no-discard-control/go-second,100000,39.264000,66.539000,77.954000,18.965000,1.601213
-crobat1-heavy-ball,"Hisuian Heavy Ball",1,no-discard-control/go-second,100000,38.585000,65.375000,77.061000,18.926000,1.608052
-crobat1-tapu-lele,"Tapu Lele-GX",1,no-discard-control/go-second,100000,38.203000,64.720000,75.718000,20.023000,1.639664
-crobat2-erika-channeler,"Erika's Invitation + Channeler",2,no-discard-control/go-second,100000,38.186000,65.656000,77.324000,31.471000,1.554320
-crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,no-discard-control/go-second,100000,38.217000,65.575000,77.383000,31.372000,1.557376
-crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,no-discard-control/go-second,100000,37.426000,63.999000,75.273000,32.388000,1.578362
-crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,no-discard-control/go-second,100000,28.674000,60.269000,71.023000,37.808000,1.619366
+regidrago-shell,"none",0,no-discard-control/go-second,100000,40.220000,66.952000,78.122000,0.000000,0.000000
+crobat1-erika,"Erika's Invitation",1,no-discard-control/go-second,100000,38.976000,66.306000,77.877000,19.078000,1.595765
+crobat1-channeler,"Channeler",1,no-discard-control/go-second,100000,39.009000,66.120000,77.710000,19.195000,1.596301
+crobat1-team-yell,"Team Yell's Cheer",1,no-discard-control/go-second,100000,39.152000,66.278000,77.768000,19.078000,1.595241
+crobat1-roseanne,"Roseanne's Backup",1,no-discard-control/go-second,100000,39.152000,66.278000,77.768000,19.078000,1.595241
+crobat1-turo,"Professor Turo's Scenario",1,no-discard-control/go-second,100000,39.026000,65.711000,77.156000,19.167000,1.594251
+crobat1-powerglass,"Powerglass",1,no-discard-control/go-second,100000,39.277000,66.622000,78.193000,18.971000,1.603447
+crobat1-heavy-ball,"Hisuian Heavy Ball",1,no-discard-control/go-second,100000,38.633000,65.502000,77.178000,19.101000,1.610701
+crobat1-tapu-lele,"Tapu Lele-GX",1,no-discard-control/go-second,100000,38.326000,64.779000,75.656000,20.150000,1.628139
+crobat2-erika-channeler,"Erika's Invitation + Channeler",2,no-discard-control/go-second,100000,38.085000,65.492000,77.349000,31.509000,1.551747
+crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,no-discard-control/go-second,100000,38.402000,65.699000,77.637000,31.491000,1.551745
+crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,no-discard-control/go-second,100000,37.338000,63.708000,75.217000,32.453000,1.575602
+crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,no-discard-control/go-second,100000,28.605000,60.319000,71.116000,37.983000,1.621252
 regidrago-shell,"none",0,strict-jit-turn2-item-lock/go-second,100000,13.983000,27.862000,35.464000,0.000000,0.000000
 crobat1-erika,"Erika's Invitation",1,strict-jit-turn2-item-lock/go-second,100000,13.804000,27.166000,34.903000,11.683000,1.330480
 crobat1-channeler,"Channeler",1,strict-jit-turn2-item-lock/go-second,100000,13.747000,27.279000,34.773000,11.564000,1.309236

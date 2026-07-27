@@ -1,0 +1,111 @@
+name: Harumi Post-1645 Main Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harumi-post-1645-main-audit-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.head_ref == 'audit/harumi-20260727-post-1645-main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run four independent simulate-this audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Quick Ball, Mysterious Treasure, Tapu Lele-GX, Crispin, and first-turn rules:
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sm2-60
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee audit-shell-seed43.txt
+          grep -q 'T2 | WONDER TAG.*Crispin' audit-shell-seed43.txt
+          grep -q 'T2 | READY' audit-shell-seed43.txt
+
+          # Under Path-style Rule Box Ability lock, this route avoids Rule Box Abilities.
+          # Manual attachment plus Celestial Roar reaches GG on T1, then evolution,
+          # Fire attachment, and Mysterious Treasure's current-turn payload cost reach T2:
+          # https://api.pokemontcg.io/v2/cards/swsh6-148
+          # https://api.pokemontcg.io/v2/cards/swsh12-135
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 2 | tee audit-shell-rulebox-seed13.txt
+          grep -q 'T1 | ATTACK.*Celestial Roar' audit-shell-rulebox-seed13.txt
+          grep -q 'T2 | DISCARD.*Mega Dragonite ex' audit-shell-rulebox-seed13.txt
+          grep -q 'T2 | READY' audit-shell-rulebox-seed13.txt
+          ! grep -q 'WONDER TAG\|LEGACY STAR\|SKYLINER' audit-shell-rulebox-seed13.txt
+
+          # Gladion, Secret Box, Pineco, Forretress ex, and registered route specification:
+          # https://api.pokemontcg.io/v2/cards/sm4-95
+          # https://api.pokemontcg.io/v2/cards/sv6-163
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-1
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 40 --require-ready-by 2 | tee audit-pineco-seed40.txt
+          grep -q 'Gladion recovered the legally known prized Secret Box' audit-pineco-seed40.txt
+          grep -q 'T2 | READY' audit-pineco-seed40.txt
+
+          # The merged issue-1645 route uses Steven's legal "up to 3" search to take
+          # only Latias ex and Grass Energy, preserving Gladion and reaching T4:
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/sv8-76
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          # https://api.pokemontcg.io/v2/cards/sv8-164
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # https://github.com/FlareZ123/pokemon-sims/issues/1645
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-heavy-ball --scenario matchup-flex-jit/go-second --seed 218 --require-ready-by 4 | tee audit-issue1645-seed218.txt
+          grep -q 'Searched the complete Latias-Grass T4 route: Latias ex, Grass Energy' audit-issue1645-seed218.txt
+          grep -q 'T4 | READY' audit-issue1645-seed218.txt
+          ! grep -q 'Searched up to 3 cards: Regidrago V, Regidrago VSTAR, Gladion' audit-issue1645-seed218.txt
+      - name: Generate T2 and T3 matrices under all registered conditions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit-results
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-results/t2-t3-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-results/multi-deck-matrix.csv
+      - name: Run complete Release suite
+        shell: bash
+        run: ctest --test-dir build --parallel 4 --output-on-failure | tee release-suite.txt
+      - name: Record source binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' 'c8cfdb116bf37b3ef339926bbe6c09634e0a031f' > tested-main.txt
+          git rev-parse HEAD > tested-head.txt
+          git diff --name-only c8cfdb116bf37b3ef339926bbe6c09634e0a031f...HEAD > audit-diff.txt
+          test "$(cat audit-diff.txt)" = '.github/workflows/harumi-post-1645-main-audit.yml'
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harumi-post-1645-main-audit-${{ github.run_attempt }}
+          path: |
+            audit-*.txt
+            audit-results/*.csv
+            release-suite.txt
+            tested-main.txt
+            tested-head.txt
+            audit-diff.txt
+            build/Testing
+          if-no-files-found: warn

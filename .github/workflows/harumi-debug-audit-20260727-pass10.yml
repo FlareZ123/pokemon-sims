@@ -1,0 +1,87 @@
+name: Harumi debug audit 20260727 pass 10
+
+on:
+  pull_request:
+    branches: [main]
+
+# Read-only audit of the exact current-main source and policy contract:
+# https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
+# https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+permissions:
+  contents: read
+
+concurrency:
+  group: harumi-debug-audit-20260727-pass10-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/debug-mode-20260727-pass10'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Record exact source boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee tested-head.txt
+          git rev-parse origin/main | tee tested-main.txt
+          git diff --name-only origin/main...HEAD | tee audit-diff.txt
+          test "$(wc -l < audit-diff.txt)" -eq 1
+          grep -qx '.github/workflows/harumi-debug-audit-20260727-pass10.yml' audit-diff.txt
+          git archive --format=tar.gz --output=source-head.tar.gz HEAD
+
+      - name: Build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+
+      - name: Run three independent simulate-this reviews
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Core turn, Supporter, Item, attack, evolution, attachment, and retreat procedure:
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # Regidrago V and Regidrago VSTAR card text:
+          # https://api.pokemontcg.io/v2/cards/swsh12-135
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee debug-trace-shell-second-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee debug-trace-shell-first-2.txt
+          # Pineco, Forretress ex, Dawn, Secret Box, and Forest of Vitality:
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-1
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # https://api.pokemontcg.io/v2/cards/me2-87
+          # https://api.pokemontcg.io/v2/cards/sv6-163
+          # https://api.pokemontcg.io/v2/cards/me1-117
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee debug-trace-pineco-second-35.txt
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Generate fresh T2 and T3 matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-shell-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-multi-deck-matrix.csv
+          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260723 --out audit-crobat-matrix.csv
+
+      - name: Upload complete audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harumi-debug-audit-20260727-pass10-${{ github.run_attempt }}
+          path: |
+            tested-head.txt
+            tested-main.txt
+            audit-diff.txt
+            source-head.tar.gz
+            debug-trace-*.txt
+            audit-*-matrix.csv
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+          if-no-files-found: warn

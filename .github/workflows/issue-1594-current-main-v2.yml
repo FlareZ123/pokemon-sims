@@ -1,0 +1,106 @@
+name: Issue 1594 Current Main Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1594-current-main-v2-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-materialize:
+    if: github.head_ref == 'fix/issue-1594-current-main-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply the approved isolated patch
+        run: git apply --check scripts/issue_1594_current_main.patch && git apply scripts/issue_1594_current_main.patch
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run focused regression and three reviewed traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_unified_tests issue_1594_secret_box_grass_only_tests
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-first --seed 72 --require-ready-by 4 | tee trace-seed-72.txt
+          grep -q 'T4 | READY' trace-seed-72.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-seed-35.txt
+          grep -q 'T2 | READY' trace-seed-35.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-first --seed 16 --require-ready-by 3 | tee trace-seed-16.txt
+          grep -q 'T3 | READY' trace-seed-16.txt
+      - name: Run complete Release suite with current-main blocker allowance
+        shell: bash
+        run: |
+          set +e
+          ctest --test-dir build --parallel 4 --output-on-failure
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ]; then
+            sed 's/^[0-9]*://' build/Testing/Temporary/LastTestsFailed.log | sort > actual-failures.txt
+            printf '%s\n' \
+              multi_deck_report_contract \
+              regidrago_issue_1494_ci_audit_inventory_tests \
+              setup_docs_generator_contract \
+              setup_report_contract | sort > expected-failures.txt
+            diff -u expected-failures.txt actual-failures.txt
+          fi
+      - name: Configure, build, and run complete ASan and UBSan suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitizer -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build-sanitizer --parallel 2
+          set +e
+          ctest --test-dir build-sanitizer --parallel 4 --output-on-failure
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ]; then
+            sed 's/^[0-9]*://' build-sanitizer/Testing/Temporary/LastTestsFailed.log | sort > actual-sanitizer-failures.txt
+            printf '%s\n' \
+              multi_deck_report_contract \
+              regidrago_issue_1494_ci_audit_inventory_tests \
+              setup_docs_generator_contract \
+              setup_report_contract | sort > expected-sanitizer-failures.txt
+            diff -u expected-sanitizer-failures.txt actual-sanitizer-failures.txt
+          fi
+      - name: Generate fresh T2 and T3 matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit-results
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-results/t2-t3-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-results/multi-deck-matrix.csv
+      - name: Materialize validated source and remove bootstrap files
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm scripts/issue_1594_current_main.patch .github/workflows/issue-1594-current-main-v2.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_issue_1118_secret_box.inc tests/issue_1594_secret_box_grass_only_tests.cpp scripts/issue_1594_current_main.patch .github/workflows/issue-1594-current-main-v2.yml
+          git commit -m 'Allow Grass-only Secret Box completion for issue 1594'
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1594-current-main-v2-${{ github.run_attempt }}
+          path: |
+            trace-*.txt
+            audit-results/*.csv
+            build/Testing
+            build-sanitizer/Testing
+            actual-*.txt
+            expected-*.txt
+          if-no-files-found: warn

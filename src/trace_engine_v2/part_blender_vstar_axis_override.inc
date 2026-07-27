@@ -1,4 +1,5 @@
   bool blender_vstar_card_axis_can_finish_this_turn() const {
+    if (issue_1646_hold_blender_for_burnet_finish_visible()) return false;
     if (!strict_payload_timing() || !need_vstar()) return true;
     if (hand_count(Card::RegidragoVstar) > 0) return true;
 
@@ -139,7 +140,48 @@
     return false;
   }
 
+  bool issue_1646_hold_blender_for_burnet_finish_visible() const {
+    const bool grass_axis_completes = state_.active &&
+        ((!state_.manual_energy_used && state_.active->grass == 1 &&
+          hand_count(Card::Grass) > 0) ||
+         (state_.manual_energy_used && state_.active->grass >= 2));
+
+    // Earthen Vessel has paid its printed cost with the route-dominated Quick
+    // Ball. Before the attachment, the final Grass is held. After the attachment,
+    // GGF is complete. In both states the Supporter slot and Professor Burnet are
+    // live, so Brilliant Blender would duplicate Burnet's current-turn payload:
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Item, Supporter, attachment, search, discard, and shuffle procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1, dynamic DCI, strict JIT, and resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1646
+    return scenario_.dci == DciProfile::StrictJit &&
+        scenario_.locks == LockMode::None && state_.turn == 3 &&
+        prizes_known() && supporter_allowed() && state_.active &&
+        state_.active->card == Card::RegidragoVstar &&
+        state_.active->fire >= 1 && grass_axis_completes && need_payload() &&
+        hand_count(Card::ProfessorBurnet) > 0 &&
+        hand_count(Card::BrilliantBlender) > 0 &&
+        count_of(state_.discard, Card::EarthenVessel) > 0 &&
+        count_of(state_.discard, Card::QuickBall) > 0 &&
+        count_of(state_.discarded_this_turn, Card::QuickBall) > 0 &&
+        payload_might_be_in_deck();
+  }
+
   bool play_brilliant_blender() {
+    if (issue_1646_hold_blender_for_burnet_finish_visible()) {
+      if (trace_ != nullptr) {
+        trace_->add_policy_once(
+            state_, "issue-1646-hold-blender-for-burnet", state_.turn,
+            "HOLD ITEM",
+            "R-BLENDER-01; R-BURNET-01; P-DCI-01; P-JIT-01; P-COMPRESS-01",
+            "Held Brilliant Blender because Professor Burnet completes the current-turn payload after the Vessel-to-Grass route.");
+      }
+      return false;
+    }
     if (!blender_vstar_card_axis_can_finish_this_turn()) return false;
     return play_brilliant_blender_vstar_axis_original();
   }

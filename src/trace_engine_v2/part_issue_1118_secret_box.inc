@@ -24,6 +24,28 @@
         std::any_of(state_.bench.begin(), state_.bench.end(), eligible);
   }
 
+  bool secret_box_direct_treasure_route_visible() const {
+    // Once a prior-turn Regidrago V already has GGF, Secret Box does not need the
+    // Pineco line. It may pay three other cards, fetch Mysterious Treasure, and
+    // leave one held Dragon as Treasure's separate discard cost. Treasure then
+    // searches Regidrago VSTAR and the held Dragon becomes the current-turn Apex
+    // Dragon payload. Every target is public after K1 in the confirmed seed:
+    // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Item, discard, search, evolution, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1, dynamic DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1563
+    return secret_box_combo_enabled() && !item_locked() && state_.turn > 1 &&
+        hand_count(Card::SecretBox) > 0 && !need_energy() && need_vstar() &&
+        need_payload() && secret_box_regi_can_evolve_now() &&
+        hand_count(Card::MysteriousTreasure) == 0 &&
+        might_be_unseen(Card::MysteriousTreasure) &&
+        might_be_unseen(Card::RegidragoVstar) &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+  }
+
   bool secret_box_full_combo_axes_visible() const {
     if (!secret_box_combo_enabled() || item_locked() || state_.turn <= 1 ||
         !ability_available_for_pokemon(Card::ForretressEx) ||
@@ -266,6 +288,20 @@ if (fire_needed() > 0 && !fire_held && !fss_fire && !crispin_fire &&
       return found == remaining.end() ? 0 : found->second;
     };
 
+    // The direct Box-to-Treasure route has two independent discard payments.
+    // Reserve the sole held Dragon for Mysterious Treasure; Secret Box may spend a
+    // Dragon only when another physical payload remains after that choice:
+    // https://api.pokemontcg.io/v2/cards/sv6-163
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://github.com/FlareZ123/pokemon-sims/issues/1563
+    if (secret_box_direct_treasure_route_visible() && is_payload(card)) {
+      int remaining_payloads = 0;
+      for (const auto& [candidate, count] : remaining) {
+        if (is_payload(candidate)) remaining_payloads += count;
+      }
+      if (remaining_payloads <= 1) return -1;
+    }
+
     // Grant and Wishful Baton are the preferred source-bound costs. Grant can
     // recover itself from discard by paying its separate printed effect, while
     // Wishful Baton has no modeled goldfish setup value:
@@ -488,12 +524,15 @@ if (fire_needed() > 0 && !fire_held && !fss_fire && !crispin_fire &&
     }
 
     ++outcome_.secret_box_combo_attempted;
-    if (bench_space() == 0 && in_play_count(Card::Pineco) == 0 &&
+    const bool direct_treasure_route =
+        secret_box_direct_treasure_route_visible();
+    if (!direct_treasure_route && bench_space() == 0 &&
+        in_play_count(Card::Pineco) == 0 &&
         in_play_count(Card::ForretressEx) == 0) {
       ++outcome_.secret_box_bench_blocked;
       return false;
     }
-    if (!secret_box_full_combo_axes_visible()) {
+    if (!direct_treasure_route && !secret_box_full_combo_axes_visible()) {
       ++outcome_.secret_box_missing_axis;
       record_secret_box_missing_axes();
       return false;
@@ -521,6 +560,22 @@ if (fire_needed() > 0 && !fire_held && !fss_fire && !crispin_fire &&
     const auto take = [this, &selected](const Card card) {
       if (move_deck_to_hand(card)) selected.push_back(card);
     };
+
+    if (direct_treasure_route) {
+      // The printed Secret Box searches are optional. The proven direct route needs
+      // only Mysterious Treasure, so do not add a Pineco Supporter or Stadium whose
+      // branch cannot improve the current T4 completion:
+      // https://api.pokemontcg.io/v2/cards/sv6-163
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // https://github.com/FlareZ123/pokemon-sims/issues/1563
+      take(Card::MysteriousTreasure);
+      shuffle(state_.deck);
+      trace("PLAY ITEM", "R-SECRET-BOX-01; R-MT-01; R-GAME-ITEM; P-DCI-01",
+            "Secret Box discarded three other cards and searched the direct "
+            "Mysterious Treasure completion channel.");
+      return true;
+    }
 
     // Secret Box independently searches up to one Item, Tool, Supporter,
     // and Stadium. Select only the missing channels in the observable route.

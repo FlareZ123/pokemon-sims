@@ -20,6 +20,8 @@ Maintainer policy excludes Dipplin's Syrup Catcher from the A/S win-condition se
 
 ## Knowledge states
 
+Battle VIP Pass follows the normal K0/K1 boundary. The decision to spend it at K0 uses only public copy counts, Bench space, turn legality, and unresolved setup axes. Once the physical Item resolves, the player inspects the real deck, K1 becomes available, actual legal Basic targets are selected, and the deck is shuffled: https://api.pokemontcg.io/v2/cards/swsh8-225 https://github.com/FlareZ123/pokemon-sims/issues/1647
+
 ### K0: before a legal inspection
 
 At K0 the policy may use only public game state, hand, board, discard, known card-copy counts, and scenario flags. It does not read Prize identities or the remaining deck order.
@@ -45,6 +47,8 @@ Examples:
 K1 begins only during a legal effect resolution. It does not grant prior knowledge retroactively.
 
 ## Decision priorities
+
+A first-turn Battle VIP Pass prioritizes a missing Regidrago V, then a live Pineco setup line in recipes that contain Pineco, then Latias ex when a Basic Active must later yield the Active position to Regidrago VSTAR. Pokémon whose value depends only on a played-from-hand Ability are not selected by the Pass. The Item is held when no selected Basic advances an unresolved setup axis: https://api.pokemontcg.io/v2/cards/swsh8-225 https://api.pokemontcg.io/v2/cards/sm2-60 https://api.pokemontcg.io/v2/cards/sm2-55 https://api.pokemontcg.io/v2/cards/swsh3-104 https://api.pokemontcg.io/v2/cards/sv8-76
 
 1. **Immediate exact missing axis.** A known prized Regidrago V or VSTAR retrieved through Gladion outranks slower connector Supporters when it is the missing card axis.
 2. **Current-turn direct completion.** Crispin outranks Arven, Oricorio, Earthen Vessel, and Ultra Ball chains when it can actually complete the remaining GGF component immediately. A Crispin known unable to find a required type is not a live line.

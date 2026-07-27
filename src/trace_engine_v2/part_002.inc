@@ -12,6 +12,7 @@ constexpr bool is_item(const Card card) {
   switch (card) {
     case Card::BrilliantBlender:
     case Card::SecretBox:
+    case Card::BattleVipPass:
     case Card::MysteriousTreasure:
     case Card::QuickBall:
     case Card::UltraBall:

@@ -283,8 +283,81 @@
     return second_cost;
   }
 
+  bool battle_vip_pass_has_public_setup_target() const {
+    if (state_.turn != 1 || item_locked() || hand_count(Card::BattleVipPass) == 0 ||
+        bench_space() <= 0) {
+      return false;
+    }
+    // At K0, action selection may use only public copy counts. The physical search
+    // establishes K1 before actual targets are selected from the inspected deck:
+    // https://api.pokemontcg.io/v2/cards/swsh8-225
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    const bool public_regi = need_regi() && might_be_unseen(Card::RegidragoV);
+    const bool public_pineco = total_copies(Card::Pineco) > 0 &&
+        !in_play(Card::Pineco) && !in_play(Card::ForretressEx) &&
+        might_be_unseen(Card::Pineco) && need_energy();
+    const bool public_latias = state_.active && is_basic(state_.active->card) &&
+        state_.active->card != Card::RegidragoV &&
+        (has_vstar() || in_play(Card::RegidragoV) || public_regi) &&
+        !in_play(Card::LatiasEx) &&
+        ability_available_for_pokemon(Card::LatiasEx) &&
+        might_be_unseen(Card::LatiasEx);
+    return public_regi || public_pineco || public_latias;
+  }
+
+  bool play_battle_vip_pass() {
+    if (!battle_vip_pass_has_public_setup_target()) return false;
+
+    // Battle VIP Pass is an Item usable only on the player's first turn. It puts
+    // up to two Basic Pokémon directly from deck onto the Bench, then shuffles.
+    // Direct placement is not a play from hand, so Wonder Tag, Vital Dance, and
+    // Dark Asset do not trigger. Static in-play effects such as Skyliner remain live:
+    // Battle VIP Pass: https://api.pokemontcg.io/v2/cards/swsh8-225
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Crobat V / Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Core Item, search, Bench, and shuffle procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/1647
+    remove_one(state_.hand, Card::BattleVipPass);
+    state_.discard.push_back(Card::BattleVipPass);
+    record_deck_search_knowledge("Battle VIP Pass");
+
+    std::vector<Card> selected;
+    const auto bench_directly = [this, &selected](const Card card) {
+      if (selected.size() >= 2U || bench_space() <= 0 || !is_basic(card) ||
+          !remove_one(state_.deck, card)) {
+        return false;
+      }
+      state_.bench.push_back(Pokemon{card, state_.turn});
+      selected.push_back(card);
+      return true;
+    };
+
+    if (need_regi()) bench_directly(Card::RegidragoV);
+    if (selected.size() < 2U && bench_space() > 0 &&
+        total_copies(Card::Pineco) > 0 && !in_play(Card::Pineco) &&
+        !in_play(Card::ForretressEx) && need_energy()) {
+      bench_directly(Card::Pineco);
+    }
+    if (selected.size() < 2U && bench_space() > 0 &&
+        state_.active && is_basic(state_.active->card) &&
+        state_.active->card != Card::RegidragoV &&
+        (has_vstar() || in_play(Card::RegidragoV)) &&
+        !in_play(Card::LatiasEx) && ability_available_for_pokemon(Card::LatiasEx)) {
+      bench_directly(Card::LatiasEx);
+    }
+
+    shuffle(state_.deck);
+    trace("PLAY ITEM", "R-BVIP-01; R-GAME-ITEM; R-GAME-BENCH; P-KNOWLEDGE-01",
+          "Battle VIP Pass put directly onto the Bench: " + join_cards(selected) +
+              "; no played-from-hand Abilities resolved.");
+    return true;
+  }
+
   bool run_search_items_one_step(const bool permit_payload) {
     if (item_locked()) return false;
+    if (play_battle_vip_pass()) return true;
     play_basics_from_hand();
     if (need_regi() && bench_space() > 0) {
       if (play_pokemon_communication(permit_payload)) return true;

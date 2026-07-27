@@ -90,6 +90,10 @@ The registered `regidrago-pineco` recipe contains Dawn `me2-87`, Forest of Vital
 
 Direct card sources: https://api.pokemontcg.io/v2/cards/me2-87 https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://github.com/FlareZ123/pokemon-sims/issues/1118
 
+## Battle VIP Pass identity and legality
+
+The supplied `tcg-data-master` record `swsh8-225` identifies Battle VIP Pass as an Expanded-legal Trainer Item. Its rules are: usable only during the player’s first turn; search up to two Basic Pokémon and put them onto the Bench; then shuffle. The simulator preserves that direct placement boundary, so played-from-hand Abilities do not trigger. Neither registered recipe contains Battle VIP Pass. The comparison matrix uses an unregistered temporary derivative only: https://api.pokemontcg.io/v2/cards/swsh8-225 https://github.com/FlareZ123/pokemon-sims/issues/1647
+
 ## Named recipe validation
 
 The registry contains `regidrago-shell` and `regidrago-pineco`. The Pineco recipe contains exactly 60 cards and one ACE SPEC, Secret Box `sv6-163`. It contains one Appletun `sv8-140`, which is a Stage 1 Dragon and legal Apex Dragon discard payload. No Applin is present, so Appletun can never be chosen as an opening Basic, Benched from hand, or evolved in play. The withdrawn Pineco Brilliant Blender recipe is not registered.

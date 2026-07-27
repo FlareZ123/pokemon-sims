@@ -135,6 +135,16 @@
       }
     }
 
+    // Battle VIP Pass can be played only during the player's first turn. Every
+    // copy still in hand afterward is stable dead-card DCI and should be spent
+    // before live setup connectors:
+    // https://api.pokemontcg.io/v2/cards/swsh8-225
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/1647
+    if (state_.turn > 1 && has_discardable_copy(Card::BattleVipPass)) {
+      return Card::BattleVipPass;
+    }
+
     // Dipplin cannot be legally put into play without Applin, which is absent from this deck.
     if (hand_count(Card::Dipplin) > 0) return Card::Dipplin;
 

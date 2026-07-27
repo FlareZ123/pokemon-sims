@@ -1,0 +1,71 @@
+name: Harumi Final Main Audit 2026-07-27
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harumi-final-main-audit-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.head_ref == 'audit/harumi-final-main-20260727'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Configure and build final combined main
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run three reviewed merged-route traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 104 --require-ready-by 2 | tee trace-shell-seed-104.txt
+          grep -q 'T2 | READY' trace-shell-seed-104.txt
+          grep -q 'Mysterious Treasure' trace-shell-seed-104.txt
+          grep -q 'Dialga-GX' trace-shell-seed-104.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-first --seed 89 --require-ready-by 2 | tee trace-pineco-seed-89.txt
+          grep -q 'T2 | READY' trace-pineco-seed-89.txt
+          grep -q 'Exploding Energy' trace-pineco-seed-89.txt
+          grep -q 'Dragapult ex' trace-pineco-seed-89.txt
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit/go-second --seed 7 | tee trace-crobat-seed-7.txt
+          grep -q 'T1 | PLAY SUPPORTER.*Arven' trace-crobat-seed-7.txt
+          grep -q 'T1 | DISCARD.*Mega Dragonite ex' trace-crobat-seed-7.txt
+          grep -q 'Dark Asset' trace-crobat-seed-7.txt
+      - name: Run all currently unblocked Release tests
+        run: ctest --test-dir build --parallel 4 --output-on-failure -E 'regidrago_issue_1494_ci_audit_inventory_tests|setup_report_contract|multi_deck_report_contract|setup_docs_generator_contract'
+      - name: Generate final all-condition T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit-results
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-results/final-multi-deck-matrix.csv
+      - name: Record exact source binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git rev-parse origin/main > final-main-sha.txt
+          git diff --name-only origin/main...HEAD > final-audit-diff.txt
+      - name: Upload final audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harumi-final-main-audit-${{ github.run_attempt }}
+          path: |
+            trace-*.txt
+            audit-results/*.csv
+            final-main-sha.txt
+            final-audit-diff.txt
+            build/Testing
+          if-no-files-found: warn

@@ -21,6 +21,10 @@ struct EngineTestAccess {
     engine.deck_seen_ = true;
     engine.prizes_revealed_ = true;
   }
+  static bool route_available(const Engine& engine) {
+    return engine.issue_1634_secret_box_latias_burnet_axes_visible() &&
+        engine.issue_1634_secret_box_latias_burnet_costs().has_value();
+  }
   static bool play_secret_box(Engine& engine) {
     return engine.play_secret_box();
   }
@@ -107,8 +111,10 @@ void test_exact_route() {
   // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1634
+  expect(sim::EngineTestAccess::route_available(fixture.engine),
+         "The exact issue-1634 route predicate was not admitted.");
   expect(sim::EngineTestAccess::play_secret_box(fixture.engine),
-         "The exact issue-1634 Secret Box route was not admitted.");
+         "The exact issue-1634 Secret Box route was not resolved.");
 
   const sim::State& state = sim::EngineTestAccess::state(fixture.engine);
   const sim::TrialOutcome& outcome =
@@ -131,12 +137,12 @@ void test_exact_route() {
          "The issue-1634 route consumed the wrong turn resources.");
 }
 
-bool route_plays(sim::State state, const sim::LockMode lock,
-                 const bool establish_k1) {
+bool route_available(sim::State state, const sim::LockMode lock,
+                     const bool establish_k1) {
   Fixture fixture(lock);
   sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
   if (establish_k1) sim::EngineTestAccess::establish_k1(fixture.engine);
-  return sim::EngineTestAccess::play_secret_box(fixture.engine);
+  return sim::EngineTestAccess::route_available(fixture.engine);
 }
 
 void erase_one(std::vector<sim::Card>& cards, const sim::Card card) {
@@ -145,30 +151,30 @@ void erase_one(std::vector<sim::Card>& cards, const sim::Card card) {
 }
 
 void test_route_gates() {
-  expect(!route_plays(route_state(), sim::LockMode::None, false),
+  expect(!route_available(route_state(), sim::LockMode::None, false),
          "The issue-1634 route used K0 deck identities.");
-  expect(!route_plays(route_state(), sim::LockMode::FullItem, true),
+  expect(!route_available(route_state(), sim::LockMode::FullItem, true),
          "The issue-1634 route ignored Item lock.");
-  expect(!route_plays(route_state(), sim::LockMode::FullSupporter, true),
+  expect(!route_available(route_state(), sim::LockMode::FullSupporter, true),
          "The issue-1634 route ignored Supporter lock.");
-  expect(!route_plays(route_state(), sim::LockMode::FullRuleBoxAbility, true),
+  expect(!route_available(route_state(), sim::LockMode::FullRuleBoxAbility, true),
          "The issue-1634 route ignored Rule Box Ability lock.");
 
   sim::State full_bench = route_state();
   full_bench.bench.push_back(sim::Pokemon{sim::Card::TapuLeleGX, 1});
   full_bench.bench.push_back(sim::Pokemon{sim::Card::TapuLeleGX, 1});
   full_bench.bench.push_back(sim::Pokemon{sim::Card::TapuLeleGX, 1});
-  expect(!route_plays(std::move(full_bench), sim::LockMode::None, true),
+  expect(!route_available(std::move(full_bench), sim::LockMode::None, true),
          "The issue-1634 route ignored a full Bench.");
 
   sim::State retreat_spent = route_state();
   retreat_spent.retreat_used = true;
-  expect(!route_plays(std::move(retreat_spent), sim::LockMode::None, true),
+  expect(!route_available(std::move(retreat_spent), sim::LockMode::None, true),
          "The issue-1634 route ignored a spent retreat.");
 
   sim::State incomplete_energy = route_state();
   incomplete_energy.bench.front().grass = 1;
-  expect(!route_plays(std::move(incomplete_energy), sim::LockMode::None, true),
+  expect(!route_available(std::move(incomplete_energy), sim::LockMode::None, true),
          "The issue-1634 route ignored incomplete GGF.");
 
   sim::State no_fourth_cost = route_state();
@@ -176,23 +182,23 @@ void test_route_gates() {
       sim::Card::SecretBox, sim::Card::Grant,
       sim::Card::WishfulBaton, sim::Card::ErikasInvitation,
   };
-  expect(!route_plays(std::move(no_fourth_cost), sim::LockMode::None, true),
+  expect(!route_available(std::move(no_fourth_cost), sim::LockMode::None, true),
          "The issue-1634 route ignored Treasure's separate discard cost.");
 
   sim::State no_latias = route_state();
   erase_one(no_latias.deck, sim::Card::LatiasEx);
-  expect(!route_plays(std::move(no_latias), sim::LockMode::None, true),
+  expect(!route_available(std::move(no_latias), sim::LockMode::None, true),
          "The issue-1634 route ignored a missing Latias ex.");
 
   sim::State no_burnet = route_state();
   erase_one(no_burnet.deck, sim::Card::ProfessorBurnet);
-  expect(!route_plays(std::move(no_burnet), sim::LockMode::None, true),
+  expect(!route_available(std::move(no_burnet), sim::LockMode::None, true),
          "The issue-1634 route ignored a missing Professor Burnet.");
 
   sim::State no_payload = route_state();
   erase_one(no_payload.deck, sim::Card::MegaDragonite);
   erase_one(no_payload.deck, sim::Card::GoodraVstar);
-  expect(!route_plays(std::move(no_payload), sim::LockMode::None, true),
+  expect(!route_available(std::move(no_payload), sim::LockMode::None, true),
          "The issue-1634 route ignored a missing deck payload.");
 }
 

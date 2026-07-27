@@ -15,7 +15,7 @@ jobs:
   validate:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/issue-1623-hold-celestial-roar-guaranteed-t2'
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
         with:
@@ -59,18 +59,30 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee perfect-pineco-35.txt
           grep -q 'T2 | READY' perfect-pineco-35.txt
 
-      - name: Run complete Release suite
-        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Release suite before generated reports
+        run: ctest --test-dir build --parallel 4 --output-on-failure -E 'setup_report_contract|multi_deck_report_contract|crobat_model_report_contract'
 
-      - name: Generate fresh T2 and T3 matrices
+      - name: Regenerate canonical evidence and fresh run matrices
         shell: bash
         run: |
           set -euo pipefail
-          ./build/regidrago_sim --trials 100000 --seed 20260726 --out shell-matrix.csv
-          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260726 --out all-decks-matrix.csv
-          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260726 --out crobat-matrix.csv
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260723 --out results/crobat_variant_model.csv
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+          python scripts/update_crobat_modeling_docs.py --csv results/crobat_variant_model.csv --out docs/CROBAT_MODEL_REPORT.md
+          ./build/regidrago_sim --trials 100000 --seed 20260726 --out shell-matrix-run.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260726 --out all-decks-matrix-run.csv
+          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260726 --out crobat-matrix-run.csv
+          cat shell-matrix-run.csv
+          cat all-decks-matrix-run.csv
+          cat crobat-matrix-run.csv
 
-      - name: Run complete sanitizer suite
+      - name: Complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Complete sanitizer suite
         shell: bash
         run: |
           set -euo pipefail
@@ -78,13 +90,14 @@ jobs:
           cmake --build build-sanitize --parallel 2
           ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ctest --test-dir build-sanitize --parallel 2 --output-on-failure
 
-      - name: Materialize validated source and regression
+      - name: Materialize validated source and evidence
         shell: bash
         run: |
           set -euo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/trace_engine_v2/part_celestial_roar_override.inc tests/run_issue_1079_celestial_roar_hold.cmake
+          rm -f docs/CROBAT_MODEL_REPORT.md.lock results/crobat_variant_model.csv.lock
+          git add src/trace_engine_v2/part_celestial_roar_override.inc tests/run_issue_1079_celestial_roar_hold.cmake README.md docs results
           git rm .github/workflows/issue-1623-validation.yml scripts/apply_issue_1623_patch.py
           git commit -m 'Hold Celestial Roar when no-control T2 is guaranteed'
           git push origin HEAD:${GITHUB_HEAD_REF}
@@ -98,9 +111,12 @@ jobs:
             issue-1623-seed-91.txt
             control-no-control-19.txt
             perfect-pineco-35.txt
-            shell-matrix.csv
-            all-decks-matrix.csv
-            crobat-matrix.csv
+            shell-matrix-run.csv
+            all-decks-matrix-run.csv
+            crobat-matrix-run.csv
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            results/crobat_variant_model.csv
             build/Testing
             build-sanitize/Testing
           if-no-files-found: warn

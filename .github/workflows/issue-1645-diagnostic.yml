@@ -1,0 +1,113 @@
+name: Diagnose issue 1645 patched route
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.head_ref == 'fix/issue-1645-prized-crispin-t4' # PR source branch: https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#github-context
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply candidate selector
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          import tempfile
+          from pathlib import Path
+
+          path = Path('src/trace_engine_v2/part_011.inc')
+          source = path.read_text(encoding='utf-8')
+          anchor = '''    const auto add_wanted = [&wanted](const Card card) {
+                if (std::find(wanted.begin(), wanted.end(), card) == wanted.end()) wanted.push_back(card);
+              };
+          '''
+          block = '''    const bool issue_1645_prized_crispin_t4_route =
+                  scenario_.dci == DciProfile::MatchupFlexJit && state_.turn == 1 &&
+                  !scenario_.going_first && scenario_.locks == LockMode::None &&
+                  prizes_known() && need_energy() && need_payload() && state_.active &&
+                  is_basic(state_.active->card) &&
+                  state_.active->card != Card::RegidragoV && bench_space() > 0 &&
+                  hand_count(Card::RegidragoVstar) > 0 &&
+                  hand_count(Card::EarthenVessel) > 0 &&
+                  hand_count(Card::BrilliantBlender) > 0 &&
+                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
+                  prize_count_after_reveal(Card::Crispin) >= 2 &&
+                  deck_count_after_search_started(Card::Crispin) == 0 &&
+                  deck_count_after_search_started(Card::Gladion) > 0 &&
+                  deck_count_after_search_started(Card::LatiasEx) > 0 &&
+                  deck_count_after_search_started(Card::Grass) >= 3 &&
+                  deck_count_after_search_started(Card::Fire) > 0 &&
+                  payload_might_be_in_deck() && !in_play(Card::LatiasEx) &&
+                  hand_count(Card::LatiasEx) == 0 &&
+                  ability_available_for_pokemon(Card::LatiasEx) &&
+                  std::any_of(state_.bench.begin(), state_.bench.end(),
+                              [this](const Pokemon& pokemon) {
+                                return pokemon.card == Card::RegidragoV &&
+                                       pokemon.entered_turn == state_.turn;
+                              });
+              if (issue_1645_prized_crispin_t4_route) {
+                // Steven searches three unrestricted cards. Latias ex supplies the
+                // Basic Active's free retreat, Gladion recovers a known prized Crispin,
+                // and the reserved Grass keeps the Vessel plus one-type Crispin line
+                // deterministic through the T4 GGF and current-turn Blender finish:
+                // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+                // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+                // Crispin card text: https://api.pokemontcg.io/v2/cards/sv7-133
+                // One-type Crispin ruling: https://compendium.pokegym.net/category/5-trainers/crispin/
+                // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+                // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+                // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+                // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+                // Core Supporter, Item, attachment, evolution, and retreat rules: https://www.pokemon.com/us/pokemon-tcg/rules
+                // K1, DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+                // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1645
+                add_wanted(Card::LatiasEx);
+                add_wanted(Card::Gladion);
+                add_wanted(Card::Grass);
+              }
+          '''
+          if 'issue_1645_prized_crispin_t4_route' not in source:
+              if source.count(anchor) != 1:
+                  raise RuntimeError('Steven target anchor changed unexpectedly')
+              source = source.replace(anchor, anchor + block, 1)
+          fd, temporary_name = tempfile.mkstemp(prefix='.part_011.', dir=path.parent)
+          try:
+              with os.fdopen(fd, 'w', encoding='utf-8', newline='') as handle:
+                  handle.write(source)
+                  handle.flush()
+                  os.fsync(handle.fileno())
+              os.replace(temporary_name, path)
+          finally:
+              if os.path.exists(temporary_name):
+                  os.unlink(temporary_name)
+          PY
+      - name: Build and capture patched trace
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-heavy-ball --scenario matchup-flex-jit/go-second --seed 218 | tee issue-1645-candidate-seed218.txt
+      - name: Upload patched trace and executable
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1645-candidate-diagnostic-${{ github.run_attempt }}
+          path: |
+            issue-1645-candidate-seed218.txt
+            build/regidrago_sim
+          if-no-files-found: error

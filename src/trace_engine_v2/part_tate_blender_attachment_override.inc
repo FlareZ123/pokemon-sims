@@ -1,4 +1,77 @@
-  bool attach_manual() {
+bool attach_manual() {
+  const bool issue_1552_public_t2_state =
+      !secret_box_combo_enabled() &&
+      scenario_.dci == DciProfile::StrictJit &&
+      scenario_.locks == LockMode::None && scenario_.going_first &&
+      state_.turn == 2 && deck_seen_ && prizes_known() &&
+      !state_.manual_energy_used && supporter_allowed() &&
+      state_.active && state_.active->card == Card::RegidragoV &&
+      state_.active->entered_turn < state_.turn &&
+      state_.active->grass == 1 && state_.active->fire == 0 &&
+      bench_space() > 0 &&
+      ability_available_for_pokemon(Card::TapuLeleGX) &&
+      count_of(state_.discard, Card::EarthenVessel) > 0 &&
+      count_of(state_.discard, Card::MysteriousTreasure) > 0 &&
+      hand_count(Card::RegidragoVstar) > 0 &&
+      hand_count(Card::QuickBall) > 0 && hand_count(Card::Fire) > 0 &&
+      deck_count_after_search_started(Card::TapuLeleGX) > 0 &&
+      deck_count_after_search_started(Card::Crispin) > 0 &&
+      deck_count_after_search_started(Card::Grass) > 0 &&
+      deck_count_after_search_started(Card::Fire) > 0;
+  const auto issue_1552_quick_ball_cost = issue_1552_public_t2_state
+      ? choose_discard(true, true, true, Card::QuickBall)
+      : std::optional<Card>{};
+  const bool issue_1552_t2_vessel_finish =
+      issue_1552_quick_ball_cost &&
+      is_payload(*issue_1552_quick_ball_cost);
+  if (issue_1552_t2_vessel_finish) {
+    // The T1 Earthen Vessel search established K1 and attached the first Grass.
+    // Before spending the T2 manual attachment, evolve, let Quick Ball discard a
+    // current-turn Dragon payload, Bench Tapu Lele-GX, resolve Wonder Tag for
+    // Crispin, and let Crispin attach the second Grass. The ordinary attachment
+    // then supplies the held Fire and completes GGF on the earliest legal turn:
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Regidrago VSTAR / GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Evolution, Item, Bench, Ability, Supporter, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1, DCI, strict-JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k1-after-a-legal-deck-or-prize-inspection https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1552
+    if (!evolve_best_regi()) {
+      throw std::logic_error(
+          "projected issue-1552 T2 evolution disappeared");
+    }
+    if (!remove_one(state_.hand, Card::QuickBall)) {
+      throw std::logic_error(
+          "projected issue-1552 Quick Ball disappeared");
+    }
+    state_.discard.push_back(Card::QuickBall);
+    if (!discard_from_hand(
+            *issue_1552_quick_ball_cost,
+            "Quick Ball issue-1552 route cost",
+            "R-QB-01; P-DCI-01; P-JIT-01")) {
+      throw std::logic_error(
+          "projected issue-1552 Dragon payload cost disappeared");
+    }
+    record_deck_search_knowledge("Quick Ball issue-1552 T2 route");
+    if (!move_deck_to_hand(Card::TapuLeleGX)) {
+      throw std::logic_error(
+          "projected issue-1552 Tapu Lele-GX target disappeared");
+    }
+    shuffle(state_.deck);
+    trace("PLAY ITEM", "R-QB-01; R-GAME-ITEM",
+          "Searched a Basic Pokémon: Tapu Lele-GX.");
+    if (!bench_from_hand(Card::TapuLeleGX, true)) {
+      throw std::logic_error(
+          "projected issue-1552 Tapu Lele-GX Bench play disappeared");
+    }
+    if (hand_count(Card::Crispin) == 0 || !play_crispin()) {
+      throw std::logic_error(
+          "projected issue-1552 Wonder Tag to Crispin route disappeared");
+    }
+  }
     if (late_steven_has_known_t3_compression_route() && !state_.manual_energy_used &&
         hand_count(Card::Fire) > 0) {
       for (Pokemon& pokemon : state_.bench) {

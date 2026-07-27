@@ -40,31 +40,34 @@ void test_strict_jit_preserves_vessel_for_t3_payload() {
   sim::TraceLog trace{true, {}};
   const sim::TrialOutcome outcome = run_seed_104("strict-jit/go-first", trace);
 
-  // Crispin plus the T2 manual attachment creates GF. Earthen Vessel can then
-  // discard a held or newly drawn Dragon on T3, search the final Grass, and
-  // preserve the singleton Brilliant Blender at the same earliest ready turn:
-  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Issue #1552 supersedes the older T3 Vessel hold for this exact seed. A
+  // public T1 Earthen Vessel search establishes K1 and pays route-replaced
+  // Mysterious Treasure. On T2, Quick Ball discards Dialga-GX, searches Tapu
+  // Lele-GX, Wonder Tag finds Crispin, and Crispin plus the manual Fire complete
+  // GGF. The Dragon enters discard on the same ready turn, so strict JIT is met:
   // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
   // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
-  // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
-  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-  // Resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1447
-  expect(outcome.first_ready_turn == 3,
-         "Strict-JIT seed 104 lost its earliest T3 ready turn.");
-  expect(!trace_contains(trace,
-                         "T2 | DISCARD | rules: R-EV-01 | Dialga-GX"),
-         "Earthen Vessel still discarded Dialga-GX before the ready turn.");
+  // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Original timing boundary: https://github.com/FlareZ123/pokemon-sims/issues/1447
+  // Confirmed faster route: https://github.com/FlareZ123/pokemon-sims/issues/1552
+  expect(outcome.first_ready_turn == 2,
+         "Strict-JIT seed 104 lost its earliest T2 ready turn.");
   expect(trace_contains(trace,
-                        "T3 | DISCARD | rules: R-EV-01 |") &&
-             trace_contains(trace, "(Earthen Vessel cost)"),
-         "The preserved Vessel did not establish a T3 strict-JIT Dragon payload.");
+                        "T1 | DISCARD | rules: R-EV-01; P-DCI-01; P-COMPRESS-01 | Mysterious Treasure") &&
+             trace_contains(trace,
+                            "T2 | DISCARD | rules: R-QB-01; P-DCI-01; P-JIT-01 | Dialga-GX") &&
+             trace_contains(trace, "T2 | WONDER TAG") &&
+             trace_contains(trace, "Crispin") &&
+             trace_contains(trace, "T2 | READY"),
+         "The source-bound trace did not execute the T1 Vessel to T2 Quick Ball route.");
   expect(!trace_contains(trace, "R-BLENDER-01"),
-         "The same-deadline route still consumed Brilliant Blender.");
-  expect(trace_contains(trace, "T3 | READY"),
-         "The source-bound trace did not report T3 readiness.");
+         "The faster route consumed Brilliant Blender.");
 }
 
 void test_no_discard_control_keeps_early_vessel() {

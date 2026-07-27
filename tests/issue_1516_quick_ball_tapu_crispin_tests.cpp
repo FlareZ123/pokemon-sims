@@ -80,19 +80,24 @@ void test_seed_42_preserves_quick_ball_and_tapu() {
 void test_strict_jit_seed_104_keeps_distinct_tapu_route() {
   const SeedResult result = run_seed("strict-jit/go-first", 104);
 
-  // Strict JIT needs the distinct Tapu Lele-GX to Crispin connector, so the
-  // no-control payload-Prize guard must remain inactive:
+  // Issue #1552 preserves the distinct Tapu Lele-GX to Crispin connector and
+  // advances it one turn. T1 Vessel establishes K1, then T2 Quick Ball places the
+  // strict-JIT Dragon payload while Tapu and Crispin complete the Energy axis:
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
   // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
   // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
-  // Existing route: https://github.com/FlareZ123/pokemon-sims/issues/962
-  expect(result.outcome.first_ready_turn == 3 && !result.outcome.setup_failed,
-         "Strict-JIT seed 104 lost its T3 route.");
+  // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Existing connector boundary: https://github.com/FlareZ123/pokemon-sims/issues/962
+  // Confirmed faster route: https://github.com/FlareZ123/pokemon-sims/issues/1552
+  expect(result.outcome.first_ready_turn == 2 && !result.outcome.setup_failed,
+         "Strict-JIT seed 104 lost its T2 route.");
   expect(trace_contains(result.trace,
                         "Searched a Basic Pokémon: Tapu Lele-GX") &&
              trace_contains(result.trace, "WONDER TAG") &&
-             trace_contains(result.trace, "Crispin"),
-         "Strict-JIT seed 104 lost its distinct Tapu-Crispin connector.");
+             trace_contains(result.trace, "Crispin") &&
+             trace_contains(result.trace, "T2 | READY"),
+         "Strict-JIT seed 104 lost its faster Tapu-Crispin connector.");
 }
 
 }  // namespace

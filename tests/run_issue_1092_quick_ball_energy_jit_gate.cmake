@@ -60,14 +60,17 @@ if(NOT issue_1092_seed_61_control MATCHES "T2 \\| READY \\|")
   message(FATAL_ERROR "Seed 61 lost same-turn strict-JIT readiness:\n${issue_1092_seed_61_control}")
 endif()
 
-# Connector control: Quick Ball may still pay a redundant Dragon when its searched
-# Tapu Lele-GX advances setup through Wonder Tag into Crispin. That live Basic route
-# reaches GG on T2 and preserves the established T3 Blender finish:
+# Connector control: issue #1552 advances the same live Basic route to T2.
+# T1 Earthen Vessel establishes K1; T2 Quick Ball discards the Dragon payload,
+# searches Tapu Lele-GX, and Wonder Tag finds Crispin before the manual Fire:
+# Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
 # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
 # Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
 # Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
-# Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
-# Refined bug boundary: https://github.com/FlareZ123/pokemon-sims/issues/1092
+# Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+# Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+# Original gate: https://github.com/FlareZ123/pokemon-sims/issues/1092
+# Confirmed faster route: https://github.com/FlareZ123/pokemon-sims/issues/1552
 run_trace("strict-jit/go-first" 104 issue_1092_seed_104_connector)
 if(NOT issue_1092_seed_104_connector MATCHES "T2 \\| PLAY ITEM \\|.*Tapu Lele-GX")
   message(FATAL_ERROR "Seed 104 lost the live Quick Ball into Tapu Lele-GX connector:\n${issue_1092_seed_104_connector}")
@@ -75,6 +78,6 @@ endif()
 if(NOT issue_1092_seed_104_connector MATCHES "T2 \\| WONDER TAG \\|.*Crispin")
   message(FATAL_ERROR "Seed 104 lost Wonder Tag into Crispin:\n${issue_1092_seed_104_connector}")
 endif()
-if(NOT issue_1092_seed_104_connector MATCHES "T3 \\| READY \\|")
-  message(FATAL_ERROR "Seed 104 lost its established T3 ready route:\n${issue_1092_seed_104_connector}")
+if(NOT issue_1092_seed_104_connector MATCHES "T2 \\| READY \\|")
+  message(FATAL_ERROR "Seed 104 lost its established T2 ready route:\n${issue_1092_seed_104_connector}")
 endif()

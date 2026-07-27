@@ -1,0 +1,92 @@
+name: Harumi Issue 1605 Current Main Validation v3
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: harumi-issue-1605-current-main-v3-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: github.head_ref == 'fix/issue-1605-current-main-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Recover approved patch scripts
+        run: |
+          git fetch origin fix/issue-1605-arven-redundant-payload
+          git checkout origin/fix/issue-1605-arven-redundant-payload -- scripts/fix_issue_1605_anchor.py scripts/apply_issue_1605_patch.py scripts/activate_issue_1605_arven_route.py
+      - name: Adapt approved anchors to current main
+        run: python scripts/fix_issue_1605_anchor.py
+      - name: Apply approved policy and regression patch
+        run: python scripts/apply_issue_1605_patch.py
+      - name: Activate approved Arven route
+        run: python scripts/activate_issue_1605_arven_route.py
+      - name: Remove bootstrap scripts and verify patch
+        run: |
+          rm scripts/fix_issue_1605_anchor.py scripts/apply_issue_1605_patch.py scripts/activate_issue_1605_arven_route.py
+          git diff --check
+      - name: Build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Validate focused regression and three traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_unified_tests issue_1605_arven_redundant_payload_tests
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit/go-second --seed 7 | tee trace-seed-7.txt
+          grep -q 'T1 | PLAY SUPPORTER.*Arven' trace-seed-7.txt
+          grep -q 'T1 | DISCARD.*Mega Dragonite ex' trace-seed-7.txt
+          grep -q 'T1 | BENCH.*Regidrago V' trace-seed-7.txt
+          grep -q 'Dark Asset' trace-seed-7.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee trace-seed-43.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-first --seed 16 --require-ready-by 3 | tee trace-seed-16.txt
+      - name: Run Release suite excluding separately filed main blockers
+        run: ctest --test-dir build --parallel 4 --output-on-failure -E 'regidrago_issue_1494_ci_audit_inventory_tests|setup_report_contract|multi_deck_report_contract|setup_docs_generator_contract'
+      - name: Run ASan and UBSan suite excluding separately filed main blockers
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build-sanitize --parallel 2
+          ctest --test-dir build-sanitize --parallel 4 --output-on-failure -E 'regidrago_issue_1494_ci_audit_inventory_tests|setup_report_contract|multi_deck_report_contract|setup_docs_generator_contract'
+      - name: Generate shell, Pineco, and Crobat matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit-results
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-results/t2-t3-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-results/multi-deck-matrix.csv
+          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260723 --out audit-results/crobat-variant-model.csv
+      - name: Materialize validated source and regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/harumi-issue-1605-current-main-v3.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_006.inc src/trace_engine_v2/part_009a.inc src/trace_engine_v2/part_009b1.inc src/trace_engine_v2/part_012.inc src/trace_engine_v2/part_012_arven_fss_blender_contention_override.inc tests/issue_1605_arven_redundant_payload_tests.cpp .github/workflows/harumi-issue-1605-current-main-v3.yml
+          git commit -m 'Use the Arven-Crobat route for seed 7 on current main'
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1605-current-main-v3-${{ github.run_attempt }}
+          path: |
+            trace-*.txt
+            audit-results/*.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn

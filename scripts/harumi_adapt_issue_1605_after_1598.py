@@ -26,4 +26,9 @@ treasure_clear_insert = (
 '''
 if source.count(old) != 1:
     raise SystemExit(f"issue-1605 post-1598 adapter count: {source.count(old)}")
-path.write_text(source.replace(old, new, 1), encoding="utf-8")
+source = source.replace(old, new, 1)
+old_name = '"Arven searched " + card_name(*found_item) +\n'
+new_name = '"Arven searched " + std::string(name(*found_item)) +\n'
+if source.count(old_name) != 1:
+    raise SystemExit(f"issue-1605 card-name adapter count: {source.count(old_name)}")
+path.write_text(source.replace(old_name, new_name, 1), encoding="utf-8")

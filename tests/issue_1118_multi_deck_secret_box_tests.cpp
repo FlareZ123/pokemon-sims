@@ -208,7 +208,84 @@ void test_secret_box_cost_reservation_and_dci() {
   }
 }
 
-void expect_seeded_route(const std::uint64_t seed,
+\
+    void test_issue_1619_route_replaced_extra_regidrago_cost() {
+      Fixture payable;
+      sim::State state;
+      state.turn = 2;
+      state.active = sim::Pokemon{sim::Card::Pineco, 0, 0, 0,
+                                  sim::Tool::None};
+      state.bench.push_back(sim::Pokemon{sim::Card::RegidragoV, 1, 1, 0,
+                                         sim::Tool::ForestSealStone});
+      state.hand = {sim::Card::SecretBox, sim::Card::RegidragoVstar,
+                    sim::Card::RegidragoVstar,
+                    sim::Card::ForestOfVitality, sim::Card::RegidragoV};
+      state.deck = {sim::Card::MysteriousTreasure, sim::Card::WishfulBaton,
+                    sim::Card::Dawn, sim::Card::ForretressEx,
+                    sim::Card::Dragapult, sim::Card::EarthenVessel,
+                    sim::Card::Fire, sim::Card::Grass, sim::Card::Grass};
+      sim::EngineTestAccess::set_state(payable.engine, state);
+
+      // The established prior-turn attacker reserves the live Regidrago V line. One
+      // duplicate VSTAR remains after cost payment, while Dawn can search Forretress ex
+      // and Dragapult ex together, leaving the Item channel for Earthen Vessel:
+      // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+      // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Dawn: https://api.pokemontcg.io/v2/cards/me2-87
+      // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+      // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Core rules: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1619
+      sim::EngineTestAccess::run_secret_box_turn(payable.engine);
+      const sim::State& after = sim::EngineTestAccess::state(payable.engine);
+      const sim::TrialOutcome& outcome =
+          sim::EngineTestAccess::outcome(payable.engine);
+      // The complete turn must pay Secret Box with only the replaced copies, search
+      // Vessel plus Dawn, discard the Dawn-searched Dragon to Vessel, attach Fire,
+      // evolve the established Regidrago V, and finish GGF with a current-turn payload:
+      // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+      // Dawn: https://api.pokemontcg.io/v2/cards/me2-87
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+      // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Core rules: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1619
+      if (!after.active || after.active->card != sim::Card::RegidragoVstar ||
+          after.active->grass < 2 || after.active->fire < 1 ||
+          !contains(after.discard, sim::Card::Dragapult) ||
+          std::count(after.discard.begin(), after.discard.end(),
+                     sim::Card::RegidragoVstar) != 1 ||
+          !contains(after.discard, sim::Card::ForestOfVitality) ||
+          !contains(after.discard, sim::Card::RegidragoV) ||
+          !outcome.used_secret_box || !outcome.used_exploding_energy) {
+        throw std::runtime_error(
+            "The issue-1619 Secret Box-Dawn-Vessel route did not complete on T2.");
+      }
+
+      Fixture protected_singleton;
+      state.hand = {sim::Card::SecretBox, sim::Card::RegidragoVstar,
+                    sim::Card::ForestOfVitality, sim::Card::RegidragoV};
+      sim::EngineTestAccess::set_state(protected_singleton.engine, state);
+
+      // One VSTAR remains UDP because no replacement exists for the only evolution
+      // card. The extra Regidrago V exception therefore supplies only a second cost,
+      // and Secret Box must remain blocked rather than consume the singleton VSTAR:
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+      // UDP/DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+      // Confirmed bug boundary: https://github.com/FlareZ123/pokemon-sims/issues/1619
+      if (sim::EngineTestAccess::play_secret_box(protected_singleton.engine) ||
+          sim::EngineTestAccess::outcome(protected_singleton.engine)
+                  .secret_box_cost_blocked != 1U) {
+        throw std::runtime_error(
+            "The issue-1619 exception spent a sole protected VSTAR.");
+      }
+    }
+
+    void expect_seeded_route(const std::uint64_t seed,
                          const std::vector<std::string>& required_lines) {
   const auto scenario = sim::scenario_by_label("strict-jit/go-second");
   const sim::NamedDeck* deck = sim::deck_by_id("regidrago-pineco");
@@ -441,6 +518,7 @@ int main() {
   test_appletun_identity_and_shell_isolation();
   test_complete_secret_box_route();
   test_secret_box_cost_reservation_and_dci();
+  test_issue_1619_route_replaced_extra_regidrago_cost();
   test_reviewed_seeded_routes();
   test_combo_ultra_ball_fallback_includes_appletun();
   test_direct_secret_box_treasure_completion();

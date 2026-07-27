@@ -12,6 +12,10 @@
           });
       if (state_.turn == 4 && hand_count(Card::SecretBox) > 0 && state_.active &&
           state_.active->card == Card::DialgaGX && powered_benched_vstar) {
+        int registered_latias = 0;
+        for (const auto& [card, copies] : recipe_) {
+          if (card == Card::LatiasEx) registered_latias += copies;
+        }
         trace("POLICY", "P-KNOWLEDGE-01; P-DCI-01; R-SECRET-BOX-01",
               "Issue-1634 route gates: axes=" +
                   std::to_string(issue_1634_axes) +
@@ -34,6 +38,7 @@
                       count_of(state_.deck, Card::MysteriousTreasure) > 0) +
                   ", latias=" + std::to_string(
                       count_of(state_.deck, Card::LatiasEx) > 0) +
+                  ", registered-latias=" + std::to_string(registered_latias) +
                   ", burnet=" + std::to_string(
                       count_of(state_.deck, Card::ProfessorBurnet) > 0) +
                   ", deck-payload=" +

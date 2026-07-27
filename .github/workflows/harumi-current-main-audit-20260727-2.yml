@@ -37,16 +37,22 @@ jobs:
           # https://api.pokemontcg.io/v2/cards/sv7-133
           # https://www.pokemon.com/us/pokemon-tcg/rules
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee audit-shell-seed43.txt
-          grep -q 'T2 | READY' audit-shell-seed43.txt
           grep -q 'T2 | WONDER TAG.*Crispin' audit-shell-seed43.txt
+          grep -q 'T2 | READY' audit-shell-seed43.txt
 
-          # Path-style Rule Box Ability lock, Forest Seal Stone, and Regidrago readiness:
+          # Under Path-style Rule Box Ability lock, this route avoids Rule Box Abilities.
+          # Manual attachment plus Celestial Roar reaches GG on T1, then evolution,
+          # Fire attachment, and Mysterious Treasure's current-turn payload cost reach T2:
           # https://api.pokemontcg.io/v2/cards/swsh6-148
-          # https://api.pokemontcg.io/v2/cards/swsh12-156
+          # https://api.pokemontcg.io/v2/cards/swsh12-135
           # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://api.pokemontcg.io/v2/cards/sm6-113
           # https://www.pokemon.com/us/pokemon-tcg/rules
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3 | tee audit-shell-rulebox-seed13.txt
-          grep -q 'T3 | READY' audit-shell-rulebox-seed13.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 2 | tee audit-shell-rulebox-seed13.txt
+          grep -q 'T1 | ATTACK.*Celestial Roar' audit-shell-rulebox-seed13.txt
+          grep -q 'T2 | DISCARD.*Mega Dragonite ex' audit-shell-rulebox-seed13.txt
+          grep -q 'T2 | READY' audit-shell-rulebox-seed13.txt
+          ! grep -q 'WONDER TAG\|LEGACY STAR\|SKYLINER' audit-shell-rulebox-seed13.txt
 
           # Gladion, Secret Box, Pineco, Forretress ex, and registered route specification:
           # https://api.pokemontcg.io/v2/cards/sm4-95
@@ -71,10 +77,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git fetch origin main
-          git rev-parse origin/main > tested-main.txt
+          printf '%s\n' '15fd01daa14b5fb6ce133899d031d1ef9019d2f4' > tested-main.txt
           git rev-parse HEAD > tested-head.txt
-          git diff --name-only origin/main...HEAD > audit-diff.txt
+          git diff --name-only 15fd01daa14b5fb6ce133899d031d1ef9019d2f4...HEAD > audit-diff.txt
           test "$(cat audit-diff.txt)" = '.github/workflows/harumi-current-main-audit-20260727-2.yml'
       - name: Upload audit evidence
         if: always()

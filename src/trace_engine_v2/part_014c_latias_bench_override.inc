@@ -463,14 +463,13 @@ bool complete_issue_1599_quick_ball_tapu_crispin_route() {
       return;
     }
     trace("POLICY", "P-AXIS-01", "Start: " + state_line());
-
-if (complete_late_steven_vstar_vessel_continuation()) return;
-play_chaotic_swell();
-play_field_blower();
-if (complete_issue_1533_blender_treasure_latias_route()) {
-  trace("POLICY", "P-AXIS-01", "End: " + state_line());
-  return;
-}
+    if (complete_late_steven_vstar_vessel_continuation()) return;
+    play_chaotic_swell();
+    play_field_blower();
+    if (complete_issue_1533_blender_treasure_latias_route()) {
+      trace("POLICY", "P-AXIS-01", "End: " + state_line());
+      return;
+    }
     // Resolve the proven K1 Steven route before generic Items can consume Quick Ball
     // and erase the public-state predicate. Steven searches any three cards and ends
     // the turn, so attaching Fire and evolving the prior-turn Regidrago V first banks

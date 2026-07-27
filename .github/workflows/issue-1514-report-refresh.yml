@@ -21,6 +21,13 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.head_ref }}
+      - name: Merge current main before validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git merge --no-edit origin/main
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -59,8 +66,6 @@ jobs:
       - name: Materialize validated reports
         shell: bash
         run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           rm -f docs/CROBAT_MODEL_REPORT.md.lock results/crobat_variant_model.csv.lock
           git add docs results README.md
           git rm .github/workflows/issue-1514-report-refresh.yml

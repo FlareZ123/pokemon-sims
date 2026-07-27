@@ -35,7 +35,7 @@ jobs:
           ./build/regidrago_unified_tests issue_1514_k0_search_order_tests
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-second --seed 33 --require-ready-by 3 | tee simulate-33.txt
           grep -q 'HOLD TAPU LELE-GX' simulate-33.txt
-          grep -q 'T1 | PLAY ITEM.*Quick Ball' simulate-33.txt
+          grep -q 'T1 | DECK KNOWLEDGE.*Quick Ball' simulate-33.txt
           grep -q 'T3 | READY' simulate-33.txt
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee simulate-43.txt
           grep -q 'T2 | READY' simulate-43.txt

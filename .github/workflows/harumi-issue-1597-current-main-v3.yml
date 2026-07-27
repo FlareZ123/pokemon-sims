@@ -1,0 +1,87 @@
+name: Harumi Issue 1597 Current Main Validation v3
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: harumi-issue-1597-current-main-v3-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: github.head_ref == 'fix/issue-1597-current-main-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply approved patch scripts at their expected paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin fix/issue-1597-wonder-tag-steven
+          git checkout origin/fix/issue-1597-wonder-tag-steven -- scripts/fix_issue_1597_anchor.py scripts/apply_issue_1597_patch.py
+          python scripts/fix_issue_1597_anchor.py
+          python scripts/apply_issue_1597_patch.py
+          rm scripts/fix_issue_1597_anchor.py scripts/apply_issue_1597_patch.py
+          git diff --check
+      - name: Build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Validate focused regression and three traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_unified_tests issue_1597_wonder_tag_steven_turo_tests
+          ./build/regidrago_sim --simulate-this --model-variant crobat2-erika-channeler --scenario no-discard-control/go-first --seed 27 --require-ready-by 4 | tee trace-seed-27.txt
+          grep -q 'banked Regidrago VSTAR and Crispin' trace-seed-27.txt
+          grep -q 'READY' trace-seed-27.txt
+          ./build/regidrago_sim --simulate-this --model-variant crobat2-erika-channeler --scenario no-discard-control/go-second --seed 27 | tee trace-control-second.txt
+          ! grep -q 'banked Regidrago VSTAR and Crispin' trace-control-second.txt
+          ./build/regidrago_sim --simulate-this --model-variant crobat2-erika-channeler --scenario strict-jit/go-first --seed 27 | tee trace-control-strict.txt
+          ! grep -q 'banked Regidrago VSTAR and Crispin' trace-control-strict.txt
+      - name: Run Release suite excluding separately filed main blockers
+        run: ctest --test-dir build --parallel 4 --output-on-failure -E 'regidrago_issue_1494_ci_audit_inventory_tests|setup_report_contract|multi_deck_report_contract|setup_docs_generator_contract'
+      - name: Run ASan and UBSan suite excluding separately filed main blockers
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build-sanitize --parallel 2
+          ctest --test-dir build-sanitize --parallel 4 --output-on-failure -E 'regidrago_issue_1494_ci_audit_inventory_tests|setup_report_contract|multi_deck_report_contract|setup_docs_generator_contract'
+      - name: Generate T2 and T3 matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit-results
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-results/t2-t3-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-results/multi-deck-matrix.csv
+      - name: Materialize validated source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/harumi-issue-1597-current-main-v3.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_010_steven_crispin_override.inc src/trace_engine_v2/part_014c_latias_bench_override.inc tests/issue_1597_wonder_tag_steven_turo_tests.cpp .github/workflows/harumi-issue-1597-current-main-v3.yml
+          git commit -m 'Bank Steven for the seed 27 T4 schedule on current main'
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1597-current-main-v3-${{ github.run_attempt }}
+          path: |
+            trace-*.txt
+            audit-results/*.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn

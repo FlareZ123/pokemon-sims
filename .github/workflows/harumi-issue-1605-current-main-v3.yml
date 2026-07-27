@@ -30,11 +30,13 @@ jobs:
           git checkout origin/fix/issue-1605-arven-redundant-payload -- scripts/fix_issue_1605_anchor.py scripts/apply_issue_1605_patch.py scripts/activate_issue_1605_arven_route.py
       - name: Adapt approved anchors to current main
         run: python scripts/fix_issue_1605_anchor.py
+      - name: Preserve the merged issue-1598 Treasure state
+        run: python scripts/harumi_adapt_issue_1605_after_1598.py
       - name: Apply approved policy and regression patch
         run: python scripts/apply_issue_1605_patch.py
       - name: Activate approved Arven route
         run: python scripts/activate_issue_1605_arven_route.py
-      - name: Remove bootstrap scripts and verify patch
+      - name: Remove recovered scripts and verify patch
         run: |
           rm scripts/fix_issue_1605_anchor.py scripts/apply_issue_1605_patch.py scripts/activate_issue_1605_arven_route.py
           git diff --check
@@ -73,10 +75,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm .github/workflows/harumi-issue-1605-current-main-v3.yml
+          rm .github/workflows/harumi-issue-1605-current-main-v3.yml .github/workflows/harumi-issue-1605-diagnostic.yml scripts/harumi_adapt_issue_1605_after_1598.py
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/trace_engine_v2/part_006.inc src/trace_engine_v2/part_009a.inc src/trace_engine_v2/part_009b1.inc src/trace_engine_v2/part_012.inc src/trace_engine_v2/part_012_arven_fss_blender_contention_override.inc tests/issue_1605_arven_redundant_payload_tests.cpp .github/workflows/harumi-issue-1605-current-main-v3.yml
+          git add src/trace_engine_v2/part_006.inc src/trace_engine_v2/part_009a.inc src/trace_engine_v2/part_009b1.inc src/trace_engine_v2/part_012.inc src/trace_engine_v2/part_012_arven_fss_blender_contention_override.inc tests/issue_1605_arven_redundant_payload_tests.cpp .github/workflows/harumi-issue-1605-current-main-v3.yml .github/workflows/harumi-issue-1605-diagnostic.yml scripts/harumi_adapt_issue_1605_after_1598.py
           git commit -m 'Use the Arven-Crobat route for seed 7 on current main'
           git push origin "HEAD:${GITHUB_HEAD_REF}"
       - name: Upload evidence

@@ -1,0 +1,100 @@
+name: Validate issue 1563
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/issue-1563-secret-box-treasure-t4'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Record exact source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee tested-head.txt
+          git rev-parse origin/main | tee tested-main.txt
+          git diff --name-status origin/main...HEAD | tee branch-diff.txt
+
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+
+      - name: Reverify issue 1563 on current source
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Secret Box pays three other cards and independently searches an Item, Tool, Supporter, and Stadium; Mysterious Treasure then pays one discard to search a Dragon Pokémon: https://api.pokemontcg.io/v2/cards/sv6-163 https://api.pokemontcg.io/v2/cards/sm6-113
+          # Dragapult ex is a legal current-turn Dragon payload and Regidrago VSTAR evolves a prior-turn Regidrago V to use Apex Dragon for GGF: https://api.pokemontcg.io/v2/cards/sv6-130 https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Core discard, search, Item, evolution, and attack-readiness procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Confirmed bug and repository policy: https://github.com/FlareZ123/pokemon-sims/issues/1563 https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 67 | tee issue-1563-seed-67.txt
+
+      - name: Perfect-play pass one
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Steven's Resolve and the earliest-completion policy define this reviewed T3 continuation: https://api.pokemontcg.io/v2/cards/sm7-145 https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee perfect-shell-58.txt
+          grep -q 'T3 | READY' perfect-shell-58.txt
+
+      - name: Perfect-play pass two
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Secret Box, Dawn, Forest of Vitality, and Exploding Energy are the registered Pineco compression route: https://api.pokemontcg.io/v2/cards/sv6-163 https://api.pokemontcg.io/v2/cards/me2-87 https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee perfect-pineco-35.txt
+          grep -q 'T2 | READY' perfect-pineco-35.txt
+
+      - name: Perfect-play pass three
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Mysterious Treasure may discard a Dragon payload, search Tapu Lele-GX, and preserve the Supporter action for Crispin: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sv6-130 https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/sv7-133
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee perfect-shell-43.txt
+          grep -q 'T2 | READY' perfect-shell-43.txt
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Generate fresh T2 and T3 matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --trials 100000 --seed 20260726 --out shell-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260726 --out all-decks-matrix.csv
+          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260726 --out crobat-matrix.csv
+
+      - name: Run sanitizer suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build-sanitize --parallel 2
+          ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ctest --test-dir build-sanitize --parallel 2 --output-on-failure
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1563-validation-${{ github.run_attempt }}
+          path: |
+            tested-head.txt
+            tested-main.txt
+            branch-diff.txt
+            issue-1563-seed-67.txt
+            perfect-*.txt
+            shell-matrix.csv
+            all-decks-matrix.csv
+            crobat-matrix.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn

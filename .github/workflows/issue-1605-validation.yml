@@ -28,7 +28,7 @@ jobs:
         run: |
           python scripts/fix_issue_1605_anchor.py
           python scripts/apply_issue_1605_patch.py
-          python scripts/diagnose_issue_1605_route.py
+          python scripts/activate_issue_1605_arven_route.py
       - name: Build Release
         shell: bash
         run: |
@@ -51,7 +51,7 @@ jobs:
           grep -q 'T3 | READY' simulate-16.txt
       - name: Release suite before reports
         run: ctest --test-dir build --parallel 4 --output-on-failure -E 'setup_report_contract|multi_deck_report_contract|crobat_model_report_contract'
-      - name: Regenerate source-bound matrices
+      - name: Generate source-bound matrices
         run: |
           python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
           python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
@@ -66,14 +66,13 @@ jobs:
           cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
           cmake --build build-sanitize --parallel 2
           ASAN_OPTIONS=detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 ctest --test-dir build-sanitize --parallel 2 --output-on-failure
-      - name: Materialize validated source and reports
+      - name: Materialize validated source only
         shell: bash
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          rm -f docs/CROBAT_MODEL_REPORT.md.lock results/crobat_variant_model.csv.lock
-          git add src/trace_engine_v2/part_006.inc src/trace_engine_v2/part_009a.inc src/trace_engine_v2/part_009b1.inc src/trace_engine_v2/part_012.inc tests/issue_1605_arven_redundant_payload_tests.cpp README.md docs results
-          git rm .github/workflows/issue-1605-validation.yml scripts/apply_issue_1605_patch.py scripts/fix_issue_1605_anchor.py scripts/diagnose_issue_1605_route.py
+          git add src/trace_engine_v2/part_006.inc src/trace_engine_v2/part_009a.inc src/trace_engine_v2/part_009b1.inc src/trace_engine_v2/part_012.inc src/trace_engine_v2/part_012_arven_fss_blender_contention_override.inc tests/issue_1605_arven_redundant_payload_tests.cpp
+          git rm .github/workflows/issue-1605-validation.yml scripts/apply_issue_1605_patch.py scripts/fix_issue_1605_anchor.py scripts/activate_issue_1605_arven_route.py scripts/diagnose_issue_1605_route.py
           git commit -m 'Use Arven-Crobat route for seed 7'
           git push origin HEAD:${GITHUB_HEAD_REF}
       - name: Upload evidence

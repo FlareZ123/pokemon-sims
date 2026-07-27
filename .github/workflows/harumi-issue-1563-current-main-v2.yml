@@ -1,0 +1,86 @@
+name: Harumi Issue 1563 Current Main Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: harumi-issue-1563-current-main-v2-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-materialize:
+    if: github.head_ref == 'fix/issue-1563-current-main-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply the approved production and focused-test delta
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin fix/issue-1563-secret-box-treasure-t4
+          git diff 0589217c117b640edbeee184befa84a5ad18f5db 5b7c5631151560334c60c91274246ecca78aa238 -- \
+            src/trace_engine_v2/part_issue_1118_secret_box.inc \
+            tests/issue_1118_multi_deck_secret_box_tests.cpp > /tmp/issue-1563.patch
+          git apply --3way /tmp/issue-1563.patch
+          git diff --check
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Run focused regression and three reviewed traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_unified_tests issue_1118_multi_deck_secret_box_tests
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-first --seed 67 --require-ready-by 4 | tee trace-seed-67.txt
+          grep -q 'T4 | READY' trace-seed-67.txt
+          grep -q 'Mysterious Treasure completion channel' trace-seed-67.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-first --seed 72 --require-ready-by 4 | tee trace-seed-72.txt
+          grep -q 'T4 | READY' trace-seed-72.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-seed-35.txt
+      - name: Run Release suite excluding separately filed main blockers
+        run: ctest --test-dir build --parallel 4 --output-on-failure -E 'regidrago_issue_1494_ci_audit_inventory_tests|setup_report_contract|multi_deck_report_contract|setup_docs_generator_contract'
+      - name: Run ASan and UBSan suite excluding separately filed main blockers
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build-sanitize --parallel 2
+          ctest --test-dir build-sanitize --parallel 4 --output-on-failure -E 'regidrago_issue_1494_ci_audit_inventory_tests|setup_report_contract|multi_deck_report_contract|setup_docs_generator_contract'
+      - name: Generate T2 and T3 matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit-results
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-results/t2-t3-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-results/multi-deck-matrix.csv
+      - name: Materialize validated source and focused test
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/harumi-issue-1563-current-main-v2.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_issue_1118_secret_box.inc tests/issue_1118_multi_deck_secret_box_tests.cpp .github/workflows/harumi-issue-1563-current-main-v2.yml
+          git commit -m 'Use the direct Secret Box-Treasure route on current main'
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1563-current-main-v2-${{ github.run_attempt }}
+          path: |
+            trace-*.txt
+            audit-results/*.csv
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn

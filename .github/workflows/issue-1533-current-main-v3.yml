@@ -28,7 +28,8 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          python scripts/apply_issue_1533_current_main.py 2>&1 | tee apply-issue-1533.log
+          python scripts/refine_issue_1533_materializer.py 2>&1 | tee apply-issue-1533.log
+          python scripts/apply_issue_1533_current_main.py 2>&1 | tee -a apply-issue-1533.log
       - name: Build Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
       - name: Validate focused regression and three simulate-this routes
@@ -72,7 +73,7 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           rm -f docs/CROBAT_MODEL_REPORT.md.lock results/crobat_variant_model.csv.lock
           git add src/trace_engine_v2/part_014c_latias_bench_override.inc tests/issue_1533_blender_treasure_latias_tests.cpp README.md docs results
-          git rm .github/workflows/issue-1533-current-main-v3.yml scripts/apply_issue_1533_current_main.py
+          git rm .github/workflows/issue-1533-current-main-v3.yml scripts/apply_issue_1533_current_main.py scripts/refine_issue_1533_materializer.py
           git commit -m 'Use Treasure-Latias-Blender for seed 1 T4'
           git push origin HEAD:${GITHUB_HEAD_REF}
       - name: Upload evidence

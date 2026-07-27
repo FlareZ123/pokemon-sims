@@ -3,12 +3,14 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import sys
 import tempfile
 from pathlib import Path
 
-from scripts.baseline_provenance import simulator_policy_source_digest
-
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from scripts.baseline_provenance import simulator_policy_source_digest
 
 
 def atomic_json(path: Path, value: dict[str, object]) -> None:

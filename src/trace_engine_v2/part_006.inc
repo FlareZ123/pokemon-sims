@@ -111,6 +111,43 @@
            (burnet_outlet || serena_outlet);
   }
 
+std::optional<Card> issue_1605_redundant_payload_cost() const {
+  int held_payloads = 0;
+  int distinct_payloads = 0;
+  for (const Card card : {Card::Appletun, Card::MegaDragonite,
+                          Card::Dragapult, Card::GoodraVstar,
+                          Card::DialgaGX}) {
+    const int copies = hand_count(card);
+    held_payloads += copies;
+    distinct_payloads += copies > 0 ? 1 : 0;
+  }
+  if (held_payloads < 3 || distinct_payloads < 2) return std::nullopt;
+  for (const Card card : {Card::Appletun, Card::MegaDragonite,
+                          Card::Dragapult, Card::GoodraVstar,
+                          Card::DialgaGX}) {
+    if (hand_count(card) >= 2) return card;
+  }
+  return std::nullopt;
+}
+
+bool issue_1605_arven_crobat_route_available() const {
+  const bool one_discard_item_plausible =
+      might_be_unseen(Card::QuickBall) ||
+      might_be_unseen(Card::MysteriousTreasure);
+  return scenario_.dci == DciProfile::StrictJit &&
+         !scenario_.going_first && state_.turn == 1 &&
+         supporter_allowed() && !item_locked() && need_regi() &&
+         bench_space() >= 2 && hand_count(Card::Arven) > 0 &&
+         hand_count(Card::CrobatV) > 0 &&
+         hand_count(Card::ForestSealStone) > 0 &&
+         !state_.vstar_power_used && !state_.dark_asset_used &&
+         ability_available_for_pokemon(Card::CrobatV) &&
+         state_.hand.size() <= 9U &&
+         might_be_unseen(Card::RegidragoV) &&
+         one_discard_item_plausible &&
+         issue_1605_redundant_payload_cost().has_value();
+}
+
   std::optional<Card> choose_discard(const bool permit_payload, const bool flex_fodder,
                                      const bool allow_heavy_ball = true,
                                      const std::optional<Card> excluded_from_cost = std::nullopt,

@@ -16,7 +16,9 @@
     return true;
   }
 
-  bool play_arven() {
+bool issue_1605_arven_redundant_payload_route_{false};
+
+bool play_arven() {
     if (!supporter_allowed() || item_locked() || hand_count(Card::Arven) == 0) return false;
 
     const bool needs_tool = has_regi_v() && !state_.vstar_power_used &&
@@ -45,9 +47,28 @@
     // Manual attachment: https://www.pokemon.com/us/pokemon-tcg/rules
     // Dynamic DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1050
-    const bool can_pay_search_cost =
-        is_legal_cost_available(can_play_payload_this_turn(), true) ||
-        final_energy_vessel_dead_role_cost;
+const bool issue_1605_public_arven_route =
+    issue_1605_arven_crobat_route_available();
+// A duplicated Dragon may pay the one-discard Item selected by Arven only in
+// this complete public K0 continuation. One copy of that identity and a
+// different modeled payload remain protected, Regidrago V advances the Basic
+// axis, Forest Seal Stone opens Star Alchemy, and Crobat V converts its UDP
+// hand role into Dark Asset after the hand is compressed:
+// Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+// Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+// Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+// Crobat V / Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+// Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+// Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+// Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
+// Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+// Core Supporter, Item, discard, search, Bench, Tool, and Ability procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+// K0/K1, dynamic DCI, UDP, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+// Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1605
+const bool can_pay_search_cost =
+    is_legal_cost_available(can_play_payload_this_turn(), true) ||
+    final_energy_vessel_dead_role_cost ||
+    issue_1605_public_arven_route;
 
     const auto item_candidates_for_current_knowledge = [this, can_pay_search_cost]() {
       const bool live_regi_target = hand_count(Card::RegidragoV) == 0 && might_be_unseen(Card::RegidragoV);
@@ -123,6 +144,11 @@
       if (move_deck_to_hand(item)) { found.push_back(item); break; }
     }
     if (live_tool && move_deck_to_hand(Card::ForestSealStone)) found.push_back(Card::ForestSealStone);
+    issue_1605_arven_redundant_payload_route_ =
+        issue_1605_public_arven_route &&
+        std::any_of(found.begin(), found.end(), [](const Card card) {
+          return card == Card::QuickBall || card == Card::MysteriousTreasure;
+        });
     shuffle(state_.deck);
     trace("PLAY SUPPORTER", "R-ARVEN-01; R-GAME-SUPPORTER", "Searched an Item and a Pokémon Tool: " + join_cards(found) + ".");
     return true;

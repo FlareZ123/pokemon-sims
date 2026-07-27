@@ -275,7 +275,19 @@
     if (!cost && want_latias) {
       cost = quick_ball_latias_replaced_tate_cost();
     }
-    if (!cost && want_regi && hand_count(Card::RegidragoVstar) >= 2) {
+if (!cost && want_regi && issue_1605_arven_redundant_payload_route_) {
+  // Arven already established K1 and selected this exact one-discard search
+  // Item. Spend only the duplicated payload identity, after all ordinary DCI
+  // costs fail, while two distinct Dragon payloads survive for later strict-JIT:
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
+  // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+  // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1605
+  cost = issue_1605_redundant_payload_cost();
+}
+if (!cost && want_regi && hand_count(Card::RegidragoVstar) >= 2) {
       // One of two public VSTAR copies may pay Quick Ball only while Quick Ball is
       // establishing the missing Regidrago V. The other copy remains in hand for the
       // legal later evolution, so this route-conditioned fallback does not weaken the
@@ -305,6 +317,7 @@
     if (!cost) return false;
 
     remove_one(state_.hand, Card::QuickBall);
+    issue_1605_arven_redundant_payload_route_ = false;
     state_.discard.push_back(Card::QuickBall);
     discard_from_hand(*cost, "Quick Ball cost", "R-QB-01");
     // Card text source: https://api.pokemontcg.io/v2/cards/swsh1-179

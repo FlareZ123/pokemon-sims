@@ -41,7 +41,41 @@
     });
   }
 
-  bool bench_tapu_if_useful() {
+bool issue_1514_hold_tapu_until_public_search() const {
+  if (deck_seen_ || item_locked() || !supporter_allowed() ||
+      hand_count(Card::TapuLeleGX) != 1 ||
+      hand_count(Card::Crispin) == 0 || !need_regi() || !need_energy() ||
+      bench_space() <= 0 ||
+      !ability_available_for_pokemon(Card::TapuLeleGX) ||
+      hand_count(Card::QuickBall) == 0 ||
+      !might_be_unseen(Card::RegidragoV)) {
+    return false;
+  }
+
+  // Quick Ball may be ranked from public K0 facts: it has a legal ordinary DCI
+  // cost and a Regidrago V may remain unseen. Hold the physical Tapu Lele-GX until
+  // that real Item resolves and establishes K1, then re-run the existing Wonder
+  // Tag policy with legally known deck and Prize identities. This preflight never
+  // executes a shadow search or inspects the hidden deck or Prizes:
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Core Item, search, Bench, Ability, and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // K0/K1 and future-card-oracle contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+  // DCI and connector-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1514
+  return choose_discard(false, true, true, Card::QuickBall).has_value();
+}
+
+bool bench_tapu_if_useful() {
+  if (issue_1514_hold_tapu_until_public_search()) {
+    trace_tapu_hold_once(
+        "issue-1514-k0-public-search-first",
+        "R-QB-01; R-TAPU-01; R-CRISPIN-01; P-CONNECTOR-01; P-KNOWLEDGE-01; P-DCI-01",
+        "Retained Tapu at K0 until a legal Quick Ball search establishes K1 and the duplicate-held-Crispin Wonder Tag can be evaluated from public information.");
+    return false;
+  }
     if (held_turo_direct_active_promotion_route()) {
       // Held Professor Turo already removes the Basic Active and promotes the
       // complete Benched Regidrago VSTAR. Do not spend Tapu Lele-GX, its Bench

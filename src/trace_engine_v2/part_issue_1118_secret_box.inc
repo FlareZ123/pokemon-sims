@@ -92,7 +92,20 @@
     const bool vessel_fire = !needs_treasure && !state_.manual_energy_used &&
         fire_searchable && (hand_count(Card::EarthenVessel) > 0 ||
                             might_be_unseen(Card::EarthenVessel));
-    if (!fire_held && !fss_fire && !crispin_fire && !vessel_fire) return false;
+// An already satisfied Fire requirement must not block a same-turn Secret Box
+// route whose only missing Energy is Grass. Dawn, Pineco, Forretress ex, and
+// Exploding Energy can provide that Grass while held Mysterious Treasure pays
+// the current-turn payload outlet:
+// Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+// Dawn: https://api.pokemontcg.io/v2/cards/me2-87
+// Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+// Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+// Core Energy, Supporter, Item, Ability, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+// Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1594
+if (fire_needed() > 0 && !fire_held && !fss_fire && !crispin_fire &&
+    !vessel_fire) {
+  return false;
+}
 
     const bool grass_available = might_be_unseen(Card::Grass) ||
         grass_needed() <= 0;

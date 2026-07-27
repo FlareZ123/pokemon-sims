@@ -1,0 +1,94 @@
+name: Audit issue 1645 current main
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    # This audit is intentionally limited to its source branch. github.head_ref is the PR source branch:
+    # https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#github-context
+    if: github.head_ref == 'audit/issue-1645-current-main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Current issue witness. Steven searches up to three unrestricted cards, and the repository
+          # objective is the earliest legal ready state with DCI/JIT resource preservation:
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://github.com/FlareZ123/pokemon-sims/issues/1645
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-heavy-ball --scenario matchup-flex-jit/go-second --seed 218 | tee trace-issue-1645-seed-218.txt
+          grep -q "Searched up to 3 cards: Regidrago V, Regidrago VSTAR, Gladion" trace-issue-1645-seed-218.txt
+
+          # Control 1 preserves Crispin and Brilliant Blender when held Fire plus Quick Ball already
+          # complete the remaining Energy and strict-JIT payload axes:
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/sv6-130
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://api.pokemontcg.io/v2/cards/sv8-164
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # https://github.com/FlareZ123/pokemon-sims/issues/978
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee trace-control-seed-58.txt
+          grep -q "Searched up to 3 cards: Regidrago VSTAR. Turn ended." trace-control-seed-58.txt
+          grep -q "T3 | DISCARD.*Dragapult ex (Quick Ball cost)" trace-control-seed-58.txt
+          grep -q "T3 | READY" trace-control-seed-58.txt
+
+          # Control 2 uses the reviewed direct Pineco-shell route while preserving Secret Box,
+          # Bench space, and the later Forretress self-Knock-Out line:
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sv6-130
+          # https://api.pokemontcg.io/v2/cards/sv6-163
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # https://github.com/FlareZ123/pokemon-sims/issues/1420
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-control-pineco-seed-35.txt
+          grep -q "banked Crispin and Dragapult ex" trace-control-pineco-seed-35.txt
+          grep -q "Dragapult ex (Mysterious Treasure cost)" trace-control-pineco-seed-35.txt
+          grep -q "T2 | READY" trace-control-pineco-seed-35.txt
+      - name: Generate T2 and T3 setup matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Canonical fixed-seed matrix contract:
+          # https://github.com/FlareZ123/pokemon-sims/pull/931
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out all-decks-t2-t3-t4-matrix.csv
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Record tested source
+        run: git rev-parse HEAD | tee tested-head.txt
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-1645-current-main-${{ github.run_attempt }}
+          path: |
+            trace-issue-1645-seed-218.txt
+            trace-control-seed-58.txt
+            trace-control-pineco-seed-35.txt
+            t2-t3-matrix.csv
+            all-decks-t2-t3-t4-matrix.csv
+            tested-head.txt
+          if-no-files-found: warn

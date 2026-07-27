@@ -80,7 +80,7 @@ jobs:
             git config user.name github-actions[bot]
             git config user.email 41898282+github-actions[bot]@users.noreply.github.com
             git add src/trace_engine_v2/part_014c_latias_bench_override.inc tests/issue_1533_blender_treasure_latias_tests.cpp README.md docs results
-            git rm scripts/apply_issue_1533_current_main.py scripts/refine_issue_1533_materializer.py scripts/issue_1533_validated_evidence.sha256
+            git rm -f scripts/apply_issue_1533_current_main.py scripts/refine_issue_1533_materializer.py scripts/issue_1533_validated_evidence.sha256
             git commit -m 'Use Treasure-Latias-Blender for seed 1 T4'
             git push origin HEAD:${GITHUB_HEAD_REF}
           } 2>&1 | tee materialize.log

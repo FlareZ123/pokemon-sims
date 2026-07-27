@@ -1,0 +1,123 @@
+name: Validate issue 1619
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: issue-1619-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/issue-1619-secret-box-extra-regi'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Record source and apply isolated patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee staged-head.txt
+          git rev-parse origin/main | tee tested-main.txt
+          python scripts/apply_issue_1619_patch.py
+          git diff --check
+          git diff -- src/trace_engine_v2/part_issue_1118_secret_box.inc tests/issue_1118_multi_deck_secret_box_tests.cpp | tee issue-1619.patch
+
+      - name: Build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+
+      - name: Validate focused regression and three perfect-play traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_unified_tests issue_1118_multi_deck_secret_box_tests | tee focused.log
+          # Exact confirmed route: Secret Box's three-card cost is legal because one VSTAR remains, the prior-turn Regidrago V remains in play, and Dawn plus Forretress ex replace the extra Basic: https://api.pokemontcg.io/v2/cards/sv6-163 https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/me2-87 https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://www.pokemon.com/us/pokemon-tcg/rules https://github.com/FlareZ123/pokemon-sims/issues/1619
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-first --seed 89 --require-ready-by 2 | tee simulate-89.txt
+          grep -q 'Secret Box discarded three other cards' simulate-89.txt
+          grep -q 'Dawn searched' simulate-89.txt
+          grep -q 'T2 | READY' simulate-89.txt
+          # Independent Pineco ALS control: https://api.pokemontcg.io/v2/cards/sv6-163 https://api.pokemontcg.io/v2/cards/me2-87 https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#registered-decks
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee simulate-35.txt
+          grep -q 'T2 | READY' simulate-35.txt
+          # Independent shell connector control: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/cel25c-60_A https://api.pokemontcg.io/v2/cards/sv7-133 https://github.com/FlareZ123/pokemon-sims/issues/1209
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee simulate-43.txt
+          grep -q 'T2 | READY' simulate-43.txt
+
+      - name: Release suite before generated reports
+        run: ctest --test-dir build --parallel 4 --output-on-failure -E 'setup_report_contract|multi_deck_report_contract|crobat_model_report_contract'
+
+      - name: Regenerate canonical evidence and fresh run matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260723 --out results/crobat_variant_model.csv
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+          python scripts/update_crobat_modeling_docs.py --csv results/crobat_variant_model.csv --out docs/CROBAT_MODEL_REPORT.md
+          ./build/regidrago_sim --trials 100000 --seed 20260726 --out shell-matrix-run.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260726 --out all-decks-matrix-run.csv
+          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260726 --out crobat-matrix-run.csv
+          cat shell-matrix-run.csv
+          cat all-decks-matrix-run.csv
+          cat crobat-matrix-run.csv
+
+      - name: Complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Complete sanitizer suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build-sanitize --parallel 2
+          ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ctest --test-dir build-sanitize --parallel 2 --output-on-failure
+
+      - name: Materialize validated source and evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          rm -f docs/CROBAT_MODEL_REPORT.md.lock results/crobat_variant_model.csv.lock
+          git add src/trace_engine_v2/part_issue_1118_secret_box.inc tests/issue_1118_multi_deck_secret_box_tests.cpp README.md docs results
+          git rm .github/workflows/issue-1619-validation.yml scripts/apply_issue_1619_patch.py
+          git commit -m 'Admit route-replaced Regidrago V cost for Secret Box'
+          git push origin HEAD:${GITHUB_HEAD_REF}
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1619-validation-${{ github.run_attempt }}
+          path: |
+            staged-head.txt
+            tested-main.txt
+            issue-1619.patch
+            focused.log
+            simulate-*.txt
+            shell-matrix-run.csv
+            all-decks-matrix-run.csv
+            crobat-matrix-run.csv
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            results/crobat_variant_model.csv
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn

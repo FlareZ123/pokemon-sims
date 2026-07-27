@@ -4,44 +4,40 @@ from textwrap import dedent
 path = Path("src/trace_engine_v2/part_010.inc")
 source = path.read_text(encoding="utf-8")
 
-admission_anchor = dedent(
-    """\
-        const bool can_jit_discard = permit_payload &&
-            (can_play_payload_this_turn() || payload_ready()) &&
-            std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
-    """
+admission_anchor = (
+    "    const bool can_jit_discard = permit_payload &&\n"
+    "        (can_play_payload_this_turn() || payload_ready()) &&\n"
+    "        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);\n"
 )
-admission_replacement = dedent(
-    """\
-        const bool issue_1619_direct_payload_cost = strict_payload_timing() &&
-            need_payload() && state_.active &&
-            state_.active->card == Card::RegidragoV &&
-            state_.active->grass >= 2 && state_.active->fire == 0 &&
-            hand_count(Card::RegidragoVstar) > 0 && fire_needed() > 0 &&
-            might_be_unseen(Card::Fire) &&
-            std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
-            count_of(state_.discard, Card::SecretBox) > 0 &&
-            count_of(state_.discard, Card::Dawn) > 0 &&
-            count_of(state_.discard, Card::ForretressEx) > 0 &&
-            count_of(state_.discard, Card::Pineco) > 0;
-        // The generic item loop suppresses early payload discards for strict-JIT. This
-        // exact public continuation overrides that suppression because Secret Box has
-        // already selected Vessel, Dawn has supplied the payload and Forretress ex,
-        // Exploding Energy has supplied GG, and the held VSTAR plus searchable Fire
-        // prove that the payload must be discarded before the current turn ends:
-        // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
-        // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-        // Dawn: https://api.pokemontcg.io/v2/cards/me2-87
-        // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
-        // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-        // Core discard, search, attachment, evolution, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-        // Strict-JIT and earliest-completion policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1619
-        const bool can_jit_discard = issue_1619_direct_payload_cost ||
-            (permit_payload &&
-             (can_play_payload_this_turn() || payload_ready()) &&
-             std::any_of(state_.hand.begin(), state_.hand.end(), is_payload));
-    """
+admission_replacement = (
+    "    const bool issue_1619_direct_payload_cost = strict_payload_timing() &&\n"
+    "        need_payload() && state_.active &&\n"
+    "        state_.active->card == Card::RegidragoV &&\n"
+    "        state_.active->grass >= 2 && state_.active->fire == 0 &&\n"
+    "        hand_count(Card::RegidragoVstar) > 0 && fire_needed() > 0 &&\n"
+    "        might_be_unseen(Card::Fire) &&\n"
+    "        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&\n"
+    "        count_of(state_.discard, Card::SecretBox) > 0 &&\n"
+    "        count_of(state_.discard, Card::Dawn) > 0 &&\n"
+    "        count_of(state_.discard, Card::ForretressEx) > 0 &&\n"
+    "        count_of(state_.discard, Card::Pineco) > 0;\n"
+    "    // The generic item loop suppresses early payload discards for strict-JIT. This\n"
+    "    // exact public continuation overrides that suppression because Secret Box has\n"
+    "    // already selected Vessel, Dawn has supplied the payload and Forretress ex,\n"
+    "    // Exploding Energy has supplied GG, and the held VSTAR plus searchable Fire\n"
+    "    // prove that the payload must be discarded before the current turn ends:\n"
+    "    // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163\n"
+    "    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163\n"
+    "    // Dawn: https://api.pokemontcg.io/v2/cards/me2-87\n"
+    "    // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2\n"
+    "    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136\n"
+    "    // Core discard, search, attachment, evolution, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules\n"
+    "    // Strict-JIT and earliest-completion policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities\n"
+    "    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1619\n"
+    "    const bool can_jit_discard = issue_1619_direct_payload_cost ||\n"
+    "        (permit_payload &&\n"
+    "         (can_play_payload_this_turn() || payload_ready()) &&\n"
+    "         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload));\n"
 )
 if source.count(admission_anchor) != 1:
     raise SystemExit(

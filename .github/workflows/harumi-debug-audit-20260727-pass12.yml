@@ -1,0 +1,163 @@
+name: Harumi Debug Audit 2026-07-27 Pass 12
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harumi-debug-audit-pass12-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.head_ref == 'audit/harumi-20260727-debug-pass-12'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Bind and export exact source
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' 'c8cfdb116bf37b3ef339926bbe6c09634e0a031f' > tested-main.txt
+          git rev-parse HEAD > tested-head.txt
+          git diff --name-only c8cfdb116bf37b3ef339926bbe6c09634e0a031f...HEAD > audit-diff.txt
+          test "$(cat audit-diff.txt)" = '.github/workflows/harumi-debug-audit-20260727-pass12.yml'
+          git archive --format=tar.gz --output=exact-source.tar.gz HEAD
+
+      - name: Run repository-wide static contracts and scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/source_anchor_contract_tests.py
+          python - <<'PY' | tee static-scan.txt
+          from pathlib import Path
+          import re
+          import subprocess
+
+          files = subprocess.check_output(['git', 'ls-files'], text=True).splitlines()
+          text_suffixes = {'.cpp', '.hpp', '.h', '.inc', '.cmake', '.py', '.md', '.yml', '.yaml', '.json', '.txt'}
+          findings = []
+          code_files = 0
+          source_urls = 0
+          issue_urls = 0
+          for name in files:
+              path = Path(name)
+              if path.suffix.lower() not in text_suffixes or not path.is_file():
+                  continue
+              try:
+                  text = path.read_text(encoding='utf-8')
+              except UnicodeDecodeError:
+                  continue
+              if path.suffix.lower() in {'.cpp', '.hpp', '.h', '.inc', '.py', '.cmake'}:
+                  code_files += 1
+              source_urls += text.count('https://api.pokemontcg.io/') + text.count('https://www.pokemon.com/') + text.count('https://professorprogram.pokemon.com/')
+              issue_urls += text.count('https://github.com/FlareZ123/pokemon-sims/issues/')
+              for lineno, line in enumerate(text.splitlines(), 1):
+                  if re.search(r'\b(TODO|FIXME|HACK|XXX)\b', line, re.IGNORECASE):
+                      findings.append(f'{name}:{lineno}:{line.strip()}')
+                  if 'assert(false)' in line or 'std::terminate(' in line:
+                      findings.append(f'{name}:{lineno}:{line.strip()}')
+          print(f'tracked_files={len(files)}')
+          print(f'code_files={code_files}')
+          print(f'authoritative_source_urls={source_urls}')
+          print(f'issue_urls={issue_urls}')
+          print(f'suspicious_markers={len(findings)}')
+          for finding in findings:
+              print(finding)
+          PY
+
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+
+      - name: Run three independent simulate-this perfect-play audits
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Pass 1: Quick Ball, Mysterious Treasure, Regidrago V/VSTAR, and the
+          # official turn procedure support the registered strict-JIT shell route:
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/swsh12-135
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee audit-pass1-shell-seed1.txt
+          grep -q 'T3 | READY' audit-pass1-shell-seed1.txt
+
+          # Pass 2: Secret Box may pay route-replaced cards only because the complete
+          # K1 Dawn, Forretress ex, Earthen Vessel, payload, Energy, and evolution
+          # route preserves one VSTAR and the established Regidrago line:
+          # https://api.pokemontcg.io/v2/cards/sv6-163
+          # https://api.pokemontcg.io/v2/cards/me2-87
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-1
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+          # https://github.com/FlareZ123/pokemon-sims/issues/1619
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-first --seed 89 --require-ready-by 2 | tee audit-pass2-pineco-seed89.txt
+          grep -q 'T2 | SECRET BOX' audit-pass2-pineco-seed89.txt
+          grep -q 'T2 | PLAY SUPPORTER.*Dawn' audit-pass2-pineco-seed89.txt
+          grep -q 'T2 | EXPLODING ENERGY' audit-pass2-pineco-seed89.txt
+          grep -q 'T2 | READY' audit-pass2-pineco-seed89.txt
+
+          # Pass 3: Steven's Resolve legally searches only Latias ex and Grass Energy.
+          # Held VSTAR, Earthen Vessel, a Dragon cost, and Brilliant Blender already
+          # cover the other axes, while Skyliner gives the Basic Active free Retreat:
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/sv8-76
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          # https://api.pokemontcg.io/v2/cards/sv8-164
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # https://github.com/FlareZ123/pokemon-sims/issues/1645
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-heavy-ball --scenario matchup-flex-jit/go-second --seed 218 --require-ready-by 4 | tee audit-pass3-crobat-seed218.txt
+          grep -q 'Searched the complete Latias-Grass T4 route: Latias ex, Grass Energy' audit-pass3-crobat-seed218.txt
+          grep -q 'T4 | READY' audit-pass3-crobat-seed218.txt
+          ! grep -q 'Searched up to 3 cards: Regidrago V, Regidrago VSTAR, Gladion' audit-pass3-crobat-seed218.txt
+
+      - name: Run complete Release suite
+        shell: bash
+        run: ctest --test-dir build --parallel 4 --output-on-failure | tee release-suite.txt
+
+      - name: Generate all-condition T2 and T3 probability matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit-results
+          ./build/regidrago_sim --trials 100000 --seed 20260727 --out audit-results/shell-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260727 --out audit-results/all-decks-matrix.csv
+
+      - name: Upload debug audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harumi-debug-audit-pass12-${{ github.run_attempt }}
+          path: |
+            exact-source.tar.gz
+            static-scan.txt
+            audit-pass*.txt
+            audit-results/*.csv
+            release-suite.txt
+            tested-main.txt
+            tested-head.txt
+            audit-diff.txt
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+          if-no-files-found: warn

@@ -1,8 +1,44 @@
   void run_secret_box_turn() {
-    const bool issue_1634_route =
-        issue_1634_secret_box_latias_burnet_axes_visible() &&
+    const bool issue_1634_axes =
+        issue_1634_secret_box_latias_burnet_axes_visible();
+    const bool issue_1634_costs =
         issue_1634_secret_box_latias_burnet_costs().has_value();
+    const bool issue_1634_route = issue_1634_axes && issue_1634_costs;
     if (!issue_1634_route) {
+      const bool powered_benched_vstar = std::any_of(
+          state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
+            return pokemon.card == Card::RegidragoVstar &&
+                pokemon.grass >= 2 && pokemon.fire >= 1;
+          });
+      if (state_.turn == 4 && hand_count(Card::SecretBox) > 0 && state_.active &&
+          state_.active->card == Card::DialgaGX && powered_benched_vstar) {
+        trace("POLICY", "P-KNOWLEDGE-01; P-DCI-01; R-SECRET-BOX-01",
+              "Issue-1634 route gates: axes=" +
+                  std::to_string(issue_1634_axes) +
+                  ", costs=" + std::to_string(issue_1634_costs) +
+                  ", combo=" + std::to_string(secret_box_combo_enabled()) +
+                  ", K1=" + std::to_string(deck_seen_) +
+                  ", item=" + std::to_string(!item_locked()) +
+                  ", supporter=" + std::to_string(supporter_allowed()) +
+                  ", retreat=" + std::to_string(!state_.retreat_used) +
+                  ", basic=" + std::to_string(is_basic(state_.active->card)) +
+                  ", bench=" + std::to_string(bench_space() > 0) +
+                  ", active-axis=" + std::to_string(need_active_vstar()) +
+                  ", energy=" + std::to_string(!need_energy()) +
+                  ", payload=" + std::to_string(need_payload()) +
+                  ", payload-turn=" +
+                  std::to_string(can_play_payload_this_turn()) +
+                  ", latias-ability=" +
+                  std::to_string(ability_available_for_pokemon(Card::LatiasEx)) +
+                  ", treasure=" + std::to_string(
+                      count_of(state_.deck, Card::MysteriousTreasure) > 0) +
+                  ", latias=" + std::to_string(
+                      count_of(state_.deck, Card::LatiasEx) > 0) +
+                  ", burnet=" + std::to_string(
+                      count_of(state_.deck, Card::ProfessorBurnet) > 0) +
+                  ", deck-payload=" +
+                  std::to_string(payload_might_be_in_deck()) + ".");
+      }
       run_secret_box_turn_issue1634_original();
       return;
     }

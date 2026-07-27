@@ -95,7 +95,20 @@
         payload_might_be_in_deck();
     const bool treasure_available = hand_count(Card::MysteriousTreasure) > 0 ||
         might_be_unseen(Card::MysteriousTreasure);
-    const bool needs_treasure = !vstar_held_or_play || !payload_already;
+    const bool dawn_payload_line = dawn_line && !payload_already &&
+        payload_might_be_in_deck();
+    // Dawn can search Forretress ex as its Stage 1 and Dragapult ex as its Stage 2
+    // in the same resolution. When VSTAR is already held, that public route makes
+    // Mysterious Treasure unnecessary and leaves Secret Box's Item search free for
+    // Earthen Vessel, which discards the Dawn-searched payload and finds Fire:
+    // Dawn: https://api.pokemontcg.io/v2/cards/me2-87
+    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Core search and discard procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1619
+    const bool needs_treasure =
+        !vstar_held_or_play || (!payload_already && !dawn_payload_line);
     if (!vstar_available || !payload_available ||
         (needs_treasure && !treasure_available)) {
       return false;
@@ -362,7 +375,29 @@ if (fire_needed() > 0 && !fire_held && !fss_fire && !crispin_fire &&
             hand_count(Card::ForestSealStone) > 0 ||
             might_be_unseen(Card::ForestSealStone)));
       if (card == Card::EarthenVessel && fire_already_covered) return 7;
-      if (card == Card::QuickBall && has_any_regi()) return 7;
+if (card == Card::QuickBall && has_any_regi()) return 7;
+const bool established_prior_turn_regi =
+    (state_.active && state_.active->card == Card::RegidragoV &&
+     state_.active->entered_turn < state_.turn) ||
+    std::any_of(state_.bench.begin(), state_.bench.end(),
+                [this](const Pokemon& pokemon) {
+      return pokemon.card == Card::RegidragoV &&
+             pokemon.entered_turn < state_.turn;
+    });
+// A held Regidrago V becomes a route-replaced Secret Box cost only after a
+// separate prior-turn Regidrago V is already established and every same-turn
+// Pineco, Energy, evolution, payload, and search axis is publicly executable.
+// The live attacker remains in play, so discarding the hand copy cannot remove
+// the evolution target or delay the proven completion window:
+// Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+// Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+// Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+// Dawn: https://api.pokemontcg.io/v2/cards/me2-87
+// Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+// Core discard, search, Bench, evolution, Ability, attachment, and promotion procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+// Dynamic DCI and route replacement: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+// Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1619
+if (card == Card::RegidragoV && established_prior_turn_regi) return 7;
       if (card == Card::ForestOfVitality &&
           ((state_.active && state_.active->card == Card::Pineco &&
             state_.active->entered_turn < state_.turn) ||
@@ -611,7 +646,20 @@ if (fire_needed() > 0 && !fire_held && !fss_fire && !crispin_fire &&
         hand_count(Card::ForestOfVitality) == 0;
     const bool vstar_held_or_play = has_vstar() ||
         hand_count(Card::RegidragoVstar) > 0;
-    const bool needs_treasure = !vstar_held_or_play || !payload_ready();
+    const bool dawn_will_supply_payload = needs_dawn && supporter_allowed() &&
+        (hand_count(Card::Dawn) > 0 || might_be_unseen(Card::Dawn)) &&
+        payload_might_be_in_deck();
+    // Preserve Secret Box's Item channel for Earthen Vessel when held VSTAR and
+    // Dawn's independent Stage 1 plus Stage 2 searches already cover evolution and
+    // payload. This is the direct same-turn route, so Treasure would add a redundant
+    // connector and strand the Fire axis:
+    // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+    // Dawn: https://api.pokemontcg.io/v2/cards/me2-87
+    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1619
+    const bool needs_treasure = !vstar_held_or_play ||
+        (!payload_ready() && !dawn_will_supply_payload);
     const bool needs_fire = fire_needed() > 0 && hand_count(Card::Fire) == 0;
     const bool can_use_fss_for_fire = needs_fire && !state_.vstar_power_used &&
         (secret_box_has_live_fss_holder() ||

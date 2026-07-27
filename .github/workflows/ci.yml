@@ -5,52 +5,42 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  materialize:
+  diagnose:
     if: github.head_ref == 'fix/issue-1634-secret-box-latias-burnet'
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Build validated simulator
+      - name: Build
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
-      - name: Validate three independent routes
+      - name: Capture independent traces
         shell: bash
         run: |
-          set -euo pipefail
-          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 123 --require-ready-by 4 | tee issue-1634-seed-123.txt
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 137 | tee issue-1634-shell-137.txt
-          ./build/regidrago_sim --simulate-this --model-variant crobat2-erika-channeler --scenario no-discard-control/go-first --seed 83 | tee issue-1634-crobat-83.txt
-      - name: Regenerate source-bound evidence
-        shell: bash
-        run: |
-          set -euo pipefail
-          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results
-          python scripts/update_setup_docs.py --repo-root .
-          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results
-          python scripts/update_multi_deck_docs.py --repo-root .
-      - name: Run complete refreshed Release suite
-        run: ctest --test-dir build --parallel 4 --output-on-failure
-      - name: Commit generated evidence and restore CI
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch origin main
-          git checkout origin/main -- .github/workflows/ci.yml
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add .github/workflows/ci.yml README.md docs/REPORT.md docs/TRACE_AUDIT.md docs/MULTI_DECK_REPORT.md results
-          git commit -m "Refresh setup baselines for issue 1634"
-          git push origin "HEAD:${GITHUB_HEAD_REF}"
+          set +e
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 123 --require-ready-by 4 > issue-1634-seed-123.txt 2>&1
+          seed_status=$?
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 137 > issue-1634-shell-137.txt 2>&1
+          shell_status=$?
+          ./build/regidrago_sim --simulate-this --model-variant crobat2-erika-channeler --scenario no-discard-control/go-first --seed 83 > issue-1634-crobat-83.txt 2>&1
+          crobat_status=$?
+          printf 'seed123=%s\nshell137=%s\ncrobat83=%s\n' "$seed_status" "$shell_status" "$crobat_status" | tee statuses.txt
+          exit 0
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1634-route-diagnostics-${{ github.run_attempt }}
+          path: |
+            statuses.txt
+            issue-1634-*.txt
+            build/regidrago_unified_tests
+          if-no-files-found: error

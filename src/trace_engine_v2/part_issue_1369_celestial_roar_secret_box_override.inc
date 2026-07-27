@@ -1,15 +1,21 @@
-  // Restore the public Pineco turn-policy name after the issue-1118 body, then
-  // install the exact issue-1439 route comparator before later overrides:
+  // Restore the public Pineco turn-policy name after the issue-1118 body. Keep
+  // the issue-1439 and issue-1596 wrapper behind a second private name so the
+  // issue-1634 turn comparator can run before every existing route:
   // https://github.com/FlareZ123/pokemon-sims/issues/1439
+  // https://github.com/FlareZ123/pokemon-sims/issues/1596
+  // https://github.com/FlareZ123/pokemon-sims/issues/1634
   #undef run_secret_box_turn
+  #define run_secret_box_turn run_secret_box_turn_issue1634_original
   #include "part_issue_1439_treasure_tapu_crispin_override.inc"
+  #undef run_secret_box_turn
 
   // Restore the public Secret Box action name after the issue-1118 body, then
-  // install the K1 Latias-Burnet completion before the Celestial Roar policy:
+  // install the K1 Latias-Burnet action and turn-level completion wrappers:
   // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1634
   #undef play_secret_box
   #include "part_issue_1634_secret_box_latias_burnet_override.inc"
+  #include "part_issue_1634_secret_box_turn_override.inc"
 
   bool guaranteed_next_turn_secret_box_route_after_hold() const {
     // This hold is restricted to the registered strict-JIT Pineco recipe after

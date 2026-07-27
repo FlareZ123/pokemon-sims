@@ -1,0 +1,77 @@
+name: Harumi Issue 1605 Finalize
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: harumi-issue-1605-finalize-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  finalize:
+    if: github.head_ref == 'fix/issue-1605-current-main-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Recreate the sanitizer-validated source derivation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin fix/issue-1605-arven-redundant-payload
+          git checkout origin/fix/issue-1605-arven-redundant-payload -- scripts/fix_issue_1605_anchor.py scripts/apply_issue_1605_patch.py scripts/activate_issue_1605_arven_route.py
+          python scripts/fix_issue_1605_anchor.py
+          python scripts/harumi_adapt_issue_1605_after_1598.py
+          python scripts/apply_issue_1605_patch.py
+          python scripts/activate_issue_1605_arven_route.py
+          rm scripts/fix_issue_1605_anchor.py scripts/apply_issue_1605_patch.py scripts/activate_issue_1605_arven_route.py
+          git diff --check
+      - name: Build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Revalidate the focused route and three traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_unified_tests issue_1605_arven_redundant_payload_tests
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit/go-second --seed 7 | tee trace-seed-7.txt
+          grep -q 'T1 | PLAY SUPPORTER.*Arven' trace-seed-7.txt
+          grep -q 'T1 | DISCARD.*Mega Dragonite ex' trace-seed-7.txt
+          grep -q 'T1 | BENCH.*Regidrago V' trace-seed-7.txt
+          grep -q 'Dark Asset' trace-seed-7.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee trace-seed-43.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-first --seed 16 --require-ready-by 3 | tee trace-seed-16.txt
+      - name: Generate the required all-condition T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit-results
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-results/multi-deck-matrix.csv
+      - name: Materialize the validated source and focused regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/harumi-issue-1605-finalize.yml scripts/harumi_adapt_issue_1605_after_1598.py
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_006.inc src/trace_engine_v2/part_009a.inc src/trace_engine_v2/part_009b1.inc src/trace_engine_v2/part_012.inc src/trace_engine_v2/part_012_arven_fss_blender_contention_override.inc tests/issue_1605_arven_redundant_payload_tests.cpp .github/workflows/harumi-issue-1605-finalize.yml scripts/harumi_adapt_issue_1605_after_1598.py
+          git commit -m 'Use the Arven-Crobat route for seed 7 on current main'
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1605-finalize-${{ github.run_attempt }}
+          path: |
+            trace-*.txt
+            audit-results/*.csv
+          if-no-files-found: warn

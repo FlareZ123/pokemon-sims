@@ -25,3 +25,10 @@
   // complete route before the original Secret Box action sequence:
   // https://github.com/FlareZ123/pokemon-sims/issues/1439
   #define run_secret_box_turn run_secret_box_turn_issue1439_original
+
+  // The same source part owns play_secret_box(). Preserve it behind a wrapper so
+  // issue #1634 can add one K1 Latias-Burnet completion without changing the
+  // established Dawn, Forretress, missing-VSTAR, or held-connector routes:
+  // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1634
+  #define play_secret_box play_secret_box_issue1634_original

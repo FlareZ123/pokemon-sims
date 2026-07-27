@@ -189,10 +189,89 @@
         latias_available && stone_available && payload_might_be_in_deck();
   }
 
+  bool issue_1645_steven_latias_grass_route_available() const {
+    if (!deck_seen_ || !prizes_known() || !supporter_allowed() ||
+        scenario_.dci != DciProfile::MatchupFlexJit || state_.turn != 1 ||
+        scenario_.going_first || scenario_.locks != LockMode::None ||
+        state_.turn + 3 > scenario_.max_turn || !state_.active ||
+        !is_basic(state_.active->card) ||
+        state_.active->card == Card::RegidragoV || bench_space() == 0 ||
+        in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
+        !ability_available_for_pokemon(Card::LatiasEx) ||
+        hand_count(Card::StevensResolve) == 0 ||
+        hand_count(Card::RegidragoVstar) == 0 ||
+        hand_count(Card::EarthenVessel) == 0 ||
+        hand_count(Card::BrilliantBlender) == 0 ||
+        !need_energy() || !need_payload() ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    const Pokemon* setup_regi = target_regi();
+    if (setup_regi == nullptr || setup_regi->card != Card::RegidragoV ||
+        setup_regi->entered_turn != state_.turn || setup_regi->grass != 0 ||
+        setup_regi->fire != 0) {
+      return false;
+    }
+
+    // Steven's Resolve searches up to three unrestricted cards. In this K1 state,
+    // Latias ex and one Grass Energy are the complete target package. The held VSTAR,
+    // Earthen Vessel, Dragon cost, and Brilliant Blender already cover evolution,
+    // the remaining GGF attachments, and the current-turn matchup-flex-JIT payload.
+    // Searching redundant Pokémon or spending Gladion on a prized Crispin cannot
+    // improve the T4 finish and consumes discrete-value resources:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Supporter, Item, attachment, evolution, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1, DCI, discrete-value preservation, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1645
+    return prize_count_after_reveal(Card::Crispin) >= 2 &&
+        deck_count_after_search_started(Card::Crispin) == 0 &&
+        deck_count_after_search_started(Card::LatiasEx) > 0 &&
+        deck_count_after_search_started(Card::Grass) >= 3 &&
+        deck_count_after_search_started(Card::Fire) > 0 &&
+        payload_might_be_in_deck();
+  }
+
+  bool play_issue_1645_steven_latias_grass_route() {
+    if (!issue_1645_steven_latias_grass_route_available()) return false;
+
+    remove_one(state_.hand, Card::StevensResolve);
+    state_.discard.push_back(Card::StevensResolve);
+    state_.supporter_used = true;
+    outcome_.used_steven = true;
+    record_deck_search_knowledge("Steven's Resolve");
+
+    if (!move_deck_to_hand(Card::LatiasEx) ||
+        !move_deck_to_hand(Card::Grass)) {
+      throw std::logic_error("Known issue-1645 Steven targets disappeared");
+    }
+    shuffle(state_.deck);
+    state_.turn_ended = true;
+
+    // Selecting only these two cards is legal because Steven says "up to 3 cards".
+    // Direct source URLs are repeated beside the executable resolution and regression:
+    // https://api.pokemontcg.io/v2/cards/sm7-145
+    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/issues/1645
+    trace("PLAY SUPPORTER",
+          "R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
+          "Searched the complete Latias-Grass T4 route: Latias ex, Grass Energy. Turn ended.");
+    return true;
+  }
+
   bool should_play_steven() const {
     return should_play_steven_issue1030_original() ||
         known_burnet_t3_steven_route_available() ||
-        known_turo_t4_steven_route_available();
+        known_turo_t4_steven_route_available() ||
+        issue_1645_steven_latias_grass_route_available();
   }
 
   bool play_steven() {
@@ -204,6 +283,7 @@
     // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1067
     if (held_arven_fss_blender_finish_available()) return false;
+    if (play_issue_1645_steven_latias_grass_route()) return true;
     if (play_known_burnet_t3_steven_route()) return true;
     if (play_known_turo_t4_steven_route()) return true;
 

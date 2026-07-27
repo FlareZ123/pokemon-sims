@@ -24,6 +24,7 @@
 // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
 // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
 // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+// Battle VIP Pass: https://api.pokemontcg.io/v2/cards/swsh8-225
 // Appletun: https://api.pokemontcg.io/v2/cards/sv8-140
 // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
 // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133

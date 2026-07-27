@@ -205,3 +205,7 @@ Dragapult ex and Mega Dragonite ex are S-tier. Dialga-GX’s Timeless-GX and His
 - Add a richer opponent model with named locks, damage clocks, Iono/Judge-style hand disruption, gust, and prize-taking.
 - Add explicit damage-board analysis for Phantom Dive, Ryuno Glide, Rolling Iron, Timeless-GX, Dipplin, and Powerglass loops.
 - Add alternative-card effect modules only after their exact text and Live availability are audited.
+
+## Battle VIP Pass extension
+
+Battle VIP Pass is represented as a first-turn-only Item connector with a two-Basic direct-to-Bench cap, K1 transition, shuffle, Bench-space enforcement, played-from-hand Ability suppression, static-Ability continuity, and post-turn-one dead-card DCI. Production support is independent of deck registration. Validation uses a temporary shell derivative outside the named registry: https://api.pokemontcg.io/v2/cards/swsh8-225 https://github.com/FlareZ123/pokemon-sims/issues/1647

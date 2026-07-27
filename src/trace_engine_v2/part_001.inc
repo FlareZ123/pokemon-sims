@@ -5,6 +5,7 @@
     case Card::ForretressEx: return "Forretress ex";
     case Card::BrilliantBlender: return "Brilliant Blender";
     case Card::SecretBox: return "Secret Box";
+    case Card::BattleVipPass: return "Battle VIP Pass";
     case Card::MysteriousTreasure: return "Mysterious Treasure";
     case Card::QuickBall: return "Quick Ball";
     case Card::UltraBall: return "Ultra Ball";

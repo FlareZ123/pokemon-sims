@@ -21,6 +21,12 @@ The withdrawn Pineco Brilliant Blender proposal is not registered. Every registe
 
 Direct identities: Secret Box https://api.pokemontcg.io/v2/cards/sv6-163, Appletun https://api.pokemontcg.io/v2/cards/sv8-140, Pineco https://api.pokemontcg.io/v2/cards/sv4pt5-1, Forretress ex https://api.pokemontcg.io/v2/cards/sv4pt5-2, Dawn https://api.pokemontcg.io/v2/cards/me2-87, and Forest of Vitality https://api.pokemontcg.io/v2/cards/me1-117.
 
+## Battle VIP Pass behavior
+
+Battle VIP Pass `swsh8-225` is fully modeled as a first-turn-only Item. A legal resolution inspects the deck, establishes K1, puts up to two setup-advancing Basic Pokémon directly onto the Bench, and shuffles. Direct deck-to-Bench placement does not trigger Wonder Tag, Vital Dance, or Dark Asset because those Abilities require a play from hand. Static in-play effects such as Latias ex's Skyliner apply normally after placement. Copies remaining after turn one are stable dead-card DCI. The card is supported by the engine and tests without changing either registered 60-card recipe: https://api.pokemontcg.io/v2/cards/swsh8-225 https://github.com/FlareZ123/pokemon-sims/issues/1647
+
+The validation matrix in [`docs/BATTLE_VIP_PASS_VALIDATION.md`](docs/BATTLE_VIP_PASS_VALIDATION.md) uses an unregistered temporary shell derivative with `-1 Quick Ball`, `-1 Mysterious Treasure`, and `+2 Battle VIP Pass`. The temporary recipe is excluded from `deck_registry()` and `--all-decks`.
+
 ## Run one readable hand
 
 ```bash

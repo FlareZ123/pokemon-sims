@@ -22,7 +22,7 @@ The fixed seed makes each report reproducible. The Monte Carlo standard error sh
 - Basic Bench limit.
 - Regidrago V, Regidrago VSTAR, Tapu Lele-GX, Latias ex, Oricorio, Pineco, Forretress ex, and core search-card state transitions. Pineco and Forretress ex are intentionally available to isolated test recipes even though they are absent from the canonical sample deck: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2.
 - Regidrago V’s Celestial Roar top-three discard and Basic Energy attachment on any legal attack turn when the Active Regidrago V can advance the modeled Energy axis or, under no-discard-control, bank a permitted Dragon payload. The player going first still cannot attack on that player's first turn: https://api.pokemontcg.io/v2/cards/swsh12-135 https://www.pokemon.com/us/pokemon-tcg/rules
-- Mysterious Treasure, Quick Ball, Earthen Vessel, Brilliant Blender, Arven, Crispin, Professor Burnet, Serena draw, Tate & Liza draw, Steven’s Resolve, Gladion, Hisuian Heavy Ball, and Forest Seal Stone routes relevant to setup.
+- Mysterious Treasure, Quick Ball, Battle VIP Pass, Earthen Vessel, Brilliant Blender, Arven, Crispin, Professor Burnet, Serena draw, Tate & Liza draw, Steven’s Resolve, Gladion, Hisuian Heavy Ball, and Forest Seal Stone routes relevant to setup. Battle VIP Pass is limited to the player’s first turn, places up to two Basic Pokémon directly from deck onto the Bench, establishes K1, shuffles, and does not trigger Abilities that require play from hand: https://api.pokemontcg.io/v2/cards/swsh8-225.
 - Path-style Rule Box Ability suppression and Field Blower removal while Items are legal.
 - Item-lock restrictions.
 - Strict same-turn payload tracking.
@@ -107,6 +107,8 @@ This is a principled approximation. DCI in a real match depends on opponent deck
 <a name="lock-scenarios"></a>
 <a name="lock-semantics"></a>
 <a name="lock-model"></a>
+
+Battle VIP Pass has stable time-dependent DCI. It remains live only during the player’s first turn while an observable setup-advancing Basic target may exist and Bench space is available. Every copy held after that turn is unplayable by printed text and is prioritized as discard fuel ahead of live connectors: https://api.pokemontcg.io/v2/cards/swsh8-225 https://github.com/FlareZ123/pokemon-sims/issues/1647
 
 ## Lock interpretation
 

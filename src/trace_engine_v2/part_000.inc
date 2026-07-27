@@ -47,6 +47,7 @@ enum class Card : std::uint8_t {
   ForretressEx,
   BrilliantBlender,
   SecretBox,
+  BattleVipPass,
   MysteriousTreasure,
   QuickBall,
   UltraBall,

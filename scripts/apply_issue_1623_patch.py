@@ -3,13 +3,18 @@ from __future__ import annotations
 import os
 import tempfile
 from pathlib import Path
-from typing import TextIO
+from typing import BinaryIO
 
 
-def _lock(file: TextIO) -> None:
+def _lock(file: BinaryIO) -> None:
     if os.name == "nt":
         import msvcrt
 
+        file.seek(0, os.SEEK_END)
+        if file.tell() == 0:
+            file.write(b"\0")
+            file.flush()
+        file.seek(0)
         msvcrt.locking(file.fileno(), msvcrt.LK_LOCK, 1)
         return
 
@@ -18,7 +23,7 @@ def _lock(file: TextIO) -> None:
     fcntl.flock(file.fileno(), fcntl.LOCK_EX)
 
 
-def _unlock(file: TextIO) -> None:
+def _unlock(file: BinaryIO) -> None:
     if os.name == "nt":
         import msvcrt
 

@@ -34,6 +34,7 @@ jobs:
           git rev-parse origin/main | tee tested-main.txt
           python scripts/apply_issue_1619_patch.py
           python scripts/apply_issue_1619_vessel_cost_patch.py
+          python scripts/apply_issue_1619_full_route_test_patch.py
           git diff --check
           git diff -- src/trace_engine_v2/part_issue_1118_secret_box.inc src/trace_engine_v2/part_010.inc tests/issue_1118_multi_deck_secret_box_tests.cpp | tee issue-1619.patch
 
@@ -97,7 +98,7 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           rm -f docs/CROBAT_MODEL_REPORT.md.lock results/crobat_variant_model.csv.lock
           git add src/trace_engine_v2/part_issue_1118_secret_box.inc src/trace_engine_v2/part_010.inc tests/issue_1118_multi_deck_secret_box_tests.cpp README.md docs results
-          git rm .github/workflows/issue-1619-validation.yml scripts/apply_issue_1619_patch.py scripts/apply_issue_1619_vessel_cost_patch.py
+          git rm .github/workflows/issue-1619-validation.yml scripts/apply_issue_1619_patch.py scripts/apply_issue_1619_vessel_cost_patch.py scripts/apply_issue_1619_full_route_test_patch.py
           git commit -m 'Complete Secret Box Dawn Vessel route for seed 89'
           git push origin HEAD:${GITHUB_HEAD_REF}
 

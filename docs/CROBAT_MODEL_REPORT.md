@@ -8,7 +8,7 @@ Crobat V `swsh3-104` uses Dark Asset only when played from hand to the Bench dur
 
 ## Result
 
-No tested Crobat swap made the shell faster. The least damaging variant was `crobat1-erika`, which averaged -0.529 percentage points of T3 readiness across all scenarios.
+No tested Crobat swap made the shell faster. The least damaging variant was `crobat1-erika`, which averaged -0.533 percentage points of T3 readiness across all scenarios.
 
 Dark Asset is a probabilistic hand-refresh connector with a Bench cost. The tested cuts remove cards with recovery, lock-answer, gust, Tool, Prize-information, or matchup value. Those discrete losses remain relevant even when a setup percentage is close.
 
@@ -19,18 +19,18 @@ Dark Asset utilization is the percentage of games with at least one legal use. T
 | Variant | Cuts | Crobat | Mean ΔT2 | Mean ΔT3 | Mean ΔT4 | T3 scenarios improved | Games using Dark Asset | Mean cards drawn per using game |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
 | `regidrago-shell` | none | 0 | +0.000 pp | +0.000 pp | +0.000 pp | 0/16 | 0.000% | 0.000 |
-| `crobat1-erika` | Erika's Invitation | 1 | -0.417 pp | -0.529 pp | -0.455 pp | 2/16 | 12.879% | 1.473 |
-| `crobat1-roseanne` | Roseanne's Backup | 1 | -0.405 pp | -0.553 pp | -0.473 pp | 2/16 | 12.928% | 1.473 |
-| `crobat1-powerglass` | Powerglass | 1 | -0.353 pp | -0.569 pp | -0.467 pp | 0/16 | 12.932% | 1.471 |
-| `crobat1-team-yell` | Team Yell's Cheer | 1 | -0.430 pp | -0.588 pp | -0.560 pp | 1/16 | 12.882% | 1.471 |
-| `crobat1-channeler` | Channeler | 1 | -0.461 pp | -0.641 pp | -0.567 pp | 1/16 | 12.866% | 1.469 |
-| `crobat1-turo` | Professor Turo's Scenario | 1 | -0.398 pp | -0.751 pp | -0.892 pp | 2/16 | 12.921% | 1.473 |
-| `crobat2-erika-channeler` | Erika's Invitation + Channeler | 2 | -0.727 pp | -1.084 pp | -0.996 pp | 0/16 | 21.789% | 1.427 |
-| `crobat2-erika-team-yell` | Erika's Invitation + Team Yell's Cheer | 2 | -0.772 pp | -1.097 pp | -0.974 pp | 0/16 | 21.792% | 1.428 |
-| `crobat1-heavy-ball` | Hisuian Heavy Ball | 1 | -0.691 pp | -1.176 pp | -1.179 pp | 0/16 | 12.694% | 1.477 |
-| `crobat1-tapu-lele` | Tapu Lele-GX | 1 | -0.975 pp | -1.303 pp | -1.609 pp | 2/16 | 13.246% | 1.473 |
-| `crobat2-erika-tapu-lele` | Erika's Invitation + Tapu Lele-GX | 2 | -1.329 pp | -1.901 pp | -2.193 pp | 1/16 | 22.090% | 1.435 |
-| `crobat2-tapu-lele-both` | Tapu Lele-GX + Tapu Lele-GX | 2 | -4.149 pp | -3.687 pp | -4.224 pp | 2/16 | 23.624% | 1.458 |
+| `crobat1-erika` | Erika's Invitation | 1 | -0.440 pp | -0.533 pp | -0.468 pp | 2/16 | 12.881% | 1.473 |
+| `crobat1-roseanne` | Roseanne's Backup | 1 | -0.441 pp | -0.568 pp | -0.483 pp | 2/16 | 12.932% | 1.473 |
+| `crobat1-powerglass` | Powerglass | 1 | -0.388 pp | -0.580 pp | -0.486 pp | 0/16 | 12.926% | 1.470 |
+| `crobat1-team-yell` | Team Yell's Cheer | 1 | -0.466 pp | -0.612 pp | -0.574 pp | 1/16 | 12.866% | 1.472 |
+| `crobat1-channeler` | Channeler | 1 | -0.476 pp | -0.635 pp | -0.563 pp | 1/16 | 12.878% | 1.468 |
+| `crobat1-turo` | Professor Turo's Scenario | 1 | -0.414 pp | -0.756 pp | -0.885 pp | 2/16 | 12.898% | 1.472 |
+| `crobat2-erika-channeler` | Erika's Invitation + Channeler | 2 | -0.769 pp | -1.113 pp | -1.019 pp | 0/16 | 21.776% | 1.427 |
+| `crobat2-erika-team-yell` | Erika's Invitation + Team Yell's Cheer | 2 | -0.809 pp | -1.125 pp | -1.013 pp | 0/16 | 21.764% | 1.429 |
+| `crobat1-heavy-ball` | Hisuian Heavy Ball | 1 | -0.718 pp | -1.177 pp | -1.183 pp | 0/16 | 12.686% | 1.478 |
+| `crobat1-tapu-lele` | Tapu Lele-GX | 1 | -0.996 pp | -1.316 pp | -1.615 pp | 2/16 | 13.247% | 1.473 |
+| `crobat2-erika-tapu-lele` | Erika's Invitation + Tapu Lele-GX | 2 | -1.353 pp | -1.909 pp | -2.210 pp | 1/16 | 22.084% | 1.435 |
+| `crobat2-tapu-lele-both` | Tapu Lele-GX + Tapu Lele-GX | 2 | -4.176 pp | -3.695 pp | -4.239 pp | 2/16 | 23.624% | 1.458 |
 
 ## Interpretation boundaries
 

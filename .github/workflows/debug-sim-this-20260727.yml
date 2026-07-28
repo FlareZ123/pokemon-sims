@@ -1,0 +1,96 @@
+name: Debug simulate-this audit 20260727
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  shell-strict-second:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure and build
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2 --target regidrago_sim
+      - name: Audit shell strict-JIT going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official turn, attachment, evolution, Ability, Item, Supporter, retreat, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Repository K0/K1, DCI/JIT, resource preservation, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 2411 | tee shell-strict-second.txt
+          git rev-parse HEAD | tee tested-head.txt
+      - name: Upload shell strict trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shell-strict-second-${{ github.run_attempt }}
+          path: |
+            shell-strict-second.txt
+            tested-head.txt
+          if-no-files-found: error
+
+  pineco-flex-first:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure and build
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2 --target regidrago_sim
+      - name: Audit Pineco matchup-flex going first
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+          # Forretress ex / Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # Official turn, Bench, evolution, Ability, Item, Supporter, retreat, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Repository Secret Box, AMR, DCI/JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-first --seed 2412 | tee pineco-flex-first.txt
+          git rev-parse HEAD | tee tested-head.txt
+      - name: Upload Pineco flex trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pineco-flex-first-${{ github.run_attempt }}
+          path: |
+            pineco-flex-first.txt
+            tested-head.txt
+          if-no-files-found: error
+
+  shell-rulebox-lock-second:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure and build
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2 --target regidrago_sim
+      - name: Audit shell Rule Box Ability lock going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Path to the Peak Rule Box Ability lock: https://api.pokemontcg.io/v2/cards/swsh6-148
+          # Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+          # Official Stadium, Ability, turn, attachment, evolution, Item, Supporter, retreat, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Repository lock, DCI/JIT, K0/K1, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 2413 | tee shell-rulebox-lock-second.txt
+          git rev-parse HEAD | tee tested-head.txt
+      - name: Upload shell lock trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shell-rulebox-lock-second-${{ github.run_attempt }}
+          path: |
+            shell-rulebox-lock-second.txt
+            tested-head.txt
+          if-no-files-found: error

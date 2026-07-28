@@ -14,8 +14,8 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 | Strict JIT, going second | 29.424% | 47.542% | +18.118 pp | 52.573% | 62.701% | +10.128 pp | 63.853% | 73.293% | +9.440 pp |
 | Matchup-flex JIT, going first | 16.265% | 20.749% | +4.484 pp | 47.590% | 48.324% | +0.734 pp | 63.406% | 66.730% | +3.324 pp |
 | Matchup-flex JIT, going second | 37.242% | 50.897% | +13.655 pp | 60.739% | 65.938% | +5.199 pp | 71.008% | 75.640% | +4.632 pp |
-| No discard control, going first | 20.134% | 25.361% | +5.227 pp | 56.000% | 60.065% | +4.065 pp | 72.128% | 75.670% | +3.542 pp |
-| No discard control, going second | 39.819% | 59.679% | +19.860 pp | 66.786% | 74.025% | +7.239 pp | 77.975% | 82.431% | +4.456 pp |
+| No discard control, going first | 20.134% | 25.343% | +5.209 pp | 56.000% | 60.075% | +4.075 pp | 72.128% | 75.684% | +3.556 pp |
+| No discard control, going second | 39.819% | 59.653% | +19.834 pp | 66.786% | 74.024% | +7.238 pp | 77.975% | 82.430% | +4.455 pp |
 
 ## Regidrago shell
 
@@ -55,14 +55,14 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 |---|---:|---:|---:|---:|
 | Strict JIT, going first | 19.380% ± 0.125 | 47.051% ± 0.158 | 65.171% ± 0.151 | 34.829% ± 0.151 |
 | Matchup-flex JIT, going first | 20.749% ± 0.128 | 48.324% ± 0.158 | 66.730% ± 0.149 | 33.270% ± 0.149 |
-| No discard control, going first | 25.361% ± 0.138 | 60.065% ± 0.155 | 75.670% ± 0.136 | 24.330% ± 0.136 |
+| No discard control, going first | 25.343% ± 0.138 | 60.075% ± 0.155 | 75.684% ± 0.136 | 24.316% ± 0.136 |
 | Strict JIT, turn-two Item lock, first | 4.506% ± 0.066 | 7.697% ± 0.084 | 13.268% ± 0.107 | 86.732% ± 0.107 |
 | Strict JIT, full Item lock, first | 2.777% ± 0.052 | 5.687% ± 0.073 | 10.732% ± 0.098 | 89.268% ± 0.098 |
 | Strict JIT, Rule Box Ability lock, first | 4.870% ± 0.068 | 17.748% ± 0.121 | 29.766% ± 0.145 | 70.234% ± 0.145 |
 | Strict JIT, combined lock, first | 0.475% ± 0.022 | 1.337% ± 0.036 | 3.098% ± 0.055 | 96.902% ± 0.055 |
 | Strict JIT, going second | 47.542% ± 0.158 | 62.701% ± 0.153 | 73.293% ± 0.140 | 26.707% ± 0.140 |
 | Matchup-flex JIT, going second | 50.897% ± 0.158 | 65.938% ± 0.150 | 75.640% ± 0.136 | 24.360% ± 0.136 |
-| No discard control, going second | 59.679% ± 0.155 | 74.025% ± 0.139 | 82.431% ± 0.120 | 17.569% ± 0.120 |
+| No discard control, going second | 59.653% ± 0.155 | 74.024% ± 0.139 | 82.430% ± 0.120 | 17.570% ± 0.120 |
 | Strict JIT, turn-two Item lock, second | 6.605% ± 0.079 | 11.845% ± 0.102 | 17.561% ± 0.120 | 82.439% ± 0.120 |
 | Strict JIT, full Item lock, second | 4.397% ± 0.065 | 9.128% ± 0.091 | 14.467% ± 0.111 | 85.533% ± 0.111 |
 | Strict JIT, Rule Box Ability lock, second | 12.142% ± 0.103 | 23.759% ± 0.135 | 33.395% ± 0.149 | 66.605% ± 0.149 |
@@ -76,10 +76,10 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 |---|---:|---:|---:|---:|
 | Strict JIT, going first | 19.380% | 27.671% | 18.120% | 10.983% |
 | Matchup-flex JIT, going first | 20.749% | 27.575% | 18.406% | 11.023% |
-| No discard control, going first | 25.361% | 34.704% | 15.605% | 7.181% |
+| No discard control, going first | 25.343% | 34.732% | 15.609% | 7.182% |
 | Strict JIT, going second | 47.542% | 15.159% | 10.592% | 7.254% |
 | Matchup-flex JIT, going second | 50.897% | 15.041% | 9.702% | 6.763% |
-| No discard control, going second | 59.679% | 14.346% | 8.406% | 4.604% |
+| No discard control, going second | 59.653% | 14.371% | 8.406% | 4.598% |
 
 ## Secret Box route graph
 
@@ -118,18 +118,18 @@ The following row is `regidrago-pineco`, no-discard-control, going second. Count
 
 | Route metric | Value |
 |---|---:|
-| Secret Box use | 64.366% |
-| Exploding Energy use | 78.626% |
-| Steven use | 35.704% |
-| Star Alchemy use | 48.086% |
-| Secret Box attempts | 1.470 per game |
+| Secret Box use | 64.384% |
+| Exploding Energy use | 78.624% |
+| Steven use | 35.752% |
+| Star Alchemy use | 48.074% |
+| Secret Box attempts | 1.471 per game |
 | Cost blocks | 0.048 per game |
-| Missing route axis | 0.777 per game |
+| Missing route axis | 0.778 per game |
 | Bench blocks | 0.001 per game |
 | Arven banks | 0.275 per game |
 | Steven banks | 0.302 per game |
 | Gladion banks | 0.040 per game |
-| FSS banks | 0.046 per game |
+| FSS banks | 0.045 per game |
 
 ### Overlapping axis and zone counters
 
@@ -160,6 +160,6 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 ## Provenance
 
-Simulator policy digest: `b28f341c872e2d21b529f32ba0a1181d6ef3433643fea4deac4e1954da7fc0ee`.
+Simulator policy digest: `66ea6198a3b184ac54f384d3d3517ab7bb2518fc0a929f2391508999b3a72b4b`.
 
-Comparison CSV SHA-256: `5c52b4aa8c1aaebd7d3d995eda7bc2fc885dba024a962bbb553868008af6ac49`.
+Comparison CSV SHA-256: `fc5623e6330354231baca24a86ddb196bceee3cdd98ba1bf094daf5e6dd048ab`.

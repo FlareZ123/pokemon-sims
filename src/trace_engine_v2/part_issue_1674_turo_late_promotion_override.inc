@@ -23,10 +23,12 @@
     return play_turo_active_promotion_route();
   }
 
-  void run_turn() {
+  void run_turn_issue1675_original() {
     run_turn_issue1674_original();
     if (complete_issue_1674_turo_late_promotion()) {
       trace("POLICY", "P-AXIS-01; R-GAME-SUPPORTER",
             "Completed the deadline Professor Turo promotion route: " + state_line());
     }
   }
+
+#include "part_issue_1675_latias_late_promotion_override.inc"

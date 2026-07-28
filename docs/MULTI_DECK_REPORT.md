@@ -42,12 +42,12 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 
 | Scenario | Ready on T2 | Ready on T3 | Ready on T4 | Ready on T5 diagnostic |
 |---|---:|---:|---:|---:|
-| Strict JIT, going first | 12.007% | 26.761% | 16.717% | 10.560% |
-| Matchup-flex JIT, going first | 16.299% | 31.322% | 15.813% | 9.568% |
-| No discard control, going first | 20.103% | 35.818% | 16.138% | 9.035% |
-| Strict JIT, going second | 29.402% | 23.310% | 11.207% | 7.942% |
-| Matchup-flex JIT, going second | 37.320% | 23.480% | 10.234% | 6.996% |
-| No discard control, going second | 39.839% | 27.004% | 11.141% | 6.677% |
+| Strict JIT, going first | 12.007% | 26.761% | 16.717% | 10.575% |
+| Matchup-flex JIT, going first | 16.299% | 31.322% | 15.813% | 9.580% |
+| No discard control, going first | 20.103% | 35.818% | 16.138% | 9.042% |
+| Strict JIT, going second | 29.402% | 23.310% | 11.207% | 7.954% |
+| Matchup-flex JIT, going second | 37.320% | 23.480% | 10.234% | 6.999% |
+| No discard control, going second | 39.839% | 27.004% | 11.141% | 6.678% |
 
 ## Regidrago-Pineco with Secret Box
 
@@ -160,6 +160,6 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 ## Provenance
 
-Simulator policy digest: `942711c4aad20757f939c2590f9b1dad935d89c2f83c6a37106a1d4f1334da8f`.
+Simulator policy digest: `9e2dd68c1f42337f8270f4b31784c42745db1590b4e796eaae8610828593cb1b`.
 
-Comparison CSV SHA-256: `43dd954565999a926bce98f877986ecc33071a160f17fbc45caa014e4a05350a`.
+Comparison CSV SHA-256: `eff18f269d5d3bcf2805d9b89341184b8643a5293a45a2fc37830f52bfe86bbe`.

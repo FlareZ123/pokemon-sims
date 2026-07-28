@@ -1,6 +1,7 @@
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
+#include <cstdint>
 #include <iostream>
 #include <random>
 #include <stdexcept>

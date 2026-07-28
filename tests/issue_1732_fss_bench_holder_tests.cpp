@@ -1,6 +1,7 @@
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
+#include <algorithm>
 #include <random>
 #include <stdexcept>
 #include <vector>
@@ -61,7 +62,8 @@ void test_benched_holder_preserves_active_tool_slot() {
          "Forest Seal Stone consumed the Active Tool slot despite an open Benched holder.");
   expect(state.bench.front().tool == sim::Tool::ForestSealStone,
          "Forest Seal Stone did not use the open Benched Regidrago holder.");
-  expect(sim::count_of(state.hand, sim::Card::ForestSealStone) == 0,
+  expect(std::find(state.hand.begin(), state.hand.end(),
+                   sim::Card::ForestSealStone) == state.hand.end(),
          "Forest Seal Stone remained in hand after attachment.");
 }
 

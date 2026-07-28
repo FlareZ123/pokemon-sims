@@ -1,0 +1,81 @@
+name: Debug audit 2026-07-28 Harumi three passes 3
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.head_ref == 'audit/debug-20260728-harumi-three-passes-3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Pass 1 shell matchup-flex going first
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # K0/K1, DCI, AMR, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          # Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 4242 | tee audit-pass-1-shell-seed-4242.txt
+      - name: Pass 2 Pineco no-discard going first
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+          # Forretress ex / Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Pineco route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+          # Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario no-discard-control/go-first --seed 909 | tee audit-pass-2-pineco-seed-909.txt
+      - name: Pass 3 Crobat strict going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Crobat V / Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+          # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Crobat connector and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#crobat-v-draw-connector-policy
+          # Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          ./build/regidrago_sim --simulate-this --model-variant crobat2-erika-channeler --scenario strict-jit/go-second --seed 1337 | tee audit-pass-3-crobat-seed-1337.txt
+      - name: Reverify issue 1719 witness
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+          # Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+          # Current claimed bug: https://github.com/FlareZ123/pokemon-sims/issues/1719
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 42 --require-ready-by 3 | tee issue-1719-seed-42.txt
+      - name: Reverify issue 1721 witness
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+          # Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+          # Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+          # Confirmation-pending bug: https://github.com/FlareZ123/pokemon-sims/issues/1721
+          ./build/regidrago_sim --simulate-this --model-variant crobat2-erika-channeler --scenario strict-jit/go-second --seed 31415 | tee issue-1721-seed-31415.txt
+      - name: Package exact tested source
+        shell: bash
+        run: git ls-files -z | tar --null --files-from=- --create --gzip --file=repository-source.tgz
+      - name: Record tested commit
+        run: git rev-parse HEAD | tee tested-head.txt
+      - name: Upload debug evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-audit-harumi-three-passes-3-${{ github.run_attempt }}
+          path: |
+            audit-pass-*.txt
+            issue-*.txt
+            repository-source.tgz
+            tested-head.txt
+            build/regidrago_sim
+          if-no-files-found: warn

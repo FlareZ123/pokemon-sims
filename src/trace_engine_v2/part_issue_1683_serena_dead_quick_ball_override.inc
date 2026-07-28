@@ -17,9 +17,16 @@
     // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Core Supporter, Item, Ability, search, discard, and Bench procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Dynamic DCI and earliest productive route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Engine's implicitly copied reference member continues to refer to the same
+    // object, so preserve the live RNG and suppress trace output around this silent
+    // projection: https://eel.is/c++draft/class.copy.ctor#15
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1683
+    const std::mt19937_64 live_rng = rng_;
     Engine projected = *this;
-    return !projected.play_quick_ball(false);
+    projected.trace_ = nullptr;
+    const bool quick_ball_has_route = projected.play_quick_ball(false);
+    rng_ = live_rng;
+    return !quick_ball_has_route;
   }
 
   bool play_serena(const bool allow_zero_draw_payload_completion = false) {

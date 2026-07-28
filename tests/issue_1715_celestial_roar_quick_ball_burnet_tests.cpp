@@ -26,6 +26,14 @@ void expect(const bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);
 }
 
+const sim::DeckRecipe& registered_shell_recipe() {
+  const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
+  if (deck == nullptr) {
+    throw std::runtime_error("The registered regidrago-shell recipe is unavailable.");
+  }
+  return deck->recipe;
+}
+
 bool trace_contains(const sim::TraceLog& trace, const std::string& expected) {
   return std::any_of(trace.lines.begin(), trace.lines.end(),
                      [&expected](const std::string& line) {
@@ -90,7 +98,7 @@ void test_registered_seed_holds_and_reaches_t2() {
 void test_exact_k1_route_is_available() {
   std::mt19937_64 rng{17150};
   const sim::Scenario scenario = exact_scenario();
-  const auto recipe = sim::shell_recipe();
+  const sim::DeckRecipe& recipe = registered_shell_recipe();
   sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, exact_t1_state());
   expect(sim::EngineTestAccess::available(engine),
@@ -100,7 +108,7 @@ void test_exact_k1_route_is_available() {
 void test_knowledge_cost_and_energy_gates() {
   std::mt19937_64 rng{17151};
   const sim::Scenario scenario = exact_scenario();
-  const auto recipe = sim::shell_recipe();
+  const sim::DeckRecipe& recipe = registered_shell_recipe();
   sim::Engine engine(scenario, recipe, rng);
 
   sim::EngineTestAccess::set_state(engine, exact_t1_state(), false);
@@ -132,7 +140,7 @@ void test_knowledge_cost_and_energy_gates() {
 void test_deck_connector_gates() {
   std::mt19937_64 rng{17152};
   const sim::Scenario scenario = exact_scenario();
-  const auto recipe = sim::shell_recipe();
+  const sim::DeckRecipe& recipe = registered_shell_recipe();
   sim::Engine engine(scenario, recipe, rng);
 
   for (const sim::Card missing : {sim::Card::TapuLeleGX,
@@ -155,8 +163,8 @@ void test_deck_connector_gates() {
 void test_bench_and_lock_gates() {
   std::mt19937_64 bench_rng{17153};
   const sim::Scenario bench_scenario = exact_scenario();
-  const auto bench_recipe = sim::shell_recipe();
-  sim::Engine occupied(bench_scenario, bench_recipe, bench_rng);
+  const sim::DeckRecipe& recipe = registered_shell_recipe();
+  sim::Engine occupied(bench_scenario, recipe, bench_rng);
   sim::State state = exact_t1_state();
   for (int index = 0; index < 5; ++index) {
     state.bench.push_back(sim::Pokemon{sim::Card::RegidragoV, 1});
@@ -171,8 +179,7 @@ void test_bench_and_lock_gates() {
                                    sim::LockMode::FullItem}) {
     std::mt19937_64 lock_rng{17154 + static_cast<unsigned>(lock)};
     const sim::Scenario locked_scenario = exact_scenario(lock);
-    const auto locked_recipe = sim::shell_recipe();
-    sim::Engine locked(locked_scenario, locked_recipe, lock_rng);
+    sim::Engine locked(locked_scenario, recipe, lock_rng);
     sim::EngineTestAccess::set_state(locked, exact_t1_state());
     expect(!sim::EngineTestAccess::available(locked),
            "The route ignored an applicable Item, Ability, or Supporter lock.");

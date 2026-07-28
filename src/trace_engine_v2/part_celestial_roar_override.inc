@@ -40,6 +40,47 @@
         std::any_of(state_.deck.begin(), state_.deck.end(), is_payload);
   }
 
+  bool issue_1719_earthen_vessel_next_window_route() const {
+    if (!deck_seen_ || !strict_payload_timing() || state_.turn_ended ||
+        !state_.active || state_.active->card != Card::RegidragoV ||
+        !state_.manual_energy_used || state_.turn >= scenario_.max_turn) {
+      return false;
+    }
+
+    const int missing_grass = std::max(0, 2 - state_.active->grass);
+    const int missing_fire = std::max(0, 1 - state_.active->fire);
+    const bool item_available_next_turn =
+        scenario_.locks != LockMode::FullItem &&
+        scenario_.locks != LockMode::FullCombined &&
+        !(scenario_.locks == LockMode::TurnTwoItem && state_.turn + 1 >= 2);
+    const bool required_energy_in_known_deck =
+        (missing_grass == 1 &&
+         deck_count_after_search_started(Card::Grass) > 0) ||
+        (missing_fire == 1 &&
+         deck_count_after_search_started(Card::Fire) > 0);
+    const bool held_payload_cost =
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    const bool live_vstar_axis =
+        hand_count(Card::RegidragoVstar) > 0 ||
+        deck_count_after_search_started(Card::RegidragoVstar) > 0;
+
+    // Earthen Vessel already covers the one missing Basic Energy and the strict-JIT
+    // payload outlet on the next legal evolution window. Celestial Roar cannot change
+    // the marginal identity of the next unknown draw, while its random top-three
+    // processing can permanently remove Regidrago VSTAR and search outs before that
+    // live axis is reached. Hold only from K1 when the Vessel cost, searched Energy,
+    // future manual attachment, Item access, and VSTAR axis are all observable:
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, attachment, evolution, and attack procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Observable-state policy, strict-JIT, dynamic DCI, and resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1719
+    return missing_grass + missing_fire == 1 &&
+        hand_count(Card::EarthenVessel) > 0 && item_available_next_turn &&
+        required_energy_in_known_deck && held_payload_cost && live_vstar_axis;
+  }
+
   bool use_celestial_roar() {
     if (first_turn_going_first() || state_.turn_ended || !state_.active ||
         state_.active->card != Card::RegidragoV) {
@@ -70,6 +111,8 @@
         deck_count_after_search_started(Card::RegidragoVstar) > 0;
     const bool held_quick_ball_tapu_burnet_route =
         issue_1715_quick_ball_tapu_burnet_next_window_route();
+    const bool held_vessel_energy_payload_route =
+        issue_1719_earthen_vessel_next_window_route();
     const bool held_supporter_payload_route =
         (hand_count(Card::Serena) > 0 && held_dragon_payload) ||
         (deck_seen_ && hand_count(Card::ProfessorBurnet) > 0 &&
@@ -98,15 +141,15 @@
         state_.manual_energy_used && state_.turn < scenario_.max_turn &&
         missing_grass + missing_fire == 1 && held_needed_energy &&
         (strict_held_payload_route || no_control_banked_payload_route);
-    if (held_energy_and_payload_route_guarantee_next_window) {
+    if (held_energy_and_payload_route_guarantee_next_window ||
+        held_vessel_energy_payload_route) {
       // The unevolved Regidrago V cannot become Regidrago VSTAR before a later legal
-      // evolution window. One held Basic Energy already guarantees GGF through that
-      // turn's manual attachment. Held Serena plus a Dragon, held Professor Burnet
-      // plus a known deck Dragon, held Gladion plus a known prized Mysterious
-      // Treasure, or a payable Quick Ball to Tapu Lele-GX to Professor Burnet chain
-      // guarantees a legal strict-JIT payload and evolution route. Celestial Roar
-      // cannot improve the earliest ready window and can randomly remove the
-      // unresolved VSTAR or connector:
+      // evolution window. A held Basic Energy plus a direct payload route guarantees
+      // GGF and strict-JIT on that window. Separately, a held payable Earthen Vessel
+      // can provide the single missing Energy and discard the held payload whenever
+      // the still-live VSTAR axis becomes available. Celestial Roar cannot improve
+      // either earliest window and can randomly remove the unresolved VSTAR or search
+      // connector:
       // Regidrago V and Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
       // Regidrago VSTAR evolution and Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
       // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
@@ -115,14 +158,16 @@
       // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
       // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
       // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
       // Manual attachment, evolution, attack, Item, Prize exchange, Ability, and Supporter procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
       // Strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
       // Earliest complete route and resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
       // Existing confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1079
       // Confirmed Gladion-Treasure continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/1174
       // Confirmed Quick Ball-Tapu-Burnet continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/1715
-      trace("HOLD ATTACK", "R-RV-01; R-GAME-ENERGY; R-SERENA-01; R-BURNET-01; R-GLADION-01; R-MT-01; R-QB-01; R-TAPU-01; P-JIT-01; P-COMPRESS-01",
-            "Held Energy and a guaranteed payload route already cover the next legal ready window.");
+      // Confirmed Earthen Vessel continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/1719
+      trace("HOLD ATTACK", "R-RV-01; R-GAME-ENERGY; R-SERENA-01; R-BURNET-01; R-GLADION-01; R-MT-01; R-QB-01; R-TAPU-01; R-VESSEL-01; P-JIT-01; P-COMPRESS-01",
+            "A protected Energy and payload continuation already covers the earliest later ready window.");
       return false;
     }
 

@@ -119,6 +119,22 @@ bool complete_issue_1597_banked_steven_turn() {
 
 #include "part_issue_1751_crobat_compression.inc"
 
+  bool issue_1751_recipe_has_crobat() const {
+    // Keep the registered shell and Pineco action selectors on the authoritative
+    // legacy policy. This replacement turn policy is recipe-gated to experimental
+    // Crobat V lists, matching every other Crobat modeling decision:
+    // Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104
+    // Modeling boundary: https://github.com/FlareZ123/pokemon-sims/issues/1394
+    // Confirmed sequencing bug: https://github.com/FlareZ123/pokemon-sims/issues/1751
+    return std::any_of(recipe_.begin(), recipe_.end(), [](const auto& entry) {
+      return entry.first == Card::CrobatV && entry.second > 0;
+    });
+  }
+
 void run_turn() {
+  if (!issue_1751_recipe_has_crobat()) {
+    run_turn_original();
+    return;
+  }
   if (secret_box_combo_enabled()) {
     run_secret_box_turn();

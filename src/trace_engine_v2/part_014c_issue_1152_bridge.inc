@@ -185,7 +185,10 @@
 // Earliest legal ready-state policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
 // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1325
 #define use_celestial_roar use_celestial_roar_after_latias_promotion
+#define run_turn run_turn_issue1673_original
 #include "part_014c_latias_bench_override.inc"
+#undef run_turn
+#include "part_issue_1673_secret_box_deadline_override.inc"
 #undef use_celestial_roar
 #undef choose_supporter
 #undef use_legacy_star

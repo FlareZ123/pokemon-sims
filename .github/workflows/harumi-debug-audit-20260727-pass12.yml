@@ -97,7 +97,7 @@ jobs:
           # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee audit-pass1-shell-seed1.txt
           grep -q 'T1 | PLAY SUPPORTER.*Regidrago VSTAR, Crispin, Latias ex' audit-pass1-shell-seed1.txt
-          grep -q 'T2 | PLAY ITEM.*Brilliant Blender' audit-pass1-shell-seed1.txt
+          grep -q 'T2 | PLAY ITEM.*Searched and discarded' audit-pass1-shell-seed1.txt
           grep -q 'T2 | RETREAT.*Latias ex' audit-pass1-shell-seed1.txt
           grep -q 'T2 | READY' audit-pass1-shell-seed1.txt
 

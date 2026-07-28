@@ -1,0 +1,79 @@
+name: Issue 1724 Source-Bound Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Pass 1 fixed Crobat Stadium compression
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Chaotic Swell: https://api.pokemontcg.io/v2/cards/sm12-187
+          # Crobat V / Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+          # Official procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1724
+          ./build/regidrago_sim --simulate-this --model-variant crobat2-erika-channeler --scenario strict-jit/go-second --seed 1337 | tee issue-1724-trace.txt
+          grep -q "T5 | PLAY STADIUM.*Chaotic Swell" issue-1724-trace.txt
+          grep -q "T5 | BENCH.*Crobat V" issue-1724-trace.txt
+          grep -q "T5 | DARK ASSET.*Drew 1 card(s)" issue-1724-trace.txt
+      - name: Pass 2 registered strict setup
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Repository earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee strict-seed-1-trace.txt
+          grep -q "T3 | READY" strict-seed-1-trace.txt
+      - name: Pass 3 scheduled Item-lock setup
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Repository lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee item-lock-seed-25-trace.txt
+          grep -q "T2 | READY" item-lock-seed-25-trace.txt
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+      - name: Generate paired T2, T3, and T4 matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out multi-deck-matrix.csv
+      - name: Record tested source
+        shell: bash
+        run: |
+          git rev-parse HEAD > tested-head.txt
+          tar --exclude=.git --exclude=build -czf tested-source.tar.gz .
+      - name: Upload source-bound evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1724-source-bound-${{ github.run_attempt }}
+          path: |
+            issue-1724-trace.txt
+            strict-seed-1-trace.txt
+            item-lock-seed-25-trace.txt
+            t2-t3-matrix.csv
+            multi-deck-matrix.csv
+            tested-head.txt
+            tested-source.tar.gz
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+          if-no-files-found: warn

@@ -53,7 +53,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ./build/regidrago_sim --trials 100000 --seed 20260301 --max-turn 4 --output audit-t2-t3-matrix.json
+          ./build/regidrago_sim --trials 100000 --seed 20260301 --max-turn 4 --out audit-t2-t3-matrix.json
       - name: Package exact tested source
         shell: bash
         run: git ls-files -z | tar --null --files-from=- --create --gzip --file=repository-source.tgz

@@ -16,10 +16,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Configure Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-      - name: Build simulator and focused test
-        run: cmake --build build --target regidrago_sim regidrago_issue_1749_redundant_regidrago_bench_tests --parallel 2
+      - name: Build simulator and unified tests
+        run: cmake --build build --target regidrago_sim regidrago_unified_tests --parallel 2
       - name: Run focused regression
-        run: ./build/regidrago_issue_1749_redundant_regidrago_bench_tests
+        run: ./build/regidrago_unified_tests issue_1749_redundant_regidrago_bench_tests
       - name: Pass 1 exact Crobat issue route
         shell: bash
         run: |

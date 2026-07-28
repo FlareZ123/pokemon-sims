@@ -1,0 +1,96 @@
+name: Turn debug audit 20260727
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  trace-and-matrix-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2 --target regidrago_sim regidrago_unified_tests
+      - name: Run three independently constrained simulate-this reviews
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Seed 43 must preserve the Supporter action, use Mysterious Treasure as the
+          # current-turn Dragon discard outlet, chain Tapu Lele-GX into Crispin, and
+          # finish T2 without spending the one-shot VSTAR Power:
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sm2-60
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://api.pokemontcg.io/v2/cards/sv6-130
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # https://github.com/FlareZ123/pokemon-sims/issues/1209
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee trace-shell-43.txt
+          grep -q "T2 | HOLD SUPPORTER.*Mysterious Treasure to Tapu Lele-GX to Crispin" trace-shell-43.txt
+          grep -q "T2 | DISCARD.*Dragapult ex (Mysterious Treasure cost)" trace-shell-43.txt
+          grep -q "T2 | WONDER TAG.*Crispin" trace-shell-43.txt
+          ! grep -q "STAR ALCHEMY" trace-shell-43.txt
+          grep -q "T2 | READY" trace-shell-43.txt
+
+          # Seed 58 must use Steven's Resolve only for the missing VSTAR axis because
+          # held Fire plus Quick Ball already complete Energy and strict-JIT payload;
+          # Crispin and Brilliant Blender remain protected discrete resources:
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/sv6-130
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://api.pokemontcg.io/v2/cards/sv8-164
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # https://github.com/FlareZ123/pokemon-sims/issues/952
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee trace-shell-58.txt
+          grep -q "Searched up to 3 cards: Regidrago VSTAR. Turn ended." trace-shell-58.txt
+          grep -q "T3 | DISCARD.*Dragapult ex (Quick Ball cost)" trace-shell-58.txt
+          ! grep -q "Searched up to 3 cards: Regidrago VSTAR, Crispin" trace-shell-58.txt
+          ! grep -q "Searched up to 3 cards: Regidrago VSTAR, Brilliant Blender" trace-shell-58.txt
+          grep -q "T3 | READY" trace-shell-58.txt
+
+          # Pineco seed 35 must prefer the complete direct K1 route over spending the
+          # ACE SPEC or self-Knock-Out line. Mysterious Treasure supplies its own
+          # discard cost, and the held Secret Box remains UDP for later turns:
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sv6-130
+          # https://api.pokemontcg.io/v2/cards/sv6-163
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # https://github.com/FlareZ123/pokemon-sims/issues/1420
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-pineco-35.txt
+          grep -q "banked Crispin and Dragapult ex" trace-pineco-35.txt
+          grep -q "Dragapult ex (Mysterious Treasure cost)" trace-pineco-35.txt
+          ! grep -q "Secret Box discarded three other cards" trace-pineco-35.txt
+          ! grep -q "T2 | EXPLODING ENERGY" trace-pineco-35.txt
+          grep -q "T2 | READY" trace-pineco-35.txt
+      - name: Run focused and complete Release validation
+        run: |
+          ./build/regidrago_unified_tests regidrago_policy_tests
+          ./build/regidrago_unified_tests regidrago_tier2_tests
+          ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Generate paired T2 and T3 setup matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out turn-t2-t3-matrix.csv
+      - name: Record tested source
+        run: git rev-parse HEAD | tee tested-head.txt
+      - name: Upload turn audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turn-debug-audit-${{ github.run_attempt }}
+          path: |
+            trace-shell-43.txt
+            trace-shell-58.txt
+            trace-pineco-35.txt
+            turn-t2-t3-matrix.csv
+            tested-head.txt
+            build/Testing
+          if-no-files-found: warn

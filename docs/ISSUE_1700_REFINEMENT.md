@@ -8,6 +8,20 @@ The original `crobat1-heavy-ball`, `matchup-flex-jit/go-second`, seed `218` witn
 
 The same underlying pre-Steven Item and attachment ordering defect affects the registered `regidrago-shell` recipe at seed `218`.
 
+## Modeling witness target correction
+
+The original modeling-route description must have Steven's Resolve search both Latias ex and a second Grass Energy after the pre-Steven Earthen Vessel searches Grass plus Fire and the first Grass is manually attached on T1. Searching only Latias ex would leave no held Grass for the T2 manual attachment.
+
+The corrected deterministic T3 modeling line is:
+
+1. After Mysterious Treasure Benches Regidrago V, play Earthen Vessel before Steven's Resolve.
+2. Discard Mega Dragonite ex, search Grass Energy plus the only deck Fire Energy, and manually attach Grass to Regidrago V on T1.
+3. Play Steven's Resolve for Latias ex plus a second Grass Energy, then end T1.
+4. T2: evolve Regidrago V, manually attach the second Grass, Bench Latias ex, retreat the Basic Active through Skyliner, and promote Regidrago VSTAR.
+5. T3: manually attach the held Fire Energy, play Brilliant Blender for a current-turn matchup-flex-JIT payload, and reach `READY`.
+
+This correction preserves the original bug diagnosis and removes an impossible held-Energy assumption from the proposed route.
+
 ## Registered-shell strict and matchup-flex JIT
 
 Commands:

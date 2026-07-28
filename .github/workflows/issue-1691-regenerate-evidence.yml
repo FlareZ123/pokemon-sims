@@ -1,0 +1,45 @@
+name: Issue 1691 regenerate evidence
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    if: github.head_ref == 'fix/issue-1691-projection-rng-isolation'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build current PR simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Regenerate source-bound setup evidence
+        run: |
+          # Fixed-seed evidence contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#sampling-and-comparison-method
+          # Confirmed RNG-isolation bug: https://github.com/FlareZ123/pokemon-sims/issues/1691
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Commit regenerated evidence to the bug branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md docs/REPORT.md docs/TRACE_AUDIT.md docs/MULTI_DECK_REPORT.md results
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Refresh source-bound setup evidence for issue 1691"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}

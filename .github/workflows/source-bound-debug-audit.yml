@@ -1,0 +1,74 @@
+name: Source-bound debug audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.head_ref == 'audit/source-bound-debug-pass-13'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure and build
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Run three independent simulate-this audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Regidrago VSTAR requires GGF and copies a Dragon attack from discard: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official turn, attachment, evolution, Trainer, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Repository earliest-route and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee audit-shell-seed-1.txt
+
+          # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Tapu Lele-GX Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+          # Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+          # Exact source-bounded route issue: https://github.com/FlareZ123/pokemon-sims/issues/1209
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee audit-shell-seed-43.txt
+
+          # Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+          # Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+          # Pineco and Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # Earliest-route and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee audit-pineco-seed-35.txt
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Generate canonical T2 and T3 matrix
+        run: |
+          # Fixed-seed sampling contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#sampling-and-comparison-method
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-t2-t3-matrix.csv
+      - name: Generate paired all-deck T2 and T3 matrix
+        run: |
+          # Named-deck comparison contract: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/multi_deck_report_contract_tests.py
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-all-decks-matrix.csv
+      - name: Record tested source
+        run: git rev-parse HEAD | tee audit-tested-head.txt
+      - name: Upload source-bound audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-bound-debug-audit-${{ github.run_attempt }}
+          path: |
+            audit-*.txt
+            audit-*.csv
+            CMakeLists.txt
+            README.md
+            .github/workflows
+            docs
+            results
+            scripts
+            src
+            tests
+            build/Testing
+          if-no-files-found: error

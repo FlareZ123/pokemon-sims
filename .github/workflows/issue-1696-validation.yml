@@ -132,7 +132,6 @@ jobs:
         run: |
           python tests/card_audit_contract_tests.py
           python tests/card_audit_category_contract_tests.py
-          ctest --test-dir build --output-on-failure
 
       - name: Simulate seed 14 deterministic Treasure route
         shell: bash

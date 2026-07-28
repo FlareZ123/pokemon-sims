@@ -36,7 +36,7 @@ void test_seed_14_prefers_prized_treasure_route() {
   // and Treasure may discard Mega Dragonite ex while searching Regidrago VSTAR:
   // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-  // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2-166
+  // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // K1 and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities

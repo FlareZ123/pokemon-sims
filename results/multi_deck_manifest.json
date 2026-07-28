@@ -1,5 +1,5 @@
 {
-  "comparison_csv_sha256": "bc22660fdf8418a240030fa2816d6e815a470dca98337a2d0eb392797fbfac3b",
+  "comparison_csv_sha256": "6134cabd6b7b99e787b18ce434fbe04dbaf5fb3db94ab53f7d3f36452c24715b",
   "condition_count": 32,
   "decks": [
     "regidrago-shell",
@@ -24,7 +24,7 @@
     "strict-jit-supporter-lock/go-first",
     "strict-jit-supporter-lock/go-second"
   ],
-  "simulator_policy_source_sha256": "560164e35dab997c61b8344e5c365421fbf1e67aeffa6d0d18b845e3290a1e3a",
+  "simulator_policy_source_sha256": "4d9c743ebe58416e8087754cf3fc62d16014e3d7edfa52d1ca85436c7f5b102b",
   "total_simulated_games": 3200000,
   "traces": [
     {

@@ -1,3 +1,45 @@
+  bool issue_1715_quick_ball_tapu_burnet_next_window_route() const {
+    if (!deck_seen_ || !strict_payload_timing() || state_.turn_ended ||
+        !state_.active || state_.active->card != Card::RegidragoV ||
+        !state_.manual_energy_used || state_.turn >= scenario_.max_turn) {
+      return false;
+    }
+
+    const int missing_grass = std::max(0, 2 - state_.active->grass);
+    const int missing_fire = std::max(0, 1 - state_.active->fire);
+    const bool held_final_energy =
+        (missing_grass == 1 && hand_count(Card::Grass) > 0) ||
+        (missing_fire == 1 && hand_count(Card::Fire) > 0);
+    const bool item_available_next_turn =
+        scenario_.locks != LockMode::FullItem &&
+        scenario_.locks != LockMode::FullCombined &&
+        !(scenario_.locks == LockMode::TurnTwoItem && state_.turn + 1 >= 2);
+
+    // One of two held Regidrago VSTAR copies is a route-safe Quick Ball cost while
+    // the other remains for the next legal evolution window. Quick Ball then finds
+    // Tapu Lele-GX, Wonder Tag finds Professor Burnet, and Burnet establishes the
+    // strict-JIT payload after the held final Energy completes GGF. This projection
+    // uses only the physically inspected K1 deck and rejects every lock or missing
+    // connector that would make the route speculative:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, Bench, Ability, Supporter, attachment, evolution, and attack procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, strict-JIT, dynamic DCI, and resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1715
+    return missing_grass + missing_fire == 1 && held_final_energy &&
+        hand_count(Card::QuickBall) > 0 &&
+        hand_count(Card::RegidragoVstar) >= 2 && bench_space() > 0 &&
+        item_available_next_turn &&
+        scenario_.locks != LockMode::FullSupporter &&
+        ability_available_for_pokemon(Card::TapuLeleGX) &&
+        deck_count_after_search_started(Card::TapuLeleGX) > 0 &&
+        deck_count_after_search_started(Card::ProfessorBurnet) > 0 &&
+        std::any_of(state_.deck.begin(), state_.deck.end(), is_payload);
+  }
+
   bool use_celestial_roar() {
     if (first_turn_going_first() || state_.turn_ended || !state_.active ||
         state_.active->card != Card::RegidragoV) {
@@ -26,11 +68,14 @@
         hand_count(Card::Gladion) > 0 && held_dragon_payload &&
         prize_count_after_reveal(Card::MysteriousTreasure) > 0 &&
         deck_count_after_search_started(Card::RegidragoVstar) > 0;
+    const bool held_quick_ball_tapu_burnet_route =
+        issue_1715_quick_ball_tapu_burnet_next_window_route();
     const bool held_supporter_payload_route =
         (hand_count(Card::Serena) > 0 && held_dragon_payload) ||
         (deck_seen_ && hand_count(Card::ProfessorBurnet) > 0 &&
          std::any_of(state_.deck.begin(), state_.deck.end(), is_payload)) ||
-        held_gladion_prized_treasure_route;
+        held_gladion_prized_treasure_route ||
+        held_quick_ball_tapu_burnet_route;
     const bool held_needed_energy =
         (missing_grass == 1 && hand_count(Card::Grass) > 0) ||
         (missing_fire == 1 && hand_count(Card::Fire) > 0);
@@ -57,22 +102,26 @@
       // The unevolved Regidrago V cannot become Regidrago VSTAR before a later legal
       // evolution window. One held Basic Energy already guarantees GGF through that
       // turn's manual attachment. Held Serena plus a Dragon, held Professor Burnet
-      // plus a known deck Dragon, or held Gladion plus a known prized Mysterious
-      // Treasure, a held Dragon cost, and a known deck Regidrago VSTAR guarantees a
-      // legal strict-JIT payload and evolution route. Celestial Roar cannot improve the
-      // earliest ready window and can randomly remove the unresolved VSTAR or connector:
+      // plus a known deck Dragon, held Gladion plus a known prized Mysterious
+      // Treasure, or a payable Quick Ball to Tapu Lele-GX to Professor Burnet chain
+      // guarantees a legal strict-JIT payload and evolution route. Celestial Roar
+      // cannot improve the earliest ready window and can randomly remove the
+      // unresolved VSTAR or connector:
       // Regidrago V and Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
       // Regidrago VSTAR evolution and Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
       // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
       // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
       // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
       // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-      // Manual attachment, evolution, attack, Item, Prize exchange, and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+      // Manual attachment, evolution, attack, Item, Prize exchange, Ability, and Supporter procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
       // Strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
       // Earliest complete route and resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
       // Existing confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1079
       // Confirmed Gladion-Treasure continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/1174
-      trace("HOLD ATTACK", "R-RV-01; R-GAME-ENERGY; R-SERENA-01; R-BURNET-01; R-GLADION-01; R-MT-01; P-JIT-01; P-COMPRESS-01",
+      // Confirmed Quick Ball-Tapu-Burnet continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/1715
+      trace("HOLD ATTACK", "R-RV-01; R-GAME-ENERGY; R-SERENA-01; R-BURNET-01; R-GLADION-01; R-MT-01; R-QB-01; R-TAPU-01; P-JIT-01; P-COMPRESS-01",
             "Held Energy and a guaranteed payload route already cover the next legal ready window.");
       return false;
     }

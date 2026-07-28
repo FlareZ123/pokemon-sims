@@ -126,3 +126,10 @@
   #include "part_issue_1711_k0_treasure_turo_crispin_override.inc"
   #undef run_secret_box_turn
   #define run_secret_box_turn run_secret_box_turn_issue1711
+
+  // Compare the one-cost Quick Ball payload route before the final Pineco dispatcher
+  // can spend Secret Box's three-card ACE SPEC cost:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1744
+  #include "part_issue_1744_quick_ball_forretress_override.inc"
+  #undef run_secret_box_turn
+  #define run_secret_box_turn run_secret_box_turn_issue1744

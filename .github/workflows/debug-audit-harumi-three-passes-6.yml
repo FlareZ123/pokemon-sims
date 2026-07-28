@@ -1,0 +1,78 @@
+name: Debug audit 2026-07-28 Harumi three passes 6
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.head_ref == 'audit/debug-20260728-harumi-three-passes-6'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Pass 1 registered shell strict JIT going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+          # Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+          # Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+          # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # K0/K1, DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          # Official setup and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee audit-pass-1-shell-seed-1.txt
+      - name: Pass 2 Pineco strict JIT going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+          # Dragapult ex payload: https://api.pokemontcg.io/v2/cards/sv6-130
+          # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Pineco route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+          # Official Supporter, Item, attachment, and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee audit-pass-2-pineco-seed-35.txt
+      - name: Pass 3 registered shell scheduled turn two Item lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+          # Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+          # Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+          # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Scheduled-lock and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Official Item, Tool, Ability, attachment, and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee audit-pass-3-item-lock-seed-25.txt
+      - name: Generate paired all-condition T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Registered deck and matrix specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#registered-decks
+          # Ready-state specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-all-decks-t2-t3-matrix.csv
+      - name: Package exact tested source
+        shell: bash
+        run: git ls-files -z | tar --null --files-from=- --create --gzip --file=repository-source.tgz
+      - name: Record tested commit
+        run: git rev-parse HEAD | tee tested-head.txt
+      - name: Upload debug evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-audit-harumi-three-passes-6-${{ github.run_attempt }}
+          path: |
+            audit-pass-*.txt
+            audit-all-decks-t2-t3-matrix.csv
+            repository-source.tgz
+            tested-head.txt
+            build/regidrago_sim
+          if-no-files-found: warn

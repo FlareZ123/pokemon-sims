@@ -42,11 +42,11 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 
 | Scenario | Ready on T2 | Ready on T3 | Ready on T4 | Ready on T5 diagnostic |
 |---|---:|---:|---:|---:|
-| Strict JIT, going first | 12.007% | 26.761% | 16.717% | 10.545% |
-| Matchup-flex JIT, going first | 16.299% | 31.322% | 15.813% | 9.567% |
+| Strict JIT, going first | 12.007% | 26.761% | 16.717% | 10.560% |
+| Matchup-flex JIT, going first | 16.299% | 31.322% | 15.813% | 9.568% |
 | No discard control, going first | 20.103% | 35.818% | 16.138% | 9.035% |
-| Strict JIT, going second | 29.402% | 23.310% | 11.207% | 7.924% |
-| Matchup-flex JIT, going second | 37.320% | 23.480% | 10.234% | 6.995% |
+| Strict JIT, going second | 29.402% | 23.310% | 11.207% | 7.942% |
+| Matchup-flex JIT, going second | 37.320% | 23.480% | 10.234% | 6.996% |
 | No discard control, going second | 39.839% | 27.004% | 11.141% | 6.677% |
 
 ## Regidrago-Pineco with Secret Box
@@ -74,10 +74,10 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 
 | Scenario | Ready on T2 | Ready on T3 | Ready on T4 | Ready on T5 diagnostic |
 |---|---:|---:|---:|---:|
-| Strict JIT, going first | 19.411% | 27.667% | 18.121% | 10.958% |
-| Matchup-flex JIT, going first | 20.749% | 27.575% | 18.406% | 11.022% |
+| Strict JIT, going first | 19.411% | 27.667% | 18.121% | 10.971% |
+| Matchup-flex JIT, going first | 20.749% | 27.575% | 18.406% | 11.023% |
 | No discard control, going first | 25.361% | 34.704% | 15.605% | 7.181% |
-| Strict JIT, going second | 47.561% | 15.152% | 10.637% | 7.240% |
+| Strict JIT, going second | 47.561% | 15.152% | 10.637% | 7.251% |
 | Matchup-flex JIT, going second | 50.861% | 15.029% | 9.718% | 6.752% |
 | No discard control, going second | 59.679% | 14.346% | 8.406% | 4.604% |
 
@@ -162,4 +162,4 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 Simulator policy digest: `942711c4aad20757f939c2590f9b1dad935d89c2f83c6a37106a1d4f1334da8f`.
 
-Comparison CSV SHA-256: `7e6df825c5a83e9ac72e705ec9131615d057c2322d3b43e91daf51065e97a66d`.
+Comparison CSV SHA-256: `43dd954565999a926bce98f877986ecc33071a160f17fbc45caa014e4a05350a`.

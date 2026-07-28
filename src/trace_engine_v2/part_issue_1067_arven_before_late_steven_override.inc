@@ -46,9 +46,7 @@
     return should_play_steven_issue1067_original();
   }
 
-  // Add the exact no-discard-control VSTAR, Latias, and Grass package after every
-  // earlier Steven comparator, then redirect later Supporter selection and resolution:
+  // Define the exact no-discard-control VSTAR, Latias, and Grass package here.
+  // The active final Supporter dispatcher invokes it after all earlier comparators:
   // https://github.com/FlareZ123/pokemon-sims/issues/1745
   #include "part_issue_1745_steven_latias_t3_override.inc"
-  #define should_play_steven should_play_steven_issue1745
-  #define play_steven play_steven_issue1745

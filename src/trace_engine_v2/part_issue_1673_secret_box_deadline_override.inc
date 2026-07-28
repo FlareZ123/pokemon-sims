@@ -1,3 +1,5 @@
+#include "part_issue_1724_crobat_stadium_compression.inc"
+
   bool complete_issue_1673_secret_box_payload_deadline() {
     if (!secret_box_combo_enabled() || item_locked() || state_.turn_ended ||
         state_.turn != scenario_.max_turn || !strict_payload_timing() ||
@@ -61,6 +63,7 @@
       trace("POLICY", "P-AXIS-01; R-SECRET-BOX-01",
             "Completed the deadline Secret Box payload route: " + state_line());
     }
+    complete_issue_1724_crobat_stadium_compression();
   }
 
 #include "part_issue_1674_turo_late_promotion_override.inc"

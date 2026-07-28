@@ -1,23 +1,38 @@
   bool complete_issue_1724_crobat_stadium_compression() {
+    const bool payload_remains_in_known_deck =
+        deck_seen_ && payload_might_be_in_deck();
+    const bool direct_burnet_draw = !state_.supporter_used && supporter_allowed() &&
+        deck_count_after_search_started(Card::ProfessorBurnet) > 0 &&
+        payload_remains_in_known_deck;
+    const bool direct_blender_draw = !item_locked() &&
+        deck_count_after_search_started(Card::BrilliantBlender) > 0 &&
+        payload_remains_in_known_deck;
+
     // The wrapped turn policy has already evaluated its deterministic Item,
     // Supporter, evolution, attachment, VSTAR Power, retreat, and attack routes.
     // This final retry is legal only from the exact visible seven-card state where
     // playing Chaotic Swell and then Crobat V changes Dark Asset from zero draws to
-    // one draw. Selection uses public/K1 state and never the next card's identity:
+    // one draw. K1 must prove at least one direct current-turn payload outlet remains
+    // in the deck. Selection never reads the next card's identity:
     // Chaotic Swell: https://api.pokemontcg.io/v2/cards/sm12-187
     // Crobat V / Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Official Stadium, Bench, Ability, and action-order procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Deterministic-route priority and resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Future-card-oracle prohibition: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1724
-    if (scenario_.locks != LockMode::None || state_.turn_ended ||
+    if (!deck_seen_ || scenario_.locks != LockMode::None || state_.turn_ended ||
         !setup_axis_missing() || state_.stadium_used ||
         state_.stadium != Stadium::None ||
         hand_count(Card::ChaoticSwell) == 0 ||
         hand_count(Card::CrobatV) == 0 || state_.hand.size() != 7U ||
         state_.dark_asset_used || bench_space() <= 0 || state_.deck.empty() ||
         !ability_available_for_pokemon(Card::CrobatV) ||
-        forretress_combo_enabled()) {
+        forretress_combo_enabled() ||
+        (!direct_burnet_draw && !direct_blender_draw) ||
+        (hand_count(Card::Oricorio) > 0 && needs_oricorio_connector()) ||
+        (hand_count(Card::TapuLeleGX) > 0 && needs_tapu_connector())) {
       return false;
     }
 

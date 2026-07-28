@@ -67,8 +67,8 @@ jobs:
           # Repository Secret Box, AMR, route-aware DCI, Supporter contention, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 18 --require-ready-by 2 | tee pineco-strict-seed-18.txt
           grep -q "Arven banked the next-turn Secret Box route" pineco-strict-seed-18.txt
-          grep -q "T2 | EXPLODING ENERGY" pineco-strict-seed-18.txt
-          grep -q "T2 | STAR ALCHEMY" pineco-strict-seed-18.txt
+          grep -q "T2 | USE ABILITY.*Exploding Energy" pineco-strict-seed-18.txt
+          grep -q "T2 | USE VSTAR POWER.*Star Alchemy" pineco-strict-seed-18.txt
           grep -q "T2 | READY" pineco-strict-seed-18.txt
           git rev-parse HEAD | tee tested-head.txt
       - name: Upload Pineco trace
@@ -102,7 +102,7 @@ jobs:
           # Repository full Item lock, K0/K1, DCI/JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#full-item-lock
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-full-item-lock/go-second --seed 9 --require-ready-by 2 | tee shell-full-item-lock-seed-9.txt
           grep -q "T1 | WONDER TAG.*Steven's Resolve" shell-full-item-lock-seed-9.txt
-          grep -q "T1 | VITAL DANCE" shell-full-item-lock-seed-9.txt
+          grep -q "T1 | Vital Dance" shell-full-item-lock-seed-9.txt
           grep -q "T2 | LEGACY STAR" shell-full-item-lock-seed-9.txt
           grep -q "T2 | READY" shell-full-item-lock-seed-9.txt
           ! grep -q "T[12] | PLAY ITEM" shell-full-item-lock-seed-9.txt

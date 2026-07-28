@@ -1,0 +1,73 @@
+name: Debug audit 2026-07-28 Harumi three passes 4
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.head_ref == 'audit/debug-20260728-harumi-three-passes-4'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Pass 1 registered shell matchup-flex going first
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+          # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # K0/K1, dynamic DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          # Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 4242 --require-ready-by 4 | tee audit-pass-1-shell-seed-4242.txt
+      - name: Pass 2 Pineco no-discard going first
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Forretress ex / Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # Dawn: https://api.pokemontcg.io/v2/cards/me1-103
+          # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Pineco route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+          # Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario no-discard-control/go-first --seed 909 --require-ready-by 3 | tee audit-pass-2-pineco-seed-909.txt
+      - name: Pass 3 registered shell scheduled T2 Item lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+          # Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+          # Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+          # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Scheduled-lock and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 25 --require-ready-by 2 | tee audit-pass-3-item-lock-seed-25.txt
+      - name: Generate canonical T2 and T3 matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --trials 100000 --seed 20260301 --max-turn 4 --output audit-t2-t3-matrix.json
+      - name: Package exact tested source
+        shell: bash
+        run: git ls-files -z | tar --null --files-from=- --create --gzip --file=repository-source.tgz
+      - name: Record tested commit
+        run: git rev-parse HEAD | tee tested-head.txt
+      - name: Upload debug evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-audit-harumi-three-passes-4-${{ github.run_attempt }}
+          path: |
+            audit-pass-*.txt
+            audit-t2-t3-matrix.json
+            repository-source.tgz
+            tested-head.txt
+            build/regidrago_sim
+          if-no-files-found: warn

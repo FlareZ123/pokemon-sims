@@ -1,8 +1,8 @@
 name: Issue 1672 baseline regeneration
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches: [fix/issue-1672-fss-vessel-latias]
   workflow_dispatch:
 
 permissions:

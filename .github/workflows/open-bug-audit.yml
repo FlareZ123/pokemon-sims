@@ -1,0 +1,71 @@
+name: Open bug trace audit
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2 --target regidrago_sim
+      - name: Run four independently reported simulate-this traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Report and route sources: https://github.com/FlareZ123/pokemon-sims/issues/1672
+          # Arven, Earthen Vessel, Forest Seal Stone, Latias ex, and Regidrago VSTAR:
+          # https://api.pokemontcg.io/v2/cards/sv1-166
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          # https://api.pokemontcg.io/v2/cards/swsh12-156
+          # https://api.pokemontcg.io/v2/cards/sv8-76
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 12 | tee issue-1672.txt
+
+          # Report and route sources: https://github.com/FlareZ123/pokemon-sims/issues/1673
+          # Secret Box, Dragapult ex, and Regidrago VSTAR:
+          # https://api.pokemontcg.io/v2/cards/sv6-163
+          # https://api.pokemontcg.io/v2/cards/sv6-130
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-first --seed 183 | tee issue-1673.txt
+
+          # Report and route sources: https://github.com/FlareZ123/pokemon-sims/issues/1674
+          # Professor Turo's Scenario, Earthen Vessel, Dragapult ex, and Regidrago VSTAR:
+          # https://api.pokemontcg.io/v2/cards/sv4-171
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          # https://api.pokemontcg.io/v2/cards/sv6-130
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 897 | tee issue-1674.txt
+
+          # Report and route sources: https://github.com/FlareZ123/pokemon-sims/issues/1675
+          # Latias ex, Mysterious Treasure, Dialga-GX, and Regidrago VSTAR:
+          # https://api.pokemontcg.io/v2/cards/sv8-76
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sm5-100
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1907 | tee issue-1675.txt
+
+          # Core Bench, Supporter, Item, Tool, Ability, evolution, attachment,
+          # Active replacement, and Retreat procedures: https://www.pokemon.com/us/pokemon-tcg/rules
+          git rev-parse HEAD | tee tested-head.txt
+      - name: Upload trace evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: open-bug-traces-${{ github.run_attempt }}
+          path: |
+            issue-1672.txt
+            issue-1673.txt
+            issue-1674.txt
+            issue-1675.txt
+            tested-head.txt
+          if-no-files-found: error

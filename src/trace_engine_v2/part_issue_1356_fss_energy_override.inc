@@ -1,5 +1,47 @@
 #include "part_issue_1393_crispin_route_helper.inc"
 
+  bool issue_1672_fss_vessel_latias_route_available() const {
+    const auto live_fss_holder = [](const Pokemon& pokemon) {
+      return pokemon.tool == Tool::ForestSealStone && is_pokemon_v(pokemon.card);
+    };
+    const bool forest_seal_stone_is_live = !state_.vstar_power_used &&
+        ((state_.active && live_fss_holder(*state_.active)) ||
+         std::any_of(state_.bench.begin(), state_.bench.end(), live_fss_holder));
+    const Pokemon* setup_regi = target_regi();
+    if (!forest_seal_stone_is_live ||
+        scenario_.dci != DciProfile::MatchupFlexJit ||
+        scenario_.locks != LockMode::None || !deck_seen_ || item_locked() ||
+        !state_.supporter_used || state_.manual_energy_used ||
+        state_.retreat_used || !state_.active ||
+        !is_basic(state_.active->card) ||
+        state_.active->card == Card::RegidragoV || bench_space() == 0 ||
+        in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
+        !ability_available_for_pokemon(Card::LatiasEx) ||
+        hand_count(Card::EarthenVessel) == 0 ||
+        hand_count(Card::RegidragoVstar) == 0 ||
+        setup_regi == nullptr || setup_regi->card != Card::RegidragoV ||
+        setup_regi->entered_turn >= state_.turn ||
+        grass_needed() + fire_needed() != 1 ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    const Card missing_energy = grass_needed() == 1 ? Card::Grass : Card::Fire;
+    // Star Alchemy is the only unrestricted connector in this public K1 state.
+    // Earthen Vessel can discard the held Dragon payload, search the one missing
+    // Basic Energy, and leave Star Alchemy free to find Latias ex. Skyliner then
+    // gives the Basic Active no Retreat Cost after the held VSTAR evolves:
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Item, Ability, evolution, attachment, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1, DCI/JIT, one-shot connector, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1672
+    return deck_count_after_search_started(Card::LatiasEx) > 0 &&
+        deck_count_after_search_started(missing_energy) > 0;
+  }
+
   bool issue_1356_fss_treasure_energy_split_available() const {
     if (scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || state_.turn != 2 ||
@@ -59,6 +101,27 @@
       trace("HOLD VSTAR POWER", "R-FSS-02; R-CRISPIN-01; P-KNOWLEDGE-01; P-COMPRESS-01",
             "Retained Star Alchemy because held Crispin and the public payload outlet already complete the turn-two route.");
       return false;
+    }
+
+    if (issue_1672_fss_vessel_latias_route_available()) {
+      state_.vstar_power_used = true;
+      outcome_.used_fss = true;
+      record_deck_search_knowledge("Star Alchemy");
+      if (!move_deck_to_hand(Card::LatiasEx)) {
+        throw std::logic_error("Issue-1672 Latias ex target disappeared");
+      }
+      shuffle(state_.deck);
+      // Star Alchemy searches any one card, while the held Earthen Vessel and
+      // Dragon payload cover the Energy and current-turn discard axes:
+      // https://api.pokemontcg.io/v2/cards/swsh12-156
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://api.pokemontcg.io/v2/cards/sv8-76
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://www.pokemon.com/us/pokemon-tcg/rules
+      // https://github.com/FlareZ123/pokemon-sims/issues/1672
+      trace("STAR ALCHEMY", "R-FSS-02; R-VSTAR-01; P-KNOWLEDGE-01; P-COMPRESS-01",
+            "Searched Latias ex while Earthen Vessel retained the held Dragon payload and missing Basic Energy axes.");
+      return true;
     }
 
     if (!issue_1356_fss_treasure_energy_split_available()) {

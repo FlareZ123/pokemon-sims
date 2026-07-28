@@ -3,7 +3,13 @@
       const bool allow_heavy_ball = true,
       const std::optional<Card> excluded_from_cost = std::nullopt,
       const bool allow_redundant_payload = false) const {
+    const auto ordinary = choose_discard(
+        permit_payload, flex_fodder, allow_heavy_ball, excluded_from_cost,
+        allow_redundant_payload);
+    const bool duplicate_treasure_is_ordinary_cost =
+        ordinary && *ordinary == Card::MysteriousTreasure;
     const bool preserve_second_treasure_for_vstar =
+        duplicate_treasure_is_ordinary_cost &&
         scenario_.dci == DciProfile::StrictJit && excluded_from_cost &&
         *excluded_from_cost == Card::MysteriousTreasure &&
         hand_count(Card::MysteriousTreasure) >= 2 &&
@@ -12,9 +18,10 @@
         !has_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
         might_be_unseen(Card::RegidragoVstar);
     if (preserve_second_treasure_for_vstar) {
-      // The first Treasure must establish the missing Basic. Preserve the distinct
-      // second copy as the remaining one-discard VSTAR connector and spend Channeler,
-      // whose attack-effect removal is outside this setup-only simulation:
+      // Replace only the existing duplicate-Treasure fallback. Every ordinary
+      // lower-DCI cost keeps its established priority. The first Treasure must
+      // establish the missing Basic, while the distinct second copy remains the
+      // one-discard VSTAR connector and setup-inert Channeler pays the current cost:
       // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
       // Channeler: https://api.pokemontcg.io/v2/cards/sm11-190
       // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -23,8 +30,7 @@
       // Confirmed bug and source-bound projection: https://github.com/FlareZ123/pokemon-sims/issues/1740 https://github.com/FlareZ123/pokemon-sims/actions/runs/30390502968
       return Card::Channeler;
     }
-    return choose_discard(permit_payload, flex_fodder, allow_heavy_ball,
-                          excluded_from_cost, allow_redundant_payload);
+    return ordinary;
   }
 
 #undef choose_discard

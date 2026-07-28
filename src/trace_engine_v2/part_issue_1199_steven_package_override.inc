@@ -99,6 +99,15 @@
   }
 
   bool play_issue_1199_route_after_attachment() {
+    // This is the final pre-fallback Supporter hook. Resolve the exact K1 T2 Latias
+    // package here so normal gameplay reaches the same route proven by its unit fixture:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Supporter, evolution, Ability, attachment, Retreat, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1745
+    if (play_issue_1745_steven_latias_t3_route()) return true;
+
     if (state_.turn != 1 || scenario_.going_first ||
         scenario_.dci != DciProfile::NoDiscardControl ||
         scenario_.locks != LockMode::None || !state_.manual_energy_used ||

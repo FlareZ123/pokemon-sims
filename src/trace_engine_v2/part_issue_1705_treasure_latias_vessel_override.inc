@@ -99,7 +99,7 @@ bool play_issue_1705_t1_treasure_latias_vessel_route() {
   }
   ++regidrago->grass;
   state_.manual_energy_used = true;
-  trace("ATTACH", "R-GAME-ATTACH; P-COMPRESS-01",
+  trace("ATTACH", "R-GAME-ENERGY; P-COMPRESS-01",
         "Grass Energy manually to Regidrago V before Steven's Resolve.");
 
   remove_one(state_.hand, Card::StevensResolve);

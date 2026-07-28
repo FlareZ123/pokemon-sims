@@ -1,0 +1,40 @@
+name: Remove issue 1683 generated artifacts
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.ref == 'cleanup/issue-1683-generated-artifacts'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
+      - name: Remove generated validation artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm -r build scripts/__pycache__ issue-1683-seed-2413.txt
+          cat >> .gitignore <<'EOF'
+
+          # Local compiler, Python, and diagnostic outputs are generated state.
+          # Pattern syntax: https://git-scm.com/docs/gitignore
+          /build/
+          **/__pycache__/
+          *.py[cod]
+          /issue-*-seed-*.txt
+          EOF
+          rm .github/workflows/cleanup-issue-1683-generated-artifacts.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Remove generated issue 1683 validation artifacts"
+          git push origin HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}

@@ -16,6 +16,24 @@ CORE_RUNNER_PATH = REPO_ROOT / "tests" / "policy_fixture_v2" / "part_004a.inc"
 TIER2_RUNNER_PATH = REPO_ROOT / "tests" / "tier2_parts" / "part_003b.inc"
 TRACE_REGISTER_PATH = REPO_ROOT / "docs" / "RULES_TRACEABILITY.md"
 TRACE_SOURCE_DIR = REPO_ROOT / "src" / "trace_engine_v2"
+SOURCE_ROOTS = ("src", "tests", "docs", "scripts", ".github")
+CARD_SOURCE_URL = re.compile(r"https://api\.pokemontcg\.io/v2/cards/([^\s<>\"')\]]+)")
+CARD_SOURCE_TRAILING_PUNCTUATION = ".,;:!?`"
+# This exact set was verified against the supplied pokemon-tcg-data English corpus:
+# https://github.com/PokemonTCG/pokemon-tcg-data
+# https://github.com/FlareZ123/pokemon-sims/issues/1696
+CANONICAL_SOURCE_CARD_IDS = {
+    "base1-99", "me1-117", "me2-87", "me2pt5-16", "me2pt5-152",
+    "sm11-141", "sm11-190", "sm12-187", "sm2-55", "sm2-60", "sm2-125",
+    "sm3-115", "sm3-128", "sm4-95", "sm4-96", "sm5-100", "sm6-113",
+    "sm7-145", "sm7-148", "sm9-152", "sv1-166", "sv3pt5-160",
+    "sv4-163", "sv4-171", "sv4pt5-1", "sv4pt5-2", "sv6-127",
+    "sv6-130", "sv6-163", "sv6pt5-63", "sv7-133", "sv8-76",
+    "sv8-140", "sv8-164", "swsh1-163", "swsh1-179", "swsh3-104",
+    "swsh6-148", "swsh8-225", "swsh9-148", "swsh9-149", "swsh10-144",
+    "swsh10-146", "swsh11-136", "swsh12-135", "swsh12-136",
+    "swsh12-156", "swsh12-164", "swsh12pt5-146", "swsh12tg-TG26",
+}
 SCRIPT_PATH = REPO_ROOT / "scripts" / "audit_card_data.py"
 UPSTREAM_COMMIT_URL = (
     "https://github.com/PokemonTCG/pokemon-tcg-data/commit/"
@@ -67,8 +85,48 @@ def emitted_rule_ids() -> set[str]:
     return emitted
 
 
+def referenced_card_source_ids() -> dict[str, set[str]]:
+    references: dict[str, set[str]] = {}
+    for source_root in SOURCE_ROOTS:
+        root = REPO_ROOT / source_root
+        if not root.exists():
+            continue
+        for source_path in root.rglob("*"):
+            if not source_path.is_file():
+                continue
+            try:
+                source_text = source_path.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                continue
+            for match in CARD_SOURCE_URL.finditer(source_text):
+                card_id = match.group(1).rstrip(CARD_SOURCE_TRAILING_PUNCTUATION)
+                references.setdefault(card_id, set()).add(
+                    source_path.relative_to(REPO_ROOT).as_posix()
+                )
+    return references
+
+
 def main() -> int:
     audit = load_audit_module()
+
+    # Every direct Pokémon TCG API source must name a card ID verified against
+    # the supplied corpus. Sentence punctuation after Markdown URLs is ignored:
+    # https://github.com/PokemonTCG/pokemon-tcg-data
+    # https://github.com/FlareZ123/pokemon-sims/issues/1696
+    card_sources = referenced_card_source_ids()
+    unknown_card_ids = sorted(set(card_sources) - CANONICAL_SOURCE_CARD_IDS)
+    if unknown_card_ids:
+        details = "; ".join(
+            f"{card_id}: {', '.join(sorted(card_sources[card_id]))}"
+            for card_id in unknown_card_ids
+        )
+        raise AssertionError(f"Unknown Pokémon TCG source card IDs: {details}")
+    unused_card_ids = sorted(CANONICAL_SOURCE_CARD_IDS - set(card_sources))
+    if unused_card_ids:
+        raise AssertionError(
+            "Canonical source card IDs are no longer referenced: "
+            + ", ".join(unused_card_ids)
+        )
     documented = DOC_PATH.read_text(encoding="utf-8")
     rule_sources = RULE_SOURCES_PATH.read_text(encoding="utf-8")
     source_wrapper = SOURCE_WRAPPER_PATH.read_text(encoding="utf-8")

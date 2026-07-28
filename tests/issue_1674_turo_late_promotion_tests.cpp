@@ -45,6 +45,7 @@ int main() {
   // https://api.pokemontcg.io/v2/cards/sv6-130
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/1674
   if (outcome.first_ready_turn != 5 ||
       !trace_contains(trace, "Professor Turo returned the Basic Active Pokémon") ||

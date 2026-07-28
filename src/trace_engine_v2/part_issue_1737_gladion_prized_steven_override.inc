@@ -1,17 +1,4 @@
 bool issue_1737_prized_steven_route_available() const {
-  const auto recipe_copies = [this](const Card card) {
-    int copies = 0;
-    for (const auto& [candidate, count] : recipe_) {
-      if (candidate == card) copies += count;
-    }
-    return copies;
-  };
-  const bool registered_pineco_recipe =
-      recipe_copies(Card::SecretBox) == 1 &&
-      recipe_copies(Card::Pineco) == 2 &&
-      recipe_copies(Card::ForretressEx) == 2 &&
-      recipe_copies(Card::MysteriousTreasure) == 4 &&
-      recipe_copies(Card::StevensResolve) == 1;
   const bool held_direct_vstar_connector =
       hand_count(Card::RegidragoVstar) > 0 ||
       hand_count(Card::EvolutionIncense) > 0 ||
@@ -27,6 +14,52 @@ bool issue_1737_prized_steven_route_available() const {
         return card != Card::Gladion && !is_payload(card) &&
             card != Card::RegidragoVstar;
       });
+
+  // Reject every non-target public state before consulting the registered deck
+  // recipe. Engine unit fixtures may pass a temporary reduced recipe, while this
+  // confirmed route exists only for the registered going-second Pineco seed:
+  // First-turn Supporter procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Registered Pineco route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+  // Existing going-first Gladion route preserved: https://github.com/FlareZ123/pokemon-sims/issues/1697
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1737
+  if (scenario_.going_first ||
+      scenario_.dci != DciProfile::NoDiscardControl ||
+      scenario_.locks != LockMode::None ||
+      scenario_.opponent_bench == OpponentBenchState::Available ||
+      state_.turn + 2 > scenario_.max_turn || !prizes_known() ||
+      !supporter_allowed() || hand_count(Card::Gladion) == 0 ||
+      prize_count_after_reveal(Card::StevensResolve) == 0 ||
+      prize_count_after_reveal(Card::RegidragoVstar) > 0 ||
+      !state_.active || state_.active->card != Card::RegidragoV ||
+      state_.active->entered_turn >= state_.turn ||
+      state_.active->grass < 2 || state_.active->fire != 0 ||
+      !need_vstar() || !need_energy() || !need_payload() ||
+      hand_count(Card::StevensResolve) > 0 ||
+      hand_count(Card::ProfessorBurnet) > 0 ||
+      held_direct_vstar_connector || !held_payload_cost ||
+      !held_secondary_secret_box_cost ||
+      deck_count_after_search_started(Card::Fire) == 0 ||
+      deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
+      deck_count_after_search_started(Card::SecretBox) == 0 ||
+      deck_count_after_search_started(Card::MysteriousTreasure) < 2 ||
+      deck_count_after_search_started(Card::Grant) == 0 ||
+      deck_count_after_search_started(Card::WishfulBaton) == 0) {
+    return false;
+  }
+
+  const auto recipe_copies = [this](const Card card) {
+    int copies = 0;
+    for (const auto& [candidate, count] : recipe_) {
+      if (candidate == card) copies += count;
+    }
+    return copies;
+  };
+  const bool registered_pineco_recipe =
+      recipe_copies(Card::SecretBox) == 1 &&
+      recipe_copies(Card::Pineco) == 2 &&
+      recipe_copies(Card::ForretressEx) == 2 &&
+      recipe_copies(Card::MysteriousTreasure) == 4 &&
+      recipe_copies(Card::StevensResolve) == 1;
 
   // Gladion reveals every Prize before the exchange. In this registered K1
   // Pineco state, prized Steven's Resolve is a live multi-axis connector while
@@ -51,28 +84,7 @@ bool issue_1737_prized_steven_route_available() const {
   // Guzma opponent-Bench model:
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#guzma-opponent-bench-prerequisite
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1737
-  return registered_pineco_recipe && secret_box_combo_enabled() &&
-      scenario_.dci == DciProfile::NoDiscardControl &&
-      scenario_.locks == LockMode::None &&
-      scenario_.opponent_bench != OpponentBenchState::Available &&
-      state_.turn + 2 <= scenario_.max_turn && prizes_known() &&
-      supporter_allowed() && hand_count(Card::Gladion) > 0 &&
-      prize_count_after_reveal(Card::StevensResolve) > 0 &&
-      prize_count_after_reveal(Card::RegidragoVstar) == 0 &&
-      state_.active && state_.active->card == Card::RegidragoV &&
-      state_.active->entered_turn < state_.turn &&
-      state_.active->grass >= 2 && state_.active->fire == 0 &&
-      need_vstar() && need_energy() && need_payload() &&
-      hand_count(Card::StevensResolve) == 0 &&
-      hand_count(Card::ProfessorBurnet) == 0 &&
-      !held_direct_vstar_connector && held_payload_cost &&
-      held_secondary_secret_box_cost &&
-      deck_count_after_search_started(Card::Fire) > 0 &&
-      deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
-      deck_count_after_search_started(Card::SecretBox) > 0 &&
-      deck_count_after_search_started(Card::MysteriousTreasure) >= 2 &&
-      deck_count_after_search_started(Card::Grant) > 0 &&
-      deck_count_after_search_started(Card::WishfulBaton) > 0;
+  return registered_pineco_recipe && secret_box_combo_enabled();
 }
 
 bool play_gladion() {

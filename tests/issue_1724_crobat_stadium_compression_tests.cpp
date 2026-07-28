@@ -135,6 +135,7 @@ void test_negative_controls() {
 
   state = exact_public_state();
   state.discard.push_back(sim::Card::Dragapult);
+  state.discarded_this_turn.push_back(sim::Card::Dragapult);
   expect(!compression_for(state),
          "The route ran after every setup axis was complete.");
 

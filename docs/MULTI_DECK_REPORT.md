@@ -63,7 +63,7 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 | Strict JIT, going second | 47.580% ± 0.158 | 62.716% ± 0.153 | 73.294% ± 0.140 | 26.706% ± 0.140 |
 | Matchup-flex JIT, going second | 50.861% ± 0.158 | 65.890% ± 0.150 | 75.608% ± 0.136 | 24.392% ± 0.136 |
 | No discard control, going second | 59.679% ± 0.155 | 74.025% ± 0.139 | 82.431% ± 0.120 | 17.569% ± 0.120 |
-| Strict JIT, turn-two Item lock, second | 6.604% ± 0.079 | 11.845% ± 0.102 | 17.560% ± 0.120 | 82.440% ± 0.120 |
+| Strict JIT, turn-two Item lock, second | 6.605% ± 0.079 | 11.845% ± 0.102 | 17.561% ± 0.120 | 82.439% ± 0.120 |
 | Strict JIT, full Item lock, second | 4.397% ± 0.065 | 9.128% ± 0.091 | 14.467% ± 0.111 | 85.533% ± 0.111 |
 | Strict JIT, Rule Box Ability lock, second | 12.160% ± 0.103 | 23.772% ± 0.135 | 33.403% ± 0.149 | 66.597% ± 0.149 |
 | Strict JIT, combined lock, second | 1.164% ± 0.034 | 2.610% ± 0.050 | 4.452% ± 0.065 | 95.548% ± 0.065 |
@@ -160,6 +160,6 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 ## Provenance
 
-Simulator policy digest: `e2389012b06f201e64bc66abd228610a4c2fc9400483d1a0e11a09f0d1c560e9`.
+Simulator policy digest: `8c5bb6fd9447c9e6948c8fb6eaf60f492d617dbbb2f55731ab28edbec9bb62ab`.
 
-Comparison CSV SHA-256: `dc0aec8081793173974ae2d4b3419650378f83e23d76c965b5c23da8279e3599`.
+Comparison CSV SHA-256: `bc22660fdf8418a240030fa2816d6e815a470dca98337a2d0eb392797fbfac3b`.

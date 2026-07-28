@@ -82,6 +82,60 @@
     return true;
   }
 
+  bool play_issue_1672_vessel_payload_finish() {
+    const Pokemon* setup_regi = target_regi();
+    const auto payload = std::find_if(
+        state_.hand.begin(), state_.hand.end(), is_payload);
+    if (scenario_.dci != DciProfile::MatchupFlexJit ||
+        scenario_.locks != LockMode::None || state_.turn != scenario_.max_turn ||
+        !prizes_known() || item_locked() || !state_.supporter_used ||
+        state_.manual_energy_used || state_.retreat_used ||
+        !state_.vstar_power_used || !state_.active ||
+        !is_basic(state_.active->card) ||
+        state_.active->card == Card::RegidragoV ||
+        hand_count(Card::EarthenVessel) == 0 ||
+        hand_count(Card::LatiasEx) == 0 ||
+        hand_count(Card::RegidragoVstar) == 0 ||
+        payload == state_.hand.end() || setup_regi == nullptr ||
+        setup_regi->card != Card::RegidragoV ||
+        setup_regi->entered_turn >= state_.turn ||
+        setup_regi->tool != Tool::ForestSealStone ||
+        setup_regi->grass != 1 || setup_regi->fire < 1 ||
+        deck_count_after_search_started(Card::Grass) == 0) {
+      return false;
+    }
+
+    const Card discarded_payload = *payload;
+    // Star Alchemy has already searched Latias ex. Earthen Vessel must now use the
+    // held Dragon as its mandatory cost, because that single payment establishes the
+    // matchup-flex current-turn payload while Vessel searches the third GGF Energy.
+    // The held VSTAR and Skyliner route then complete evolution and promotion:
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Dialga-GX Dragon payload: https://api.pokemontcg.io/v2/cards/sm5-100
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Item, discard, search, attachment, evolution, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Dynamic DCI, strict current-turn payload, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1672
+    remove_one(state_.hand, Card::EarthenVessel);
+    state_.discard.push_back(Card::EarthenVessel);
+    if (!discard_from_hand(discarded_payload, "Earthen Vessel cost",
+                           "R-EV-01; P-DCI-01; P-JIT-01")) {
+      throw std::logic_error("Issue-1672 Dragon payload cost disappeared");
+    }
+    record_deck_search_knowledge("Earthen Vessel");
+    if (!move_deck_to_hand(Card::Grass)) {
+      throw std::logic_error("Issue-1672 Grass target disappeared");
+    }
+    shuffle(state_.deck);
+    trace("Earthen Vessel",
+          "R-EV-01; R-GAME-ITEM; P-KNOWLEDGE-01; P-DCI-01; P-JIT-01; P-COMPRESS-01",
+          "Discarded " + std::string(name(discarded_payload)) +
+              " as the current-turn payload and searched Grass Energy for the Latias promotion finish.");
+    return true;
+  }
+
   bool play_earthen_vessel(const bool permit_payload) {
     // Earthen Vessel and its discard cost resolve no missing axis once the exact
     // Forest Seal Stone route is public. Preserve Vessel and its prospective cost
@@ -91,6 +145,7 @@
     // Dynamic DCI and resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1412
     if (issue_1412_direct_fss_fire_route_visible()) return false;
+    if (play_issue_1672_vessel_payload_finish()) return true;
     if (play_issue_1646_vessel_burnet_finish()) return true;
     return play_earthen_vessel_issue1412_original(permit_payload);
   }

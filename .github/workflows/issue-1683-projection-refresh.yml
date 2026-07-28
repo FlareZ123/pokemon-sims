@@ -1,0 +1,67 @@
+name: Refresh issue 1683 projection evidence
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.ref == 'fix/issue-1683-serena-dead-quick-ball'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build and validate both issue regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+          # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+          # Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+          # Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+          # Official Supporter, Item, Ability, search, shuffle, attachment, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # DCI/JIT and earliest-route specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Fixed-seed sampling specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#sampling-and-comparison-method
+          # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1683
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ./build/regidrago_unified_tests issue_1683_serena_dead_quick_ball_tests
+          ./build/regidrago_unified_tests issue_1683_projection_isolation_tests
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 2413 | tee issue-1683-seed-2413.txt
+          grep -q "T3 | DISCARD.*Quick Ball (Serena chosen discard)" issue-1683-seed-2413.txt
+          grep -q "T3 | Earthen Vessel" issue-1683-seed-2413.txt
+          grep -q "T4 | ATTACH.*Grass Energy" issue-1683-seed-2413.txt
+      - name: Regenerate source-bound reports and matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official setup and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Canonical generator specification: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+          python tests/setup_report_contract_tests.py
+          python tests/multi_deck_report_contract_tests.py
+          git diff --check
+      - name: Commit refreshed source-bound evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/issue-1683-projection-refresh.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Refresh Serena projection source-bound evidence"
+          git push origin HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}

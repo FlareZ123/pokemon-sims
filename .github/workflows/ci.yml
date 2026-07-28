@@ -142,16 +142,16 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 40 --require-ready-by 2 | tee pineco-trace-40.txt
           grep -q "Gladion recovered the legally known prized Secret Box" pineco-trace-40.txt
           grep -q "T2 | READY" pineco-trace-40.txt
-      # The issue #718 PR refreshes and validates the source-bound matrix after the
-      # Blender VSTAR-card-axis fix: https://github.com/FlareZ123/pokemon-sims/pull/931
       - name: Generate canonical T2 and T3 matrix
         run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
-      - name: Capture canonical shell matrix for issue 1691
-        run: cp t2-t3-matrix.csv results/simulation_results.csv
       - name: Generate paired two-deck T2, T3, and T4 matrix
         run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out multi-deck-matrix.csv
-      - name: Capture paired matrix for issue 1691
-        run: cp multi-deck-matrix.csv results/multi_deck_comparison.csv
+      - name: Regenerate source-bound evidence for issue 1691
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
       - name: Record simulator policy source digest
         run: >-
           python -c "from pathlib import Path; from scripts.baseline_provenance import simulator_policy_source_digest; print(simulator_policy_source_digest(Path('.').resolve()))"
@@ -172,6 +172,11 @@ jobs:
             multi-deck-matrix.csv
             simulator-policy-source-sha256.txt
             tested-head.txt
+            README.md
+            docs/REPORT.md
+            docs/TRACE_AUDIT.md
+            docs/MULTI_DECK_REPORT.md
+            results
             build/regidrago_sim
             build/regidrago_unified_tests
             build/Testing

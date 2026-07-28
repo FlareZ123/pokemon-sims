@@ -109,3 +109,11 @@
   #include "part_issue_1705_treasure_latias_vessel_override.inc"
   #define late_steven_has_known_t3_compression_route \
     late_steven_has_known_t3_compression_route_issue1705
+
+  // Compose the confirmed K1 Heavy Ball route after the Treasure-Latias dispatcher,
+  // preserving the prior fix as the fallback for every non-matching state:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1702
+  #undef late_steven_has_known_t3_compression_route
+  #include "part_issue_1702_heavy_ball_latias_override.inc"
+  #define late_steven_has_known_t3_compression_route \
+    late_steven_has_known_t3_compression_route_issue1702

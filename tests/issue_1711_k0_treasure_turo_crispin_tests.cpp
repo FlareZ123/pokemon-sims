@@ -89,7 +89,13 @@ void test_registered_seed_reaches_t3() {
 
 void test_repeated_payload_and_k0_gates() {
   std::mt19937_64 rng{17110};
-  sim::Engine engine(exact_scenario(), sim::pineco_recipe(), rng);
+  const sim::Scenario scenario = exact_scenario();
+  const auto recipe = sim::pineco_recipe();
+  // Engine stores references to its scenario and recipe, so both fixtures must
+  // outlive the Engine under the C++ temporary-lifetime rules:
+  // https://eel.is/c++draft/class.temporary
+  // Confirmed sanitizer failure: https://github.com/FlareZ123/pokemon-sims/pull/1714
+  sim::Engine engine(scenario, recipe, rng);
   sim::State state = exact_t2_state();
   state.hand.erase(std::find(state.hand.begin(), state.hand.end(),
                              sim::Card::Appletun));
@@ -104,14 +110,18 @@ void test_repeated_payload_and_k0_gates() {
 
 void test_lock_and_bench_gates() {
   std::mt19937_64 locked_rng{17111};
-  sim::Engine locked(exact_scenario(sim::LockMode::FullRuleBoxAbility),
-                     sim::pineco_recipe(), locked_rng);
+  const sim::Scenario locked_scenario =
+      exact_scenario(sim::LockMode::FullRuleBoxAbility);
+  const auto locked_recipe = sim::pineco_recipe();
+  sim::Engine locked(locked_scenario, locked_recipe, locked_rng);
   sim::EngineTestAccess::set_state(locked, exact_t2_state());
   expect(!sim::EngineTestAccess::available(locked),
          "Wonder Tag route ignored Rule Box Ability lock.");
 
   std::mt19937_64 bench_rng{17112};
-  sim::Engine occupied(exact_scenario(), sim::pineco_recipe(), bench_rng);
+  const sim::Scenario bench_scenario = exact_scenario();
+  const auto bench_recipe = sim::pineco_recipe();
+  sim::Engine occupied(bench_scenario, bench_recipe, bench_rng);
   sim::State state = exact_t2_state();
   state.bench.push_back(sim::Pokemon{sim::Card::Pineco, 1});
   sim::EngineTestAccess::set_state(occupied, state);
@@ -122,7 +132,9 @@ void test_lock_and_bench_gates() {
 void test_k1_missing_crispin_falls_back_after_legal_search() {
   std::mt19937_64 rng{17113};
   sim::TraceLog trace{true, {}};
-  sim::Engine engine(exact_scenario(), sim::pineco_recipe(), rng, &trace);
+  const sim::Scenario scenario = exact_scenario();
+  const auto recipe = sim::pineco_recipe();
+  sim::Engine engine(scenario, recipe, rng, &trace);
   sim::State state = exact_t2_state();
   state.deck.erase(std::find(state.deck.begin(), state.deck.end(),
                              sim::Card::Crispin));

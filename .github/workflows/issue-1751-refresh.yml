@@ -1,0 +1,69 @@
+name: Issue 1751 Refresh
+
+on:
+  push:
+    branches: [fix/issue-1751-crobat-compression]
+    paths: [.github/workflows/issue-1751-refresh.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-1751-crobat-compression
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Regenerate canonical matrix and traces
+        run: >-
+          python scripts/regenerate_setup_baselines.py
+          --exe build/regidrago_sim
+          --out-dir results
+          --trials 100000
+          --matrix-seed 20260705
+      - name: Refresh canonical documents
+        run: python scripts/update_setup_docs.py --repo-root .
+      - name: Regenerate paired matrix and traces
+        run: >-
+          python scripts/generate_multi_deck_comparison.py
+          --exe build/regidrago_sim
+          --out-dir results
+          --trials 100000
+          --matrix-seed 20260705
+      - name: Refresh paired report
+        run: python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Commit regenerated evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md docs/REPORT.md docs/TRACE_AUDIT.md docs/MULTI_DECK_REPORT.md results/
+          if git diff --cached --quiet; then
+            echo "No generated changes"
+          else
+            git commit -m "Refresh issue 1751 setup matrices"
+            git push origin HEAD:fix/issue-1751-crobat-compression
+          fi
+      - name: Upload regenerated evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1751-regenerated-matrices
+          path: |
+            results/simulation_results.csv
+            results/baseline_manifest.json
+            docs/REPORT.md
+            results/multi_deck_comparison.csv
+            results/multi_deck_manifest.json
+            docs/MULTI_DECK_REPORT.md

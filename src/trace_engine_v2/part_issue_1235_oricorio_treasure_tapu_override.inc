@@ -139,17 +139,32 @@
 
   bool issue_1235_t2_treasure_tapu_crispin_completion_available() const {
     if (!issue_1235_t2_treasure_tapu_context_available()) return false;
+
+    // A copied Engine retains the live rng_ reference. Preserve the fixed-seed trial
+    // stream while this silent route check resolves searches and projected shuffles:
+    // C++ reference-member copy semantics: https://eel.is/c++draft/class.copy.ctor#15
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Official search and shuffle procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Fixed-seed sampling contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#sampling-and-comparison-method
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1691
+    const std::mt19937_64 live_rng = rng_;
     Engine projected = *this;
     projected.trace_ = nullptr;
-    if (!projected.play_mysterious_treasure(true)) return false;
-    projected.play_basics_from_hand();
-    if (projected.hand_count(Card::Crispin) == 0 ||
-        !projected.play_crispin()) return false;
-    projected.attach_manual();
-    projected.evolve_best_regi();
-    return projected.active_is_vstar() &&
-        projected.state_.active->grass >= 2 &&
-        projected.state_.active->fire >= 1 && projected.payload_ready();
+    const bool available = [&projected]() {
+      if (!projected.play_mysterious_treasure(true)) return false;
+      projected.play_basics_from_hand();
+      if (projected.hand_count(Card::Crispin) == 0 ||
+          !projected.play_crispin()) return false;
+      projected.attach_manual();
+      projected.evolve_best_regi();
+      return projected.active_is_vstar() &&
+          projected.state_.active->grass >= 2 &&
+          projected.state_.active->fire >= 1 && projected.payload_ready();
+    }();
+    rng_ = live_rng;
+    return available;
   }
 
   void choose_supporter() {

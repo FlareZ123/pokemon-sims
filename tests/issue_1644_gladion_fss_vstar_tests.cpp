@@ -44,14 +44,21 @@ int main() {
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://www.pokemon.com/us/pokemon-tcg/rules
   // Refined confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/1644
+  // Issue #1697 refines this route: a held Fire Energy makes T3 readiness
+  // deterministic, so Gladion, Forest Seal Stone, Star Alchemy, and evolution
+  // move to T2 while the original earliest T3 ready turn remains unchanged:
+  // https://api.pokemontcg.io/v2/cards/sm4-95
+  // https://api.pokemontcg.io/v2/cards/swsh12-156
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/1697
   if (outcome.first_ready_turn != 3 ||
-      !trace_contains(trace, "T3 | PLAY SUPPORTER") ||
+      !trace_contains(trace, "T2 | PLAY SUPPORTER") ||
       !trace_contains(trace, "Exchanged Gladion for Forest Seal Stone") ||
-      !trace_contains(trace, "T3 | STAR ALCHEMY") ||
-      !trace_contains(trace, "T3 | EVOLVE") ||
+      !trace_contains(trace, "T2 | STAR ALCHEMY") ||
+      !trace_contains(trace, "T2 | EVOLVE") ||
       !trace_contains(trace, "T3 | READY")) {
     throw std::runtime_error(
-        "Seed 83 did not complete the Gladion-Forest Seal Stone-VSTAR route on T3.");
+        "Seed 83 did not take the refined T2 Gladion-Forest Seal Stone-VSTAR route.");
   }
 
   if (trace_contains(trace, "Completed mandatory Prize exchange with Grass Energy")) {

@@ -156,3 +156,7 @@ if (play_issue_1552_t1_vessel_route()) return true;
       if (!run_search_items_one_step(permit_payload)) break;
     }
   }
+
+// Limit issue #1749 count substitution to the generic Basic loop in part_013.inc.
+// https://github.com/FlareZ123/pokemon-sims/issues/1749
+#undef in_play_count

@@ -1,0 +1,50 @@
+name: Issue 1711 three source-bound traces
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.head_ref == 'fix/issue-1711-k0-treasure-turo-crispin'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Validate fixed Pineco T3 route
+        run: |
+          # Mysterious Treasure, Turo, Tapu, Crispin, Vessel, and Regidrago VSTAR:
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sv4-171
+          # https://api.pokemontcg.io/v2/cards/sm2-60
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://github.com/FlareZ123/pokemon-sims/issues/1711
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 1337 --require-ready-by 3 | tee issue-1711-pineco-1337.txt
+      - name: Validate shell T2 control
+        run: |
+          # Earliest-ready objective and K0/K1 policy:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 777 --require-ready-by 2 | tee issue-1711-shell-777.txt
+      - name: Validate Rule Box lock T2 control
+        run: |
+          # Crobat V and Rule Box Ability-lock treatment:
+          # https://api.pokemontcg.io/v2/cards/swsh3-104
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+          ./build/regidrago_sim --simulate-this --model-variant crobat2-erika-channeler --scenario strict-jit-rulebox-ability-lock/go-first --seed 2026 --require-ready-by 2 | tee issue-1711-crobat-lock-2026.txt
+      - name: Upload exact traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1711-three-traces-${{ github.run_attempt }}
+          path: issue-1711-*.txt
+          if-no-files-found: error

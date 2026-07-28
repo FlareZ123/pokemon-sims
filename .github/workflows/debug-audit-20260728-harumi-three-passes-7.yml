@@ -37,6 +37,30 @@ jobs:
           # Pineco route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
           # Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario no-discard-control/go-second --seed 8675309 | tee audit-pass-2-pineco-seed-8675309.txt
+      - name: Pass 2 Steven Prize counterfactual
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp -a . /tmp/steven-projection
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('/tmp/steven-projection/src/trace_engine_v2/part_012.inc')
+          source = path.read_text()
+          original = 'for (const Card target : {Card::RegidragoVstar, Card::RegidragoV, Card::ProfessorBurnet, Card::Crispin, Card::MegaDragonite}) {'
+          projected = 'for (const Card target : {Card::RegidragoVstar, Card::RegidragoV, Card::ProfessorBurnet, Card::Crispin, Card::MegaDragonite, Card::StevensResolve}) {'
+          if original not in source:
+              raise SystemExit('Gladion fallback selector changed')
+          path.write_text(source.replace(original, projected, 1))
+          PY
+          # Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+          # Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+          # Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+          # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # K1 and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Official Prize, Supporter, Item, evolution, and search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          cmake -S /tmp/steven-projection -B /tmp/steven-projection/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/steven-projection/build --target regidrago_sim --parallel 2
+          /tmp/steven-projection/build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario no-discard-control/go-second --seed 8675309 | tee audit-pass-2-steven-projection-seed-8675309.txt
       - name: Pass 3 Crobat matchup-flex going first
         shell: bash
         run: |

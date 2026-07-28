@@ -70,7 +70,7 @@ void verify_projection_isolation(const sim::Scenario& scenario,
 
   // Both completion predicates silently execute Mysterious Treasure, Wonder Tag,
   // and Crispin searches. Their projected shuffles must leave the live trial stream
-  // at the exact pre-projection position when the predicate returns:
+  // at the same fixed-seed position it held before the predicate call:
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
   // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133

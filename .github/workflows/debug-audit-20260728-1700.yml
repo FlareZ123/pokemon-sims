@@ -34,7 +34,7 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee audit-shell-seed-1.txt
           grep -q 'T1 | PLAY ITEM .*exchanged Heavy Ball for Tapu Lele-GX' audit-shell-seed-1.txt
           grep -q 'Searched up to 3 cards: Regidrago VSTAR, Crispin, Latias ex' audit-shell-seed-1.txt
-          grep -q 'T2 | PLAY ITEM .*Brilliant Blender' audit-shell-seed-1.txt
+          grep -q 'T2 | PLAY ITEM | rules: R-BLENDER-01' audit-shell-seed-1.txt
           grep -q 'T2 | RETREAT .*promoted the best-powered Benched Regidrago VSTAR' audit-shell-seed-1.txt
           grep -q 'T2 | READY' audit-shell-seed-1.txt
       - name: Audit Pineco seed 35 direct T2 route

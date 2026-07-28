@@ -102,3 +102,10 @@
   // https://github.com/FlareZ123/pokemon-sims/issues/1704
   #include "part_issue_1704_item_lock_burnet_override.inc"
   #define run_secret_box_turn run_secret_box_turn_issue1704
+
+  // Compose the confirmed K1 pre-Steven route after the scheduled Item-lock wrapper,
+  // then redirect the later general-policy probe through its narrow dispatcher:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1705
+  #include "part_issue_1705_treasure_latias_vessel_override.inc"
+  #define late_steven_has_known_t3_compression_route \
+    late_steven_has_known_t3_compression_route_issue1705

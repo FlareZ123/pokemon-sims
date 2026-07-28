@@ -197,6 +197,7 @@ set(REGIDRAGO_UNIFIED_CASES
   issue_1673_secret_box_deadline_tests
   issue_1674_turo_late_promotion_tests
   issue_1675_latias_late_promotion_tests
+  issue_1683_projection_isolation_tests
   issue_1683_serena_dead_quick_ball_tests
   issue_962_quick_ball_vessel_positive_tests
   issue_962_quick_ball_vessel_resource_controls_tests

@@ -26,14 +26,14 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 | No discard control, going first | 20.103% ± 0.127 | 55.921% ± 0.157 | 72.059% ± 0.142 | 27.941% ± 0.142 |
 | Strict JIT, turn-two Item lock, first | 4.601% ± 0.066 | 10.191% ± 0.096 | 17.704% ± 0.121 | 82.296% ± 0.121 |
 | Strict JIT, full Item lock, first | 2.825% ± 0.052 | 7.752% ± 0.085 | 15.070% ± 0.113 | 84.930% ± 0.113 |
-| Strict JIT, Rule Box Ability lock, first | 4.442% ± 0.065 | 25.964% ± 0.139 | 39.025% ± 0.154 | 60.975% ± 0.154 |
+| Strict JIT, Rule Box Ability lock, first | 4.441% ± 0.065 | 25.965% ± 0.139 | 39.028% ± 0.154 | 60.972% ± 0.154 |
 | Strict JIT, combined lock, first | 0.287% ± 0.017 | 3.278% ± 0.056 | 7.270% ± 0.082 | 92.730% ± 0.082 |
 | Strict JIT, going second | 29.402% ± 0.144 | 52.712% ± 0.158 | 63.919% ± 0.152 | 36.081% ± 0.152 |
 | Matchup-flex JIT, going second | 37.320% ± 0.153 | 60.800% ± 0.154 | 71.034% ± 0.143 | 28.966% ± 0.143 |
 | No discard control, going second | 39.839% ± 0.155 | 66.843% ± 0.149 | 77.984% ± 0.131 | 22.016% ± 0.131 |
 | Strict JIT, turn-two Item lock, second | 14.086% ± 0.110 | 27.941% ± 0.142 | 35.593% ± 0.151 | 64.407% ± 0.151 |
 | Strict JIT, full Item lock, second | 10.531% ± 0.097 | 22.928% ± 0.133 | 30.088% ± 0.145 | 69.912% ± 0.145 |
-| Strict JIT, Rule Box Ability lock, second | 18.092% ± 0.122 | 34.621% ± 0.150 | 44.733% ± 0.157 | 55.267% ± 0.157 |
+| Strict JIT, Rule Box Ability lock, second | 18.093% ± 0.122 | 34.622% ± 0.150 | 44.730% ± 0.157 | 55.270% ± 0.157 |
 | Strict JIT, combined lock, second | 2.370% ± 0.048 | 11.414% ± 0.101 | 15.520% ± 0.115 | 84.480% ± 0.115 |
 | Strict JIT, Supporter lock, first | 0.003% ± 0.002 | 15.289% ± 0.114 | 21.545% ± 0.130 | 78.455% ± 0.130 |
 | Strict JIT, Supporter lock, second | 8.122% ± 0.086 | 19.457% ± 0.125 | 25.347% ± 0.138 | 74.653% ± 0.138 |
@@ -160,6 +160,6 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 ## Provenance
 
-Simulator policy digest: `5dd275e415bbe16af9cc0c4e1b32896de6874ff096f8387e9d3fbf85b713ec11`.
+Simulator policy digest: `cf510a37d5212bf5cabeb898b65219c55d7ca48fca53c53474247294d0ef6182`.
 
-Comparison CSV SHA-256: `fbf4d9de974160b99e6996048d43dd136d46566e6d423e8134c9f041e82f3ec9`.
+Comparison CSV SHA-256: `4b00298dd505537b0713d4be069d538966d7866ae473e46bc5c1e6f23c690ce8`.

@@ -169,7 +169,9 @@
 #undef play_crispin
 #define play_arven play_arven_original
 #define play_gladion play_gladion_original
+#define play_serena play_serena_issue1683_original
 #include "trace_engine_v2/part_012.inc"
+#undef play_serena
 #undef play_gladion
 #undef play_arven
 #define use_celestial_roar use_celestial_roar_original
@@ -177,6 +179,7 @@
 #include "trace_engine_v2/part_013.inc"
 #undef use_legacy_star
 #include "trace_engine_v2/part_014a.inc"
+#include "trace_engine_v2/part_issue_1683_serena_dead_quick_ball_override.inc"
 // part_012.inc opens Serena's draw-mode body, part_013.inc closes it and later
 // opens run_search_items_one_step(), and part_014a.inc completes that method.
 // Define the active Burnet policy only after this first complete member boundary:

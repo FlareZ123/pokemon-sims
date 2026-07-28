@@ -27,7 +27,7 @@ jobs:
           # Repository K0/K1, DCI/JIT, resource preservation, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 2411 | tee shell-strict-second.txt
           git rev-parse HEAD | tee tested-head.txt
-      - name: Upload shell strict trace
+      - name: Upload shell strict trace and source snapshot
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -35,6 +35,14 @@ jobs:
           path: |
             shell-strict-second.txt
             tested-head.txt
+            README.md
+            CMakeLists.txt
+            src
+            tests
+            scripts
+            docs
+            results/*.csv
+            results/*.json
           if-no-files-found: error
 
   pineco-flex-first:

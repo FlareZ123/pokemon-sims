@@ -97,7 +97,7 @@ void test_quick_ball_route_preserves_secret_box() {
          "The cheaper route failed to preserve Supporter resources.");
   expect(trace_contains(trace, "Quick Ball current-turn payload cost") &&
              trace_contains(trace, "preserved Secret Box") &&
-             trace_contains(trace, "EXPLODING ENERGY"),
+             trace_contains(trace, "Exploding Energy"),
          "The issue-1744 trace omitted a required corrected action.");
 }
 
@@ -177,7 +177,7 @@ void test_registered_seed_1618033_reaches_t3_without_secret_box() {
   expect(outcome.first_ready_turn == 3,
          "Seed 1618033 did not retain T3 readiness.");
   expect(trace_contains(trace, "Quick Ball current-turn payload cost") &&
-             trace_contains(trace, "EXPLODING ENERGY") &&
+             trace_contains(trace, "Exploding Energy") &&
              trace_contains(trace, "T3 | READY") &&
              !trace_contains(trace, "T3 | SECRET BOX"),
          "Seed 1618033 did not take the cheaper corrected route.");

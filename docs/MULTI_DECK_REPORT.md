@@ -153,13 +153,3 @@ The following row is `regidrago-pineco`, no-discard-control, going second. Count
 Four Tapu Lele-GX and two Pineco reduce mulligans, while they also lower the probability of opening Regidrago V. Active Tapu or Pineco can require a retreat or switch plan, the six support Pokémon compete for Bench space, and partially drawn Pineco pieces have value only when the full route can execute. Secret Box requires three other hand cards, while Mysterious Treasure may require another cost. Prizing can collapse the ACE SPEC, Forest, Forest Seal Stone, Pineco line, VSTAR, Fire channel, or connector path. Item, Supporter, and Rule Box Ability locks remove different parts of the chain.
 
 The corrected planner distinguishes sequential Supporters from same-turn contention. A planned T1 Arven, Gladion, or Steven play can be followed by T2 Dawn. It also compares direct shell-style completion against the Pineco route before committing resources.
-
-## Boundary
-
-These percentages estimate setup readiness under the documented goldfish policy. They are not match-win rates. The model does not assign strategic value to giving up two Prizes through Exploding Energy, repeated attacks, opponent damage, gust, hand disruption, or full format legality.
-
-## Provenance
-
-Simulator policy digest: `4d9c743ebe58416e8087754cf3fc62d16014e3d7edfa52d1ca85436c7f5b102b`.
-
-Comparison CSV SHA-256: `6134cabd6b7b99e787b18ce434fbe04dbaf5fb3db94ab53f7d3f36452c24715b`.

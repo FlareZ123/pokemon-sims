@@ -96,3 +96,9 @@
     }
     return use_celestial_roar_issue1369_original();
   }
+
+  // Compose the scheduled Item-lock route after the ordinary Pineco policy, then
+  // rewrite only the later registered-deck dispatch call to the narrow wrapper:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1704
+  #include "part_issue_1704_item_lock_burnet_override.inc"
+  #define run_secret_box_turn run_secret_box_turn_issue1704

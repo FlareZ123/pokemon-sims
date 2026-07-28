@@ -49,8 +49,7 @@ jobs:
               "    if (excluded_from_cost && *excluded_from_cost == Card::MysteriousTreasure &&\n"
               "        scenario_.dci == DciProfile::StrictJit &&\n"
               "        hand_count(Card::MysteriousTreasure) >= 2 &&\n"
-              "        hand_count(Card::Channeler) > 0 &&\n"
-              "        (need_vstar() || need_active_vstar())) {\n"
+              "        hand_count(Card::Channeler) > 0) {\n"
               "      return Card::Channeler;\n"
               "    }\n\n"
           )

@@ -103,12 +103,14 @@
   #include "part_issue_1704_item_lock_burnet_override.inc"
   #define run_secret_box_turn run_secret_box_turn_issue1704
 
+
   // Compose the confirmed K1 pre-Steven route after the scheduled Item-lock wrapper,
   // then redirect the later general-policy probe through its narrow dispatcher:
   // https://github.com/FlareZ123/pokemon-sims/issues/1705
   #include "part_issue_1705_treasure_latias_vessel_override.inc"
   #define late_steven_has_known_t3_compression_route \
     late_steven_has_known_t3_compression_route_issue1705
+
 
   // Compose the confirmed K1 Heavy Ball route after the Treasure-Latias dispatcher,
   // preserving the prior fix as the fallback for every non-matching state:
@@ -117,3 +119,10 @@
   #include "part_issue_1702_heavy_ball_latias_override.inc"
   #define late_steven_has_known_t3_compression_route \
     late_steven_has_known_t3_compression_route_issue1702
+
+  // Compose the confirmed K0 Treasure-Turo-Crispin route after earlier Pineco
+  // wrappers, then direct the registered-deck dispatcher through this narrow layer:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1711
+  #include "part_issue_1711_k0_treasure_turo_crispin_override.inc"
+  #undef run_secret_box_turn
+  #define run_secret_box_turn run_secret_box_turn_issue1711

@@ -1,0 +1,144 @@
+name: Fresh three-pass simulator audit 20260727 B
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  shell-strict-seed-43:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2 --target regidrago_sim
+      - name: Audit shell strict route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+          # Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+          # Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+          # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official turn, Bench, search, discard, Supporter, Energy, evolution, Ability, retreat, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Repository K0/K1, DCI/JIT, Supporter contention, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee shell-strict-seed-43.txt
+          grep -q "T1 | DISCARD.*Grass Energy (Quick Ball cost)" shell-strict-seed-43.txt
+          grep -q "T2 | DISCARD.*Dragapult ex (Mysterious Treasure cost)" shell-strict-seed-43.txt
+          grep -q "T2 | WONDER TAG.*Crispin" shell-strict-seed-43.txt
+          grep -q "T2 | READY" shell-strict-seed-43.txt
+          git rev-parse HEAD | tee tested-head.txt
+      - name: Upload shell trace
+        uses: actions/upload-artifact@v4
+        with:
+          name: fresh-shell-strict-seed-43-${{ github.run_attempt }}
+          path: |
+            shell-strict-seed-43.txt
+            tested-head.txt
+          if-no-files-found: error
+
+  pineco-strict-seed-18:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2 --target regidrago_sim
+      - name: Audit Pineco compression route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Forretress ex / Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+          # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official turn, Bench, search, discard, Supporter, Item, Tool, Stadium, Energy, evolution, Ability, retreat, self-Knock-Out, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Repository Secret Box, AMR, route-aware DCI, Supporter contention, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 18 --require-ready-by 2 | tee pineco-strict-seed-18.txt
+          grep -q "Arven banked the next-turn Secret Box route" pineco-strict-seed-18.txt
+          grep -q "T2 | EXPLODING ENERGY" pineco-strict-seed-18.txt
+          grep -q "T2 | STAR ALCHEMY" pineco-strict-seed-18.txt
+          grep -q "T2 | READY" pineco-strict-seed-18.txt
+          git rev-parse HEAD | tee tested-head.txt
+      - name: Upload Pineco trace
+        uses: actions/upload-artifact@v4
+        with:
+          name: fresh-pineco-strict-seed-18-${{ github.run_attempt }}
+          path: |
+            pineco-strict-seed-18.txt
+            tested-head.txt
+          if-no-files-found: error
+
+  shell-full-item-lock-seed-9:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2 --target regidrago_sim
+      - name: Audit full Item lock route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+          # Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+          # Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+          # Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+          # Regidrago VSTAR / Legacy Star and Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official turn, Bench, Supporter, Energy, evolution, Ability, retreat, Item-lock, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Repository full Item lock, K0/K1, DCI/JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#full-item-lock
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-full-item-lock/go-second --seed 9 --require-ready-by 2 | tee shell-full-item-lock-seed-9.txt
+          grep -q "T1 | WONDER TAG.*Steven's Resolve" shell-full-item-lock-seed-9.txt
+          grep -q "T1 | VITAL DANCE" shell-full-item-lock-seed-9.txt
+          grep -q "T2 | LEGACY STAR" shell-full-item-lock-seed-9.txt
+          grep -q "T2 | READY" shell-full-item-lock-seed-9.txt
+          ! grep -q "T[12] | PLAY ITEM" shell-full-item-lock-seed-9.txt
+          git rev-parse HEAD | tee tested-head.txt
+      - name: Upload Item-lock trace
+        uses: actions/upload-artifact@v4
+        with:
+          name: fresh-shell-full-item-lock-seed-9-${{ github.run_attempt }}
+          path: |
+            shell-full-item-lock-seed-9.txt
+            tested-head.txt
+          if-no-files-found: error
+
+  paired-t2-t3-matrix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2 --target regidrago_sim
+      - name: Generate paired all-condition matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Regidrago VSTAR ready-state attack cost and Dragon-copy effect: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official turn, attachment, evolution, Ability, Item, Supporter, retreat, Stadium, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Repository registered decks, scenario matrix, success thresholds, locks, and DCI/JIT profiles: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260728 --out fresh-ci-t2-t3-matrix.csv
+          git rev-parse HEAD | tee tested-head.txt
+      - name: Upload paired matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: fresh-current-main-t2-t3-matrix-${{ github.run_attempt }}
+          path: |
+            fresh-ci-t2-t3-matrix.csv
+            tested-head.txt
+          if-no-files-found: error

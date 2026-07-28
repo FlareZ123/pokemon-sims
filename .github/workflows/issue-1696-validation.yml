@@ -1,0 +1,172 @@
+name: Issue 1696 validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    if: github.head_ref == 'issue-1696-card-source-contract'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Apply source-card contract
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          root = Path('.')
+          for relative in (
+              'src/trace_engine_v2/part_009a.inc',
+              'src/trace_engine_v2/part_012.inc',
+              'tests/issue_1017_late_steven_vstar_vessel_tests.cpp',
+              'tests/issue_1598_prized_treasure_route_tests.cpp',
+          ):
+              path = root / relative
+              text = path.read_text(encoding='utf-8')
+              path.write_text(text.replace('me2-166', 'me2pt5-152'), encoding='utf-8')
+
+          path = root / 'tests/card_audit_contract_tests.py'
+          text = path.read_text(encoding='utf-8')
+          if 'CANONICAL_SOURCE_CARD_IDS' not in text:
+              constants = '''SOURCE_ROOTS = ("src", "tests", "docs", "scripts", ".github")
+          CARD_SOURCE_URL = re.compile(r"https://api\\.pokemontcg\\.io/v2/cards/([^\\s<>\\\"')\\]]+)")
+          CARD_SOURCE_TRAILING_PUNCTUATION = ".,;:!?`"
+          # This exact set was verified against the supplied pokemon-tcg-data English corpus:
+          # https://github.com/PokemonTCG/pokemon-tcg-data
+          # https://github.com/FlareZ123/pokemon-sims/issues/1696
+          CANONICAL_SOURCE_CARD_IDS = {
+              "base1-99", "me1-117", "me2-87", "me2pt5-16", "me2pt5-152",
+              "sm11-141", "sm11-190", "sm12-187", "sm2-55", "sm2-60", "sm2-125",
+              "sm3-115", "sm3-128", "sm4-95", "sm4-96", "sm5-100", "sm6-113",
+              "sm7-145", "sm7-148", "sm9-152", "sv1-166", "sv3pt5-160",
+              "sv4-163", "sv4-171", "sv4pt5-1", "sv4pt5-2", "sv6-127",
+              "sv6-130", "sv6-163", "sv6pt5-63", "sv7-133", "sv8-76",
+              "sv8-140", "sv8-164", "swsh1-163", "swsh1-179", "swsh3-104",
+              "swsh6-148", "swsh8-225", "swsh9-148", "swsh9-149", "swsh10-144",
+              "swsh10-146", "swsh11-136", "swsh12-135", "swsh12-136",
+              "swsh12-156", "swsh12-164", "swsh12pt5-146", "swsh12tg-TG26",
+          }
+          '''
+              marker = 'TRACE_SOURCE_DIR = REPO_ROOT / "src" / "trace_engine_v2"\n'
+              text = text.replace(marker, marker + constants)
+
+              helper = '''\n\ndef referenced_card_source_ids() -> dict[str, set[str]]:
+              references: dict[str, set[str]] = {}
+              for source_root in SOURCE_ROOTS:
+                  root = REPO_ROOT / source_root
+                  if not root.exists():
+                      continue
+                  for source_path in root.rglob("*"):
+                      if not source_path.is_file():
+                          continue
+                      try:
+                          source_text = source_path.read_text(encoding="utf-8")
+                      except UnicodeDecodeError:
+                          continue
+                      for match in CARD_SOURCE_URL.finditer(source_text):
+                          card_id = match.group(1).rstrip(CARD_SOURCE_TRAILING_PUNCTUATION)
+                          references.setdefault(card_id, set()).add(
+                              source_path.relative_to(REPO_ROOT).as_posix()
+                          )
+              return references
+          '''
+              text = text.replace('\n\ndef main() -> int:\n', helper + '\n\ndef main() -> int:\n')
+
+              check = '''\n    # Every direct Pokémon TCG API source must name a card ID verified against
+              # the supplied corpus. Sentence punctuation after Markdown URLs is ignored:
+              # https://github.com/PokemonTCG/pokemon-tcg-data
+              # https://github.com/FlareZ123/pokemon-sims/issues/1696
+              card_sources = referenced_card_source_ids()
+              unknown_card_ids = sorted(set(card_sources) - CANONICAL_SOURCE_CARD_IDS)
+              if unknown_card_ids:
+                  details = "; ".join(
+                      f"{card_id}: {', '.join(sorted(card_sources[card_id]))}"
+                      for card_id in unknown_card_ids
+                  )
+                  raise AssertionError(f"Unknown Pokémon TCG source card IDs: {details}")
+              unused_card_ids = sorted(CANONICAL_SOURCE_CARD_IDS - set(card_sources))
+              if unused_card_ids:
+                  raise AssertionError(
+                      "Canonical source card IDs are no longer referenced: "
+                      + ", ".join(unused_card_ids)
+                  )
+          '''
+              text = text.replace('    audit = load_audit_module()\n', '    audit = load_audit_module()\n' + check)
+              path.write_text(text, encoding='utf-8')
+          PY
+
+          git diff --check
+          ! git grep -n 'me2-166'
+          python tests/card_audit_contract_tests.py
+          python tests/card_audit_category_contract_tests.py
+
+      - name: Commit applied fix
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_009a.inc src/trace_engine_v2/part_012.inc tests/issue_1017_late_steven_vstar_vessel_tests.cpp tests/issue_1598_prized_treasure_route_tests.cpp tests/card_audit_contract_tests.py
+          git commit -m 'Complete issue 1696 source-card contract'
+          git push origin HEAD:${{ github.head_ref }}
+
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+
+      - name: Test source-card contract
+        run: |
+          python tests/card_audit_contract_tests.py
+          python tests/card_audit_category_contract_tests.py
+          ctest --test-dir build --output-on-failure
+
+      - name: Simulate seed 14 deterministic Treasure route
+        shell: bash
+        run: |
+          # Printed effects and procedure: https://api.pokemontcg.io/v2/cards/sm4-95 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/me2pt5-152 https://api.pokemontcg.io/v2/cards/swsh12-136 https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 14 --require-ready-by 3 | tee trace-seed-14.txt
+          grep -q 'exchanged Gladion for Mysterious Treasure' trace-seed-14.txt
+          grep -q 'T3 | DISCARD | rules: R-MT-01 | Mega Dragonite ex' trace-seed-14.txt
+          grep -q 'T3 | EVOLVE' trace-seed-14.txt
+          grep -q 'T3 | READY' trace-seed-14.txt
+
+      - name: Simulate seed 218 direct Latias route
+        shell: bash
+        run: |
+          # Printed effects and procedure: https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/sv8-76 https://api.pokemontcg.io/v2/cards/sv4-163 https://api.pokemontcg.io/v2/cards/swsh12-136 https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-heavy-ball --scenario matchup-flex-jit/go-second --seed 218 --require-ready-by 4 | tee trace-seed-218.txt
+          grep -q 'Searched the complete Latias-Grass T4 route: Latias ex, Grass Energy' trace-seed-218.txt
+          grep -q 'T2 | EVOLVE' trace-seed-218.txt
+          grep -q 'T2 | RETREAT' trace-seed-218.txt
+          grep -q 'T4 | READY' trace-seed-218.txt
+
+      - name: Simulate seed 245 Vessel Burnet route
+        shell: bash
+        run: |
+          # Printed effects and procedure: https://api.pokemontcg.io/v2/cards/sv4-163 https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 https://api.pokemontcg.io/v2/cards/swsh12-136 https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-erika --scenario strict-jit/go-first --seed 245 --require-ready-by 3 | tee trace-seed-245.txt
+          grep -q 'Discarded the dominated Quick Ball and searched Grass Energy for the held Burnet finish' trace-seed-245.txt
+          grep -q 'Professor Burnet' trace-seed-245.txt
+          grep -q 'T3 | READY' trace-seed-245.txt
+
+      - name: Upload simulator traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1696-simulate-this-${{ github.run_attempt }}
+          path: trace-seed-*.txt
+          if-no-files-found: warn

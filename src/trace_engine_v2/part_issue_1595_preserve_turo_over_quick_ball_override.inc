@@ -128,14 +128,14 @@
     state_.discard.push_back(Card::EarthenVessel);
     if (!discard_from_hand(Card::FieldBlower,
                            "setup-dead K1 Earthen Vessel cost",
-                           "R-VESSEL-01; P-DCI-01")) {
+                           "R-EV-01; P-DCI-01")) {
       throw std::logic_error("issue-1721 Field Blower cost disappeared");
     }
     if (!move_deck_to_hand(Card::Grass) || !move_deck_to_hand(Card::Fire)) {
       throw std::logic_error("issue-1721 Vessel Energy targets disappeared");
     }
     shuffle(state_.deck);
-    trace("EARTHEN VESSEL", "R-VESSEL-01; R-GAME-ITEM; P-DCI-01",
+    trace("EARTHEN VESSEL", "R-EV-01; R-GAME-ITEM; P-DCI-01",
           "Discarded setup-dead Field Blower; searched Grass Energy and Fire Energy.");
 
     remove_one(state_.hand, Card::Powerglass);

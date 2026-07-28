@@ -96,7 +96,7 @@ void test_live_projection_preserves_rng_and_trace() {
   // that RNG unless the classifier explicitly restores it, and a copied trace pointer
   // would otherwise leak speculative actions into the real trace:
   // C++ reference-member copy semantics: https://eel.is/c++draft/class.copy.ctor#15
-  // Repository deterministic fixed-seed contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#determinism-and-randomness
+  // Repository fixed-seed sampling contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#sampling-and-comparison-method
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1683
   expect(!sim::EngineTestAccess::dead_quick_ball(engine),
          "A live Quick Ball route was incorrectly classified as setup-dead.");

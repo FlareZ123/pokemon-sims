@@ -98,6 +98,7 @@ void test_live_projection_preserves_rng_and_trace() {
   // C++ reference-member copy semantics: https://eel.is/c++draft/class.copy.ctor#15
   // Repository fixed-seed sampling contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#sampling-and-comparison-method
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1683
+  // Validated pull request: https://github.com/FlareZ123/pokemon-sims/pull/1689
   expect(!sim::EngineTestAccess::dead_quick_ball(engine),
          "A live Quick Ball route was incorrectly classified as setup-dead.");
   expect(trace.lines.empty(),

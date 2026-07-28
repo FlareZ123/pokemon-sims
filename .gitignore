@@ -2,3 +2,10 @@
 # https://github.com/FlareZ123/pokemon-sims/issues/1492
 /src/*.lock
 /src/**/*.lock
+
+# Local compiler, Python, and diagnostic outputs are generated state.
+# Pattern syntax: https://git-scm.com/docs/gitignore
+/build/
+**/__pycache__/
+*.py[cod]
+/issue-*-seed-*.txt

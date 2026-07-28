@@ -136,3 +136,5 @@
     }
     return play_tate_draw_tate_blender_original();
   }
+
+#include "part_issue_1740_preserve_live_treasure_override.inc"

@@ -1,3 +1,29 @@
+bool issue_1697_held_next_turn_manual_energy_route() const {
+  // In no-discard-control, a held Basic Energy can finish the one remaining
+  // GGF component through next turn's legal manual attachment. Taking the known
+  // prized Forest Seal Stone now evolves the prior-turn Regidrago V one turn
+  // earlier, preserves the live Crispin, and leaves next turn's Supporter unused:
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Core Supporter, Tool, VSTAR Power, manual attachment, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // K1, earliest-completion, and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1697
+  return scenario_.dci == DciProfile::NoDiscardControl &&
+      state_.turn < scenario_.max_turn && state_.manual_energy_used &&
+      state_.active &&
+      std::max(0, 2 - state_.active->grass) +
+              std::max(0, 1 - state_.active->fire) ==
+          1 &&
+      ((state_.active->grass < 2 && hand_count(Card::Grass) > 0) ||
+       (state_.active->fire < 1 && hand_count(Card::Fire) > 0)) &&
+      hand_count(Card::Crispin) > 0 &&
+      deck_count_after_search_started(Card::Grass) > 0 &&
+      deck_count_after_search_started(Card::Fire) > 0 &&
+      crispin_can_advance_energy_axis();
+}
+
 bool play_gladion() {
   const bool issue_1644_has_held_vstar_route =
       hand_count(Card::ForestSealStone) > 0 || hand_count(Card::Arven) > 0 ||
@@ -10,8 +36,8 @@ bool play_gladion() {
       !state_.vstar_power_used && state_.active &&
       state_.active->card == Card::RegidragoV &&
       state_.active->entered_turn < state_.turn &&
-      state_.active->tool == Tool::None && state_.active->grass >= 2 &&
-      state_.active->fire >= 1 && need_vstar() && !need_energy() &&
+      state_.active->tool == Tool::None && need_vstar() &&
+      (!need_energy() || issue_1697_held_next_turn_manual_energy_route()) &&
       !need_payload() && hand_count(Card::Gladion) > 0 &&
       prize_count_after_reveal(Card::ForestSealStone) > 0 &&
       deck_count_after_search_started(Card::RegidragoVstar) > 0 &&

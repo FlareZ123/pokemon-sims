@@ -78,32 +78,35 @@ void test_seed_33_uses_burnet_before_dead_crispin() {
          "Crobat seed 33 did not prefer observable Burnet payload progress over dead Crispin.");
 }
 
-void test_seed_83_uses_crispin_before_gladion_and_celestial_roar() {
+void test_seed_83_uses_prized_fss_before_crispin() {
   const SeedResult result = run_crobat_seed(
       "crobat2-erika-channeler", "no-discard-control/go-first", 83);
 
-  // The T1 deck search established K1. On T2, the manual Grass attachment plus
-  // held Crispin deterministically completes GGF, the Dragon payload is already
-  // banked, and Regidrago VSTAR remains in the inspected deck. Gladion cannot
-  // improve a current axis, while Celestial Roar can discard unresolved VSTAR
-  // copies from a hidden top three. The selector must use only this public state:
-  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // K1 proves Forest Seal Stone is prized and Regidrago VSTAR remains in deck.
+  // The held Fire Energy makes the T3 manual attachment deterministic, so T2
+  // Gladion, Star Alchemy, and evolution preserve Crispin while keeping the same
+  // earliest T3 ready turn:
   // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
-  // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+  // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
   // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-  // Core Supporter, attachment, search, evolution, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-  // K1 and direct-completion policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1633
-  expect(trace_contains(result.trace,
-                        "Held Gladion because Crispin deterministically completes GGF") &&
+  // Core Supporter, Tool, VSTAR Power, manual attachment, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // K1 and resource-preserving earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed refinement: https://github.com/FlareZ123/pokemon-sims/issues/1697
+  expect(result.outcome.first_ready_turn == 3 &&
              trace_contains(result.trace,
-                            "T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER") &&
-             trace_contains(result.trace, "T2 | HOLD ATTACK |") &&
+                            "T2 | PLAY SUPPORTER | rules: R-GLADION-01") &&
+             trace_contains(result.trace,
+                            "Exchanged Gladion for Forest Seal Stone") &&
+             trace_contains(result.trace, "T2 | STAR ALCHEMY") &&
+             trace_contains(result.trace, "T2 | EVOLVE") &&
+             trace_contains(result.trace,
+                            "T3 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually") &&
              !trace_contains(result.trace,
-                             "T2 | PLAY SUPPORTER | rules: R-GLADION-01") &&
+                             "T2 | PLAY SUPPORTER | rules: R-CRISPIN-01") &&
              !trace_contains(result.trace,
                              "T2 | ATTACK | rules: R-RV-01; R-GAME-ATTACK"),
-         "Crobat seed 83 did not choose deterministic Crispin and hold Celestial Roar.");
+         "Crobat seed 83 did not use the refined prized-FSS held-Energy route.");
 }
 
 void test_live_prized_crispin_route_remains_available() {
@@ -120,7 +123,7 @@ void test_live_prized_crispin_route_remains_available() {
 
 int main() {
   test_seed_33_uses_burnet_before_dead_crispin();
-  test_seed_83_uses_crispin_before_gladion_and_celestial_roar();
+  test_seed_83_uses_prized_fss_before_crispin();
   test_live_prized_crispin_route_remains_available();
   return 0;
 }

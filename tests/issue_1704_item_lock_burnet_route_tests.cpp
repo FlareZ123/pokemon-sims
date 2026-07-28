@@ -105,8 +105,9 @@ void test_entry_requires_realistic_vessel_cost() {
   const sim::Scenario scenario{"issue-1704-cost-control",
                                sim::DciProfile::StrictJit,
                                sim::LockMode::TurnTwoItem, false, 2};
+  const auto recipe = sim::pineco_recipe();
   std::mt19937_64 rng{17040};
-  sim::Engine engine(scenario, sim::pineco_recipe(), rng);
+  sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, exact_t1_state(false, true));
 
   // Earthen Vessel requires another card as its discard cost:
@@ -123,8 +124,9 @@ void test_entry_requires_held_vstar() {
   const sim::Scenario scenario{"issue-1704-vstar-control",
                                sim::DciProfile::StrictJit,
                                sim::LockMode::TurnTwoItem, false, 2};
+  const auto recipe = sim::pineco_recipe();
   std::mt19937_64 rng{17041};
-  sim::Engine engine(scenario, sim::pineco_recipe(), rng);
+  sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, exact_t1_state(true, false));
 
   // Regidrago VSTAR must already be held because T2 Items are unavailable:

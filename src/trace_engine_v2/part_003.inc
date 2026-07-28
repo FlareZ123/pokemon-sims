@@ -16,28 +16,6 @@ class Engine {
   Engine(const Scenario& scenario, const DeckRecipe& recipe, std::mt19937_64& rng, TraceLog* trace = nullptr)
       : scenario_(scenario), recipe_(recipe), rng_(rng), trace_(trace) {}
 
-  // Engine copies are speculative route projections. Give each projection an
-  // isolated snapshot so a search-and-shuffle probe cannot consume the live trial RNG:
-  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
-  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
-  // Official search and shuffle procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-  // C++ reference-member copy semantics: https://eel.is/c++draft/class.copy.ctor#15
-  // Repository fixed-seed sampling contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#sampling-and-comparison-method
-  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1691
-  Engine(const Engine& other)
-      : scenario_(other.scenario_),
-        recipe_(other.recipe_),
-        projected_rng_(other.rng_),
-        rng_(*projected_rng_),
-        trace_(other.trace_),
-        state_(other.state_),
-        outcome_(other.outcome_),
-        deck_seen_(other.deck_seen_),
-        prizes_revealed_(other.prizes_revealed_),
-        issue_1420_direct_t2_treasure_route_(
-            other.issue_1420_direct_t2_treasure_route_) {}
-
   TrialOutcome run() {
     setup();
     for (int next_turn = 1; next_turn <= scenario_.max_turn; ++next_turn) {
@@ -69,7 +47,6 @@ class Engine {
  private:
   const Scenario& scenario_;
   const DeckRecipe& recipe_;
-  std::optional<std::mt19937_64> projected_rng_;
   std::mt19937_64& rng_;
   TraceLog* trace_{nullptr};
   State state_;

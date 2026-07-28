@@ -1,3 +1,4 @@
+# Source-bound validation for issue #1749 after baseline refresh.
 name: Debug issue 1749 three-pass audit
 
 on:

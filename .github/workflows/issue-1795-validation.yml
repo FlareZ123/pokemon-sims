@@ -1,0 +1,77 @@
+name: Issue 1795 Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  source-bound-validation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+
+      - name: Focused issue 1795 regressions
+        run: ctest --test-dir build -R regidrago_issue_1795_crispin_steven_vessel_tests --output-on-failure
+
+      - name: Pass 1 exact seed 364 Crispin Steven Vessel route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Crispin, Steven's Resolve, Earthen Vessel, Regidrago VSTAR, official procedure, and confirmed issue:
+          # https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/sv4-163 https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          # https://github.com/FlareZ123/pokemon-sims/issues/1795
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 364 --require-ready-by 4 | tee issue-1795-pass-1.txt
+
+      - name: Pass 2 shell strict JIT going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Ready-state and earliest-route specifications:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee issue-1795-pass-2.txt
+
+      - name: Pass 3 Pineco strict JIT going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Registered Pineco route, Pineco, Forretress ex, and Secret Box:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://api.pokemontcg.io/v2/cards/sv6-163
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee issue-1795-pass-3.txt
+
+      - name: Complete Release test suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Generate canonical T2 T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-1795-t2-t3-matrix.csv
+
+      - name: Generate all-deck T2 T3 matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out issue-1795-all-decks-matrix.csv
+
+      - name: Record tested source
+        run: git rev-parse HEAD | tee issue-1795-tested-head.txt
+
+      - name: Upload source-bound evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1795-validation-${{ github.run_attempt }}
+          path: |
+            issue-1795-pass-*.txt
+            issue-1795-t2-t3-matrix.csv
+            issue-1795-all-decks-matrix.csv
+            issue-1795-tested-head.txt
+          if-no-files-found: warn

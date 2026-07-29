@@ -1,4 +1,4 @@
-name: Regenerate 1079 Artifacts
+name: Apply 1079 Artifacts
 
 on:
   pull_request:
@@ -6,53 +6,43 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  actions: read
+  contents: write
 
 concurrency:
-  group: regenerate-1079-${{ github.event.pull_request.number || github.ref }}
+  group: apply-1079-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  regenerate:
+  apply:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-      - name: Configure Release
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-      - name: Build simulator
-        run: cmake --build build --target regidrago_sim --parallel 2
-      - name: Regenerate canonical shell baselines
+          ref: fix-1079-held-energy-regression
+          fetch-depth: 0
+      - name: Download verified generated artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          # Fixed-seed matrix contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
-          # Source-bound baseline generator: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
-          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
-      - name: Regenerate paired deck comparison
+          # Source-bound generation run: https://github.com/FlareZ123/pokemon-sims/actions/runs/30416698466
+          # Confirmed regression scope: https://github.com/FlareZ123/pokemon-sims/issues/1079
+          gh run download 30416698466 --repo FlareZ123/pokemon-sims --name issue-1079-regenerated-artifacts-1 --dir generated
+      - name: Apply generated contracts
         run: |
-          # Registered deck and scenario contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#registered-decks
-          # Source-bound paired generator: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/generate_multi_deck_comparison.py
-          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
-      - name: Update generated reports
+          cp generated/docs/MULTI_DECK_REPORT.md docs/MULTI_DECK_REPORT.md
+          cp generated/docs/REPORT.md docs/REPORT.md
+          cp generated/results/baseline_manifest.json results/baseline_manifest.json
+          cp generated/results/multi_deck_comparison.csv results/multi_deck_comparison.csv
+          cp generated/results/multi_deck_manifest.json results/multi_deck_manifest.json
+          cp generated/results/simulation_results.csv results/simulation_results.csv
+          git rm .github/workflows/regenerate-1079-artifacts.yml
+          git diff --check
+      - name: Commit generated contracts
         run: |
-          # Generated documentation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/REPORT.md
-          python scripts/update_setup_docs.py --repo-root .
-          python scripts/update_multi_deck_docs.py --repo-root .
-      - name: Verify generated text
-        run: git diff --check
-      - name: Record generated paths
-        if: always()
-        run: git status --short | tee regenerated-paths.txt
-      - name: Upload generated artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: issue-1079-regenerated-artifacts-${{ github.run_attempt }}
-          path: |
-            results
-            docs
-            README.md
-            regenerated-paths.txt
-          if-no-files-found: error
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add docs/MULTI_DECK_REPORT.md docs/REPORT.md results/baseline_manifest.json results/multi_deck_comparison.csv results/multi_deck_manifest.json results/simulation_results.csv
+          git commit -m "Regenerate source-bound setup reports for #1079"
+          git push origin HEAD:fix-1079-held-energy-regression

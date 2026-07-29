@@ -39,6 +39,31 @@ if(NOT strict_seed_19 MATCHES "T2 \\| READY \\|")
   message(FATAL_ERROR "Strict seed 19 did not retain T2 readiness:\n${strict_seed_19}")
 endif()
 
+
+# Current-main seed 2026072802 is the regression witness. Matchup-flex JIT has
+# spent the T2 manual attachment, holds the sole missing Fire Energy, and has no
+# T2 Regidrago VSTAR route. Celestial Roar cannot improve the marginal next-draw
+# VSTAR chance or bank a later JIT payload, so it must preserve the top three.
+# The fixed hidden order then draws Gladion on T3 and the preserved VSTAR on T4,
+# where Professor Burnet establishes the same-turn payload:
+# Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+# Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+# Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+# Core attachment, evolution, Supporter, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+# Strict and matchup-flex JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+# Earliest-route and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+# Reopened confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/1079
+run_trace("matchup-flex-jit/go-first" 2026072802 matchup_flex_regression)
+if(NOT matchup_flex_regression MATCHES "T2 \\| HOLD ATTACK \\|")
+  message(FATAL_ERROR "Matchup-flex regression seed did not hold Celestial Roar:\n${matchup_flex_regression}")
+endif()
+if(matchup_flex_regression MATCHES "T2 \\| ATTACK \\|.*Celestial Roar")
+  message(FATAL_ERROR "Matchup-flex regression seed still used Celestial Roar:\n${matchup_flex_regression}")
+endif()
+if(NOT matchup_flex_regression MATCHES "T4 \\| READY \\|")
+  message(FATAL_ERROR "Matchup-flex regression seed did not preserve the T4 ready route:\n${matchup_flex_regression}")
+endif()
+
 # With two Energy still missing, one future manual attachment does not guarantee GGF.
 # Celestial Roar must remain available as a live acceleration route:
 # https://api.pokemontcg.io/v2/cards/swsh12-135

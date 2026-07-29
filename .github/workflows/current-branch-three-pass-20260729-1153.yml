@@ -50,6 +50,13 @@ jobs:
           # Scheduled Item-lock model and merged route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock https://github.com/FlareZ123/pokemon-sims/issues/1817
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 314159 --require-ready-by 3 | tee trace-pass-3.txt
 
+      - name: Regenerate source-bound baselines
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
 
@@ -82,6 +89,14 @@ jobs:
             trace-pass-*.txt
             t2-t3-shell-matrix.csv
             t2-t3-all-condition-matrix.csv
+            docs/REPORT.md
+            docs/MULTI_DECK_REPORT.md
+            results/simulation_results.csv
+            results/baseline_manifest.json
+            results/traces
+            results/multi_deck_comparison.csv
+            results/multi_deck_manifest.json
+            results/multi_deck_traces
             build/Testing
             build-sanitize/Testing
           if-no-files-found: warn

@@ -1,0 +1,25 @@
+name: Issue 1839 Exact State Trace
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  trace:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/issue-1839-dawn-secret-box-refill'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Apply corrected patch
+        run: |
+          python scripts/apply_issue_1839.py
+          python scripts/refine_issue_1839.py
+      - name: Build simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target regidrago_sim --parallel 2
+      - name: Print filed reproduction
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 1618033

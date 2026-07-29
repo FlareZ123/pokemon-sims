@@ -129,7 +129,7 @@ void test_seed_14_wonder_tag_selects_steven_and_reaches_t4() {
   // deterministic, one turn earlier than the preserved Steven-Vessel fallback:
   // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-  // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2-166
+  // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Core Prize, Supporter, Item, discard, search, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // Earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities

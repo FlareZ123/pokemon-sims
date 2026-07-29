@@ -1,0 +1,44 @@
+name: Inspect Klara rebase
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'enhancement-1773-klara-swap'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: enhancement-1773-klara-swap
+          fetch-depth: 0
+      - name: Inspect merge with current main
+        shell: bash
+        run: |
+          set +e
+          git fetch origin main
+          git merge --no-commit --no-ff origin/main
+          status=$?
+          {
+            echo "merge_status=$status"
+            git status --short
+            echo "CONFLICTS"
+            git diff --name-only --diff-filter=U
+          } > /tmp/rebase-status.txt
+          mkdir -p /tmp/rebase-conflicts
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            mkdir -p "/tmp/rebase-conflicts/$(dirname "$file")"
+            cp "$file" "/tmp/rebase-conflicts/$file"
+          done < <(git diff --name-only --diff-filter=U)
+          cp /tmp/rebase-status.txt /tmp/rebase-conflicts/status.txt
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: klara-rebase-inspection
+          path: /tmp/rebase-conflicts
+          if-no-files-found: error

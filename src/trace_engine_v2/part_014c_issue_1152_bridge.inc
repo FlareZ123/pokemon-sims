@@ -130,6 +130,141 @@
     return crispin_can_advance_energy_axis();
   }
 
+  int issue_1795_steven_turn_ = 0;
+  int issue_1795_vessel_turn_ = 0;
+
+  bool issue_1795_banked_steven_route_available() const {
+    const bool has_or_can_search_vstar =
+        hand_count(Card::RegidragoVstar) > 0 ||
+        deck_count_after_search_started(Card::RegidragoVstar) > 0;
+    const bool has_or_can_search_vessel =
+        hand_count(Card::EarthenVessel) > 0 ||
+        deck_count_after_search_started(Card::EarthenVessel) > 0;
+    const bool still_needs_steven = hand_count(Card::RegidragoVstar) == 0 ||
+        hand_count(Card::EarthenVessel) == 0;
+    const bool has_final_grass = hand_count(Card::Grass) > 0 ||
+        deck_count_after_search_started(Card::Grass) > 0;
+    const bool held_payload = std::any_of(
+        state_.hand.begin(), state_.hand.end(), is_payload);
+
+    return issue_1795_steven_turn_ == state_.turn &&
+        scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
+        scenario_.locks == LockMode::None && state_.turn + 1 <= scenario_.max_turn &&
+        prizes_known() && supporter_allowed() && state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        state_.active->grass == 1 && state_.active->fire == 1 &&
+        hand_count(Card::StevensResolve) > 0 && held_payload &&
+        has_or_can_search_vstar && has_or_can_search_vessel &&
+        still_needs_steven && has_final_grass;
+  }
+
+  bool play_issue_1795_banked_steven() {
+    if (issue_1795_steven_turn_ != state_.turn) return false;
+    if (!issue_1795_banked_steven_route_available()) {
+      issue_1795_steven_turn_ = 0;
+      return false;
+    }
+
+    remove_one(state_.hand, Card::StevensResolve);
+    state_.discard.push_back(Card::StevensResolve);
+    state_.supporter_used = true;
+    outcome_.used_steven = true;
+    record_deck_search_knowledge("Steven's Resolve issue-1795 schedule");
+
+    std::vector<Card> found;
+    if (hand_count(Card::RegidragoVstar) == 0) {
+      if (!move_deck_to_hand(Card::RegidragoVstar)) {
+        throw std::logic_error("Issue-1795 Regidrago VSTAR target disappeared");
+      }
+      found.push_back(Card::RegidragoVstar);
+    }
+    if (hand_count(Card::EarthenVessel) == 0) {
+      if (!move_deck_to_hand(Card::EarthenVessel)) {
+        throw std::logic_error("Issue-1795 Earthen Vessel target disappeared");
+      }
+      found.push_back(Card::EarthenVessel);
+    }
+    shuffle(state_.deck);
+    state_.turn_ended = true;
+    issue_1795_steven_turn_ = 0;
+    issue_1795_vessel_turn_ = state_.turn + 1;
+
+    // Steven may search up to three cards and ends the turn. The committed K1 route
+    // takes only the missing Regidrago VSTAR and Earthen Vessel pieces, preserving
+    // the held Dragon for Vessel's strict-JIT cost on the next turn:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Supporter and search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1795
+    trace("PLAY SUPPORTER", "R-STEVEN-01; R-GAME-SUPPORTER; P-COMPRESS-01",
+          "Continued the issue-1795 route and searched: " +
+              join_cards(found) + ". Turn ended.");
+    return true;
+  }
+
+  bool complete_issue_1795_vessel_finish() {
+    if (issue_1795_vessel_turn_ != state_.turn) return false;
+
+    const auto payload = std::find_if(
+        state_.hand.begin(), state_.hand.end(), is_payload);
+    const bool has_final_grass = hand_count(Card::Grass) > 0 ||
+        deck_count_after_search_started(Card::Grass) > 0;
+    const bool route_available =
+        scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
+        scenario_.locks == LockMode::None && !state_.turn_ended &&
+        prizes_known() && !state_.manual_energy_used && !item_locked() &&
+        state_.active && state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        state_.active->grass == 1 && state_.active->fire == 1 &&
+        hand_count(Card::RegidragoVstar) > 0 &&
+        hand_count(Card::EarthenVessel) > 0 &&
+        payload != state_.hand.end() && has_final_grass;
+    if (!route_available) {
+      issue_1795_vessel_turn_ = 0;
+      return false;
+    }
+
+    evolve_best_regi();
+    if (!active_is_vstar()) {
+      throw std::logic_error("Issue-1795 Active Regidrago V did not evolve");
+    }
+
+    remove_one(state_.hand, Card::EarthenVessel);
+    state_.discard.push_back(Card::EarthenVessel);
+    if (!discard_from_hand(*payload, "Earthen Vessel strict-JIT Dragon cost",
+                           "R-EV-01; P-DCI-01; P-JIT-01")) {
+      throw std::logic_error("Issue-1795 Vessel payload cost disappeared");
+    }
+    record_deck_search_knowledge("Earthen Vessel issue-1795 finish");
+    if (hand_count(Card::Grass) == 0 && !move_deck_to_hand(Card::Grass)) {
+      throw std::logic_error("Issue-1795 final Grass target disappeared");
+    }
+    shuffle(state_.deck);
+    trace("Earthen Vessel", "R-EV-01; R-GAME-ITEM; P-DCI-01; P-JIT-01",
+          "Discarded the held Dragon payload and searched the final Grass Energy.");
+
+    if (!attach_manual()) {
+      throw std::logic_error("Issue-1795 final Grass attachment became unavailable");
+    }
+    issue_1795_vessel_turn_ = 0;
+
+    // The prior-turn Regidrago V legally evolves, Vessel pays the held Dragon as its
+    // mandatory cost, and the searched Grass receives the turn's manual attachment.
+    // The payload therefore enters discard on the same T4 ready-check turn:
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official evolution, Item, discard, search, attachment, and attack procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Strict-JIT and success horizon: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1795
+    return active_is_vstar() && state_.active->grass >= 2 &&
+        state_.active->fire >= 1 && payload_ready();
+  }
+
   int issue_1152_legacy_star_turn_ = 0;
 
   bool use_legacy_star_issue_1152() {
@@ -143,6 +278,7 @@
   }
 
   void choose_supporter_issue_1152() {
+    if (play_issue_1795_banked_steven()) return;
     if (issue_1481_hold_serena_for_free_latias_completion()) {
       trace("HOLD SUPPORTER", "P-DCI-01; P-COMPRESS-01",
             "Preserved Serena because Skyliner already completes the sole remaining Active axis.");
@@ -159,9 +295,10 @@
         throw std::logic_error(
             "Proven issue-1795 Crispin route became unavailable");
       }
+      issue_1795_steven_turn_ = state_.turn + 1;
       trace("ROUTE SELECTION",
             "R-CRISPIN-01; R-STEVEN-01; R-EV-01; P-KNOWLEDGE-01; P-JIT-01; P-COMPRESS-01",
-            "Selected Crispin over Gladion for the deterministic Steven and Earthen Vessel T4 finish.");
+            "Selected Crispin over Gladion and committed the deterministic Steven and Earthen Vessel T4 finish.");
       return;
     }
     if (play_issue_1478_t3_arven_vessel_completion()) return;

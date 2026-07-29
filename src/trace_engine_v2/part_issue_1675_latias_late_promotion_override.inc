@@ -36,6 +36,19 @@
   }
 
   void run_turn() {
+    if (complete_issue_1796_t3_finish()) {
+      // The K1 Wonder Tag route has completed every public setup axis on T3:
+      // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1796
+      trace("POLICY", "P-AXIS-01; R-STEVEN-01; R-MT-01; P-JIT-01; P-COMPRESS-01",
+            "Completed the Wonder Tag, Steven, Treasure, and Latias ex T3 route: " +
+                state_line());
+      return;
+    }
     // A route committed by the prior two public Supporter decisions must finish before
     // generic Item and discard selection can spend Earthen Vessel or its Dragon cost:
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133

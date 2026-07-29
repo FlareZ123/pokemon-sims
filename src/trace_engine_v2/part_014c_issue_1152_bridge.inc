@@ -130,6 +130,153 @@
     return crispin_can_advance_energy_axis();
   }
 
+  int issue_1796_finish_turn_ = 0;
+
+  bool issue_1796_t2_steven_route_available() const {
+    const Pokemon* regidrago = nullptr;
+    for (const Pokemon& pokemon : state_.bench) {
+      if (pokemon.card == Card::RegidragoV &&
+          pokemon.entered_turn < state_.turn && pokemon.grass == 1 &&
+          pokemon.fire == 0) {
+        regidrago = &pokemon;
+        break;
+      }
+    }
+    const bool deck_payload = std::any_of(
+        state_.deck.begin(), state_.deck.end(), is_payload);
+
+    return scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
+        scenario_.locks == LockMode::None && state_.turn == 2 &&
+        scenario_.max_turn >= 3 && prizes_known() && supporter_allowed() &&
+        state_.manual_energy_used && !item_locked() && !state_.retreat_used &&
+        state_.active && state_.active->card == Card::Oricorio &&
+        regidrago != nullptr && bench_space() > 0 &&
+        ability_available_for_pokemon(Card::LatiasEx) &&
+        hand_count(Card::StevensResolve) > 0 &&
+        hand_count(Card::MysteriousTreasure) > 0 && deck_payload &&
+        deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
+        deck_count_after_search_started(Card::Crispin) > 0 &&
+        deck_count_after_search_started(Card::LatiasEx) > 0 &&
+        deck_count_after_search_started(Card::Grass) > 0 &&
+        deck_count_after_search_started(Card::Fire) > 0;
+  }
+
+  bool play_issue_1796_banked_steven() {
+    if (!issue_1796_t2_steven_route_available()) return false;
+
+    const auto payload_it = std::find_if(
+        state_.deck.begin(), state_.deck.end(), is_payload);
+    if (payload_it == state_.deck.end()) {
+      throw std::logic_error("Issue-1796 Steven payload target disappeared");
+    }
+    const Card payload = *payload_it;
+
+    remove_one(state_.hand, Card::StevensResolve);
+    state_.discard.push_back(Card::StevensResolve);
+    state_.supporter_used = true;
+    outcome_.used_steven = true;
+    record_deck_search_knowledge("Steven's Resolve issue-1796 route");
+    if (!move_deck_to_hand(Card::RegidragoVstar) ||
+        !move_deck_to_hand(Card::Crispin) || !move_deck_to_hand(payload)) {
+      throw std::logic_error("Issue-1796 Steven package target disappeared");
+    }
+    shuffle(state_.deck);
+    state_.turn_ended = true;
+    issue_1796_finish_turn_ = state_.turn + 1;
+
+    // Steven searches up to three cards and ends the turn. The exact K1 package
+    // reserves VSTAR, next-turn Crispin, and Treasure's strict-JIT Dragon cost:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Mega Dragonite ex example payload: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Supporter and search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1796
+    trace("PLAY SUPPORTER", "R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
+          "Banked Regidrago VSTAR, Crispin, and " + std::string(name(payload)) +
+              " for the deterministic T3 Treasure and Latias ex finish. Turn ended.");
+    return true;
+  }
+
+  bool complete_issue_1796_t3_finish() {
+    if (issue_1796_finish_turn_ != state_.turn) return false;
+
+    const auto payload_it = std::find_if(
+        state_.hand.begin(), state_.hand.end(), is_payload);
+    const bool route_available =
+        scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
+        scenario_.locks == LockMode::None && state_.turn == 3 &&
+        state_.turn <= scenario_.max_turn && prizes_known() &&
+        !state_.turn_ended && supporter_allowed() && !state_.manual_energy_used &&
+        !item_locked() && !state_.retreat_used && state_.active &&
+        state_.active->card == Card::Oricorio && bench_space() > 0 &&
+        ability_available_for_pokemon(Card::LatiasEx) &&
+        hand_count(Card::RegidragoVstar) > 0 &&
+        hand_count(Card::Crispin) > 0 &&
+        hand_count(Card::MysteriousTreasure) > 0 &&
+        payload_it != state_.hand.end() &&
+        deck_count_after_search_started(Card::LatiasEx) > 0 &&
+        deck_count_after_search_started(Card::Grass) > 0 &&
+        deck_count_after_search_started(Card::Fire) > 0;
+    if (!route_available) {
+      issue_1796_finish_turn_ = 0;
+      return false;
+    }
+    const Card payload = *payload_it;
+
+    evolve_best_regi();
+    const bool benched_vstar = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoVstar;
+        });
+    if (!benched_vstar) {
+      throw std::logic_error("Issue-1796 Regidrago V did not evolve");
+    }
+    if (!play_crispin()) {
+      throw std::logic_error("Issue-1796 Crispin Energy package disappeared");
+    }
+    if (!attach_manual()) {
+      throw std::logic_error("Issue-1796 manual Fire attachment disappeared");
+    }
+
+    remove_one(state_.hand, Card::MysteriousTreasure);
+    state_.discard.push_back(Card::MysteriousTreasure);
+    if (!discard_from_hand(payload, "Mysterious Treasure issue-1796 Dragon cost",
+                           "R-MT-01; P-DCI-01; P-JIT-01")) {
+      throw std::logic_error("Issue-1796 Treasure payload cost disappeared");
+    }
+    record_deck_search_knowledge("Mysterious Treasure issue-1796 finish");
+    if (!move_deck_to_hand(Card::LatiasEx)) {
+      throw std::logic_error("Issue-1796 Latias ex target disappeared");
+    }
+    shuffle(state_.deck);
+    trace("Mysterious Treasure", "R-MT-01; R-GAME-ITEM; P-DCI-01; P-JIT-01",
+          "Discarded " + std::string(name(payload)) +
+              " and searched Latias ex for the Active-position axis.");
+    if (!bench_from_hand(Card::LatiasEx, false)) {
+      throw std::logic_error("Issue-1796 Latias ex became unbenchable");
+    }
+    if (!retreat_to_benched_vstar_with_latias()) {
+      throw std::logic_error("Issue-1796 Skyliner promotion became unavailable");
+    }
+    issue_1796_finish_turn_ = 0;
+
+    // Treasure's mandatory discard places the permitted Dragon into discard during
+    // T3. Latias ex is a Psychic search target, and Skyliner removes Oricorio's
+    // Retreat Cost before the prepared GGF Regidrago VSTAR is promoted:
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, discard, search, evolution, Bench, Ability, attachment, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Strict-JIT and success horizon: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1796
+    return active_is_vstar() && state_.active->grass >= 2 &&
+        state_.active->fire >= 1 && payload_ready();
+  }
+
   int issue_1795_steven_turn_ = 0;
   int issue_1795_vessel_turn_ = 0;
 
@@ -302,6 +449,7 @@
   }
 
   void choose_supporter_issue_1152() {
+    if (play_issue_1796_banked_steven()) return;
     if (play_issue_1795_banked_steven()) return;
     if (issue_1481_hold_serena_for_free_latias_completion()) {
       trace("HOLD SUPPORTER", "P-DCI-01; P-COMPRESS-01",

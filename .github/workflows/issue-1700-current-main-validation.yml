@@ -91,8 +91,12 @@ jobs:
               turn = turn.replace(old_turn, new_turn, 1)
           turn_path.write_text(turn, encoding="utf-8")
 
-          test_path = Path("tests/issue_1700_pre_steven_vessel_tests.cpp")
-          test_path.write_text(old_text(str(test_path)), encoding="utf-8")
+          for test_name in (
+              "tests/issue_1700_pre_steven_vessel_tests.cpp",
+              "tests/issue_1645_steven_latias_grass_tests.cpp",
+          ):
+              test_path = Path(test_name)
+              test_path.write_text(old_text(test_name), encoding="utf-8")
           PY
 
       - name: Configure Release
@@ -102,7 +106,9 @@ jobs:
         run: cmake --build build --parallel 2
 
       - name: Run focused issue 1700 regressions
-        run: ./build/regidrago_unified_tests issue_1700_pre_steven_vessel_tests
+        run: |
+          ./build/regidrago_unified_tests issue_1700_pre_steven_vessel_tests
+          ./build/regidrago_unified_tests issue_1645_steven_latias_grass_tests
 
       - name: Pass 1 registered strict JIT seed 218
         shell: bash

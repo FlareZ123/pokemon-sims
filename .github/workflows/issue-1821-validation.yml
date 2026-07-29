@@ -25,12 +25,11 @@ jobs:
       - name: Apply source composition
         run: python3 scripts/apply_issue_1821_composition.py
 
-      - name: Archive exact tested source
+      - name: Remove temporary validation machinery
         run: |
+          rm scripts/apply_issue_1821_composition.py
+          rm .github/workflows/issue-1821-validation.yml
           git rev-parse HEAD | tee pre-finalize-head.txt
-          git diff --check
-          git diff --binary > issue-1821-composition.patch
-          git archive --format=zip --output=issue-1821-tested-source.zip HEAD
 
       - name: Configure Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -70,6 +69,21 @@ jobs:
           # Pineco, Forretress ex, and the earliest legal VSTAR window: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-control-3.txt
 
+      - name: Regenerate canonical setup reports
+        run: |
+          python3 scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python3 scripts/update_setup_docs.py --repo-root .
+          python3 scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python3 scripts/update_multi_deck_docs.py --repo-root .
+
+      - name: Archive exact tested tree
+        run: |
+          git add -A
+          git diff --cached --check
+          git diff --cached --binary > issue-1821-composition.patch
+          git write-tree | tee tested-tree.txt
+          git archive --format=zip --output=issue-1821-tested-source.zip "$(cat tested-tree.txt)"
+
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
 
@@ -98,12 +112,17 @@ jobs:
           name: issue-1821-validation-${{ github.run_attempt }}
           path: |
             pre-finalize-head.txt
+            tested-tree.txt
             issue-1821-composition.patch
             issue-1821-tested-source.zip
             trace-issue-1821.txt
             trace-control-*.txt
             issue-1821-shell-matrix.csv
             issue-1821-all-condition-matrix.csv
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            results/baseline_manifest.json
+            results/multi_deck_manifest.json
             build/regidrago_sim
             build/regidrago_unified_tests
             build/Testing
@@ -113,11 +132,6 @@ jobs:
       - name: Commit validated source
         if: success()
         run: |
-          rm scripts/apply_issue_1821_composition.py
-          rm .github/workflows/issue-1821-validation.yml
-          git add src/trace_engine_v2/part_014c.inc
-          git add src/trace_engine_v2/part_014c_latias_bench_override.inc
-          git add -u scripts/apply_issue_1821_composition.py .github/workflows/issue-1821-validation.yml
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git commit -m 'Fix issue 1821 Oricorio Steven route'

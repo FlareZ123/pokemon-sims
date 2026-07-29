@@ -1,0 +1,22 @@
+Issue 1821 source-bound validation
+
+Confirmed issue: https://github.com/FlareZ123/pokemon-sims/issues/1821
+Fix PR: https://github.com/FlareZ123/pokemon-sims/pull/1827
+Successful validation run: https://github.com/FlareZ123/pokemon-sims/actions/runs/30468651420
+Artifact ID: 8731299136
+Artifact SHA-256: de8c90787b9b868a3cecfe55a7217d89b30013c2e48da2e7ae287b4edac7bf46
+Tested tree: 9cf9db4a3ee24215e64ca357bb1246ee11e51cb7
+
+Exact corrected trace:
+- regidrago-shell
+- strict-jit/go-second
+- seed 161803
+- first-ready turn 3
+- setup result success
+
+Perfect-play control traces:
+- regidrago-shell, strict-jit/go-second, seed 1, first-ready turn 2
+- regidrago-shell, matchup-flex-jit/go-second, seed 3, first-ready turn 2
+- regidrago-pineco, strict-jit/go-second, seed 35, first-ready turn 2
+
+The validation run passed the focused regression, all three control traces, 350 Release tests, 350 sanitizer tests, the canonical report regeneration contracts, and fresh 100000-trial shell and all-condition matrices.

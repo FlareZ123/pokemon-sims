@@ -37,25 +37,43 @@ def atomic_write(path: Path, content: str) -> None:
 
 legacy_path = Path("src/trace_engine_v2/part_013_legacy_star_override.inc")
 legacy = legacy_path.read_text(encoding="utf-8")
-old_route = """        held_payload && count_of(state_.discard, Card::EarthenVessel) > 0;
+old_axis = """    const bool one_energy_missing = grass_needed() + fire_needed() == 1;
+    const bool known_energy_target =
+        (grass_needed() == 1 && count_of(state_.deck, Card::Grass) > 0) ||
+        (fire_needed() == 1 && count_of(state_.deck, Card::Fire) > 0);
 """
-new_route = """        held_payload &&
+new_axis = """    const bool exact_reported_axis = state_.turn == 2 && active_is_vstar() &&
+        state_.active->grass == 1 && state_.active->fire == 1 &&
+        grass_needed() == 1 && fire_needed() == 0 &&
+        count_of(state_.deck, Card::Grass) > 0;
+"""
+if new_axis not in legacy:
+    if legacy.count(old_axis) != 1:
+        raise RuntimeError("Expected one delayed Vessel Energy-axis block")
+    legacy = legacy.replace(old_axis, new_axis, 1)
+
+old_gate = """        state_.turn + 1 <= scenario_.max_turn && state_.manual_energy_used &&
+        active_is_vstar() && one_energy_missing && known_energy_target &&
+        held_payload && count_of(state_.discard, Card::EarthenVessel) > 0;
+"""
+new_gate = """        state_.turn + 1 <= scenario_.max_turn && state_.manual_energy_used &&
+        exact_reported_axis && held_payload &&
         (count_of(state_.discard, Card::EarthenVessel) > 0 ||
          hand_count(Card::EarthenVessel) > 0);
 """
-if new_route not in legacy:
-    if legacy.count(old_route) != 1:
-        raise RuntimeError("Expected one delayed Vessel route tail")
-    legacy = legacy.replace(old_route, new_route, 1)
+if new_gate not in legacy:
+    if legacy.count(old_gate) != 1:
+        raise RuntimeError("Expected one delayed Vessel route gate")
+    legacy = legacy.replace(old_gate, new_gate, 1)
 atomic_write(legacy_path, legacy)
 
 vessel_path = Path("src/trace_engine_v2/part_issue_1412_preserve_quick_balls.inc")
 vessel = vessel_path.read_text(encoding="utf-8")
 anchor = """  bool play_earthen_vessel(const bool permit_payload) {
 """
-replacement = anchor + """    // Legacy Star may recover Earthen Vessel on a turn whose manual Energy
-    // attachment is already spent. Preserve the Item until the next turn, when
-    // its Dragon cost and searched Basic Energy complete strict-JIT together:
+replacement = anchor + """    // Legacy Star may recover Earthen Vessel on the reported T2 `GF` state
+    // whose manual Energy attachment is already spent. Preserve the Item until
+    // T3, when its Dragon cost and searched Grass complete strict-JIT together:
     // Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
@@ -96,15 +114,34 @@ new_function = """void recovered_vessel_is_held_until_next_turn() {
       std::find(state.discard.begin(), state.discard.end(), sim::Card::EarthenVessel));
   sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
 
-  // The current turn has no legal attachment window left. Spending Vessel now
-  // would discard the Dragon payload one turn before strict-JIT readiness:
+  // The T2 attachment window is spent. Spending Vessel now would discard the
+  // Dragon payload one turn before strict-JIT readiness:
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://api.pokemontcg.io/v2/cards/sv4-163
   // https://github.com/FlareZ123/pokemon-sims/issues/1844
   expect(sim::EngineTestAccess::delayed_vessel_route(fixture.engine),
-         "Recovered Vessel was not recognized as the delayed route");
+         \"Recovered Vessel was not recognized as the delayed route\");
   expect(!sim::EngineTestAccess::play_earthen_vessel(fixture.engine),
-         "Recovered Vessel was spent before the next attachment window");
+         \"Recovered Vessel was spent before the next attachment window\");
+}
+
+void nonreported_energy_axis_is_rejected() {
+  for (const int mode : {0, 1, 2}) {
+    Fixture fixture;
+    sim::State state = complete_state();
+    if (mode == 0) {
+      state.turn = 3;
+    } else if (mode == 1) {
+      state.active->fire = 0;
+    } else {
+      state.active->grass = 2;
+      state.active->fire = 0;
+      state.deck.push_back(sim::Card::Fire);
+    }
+    sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+    expect(!sim::EngineTestAccess::delayed_vessel_route(fixture.engine),
+           \"Delayed Vessel exception escaped the exact T2 GF-to-GGF boundary\");
+  }
 }
 
 """ + function_anchor
@@ -118,6 +155,7 @@ main_anchor = """    complete_public_route_is_admitted();
 """
 main_replacement = """    complete_public_route_is_admitted();
     recovered_vessel_is_held_until_next_turn();
+    nonreported_energy_axis_is_rejected();
     item_lock_rejects_route();
 """
 if main_replacement not in test:

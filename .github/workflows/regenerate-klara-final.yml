@@ -1,14 +1,20 @@
 name: Regenerate Klara final evidence
 
 on:
-  push:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
     branches: [klara-workflow-base]
 
 permissions:
   contents: write
 
+concurrency:
+  group: klara-final-regeneration
+  cancel-in-progress: true
+
 jobs:
   regenerate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'enhancement-1773-klara-swap'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:

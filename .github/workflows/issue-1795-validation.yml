@@ -10,7 +10,7 @@ permissions:
 jobs:
   source-bound-validation:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -62,19 +62,29 @@ jobs:
           # https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://api.pokemontcg.io/v2/cards/sv6-163
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee issue-1795-pass-3.txt
 
+      - name: Regenerate canonical shell baselines
+        run: python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+
+      - name: Regenerate named deck comparison
+        run: python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+
+      - name: Regenerate reports
+        run: |
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+
       - name: Complete Release test suite
         run: ctest --test-dir build --output-on-failure
 
-      - name: Generate canonical T2 T3 matrix
-        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-1795-t2-t3-matrix.csv
-
-      - name: Generate all-deck T2 T3 matrix
-        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out issue-1795-all-decks-matrix.csv
+      - name: Copy canonical T2 T3 matrices
+        run: |
+          cp results/simulation_results.csv issue-1795-t2-t3-matrix.csv
+          cp results/multi_deck_comparison.csv issue-1795-all-decks-matrix.csv
 
       - name: Record tested source
         run: git rev-parse HEAD | tee issue-1795-tested-head.txt
 
-      - name: Upload source-bound evidence
+      - name: Upload source-bound evidence and regenerated baselines
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -85,4 +95,12 @@ jobs:
             issue-1795-t2-t3-matrix.csv
             issue-1795-all-decks-matrix.csv
             issue-1795-tested-head.txt
+            results/simulation_results.csv
+            results/baseline_manifest.json
+            results/traces/*.txt
+            results/multi_deck_comparison.csv
+            results/multi_deck_manifest.json
+            results/multi_deck_traces/*.txt
+            docs/REPORT.md
+            docs/MULTI_DECK_REPORT.md
           if-no-files-found: warn

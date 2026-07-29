@@ -1,0 +1,230 @@
+diff --git a/issue1835-orig/src/trace_engine_v2/part_014b.inc b/issue1835-work/src/trace_engine_v2/part_014b.inc
+index 646a7e1..209ce2a 100644
+--- a/issue1835-orig/src/trace_engine_v2/part_014b.inc
++++ b/issue1835-work/src/trace_engine_v2/part_014b.inc
+@@ -2,8 +2,8 @@
+     // Lusamine says to put 2 Supporter and/or Stadium cards from discard into hand:
+     // https://api.pokemontcg.io/v2/cards/sm4-96
+     // A policy-first recovery requires one card that advances an unresolved setup
+-    // axis. Once that card makes Lusamine worth playing, the second selection is
+-    // mandatory and uses a deterministic low-impact eligible card.
++    // axis. When another eligible card exists, the fixed-count effect also selects
++    // that card through a deterministic low-impact fallback.
+     std::vector<Card> targets;
+     const auto recover_once = [this, &targets](const Card card) {
+       if (targets.size() < 2U && count_of(state_.discard, card) > count_of(targets, card)) {
+@@ -133,10 +133,10 @@
+ 
+     // These are the remaining modeled Supporter and Stadium cards, ordered from
+     // least direct setup value to the connectors retained above. The list contains
+-    // only legal Lusamine targets and may select a second copy where available.
++    // only legal Lusamine targets and selects a second copy where available.
+     // Erika's Invitation is a Supporter and the canonical low-impact replacement
+     // for retired Mawile-GX. Once an advancing target makes Lusamine worth playing,
+-    // Erika may satisfy the printed mandatory second Supporter/Stadium recovery:
++    // Erika may satisfy the printed second Supporter/Stadium recovery when available:
+     // https://api.pokemontcg.io/v2/cards/sm4-96
+     // https://api.pokemontcg.io/v2/cards/sv3pt5-160
+     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CARD_AUDIT.md#erikas-invitation
+@@ -154,11 +154,14 @@
+   bool play_lusamine() {
+     if (!supporter_allowed() || hand_count(Card::Lusamine) == 0) return false;
+     const std::vector<Card> targets = lusamine_recovery_targets();
+-    // Lusamine requires exactly 2 Supporter and/or Stadium cards from the public
+-    // discard pile. It does not say "up to 2", so one eligible target is insufficient:
+-    // https://api.pokemontcg.io/v2/cards/sm4-96
+-    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+-    if (targets.size() != 2U) return false;
++    // A fixed-count public-zone effect selects as many eligible cards as possible
++    // when fewer than the printed number exist. One eligible target therefore makes
++    // Lusamine legal, while zero targets would make the Supporter have no effect:
++    // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
++    // Fixed-count public-zone ruling: https://compendium.pokegym.net/compendium-ex.html#HOLON_FARMER
++    // Trainer no-effect and resolution-order rulings: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
++    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1835
++    if (targets.empty()) return false;
+     remove_one(state_.hand, Card::Lusamine);
+     state_.discard.push_back(Card::Lusamine);
+     state_.supporter_used = true;
+diff --git a/issue1835-orig/tests/lusamine_erika_fallback_tests.cpp b/issue1835-work/tests/lusamine_erika_fallback_tests.cpp
+index 221f2fc..5ed9858 100644
+--- a/issue1835-orig/tests/lusamine_erika_fallback_tests.cpp
++++ b/issue1835-work/tests/lusamine_erika_fallback_tests.cpp
+@@ -73,31 +73,34 @@ void test_burnet_and_erika_form_legal_two_card_recovery() {
+   assert(!contains(state.discard, Card::ErikasInvitation));
+ }
+ 
+-void test_one_eligible_target_remains_unplayable() {
++void test_one_eligible_target_resolves() {
+   using namespace sim;
+   std::mt19937_64 rng(85402);
+   Engine engine = make_engine(rng);
+   configure_payload_state(engine, false);
+   State& state = EngineTestAccess::state(engine);
+ 
+-  // Lusamine does not say "up to 2". Professor Burnet alone cannot satisfy the
+-  // mandatory two-card recovery requirement:
+-  // https://api.pokemontcg.io/v2/cards/sm4-96
+-  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+-  // https://github.com/FlareZ123/pokemon-sims/issues/854
++  // Fixed-count public-zone effects select as many eligible cards as possible
++  // below the printed count. Professor Burnet therefore makes Lusamine legal:
++  // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
++  // Fixed-count ruling: https://compendium.pokegym.net/compendium-ex.html#HOLON_FARMER
++  // Trainer legality: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
++  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1835
+   const std::vector<Card> targets = EngineTestAccess::lusamine_recovery_targets(engine);
+   assert(targets.size() == 1U);
+   assert(targets.front() == Card::ProfessorBurnet);
+-  assert(!EngineTestAccess::play_lusamine(engine));
+-  assert(!state.supporter_used);
+-  assert(contains(state.hand, Card::Lusamine));
+-  assert(contains(state.discard, Card::ProfessorBurnet));
++  assert(EngineTestAccess::play_lusamine(engine));
++  assert(state.supporter_used);
++  assert(!contains(state.hand, Card::Lusamine));
++  assert(contains(state.hand, Card::ProfessorBurnet));
++  assert(contains(state.discard, Card::Lusamine));
++  assert(!contains(state.discard, Card::ProfessorBurnet));
+ }
+ 
+ }  // namespace
+ 
+ int main() {
+   test_burnet_and_erika_form_legal_two_card_recovery();
+-  test_one_eligible_target_remains_unplayable();
++  test_one_eligible_target_resolves();
+   return 0;
+ }
+diff --git a/issue1835-orig/tests/issue_1392_lusamine_chaotic_swell_tests.cpp b/issue1835-work/tests/issue_1392_lusamine_chaotic_swell_tests.cpp
+index f0489f4..50dadcb 100644
+--- a/issue1835-orig/tests/issue_1392_lusamine_chaotic_swell_tests.cpp
++++ b/issue1835-work/tests/issue_1392_lusamine_chaotic_swell_tests.cpp
+@@ -128,7 +128,7 @@ void test_no_lock_and_spent_resources_block_route() {
+   }
+ }
+ 
+-void test_horizon_and_exact_two_target_requirement() {
++void test_horizon_and_single_target_resolution() {
+   {
+     Fixture fixture(rule_box_scenario(2));
+     sim::EngineTestAccess::set_state(fixture.engine, exact_state());
+@@ -143,12 +143,15 @@ void test_horizon_and_exact_two_target_requirement() {
+     sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+     const auto targets = sim::EngineTestAccess::lusamine_targets(fixture.engine);
+ 
+-    // Lusamine says 2, rather than up to 2, so a lone Swell is insufficient:
+-    // https://api.pokemontcg.io/v2/cards/sm4-96
+-    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+-    // https://github.com/FlareZ123/pokemon-sims/issues/1392
+-    require(targets.size() == 1U && !sim::EngineTestAccess::play_lusamine(fixture.engine),
+-            "Lusamine resolved without its mandatory second target.");
++    // One advancing Swell is enough to make Lusamine legal when it is the only
++    // eligible public discard target. The played Lusamine cannot target itself:
++    // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
++    // Fixed-count ruling: https://compendium.pokegym.net/compendium-ex.html#HOLON_FARMER
++    // Trainer resolution order: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
++    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1835
++    require(targets.size() == 1U && targets.front() == sim::Card::ChaoticSwell &&
++                sim::EngineTestAccess::play_lusamine(fixture.engine),
++            "Lusamine did not recover its lone advancing Chaotic Swell target.");
+   }
+ }
+ 
+@@ -190,6 +193,6 @@ void test_seed_20_reaches_t4() {
+ int main() {
+   test_swell_is_advancing_first_target();
+   test_no_lock_and_spent_resources_block_route();
+-  test_horizon_and_exact_two_target_requirement();
++  test_horizon_and_single_target_resolution();
+   test_seed_20_reaches_t4();
+ }
+diff --git a/issue1835-orig/tests/lusamine_arven_fss_payload_tests.cpp b/issue1835-work/tests/lusamine_arven_fss_payload_tests.cpp
+index d147c23..fcbf389 100644
+--- a/issue1835-orig/tests/lusamine_arven_fss_payload_tests.cpp
++++ b/issue1835-work/tests/lusamine_arven_fss_payload_tests.cpp
+@@ -183,10 +183,26 @@ void test_absent_payload_blocks_recovery() {
+   expect_lusamine_rejected(std::move(state), "absent Dragon payload");
+ }
+ 
+-void test_lusamine_still_requires_two_targets() {
++void test_lusamine_resolves_with_one_live_target() {
++  Fixture fixture;
+   sim::State state = live_route_state();
+   state.discard = {sim::Card::Arven};
+-  expect_lusamine_rejected(std::move(state), "one Lusamine target");
++  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
++
++  // One live Arven is enough when it is the only eligible public discard target.
++  // The delayed Item-lock route remains available after the recovery:
++  // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
++  // Fixed-count ruling: https://compendium.pokegym.net/compendium-ex.html#HOLON_FARMER
++  // Arven and Forest Seal Stone: https://api.pokemontcg.io/v2/cards/sv1-166 https://api.pokemontcg.io/v2/cards/swsh12-156
++  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1835
++  if (!sim::EngineTestAccess::play_lusamine(fixture.engine)) {
++    throw std::runtime_error("Lusamine must recover its lone live Arven target.");
++  }
++  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
++  if (!after.supporter_used || !contains(after.hand, sim::Card::Arven) ||
++      !contains(after.discard, sim::Card::Lusamine)) {
++    throw std::runtime_error("Single-target Lusamine did not preserve the live Arven route.");
++  }
+ }
+ 
+ }  // namespace
+@@ -200,7 +216,7 @@ int main() {
+     test_absent_forest_seal_stone_blocks_recovery();
+     test_absent_burnet_blocks_item_lock_payload_route();
+     test_absent_payload_blocks_recovery();
+-    test_lusamine_still_requires_two_targets();
++    test_lusamine_resolves_with_one_live_target();
+     std::cout << "Lusamine Arven-FSS payload tests passed\n";
+     return 0;
+   } catch (const std::exception& error) {
+diff --git a/issue1835-orig/tests/lusamine_arven_item_lock_tests.cpp b/issue1835-work/tests/lusamine_arven_item_lock_tests.cpp
+index 5b40d7f..7c00876 100644
+--- a/issue1835-orig/tests/lusamine_arven_item_lock_tests.cpp
++++ b/issue1835-work/tests/lusamine_arven_item_lock_tests.cpp
+@@ -59,7 +59,7 @@ void test_lusamine_recovers_arven_for_item_lock_fss_route() {
+   assert(std::count(state.discard.begin(), state.discard.end(), Card::Arven) == 1);
+ }
+ 
+-void test_lusamine_holds_with_only_one_eligible_target() {
++void test_lusamine_recovers_only_eligible_target() {
+   using namespace sim;
+   const Scenario scenario{"lusamine-one-target", DciProfile::StrictJit, LockMode::None, false, 4};
+   const DeckRecipe recipe = baseline_recipe();
+@@ -72,14 +72,16 @@ void test_lusamine_holds_with_only_one_eligible_target() {
+   state.hand = {Card::Lusamine};
+   state.discard = {Card::ProfessorBurnet, Card::Grass};
+ 
+-  // Lusamine requires exactly 2 Supporter and/or Stadium cards from the public
+-  // discard pile. One eligible target does not satisfy the printed effect:
+-  // https://api.pokemontcg.io/v2/cards/sm4-96
+-  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+-  assert(!EngineTestAccess::play_lusamine(engine));
+-  assert(!state.supporter_used);
+-  assert(state.hand.size() == 1U && state.hand.front() == Card::Lusamine);
+-  assert(state.discard.size() == 2U && contains(state.discard, Card::ProfessorBurnet) &&
++  // Fixed-count public-zone effects select as many eligible cards as possible.
++  // Grass is ineligible, so Lusamine recovers the lone Professor Burnet target:
++  // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
++  // Fixed-count ruling: https://compendium.pokegym.net/compendium-ex.html#HOLON_FARMER
++  // Trainer resolution order: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
++  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1835
++  assert(EngineTestAccess::play_lusamine(engine));
++  assert(state.supporter_used);
++  assert(state.hand.size() == 1U && state.hand.front() == Card::ProfessorBurnet);
++  assert(state.discard.size() == 2U && contains(state.discard, Card::Lusamine) &&
+          contains(state.discard, Card::Grass));
+ }
+ 
+@@ -173,7 +175,7 @@ void test_roseanne_holds_without_a_payable_post_recovery_search() {
+ 
+ int main() {
+   test_lusamine_recovers_arven_for_item_lock_fss_route();
+-  test_lusamine_holds_with_only_one_eligible_target();
++  test_lusamine_recovers_only_eligible_target();
+   test_lusamine_accepts_two_copies_of_one_eligible_card();
+   test_roseanne_recovers_vstar_into_evolution_incense_route();
+   test_roseanne_holds_without_a_payable_post_recovery_search();

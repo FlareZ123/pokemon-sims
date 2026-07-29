@@ -35,7 +35,7 @@
     return true;
   }
 
-  void run_turn() {
+  void run_turn_issue1775_original() {
     if (complete_issue_1796_t3_finish()) {
       // The K1 Wonder Tag route has completed every public setup axis on T3:
       // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
@@ -70,3 +70,5 @@
             "Completed the deadline Latias ex promotion route: " + state_line());
     }
   }
+
+#include "part_issue_1775_gladion_treasure_route_override.inc"

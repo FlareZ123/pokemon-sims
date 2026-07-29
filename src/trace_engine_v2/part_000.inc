@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <numeric>
 #include <optional>
 #include <random>
@@ -68,6 +69,7 @@ enum class Card : std::uint8_t {
   Lusamine,
   TeamYellsCheer,
   RoseannesBackup,
+  Klara,
   ProfessorTuro,
   ErikasInvitation,
   ForestSealStone,
@@ -91,7 +93,7 @@ constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
     {Card::Arven, 2},             {Card::Crispin, 2},        {Card::ProfessorBurnet, 1},
     {Card::Serena, 1},            {Card::TateLiza, 1},       {Card::StevensResolve, 1},
     {Card::Guzma, 1},             {Card::Channeler, 1},      {Card::Gladion, 2},
-    {Card::Lusamine, 1},          {Card::TeamYellsCheer, 1}, {Card::RoseannesBackup, 1},
+    {Card::Lusamine, 1},          {Card::TeamYellsCheer, 1}, {Card::Klara, 1},
     {Card::ProfessorTuro, 1},     {Card::ForestSealStone, 1},{Card::Powerglass, 1},
     {Card::FieldBlower, 1},       {Card::ChaoticSwell, 1},   {Card::PathToPeak, 1},
     {Card::HisuianHeavyBall, 1},  {Card::Grass, 6},          {Card::Fire, 3},

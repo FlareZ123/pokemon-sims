@@ -142,7 +142,7 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CARD_AUDIT.md#erikas-invitation
     // https://github.com/FlareZ123/pokemon-sims/issues/854
     for (const Card fallback : {Card::ErikasInvitation, Card::ChaoticSwell, Card::PathToPeak,
-                                Card::TeamYellsCheer, Card::RoseannesBackup, Card::ProfessorTuro,
+                                Card::TeamYellsCheer, Card::RoseannesBackup, Card::Klara, Card::ProfessorTuro,
                                 Card::Channeler, Card::Guzma, Card::Serena, Card::TateLiza,
                                 Card::StevensResolve, Card::Arven, Card::Crispin,
                                 Card::ProfessorBurnet, Card::Gladion}) {

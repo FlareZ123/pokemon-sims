@@ -301,7 +301,7 @@
                                 Card::ProfessorBurnet, Card::StevensResolve,
                                 Card::Gladion, Card::Lusamine, Card::Guzma,
                                 Card::Channeler, Card::TeamYellsCheer,
-                                Card::RoseannesBackup, Card::ProfessorTuro}) {
+                                Card::RoseannesBackup, Card::Klara, Card::ProfessorTuro}) {
       if (deck_count_after_search_started(fallback) > 0) return fallback;
     }
     // Wonder Tag is optional. Returning an absent sentinel makes the caller

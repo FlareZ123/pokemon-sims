@@ -26,6 +26,7 @@
     case Card::Lusamine: return "Lusamine";
     case Card::TeamYellsCheer: return "Team Yell's Cheer";
     case Card::RoseannesBackup: return "Roseanne's Backup";
+    case Card::Klara: return "Klara";
     case Card::ProfessorTuro: return "Professor Turo's Scenario";
     case Card::ErikasInvitation: return "Erika's Invitation";
     case Card::ForestSealStone: return "Forest Seal Stone";

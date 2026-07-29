@@ -1,6 +1,7 @@
     case Card::Lusamine:
     case Card::TeamYellsCheer:
     case Card::RoseannesBackup:
+    case Card::Klara:
     case Card::ProfessorTuro:
       return true;
     default:

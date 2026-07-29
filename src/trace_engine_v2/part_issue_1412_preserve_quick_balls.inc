@@ -137,6 +137,17 @@
   }
 
   bool play_earthen_vessel(const bool permit_payload) {
+    // A Vessel recovered by Legacy Star for issue #1844 is reserved through the
+    // current turn. Playing it immediately would place the Dragon payload in
+    // discard one turn too early for strict JIT and cannot use another manual
+    // attachment after the pre-Legacy attachment was already spent:
+    // Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Official Item, discard-cost, and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Strict-JIT timing and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1844
+    if (issue_1844_vessel_hold_turn_ == state_.turn) return false;
+
     // Earthen Vessel and its discard cost resolve no missing axis once the exact
     // Forest Seal Stone route is public. Preserve Vessel and its prospective cost
     // until the existing FSS, manual-attachment, and evolution sequence resolves:

@@ -136,10 +136,55 @@ void test_grant_requires_the_card_and_an_incomplete_payload_axis() {
   }
 }
 
+
+void test_grant_recovery_respects_turn_end_boundary() {
+  Fixture ended;
+  sim::State ended_state = grant_route_state();
+  ended_state.turn_ended = true;
+  const std::vector<sim::Card> hand_before = ended_state.hand;
+  const std::vector<sim::Card> discard_before = ended_state.discard;
+  const std::vector<sim::Card> discarded_this_turn_before =
+      ended_state.discarded_this_turn;
+  sim::EngineTestAccess::set_state(ended.engine, std::move(ended_state));
+
+  // Grant's discard-pile action is legal only during the player's turn. A
+  // readiness observer may inspect a completed turn, but it cannot discard
+  // cards or recover Grant after the turn-ending boundary:
+  // Grant: https://api.pokemontcg.io/v2/cards/swsh10-144
+  // Official turn and attack procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Existing turn-ended action gate: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L157-L161
+  // Strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1829
+  sim::EngineTestAccess::record_ready(ended.engine);
+
+  sim::State& after_end = sim::EngineTestAccess::state(ended.engine);
+  if (sim::EngineTestAccess::outcome(ended.engine).first_ready_turn != 0 ||
+      after_end.hand != hand_before || after_end.discard != discard_before ||
+      after_end.discarded_this_turn != discarded_this_turn_before ||
+      !after_end.turn_ended) {
+    throw std::runtime_error(
+        "Grant recovery mutated zones or readiness after the turn ended.");
+  }
+
+  Fixture active;
+  sim::EngineTestAccess::set_state(active.engine, grant_route_state());
+  sim::EngineTestAccess::record_ready(active.engine);
+  sim::State& after_active = sim::EngineTestAccess::state(active.engine);
+  if (sim::EngineTestAccess::outcome(active.engine).first_ready_turn != 2 ||
+      !contains(after_active.hand, sim::Card::Grant) ||
+      contains(after_active.discard, sim::Card::Grant) ||
+      !contains(after_active.discard, sim::Card::Dragapult) ||
+      !contains(after_active.discard, sim::Card::WishfulBaton)) {
+    throw std::runtime_error(
+        "The legal active-turn Grant recovery route regressed.");
+  }
+}
+
 }  // namespace
 
 int main() {
   test_grant_completes_the_only_missing_strict_jit_axis();
   test_grant_rejects_insufficient_or_protected_costs();
   test_grant_requires_the_card_and_an_incomplete_payload_axis();
+  test_grant_recovery_respects_turn_end_boundary();
 }

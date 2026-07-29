@@ -175,8 +175,16 @@
   }
 
   std::optional<std::array<Card, 2>> grant_recovery_strict_jit_costs() {
-    if (!strict_payload_timing() || !need_payload() || !active_is_vstar() ||
-        need_energy() || count_of(state_.discard, Card::Grant) == 0) {
+    // Grant's discard-pile recovery is available only during the player's turn.
+    // Once an attack or another turn-ending effect sets turn_ended, readiness
+    // observation must not create a new gameplay action:
+    // Grant: https://api.pokemontcg.io/v2/cards/swsh10-144
+    // Official turn and attack procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Existing turn-ended action gate: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L157-L161
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1829
+    if (state_.turn_ended || !strict_payload_timing() || !need_payload() ||
+        !active_is_vstar() || need_energy() ||
+        count_of(state_.discard, Card::Grant) == 0) {
       return std::nullopt;
     }
 

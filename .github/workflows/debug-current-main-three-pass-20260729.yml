@@ -1,0 +1,73 @@
+name: Debug Current Main Three Pass 20260729
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  debug-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Archive exact tested source
+        run: |
+          git rev-parse HEAD | tee tested-head.txt
+          git archive --format=zip --output=exact-tested-source.zip HEAD
+
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+
+      - name: Pass 1 shell strict JIT going first
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Regidrago V/VSTAR and official turn procedure: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136 https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          # Earliest complete route and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 271828 | tee trace-pass-1.txt
+
+      - name: Pass 2 shell turn-two Item lock going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Oricorio Vital Dance, Mysterious Treasure, and official Item/Ability procedure: https://api.pokemontcg.io/v2/cards/sm2-55 https://api.pokemontcg.io/v2/cards/sm6-113 https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          # Lock and JIT scenario specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#lock-model https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-turn2-item-lock/go-second --seed 314159 | tee trace-pass-2.txt
+
+      - name: Pass 3 Pineco Rule Box Ability lock going first
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Steven's Resolve, Mysterious Treasure, Mega Dragonite ex, and Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/me2pt5-152 https://api.pokemontcg.io/v2/cards/swsh12-136
+          # K1, DCI, supporter contention, lock, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit-rulebox-ability-lock/go-first --seed 161803 | tee trace-pass-3.txt
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Generate canonical T2 T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260729 --out t2-t3-matrix.csv
+
+      - name: Generate all-deck T2 T3 T4 matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260729 --out all-deck-matrix.csv
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-current-main-three-pass-${{ github.run_attempt }}
+          path: |
+            exact-tested-source.zip
+            tested-head.txt
+            trace-pass-*.txt
+            t2-t3-matrix.csv
+            all-deck-matrix.csv
+            build/Testing
+          if-no-files-found: warn

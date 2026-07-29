@@ -64,14 +64,25 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          capture_witness() {
+            local output="$1"
+            shift
+            set +e
+            "$@" | tee "$output"
+            local rc=${PIPESTATUS[0]}
+            set -e
+            if [[ $rc -ne 0 && $rc -ne 1 ]]; then
+              return "$rc"
+            fi
+          }
           # Open issue evidence: https://github.com/FlareZ123/pokemon-sims/issues/1700
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 218 | tee audit-open-1700-seed-218.txt
+          capture_witness audit-open-1700-seed-218.txt ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 218
           # Open issue evidence: https://github.com/FlareZ123/pokemon-sims/issues/1737
-          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario no-discard-control/go-second --seed 8675309 | tee audit-open-1737-seed-8675309.txt
+          capture_witness audit-open-1737-seed-8675309.txt ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario no-discard-control/go-second --seed 8675309
           # Open issue evidence: https://github.com/FlareZ123/pokemon-sims/issues/1751
-          ./build/regidrago_sim --simulate-this --model-variant crobat1-serena --scenario strict-jit/go-second --seed 2154 | tee audit-open-1751-seed-2154.txt
+          capture_witness audit-open-1751-seed-2154.txt ./build/regidrago_sim --simulate-this --model-variant crobat1-serena --scenario strict-jit/go-second --seed 2154
           # Open issue evidence: https://github.com/FlareZ123/pokemon-sims/issues/1775
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 38 | tee audit-open-1775-seed-38.txt
+          capture_witness audit-open-1775-seed-38.txt ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 38
       - name: Run complete Release suite
         run: ctest --test-dir build --output-on-failure
       - name: Generate canonical shell matrix

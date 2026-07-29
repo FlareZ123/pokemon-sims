@@ -1,3 +1,30 @@
+  bool legacy_star_delayed_vessel_route() const {
+    const bool held_payload = std::any_of(
+        state_.hand.begin(), state_.hand.end(), is_payload);
+    const bool exact_reported_axis = state_.turn == 2 && active_is_vstar() &&
+        state_.active->grass == 1 && state_.active->fire == 1 &&
+        grass_needed() == 1 && fire_needed() == 0 &&
+        count_of(state_.deck, Card::Grass) > 0;
+
+    // Legacy Star may return Earthen Vessel now for a fully public next-turn
+    // finish. The current turn's manual attachment is already spent, while the
+    // next turn gets a fresh attachment. A held Dragon pays Vessel and enters
+    // discard during that next strict-JIT ready turn:
+    // Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Official Item, discard, search, attachment, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, dynamic DCI, strict-JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1844
+    return scenario_.dci == DciProfile::StrictJit &&
+        scenario_.locks == LockMode::None && deck_seen_ &&
+        state_.turn + 1 <= scenario_.max_turn && state_.manual_energy_used &&
+        exact_reported_axis && held_payload &&
+        (count_of(state_.discard, Card::EarthenVessel) > 0 ||
+         hand_count(Card::EarthenVessel) > 0);
+  }
+
   bool use_legacy_star() {
     if (state_.vstar_power_used || !has_vstar() || !ability_available_for_pokemon(Card::RegidragoVstar)) return false;
     // Card text source: https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -177,6 +204,13 @@
     if (burnet_payload_line && count_of(state_.discard, Card::ProfessorBurnet) > 0 && recovered.size() < 2U) {
       if (!recover_discard_to_hand(Card::ProfessorBurnet)) throw std::logic_error("Legacy Star Burnet target disappeared");
       recovered.push_back(Card::ProfessorBurnet);
+    }
+
+    if (legacy_star_delayed_vessel_route() && recovered.size() < 2U) {
+      if (!recover_discard_to_hand(Card::EarthenVessel)) {
+        throw std::logic_error("Legacy Star delayed Earthen Vessel target disappeared");
+      }
+      recovered.push_back(Card::EarthenVessel);
     }
 
     // K1 proves a complete Earthen Vessel -> Mysterious Treasure -> Quick

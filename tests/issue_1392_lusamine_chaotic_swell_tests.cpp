@@ -128,7 +128,7 @@ void test_no_lock_and_spent_resources_block_route() {
   }
 }
 
-void test_horizon_and_exact_two_target_requirement() {
+void test_horizon_and_single_target_resolution() {
   {
     Fixture fixture(rule_box_scenario(2));
     sim::EngineTestAccess::set_state(fixture.engine, exact_state());
@@ -143,12 +143,15 @@ void test_horizon_and_exact_two_target_requirement() {
     sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
     const auto targets = sim::EngineTestAccess::lusamine_targets(fixture.engine);
 
-    // Lusamine says 2, rather than up to 2, so a lone Swell is insufficient:
-    // https://api.pokemontcg.io/v2/cards/sm4-96
-    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
-    // https://github.com/FlareZ123/pokemon-sims/issues/1392
-    require(targets.size() == 1U && !sim::EngineTestAccess::play_lusamine(fixture.engine),
-            "Lusamine resolved without its mandatory second target.");
+    // One advancing Swell is enough to make Lusamine legal when it is the only
+    // eligible public discard target. The played Lusamine cannot target itself:
+    // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
+    // Fixed-count ruling: https://compendium.pokegym.net/compendium-ex.html#HOLON_FARMER
+    // Trainer resolution order: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1835
+    require(targets.size() == 1U && targets.front() == sim::Card::ChaoticSwell &&
+                sim::EngineTestAccess::play_lusamine(fixture.engine),
+            "Lusamine did not recover its lone advancing Chaotic Swell target.");
   }
 }
 
@@ -190,6 +193,6 @@ void test_seed_20_reaches_t4() {
 int main() {
   test_swell_is_advancing_first_target();
   test_no_lock_and_spent_resources_block_route();
-  test_horizon_and_exact_two_target_requirement();
+  test_horizon_and_single_target_resolution();
   test_seed_20_reaches_t4();
 }

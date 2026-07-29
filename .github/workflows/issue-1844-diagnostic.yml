@@ -1,0 +1,18 @@
+name: Issue 1844 Diagnostic Trace
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  trace:
+    if: github.event.pull_request.head.ref == 'fix/issue-1844-legacy-vessel-next-turn'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - run: python scripts/apply_issue_1844.py
+      - run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build build --parallel 2
+      - run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 314159

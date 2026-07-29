@@ -578,6 +578,7 @@ void run_turn() {
     play_basics_from_hand();
     play_items_until_stable(!strict_payload_timing());
 
+    play_issue_1700_known_prize_gladion_before_blender(); // Gladion must use the still-open T2 Supporter window before attachment: https://api.pokemontcg.io/v2/cards/sm4-95 https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf https://github.com/FlareZ123/pokemon-sims/issues/1700
     attach_manual();
     if (complete_issue_1564_quick_ball_latias_promotion()) {
       trace("POLICY", "P-AXIS-01", "End: " + state_line());

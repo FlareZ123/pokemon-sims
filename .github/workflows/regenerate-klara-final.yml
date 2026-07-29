@@ -1,8 +1,7 @@
 name: Regenerate Klara final evidence
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, edited]
+  push:
     branches: [klara-workflow-base]
 
 permissions:
@@ -10,7 +9,6 @@ permissions:
 
 jobs:
   regenerate:
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'enhancement-1773-klara-swap'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -69,7 +67,6 @@ jobs:
           python scripts/update_multi_deck_docs.py --repo-root .
           ctest --test-dir build-regenerate --parallel 4 --output-on-failure
 
-          rm -f .github/workflows/regenerate-klara-final.yml
           rm -f .github/klara-regeneration-trigger.txt
           git add -A
           git commit -m 'Refresh Klara fixtures and canonical matrices'

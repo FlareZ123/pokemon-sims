@@ -16,6 +16,25 @@ CORE_RUNNER_PATH = REPO_ROOT / "tests" / "policy_fixture_v2" / "part_004a.inc"
 TIER2_RUNNER_PATH = REPO_ROOT / "tests" / "tier2_parts" / "part_003b.inc"
 TRACE_REGISTER_PATH = REPO_ROOT / "docs" / "RULES_TRACEABILITY.md"
 TRACE_SOURCE_DIR = REPO_ROOT / "src" / "trace_engine_v2"
+SOURCE_ROOTS = ("src", "tests", "docs", "scripts", ".github")
+CARD_SOURCE_URL = re.compile(r"https://api\.pokemontcg\.io/v2/cards/([^\s<>\"\')\]]+)")
+CARD_SOURCE_TRAILING_PUNCTUATION = ".,;:!?`"
+# This exact card-ID contract was verified against the supplied English corpus:
+# https://github.com/PokemonTCG/pokemon-tcg-data
+# Correct Mega Dragonite ex record: https://api.pokemontcg.io/v2/cards/me2pt5-152
+# Confirmed source-traceability bug: https://github.com/FlareZ123/pokemon-sims/issues/1696
+CANONICAL_SOURCE_CARD_IDS = {
+    "base1-99", "me1-117", "me2-87", "me2pt5-16", "me2pt5-152",
+    "sm11-141", "sm11-190", "sm12-187", "sm2-55", "sm2-60", "sm2-125",
+    "sm3-115", "sm3-128", "sm4-95", "sm4-96", "sm5-100", "sm6-113",
+    "sm7-145", "sm7-148", "sm9-152", "sv1-166", "sv3pt5-160",
+    "sv4-163", "sv4-171", "sv4pt5-1", "sv4pt5-2", "sv6-127",
+    "sv6-130", "sv6-163", "sv6pt5-63", "sv7-133", "sv8-76",
+    "sv8-140", "sv8-164", "swsh1-163", "swsh1-179", "swsh3-104",
+    "swsh6-148", "swsh8-225", "swsh9-148", "swsh9-149", "swsh10-144",
+    "swsh10-146", "swsh11-136", "swsh12-135", "swsh12-136",
+    "swsh12-156", "swsh12-164", "swsh12pt5-146", "swsh12tg-TG26",
+}
 SCRIPT_PATH = REPO_ROOT / "scripts" / "audit_card_data.py"
 UPSTREAM_COMMIT_URL = (
     "https://github.com/PokemonTCG/pokemon-tcg-data/commit/"
@@ -67,7 +86,60 @@ def emitted_rule_ids() -> set[str]:
     return emitted
 
 
+def referenced_card_source_ids() -> dict[str, set[str]]:
+    references: dict[str, set[str]] = {}
+    for source_root in SOURCE_ROOTS:
+        root = REPO_ROOT / source_root
+        if not root.exists():
+            continue
+        for source_path in root.rglob("*"):
+            if not source_path.is_file():
+                continue
+            try:
+                source_text = source_path.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                continue
+            card_ids = {
+                match.group(1).rstrip(CARD_SOURCE_TRAILING_PUNCTUATION)
+                for match in CARD_SOURCE_URL.finditer(source_text)
+            }
+            if card_ids:
+                references[str(source_path.relative_to(REPO_ROOT))] = card_ids
+    return references
+
+
+def require_valid_card_source_urls() -> None:
+    references = referenced_card_source_ids()
+    referenced_ids = set().union(*references.values()) if references else set()
+    unknown_ids = sorted(referenced_ids - CANONICAL_SOURCE_CARD_IDS)
+    if unknown_ids:
+        locations = {
+            card_id: sorted(path for path, ids in references.items() if card_id in ids)
+            for card_id in unknown_ids
+        }
+        raise AssertionError(
+            "Unknown Pokémon TCG API card IDs: "
+            + "; ".join(
+                f"{card_id} in {', '.join(locations[card_id])}"
+                for card_id in unknown_ids
+            )
+        )
+    stale_ids = sorted(CANONICAL_SOURCE_CARD_IDS - referenced_ids)
+    if stale_ids:
+        raise AssertionError(
+            "Stale canonical Pokémon TCG API card IDs: " + ", ".join(stale_ids)
+        )
+
+
 def main() -> int:
+    # Reject nonexistent direct card records before they can be used as executable
+    # policy evidence. The contract is corpus-backed and keeps all tracked source
+    # URLs independently auditable:
+    # https://github.com/PokemonTCG/pokemon-tcg-data
+    # https://api.pokemontcg.io/v2/cards/me2pt5-152
+    # https://github.com/FlareZ123/pokemon-sims/issues/1696
+    require_valid_card_source_urls()
+
     audit = load_audit_module()
     documented = DOC_PATH.read_text(encoding="utf-8")
     rule_sources = RULE_SOURCES_PATH.read_text(encoding="utf-8")

@@ -83,6 +83,53 @@
         projected.state_.active->fire >= 1 && projected.payload_ready();
   }
 
+  bool issue_1795_crispin_steven_vessel_route_available() const {
+    const bool held_direct_vstar_connector =
+        hand_count(Card::RegidragoVstar) > 0 ||
+        hand_count(Card::EvolutionIncense) > 0 ||
+        hand_count(Card::MysteriousTreasure) > 0 ||
+        hand_count(Card::UltraBall) > 0 ||
+        hand_count(Card::PokemonCommunication) > 0 ||
+        hand_count(Card::ForestSealStone) > 0 ||
+        hand_count(Card::Arven) > 0 || hand_count(Card::SecretBox) > 0;
+    const bool held_vessel_payload = std::any_of(
+        state_.hand.begin(), state_.hand.end(), is_payload);
+
+    if (scenario_.dci != DciProfile::StrictJit || !scenario_.going_first ||
+        scenario_.locks != LockMode::None || state_.turn != 2 ||
+        state_.turn + 2 > scenario_.max_turn || !prizes_known() ||
+        !supporter_allowed() || state_.manual_energy_used || !state_.active ||
+        state_.active->card != Card::RegidragoV ||
+        state_.active->entered_turn >= state_.turn ||
+        state_.active->grass != 0 || state_.active->fire != 0 ||
+        !need_energy() || !need_vstar() || !need_payload() ||
+        hand_count(Card::Gladion) == 0 || hand_count(Card::Crispin) == 0 ||
+        hand_count(Card::StevensResolve) == 0 || !held_vessel_payload ||
+        held_direct_vstar_connector ||
+        deck_count_after_search_started(Card::Grass) < 2 ||
+        deck_count_after_search_started(Card::Fire) == 0 ||
+        deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
+        deck_count_after_search_started(Card::EarthenVessel) == 0) {
+      return false;
+    }
+
+    // K1 exposes a complete Supporter schedule. Crispin searches different Basic
+    // Energy types on T2, attaches one, and leaves the other for the still-unused
+    // manual attachment. Steven's Resolve then banks Regidrago VSTAR and Earthen
+    // Vessel on T3. On T4, Vessel discards the held Dragon payload, searches the
+    // final Grass Energy, and the manual attachment completes GGF. This deterministic
+    // route outranks Gladion's single-Prize exchange and a random Celestial Roar:
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Supporter, search, attachment, evolution, Item, and attack procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, strict-JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1795
+    return crispin_can_advance_energy_axis();
+  }
+
   int issue_1152_legacy_star_turn_ = 0;
 
   bool use_legacy_star_issue_1152() {
@@ -99,6 +146,22 @@
     if (issue_1481_hold_serena_for_free_latias_completion()) {
       trace("HOLD SUPPORTER", "P-DCI-01; P-COMPRESS-01",
             "Preserved Serena because Skyliner already completes the sole remaining Active axis.");
+      return;
+    }
+    if (issue_1795_crispin_steven_vessel_route_available()) {
+      // Play the first Supporter in the complete T2-T4 schedule before generic
+      // Gladion selection consumes this turn's one Supporter action:
+      // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+      // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+      // Official one-Supporter-per-turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1795
+      if (!play_crispin()) {
+        throw std::logic_error(
+            "Proven issue-1795 Crispin route became unavailable");
+      }
+      trace("ROUTE SELECTION",
+            "R-CRISPIN-01; R-STEVEN-01; R-EV-01; P-KNOWLEDGE-01; P-JIT-01; P-COMPRESS-01",
+            "Selected Crispin over Gladion for the deterministic Steven and Earthen Vessel T4 finish.");
       return;
     }
     if (play_issue_1478_t3_arven_vessel_completion()) return;

@@ -24,7 +24,7 @@ bool issue_1697_held_next_turn_manual_energy_route() const {
       crispin_can_advance_energy_axis();
 }
 
-bool play_gladion() {
+bool play_gladion_issue1737_original() {
   const bool issue_1644_has_held_vstar_route =
       hand_count(Card::ForestSealStone) > 0 || hand_count(Card::Arven) > 0 ||
       hand_count(Card::EvolutionIncense) > 0 ||
@@ -150,3 +150,5 @@ bool play_gladion() {
   }
   return false;
 }
+
+#include "part_issue_1737_gladion_prized_steven_override.inc"

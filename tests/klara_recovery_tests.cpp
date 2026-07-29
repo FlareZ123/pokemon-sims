@@ -185,8 +185,15 @@ void test_klara_does_not_remove_the_only_ready_payload() {
   state.hand = {sim::Card::Klara};
   state.discard = {sim::Card::Fire, sim::Card::MegaDragonite};
   state.discarded_this_turn = {sim::Card::MegaDragonite};
+  state.vstar_power_used = true;
   sim::EngineTestAccess::set_state(engine, std::move(state));
 
+  // With Legacy Star already spent, Klara is the only current-turn route to the
+  // missing Fire. It may recover that Energy but must leave the sole strict-JIT
+  // Dragon in discard:
+  // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
+  // Regidrago VSTAR and Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Official Supporter and manual-attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   expect(sim::EngineTestAccess::play_klara(engine),
          "The missing Fire Energy should make Klara worth playing");
   const sim::State& after = sim::EngineTestAccess::state(engine);

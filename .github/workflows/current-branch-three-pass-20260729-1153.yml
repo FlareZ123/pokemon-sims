@@ -5,14 +5,25 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   current-branch-audit:
+    if: github.event.pull_request.head.ref == 'fix/issue-1821-steven-latias-grass'
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Compose with current main
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
 
       - name: Archive exact tested source
         run: |
@@ -77,6 +88,14 @@ jobs:
 
       - name: Generate all-deck all-condition matrix
         run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260729 --out t2-t3-all-condition-matrix.csv
+
+      - name: Commit validated fix and generated evidence
+        run: |
+          rm .github/workflows/current-branch-three-pass-20260729-1153.yml
+          git add src tests results docs .github/workflows/current-branch-three-pass-20260729-1153.yml
+          git commit -m 'Fix issue 1821 Steven Latias Grass T3 route'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          git rev-parse HEAD | tee tested-head.txt
 
       - name: Upload branch evidence
         if: always()

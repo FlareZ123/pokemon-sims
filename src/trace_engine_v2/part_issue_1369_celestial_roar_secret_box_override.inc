@@ -133,3 +133,10 @@
   #include "part_issue_1744_quick_ball_forretress_override.inc"
   #undef run_secret_box_turn
   #define run_secret_box_turn run_secret_box_turn_issue1744
+
+  // Compare the direct Steven, VSTAR, final Grass, and Mysterious Treasure
+  // package before the Pineco dispatcher can bank Secret Box filler:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1816
+  #include "part_issue_1816_pineco_steven_treasure_override.inc"
+  #undef run_secret_box_turn
+  #define run_secret_box_turn run_secret_box_turn_issue1816

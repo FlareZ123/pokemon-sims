@@ -1,0 +1,30 @@
+name: Apply Klara selector fix
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'enhancement-1773-klara-swap'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: enhancement-1773-klara-swap
+          fetch-depth: 0
+      - name: Apply route-completion regression fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git apply .github/klara-selector-fix.patch
+          rm -f .github/klara-selector-fix.patch
+          rm -f .github/workflows/apply-klara-selector-fix.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Prevent Klara from preempting faster Supporter routes'
+          git push origin HEAD:enhancement-1773-klara-swap

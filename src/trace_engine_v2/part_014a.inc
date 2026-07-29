@@ -1,3 +1,51 @@
+const auto issue_1757_prelock_vessel_available = [this] {
+  if (secret_box_combo_enabled() ||
+      scenario_.locks != LockMode::TurnTwoItem || scenario_.going_first ||
+      state_.turn != 1 || item_locked() || !need_regi() || has_vstar() ||
+      hand_count(Card::EarthenVessel) == 0 ||
+      hand_count(Card::MegaDragonite) < 2) {
+    return false;
+  }
+
+  const bool grass_available = deck_seen_
+      ? deck_count_after_search_started(Card::Grass) > 0
+      : might_be_unseen(Card::Grass);
+  const bool fire_available = deck_seen_
+      ? deck_count_after_search_started(Card::Fire) > 0
+      : might_be_unseen(Card::Fire);
+
+  // The scheduled T2 Item lock makes a held Vessel use-or-lose. One of two
+  // identical Mega Dragonite ex copies is a realistic DCI cost because the other
+  // copy remains protected for a later strict-JIT payload turn. The legal search
+  // establishes K1 and takes any live Basic Energy before Items become unusable:
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Official Item, discard-cost, deck-search, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // K0/K1, dynamic DCI, scheduled-lock, and resource-priority policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1757
+  return grass_available || fire_available;
+};
+
+const auto play_issue_1757_prelock_vessel =
+    [this, &issue_1757_prelock_vessel_available] {
+  if (!issue_1757_prelock_vessel_available()) return false;
+  if (!remove_one(state_.hand, Card::EarthenVessel)) {
+    throw std::logic_error("Issue-1757 Earthen Vessel disappeared");
+  }
+  state_.discard.push_back(Card::EarthenVessel);
+  if (!discard_from_hand(Card::MegaDragonite,
+                         "Earthen Vessel issue-1757 duplicate payload cost",
+                         "R-EV-01; P-DCI-01; P-KNOWLEDGE-01")) {
+    throw std::logic_error("Issue-1757 duplicate payload cost disappeared");
+  }
+  search_energy_to_hand(
+      2, "R-EV-01; R-GAME-ITEM; P-DCI-01; P-KNOWLEDGE-01",
+      "Earthen Vessel issue-1757 pre-lock route");
+  return true;
+};
+
+if (play_issue_1757_prelock_vessel()) return true;
 if (bench_oricorio_if_useful()) return true;
 if (play_pokemon_communication(permit_payload)) return true;
 

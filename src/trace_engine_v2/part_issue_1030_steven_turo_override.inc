@@ -275,6 +275,7 @@
   }
 
   bool play_steven() {
+    if (issue_1817_play_prelock_steven_package()) return true;
     // A held Arven can complete the current turn through Forest Seal Stone and
     // Brilliant Blender, so do not enter any Steven route that ends the turn:
     // Arven: https://api.pokemontcg.io/v2/cards/sv1-166

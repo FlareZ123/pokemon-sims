@@ -209,8 +209,13 @@
   bool complete_issue_1795_vessel_finish() {
     if (issue_1795_vessel_turn_ != state_.turn) return false;
 
-    const auto payload = std::find_if(
-        state_.hand.begin(), state_.hand.end(), is_payload);
+    std::optional<Card> payload;
+    for (const Card card : state_.hand) {
+      if (is_payload(card)) {
+        payload = card;
+        break;
+      }
+    }
     const bool has_final_grass = hand_count(Card::Grass) > 0 ||
         deck_count_after_search_started(Card::Grass) > 0;
     const bool route_available =
@@ -222,7 +227,7 @@
         state_.active->grass == 1 && state_.active->fire == 1 &&
         hand_count(Card::RegidragoVstar) > 0 &&
         hand_count(Card::EarthenVessel) > 0 &&
-        payload != state_.hand.end() && has_final_grass;
+        payload.has_value() && has_final_grass;
     if (!route_available) {
       issue_1795_vessel_turn_ = 0;
       return false;

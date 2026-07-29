@@ -20,6 +20,16 @@ jobs:
       - name: Build simulator and tests
         run: cmake --build build --parallel 2
 
+      - name: Diagnostic exact seed 364 trace
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Crispin, Steven's Resolve, Earthen Vessel, Regidrago VSTAR, official procedure, and confirmed issue:
+          # https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/sv4-163 https://api.pokemontcg.io/v2/cards/swsh12-136
+          # https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          # https://github.com/FlareZ123/pokemon-sims/issues/1795
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 364 | tee issue-1795-diagnostic.txt
+
       - name: Focused issue 1795 regressions
         run: ctest --test-dir build -R regidrago_issue_1795_crispin_steven_vessel_tests --output-on-failure
 
@@ -70,6 +80,7 @@ jobs:
         with:
           name: issue-1795-validation-${{ github.run_attempt }}
           path: |
+            issue-1795-diagnostic.txt
             issue-1795-pass-*.txt
             issue-1795-t2-t3-matrix.csv
             issue-1795-all-decks-matrix.csv

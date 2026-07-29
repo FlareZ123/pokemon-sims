@@ -174,7 +174,65 @@
     trace("POLICY", "P-AXIS-01", "End: " + state_line());
   }
 
+  std::optional<std::array<Card, 2>> grant_recovery_strict_jit_costs() {
+    if (!strict_payload_timing() || !need_payload() || !active_is_vstar() ||
+        need_energy() || count_of(state_.discard, Card::Grant) == 0) {
+      return std::nullopt;
+    }
+
+    const std::vector<Card> original_hand = state_.hand;
+    const bool flex_fodder = scenario_.dci == DciProfile::MatchupFlexJit;
+    const auto payload = choose_discard(true, flex_fodder);
+    if (!payload || !is_payload(*payload) || !remove_one(state_.hand, *payload)) {
+      state_.hand = original_hand;
+      return std::nullopt;
+    }
+
+    // Grant's auxiliary effect forbids Grant itself as either of the two costs.
+    // Remove any held copy only from this policy projection, then require the
+    // ordinary cost to pass the existing UDP/DCI selector:
+    // Grant: https://api.pokemontcg.io/v2/cards/swsh10-144
+    // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1790
+    state_.hand.erase(std::remove(state_.hand.begin(), state_.hand.end(),
+                                  Card::Grant),
+                      state_.hand.end());
+    const auto ordinary = choose_discard(false, flex_fodder);
+    state_.hand = original_hand;
+    if (!ordinary || *ordinary == Card::Grant) return std::nullopt;
+    return std::array<Card, 2>{*payload, *ordinary};
+  }
+
+  bool recover_grant_for_strict_jit_payload() {
+    const auto costs = grant_recovery_strict_jit_costs();
+    if (!costs) return false;
+
+    // This action is admitted only when Active Regidrago VSTAR already pays GGF
+    // and the current-turn Dragon payload is the sole missing ready-state axis.
+    // Grant returns from discard without consuming the turn's Supporter action:
+    // Grant: https://api.pokemontcg.io/v2/cards/swsh10-144
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Trainer and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Strict-JIT and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1790
+    if (!discard_from_hand((*costs)[0], "Grant strict-JIT Dragon cost",
+                           "R-GRANT-01; P-DCI-01; P-JIT-01") ||
+        !discard_from_hand((*costs)[1], "Grant ordinary DCI cost",
+                           "R-GRANT-01; P-DCI-01")) {
+      throw std::logic_error("Grant recovery costs disappeared");
+    }
+    if (!recover_discard_to_hand(Card::Grant)) {
+      throw std::logic_error("Grant recovery target disappeared");
+    }
+    trace("GRANT RECOVERY", "R-GRANT-01; P-DCI-01; P-JIT-01",
+          "Discarded " + std::string(name((*costs)[0])) + " and " +
+              std::string(name((*costs)[1])) +
+              "; returned Grant to hand without using the Supporter action.");
+    return true;
+  }
+
   void record_ready() {
+    recover_grant_for_strict_jit_payload();
     const bool active_vstar = active_is_vstar();
     const bool grass_ready = active_vstar && state_.active->grass >= 2;
     const bool fire_ready = active_vstar && state_.active->fire >= 1;

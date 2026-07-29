@@ -1,2 +1,0 @@
-Trigger canonical Klara regeneration after current-main merge.
-Run 2 after staging workflow discovery.

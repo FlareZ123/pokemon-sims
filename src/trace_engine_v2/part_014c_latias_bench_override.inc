@@ -578,6 +578,16 @@ void run_turn() {
     play_basics_from_hand();
     play_items_until_stable(!strict_payload_timing());
 
+    // Resolve the confirmed K1 Oricorio retreat and Steven package before the
+    // generic attachment and Supporter selectors can consume either channel:
+    // https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://api.pokemontcg.io/v2/cards/sm7-145
+    // https://github.com/FlareZ123/pokemon-sims/issues/1821
+    if (play_issue_1821_oricorio_steven_route()) {
+      trace("TURN END", "R-STEVEN-01; R-GAME-RETREAT", state_line());
+      return;
+    }
+
     attach_manual();
     if (complete_issue_1564_quick_ball_latias_promotion()) {
       trace("POLICY", "P-AXIS-01", "End: " + state_line());

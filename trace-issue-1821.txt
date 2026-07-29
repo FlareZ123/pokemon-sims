@@ -1,0 +1,38 @@
+
+Deck: regidrago-shell | Seed: 161803 | first-ready turn: 3 | setup result: success
+Seed: 161803 | first-ready turn: 3 | setup result: success
+===== SIMULATE THIS =====
+Deck: regidrago-shell
+Scenario: strict-jit/go-second | DCI: strict-JIT | Locks: none
+Mulligans: 1
+Opening player-known state: Active=Oricorio GRI 55 [-] | Bench=(none) | Hand=Regidrago VSTAR, Dragapult ex, Steven's Resolve, Earthen Vessel, Grass Energy, Tapu Lele-GX | Discard=(none)
+DEBUG ONLY: prizes=Erika's Invitation, Mysterious Treasure, Grass Energy, Dipplin TWM 127, Powerglass, Lusamine. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Team Yell's Cheer
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Oricorio GRI 55 [-] | Bench=(none) | Hand=Regidrago VSTAR, Dragapult ex, Steven's Resolve, Earthen Vessel, Grass Energy, Tapu Lele-GX, Team Yell's Cheer | Discard=(none)
+T1 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Wonder Tag: deck inspected; Prize identities are now deducible for later decisions.
+T1 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Crispin.
+T1 | ATTACH | rules: R-GAME-ENERGY; R-ORICORIO-01; P-COMPRESS-01 | Grass Energy manually to Oricorio for the deterministic Steven route.
+T1 | RETREAT | rules: R-GAME-RETREAT; R-ORICORIO-01; R-TAPU-01 | Paid Oricorio's one-Energy Retreat Cost and promoted Tapu Lele-GX before Steven's Resolve ended the turn.
+T1 | PLAY SUPPORTER | rules: R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01 | Steven's Resolve searched Regidrago V, Latias ex, and Grass Energy for the deterministic T3 route; the held VSTAR and Vessel-payload channel were preserved and the turn ended.
+T1 | TURN END | rules: R-STEVEN-01; R-GAME-RETREAT | Active=Tapu Lele-GX [-] | Bench=Oricorio GRI 55 [-] | Hand=Regidrago VSTAR, Dragapult ex, Earthen Vessel, Team Yell's Cheer, Crispin, Regidrago V, Latias ex, Grass Energy | Discard=Grass Energy, Steven's Resolve
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Tapu Lele-GX
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=Oricorio GRI 55 [-] | Hand=Regidrago VSTAR, Dragapult ex, Earthen Vessel, Team Yell's Cheer, Crispin, Regidrago V, Latias ex, Grass Energy, Tapu Lele-GX | Discard=Grass Energy, Steven's Resolve
+T2 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T2 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Tapu Lele-GX [-] | Bench=Oricorio GRI 55 [-]; Regidrago V [GG] | Hand=Regidrago VSTAR, Dragapult ex, Earthen Vessel, Team Yell's Cheer, Latias ex, Tapu Lele-GX, Fire Energy | Discard=Grass Energy, Steven's Resolve, Crispin
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Regidrago V
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=Oricorio GRI 55 [-]; Regidrago V [GG] | Hand=Regidrago VSTAR, Dragapult ex, Earthen Vessel, Team Yell's Cheer, Latias ex, Tapu Lele-GX, Fire Energy, Regidrago V | Discard=Grass Energy, Steven's Resolve, Crispin
+T3 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T3 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T3 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
+T3 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Professor Burnet.
+T3 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T3 | BENCH | rules: R-GAME-BENCH | Latias ex from hand.
+T3 | DISCARD | rules: R-EV-01 | Dragapult ex (Earthen Vessel cost)
+T3 | Earthen Vessel | rules: R-EV-01; R-GAME-ITEM | Searched up to 2 Basic Energy: Grass Energy, Grass Energy.
+T3 | RETREAT | rules: R-LATIAS-01; R-GAME-RETREAT | Latias ex gives the Basic Active no Retreat Cost; promoted the best-powered Benched Regidrago VSTAR.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Oricorio GRI 55 [-]; Tapu Lele-GX [-]; Regidrago V [-]; Tapu Lele-GX [-]; Latias ex [-] | Hand=Team Yell's Cheer, Professor Burnet, Grass Energy, Grass Energy | Discard=Grass Energy, Steven's Resolve, Crispin, Earthen Vessel, Dragapult ex
+T3 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

@@ -1,99 +1,4 @@
-from __future__ import annotations
-
-import fcntl
-import os
-import tempfile
-from contextlib import contextmanager
-from pathlib import Path
-
-
-@contextmanager
-def locked_path(path: Path):
-    lock_path = path.with_suffix(path.suffix + ".lock")
-    descriptor = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
-    try:
-        fcntl.flock(descriptor, fcntl.LOCK_EX)
-        yield
-    finally:
-        fcntl.flock(descriptor, fcntl.LOCK_UN)
-        os.close(descriptor)
-        lock_path.unlink(missing_ok=True)
-
-
-def atomic_write(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with locked_path(path):
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            newline="",
-            dir=path.parent,
-            prefix=f".{path.name}.",
-            delete=False,
-        ) as handle:
-            handle.write(content)
-            temporary = Path(handle.name)
-        os.replace(temporary, path)
-
-
-source_path = Path("src/trace_engine_v2/part_013_legacy_star_override.inc")
-source = source_path.read_text(encoding="utf-8")
-helper_anchor = "  bool use_legacy_star() {\n"
-helper = r'''  bool legacy_star_delayed_vessel_route() const {
-    const bool held_payload = std::any_of(
-        state_.hand.begin(), state_.hand.end(), is_payload);
-    const bool one_energy_missing = grass_needed() + fire_needed() == 1;
-    const bool known_energy_target =
-        (grass_needed() == 1 && count_of(state_.deck, Card::Grass) > 0) ||
-        (fire_needed() == 1 && count_of(state_.deck, Card::Fire) > 0);
-
-    // Legacy Star may return Earthen Vessel now for a fully public next-turn
-    // finish. The current turn's manual attachment is already spent, while the
-    // next turn gets a fresh attachment. A held Dragon pays Vessel and enters
-    // discard during that next strict-JIT ready turn:
-    // Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
-    // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
-    // Official Item, discard, search, attachment, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1, dynamic DCI, strict-JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1844
-    return scenario_.dci == DciProfile::StrictJit &&
-        scenario_.locks == LockMode::None && deck_seen_ &&
-        state_.turn + 1 <= scenario_.max_turn && state_.manual_energy_used &&
-        active_is_vstar() && one_energy_missing && known_energy_target &&
-        held_payload && count_of(state_.discard, Card::EarthenVessel) > 0;
-  }
-
-'''
-if helper not in source:
-    if source.count(helper_anchor) != 1:
-        raise RuntimeError("Expected one Legacy Star helper insertion point")
-    source = source.replace(helper_anchor, helper + helper_anchor, 1)
-
-recovery_anchor = '''    const bool burnet_payload_line = need_payload() && supporter_allowed() && payload_might_be_in_deck();
-    if (burnet_payload_line && count_of(state_.discard, Card::ProfessorBurnet) > 0 && recovered.size() < 2U) {
-      if (!recover_discard_to_hand(Card::ProfessorBurnet)) throw std::logic_error("Legacy Star Burnet target disappeared");
-      recovered.push_back(Card::ProfessorBurnet);
-    }
-
-'''
-recovery = recovery_anchor + r'''    if (legacy_star_delayed_vessel_route() && recovered.size() < 2U) {
-      if (!recover_discard_to_hand(Card::EarthenVessel)) {
-        throw std::logic_error("Legacy Star delayed Earthen Vessel target disappeared");
-      }
-      recovered.push_back(Card::EarthenVessel);
-    }
-
-'''
-if recovery not in source:
-    if source.count(recovery_anchor) != 1:
-        raise RuntimeError("Expected one Legacy Star recovery insertion point")
-    source = source.replace(recovery_anchor, recovery, 1)
-atomic_write(source_path, source)
-
-
-test = r'''#define REGIDRAGO_SIM_NO_MAIN
+#define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
 #include <algorithm>
@@ -113,6 +18,9 @@ struct EngineTestAccess {
   }
   static bool delayed_vessel_route(const Engine& engine) {
     return engine.legacy_star_delayed_vessel_route();
+  }
+  static bool play_earthen_vessel(Engine& engine) {
+    return engine.play_earthen_vessel(true);
   }
 };
 
@@ -169,6 +77,44 @@ void complete_public_route_is_admitted() {
   // https://github.com/FlareZ123/pokemon-sims/issues/1844
   expect(sim::EngineTestAccess::delayed_vessel_route(fixture.engine),
          "Complete delayed Vessel route was rejected");
+}
+
+void recovered_vessel_is_held_until_next_turn() {
+  Fixture fixture;
+  sim::State state = complete_state();
+  state.hand.push_back(sim::Card::EarthenVessel);
+  state.discard.erase(
+      std::find(state.discard.begin(), state.discard.end(), sim::Card::EarthenVessel));
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // The T2 attachment window is spent. Spending Vessel now would discard the
+  // Dragon payload one turn before strict-JIT readiness:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://github.com/FlareZ123/pokemon-sims/issues/1844
+  expect(sim::EngineTestAccess::delayed_vessel_route(fixture.engine),
+         "Recovered Vessel was not recognized as the delayed route");
+  expect(!sim::EngineTestAccess::play_earthen_vessel(fixture.engine),
+         "Recovered Vessel was spent before the next attachment window");
+}
+
+void nonreported_energy_axis_is_rejected() {
+  for (const int mode : {0, 1, 2}) {
+    Fixture fixture;
+    sim::State state = complete_state();
+    if (mode == 0) {
+      state.turn = 3;
+    } else if (mode == 1) {
+      state.active->fire = 0;
+    } else {
+      state.active->grass = 2;
+      state.active->fire = 0;
+      state.deck.push_back(sim::Card::Fire);
+    }
+    sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+    expect(!sim::EngineTestAccess::delayed_vessel_route(fixture.engine),
+           "Delayed Vessel exception escaped the exact T2 GF-to-GGF boundary");
+  }
 }
 
 void item_lock_rejects_route() {
@@ -253,6 +199,8 @@ void exact_seed_reaches_turn_three() {
 int main() {
   try {
     complete_public_route_is_admitted();
+    recovered_vessel_is_held_until_next_turn();
+    nonreported_energy_axis_is_rejected();
     item_lock_rejects_route();
     missing_payload_rejects_route();
     multiple_energy_attachments_reject_route();
@@ -266,5 +214,3 @@ int main() {
   }
   return 0;
 }
-'''
-atomic_write(Path("tests/issue_1844_legacy_vessel_next_turn_tests.cpp"), test)

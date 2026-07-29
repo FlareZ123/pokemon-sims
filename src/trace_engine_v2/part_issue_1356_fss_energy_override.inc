@@ -79,6 +79,36 @@
     return star_takes_fire || star_takes_grass;
   }
 
+  bool issue_1811_fss_crispin_continuation_available() const {
+    if (scenario_.dci != DciProfile::StrictJit || scenario_.going_first ||
+        scenario_.locks != LockMode::None || state_.turn != 1 ||
+        scenario_.max_turn < 2 || !deck_seen_ || item_locked() ||
+        !state_.supporter_used || !state_.manual_energy_used ||
+        state_.vstar_power_used || !state_.active ||
+        state_.active->card != Card::RegidragoV ||
+        state_.active->grass != 1 || state_.active->fire != 0 ||
+        state_.active->tool != Tool::ForestSealStone ||
+        hand_count(Card::RegidragoVstar) == 0 ||
+        hand_count(Card::EarthenVessel) == 0 ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    // Mysterious Treasure has already supplied Regidrago VSTAR. Star Alchemy now
+    // takes Crispin, whose two-type search supplies both T2 Energy attachments. The
+    // held Vessel and Dragon preserve the same-turn strict-JIT payload channel:
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official VSTAR Power, Supporter, attachment, evolution, and Item procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Strict-JIT and route-priority specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1811
+    return deck_count_after_search_started(Card::Crispin) > 0 &&
+        deck_count_after_search_started(Card::Grass) > 0 &&
+        deck_count_after_search_started(Card::Fire) > 0;
+  }
+
   bool use_fss() {
     const auto live_fss_holder = [](const Pokemon& pokemon) {
       return pokemon.tool == Tool::ForestSealStone && is_pokemon_v(pokemon.card);
@@ -86,6 +116,26 @@
     const bool forest_seal_stone_is_live = !state_.vstar_power_used &&
         ((state_.active && live_fss_holder(*state_.active)) ||
          std::any_of(state_.bench.begin(), state_.bench.end(), live_fss_holder));
+    if (forest_seal_stone_is_live &&
+        issue_1811_fss_crispin_continuation_available()) {
+      state_.vstar_power_used = true;
+      outcome_.used_fss = true;
+      record_deck_search_knowledge("Star Alchemy");
+      if (!move_deck_to_hand(Card::Crispin)) {
+        throw std::logic_error("Issue-1811 Crispin target disappeared");
+      }
+      shuffle(state_.deck);
+      // Star Alchemy searches Crispin only after Mysterious Treasure has supplied
+      // VSTAR, preserving one search channel for each missing axis:
+      // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+      // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1811
+      trace("STAR ALCHEMY", "R-FSS-02; R-VSTAR-01; P-COMPRESS-01",
+            "Searched Crispin for the deterministic T2 Energy package after Mysterious Treasure supplied Regidrago VSTAR.");
+      return true;
+    }
+
     if (forest_seal_stone_is_live &&
         issue_1393_held_crispin_completion_available()) {
       // A held Crispin can attach one searched Basic Energy and place the other

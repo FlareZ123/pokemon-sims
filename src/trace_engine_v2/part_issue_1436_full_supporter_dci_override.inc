@@ -139,6 +139,48 @@
         issue_1419_possible_payload_count() > 0;
   }
 
+  std::optional<Card> issue_1765_treasure_surplus_energy_cost(
+      const std::optional<Card> excluded_from_cost) const {
+    if (excluded_from_cost != Card::MysteriousTreasure ||
+        scenario_.dci != DciProfile::StrictJit || item_locked() ||
+        state_.turn != 2 || scenario_.max_turn < 3 ||
+        state_.manual_energy_used || state_.vstar_power_used ||
+        !state_.active || state_.active->card != Card::RegidragoV ||
+        state_.active->entered_turn >= state_.turn || !need_vstar() ||
+        !need_payload() || hand_count(Card::MysteriousTreasure) == 0 ||
+        hand_count(Card::EarthenVessel) == 0 ||
+        !might_be_unseen(Card::RegidragoVstar)) {
+      return std::nullopt;
+    }
+
+    const int missing_grass = grass_needed();
+    const int missing_fire = fire_needed();
+    const int attachment_windows = 1 + scenario_.max_turn - state_.turn;
+    if (missing_grass + missing_fire == 0 ||
+        attachment_windows < missing_grass + missing_fire ||
+        hand_count(Card::Grass) < missing_grass ||
+        hand_count(Card::Fire) < missing_fire) {
+      return std::nullopt;
+    }
+
+    // Mysterious Treasure may spend only the Basic Energy copy left after reserving
+    // every type and count required by the earliest observable manual-attachment
+    // schedule. The prior-turn Regidrago V is evolution-eligible, Treasure can search
+    // Regidrago VSTAR, and the retained Grass plus Fire complete GGF across T2 and T3.
+    // Earthen Vessel remains as the next-turn one-discard outlet without weakening
+    // the general strict-DCI protection applied to Energy in all other states:
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Regidrago VSTAR / Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Item costs, manual attachments, evolution, and VSTAR Power procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Dynamic DCI and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug and source-bound CI reproduction: https://github.com/FlareZ123/pokemon-sims/issues/1765 https://github.com/FlareZ123/pokemon-sims/pull/1768
+    if (hand_count(Card::Grass) > missing_grass) return Card::Grass;
+    return std::nullopt;
+  }
+
   std::optional<Card> choose_discard(
       const bool permit_payload, const bool flex_fodder,
       const bool allow_heavy_ball = true,
@@ -148,6 +190,11 @@
         permit_payload, flex_fodder, allow_heavy_ball, excluded_from_cost,
         allow_redundant_payload);
     if (ordinary) return ordinary;
+
+    if (const auto surplus_energy =
+            issue_1765_treasure_surplus_energy_cost(excluded_from_cost)) {
+      return surplus_energy;
+    }
 
     if (issue_1476_redundant_burnet_route_available(excluded_from_cost)) {
       // Blender dominates Burnet's only remaining payload axis, while spending

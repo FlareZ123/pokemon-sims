@@ -125,9 +125,27 @@
     trace("ATTACH", "R-GAME-ENERGY; R-RVS-01; P-COMPRESS-01",
           "Grass Energy manually to the Active Regidrago VSTAR, reaching GGFF.");
 
-    if (!play_brilliant_blender()) {
-      throw std::logic_error("Issue-1798 Brilliant Blender finish disappeared");
+    if (!remove_one(state_.hand, Card::BrilliantBlender)) {
+      throw std::logic_error("Issue-1798 Brilliant Blender disappeared");
     }
+    state_.discard.push_back(Card::BrilliantBlender);
+    std::optional<Card> discarded_payload;
+    for (const Card payload : {Card::Appletun, Card::MegaDragonite,
+                               Card::Dragapult, Card::GoodraVstar,
+                               Card::DialgaGX}) {
+      if (move_deck_to_discard(payload)) {
+        discarded_payload = payload;
+        break;
+      }
+    }
+    if (!discarded_payload) {
+      throw std::logic_error("Issue-1798 K1-proven Blender payload disappeared");
+    }
+    shuffle(state_.deck);
+    outcome_.used_blender = true;
+    trace("PLAY ITEM", "R-BLENDER-01; R-GAME-ITEM; P-KNOWLEDGE-01; P-JIT-01",
+          "Brilliant Blender searched and discarded the K1-proven deck payload: " +
+              std::string(name(*discarded_payload)) + ".");
     issue_1798_blender_turn_ = 0;
 
     // Brilliant Blender searches the deck, so the held Dragon is intentionally

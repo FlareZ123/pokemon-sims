@@ -146,7 +146,7 @@ void test_seed_14_wonder_tag_selects_steven_and_reaches_t4() {
          "Seed 14 must be ready by exactly T3.");
 }
 
-void test_seed_38_executes_held_steven_and_reaches_t5() {
+void test_seed_38_yields_to_confirmed_t3_route() {
   const sim::Scenario scenario{"strict-jit/go-first", sim::DciProfile::StrictJit,
                                sim::LockMode::None, true, 5};
   const sim::DeckRecipe recipe = sim::baseline_recipe();
@@ -156,20 +156,30 @@ void test_seed_38_executes_held_steven_and_reaches_t5() {
   sim::Engine engine(scenario, recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 
-  // The refined report covers an already-held Steven. It must search VSTAR on T4,
-  // then the held Vessel discards a Dragon and reaches diagnostic readiness on T5:
-  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Issue #1775 supersedes the older seed-38 late-Steven expectation. At K1,
+  // Earthen Vessel can discard route-replaced Steven, attach the searched Grass,
+  // Gladion can recover known-prized Mysterious Treasure, and Treasure can discard
+  // Dragapult ex while searching Regidrago VSTAR on the strict-JIT ready turn:
   // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
-  // https://github.com/FlareZ123/pokemon-sims/issues/1017#issuecomment-5015578916
-  expect(trace_contains(trace, "T4 | PLAY SUPPORTER | rules: R-STEVEN-01"),
-         "Seed 38 must execute the held Steven on T4.");
-  expect(trace_contains(trace, "T5 | DISCARD | rules: R-EV-01 | Mega Dragonite ex"),
-         "Seed 38 must use its held Vessel on T5.");
-  expect(trace_contains(trace, "T5 | READY"),
-         "Seed 38 must reach the deterministic T5 diagnostic state.");
-  expect(outcome.ready_by_5 && outcome.first_ready_turn == 5,
-         "Seed 38 must first become ready on T5.");
+  // Official procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Original fallback regression: https://github.com/FlareZ123/pokemon-sims/issues/1017
+  // Confirmed faster route: https://github.com/FlareZ123/pokemon-sims/issues/1775
+  expect(trace_contains(trace, "T3 | Earthen Vessel") &&
+             trace_contains(trace, "T3 | PLAY SUPPORTER | rules: R-GLADION-01") &&
+             trace_contains(trace, "known prized Mysterious Treasure") &&
+             trace_contains(trace, "T3 | PLAY ITEM | rules: R-MT-01") &&
+             trace_contains(trace, "T3 | READY"),
+         "Seed 38 must execute the confirmed T3 Gladion-Treasure route.");
+  expect(!trace_contains(trace, "T4 | PLAY SUPPORTER | rules: R-STEVEN-01"),
+         "Seed 38 must not defer the complete public route to T4 Steven.");
+  expect(outcome.ready_by_3 && outcome.first_ready_turn == 3,
+         "Seed 38 must first become ready on T3.");
 }
 }  // namespace
 
@@ -179,6 +189,6 @@ int main() {
   test_missing_energy_target_rejects_vessel_route();
   test_horizon_rejects_unresolvable_next_turn_route();
   test_seed_14_wonder_tag_selects_steven_and_reaches_t4();
-  test_seed_38_executes_held_steven_and_reaches_t5();
+  test_seed_38_yields_to_confirmed_t3_route();
   return 0;
 }

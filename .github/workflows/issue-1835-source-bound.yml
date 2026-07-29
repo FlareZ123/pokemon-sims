@@ -69,7 +69,7 @@ jobs:
       - name: Archive exact validated tree
         shell: bash
         run: |
-          git add -A
+          git add -u
           git diff --cached --check
           git diff --cached > issue-1835.patch
           git diff --cached --name-only > tested-files.txt

@@ -1,4 +1,4 @@
-name: Finalize Klara evidence
+name: Clean Klara evidence branch
 
 on:
   push:
@@ -9,9 +9,8 @@ permissions:
   pull-requests: write
 
 jobs:
-  finalize:
+  clean:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -19,71 +18,18 @@ jobs:
         with:
           ref: enhancement-1773-klara-swap
           fetch-depth: 0
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Compose latest main and regenerate exact evidence
+      - name: Remove helper build products
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git fetch origin main
-          main_sha="$(git rev-parse origin/main)"
-          git merge --no-edit -X theirs origin/main
-
-          python3 - <<'PY'
-          from pathlib import Path
-
-          path = Path('src/trace_engine_v2/part_014b.inc')
-          text = path.read_text()
-          wanted = 'Card::RoseannesBackup, Card::Klara, Card::ProfessorTuro'
-          if wanted not in text:
-              old = 'Card::RoseannesBackup, Card::ProfessorTuro'
-              if text.count(old) != 1:
-                  raise SystemExit('Unable to preserve Klara in Lusamine fallback targets')
-              path.write_text(text.replace(old, wanted, 1))
-          PY
-
-          cmake -S . -B build-finalize -G Ninja -DCMAKE_BUILD_TYPE=Release
-          cmake --build build-finalize --parallel 2
-          python scripts/regenerate_setup_baselines.py --exe build-finalize/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
-          python scripts/update_setup_docs.py --repo-root .
-          python scripts/generate_multi_deck_comparison.py --exe build-finalize/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
-          python scripts/update_multi_deck_docs.py --repo-root .
-
-          MAIN_SHA="$main_sha" python3 - <<'PY'
-          from pathlib import Path
-          import hashlib
-          import json
-          import os
-
-          def sha256(path: Path) -> str:
-              digest = hashlib.sha256()
-              digest.update(path.read_bytes())
-              return digest.hexdigest()
-
-          path = Path('results/klara_release_evidence.json')
-          evidence = json.loads(path.read_text())
-          evidence['composed_main_commit'] = os.environ['MAIN_SHA']
-          evidence['shell_csv_sha256'] = sha256(Path('results/simulation_results.csv'))
-          evidence['multi_deck_csv_sha256'] = sha256(Path('results/multi_deck_comparison.csv'))
-          evidence.pop('matrix_refresh_run_id', None)
-          evidence.pop('matrix_refresh_artifact_id', None)
-          evidence.pop('matrix_refresh_artifact_digest', None)
-          path.write_text(json.dumps(evidence, indent=2, sort_keys=True) + '\n')
-          PY
-
-          python tests/source_anchor_contract_tests.py
-          python tests/setup_report_contract_tests.py
-          python tests/multi_deck_report_contract_tests.py
-          ctest --test-dir build-finalize --parallel 4 --output-on-failure
-
+          rm -rf build-finalize
           git add -A
-          git commit -m 'Compose latest main and refresh Klara evidence'
+          git commit -m 'Remove helper build products'
           git push origin HEAD:enhancement-1773-klara-swap
-          gh pr comment 1774 --body "Latest main ${main_sha} composed into the Klara branch. Canonical shell and paired matrices, manifests, reports, and the complete Release suite passed before push."
-      - name: Report helper failure
+          gh pr comment 1774 --body 'Removed all helper build products from the Klara branch. The PR diff now contains only source, tests, documentation, and committed evidence.'
+      - name: Report cleanup failure
         if: failure()
         shell: bash
-        run: gh pr comment 1774 --body 'The latest-main Klara evidence helper failed. Inspect workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}.'
+        run: gh pr comment 1774 --body 'The Klara build-product cleanup helper failed. Inspect workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}.'

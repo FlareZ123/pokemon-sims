@@ -99,9 +99,81 @@
     return play_quick_ball_issue1356_original(permit_payload);
   }
 
+  bool issue_1811_arven_treasure_crispin_route_available() const {
+    if (scenario_.dci != DciProfile::StrictJit || scenario_.going_first ||
+        scenario_.locks != LockMode::None || state_.turn != 1 ||
+        scenario_.max_turn < 2 || !deck_seen_ || item_locked() ||
+        !state_.supporter_used || count_of(state_.discard, Card::Arven) == 0 ||
+        !state_.manual_energy_used || state_.vstar_power_used || !state_.active ||
+        state_.active->card != Card::RegidragoV ||
+        state_.active->grass != 1 || state_.active->fire != 0 ||
+        state_.active->tool != Tool::None || !need_vstar() ||
+        !ability_available_for_pokemon(Card::RegidragoV) ||
+        hand_count(Card::Fire) == 0 || hand_count(Card::EarthenVessel) == 0 ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    const bool treasure_available =
+        hand_count(Card::MysteriousTreasure) > 0 ||
+        deck_count_after_search_started(Card::MysteriousTreasure) > 0;
+    const bool fss_available = hand_count(Card::ForestSealStone) > 0 ||
+        deck_count_after_search_started(Card::ForestSealStone) > 0;
+
+    // Arven has legally exposed the deck. Mysterious Treasure can spend the held
+    // Fire and search Regidrago VSTAR because Star Alchemy can bank Crispin. On T2,
+    // Crispin searches Grass and Fire, attaches one, and the fresh manual attachment
+    // supplies the other. Held Earthen Vessel then discards a held Dragon during the
+    // ready turn, satisfying strict JIT without any future-card knowledge:
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Supporter, Item, Tool, VSTAR Power, attachment, evolution, and search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, dynamic DCI, strict-JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1811
+    return treasure_available && fss_available &&
+        deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
+        deck_count_after_search_started(Card::Crispin) > 0 &&
+        deck_count_after_search_started(Card::Grass) > 0 &&
+        deck_count_after_search_started(Card::Fire) > 0;
+  }
+
   bool play_mysterious_treasure(const bool permit_payload) {
     if (issue_1817_play_prelock_treasure_tapu_route()) return true;
     if (issue_1411_play_treasure_tapu_steven_route()) return true;
+    const auto generic_cost = choose_discard(
+        permit_payload, true, true, Card::MysteriousTreasure);
+    if (issue_1811_arven_treasure_crispin_route_available() && !generic_cost) {
+      remove_one(state_.hand, Card::MysteriousTreasure);
+      state_.discard.push_back(Card::MysteriousTreasure);
+      if (!discard_from_hand(Card::Fire,
+                             "Mysterious Treasure Arven-Crispin route cost",
+                             "R-MT-01; P-DCI-01; P-COMPRESS-01")) {
+        throw std::logic_error(
+            "projected issue-1811 route-replaced Fire cost disappeared");
+      }
+      record_deck_search_knowledge("Mysterious Treasure");
+      if (!move_deck_to_hand(Card::RegidragoVstar)) {
+        throw std::logic_error(
+            "projected issue-1811 Regidrago VSTAR target disappeared");
+      }
+      shuffle(state_.deck);
+      // The held Fire is replaced by Crispin's two-type T2 search, while the
+      // searched VSTAR and held Vessel preserve the evolution and JIT payload axes:
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Dynamic DCI and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1811
+      trace("PLAY ITEM",
+            "R-MT-01; R-GAME-ITEM; P-DCI-01; P-COMPRESS-01",
+            "Discarded route-replaced Fire Energy and searched Regidrago VSTAR for the deterministic T2 Crispin route.");
+      return true;
+    }
     if (issue_1417_treasure_hold_turn_ == state_.turn) {
       // The recovered Mysterious Treasure is a next-turn connector. Playing it on
       // the Legacy Star turn would discard the held Dragon before GGF is complete,

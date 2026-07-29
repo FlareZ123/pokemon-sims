@@ -94,10 +94,33 @@
     const bool no_control_banked_payload_route =
         !strict_payload_timing() && !need_payload() &&
         hand_count(Card::RegidragoVstar) > 0;
+    // Before any legal deck or Prize inspection, two held Dragon payloads make one
+    // copy dynamically discard-capable for a later hand-cost outlet, while Professor
+    // Burnet preserves a second payload channel once the deck is inspected. Random
+    // top-three processing cannot improve the marginal chance of drawing the
+    // unresolved VSTAR or connector on a later turn. When held Basic Energy already
+    // covers the sole missing GGF component, strict and matchup-flex JIT gain no
+    // payload credit from this attack, while Celestial Roar can permanently discard
+    // scarce route pieces. Preserve the later #1174 boundary for K0 hands without
+    // this redundant-payload plus Burnet route and for K1 states lacking a proven
+    // payload continuation:
+    // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core attachment, evolution, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K0/K1 and hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+    // Strict-JIT timing and resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Reopened regression: https://github.com/FlareZ123/pokemon-sims/issues/1079
+    // Known-route boundary: https://github.com/FlareZ123/pokemon-sims/issues/1174
+    const int held_payload_count = static_cast<int>(std::count_if(
+        state_.hand.begin(), state_.hand.end(), is_payload));
+    const bool k0_held_energy_preservation =
+        strict_payload_timing() && !prizes_known() &&
+        hand_count(Card::ProfessorBurnet) > 0 && held_payload_count >= 2;
     const bool held_energy_and_payload_route_guarantee_next_window =
         state_.manual_energy_used && state_.turn < scenario_.max_turn &&
         missing_grass + missing_fire == 1 && held_needed_energy &&
-        (strict_held_payload_route || no_control_banked_payload_route);
+        (k0_held_energy_preservation || strict_held_payload_route ||
+         no_control_banked_payload_route);
     if (held_energy_and_payload_route_guarantee_next_window) {
       // The unevolved Regidrago V cannot become Regidrago VSTAR before a later legal
       // evolution window. One held Basic Energy already guarantees GGF through that
@@ -121,8 +144,10 @@
       // Existing confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1079
       // Confirmed Gladion-Treasure continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/1174
       // Confirmed Quick Ball-Tapu-Burnet continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/1715
-      trace("HOLD ATTACK", "R-RV-01; R-GAME-ENERGY; R-SERENA-01; R-BURNET-01; R-GLADION-01; R-MT-01; R-QB-01; R-TAPU-01; P-JIT-01; P-COMPRESS-01",
-            "Held Energy and a guaranteed payload route already cover the next legal ready window.");
+      trace("HOLD ATTACK", "R-RV-01; R-GAME-ENERGY; R-SERENA-01; R-BURNET-01; R-GLADION-01; R-MT-01; R-QB-01; R-TAPU-01; P-KNOWLEDGE-01; P-JIT-01; P-COMPRESS-01",
+            k0_held_energy_preservation
+                ? "K0 held Energy, Professor Burnet, and redundant Dragon payloads preserve a stronger unresolved route than random top-three processing."
+                : "Held Energy and a guaranteed payload route already cover the next legal ready window.");
       return false;
     }
 

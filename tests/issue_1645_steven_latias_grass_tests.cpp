@@ -36,30 +36,35 @@ int main() {
   Engine engine(*scenario, deck->recipe, rng, &trace);
   const TrialOutcome outcome = engine.run();
 
-  // Steven searches up to three cards, Latias ex gives Basic Pokémon no Retreat
-  // Cost, Earthen Vessel searches Basic Energy after one discard, Brilliant Blender
-  // establishes the current-turn payload, and Apex Dragon requires GGF:
-  // https://api.pokemontcg.io/v2/cards/sm7-145
-  // https://api.pokemontcg.io/v2/cards/sv8-76
-  // https://api.pokemontcg.io/v2/cards/sv4-163
-  // https://api.pokemontcg.io/v2/cards/sv8-164
-  // https://api.pokemontcg.io/v2/cards/swsh12-136
-  // https://www.pokemon.com/us/pokemon-tcg/rules
-  // Refined confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/1645
-  if (outcome.first_ready_turn != 4 ||
+  // Earthen Vessel resolves and attaches before Steven ends turn one. Steven then
+  // searches Latias ex and one Grass, preserving held VSTAR and Blender. T2 evolves
+  // and retreats the prepared Regidrago, while T3 Fire plus Blender reaches readiness:
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Core Item, attachment, evolution, Supporter, retreat, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Original refined route: https://github.com/FlareZ123/pokemon-sims/issues/1645
+  // Confirmed pre-Steven ordering bug: https://github.com/FlareZ123/pokemon-sims/issues/1700
+  if (outcome.first_ready_turn != 3 ||
       !trace_contains(trace,
-                      "Searched the complete Latias-Grass T4 route: Latias ex, Grass Energy") ||
+                      "Earthen Vessel searched Grass and Fire before Steven's Resolve") ||
+      !trace_contains(trace,
+                      "Searched the complete post-Vessel T3 route: Latias ex, Grass Energy") ||
       !trace_contains(trace, "T2 | EVOLVE") ||
       !trace_contains(trace, "T2 | RETREAT") ||
-      !trace_contains(trace, "T4 | READY")) {
+      !trace_contains(trace, "T3 | READY")) {
     throw std::runtime_error(
-        "Seed 218 did not complete the direct Latias-Grass route on T4.");
+        "Seed 218 did not complete the corrected pre-Steven Vessel route on T3.");
   }
 
   if (trace_contains(
           trace,
-          "Searched up to 3 cards: Regidrago V, Regidrago VSTAR, Gladion")) {
+          "Searched up to 3 cards: Regidrago V, Regidrago VSTAR, Gladion") ||
+      trace_contains(trace,
+                     "Searched the complete Latias-Grass T4 route")) {
     throw std::runtime_error(
-        "Seed 218 still selected the redundant Regidrago V-VSTAR-Gladion package.");
+        "Seed 218 still selected a slower Steven target package.");
   }
 }

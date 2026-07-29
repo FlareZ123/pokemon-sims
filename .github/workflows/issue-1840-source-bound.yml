@@ -187,6 +187,6 @@ jobs:
         run: |
           set -euo pipefail
           git add src/trace_engine_v2/part_issue_1118_secret_box.inc tests/issue_1840_secret_box_surplus_fire_tests.cpp docs/REPORT.md docs/MULTI_DECK_REPORT.md results/simulation_results.csv results/baseline_manifest.json results/traces results/multi_deck_comparison.csv results/multi_deck_manifest.json results/multi_deck_traces
-          git rm scripts/apply_issue_1840.py .github/workflows/issue-1840-source-bound.yml
+          git rm -f scripts/apply_issue_1840.py scripts/refine_issue_1840.py .github/workflows/issue-1840-source-bound.yml .github/workflows/issue-1840-source-bound-v2.yml
           git commit -m "Spend fully surplus Fire through Secret Box for #1840"
           git push origin HEAD:${{ github.head_ref }}

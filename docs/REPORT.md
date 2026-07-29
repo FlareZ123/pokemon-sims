@@ -14,25 +14,25 @@ Seed: `20260705`.
 
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
-| Strict JIT, going first | 11.907% | 38.506% | 55.425% |
-| Matchup-flex JIT, going first | 16.308% | 47.647% | 63.409% |
-| No discard control, going first | 20.134% | 56% | 72.128% |
-| Strict JIT, going second | 29.307% | 52.632% | 63.881% |
-| Matchup-flex JIT, going second | 37.3% | 61.084% | 71.342% |
-| No discard control, going second | 39.823% | 66.919% | 78.006% |
+| Strict JIT, going first | 11.885% | 38.731% | 55.812% |
+| Matchup-flex JIT, going first | 16.382% | 47.638% | 63.393% |
+| No discard control, going first | 20.09% | 55.965% | 72.284% |
+| Strict JIT, going second | 29.34% | 52.609% | 63.963% |
+| Matchup-flex JIT, going second | 37.288% | 61.121% | 71.4% |
+| No discard control, going second | 39.873% | 67.048% | 78.156% |
 
 ## Lock stress tests
 
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
-| Strict JIT, turn-two Item lock, first | 4.574% | 10.157% | 17.686% |
-| Strict JIT, full Item lock, first | 2.817% | 7.746% | 15.059% |
-| Strict JIT, Rule Box Ability lock, first | 4.383% | 26.02% | 39.115% |
-| Strict JIT, combined lock, first | 0.293% | 3.279% | 7.268% |
-| Strict JIT, turn-two Item lock, second | 14.056% | 27.935% | 35.566% |
-| Strict JIT, full Item lock, second | 10.558% | 22.93% | 30.109% |
-| Strict JIT, Rule Box Ability lock, second | 18.012% | 34.65% | 44.938% |
-| Strict JIT, combined lock, second | 2.365% | 11.404% | 15.519% |
+| Strict JIT, turn-two Item lock, first | 4.579% | 10.127% | 17.708% |
+| Strict JIT, full Item lock, first | 2.789% | 7.658% | 15.045% |
+| Strict JIT, Rule Box Ability lock, first | 4.372% | 26.093% | 39.266% |
+| Strict JIT, combined lock, first | 0.278% | 3.231% | 7.225% |
+| Strict JIT, turn-two Item lock, second | 14.027% | 27.939% | 35.743% |
+| Strict JIT, full Item lock, second | 10.46% | 22.819% | 29.995% |
+| Strict JIT, Rule Box Ability lock, second | 18.144% | 34.767% | 45.178% |
+| Strict JIT, combined lock, second | 2.33% | 11.453% | 15.595% |
 | Strict JIT, Supporter lock, first | 0.001% | 15.327% | 21.605% |
 | Strict JIT, Supporter lock, second | 8.192% | 19.69% | 25.501% |
 

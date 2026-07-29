@@ -73,31 +73,34 @@ void test_burnet_and_erika_form_legal_two_card_recovery() {
   assert(!contains(state.discard, Card::ErikasInvitation));
 }
 
-void test_one_eligible_target_remains_unplayable() {
+void test_one_eligible_target_resolves() {
   using namespace sim;
   std::mt19937_64 rng(85402);
   Engine engine = make_engine(rng);
   configure_payload_state(engine, false);
   State& state = EngineTestAccess::state(engine);
 
-  // Lusamine does not say "up to 2". Professor Burnet alone cannot satisfy the
-  // mandatory two-card recovery requirement:
-  // https://api.pokemontcg.io/v2/cards/sm4-96
-  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
-  // https://github.com/FlareZ123/pokemon-sims/issues/854
+  // Fixed-count public-zone effects select as many eligible cards as possible
+  // below the printed count. Professor Burnet therefore makes Lusamine legal:
+  // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
+  // Fixed-count ruling: https://compendium.pokegym.net/compendium-ex.html#HOLON_FARMER
+  // Trainer legality: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1835
   const std::vector<Card> targets = EngineTestAccess::lusamine_recovery_targets(engine);
   assert(targets.size() == 1U);
   assert(targets.front() == Card::ProfessorBurnet);
-  assert(!EngineTestAccess::play_lusamine(engine));
-  assert(!state.supporter_used);
-  assert(contains(state.hand, Card::Lusamine));
-  assert(contains(state.discard, Card::ProfessorBurnet));
+  assert(EngineTestAccess::play_lusamine(engine));
+  assert(state.supporter_used);
+  assert(!contains(state.hand, Card::Lusamine));
+  assert(contains(state.hand, Card::ProfessorBurnet));
+  assert(contains(state.discard, Card::Lusamine));
+  assert(!contains(state.discard, Card::ProfessorBurnet));
 }
 
 }  // namespace
 
 int main() {
   test_burnet_and_erika_form_legal_two_card_recovery();
-  test_one_eligible_target_remains_unplayable();
+  test_one_eligible_target_resolves();
   return 0;
 }

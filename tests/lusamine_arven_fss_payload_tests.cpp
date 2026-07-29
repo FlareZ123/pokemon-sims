@@ -183,10 +183,26 @@ void test_absent_payload_blocks_recovery() {
   expect_lusamine_rejected(std::move(state), "absent Dragon payload");
 }
 
-void test_lusamine_still_requires_two_targets() {
+void test_lusamine_resolves_with_one_live_target() {
+  Fixture fixture;
   sim::State state = live_route_state();
   state.discard = {sim::Card::Arven};
-  expect_lusamine_rejected(std::move(state), "one Lusamine target");
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // One live Arven is enough when it is the only eligible public discard target.
+  // The delayed Item-lock route remains available after the recovery:
+  // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
+  // Fixed-count ruling: https://compendium.pokegym.net/compendium-ex.html#HOLON_FARMER
+  // Arven and Forest Seal Stone: https://api.pokemontcg.io/v2/cards/sv1-166 https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1835
+  if (!sim::EngineTestAccess::play_lusamine(fixture.engine)) {
+    throw std::runtime_error("Lusamine must recover its lone live Arven target.");
+  }
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  if (!after.supporter_used || !contains(after.hand, sim::Card::Arven) ||
+      !contains(after.discard, sim::Card::Lusamine)) {
+    throw std::runtime_error("Single-target Lusamine did not preserve the live Arven route.");
+  }
 }
 
 }  // namespace
@@ -200,7 +216,7 @@ int main() {
     test_absent_forest_seal_stone_blocks_recovery();
     test_absent_burnet_blocks_item_lock_payload_route();
     test_absent_payload_blocks_recovery();
-    test_lusamine_still_requires_two_targets();
+    test_lusamine_resolves_with_one_live_target();
     std::cout << "Lusamine Arven-FSS payload tests passed\n";
     return 0;
   } catch (const std::exception& error) {

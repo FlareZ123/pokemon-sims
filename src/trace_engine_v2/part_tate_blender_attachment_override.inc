@@ -1,4 +1,17 @@
 bool attach_manual() {
+  if (issue_1772_t3_crispin_completion_available()) {
+    // The banked K1 route needs Crispin to supply the first Grass before the
+    // ordinary manual attachment supplies the second. Spending the attachment
+    // first makes Crispin unable to complete GGF and lets Gladion preempt the
+    // deterministic T3 package:
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Supporter and Energy attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1772
+    if (!play_crispin()) {
+      throw std::logic_error("Issue-1772 projected Crispin completion disappeared");
+    }
+  }
   const bool issue_1552_public_t2_state =
       !secret_box_combo_enabled() &&
       scenario_.dci == DciProfile::StrictJit &&

@@ -1,0 +1,1 @@
+Trigger canonical Klara regeneration after current-main merge.

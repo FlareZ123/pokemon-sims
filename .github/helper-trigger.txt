@@ -1,1 +1,2 @@
 Trigger latest-main Klara evidence regeneration.
+Trigger clean helper build products.

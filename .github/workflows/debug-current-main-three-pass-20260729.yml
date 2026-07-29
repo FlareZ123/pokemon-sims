@@ -45,9 +45,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Steven's Resolve, Mysterious Treasure, Mega Dragonite ex, and Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/me2pt5-152 https://api.pokemontcg.io/v2/cards/swsh12-136
-          # K1, DCI, supporter contention, lock, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit-rulebox-ability-lock/go-first --seed 161803 | tee trace-pass-3.txt
+          # Steven's Resolve, Mysterious Treasure, Dragapult ex, and Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sv6-130 https://api.pokemontcg.io/v2/cards/swsh12-136
+          # K1, DCI, lock, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit-rulebox-ability-lock/go-first --seed 200 | tee trace-pass-3.txt
 
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure

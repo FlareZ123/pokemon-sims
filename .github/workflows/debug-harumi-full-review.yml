@@ -22,7 +22,7 @@ jobs:
           mkdir -p audit
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 2026072801 > audit/trace-1.txt
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario no-discard-control/go-second --seed 8675309 > audit/trace-2.txt
-          ./build/regidrago_sim --simulate-this --model-variant crobat1-serena --scenario strict-jit/go-second --seed 2154 > audit/trace-3.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 42 > audit/trace-3.txt
       - name: Generate T2 and T3 matrix
         run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260728 --out audit/t2-t3-matrix.csv
       - name: Record tested commit

@@ -1,0 +1,126 @@
+name: Debug Audit Harumi 0056
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: debug-audit-harumi-0056-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  three-simulate-this-passes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+      - name: Pass 1 shell strict JIT going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Observable-state, K0/K1, DCI/JIT, and earliest-route policy:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Official turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee debug-trace-1.txt
+      - name: Pass 2 shell matchup-flex JIT going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Regidrago V and VSTAR identities and attack requirements:
+          # https://api.pokemontcg.io/v2/cards/swsh12-135
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Repository ready-state specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+          # Official turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee debug-trace-2.txt
+      - name: Pass 3 Pineco strict JIT going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Registered Pineco recipe and route specification:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#registered-decks
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+          # Secret Box, Pineco, Forretress ex, Mysterious Treasure, and Crispin:
+          # https://api.pokemontcg.io/v2/cards/sv6-163
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-1
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # Official turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee debug-trace-3.txt
+      - name: Reverify seed 905 Tate over Steven
+        shell: bash
+        run: |
+          set -euo pipefail
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/sm7-148
+          # https://api.pokemontcg.io/v2/cards/sv8-76
+          # https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+          # https://github.com/FlareZ123/pokemon-sims/issues/1771
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 905 | tee debug-trace-4-seed-905.txt
+      - name: Reverify seed 145 Gladion over Steven
+        shell: bash
+        run: |
+          set -euo pipefail
+          # https://api.pokemontcg.io/v2/cards/sm4-95
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          # https://github.com/FlareZ123/pokemon-sims/issues/1772
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 145 | tee debug-trace-5-seed-145.txt
+      - name: Reverify seed 38 Gladion Treasure route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # https://api.pokemontcg.io/v2/cards/sm4-95
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          # https://api.pokemontcg.io/v2/cards/sv6-130
+          # https://github.com/FlareZ123/pokemon-sims/issues/1775
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 38 | tee debug-trace-6-seed-38.txt
+      - name: Reverify stale seed 42 Celestial Roar claim
+        shell: bash
+        run: |
+          set -euo pipefail
+          # https://api.pokemontcg.io/v2/cards/swsh12-135
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          # https://github.com/FlareZ123/pokemon-sims/issues/1719
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 42 | tee debug-trace-7-seed-42.txt
+      - name: Reverify stale seed 218 pre-Steven claim
+        shell: bash
+        run: |
+          set -euo pipefail
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://github.com/FlareZ123/pokemon-sims/issues/1700
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 218 | tee debug-trace-8-seed-218.txt
+      - name: Generate canonical T2 T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out debug-t2-t3-matrix.csv
+      - name: Generate paired T2 T3 T4 matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out debug-multi-deck-matrix.csv
+      - name: Record tested source
+        run: git rev-parse HEAD | tee debug-tested-head.txt
+      - name: Upload debug evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-audit-harumi-0056-${{ github.run_attempt }}
+          path: |
+            debug-trace-*.txt
+            debug-t2-t3-matrix.csv
+            debug-multi-deck-matrix.csv
+            debug-tested-head.txt
+          if-no-files-found: error

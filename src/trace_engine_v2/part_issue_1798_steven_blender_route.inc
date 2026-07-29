@@ -113,7 +113,8 @@
       return false;
     }
 
-    if (!evolve_best_regi() || !active_is_vstar()) {
+    evolve_best_regi();
+    if (!active_is_vstar()) {
       throw std::logic_error("Issue-1798 Active Regidrago V did not evolve");
     }
     if (!remove_one(state_.hand, Card::Grass)) {

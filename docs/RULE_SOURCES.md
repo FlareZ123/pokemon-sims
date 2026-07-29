@@ -56,7 +56,9 @@ The API records are card-text sources. They do not replace official tournament r
 | Chaotic Swell | https://api.pokemontcg.io/v2/cards/sm12-187 |
 | Field Blower | https://api.pokemontcg.io/v2/cards/sm2-125 |
 | Team Yell's Cheer | https://api.pokemontcg.io/v2/cards/swsh9-149 |
-| Roseanne's Backup | https://api.pokemontcg.io/v2/cards/swsh9-148 |
+| Klara | https://api.pokemontcg.io/v2/cards/swsh6-145 |
+| Eri, Item-discard comparison boundary | https://api.pokemontcg.io/v2/cards/sv5-146 |
+| Roseanne's Backup, retained legacy/variant support | https://api.pokemontcg.io/v2/cards/swsh9-148 |
 | Professor Turo's Scenario | https://api.pokemontcg.io/v2/cards/sv4-171 |
 | Dragapult ex payload model | https://api.pokemontcg.io/v2/cards/sv6-130 |
 | Mega Dragonite ex payload model | https://api.pokemontcg.io/v2/cards/me2pt5-152 |

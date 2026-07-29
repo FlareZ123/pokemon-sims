@@ -320,7 +320,7 @@ bool issue_1605_arven_crobat_route_available() const {
       // https://github.com/FlareZ123/pokemon-sims/issues/852
       for (const Card card : {Card::Grant, Card::WishfulBaton, Card::ErikasInvitation, Card::Guzma, Card::Channeler, Card::FieldBlower,
                               Card::ChaoticSwell, Card::PathToPeak, Card::TeamYellsCheer,
-                              Card::RoseannesBackup, Card::Lusamine, Card::ProfessorTuro,
+                              Card::RoseannesBackup, Card::Klara, Card::Lusamine, Card::ProfessorTuro,
                               Card::Powerglass}) {
         if (hand_count(card) > 0) return card;
       }

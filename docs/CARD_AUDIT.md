@@ -42,7 +42,7 @@ The raw audit is generated locally at `data/card_audit.json` and is intentionall
 | Gladion | `sm4-95` | 2 | Prize inspection and one recovery |
 | Lusamine | `sm4-96` | 1 | Supporter/Stadium recovery |
 | Team Yell’s Cheer | `swsh9-149` | 1 | Pokémon/Supporter deck recovery |
-| Roseanne’s Backup | `swsh9-148` | 1 | selected category recovery |
+| Klara | `swsh6-145` | 1 | up to 2 Pokémon and up to 2 Basic Energy from discard to hand |
 | Professor Turo’s Scenario | `sv4-171` | 1 | return a Pokémon in play to hand |
 | Erika’s Invitation | `sv3pt5-160` | 1 | opponent-hand Basic placement and forced promotion |
 | Forest Seal Stone | `swsh12-156` | 1 | Tool VSTAR Power, any card search |
@@ -59,6 +59,13 @@ The raw audit is generated locally at `data/card_audit.json` and is intentionall
 ### Brilliant Blender
 
 The supplied corpus has this effect: search the deck for up to five cards and discard them. It does not discard cards from hand. The tool therefore implements Blender as a deck-selected JIT payload route with no hand-DCI payment.
+
+
+### Klara
+
+The registered `regidrago-shell` permanently replaces Roseanne’s Backup with Klara `swsh6-145`. Klara may choose one or both printed modes, returning up to two Pokémon and up to two Basic Energy from discard directly to hand. The policy preserves a sole current-turn strict-JIT Dragon in discard, but may recover an older or redundant Dragon when a legal same-turn Item discard outlet re-establishes the payload or when the second optional target adds discard-control denial without breaking readiness. Missing Grass or Fire is recovered first, followed by legal additional Basic Energy for immediate recovery value. Because Klara is a Supporter rather than an Item, the recovery is not an Item target for Eri. The simulator remains a setup model, so post-readiness prize mapping and full combat sequencing are outside the aggregate matrix.
+
+Direct sources: https://api.pokemontcg.io/v2/cards/swsh6-145 https://api.pokemontcg.io/v2/cards/sv5-146 https://www.pokemon.com/us/pokemon-tcg/rules https://github.com/FlareZ123/pokemon-sims/issues/1773
 
 ### Mysterious Treasure
 

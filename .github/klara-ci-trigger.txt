@@ -1,0 +1,1 @@
+Trigger permanent CI after composing current main into pull request 1774.

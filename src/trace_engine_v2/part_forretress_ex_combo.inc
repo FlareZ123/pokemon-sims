@@ -435,6 +435,33 @@ bool Engine::advance_forretress_combo() {
       ability_available_for_pokemon(Card::ForretressEx) &&
       hand_count(Card::Dawn) > 0 && pineco_searchable && forretress_searchable &&
       (pineco_present || bench_space() > 0);
+  const Pokemon* dawn_refill_target = target_regi();
+  const bool dawn_refills_secret_box_costs = dawn_advances_combo &&
+      prizes_known() && !item_locked() && hand_count(Card::SecretBox) > 0 &&
+      need_payload() && dawn_refill_target != nullptr &&
+      dawn_refill_target->card == Card::RegidragoV &&
+      dawn_refill_target->entered_turn < state_.turn &&
+      hand_count(Card::RegidragoVstar) > 0 && !state_.manual_energy_used &&
+      hand_count(Card::Fire) > 0 && grass_needed() > 0 && fire_needed() > 0 &&
+      in_play_count(Card::Pineco) > 0 && hand_count(Card::ForretressEx) > 0 &&
+      deck_count_after_search_started(Card::Grass) >= grass_needed() &&
+      deck_count_after_search_started(Card::RegidragoV) > 0 &&
+      deck_count_after_search_started(Card::Appletun) > 0 &&
+      (deck_count_after_search_started(Card::Dragapult) > 0 ||
+       deck_count_after_search_started(Card::MegaDragonite) > 0);
+  // A K1 Dawn search may refill Secret Box's three independent discard slots with
+  // one Basic, one Stage 1, and one Stage 2 only when the complete same-turn route
+  // is already proven. A prior-turn Regidrago V, held VSTAR, held Fire, unused
+  // manual attachment, prior-turn Pineco, held Forretress ex, and known deck Grass
+  // preserve every board and Energy axis. Regidrago V, Appletun, and the Stage 2
+  // Dragon are replaced setup resources whose dynamic DCI becomes positive:
+  // Dawn: https://api.pokemontcg.io/v2/cards/me2-87
+  // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+  // Appletun: https://api.pokemontcg.io/v2/cards/sv8-140
+  // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  // Regidrago V/VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+  // K1, dynamic DCI, resource preservation, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1839
   if (dawn_advances_combo && remove_one(state_.hand, Card::Dawn)) {
     state_.discard.push_back(Card::Dawn);
     state_.supporter_used = true;
@@ -446,13 +473,31 @@ bool Engine::advance_forretress_combo() {
         hand_count(Card::Pineco) == 0 && bench_space() > 0 &&
         move_deck_to_hand(Card::Pineco)) {
       selected.push_back(Card::Pineco);
-    } else if (need_regi() && move_deck_to_hand(Card::RegidragoV)) {
+    } else if ((need_regi() || dawn_refills_secret_box_costs) &&
+               move_deck_to_hand(Card::RegidragoV)) {
+      // Dawn's Basic category becomes legal Secret Box fuel only under the complete
+      // K1 refill predicate above. The redundant Regidrago V is never spent merely
+      // to increase hand size:
+      // https://api.pokemontcg.io/v2/cards/me2-87
+      // https://api.pokemontcg.io/v2/cards/swsh12-135
+      // https://api.pokemontcg.io/v2/cards/sv6-163
+      // https://github.com/FlareZ123/pokemon-sims/issues/1839
       selected.push_back(Card::RegidragoV);
     }
     if (in_play_count(Card::ForretressEx) == 0 &&
         hand_count(Card::ForretressEx) == 0 &&
         move_deck_to_hand(Card::ForretressEx)) {
       selected.push_back(Card::ForretressEx);
+    } else if (dawn_refills_secret_box_costs &&
+               move_deck_to_hand(Card::Appletun)) {
+      // Held Forretress ex already satisfies Dawn's Stage 1 setup role. In the
+      // proven Secret Box continuation, the deck-resident Appletun is a legal
+      // Stage 1 search and a same-turn Dragon payload cost:
+      // Dawn: https://api.pokemontcg.io/v2/cards/me2-87
+      // Appletun: https://api.pokemontcg.io/v2/cards/sv8-140
+      // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+      // https://github.com/FlareZ123/pokemon-sims/issues/1839
+      selected.push_back(Card::Appletun);
     }
     const std::array<Card, 2> stage_two_priority =
         secret_box_combo_enabled()
@@ -474,6 +519,20 @@ bool Engine::advance_forretress_combo() {
     // https://github.com/FlareZ123/pokemon-sims/issues/1096
     trace("PLAY SUPPORTER", "R-DAWN-01; R-GAME-SUPPORTER; R-FORRETRESS-01",
           "Dawn searched and revealed: " + join_cards(selected) + ".");
+    if (dawn_refills_secret_box_costs && play_secret_box()) {
+      // Secret Box must resolve while the prior-turn Pineco and held Forretress ex
+      // still prove the Grass line. Evolving and using Exploding Energy first removes
+      // that line from the full-combo gate and strands the newly searched costs:
+      // Dawn: https://api.pokemontcg.io/v2/cards/me2-87
+      // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+      // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Core Supporter, Item, evolution, Ability, and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+      // Deterministic current-route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1839
+      trace("POLICY", "R-DAWN-01; R-SECRET-BOX-01; P-AXIS-01",
+            "Dawn refilled and immediately paid Secret Box before the Forretress line resolved.");
+    }
     changed = true;
   }
 

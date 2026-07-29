@@ -2,8 +2,8 @@
     // Lusamine says to put 2 Supporter and/or Stadium cards from discard into hand:
     // https://api.pokemontcg.io/v2/cards/sm4-96
     // A policy-first recovery requires one card that advances an unresolved setup
-    // axis. Once that card makes Lusamine worth playing, the second selection is
-    // mandatory and uses a deterministic low-impact eligible card.
+    // axis. When another eligible card exists, the fixed-count effect also selects
+    // that card through a deterministic low-impact fallback.
     std::vector<Card> targets;
     const auto recover_once = [this, &targets](const Card card) {
       if (targets.size() < 2U && count_of(state_.discard, card) > count_of(targets, card)) {
@@ -133,10 +133,10 @@
 
     // These are the remaining modeled Supporter and Stadium cards, ordered from
     // least direct setup value to the connectors retained above. The list contains
-    // only legal Lusamine targets and may select a second copy where available.
+    // only legal Lusamine targets and selects a second copy where available.
     // Erika's Invitation is a Supporter and the canonical low-impact replacement
     // for retired Mawile-GX. Once an advancing target makes Lusamine worth playing,
-    // Erika may satisfy the printed mandatory second Supporter/Stadium recovery:
+    // Erika may satisfy the printed second Supporter/Stadium recovery when available:
     // https://api.pokemontcg.io/v2/cards/sm4-96
     // https://api.pokemontcg.io/v2/cards/sv3pt5-160
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CARD_AUDIT.md#erikas-invitation
@@ -154,11 +154,14 @@
   bool play_lusamine() {
     if (!supporter_allowed() || hand_count(Card::Lusamine) == 0) return false;
     const std::vector<Card> targets = lusamine_recovery_targets();
-    // Lusamine requires exactly 2 Supporter and/or Stadium cards from the public
-    // discard pile. It does not say "up to 2", so one eligible target is insufficient:
-    // https://api.pokemontcg.io/v2/cards/sm4-96
-    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
-    if (targets.size() != 2U) return false;
+    // A fixed-count public-zone effect selects as many eligible cards as possible
+    // when fewer than the printed number exist. One eligible target therefore makes
+    // Lusamine legal, while zero targets would make the Supporter have no effect:
+    // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
+    // Fixed-count public-zone ruling: https://compendium.pokegym.net/compendium-ex.html#HOLON_FARMER
+    // Trainer no-effect and resolution-order rulings: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1835
+    if (targets.empty()) return false;
     remove_one(state_.hand, Card::Lusamine);
     state_.discard.push_back(Card::Lusamine);
     state_.supporter_used = true;

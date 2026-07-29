@@ -1,3 +1,5 @@
+#include "part_issue_1798_steven_blender_route.inc"
+
   bool complete_issue_1675_latias_late_promotion() {
     if (state_.turn_ended || state_.turn != scenario_.max_turn ||
         !need_active_vstar() || need_regi() || need_vstar() ||
@@ -48,6 +50,32 @@
       trace("POLICY", "P-AXIS-01; R-EV-01; P-JIT-01; P-COMPRESS-01",
             "Completed the committed Crispin, Steven, and Earthen Vessel T4 route: " +
                 state_line());
+      return;
+    }
+
+    // Finish the committed T4 route before generic actions can spend Brilliant
+    // Blender, its deck payload, the searched VSTAR, or the searched Grass:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1798
+    if (complete_issue_1798_steven_blender_route()) {
+      trace("POLICY", "P-AXIS-01; R-STEVEN-01; R-BLENDER-01; P-JIT-01; P-COMPRESS-01",
+            "Completed the committed Steven and Brilliant Blender T4 route: " +
+                state_line());
+      return;
+    }
+
+    // Commit the complete K1 route before ordinary attachment heuristics reject the
+    // surplus-type Fire and before Celestial Roar introduces hidden-card variance:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1798
+    if (start_issue_1798_steven_blender_route()) {
+      trace("TURN END", "R-STEVEN-01; P-KNOWLEDGE-01; P-COMPRESS-01",
+            state_line());
       return;
     }
 

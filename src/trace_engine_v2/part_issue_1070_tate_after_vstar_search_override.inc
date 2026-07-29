@@ -92,6 +92,7 @@
   }
 
   void choose_supporter() {
+    if (play_issue_1771_steven_t4_package()) return;
     if (tate_switch_after_incomplete_held_vstar_evolution_route()) {
       if (trace_ != nullptr) {
         trace_->add_policy_once(

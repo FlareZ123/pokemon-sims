@@ -50,3 +50,4 @@
   // The active final Supporter dispatcher invokes it after all earlier comparators:
   // https://github.com/FlareZ123/pokemon-sims/issues/1745
   #include "part_issue_1745_steven_latias_t3_override.inc"
+  #include "part_issue_1771_steven_t4_package_override.inc"

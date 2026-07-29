@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   source-bound-validation:
@@ -13,6 +13,8 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Configure Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -85,7 +87,6 @@ jobs:
         run: git rev-parse HEAD | tee issue-1795-tested-head.txt
 
       - name: Upload source-bound evidence and regenerated baselines
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: issue-1795-validation-${{ github.run_attempt }}
@@ -103,4 +104,17 @@ jobs:
             results/multi_deck_traces/*.txt
             docs/REPORT.md
             docs/MULTI_DECK_REPORT.md
-          if-no-files-found: warn
+          if-no-files-found: error
+
+      - name: Commit regenerated baselines
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/REPORT.md docs/MULTI_DECK_REPORT.md results/simulation_results.csv results/baseline_manifest.json results/traces results/multi_deck_comparison.csv results/multi_deck_manifest.json results/multi_deck_traces
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Refresh source-bound setup baselines for #1795"
+          git push origin HEAD:${{ github.head_ref }}

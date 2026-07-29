@@ -1,25 +1,30 @@
 name: Apply Klara final fixes
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches: [enhancement-1773-klara-swap]
 
 permissions:
   contents: write
 
 jobs:
   apply:
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'enhancement-1773-klara-swap'
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           ref: enhancement-1773-klara-swap
           fetch-depth: 0
-      - name: Apply source and regression corrections
+      - name: Merge current main and apply corrections
         shell: bash
         run: |
           set -euo pipefail
+          git fetch origin main
+          cp docs/RULES_TRACEABILITY.md /tmp/klara-rules-traceability.md
+          cp docs/RULE_SOURCES.md /tmp/klara-rule-sources.md
+          git merge --no-commit --no-ff -X theirs origin/main
+
           python3 - <<'PY'
           from pathlib import Path
 
@@ -30,6 +35,48 @@ jobs:
               if count != 1:
                   raise SystemExit(f"{path}: expected one replacement, found {count}")
               file.write_text(text.replace(old, new, 1))
+
+          # Preserve Klara's wrapper position while retaining every newer main override.
+          path = Path('src/regidrago_sim.cpp')
+          text = path.read_text()
+          if 'part_klara_recovery_override.inc' not in text:
+              old = '''#include "trace_engine_v2/part_roseanne_multimode_override.inc"\n#define choose_supporter choose_supporter_issue1070_original\n#include "trace_engine_v2/part_turo_oricorio_override.inc"\n#undef choose_supporter\n#define choose_supporter choose_supporter_issue1209_original\n#include "trace_engine_v2/part_issue_1070_tate_after_vstar_search_override.inc"\n'''
+              new = '''#include "trace_engine_v2/part_roseanne_multimode_override.inc"\n#define choose_supporter choose_supporter_klara_original\n#include "trace_engine_v2/part_turo_oricorio_override.inc"\n#undef choose_supporter\n#define choose_supporter choose_supporter_issue1070_original\n#include "trace_engine_v2/part_klara_recovery_override.inc"\n#undef choose_supporter\n#define choose_supporter choose_supporter_issue1209_original\n#include "trace_engine_v2/part_issue_1070_tate_after_vstar_search_override.inc"\n'''
+              if text.count(old) != 1:
+                  raise SystemExit('src/regidrago_sim.cpp: current-main Supporter wrapper block not found')
+              path.write_text(text.replace(old, new, 1))
+
+          path = Path('src/trace_engine_v2/part_007.inc')
+          text = path.read_text()
+          if 'Card::RoseannesBackup, Card::Klara, Card::ProfessorTuro' not in text:
+              replace_once(
+                  str(path),
+                  'Card::RoseannesBackup, Card::ProfessorTuro',
+                  'Card::RoseannesBackup, Card::Klara, Card::ProfessorTuro',
+              )
+
+          # Merge source registries additively rather than choosing either side.
+          saved = Path('/tmp/klara-rules-traceability.md').read_text().splitlines()
+          path = Path('docs/RULES_TRACEABILITY.md')
+          text = path.read_text()
+          if '`R-KLARA-01`' not in text:
+              row = next(line for line in saved if '`R-KLARA-01`' in line)
+              marker = next(line for line in text.splitlines() if '`R-LUSAMINE-01`' in line)
+              text = text.replace(marker, row + '\n' + marker, 1)
+              path.write_text(text)
+
+          saved = Path('/tmp/klara-rule-sources.md').read_text().splitlines()
+          path = Path('docs/RULE_SOURCES.md')
+          text = path.read_text()
+          additions = [
+              next(line for line in saved if line.startswith('| Klara |')),
+              next(line for line in saved if line.startswith('| Eri,')),
+              next(line for line in saved if line.startswith("| Roseanne's Backup,")),
+          ]
+          if additions[0] not in text:
+              marker = next(line for line in text.splitlines() if line.startswith("| Roseanne's Backup |"))
+              text = text.replace(marker, '\n'.join(additions) + '\n' + marker, 1)
+              path.write_text(text)
 
           replace_once(
               'src/trace_engine_v2/part_000.inc',
@@ -109,5 +156,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -m 'Fix Klara sanitizer and compatibility regressions'
+          git commit -m 'Merge current main and fix Klara sanitizer regressions'
           git push origin HEAD:enhancement-1773-klara-swap

@@ -35,10 +35,12 @@
     return true;
   }
 
-  void run_turn() {
+  void run_turn_issue1775_original() {
     run_turn_issue1675_original();
     if (complete_issue_1675_latias_late_promotion()) {
       trace("POLICY", "P-AXIS-01; R-GAME-BENCH; R-GAME-RETREAT",
             "Completed the deadline Latias ex promotion route: " + state_line());
     }
   }
+
+#include "part_issue_1775_gladion_treasure_route_override.inc"

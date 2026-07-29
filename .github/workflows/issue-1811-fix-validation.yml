@@ -1,0 +1,110 @@
+name: Issue 1811 Fix Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-commit:
+    if: github.event.pull_request.head.ref == 'fix/issue-1811-arven-treasure-crispin'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Compose issue 1811 hooks
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def insert_once(path, needle, replacement):
+              source = Path(path).read_text(encoding='utf-8')
+              if replacement in source:
+                  return
+              if needle not in source:
+                  raise SystemExit(f'missing insertion point in {path}: {needle!r}')
+              Path(path).write_text(source.replace(needle, replacement, 1), encoding='utf-8')
+
+          empty = Path('src/trace_engine_v2/part_empty_deck_search_override.inc')
+          source = empty.read_text(encoding='utf-8')
+          include = '#include "part_issue_1811_arven_treasure_crispin_override.inc"\n\n'
+          if not source.startswith(include):
+              empty.write_text(include + source, encoding='utf-8')
+          insert_once(
+              empty,
+              '  bool play_arven() {\n',
+              '  bool play_arven() {\n    if (play_issue_1811_arven_route()) return true; // Confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/1811\n')
+          insert_once(
+              'src/trace_engine_v2/part_issue_1476_redundant_burnet_route_override.inc',
+              '  bool play_mysterious_treasure(const bool permit_payload) {\n',
+              '  bool play_mysterious_treasure(const bool permit_payload) {\n    if (play_issue_1811_mysterious_treasure_route()) return true; // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113\n')
+          insert_once(
+              'src/trace_engine_v2/part_issue_1356_fss_energy_override.inc',
+              '  bool use_fss() {\n',
+              '  bool use_fss() {\n    if (use_issue_1811_fss_route()) return true; // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156\n')
+          insert_once(
+              'src/trace_engine_v2/part_issue_1369_celestial_roar_secret_box_override.inc',
+              '  bool use_celestial_roar() {\n',
+              '  bool use_celestial_roar() {\n    if (hold_issue_1811_celestial_roar()) return false; // Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135\n')
+          PY
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build Release simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run focused issue 1811 regression
+        run: ./build/regidrago_unified_tests issue_1811_arven_treasure_crispin_tests
+      - name: Run three individual simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 424242 --require-ready-by 2 | tee trace-pass-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 38 | tee trace-pass-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 104729 | tee trace-pass-3.txt
+      - name: Regenerate source-bound baselines
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Configure sanitizer build
+        run: cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+      - name: Build sanitizer simulator and tests
+        run: cmake --build build-sanitize --parallel 2
+      - name: Run sanitizer suite
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-sanitize --parallel 2 --output-on-failure
+      - name: Commit validated fix and generated evidence
+        run: |
+          rm .github/workflows/issue-1811-fix-validation.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src tests results docs .github/workflows/issue-1811-fix-validation.yml
+          git commit -m 'Fix issue 1811 Arven Treasure Crispin T2 route'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          git rev-parse HEAD | tee tested-head.txt
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1811-fix-validation-${{ github.run_attempt }}
+          path: |
+            trace-pass-*.txt
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            results/baseline_manifest.json
+            results/multi_deck_manifest.json
+            tested-head.txt
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn

@@ -42,15 +42,8 @@
         payload_in_known_deck;
   }
 
-  bool should_play_steven() const {
-    return issue_1771_steven_t4_package_available() ||
-        should_play_steven_issue1771_original();
-  }
-
-  bool play_steven() {
-    if (!issue_1771_steven_t4_package_available()) {
-      return play_steven_issue1771_original();
-    }
+  bool play_issue_1771_steven_t4_package() {
+    if (!issue_1771_steven_t4_package_available()) return false;
 
     remove_one(state_.hand, Card::StevensResolve);
     state_.discard.push_back(Card::StevensResolve);

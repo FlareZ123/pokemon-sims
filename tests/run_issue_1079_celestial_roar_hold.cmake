@@ -39,7 +39,7 @@ if(NOT strict_seed_19 MATCHES "T2 \\| READY \\|")
   message(FATAL_ERROR "Strict seed 19 did not retain T2 readiness:\n${strict_seed_19}")
 endif()
 
-# Current-main seed 2026072802 is the K0 regression witness. Matchup-flex JIT has
+# Audited-main seed 2026072802 is the K0 regression witness. Matchup-flex JIT has
 # spent the T2 manual attachment, holds the sole missing Fire Energy, and has no
 # observed VSTAR route. Randomly processing three unknown cards cannot improve the
 # marginal chance that a later draw is Regidrago VSTAR, while the attack can discard

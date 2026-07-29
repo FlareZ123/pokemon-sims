@@ -19,6 +19,21 @@ jobs:
       - name: Apply source-bound issue 1797 patch
         run: python scripts/apply_issue_1797.py
 
+      - name: Use the repository ability-lock scenario enum
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("tests/issue_1797_quick_ball_tapu_steven_tests.cpp")
+          text = path.read_text(encoding="utf-8")
+          old = "sim::LockMode::Ability"
+          new = "sim::LockMode::FullRuleBoxAbility"
+          if text.count(old) != 1:
+              raise RuntimeError("Expected one issue-1797 ability-lock enum marker")
+          path.write_text(text.replace(old, new, 1), encoding="utf-8")
+          PY
+
       - name: Configure Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 

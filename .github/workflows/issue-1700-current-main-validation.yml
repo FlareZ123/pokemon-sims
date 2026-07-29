@@ -72,6 +72,25 @@ jobs:
               blender = blender.replace(blender_start, blender_call, 1)
           blender_path.write_text(blender, encoding="utf-8")
 
+          turn_path = Path("src/trace_engine_v2/part_014c_latias_bench_override.inc")
+          turn = turn_path.read_text(encoding="utf-8")
+          old_turn = (
+              "    play_items_until_stable(!strict_payload_timing());\n\n"
+              "    attach_manual();\n"
+              "    if (complete_issue_1564_quick_ball_latias_promotion()) {"
+          )
+          new_turn = (
+              "    play_items_until_stable(!strict_payload_timing());\n\n"
+              "    play_issue_1700_known_prize_gladion_before_blender(); // Gladion must use the still-open T2 Supporter window before attachment: https://api.pokemontcg.io/v2/cards/sm4-95 https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf https://github.com/FlareZ123/pokemon-sims/issues/1700\n"
+              "    attach_manual();\n"
+              "    if (complete_issue_1564_quick_ball_latias_promotion()) {"
+          )
+          if new_turn not in turn:
+              if turn.count(old_turn) != 1:
+                  raise RuntimeError("Expected one pre-attachment issue-1700 turn-policy marker")
+              turn = turn.replace(old_turn, new_turn, 1)
+          turn_path.write_text(turn, encoding="utf-8")
+
           test_path = Path("tests/issue_1700_pre_steven_vessel_tests.cpp")
           test_path.write_text(old_text(str(test_path)), encoding="utf-8")
           PY

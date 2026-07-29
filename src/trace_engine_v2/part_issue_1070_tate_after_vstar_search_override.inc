@@ -92,6 +92,7 @@
   }
 
   void choose_supporter() {
+    if (play_issue_1775_gladion_treasure_t3_route()) return;
     if (play_issue_1771_steven_t4_package()) return;
     if (play_issue_1772_steven_t3_package()) return;
     if (issue_1772_t3_crispin_completion_available()) {

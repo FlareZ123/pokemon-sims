@@ -1,17 +1,19 @@
 {
   "issue": "https://github.com/FlareZ123/pokemon-sims/issues/1773",
-  "baseline_commit": "46860424a452121b0747eb048520c3b82a0604cb",
-  "latest_main_commit": "27047ca0b49c0f3a804e827603a8d98358b06204",
-  "corrected_release_run_id": 30424489808,
-  "corrected_release_artifact_id": 8713142086,
-  "corrected_release_artifact_digest": "sha256:cc7dacd598fe0beb3ee65a0ab4b4db419765df87a8e0bc74f32fc744fda748a3",
-  "final_release_run_id": 30483041367,
-  "final_release_artifact_id": 8736572644,
-  "final_release_artifact_digest": "sha256:066d9356cb9add442f174e341adffe18c733327e86278ddd2edf686cd6f21bf0",
-  "final_shell_csv_sha256": "f87c86c9b18c820618444ef1c48b42b5b3ce5bdd527df1a15b0135723fa5a7ca",
-  "final_multi_deck_csv_sha256": "290047f8e1b390454fef5c047914297590dbd57d1a2fa3a70a2b9e53c8aa2233",
+  "pull_request": "https://github.com/FlareZ123/pokemon-sims/pull/1774",
+  "comparison_baseline_commit": "46860424a452121b0747eb048520c3b82a0604cb",
+  "composed_main_commit": "9bf0bb6b1eb19080735140c3c06cc294aab3c3f2",
+  "matrix_refresh_run_id": 30489614471,
+  "matrix_refresh_artifact_id": 8739367745,
+  "matrix_refresh_artifact_digest": "sha256:d7ade0d61e5e8999938689a43f24d5eb0d3c4646a041f76a430250dab3d66989",
+  "shell_csv_sha256": "94de717157957eb8d2e9a412ff84229a025b8da4fc1c83195c47b904387a9891",
+  "multi_deck_csv_sha256": "ba78a9d79ba949e33755b85e7dfd3e6a950fea251fd8d121f9f779b68d30f4c8",
   "matrix_seed": 20260705,
   "trials_per_scenario": 100000,
-  "affected_decks": ["regidrago-shell"],
-  "unchanged_control_decks": ["regidrago-pineco"]
+  "affected_decks": [
+    "regidrago-shell"
+  ],
+  "unchanged_control_decks": [
+    "regidrago-pineco"
+  ]
 }

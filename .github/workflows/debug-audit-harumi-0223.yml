@@ -1,0 +1,108 @@
+name: Debug Audit Harumi 0223
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: debug-audit-harumi-0223-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  three-simulate-this-passes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Pass 1 shell strict JIT going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Observable-state, K0/K1, DCI/JIT, and earliest-route policy:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee debug-trace-1.txt
+          grep -q "T2 | READY" debug-trace-1.txt
+      - name: Pass 2 shell matchup-flex JIT going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Regidrago V and VSTAR identities and attack requirements:
+          # https://api.pokemontcg.io/v2/cards/swsh12-135
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Repository ready-state specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+          # Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee debug-trace-2.txt
+          grep -q "T2 | READY" debug-trace-2.txt
+      - name: Pass 3 Pineco strict JIT going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Registered Pineco route and relevant printed effects:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+          # https://api.pokemontcg.io/v2/cards/sv6-163
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-1
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # https://api.pokemontcg.io/v2/cards/sm6-113
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee debug-trace-3.txt
+          grep -q "T2 | READY" debug-trace-3.txt
+      - name: Reverify open issue witnesses
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Earthen Vessel before Steven issue: https://github.com/FlareZ123/pokemon-sims/issues/1700
+          # Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+          # Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 218 | tee debug-open-1700.txt
+          # Celestial Roar Vessel-continuation issue: https://github.com/FlareZ123/pokemon-sims/issues/1719
+          # Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 42 | tee debug-open-1719.txt
+          # Pineco Gladion target issue: https://github.com/FlareZ123/pokemon-sims/issues/1737
+          # Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario no-discard-control/go-second --seed 8675309 | tee debug-open-1737.txt
+          # Crobat compression-order issue: https://github.com/FlareZ123/pokemon-sims/issues/1751
+          # Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-serena --scenario strict-jit/go-second --seed 2154 | tee debug-open-1751.txt
+          # Gladion Treasure route issue: https://github.com/FlareZ123/pokemon-sims/issues/1775
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 38 | tee debug-open-1775.txt
+      - name: Generate canonical T2 T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out debug-t2-t3-matrix.csv
+      - name: Generate paired T2 T3 T4 matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out debug-multi-deck-matrix.csv
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Record tested source
+        run: git rev-parse HEAD | tee debug-tested-head.txt
+      - name: Upload debug evidence and source snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-audit-harumi-0223-${{ github.run_attempt }}
+          path: |
+            debug-trace-*.txt
+            debug-open-*.txt
+            debug-t2-t3-matrix.csv
+            debug-multi-deck-matrix.csv
+            debug-tested-head.txt
+            .
+            !.git
+            !build
+          include-hidden-files: true
+          if-no-files-found: error

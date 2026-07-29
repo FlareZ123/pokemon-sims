@@ -142,6 +142,6 @@ jobs:
         run: |
           set -euo pipefail
           git add src/trace_engine_v2/part_forretress_ex_combo.inc tests/issue_1839_dawn_secret_box_refill_tests.cpp docs/REPORT.md docs/MULTI_DECK_REPORT.md results/simulation_results.csv results/baseline_manifest.json results/traces results/multi_deck_comparison.csv results/multi_deck_manifest.json results/multi_deck_traces
-          git rm scripts/apply_issue_1839.py scripts/refine_issue_1839.py scripts/finalize_issue_1839.py .github/workflows/issue-1839-source-bound.yml .github/workflows/issue-1839-source-bound-v2.yml .github/workflows/issue-1839-source-bound-v3.yml .github/workflows/issue-1839-diagnostic.yml .github/workflows/issue-1839-exact-state-trace.yml .github/workflows/issue-1839-exact-state-trace.yml
+          git rm scripts/apply_issue_1839.py scripts/refine_issue_1839.py scripts/finalize_issue_1839.py .github/workflows/issue-1839-source-bound.yml .github/workflows/issue-1839-source-bound-v2.yml .github/workflows/issue-1839-source-bound-v3.yml .github/workflows/issue-1839-diagnostic.yml .github/workflows/issue-1839-exact-state-trace.yml
           git commit -m "Refill Secret Box costs through Dawn for #1839"
           git push origin HEAD:${{ github.head_ref }}

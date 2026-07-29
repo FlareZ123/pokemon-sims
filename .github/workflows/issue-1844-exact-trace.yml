@@ -1,0 +1,23 @@
+name: Issue 1844 Exact Trace Diagnostic
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  trace:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/issue-1844-legacy-star-delayed-vessel'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Apply patch
+        run: python scripts/apply_issue_1844.py
+      - name: Build simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target regidrago_sim --parallel 2
+      - name: Print exact seed trace
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 314159

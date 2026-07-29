@@ -17,7 +17,9 @@ struct EngineTestAccess {
   static bool route_available(const Engine& engine) {
     return engine.issue_1771_steven_t4_package_available();
   }
-  static bool play_steven(Engine& engine) { return engine.play_steven(); }
+  static bool play_steven(Engine& engine) {
+    return engine.play_issue_1771_steven_t4_package();
+  }
   static const State& state(const Engine& engine) { return engine.state_; }
 };
 }  // namespace sim

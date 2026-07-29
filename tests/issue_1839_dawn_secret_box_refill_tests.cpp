@@ -1,89 +1,4 @@
-from __future__ import annotations
-
-import fcntl
-import os
-import tempfile
-from contextlib import contextmanager
-from pathlib import Path
-
-
-@contextmanager
-def locked_path(path: Path):
-    lock_path = path.with_suffix(path.suffix + ".lock")
-    descriptor = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
-    try:
-        fcntl.flock(descriptor, fcntl.LOCK_EX)
-        yield
-    finally:
-        fcntl.flock(descriptor, fcntl.LOCK_UN)
-        os.close(descriptor)
-        lock_path.unlink(missing_ok=True)
-
-
-def atomic_write(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with locked_path(path):
-        with tempfile.NamedTemporaryFile(
-            mode="w", encoding="utf-8", newline="", dir=path.parent,
-            prefix=f".{path.name}.", delete=False
-        ) as handle:
-            handle.write(content)
-            temporary = Path(handle.name)
-        os.replace(temporary, path)
-
-
-def replace_once(path: Path, old: str, new: str) -> None:
-    text = path.read_text(encoding="utf-8")
-    if new in text:
-        return
-    if text.count(old) != 1:
-        raise RuntimeError(f"Expected exactly one marker in {path}: {old!r}")
-    atomic_write(path, text.replace(old, new, 1))
-
-
-source = Path("src/trace_engine_v2/part_forretress_ex_combo.inc")
-replace_once(
-    source,
-    """  const bool dawn_refills_secret_box_costs = dawn_advances_combo &&
-      prizes_known() && !item_locked() && hand_count(Card::SecretBox) > 0 &&
-      active_is_vstar() && need_payload() && grass_needed() > 0 &&
-      fire_needed() <= 0 && in_play_count(Card::Pineco) > 0 &&
-      hand_count(Card::ForretressEx) > 0 &&
-      deck_count_after_search_started(Card::RegidragoV) > 0 &&
-      deck_count_after_search_started(Card::Appletun) > 0 &&
-      (deck_count_after_search_started(Card::Dragapult) > 0 ||
-       deck_count_after_search_started(Card::MegaDragonite) > 0);
-  // A K1 Dawn search may refill Secret Box's three independent discard slots with
-  // one Basic, one Stage 1, and one Stage 2 only when the complete same-turn route
-  // is already proven. The held Forretress ex and prior-turn Pineco preserve the
-  // Grass axis, while Regidrago V, Appletun, and the Stage 2 Dragon are replaced
-  // setup resources whose dynamic DCI becomes positive for this exact completion:
-""",
-    """  const Pokemon* dawn_refill_target = target_regi();
-  const bool dawn_refills_secret_box_costs = dawn_advances_combo &&
-      prizes_known() && !item_locked() && hand_count(Card::SecretBox) > 0 &&
-      need_payload() && dawn_refill_target != nullptr &&
-      dawn_refill_target->card == Card::RegidragoV &&
-      dawn_refill_target->entered_turn < state_.turn &&
-      hand_count(Card::RegidragoVstar) > 0 && !state_.manual_energy_used &&
-      hand_count(Card::Fire) > 0 && grass_needed() > 0 && fire_needed() > 0 &&
-      in_play_count(Card::Pineco) > 0 && hand_count(Card::ForretressEx) > 0 &&
-      deck_count_after_search_started(Card::Grass) >= grass_needed() &&
-      deck_count_after_search_started(Card::RegidragoV) > 0 &&
-      deck_count_after_search_started(Card::Appletun) > 0 &&
-      (deck_count_after_search_started(Card::Dragapult) > 0 ||
-       deck_count_after_search_started(Card::MegaDragonite) > 0);
-  // A K1 Dawn search may refill Secret Box's three independent discard slots with
-  // one Basic, one Stage 1, and one Stage 2 only when the complete same-turn route
-  // is already proven. A prior-turn Regidrago V, held VSTAR, held Fire, unused
-  // manual attachment, prior-turn Pineco, held Forretress ex, and known deck Grass
-  // preserve every board and Energy axis. Regidrago V, Appletun, and the Stage 2
-  // Dragon are replaced setup resources whose dynamic DCI becomes positive:
-""",
-)
-
-
-test_content = r'''#define REGIDRAGO_SIM_NO_MAIN
+#define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
 #include <algorithm>
@@ -204,12 +119,20 @@ void complete_k1_route_refills_all_three_categories() {
   expect(sim::EngineTestAccess::advance_forretress_combo(fixture.engine),
          "Dawn did not advance the exact Forretress route");
   const sim::State& state = sim::EngineTestAccess::state(fixture.engine);
-  expect(contains(state.hand, sim::Card::RegidragoV),
-         "Dawn did not refill Secret Box's Basic cost slot");
-  expect(contains(state.hand, sim::Card::Appletun),
-         "Dawn did not refill Secret Box's Stage 1 cost slot");
-  expect(contains(state.hand, sim::Card::MegaDragonite),
-         "Dawn did not refill Secret Box's Stage 2 cost slot");
+  expect(!contains(state.hand, sim::Card::SecretBox),
+         "Dawn refilled the costs but Secret Box was not retried immediately");
+  expect(contains(state.discard, sim::Card::SecretBox),
+         "The immediate Secret Box resolution did not enter discard");
+  expect(contains(state.hand, sim::Card::RegidragoVstar),
+         "The complete route discarded the held evolution axis");
+  expect(contains(state.hand, sim::Card::Fire),
+         "The complete route discarded the held manual attachment");
+  expect(!state.vstar_power_used,
+         "The refill route consumed the once-per-game VSTAR Power");
+  expect(contains(state.discard, sim::Card::Appletun) ||
+             contains(state.discard, sim::Card::MegaDragonite) ||
+             contains(state.discard, sim::Card::Dragapult),
+         "Secret Box did not establish a same-turn Dragon payload");
 }
 
 void k0_does_not_invent_refill_targets() {
@@ -319,7 +242,7 @@ void exact_seed_reaches_turn_two_without_legacy_star() {
   // https://github.com/FlareZ123/pokemon-sims/issues/1839
   expect(outcome.first_ready_turn == 2,
          "Seed 1618033 did not reach T2 readiness");
-  expect(trace_contains("Dawn searched and revealed: Regidrago V, Appletun, Mega Dragonite ex"),
+  expect(trace_contains("Dawn searched and revealed: Regidrago V, Appletun sv8-140, Mega Dragonite ex."),
          "Dawn did not expose all three Secret Box cost categories");
   expect(trace_contains("PLAY ITEM") && trace_contains("Secret Box discarded three"),
          "Seed 1618033 did not retry Secret Box after Dawn");
@@ -348,6 +271,3 @@ int main() {
   }
   return 0;
 }
-'''
-
-atomic_write(Path("tests/issue_1839_dawn_secret_box_refill_tests.cpp"), test_content)

@@ -106,3 +106,7 @@ Those were selector bugs, not an inherent Klara tradeoff. The final implementati
 ## Modeled strategic value
 
 Klara returns up to two Pokémon and up to two Basic Energy directly from discard to hand. The setup policy preserves the sole current-turn strict-JIT Dragon, can recover an older Dragon only when a legal Item can discard it again that turn, and can use an optional second Pokémon target for discard-control denial without breaking readiness. Because the recovery is a Supporter action rather than an Item, Eri cannot remove Klara from hand as an Item. Team Yell’s Cheer and Lusamine remain modeled recovery-chain partners, while full post-readiness combat and deck-out valuation remain outside this setup simulator.
+
+## Final current-main validation boundary
+
+The merge candidate includes the current `main` selector stack and its generated-output contracts. Final validation also covers temporary-recipe ownership under AddressSanitizer, delegation to existing Professor Turo and Oricorio routes, Klara as the registered issue-1236 discard cost, and the legal earlier Klara alternative in the issue-1109 integration seed. The Release and sanitizer workflows after this commit are the merge gate for those combined behaviors.

@@ -1,0 +1,59 @@
+name: Harumi Current Main Source Audit
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee harumi-trace-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee harumi-trace-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 1 --require-ready-by 4 | tee harumi-trace-3.txt
+      - name: Generate source-bound matrices
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out harumi-t2-t3-matrix.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out harumi-multi-deck-matrix.csv
+      - name: Record exact source
+        shell: bash
+        run: |
+          git rev-parse HEAD > harumi-tested-head.txt
+          python -c "from pathlib import Path; from scripts.baseline_provenance import simulator_policy_source_digest; print(simulator_policy_source_digest(Path('.').resolve()))" > harumi-policy-digest.txt
+      - name: Upload exact source and evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: harumi-current-main-source-audit
+          path: |
+            .github/workflows/ci.yml
+            CMakeLists.txt
+            README.md
+            docs
+            results
+            scripts
+            src
+            tests
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            harumi-trace-*.txt
+            harumi-*-matrix.csv
+            harumi-tested-head.txt
+            harumi-policy-digest.txt
+          if-no-files-found: error

@@ -1,0 +1,26 @@
+name: Source Snapshot Harumi 2325
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  source-snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record source
+        run: git rev-parse HEAD | tee source-snapshot-head.txt
+      - name: Upload source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-snapshot-harumi-2325-${{ github.run_attempt }}
+          path: |
+            .
+            !.git
+          include-hidden-files: true
+          if-no-files-found: error

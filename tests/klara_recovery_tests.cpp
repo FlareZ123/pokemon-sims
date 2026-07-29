@@ -151,6 +151,28 @@ void test_klara_obeys_two_pokemon_and_two_energy_limits() {
          "Klara must recover at most two Basic Energy cards");
 }
 
+
+void test_klara_yields_to_faster_wonder_tag_supporter_routes() {
+  const sim::Scenario scenario{"strict-jit/go-first", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, true, 5};
+
+  // Seed 301 previously spent Klara to recycle Dragapult, blocking Quick Ball into
+  // Tapu Lele-GX into Crispin and delaying GGF from T3 to T4. Seed 759 similarly
+  // blocked Wonder Tag into Tate & Liza. Both exact traces must remain T3-ready:
+  // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+  // Regression: https://github.com/FlareZ123/pokemon-sims/issues/1773
+  for (const std::uint64_t seed : {301ULL, 759ULL}) {
+    std::mt19937_64 rng{seed};
+    sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+    const sim::TrialOutcome outcome = engine.run();
+    expect(outcome.ready_by_3,
+           "Klara must yield when a non-Klara Wonder Tag route completes on T3");
+  }
+}
+
 void test_klara_does_not_remove_the_only_ready_payload() {
   const sim::Scenario scenario{"klara-preserve-ready-payload", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
@@ -184,6 +206,7 @@ int main() {
     test_klara_recovers_vstar_energy_and_redundant_older_dragon();
     test_klara_recovers_old_payload_for_a_current_turn_item_discard();
     test_klara_obeys_two_pokemon_and_two_energy_limits();
+    test_klara_yields_to_faster_wonder_tag_supporter_routes();
     test_klara_does_not_remove_the_only_ready_payload();
   } catch (const std::exception& error) {
     std::cerr << "klara_recovery_tests failed: " << error.what() << '\n';

@@ -164,15 +164,53 @@
     }
   }
 
+  bool suppress_klara_projection_{false};
+
+  bool non_klara_current_turn_completion_exists() {
+    if (suppress_klara_projection_ || hand_count(Card::Klara) == 0) return false;
+
+    // Klara must not consume the Supporter action merely because one recovered card
+    // improves an axis when the existing hand and deck connectors already complete
+    // every setup axis this turn. Project the rest of the exact current turn with
+    // Klara disabled but still physically present in hand, preserving its legal value
+    // as discard fodder and preserving every later selector input. The projection uses
+    // a copied Engine state and restores the shared RNG immediately afterward, so it
+    // cannot perturb the real trial's shuffle or draw stream:
+    // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Official Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Regression evidence: https://github.com/FlareZ123/pokemon-sims/issues/1773
+    const std::mt19937_64 saved_rng = rng_;
+    Engine projected = *this;
+    projected.trace_ = nullptr;
+    projected.suppress_klara_projection_ = true;
+    try {
+      projected.run_turn();
+    } catch (...) {
+      rng_ = saved_rng;
+      throw;
+    }
+    rng_ = saved_rng;
+    return projected.active_is_vstar() && projected.state_.active->grass >= 2 &&
+           projected.state_.active->fire >= 1 && projected.payload_ready();
+  }
+
   bool play_klara_recovery() {
-    if (!supporter_allowed() || hand_count(Card::Klara) == 0 ||
-        !setup_axis_missing()) {
+    if (suppress_klara_projection_ || !supporter_allowed() ||
+        hand_count(Card::Klara) == 0 || !setup_axis_missing()) {
       return false;
     }
 
     std::vector<Card> pokemon = klara_pokemon_recovery_targets();
     const std::vector<Card> energy = klara_energy_recovery_targets();
     if (!klara_targets_advance_setup(pokemon, energy)) return false;
+    if (non_klara_current_turn_completion_exists()) {
+      trace("HOLD SUPPORTER", "R-KLARA-01; P-CONNECTOR-01",
+            "Held Klara because the existing non-Klara connector route completes every setup axis this turn.");
+      return false;
+    }
     klara_fill_discrete_value_targets(pokemon);
 
     remove_one(state_.hand, Card::Klara);

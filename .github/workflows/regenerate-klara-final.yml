@@ -1,0 +1,76 @@
+name: Regenerate Klara final evidence
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    branches: [klara-workflow-base]
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'enhancement-1773-klara-swap'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: enhancement-1773-klara-swap
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Merge current main, correct fixture, and regenerate canonical evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git merge --no-edit -X theirs origin/main
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('tests/klara_recovery_tests.cpp')
+          text = path.read_text()
+          old = '''  state.discarded_this_turn = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  expect(sim::EngineTestAccess::play_klara(engine),
+          "The missing Fire Energy should make Klara worth playing");
+'''
+          new = '''  state.discarded_this_turn = {sim::Card::MegaDragonite};
+  state.vstar_power_used = true;
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // This fixture isolates Klara's printed discard recovery after the once-per-game
+  // VSTAR Power is already spent. Otherwise Legacy Star is a legal non-Klara route
+  // that can recover Fire and correctly make the Supporter unnecessary:
+  // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Official VSTAR Power and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Sanitizer regression: https://github.com/FlareZ123/pokemon-sims/pull/1774
+  expect(sim::EngineTestAccess::play_klara(engine),
+          "The missing Fire Energy should make Klara worth playing after Legacy Star is spent");
+'''
+          if old in text:
+              path.write_text(text.replace(old, new, 1))
+          elif 'state.vstar_power_used = true;' not in text[text.find('void test_klara_does_not_remove_the_only_ready_payload'):]:
+              raise SystemExit('Klara fixture block was not found')
+          PY
+
+          cmake -S . -B build-regenerate -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-regenerate --parallel 2
+          python scripts/regenerate_setup_baselines.py --exe build-regenerate/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build-regenerate/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+          ctest --test-dir build-regenerate --parallel 4 --output-on-failure
+
+          rm -f .github/workflows/regenerate-klara-final.yml
+          rm -f .github/klara-regeneration-trigger.txt
+          git add -A
+          git commit -m 'Refresh Klara fixtures and canonical matrices'
+          git push origin HEAD:enhancement-1773-klara-swap

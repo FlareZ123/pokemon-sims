@@ -36,6 +36,21 @@
   }
 
   void run_turn() {
+    // A route committed by the prior two public Supporter decisions must finish before
+    // generic Item and discard selection can spend Earthen Vessel or its Dragon cost:
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1795
+    if (complete_issue_1795_vessel_finish()) {
+      trace("POLICY", "P-AXIS-01; R-EV-01; P-JIT-01; P-COMPRESS-01",
+            "Completed the committed Crispin, Steven, and Earthen Vessel T4 route: " +
+                state_line());
+      return;
+    }
+
     run_turn_issue1675_original();
     if (complete_issue_1675_latias_late_promotion()) {
       trace("POLICY", "P-AXIS-01; R-GAME-BENCH; R-GAME-RETREAT",

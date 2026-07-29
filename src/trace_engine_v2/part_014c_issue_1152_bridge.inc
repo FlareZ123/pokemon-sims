@@ -270,6 +270,25 @@
         state_.active->fire >= 1 && payload_ready();
   }
 
+  bool use_celestial_roar_issue_1795() {
+    if (issue_1795_steven_turn_ == state_.turn + 1) {
+      // Celestial Roar would inspect and discard three random cards after the complete
+      // K1 route is already committed. Holding the attack preserves the known VSTAR,
+      // Vessel, final Grass, and payload channels without affecting the GF board:
+      // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+      // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Official attack procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+      // Observable deterministic route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1795
+      trace("HOLD ATTACK", "R-RV-01; P-KNOWLEDGE-01; P-COMPRESS-01",
+            "Skipped Celestial Roar because its random top-three discard can only damage the committed T4 route.");
+      return false;
+    }
+    return use_celestial_roar_after_latias_promotion();
+  }
+
   int issue_1152_legacy_star_turn_ = 0;
 
   bool use_legacy_star_issue_1152() {
@@ -389,7 +408,7 @@
 // Core Retreat and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
 // Earliest legal ready-state policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
 // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1325
-#define use_celestial_roar use_celestial_roar_after_latias_promotion
+#define use_celestial_roar use_celestial_roar_issue_1795
 #define run_turn run_turn_issue1673_original
 #include "part_014c_latias_bench_override.inc"
 #undef run_turn

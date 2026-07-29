@@ -46,7 +46,10 @@
     return should_play_steven_issue1067_original();
   }
 
-  // Define the exact no-discard-control VSTAR, Latias, and Grass package here.
-  // The active final Supporter dispatcher invokes it after all earlier comparators:
+  // Define exact source-bounded Supporter packages before the final dispatcher:
   // https://github.com/FlareZ123/pokemon-sims/issues/1745
+  // https://github.com/FlareZ123/pokemon-sims/issues/1771
+  // https://github.com/FlareZ123/pokemon-sims/issues/1772
   #include "part_issue_1745_steven_latias_t3_override.inc"
+  #include "part_issue_1771_steven_t4_package_override.inc"
+  #include "part_issue_1772_steven_t3_package_override.inc"

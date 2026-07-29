@@ -92,6 +92,14 @@
   }
 
   void choose_supporter() {
+    if (play_issue_1771_steven_t4_package()) return;
+    if (play_issue_1772_steven_t3_package()) return;
+    if (issue_1772_t3_crispin_completion_available()) {
+      if (!play_crispin()) {
+        throw std::logic_error("Known issue-1772 Crispin completion failed");
+      }
+      return;
+    }
     if (tate_switch_after_incomplete_held_vstar_evolution_route()) {
       if (trace_ != nullptr) {
         trace_->add_policy_once(

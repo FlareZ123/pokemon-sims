@@ -26,6 +26,7 @@ The API records are card-text sources. They do not replace official tournament r
 | Forest Seal Stone — Star Alchemy | https://api.pokemontcg.io/v2/cards/swsh12-156 |
 | Powerglass | https://api.pokemontcg.io/v2/cards/sv6pt5-63 |
 | Dawn | https://api.pokemontcg.io/v2/cards/me2-87 |
+| Grant | https://api.pokemontcg.io/v2/cards/swsh10-144 |
 | Forest of Vitality | https://api.pokemontcg.io/v2/cards/me1-117 |
 | Pineco | https://api.pokemontcg.io/v2/cards/sv4pt5-1 |
 | Forretress ex — Exploding Energy | https://api.pokemontcg.io/v2/cards/sv4pt5-2 |
@@ -76,8 +77,9 @@ The API records are card-text sources. They do not replace official tournament r
 | https://github.com/FlareZ123/pokemon-sims/issues/1070 | Preserve Tate & Liza switch mode after Star Alchemy searches the VSTAR for a prepared Benched Basic | https://api.pokemontcg.io/v2/cards/sm7-148, https://api.pokemontcg.io/v2/cards/swsh12-156, https://api.pokemontcg.io/v2/cards/swsh12-136, https://api.pokemontcg.io/v2/cards/sv8-164 | `part_issue_1070_tate_after_vstar_search_override.inc`, `part_tate_blender_tate_override.inc` |
 | https://github.com/FlareZ123/pokemon-sims/issues/1071 | Let Mysterious Treasure cover the VSTAR axis while Star Alchemy covers Oricorio and Vital Dance Energy | https://api.pokemontcg.io/v2/cards/swsh12-156, https://api.pokemontcg.io/v2/cards/sm6-113, https://api.pokemontcg.io/v2/cards/sm2-55, https://api.pokemontcg.io/v2/cards/swsh12-136, https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 | `part_issue_1071_fss_oricorio_treasure_decomposition_override.inc` |
 | https://github.com/FlareZ123/pokemon-sims/issues/1079 | Hold Celestial Roar when one held Basic Energy and the next legal manual attachment already guarantee GGF before evolution, while strict JIT cannot bank an early payload | https://api.pokemontcg.io/v2/cards/swsh12-135, https://api.pokemontcg.io/v2/cards/swsh12-136, https://www.pokemon.com/us/pokemon-tcg/rules | `part_celestial_roar_override.inc`, `run_issue_1079_celestial_roar_hold.cmake` |
+| https://github.com/FlareZ123/pokemon-sims/issues/1790 | Use Grant from discard to convert a held Dragon plus one ordinary UDP/DCI-safe card into the sole missing current-turn strict-JIT payload without consuming the Supporter action | https://api.pokemontcg.io/v2/cards/swsh10-144, https://api.pokemontcg.io/v2/cards/swsh12-136, https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf | `grant_recovery_strict_jit_costs`, `recover_grant_for_strict_jit_payload`, `issue_1790_grant_recovery_tests.cpp`, https://github.com/FlareZ123/pokemon-sims/pull/1793 |
 
-All six boundaries also cite the official turn, Trainer, evolution, attachment, Ability, attack, and Retreat procedures at https://www.pokemon.com/us/pokemon-tcg/rules and the repository's earliest-complete-route and strict-JIT specifications in `POLICY_DECISIONS.md` and `MODEL_ASSUMPTIONS.md`.
+All seven boundaries also cite the official turn, Trainer, evolution, attachment, Ability, attack, and Retreat procedures at https://www.pokemon.com/us/pokemon-tcg/rules and the repository's earliest-complete-route and strict-JIT specifications in `POLICY_DECISIONS.md` and `MODEL_ASSUMPTIONS.md`.
 
 ## Verified versus modeled interactions
 

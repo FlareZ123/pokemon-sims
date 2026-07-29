@@ -15,6 +15,26 @@
   }
 
   bool use_legacy_star() {
+    const bool issue_1817_hold_for_burnet_finish =
+        issue_1817_burnet_finish_pending_ &&
+        scenario_.dci == DciProfile::StrictJit &&
+        scenario_.locks == LockMode::TurnTwoItem && state_.turn == 2 &&
+        scenario_.max_turn >= 3 && deck_seen_ && state_.manual_energy_used &&
+        active_is_vstar() && state_.active->grass == 1 &&
+        state_.active->fire == 1 && hand_count(Card::Grass) > 0 &&
+        hand_count(Card::ProfessorBurnet) > 0 && need_payload();
+    if (issue_1817_hold_for_burnet_finish) {
+      // VSTAR, the held final Grass, and held Professor Burnet already guarantee
+      // T3 readiness. Preserve the one-use VSTAR Power instead of introducing a
+      // random discard and recovery sequence that cannot improve the deadline:
+      // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+      // Regidrago VSTAR / Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Official VSTAR Power and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+      // Resource-preservation and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1817
+      return false;
+    }
+
     const bool issue_1765_hold_for_t3_payload_window =
         scenario_.dci == DciProfile::StrictJit && scenario_.locks == LockMode::None &&
         !scenario_.going_first && state_.turn == 2 && scenario_.max_turn >= 3 &&

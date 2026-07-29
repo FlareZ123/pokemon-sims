@@ -237,7 +237,16 @@
   }
 
   void choose_supporter() {
-    if (!supporter_allowed() || !setup_axis_missing()) return;
-    if (play_klara_recovery()) return;
+    if (!supporter_allowed()) return;
+    if (setup_axis_missing() && play_klara_recovery()) return;
+
+    // Klara's setup-only admission must not hide existing Supporter routes that
+    // repair the Active position after another Regidrago is already complete,
+    // including Professor Turo plus Oricorio Energy compression:
+    // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
+    // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+    // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Official Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Sanitizer regression: https://github.com/FlareZ123/pokemon-sims/pull/1774
     choose_supporter_klara_original();
   }

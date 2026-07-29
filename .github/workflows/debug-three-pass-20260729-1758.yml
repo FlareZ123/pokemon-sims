@@ -1,0 +1,88 @@
+name: Debug Three Pass 20260729 1758
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.ref == 'audit/debug-three-pass-20260729-1758'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Archive exact tested source
+        run: |
+          git rev-parse HEAD | tee tested-head.txt
+          git ls-files | sort > source-files.txt
+          git archive --format=zip --output=exact-tested-source.zip HEAD
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build Release simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Simulate pass 1 delayed Vessel route witness
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+          # Confirmed issue under review: https://github.com/FlareZ123/pokemon-sims/issues/1844
+          # K1, dynamic DCI, strict-JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 314159 | tee trace-pass-1.txt
+      - name: Simulate pass 2 proactive Tapu retreat witness
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Chaotic Swell and Path to the Peak: https://api.pokemontcg.io/v2/cards/sm12-187 https://api.pokemontcg.io/v2/cards/swsh6-148
+          # Confirmed issue under review: https://github.com/FlareZ123/pokemon-sims/issues/1845
+          # Observable-information and combined-lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-model
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-combined-lock/go-first --seed 271828 | tee trace-pass-2.txt
+      - name: Simulate pass 3 merged Secret Box route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Secret Box, Dawn, Pineco, and Forretress ex: https://api.pokemontcg.io/v2/cards/sv6-163 https://api.pokemontcg.io/v2/cards/me2-87 https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # Merged repair and issue: https://github.com/FlareZ123/pokemon-sims/pull/1842 https://github.com/FlareZ123/pokemon-sims/issues/1840
+          # Secret Box and Pineco route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 58 | tee trace-pass-3.txt
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Configure sanitizer build
+        run: cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+      - name: Build sanitizer simulator and tests
+        run: cmake --build build-sanitize --parallel 2
+      - name: Run sanitizer suite
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-sanitize --parallel 2 --output-on-failure
+      - name: Generate canonical T2 T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260729 --out t2-t3-matrix.csv
+      - name: Generate all-deck setup matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260729 --out all-deck-matrix.csv
+      - name: Capture static audit surfaces
+        run: |
+          git grep -n -E 'TODO|FIXME|HACK|BUG' -- src tests docs scripts > static-markers.txt || true
+          git grep -n -E 'simulate-this|strict-jit|K1|DCI|lock|Supporter' -- docs src > policy-surfaces.txt || true
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-three-pass-1758-${{ github.run_attempt }}
+          path: |
+            exact-tested-source.zip
+            source-files.txt
+            tested-head.txt
+            trace-pass-*.txt
+            t2-t3-matrix.csv
+            all-deck-matrix.csv
+            static-markers.txt
+            policy-surfaces.txt
+            build/Testing
+            build-sanitize/Testing
+          if-no-files-found: warn

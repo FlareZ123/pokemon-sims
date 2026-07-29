@@ -449,6 +449,21 @@ if (card == Card::RegidragoV && established_prior_turn_regi) return 7;
       // once the full line, Bench access, and Ability legality are proven.
       if (card == Card::Grass) return 7;
 
+      // A sole Fire is route-replaced only when this same public full-combo proof
+      // already has the Regidrago VSTAR Active and its Fire requirement complete.
+      // The Active gate preserves Fire for retreat or promotion states; the
+      // fire_needed gate preserves manual-attachment and search continuations:
+      // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+      // Dawn: https://api.pokemontcg.io/v2/cards/me2-87
+      // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+      // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+      // Regidrago VSTAR / GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Official Item, Supporter, discard, search, evolution, Ability, Energy, Knock Out, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+      // Dynamic DCI and earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1840
+      if (card == Card::Fire && active_is_vstar() && fire_needed() <= 0) return 7;
+
       // With VSTAR already held, the Box's independent Item category can take
       // Quick Ball to discard the Dawn-supplied Dragon. The held Treasure is
       // replaceable, though it remains more valuable than an Earthen Vessel

@@ -1,0 +1,117 @@
+name: Apply Klara final matrices
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'enhancement-1773-klara-swap'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: enhancement-1773-klara-swap
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install exact matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d .github/klara-final-payload/shell.csv.gz.b64 | gzip -d > results/simulation_results.csv
+          base64 -d .github/klara-final-payload/multi.csv.gz.b64 | gzip -d > results/multi_deck_comparison.csv
+          printf '%s  %s\n' 'f87c86c9b18c820618444ef1c48b42b5b3ce5bdd527df1a15b0135723fa5a7ca' results/simulation_results.csv | sha256sum -c -
+          printf '%s  %s\n' '290047f8e1b390454fef5c047914297590dbd57d1a2fa3a70a2b9e53c8aa2233' results/multi_deck_comparison.csv | sha256sum -c -
+      - name: Build trace executable
+        run: |
+          cmake -S . -B build-klara-final -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-klara-final --target regidrago_sim --parallel 2
+      - name: Refresh manifests, traces, and reports
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import re
+          from pathlib import Path
+
+          from scripts import generate_multi_deck_comparison as multi
+          from scripts import regenerate_setup_baselines as setup
+          from scripts.baseline_provenance import simulator_policy_source_digest
+
+          repo = Path('.').resolve()
+          executable = (repo / 'build-klara-final' / 'regidrago_sim').resolve()
+          results = repo / 'results'
+          digest = simulator_policy_source_digest(repo)
+
+          trace_dir = results / 'traces'
+          trace_dir.mkdir(parents=True, exist_ok=True)
+          baseline_manifest: dict[str, object] = {
+              'deck': 'regidrago-shell',
+              'matrix_seed': 20260705,
+              'trials': 100000,
+              'simulator_policy_source_sha256': digest,
+              'traces': [],
+          }
+          expected_trace_files: set[str] = set()
+          for scenario, deadline, stem in setup.TRACE_SPECS:
+              seed, trace = setup.find_trace_seed(executable, scenario, deadline, 5000)
+              file_name = f'{stem}_seed_{seed}.txt'
+              expected_trace_files.add(file_name)
+              setup.atomic_write_text(trace_dir / file_name, trace)
+              baseline_manifest['traces'].append({
+                  'scenario': scenario,
+                  'deadline': deadline,
+                  'seed': seed,
+                  'file': file_name,
+              })
+          generated_stems = '|'.join(re.escape(stem) for _, _, stem in setup.TRACE_SPECS)
+          generated_name = re.compile(rf'(?:{generated_stems})_seed_[0-9]+\.txt')
+          for path in trace_dir.iterdir():
+              if path.is_file() and generated_name.fullmatch(path.name) and path.name not in expected_trace_files:
+                  path.unlink()
+          setup.atomic_write_text(
+              results / 'baseline_manifest.json',
+              json.dumps(baseline_manifest, indent=2, sort_keys=True) + '\n',
+          )
+
+          multi_traces = multi.generate_traces(executable, results / 'multi_deck_traces')
+          comparison_path = results / 'multi_deck_comparison.csv'
+          multi_manifest = {
+              'decks': list(multi.DECKS),
+              'scenarios': list(multi.SCENARIOS),
+              'matrix_seed': 20260705,
+              'trials_per_condition': 100000,
+              'condition_count': len(multi.DECKS) * len(multi.SCENARIOS),
+              'total_simulated_games': 100000 * len(multi.DECKS) * len(multi.SCENARIOS),
+              'simulator_policy_source_sha256': digest,
+              'comparison_csv_sha256': hashlib.sha256(comparison_path.read_bytes()).hexdigest(),
+              'traces': multi_traces,
+          }
+          multi.atomic_write_text(
+              results / 'multi_deck_manifest.json',
+              json.dumps(multi_manifest, indent=2, sort_keys=True) + '\n',
+          )
+          PY
+          python3 scripts/update_setup_docs.py --repo-root .
+          python3 scripts/update_multi_deck_docs.py --repo-root .
+      - name: Commit final evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .github/klara-final-payload
+          rm -f .github/workflows/apply-klara-final-matrices.yml
+          rm -rf build-klara-final
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Refresh final Klara matrices and reports'
+          git push origin HEAD:enhancement-1773-klara-swap

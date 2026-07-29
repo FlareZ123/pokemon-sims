@@ -61,6 +61,24 @@ jobs:
           # https://api.pokemontcg.io/v2/cards/sv7-133
           # Official turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee debug-trace-3.txt
+      - name: Reverify seed 905 Tate over Steven defect
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Steven's Resolve can bank any three cards for the next turn:
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # Latias ex gives Basic Pokémon no Retreat Cost:
+          # https://api.pokemontcg.io/v2/cards/sv8-76
+          # Professor Burnet searches and discards up to two Pokémon:
+          # https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+          # Tate & Liza draw mode shuffles the hand and draws five:
+          # https://api.pokemontcg.io/v2/cards/sm7-148
+          # Observable-state and earliest-route policy:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Official turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 905 | tee debug-trace-4-seed-905.txt
+          grep -F "T3 | PLAY SUPPORTER | rules: R-TATE-01; R-GAME-SUPPORTER | Tate & Liza draw mode" debug-trace-4-seed-905.txt
+          grep -F "not ready through T5" debug-trace-4-seed-905.txt
       - name: Generate current-main canonical T2 T3 matrix
         run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out debug-t2-t3-matrix.csv
       - name: Generate current-main paired T2 T3 T4 matrix

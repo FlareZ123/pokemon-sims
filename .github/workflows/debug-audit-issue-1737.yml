@@ -1,0 +1,89 @@
+name: Debug Audit Issue 1737
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: debug-audit-issue-1737-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-bound-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and regressions
+        run: cmake --build build --parallel 2
+      - name: Run focused issue regression
+        run: ./build/regidrago_unified_tests issue_1737_gladion_prized_steven_tests
+      - name: Pass 1 exact fixed Pineco witness
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+          # Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+          # Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          # K1 and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Confirmed issue: https://github.com/FlareZ123/pokemon-sims/issues/1737
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario no-discard-control/go-second --seed 8675309 --require-ready-by 4 | tee issue-1737-trace-1.txt
+      - name: Pass 2 shell strict JIT control
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Regidrago V and VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Strict JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          # Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee issue-1737-trace-2.txt
+      - name: Pass 3 Pineco strict JIT control
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Registered Pineco policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+          # Secret Box and Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sv6-163 https://api.pokemontcg.io/v2/cards/sm6-113
+          # Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee issue-1737-trace-3.txt
+      - name: Run complete Release suite
+        run: ctest --test-dir build --output-on-failure
+      - name: Configure ASan and UBSan
+        run: cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DREGIDRAGO_ENABLE_SANITIZERS=ON
+      - name: Build sanitizer suite
+        run: cmake --build build-sanitize --parallel 2
+      - name: Run sanitizer regression and simulator self-test
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build-sanitize/regidrago_unified_tests issue_1737_gladion_prized_steven_tests
+          ./build-sanitize/regidrago_sim --self-test
+      - name: Generate canonical shell matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-1737-t2-t3-shell.csv
+      - name: Generate paired deck matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out issue-1737-t2-t3-paired.csv
+      - name: Record exact tested source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee issue-1737-tested-head.txt
+          git archive --format=zip --output=issue-1737-source-snapshot.zip HEAD
+      - name: Upload source-bound evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1737-source-bound-${{ github.run_attempt }}
+          path: |
+            issue-1737-trace-*.txt
+            issue-1737-t2-t3-shell.csv
+            issue-1737-t2-t3-paired.csv
+            issue-1737-tested-head.txt
+            issue-1737-source-snapshot.zip
+          if-no-files-found: error

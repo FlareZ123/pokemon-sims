@@ -24,7 +24,8 @@ jobs:
               .github/klara-patch/part-01 \
               .github/klara-patch/rest-00 \
               .github/klara-patch/rest-01 \
-              .github/klara-patch/rest-02 \
+              .github/klara-patch/rest-02a \
+              .github/klara-patch/rest-02b \
               .github/klara-patch/rest-03 \
             | base64 -d | tar -xzf -
           rm -rf .github/klara-patch

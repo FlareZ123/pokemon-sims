@@ -1,0 +1,110 @@
+name: Issue 1811 Apply and Validate
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  source-bound-validation:
+    if: github.event.pull_request.head.ref == 'fix/issue-1811-arven-post-search-affordability'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Apply the reviewed issue 1811 patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git apply --index scripts/issue-1811.patch
+          git diff --cached --check
+
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build simulator and unified tests
+        run: cmake --build build --parallel 2
+
+      - name: Focused issue 1811 regression
+        run: ctest --test-dir build -R regidrago_issue_1811_arven_post_search_affordability_tests --output-on-failure
+
+      - name: Exact seed 424242 T2 route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Arven, Mysterious Treasure, Forest Seal Stone, Crispin, Earthen Vessel, Dragapult ex, and Regidrago VSTAR:
+          # https://api.pokemontcg.io/v2/cards/sv1-166 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/sv4-163 https://api.pokemontcg.io/v2/cards/sv6-130 https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official Supporter, Item, Tool, VSTAR Power, attachment, evolution, and search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          # K1, dynamic DCI, strict-JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1811
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 424242 --require-ready-by 2 | tee issue-1811-seed-424242.txt
+          grep -q "Mysterious Treasure, Forest Seal Stone" issue-1811-seed-424242.txt
+          grep -q "route-replaced Fire Energy" issue-1811-seed-424242.txt
+          grep -q "Searched Crispin for the deterministic T2" issue-1811-seed-424242.txt
+          grep -q "T2 | DISCARD.*Dragapult ex" issue-1811-seed-424242.txt
+          grep -q "T2 | READY" issue-1811-seed-424242.txt
+
+      - name: Related route regressions
+        run: >-
+          ctest --test-dir build
+          -R 'regidrago_(arven_fss_rulebox_tests|issue_1093_quick_ball_crispin_energy_tests|issue_1356_fss_treasure_energy_tests|issue_1411_treasure_tapu_steven_tests|issue_1817_prelock_treasure_tapu_steven_tests)'
+          --output-on-failure
+
+      - name: Regenerate canonical shell baselines
+        run: python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+
+      - name: Regenerate paired deck comparison
+        run: python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+
+      - name: Regenerate reports
+        run: |
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Verify regenerated matrices
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out verified-shell-matrix.csv
+          cmp verified-shell-matrix.csv results/simulation_results.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out verified-all-deck-matrix.csv
+          cmp verified-all-deck-matrix.csv results/multi_deck_comparison.csv
+
+      - name: Upload source-bound evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1811-validation-${{ github.run_attempt }}
+          path: |
+            issue-1811-seed-424242.txt
+            verified-shell-matrix.csv
+            verified-all-deck-matrix.csv
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            results/baseline_manifest.json
+            results/multi_deck_manifest.json
+            docs/REPORT.md
+            docs/MULTI_DECK_REPORT.md
+            build/Testing
+          if-no-files-found: error
+
+      - name: Commit tested source, tests, matrices, and reports
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm scripts/issue-1811.patch .github/workflows/issue-1811-apply-validate.yml
+          git add -A
+          git diff --cached --check
+          git commit -m "Fix #1811 Arven post-search affordability"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}

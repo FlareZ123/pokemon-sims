@@ -1,4 +1,35 @@
+bool issue_1845_proactive_tapu_attachment_available() const {
+  // This decision uses only the current public state. Three visible Grass
+  // preserve the two-Grass Apex Dragon reserve while the third pays Tapu's
+  // printed one-Energy Retreat Cost. No later draw identity is consulted:
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Official attachment, retreat, and first-turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Observable-information, lock, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-model https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1845
+  return !secret_box_combo_enabled() &&
+      scenario_.dci == DciProfile::StrictJit &&
+      scenario_.locks == LockMode::FullCombined && scenario_.going_first &&
+      state_.turn == 1 && scenario_.max_turn >= 5 &&
+      !state_.manual_energy_used && !state_.retreat_used &&
+      state_.active && state_.active->card == Card::TapuLeleGX &&
+      state_.active->grass == 0 && state_.active->fire == 0 &&
+      target_regi() == nullptr && bench_space() > 0 &&
+      hand_count(Card::Grass) >= 3 && hand_count(Card::TateLiza) == 0 &&
+      hand_count(Card::LatiasEx) == 0 && !in_play(Card::LatiasEx);
+}
+
 bool attach_manual() {
+  if (issue_1845_proactive_tapu_attachment_available()) {
+    if (!remove_one(state_.hand, Card::Grass)) {
+      throw std::logic_error("Issue-1845 surplus Grass disappeared");
+    }
+    ++state_.active->grass;
+    state_.manual_energy_used = true;
+    trace("ATTACH", "R-GAME-ENERGY; R-TAPU-01; P-DCI-01",
+          "Grass Energy manually to Tapu Lele-GX for a future paid Retreat.");
+    return true;
+  }
   if (issue_1772_t3_crispin_completion_available()) {
     // The banked K1 route needs Crispin to supply the first Grass before the
     // ordinary manual attachment supplies the second. Spending the attachment

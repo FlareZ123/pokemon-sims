@@ -21,6 +21,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git fetch origin main
           cp docs/RULES_TRACEABILITY.md /tmp/klara-rules-traceability.md
           cp docs/RULE_SOURCES.md /tmp/klara-rule-sources.md
@@ -28,8 +30,6 @@ jobs:
           python3 .github/klara-final-fix.py
           rm -f .github/klara-final-fix.py
           rm -f .github/workflows/apply-klara-final-fixes.yml
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
           git commit -m 'Merge current main and fix Klara sanitizer regressions'
           git push origin HEAD:enhancement-1773-klara-swap

@@ -50,6 +50,8 @@
   // https://github.com/FlareZ123/pokemon-sims/issues/1745
   // https://github.com/FlareZ123/pokemon-sims/issues/1771
   // https://github.com/FlareZ123/pokemon-sims/issues/1772
+  // https://github.com/FlareZ123/pokemon-sims/issues/1775
   #include "part_issue_1745_steven_latias_t3_override.inc"
   #include "part_issue_1771_steven_t4_package_override.inc"
   #include "part_issue_1772_steven_t3_package_override.inc"
+  #include "part_issue_1775_gladion_treasure_t3_route_override.inc"

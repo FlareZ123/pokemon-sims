@@ -16,6 +16,21 @@ class Engine {
   Engine(const Scenario& scenario, const DeckRecipe& recipe, std::mt19937_64& rng, TraceLog* trace = nullptr)
       : scenario_(scenario), recipe_(recipe), rng_(rng), trace_(trace) {}
 
+  Engine(const Scenario& scenario, DeckRecipe&& recipe, std::mt19937_64& rng,
+         TraceLog* trace = nullptr)
+      : scenario_(scenario),
+        owned_recipe_(std::make_shared<DeckRecipe>(std::move(recipe))),
+        recipe_(*owned_recipe_),
+        rng_(rng),
+        trace_(trace) {
+    // Synthetic fixtures may pass a temporary recipe. Own that rvalue so later
+    // route projections and recipe inventory checks cannot retain a dangling
+    // reference. Shared ownership also keeps default Engine copies safe:
+    // https://eel.is/c++draft/class.temporary
+    // https://eel.is/c++draft/util.smartptr.shared
+    // Sanitizer evidence: https://github.com/FlareZ123/pokemon-sims/pull/1774
+  }
+
   TrialOutcome run() {
     setup();
     for (int next_turn = 1; next_turn <= scenario_.max_turn; ++next_turn) {
@@ -46,6 +61,7 @@ class Engine {
 
  private:
   const Scenario& scenario_;
+  std::shared_ptr<const DeckRecipe> owned_recipe_;
   const DeckRecipe& recipe_;
   std::mt19937_64& rng_;
   TraceLog* trace_{nullptr};

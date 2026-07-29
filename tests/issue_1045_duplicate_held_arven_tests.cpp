@@ -96,7 +96,7 @@ sim::State exact_issue_state() {
            sim::Card::Guzma,
            sim::Card::Lusamine,
            sim::Card::TeamYellsCheer,
-           sim::Card::RoseannesBackup,
+           sim::Card::Klara,
            sim::Card::PathToPeak,
        }) {
     take(card);

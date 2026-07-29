@@ -46,7 +46,7 @@ REQUESTED: dict[str, tuple[str, int]] = {
     "Gladion": ("sm4-95", 2),
     "Lusamine": ("sm4-96", 1),
     "Team Yell's Cheer": ("swsh9-149", 1),
-    "Roseanne's Backup": ("swsh9-148", 1),
+    "Klara": ("swsh6-145", 1),
     "Professor Turo's Scenario": ("sv4-171", 1),
     "Forest Seal Stone": ("swsh12-156", 1),
     "Powerglass": ("sv6pt5-63", 1),

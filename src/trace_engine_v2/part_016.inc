@@ -64,7 +64,7 @@ const std::vector<CrobatModelingDeck>& crobat_modeling_decks() {
       make_crobat_modeling_deck("crobat1-erika", {Card::ErikasInvitation}),
       make_crobat_modeling_deck("crobat1-channeler", {Card::Channeler}),
       make_crobat_modeling_deck("crobat1-team-yell", {Card::TeamYellsCheer}),
-      make_crobat_modeling_deck("crobat1-roseanne", {Card::RoseannesBackup}),
+      make_crobat_modeling_deck("crobat1-klara", {Card::Klara}),
       make_crobat_modeling_deck("crobat1-turo", {Card::ProfessorTuro}),
       make_crobat_modeling_deck("crobat1-powerglass", {Card::Powerglass}),
       make_crobat_modeling_deck("crobat1-heavy-ball", {Card::HisuianHeavyBall}),

@@ -109,6 +109,8 @@
     // evolution, and Brilliant Blender finish:
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Klara, the registered shell's second printed discard cost: https://api.pokemontcg.io/v2/cards/swsh6-145
+    // Roseanne's Backup, retained legacy recipe support: https://api.pokemontcg.io/v2/cards/swsh9-148
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
@@ -125,7 +127,8 @@
         state_.active->fire == 0 && state_.active->tool == Tool::None &&
         hand_count(Card::EarthenVessel) > 0 &&
         hand_count(Card::MysteriousTreasure) >= 2 &&
-        hand_count(Card::RoseannesBackup) > 0 &&
+        (hand_count(Card::RoseannesBackup) > 0 ||
+         hand_count(Card::Klara) > 0) &&
         hand_count(Card::ForestSealStone) > 0 &&
         hand_count(Card::Grass) == 0 && hand_count(Card::Fire) == 0 &&
         hand_count(Card::RegidragoVstar) == 0 &&

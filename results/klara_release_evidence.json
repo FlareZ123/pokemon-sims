@@ -1,0 +1,16 @@
+{
+  "affected_decks": [
+    "regidrago-shell"
+  ],
+  "comparison_baseline_commit": "46860424a452121b0747eb048520c3b82a0604cb",
+  "composed_main_commit": "463237702db3f533c969155a1fe069595bd5d48e",
+  "issue": "https://github.com/FlareZ123/pokemon-sims/issues/1773",
+  "matrix_seed": 20260705,
+  "multi_deck_csv_sha256": "dde9039b8a4f35c5ea99716d45abfa9e7deb8fce67b98cde30c5062588434798",
+  "pull_request": "https://github.com/FlareZ123/pokemon-sims/pull/1774",
+  "shell_csv_sha256": "ef9c1d8cf7065dee7dcb6fa16d6e4e523d5371097b8d5c45679ed067207bc8f8",
+  "trials_per_scenario": 100000,
+  "unchanged_control_decks": [
+    "regidrago-pineco"
+  ]
+}

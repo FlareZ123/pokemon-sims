@@ -1,0 +1,32 @@
+{
+  "affected_decks": [
+    "regidrago-shell"
+  ],
+  "after_csv": "klara_swap_shell_after.csv",
+  "after_csv_sha256": "2410cc74b6616c620d26d772ea25a50f5458cf57bf49b95a5ce4e79082ee7d9e",
+  "after_source_commit": "c3bd22f59c882cc43a494fc081cfdce1506c443b",
+  "baseline_commit": "46860424a452121b0747eb048520c3b82a0604cb",
+  "before_csv": "klara_swap_shell_before.csv",
+  "before_csv_sha256": "c7908ca12cecda7cd5ac7de7443255520db8593ca5764f15af6414c81e31cf12",
+  "condition_count": 16,
+  "exact_regression_seeds": [
+    301,
+    759
+  ],
+  "issue": "https://github.com/FlareZ123/pokemon-sims/issues/1773",
+  "largest_negative_readiness_z": -0.9644415857732788,
+  "matrix_seed": 20260705,
+  "release_artifact_digest": "sha256:cc7dacd598fe0beb3ee65a0ab4b4db419765df87a8e0bc74f32fc744fda748a3",
+  "release_artifact_id": 8713142086,
+  "summary_average_delta_pp": {
+    "ready_by_t2_pct": 0.04537500000000038,
+    "ready_by_t3_pct": 0.2403749999999999,
+    "ready_by_t4_pct": 0.3463124999999995,
+    "ready_by_t5_pct": 0.36362499999999986,
+    "setup_failure_pct": -0.3463124999999987
+  },
+  "trials_per_condition": 100000,
+  "unchanged_decks": [
+    "regidrago-pineco"
+  ]
+}

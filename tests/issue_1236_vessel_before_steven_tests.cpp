@@ -44,7 +44,7 @@ sim::State route_state() {
   state.turn = 1;
   state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0,
                               sim::Tool::None};
-  state.hand = {sim::Card::LatiasEx, sim::Card::RoseannesBackup,
+  state.hand = {sim::Card::LatiasEx, sim::Card::Klara,
                 sim::Card::MysteriousTreasure,
                 sim::Card::MysteriousTreasure,
                 sim::Card::GoodraVstar, sim::Card::EarthenVessel,
@@ -80,11 +80,11 @@ void test_vessel_precedes_vstar_search() {
   sim::Engine engine = make_engine(selected, rng, route_state());
 
   // The duplicate Treasure pays Vessel while its surviving copy pays its own cost
-  // with Roseanne's Backup and searches Regidrago VSTAR. Grass is available for the
+  // with Klara and searches Regidrago VSTAR. Grass is available for the
   // T1 manual attachment before Steven ends the turn:
   // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-  // Roseanne's Backup: https://api.pokemontcg.io/v2/cards/swsh9-148
+  // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
   // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
@@ -154,9 +154,9 @@ void test_incomplete_routes_hold() {
   blocked(one_treasure, scenario(), 1236003,
           "A singleton Treasure must remain protected.");
 
-  sim::State no_roseanne = route_state();
-  erase_one(no_roseanne.hand, sim::Card::RoseannesBackup);
-  blocked(no_roseanne, scenario(), 1236004,
+  sim::State no_supporter_cost = route_state();
+  erase_one(no_supporter_cost.hand, sim::Card::Klara);
+  blocked(no_supporter_cost, scenario(), 1236004,
           "Missing the second printed discard cost must block the route.");
 
   sim::State no_fss = route_state();

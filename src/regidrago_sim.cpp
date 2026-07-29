@@ -39,6 +39,7 @@
 // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
 // Team Yell's Cheer: https://api.pokemontcg.io/v2/cards/swsh9-149
 // Roseanne's Backup: https://api.pokemontcg.io/v2/cards/swsh9-148
+// Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
 // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
 #include "trace_engine_v2/part_000.inc"
 #include "trace_engine_v2/part_001.inc"
@@ -251,8 +252,11 @@
 #include "trace_engine_v2/part_team_yell_vstar_override.inc"
 #undef choose_supporter
 #include "trace_engine_v2/part_roseanne_multimode_override.inc"
-#define choose_supporter choose_supporter_issue1070_original
+#define choose_supporter choose_supporter_klara_original
 #include "trace_engine_v2/part_turo_oricorio_override.inc"
+#undef choose_supporter
+#define choose_supporter choose_supporter_issue1070_original
+#include "trace_engine_v2/part_klara_recovery_override.inc"
 #undef choose_supporter
 #define choose_supporter choose_supporter_issue1209_original
 #include "trace_engine_v2/part_issue_1070_tate_after_vstar_search_override.inc"

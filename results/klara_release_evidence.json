@@ -1,0 +1,11 @@
+{
+  "issue": "https://github.com/FlareZ123/pokemon-sims/issues/1773",
+  "baseline_commit": "46860424a452121b0747eb048520c3b82a0604cb",
+  "corrected_release_run_id": 30424489808,
+  "corrected_release_artifact_id": 8713142086,
+  "corrected_release_artifact_digest": "sha256:cc7dacd598fe0beb3ee65a0ab4b4db419765df87a8e0bc74f32fc744fda748a3",
+  "matrix_seed": 20260705,
+  "trials_per_scenario": 100000,
+  "affected_decks": ["regidrago-shell"],
+  "unchanged_control_decks": ["regidrago-pineco"]
+}

@@ -81,64 +81,7 @@
     return true;
   }
 
-  bool issue_1719_earthen_vessel_next_window_route() const {
-    if (!deck_seen_ || !strict_payload_timing() || state_.turn_ended ||
-        !state_.active || state_.active->card != Card::RegidragoV ||
-        !state_.manual_energy_used || state_.turn >= scenario_.max_turn) {
-      return false;
-    }
-
-    const int missing_grass = std::max(0, 2 - state_.active->grass);
-    const int missing_fire = std::max(0, 1 - state_.active->fire);
-    const bool item_available_next_turn =
-        scenario_.locks != LockMode::FullItem &&
-        scenario_.locks != LockMode::FullCombined &&
-        !(scenario_.locks == LockMode::TurnTwoItem && state_.turn + 1 >= 2);
-    const bool required_energy_in_known_deck =
-        (missing_grass == 1 &&
-         deck_count_after_search_started(Card::Grass) > 0) ||
-        (missing_fire == 1 &&
-         deck_count_after_search_started(Card::Fire) > 0);
-    const bool held_payload_cost =
-        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
-    const bool live_vstar_axis =
-        hand_count(Card::RegidragoVstar) > 0 ||
-        deck_count_after_search_started(Card::RegidragoVstar) > 0;
-
-    // Earthen Vessel already covers the one missing Basic Energy and the strict-JIT
-    // payload outlet on the next legal evolution window. Celestial Roar cannot change
-    // the marginal identity of the next unknown draw, while its random top-three
-    // processing can permanently remove Regidrago VSTAR and search outs before that
-    // live axis is reached. Hold only from K1 when the Vessel cost, searched Energy,
-    // future manual attachment, Item access, and VSTAR axis are all observable:
-    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-    // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
-    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Official Item, attachment, evolution, and attack procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // Observable-state policy, strict-JIT, dynamic DCI, and resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1719
-    return missing_grass + missing_fire == 1 &&
-        hand_count(Card::EarthenVessel) > 0 && item_available_next_turn &&
-        required_energy_in_known_deck && held_payload_cost && live_vstar_axis;
-  }
-
   bool use_celestial_roar() {
-    if (issue_1719_earthen_vessel_next_window_route()) {
-      // The held Vessel searches the sole missing Basic Energy and discards the held
-      // Dragon payload during the next strict-JIT ready turn. Random top-three
-      // processing cannot improve that earliest legal route and may remove its live
-      // VSTAR or search axis:
-      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-      // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
-      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-      // Official attack, Item, attachment, and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-      // Earliest-route and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1719
-      trace("HOLD ATTACK",
-            "R-RV-01; R-EV-01; R-GAME-ENERGY; P-KNOWLEDGE-01; P-JIT-01; P-COMPRESS-01",
-            "A payable Earthen Vessel, held Dragon payload, and live VSTAR axis already cover the next legal ready window.");
-      return false;
-    }
     if (guaranteed_next_turn_secret_box_route_after_hold()) {
       // Celestial Roar cannot improve the earliest legal ready turn beyond T2 in
       // this graph. Its random discard can remove a complete required category,

@@ -18,161 +18,13 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
 
-      - name: Apply the confirmed rules fix
+      - name: Apply confirmed patch and remove temporary machinery
         shell: bash
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          replacements = {
-              "src/trace_engine_v2/part_014b.inc": [
-                  (
-                      "    // axis. Once that card makes Lusamine worth playing, the second selection is\n"
-                      "    // mandatory and uses a deterministic low-impact eligible card.\n",
-                      "    // axis. When another eligible card exists, the fixed-count effect also selects\n"
-                      "    // that card through a deterministic low-impact fallback.\n",
-                  ),
-                  (
-                      "    // only legal Lusamine targets and may select a second copy where available.\n",
-                      "    // only legal Lusamine targets and selects a second copy where available.\n",
-                  ),
-                  (
-                      "    // Erika may satisfy the printed mandatory second Supporter/Stadium recovery:\n",
-                      "    // Erika may satisfy the printed second Supporter/Stadium recovery when available:\n",
-                  ),
-                  (
-                      "    // Lusamine requires exactly 2 Supporter and/or Stadium cards from the public\n"
-                      "    // discard pile. It does not say \"up to 2\", so one eligible target is insufficient:\n"
-                      "    // https://api.pokemontcg.io/v2/cards/sm4-96\n"
-                      "    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/\n"
-                      "    if (targets.size() != 2U) return false;\n",
-                      "    // A fixed-count public-zone effect selects as many eligible cards as possible\n"
-                      "    // when fewer than the printed number exist. One eligible target therefore makes\n"
-                      "    // Lusamine legal, while zero targets would make the Supporter have no effect:\n"
-                      "    // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96\n"
-                      "    // Fixed-count public-zone ruling: https://compendium.pokegym.net/compendium-ex.html#HOLON_FARMER\n"
-                      "    // Trainer no-effect and resolution-order rulings: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/\n"
-                      "    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1835\n"
-                      "    if (targets.empty()) return false;\n",
-                  ),
-              ],
-              "tests/lusamine_erika_fallback_tests.cpp": [
-                  ("void test_one_eligible_target_remains_unplayable() {", "void test_one_eligible_target_resolves() {"),
-                  (
-                      "  // Lusamine does not say \"up to 2\". Professor Burnet alone cannot satisfy the\n"
-                      "  // mandatory two-card recovery requirement:\n"
-                      "  // https://api.pokemontcg.io/v2/cards/sm4-96\n"
-                      "  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/\n"
-                      "  // https://github.com/FlareZ123/pokemon-sims/issues/854\n",
-                      "  // Fixed-count public-zone effects select as many eligible cards as possible\n"
-                      "  // below the printed count. Professor Burnet therefore makes Lusamine legal:\n"
-                      "  // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96\n"
-                      "  // Fixed-count ruling: https://compendium.pokegym.net/compendium-ex.html#HOLON_FARMER\n"
-                      "  // Trainer legality: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/\n"
-                      "  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1835\n",
-                  ),
-                  (
-                      "  assert(!EngineTestAccess::play_lusamine(engine));\n"
-                      "  assert(!state.supporter_used);\n"
-                      "  assert(contains(state.hand, Card::Lusamine));\n"
-                      "  assert(contains(state.discard, Card::ProfessorBurnet));\n",
-                      "  assert(EngineTestAccess::play_lusamine(engine));\n"
-                      "  assert(state.supporter_used);\n"
-                      "  assert(!contains(state.hand, Card::Lusamine));\n"
-                      "  assert(contains(state.hand, Card::ProfessorBurnet));\n"
-                      "  assert(contains(state.discard, Card::Lusamine));\n"
-                      "  assert(!contains(state.discard, Card::ProfessorBurnet));\n",
-                  ),
-                  ("  test_one_eligible_target_remains_unplayable();", "  test_one_eligible_target_resolves();"),
-              ],
-              "tests/issue_1392_lusamine_chaotic_swell_tests.cpp": [
-                  ("void test_horizon_and_exact_two_target_requirement() {", "void test_horizon_and_single_target_resolution() {"),
-                  (
-                      "    // Lusamine says 2, rather than up to 2, so a lone Swell is insufficient:\n"
-                      "    // https://api.pokemontcg.io/v2/cards/sm4-96\n"
-                      "    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/\n"
-                      "    // https://github.com/FlareZ123/pokemon-sims/issues/1392\n"
-                      "    require(targets.size() == 1U && !sim::EngineTestAccess::play_lusamine(fixture.engine),\n"
-                      "            \"Lusamine resolved without its mandatory second target.\");\n",
-                      "    // One advancing Swell is enough to make Lusamine legal when it is the only\n"
-                      "    // eligible public discard target. The played Lusamine cannot target itself:\n"
-                      "    // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96\n"
-                      "    // Fixed-count ruling: https://compendium.pokegym.net/compendium-ex.html#HOLON_FARMER\n"
-                      "    // Trainer resolution order: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/\n"
-                      "    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1835\n"
-                      "    require(targets.size() == 1U && targets.front() == sim::Card::ChaoticSwell &&\n"
-                      "                sim::EngineTestAccess::play_lusamine(fixture.engine),\n"
-                      "            \"Lusamine did not recover its lone advancing Chaotic Swell target.\");\n",
-                  ),
-                  ("  test_horizon_and_exact_two_target_requirement();", "  test_horizon_and_single_target_resolution();"),
-              ],
-              "tests/lusamine_arven_fss_payload_tests.cpp": [
-                  (
-                      "void test_lusamine_still_requires_two_targets() {\n"
-                      "  sim::State state = live_route_state();\n"
-                      "  state.discard = {sim::Card::Arven};\n"
-                      "  expect_lusamine_rejected(std::move(state), \"one Lusamine target\");\n"
-                      "}\n",
-                      "void test_lusamine_resolves_with_one_live_target() {\n"
-                      "  Fixture fixture;\n"
-                      "  sim::State state = live_route_state();\n"
-                      "  state.discard = {sim::Card::Arven};\n"
-                      "  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));\n\n"
-                      "  // One live Arven is enough when it is the only eligible public discard target.\n"
-                      "  // The delayed Item-lock route remains available after the recovery:\n"
-                      "  // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96\n"
-                      "  // Fixed-count ruling: https://compendium.pokegym.net/compendium-ex.html#HOLON_FARMER\n"
-                      "  // Arven and Forest Seal Stone: https://api.pokemontcg.io/v2/cards/sv1-166 https://api.pokemontcg.io/v2/cards/swsh12-156\n"
-                      "  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1835\n"
-                      "  if (!sim::EngineTestAccess::play_lusamine(fixture.engine)) {\n"
-                      "    throw std::runtime_error(\"Lusamine must recover its lone live Arven target.\");\n"
-                      "  }\n"
-                      "  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);\n"
-                      "  if (!after.supporter_used || !contains(after.hand, sim::Card::Arven) ||\n"
-                      "      !contains(after.discard, sim::Card::Lusamine)) {\n"
-                      "    throw std::runtime_error(\"Single-target Lusamine did not preserve the live Arven route.\");\n"
-                      "  }\n"
-                      "}\n",
-                  ),
-                  ("    test_lusamine_still_requires_two_targets();", "    test_lusamine_resolves_with_one_live_target();"),
-              ],
-              "tests/lusamine_arven_item_lock_tests.cpp": [
-                  ("void test_lusamine_holds_with_only_one_eligible_target() {", "void test_lusamine_recovers_only_eligible_target() {"),
-                  (
-                      "  // Lusamine requires exactly 2 Supporter and/or Stadium cards from the public\n"
-                      "  // discard pile. One eligible target does not satisfy the printed effect:\n"
-                      "  // https://api.pokemontcg.io/v2/cards/sm4-96\n"
-                      "  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/\n"
-                      "  assert(!EngineTestAccess::play_lusamine(engine));\n"
-                      "  assert(!state.supporter_used);\n"
-                      "  assert(state.hand.size() == 1U && state.hand.front() == Card::Lusamine);\n"
-                      "  assert(state.discard.size() == 2U && contains(state.discard, Card::ProfessorBurnet) &&\n"
-                      "         contains(state.discard, Card::Grass));\n",
-                      "  // Fixed-count public-zone effects select as many eligible cards as possible.\n"
-                      "  // Grass is ineligible, so Lusamine recovers the lone Professor Burnet target:\n"
-                      "  // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96\n"
-                      "  // Fixed-count ruling: https://compendium.pokegym.net/compendium-ex.html#HOLON_FARMER\n"
-                      "  // Trainer resolution order: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/\n"
-                      "  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1835\n"
-                      "  assert(EngineTestAccess::play_lusamine(engine));\n"
-                      "  assert(state.supporter_used);\n"
-                      "  assert(state.hand.size() == 1U && state.hand.front() == Card::ProfessorBurnet);\n"
-                      "  assert(state.discard.size() == 2U && contains(state.discard, Card::Lusamine) &&\n"
-                      "         contains(state.discard, Card::Grass));\n",
-                  ),
-                  ("  test_lusamine_holds_with_only_one_eligible_target();", "  test_lusamine_recovers_only_eligible_target();"),
-              ],
-          }
-
-          for filename, changes in replacements.items():
-              path = Path(filename)
-              text = path.read_text(encoding="utf-8")
-              for old, new in changes:
-                  if text.count(old) != 1:
-                      raise SystemExit(f"Expected exactly one source match in {filename}: {old[:80]!r}")
-                  text = text.replace(old, new)
-              path.write_text(text, encoding="utf-8")
-          PY
+          git apply --check -p2 .github/issue-1835.patch
+          git apply -p2 .github/issue-1835.patch
+          git rm .github/issue-1835.patch .github/workflows/issue-1835-source-bound.yml
+          git diff --check
 
       - name: Configure Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -180,12 +32,23 @@ jobs:
         run: cmake --build build --parallel 2
       - name: Run focused Lusamine regressions
         run: ctest --test-dir build --output-on-failure -R 'regidrago_(issue_1392_lusamine_chaotic_swell_tests|lusamine_arven_fss_payload_tests|lusamine_arven_item_lock_tests|lusamine_erika_fallback_tests)'
+
       - name: Simulate pass 1 shell strict JIT
         run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-pass-1.txt
       - name: Simulate pass 2 combined lock
         run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-combined-lock/go-first --seed 8675309 | tee trace-pass-2.txt
       - name: Simulate pass 3 Pineco strict JIT
         run: ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-pass-3.txt
+
+      - name: Regenerate canonical shell reports
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+      - name: Regenerate paired deck reports
+        run: |
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
       - name: Configure sanitizer build
@@ -197,41 +60,45 @@ jobs:
           ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
           UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
         run: ctest --test-dir build-sanitize --parallel 2 --output-on-failure
-      - name: Generate canonical matrix
+
+      - name: Generate final canonical T2 T3 matrix
         run: ./build/regidrago_sim --trials 100000 --seed 20260729 --out t2-t3-matrix.csv
-      - name: Generate all-deck matrix
+      - name: Generate final all-deck T2 T3 matrix
         run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260729 --out all-deck-matrix.csv
-      - name: Archive exact tested source
+
+      - name: Archive exact validated tree
+        shell: bash
         run: |
-          git rev-parse HEAD | tee workflow-input-head.txt
-          git diff --check
-          git diff > issue-1835.patch
-          git archive --format=zip --output=exact-input-source.zip HEAD
+          git add -A
+          git diff --cached --check
+          git diff --cached > issue-1835.patch
+          git diff --cached --name-only > tested-files.txt
+          git rev-parse HEAD | tee parent-head.txt
+          git write-tree | tee tested-tree.txt
+          git archive --format=zip --output=exact-tested-source.zip "$(cat tested-tree.txt)"
+
       - name: Upload source-bound evidence
         uses: actions/upload-artifact@v4
         with:
           name: issue-1835-source-bound-${{ github.run_attempt }}
           path: |
-            workflow-input-head.txt
+            parent-head.txt
+            tested-tree.txt
+            tested-files.txt
             issue-1835.patch
-            exact-input-source.zip
+            exact-tested-source.zip
             trace-pass-*.txt
             t2-t3-matrix.csv
             all-deck-matrix.csv
             build/Testing
             build-sanitize/Testing
-      - name: Commit the exact validated fix
+
+      - name: Commit the exact validated tree
         shell: bash
         env:
           HEAD_REF: ${{ github.head_ref }}
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/trace_engine_v2/part_014b.inc \
-                  tests/lusamine_erika_fallback_tests.cpp \
-                  tests/issue_1392_lusamine_chaotic_swell_tests.cpp \
-                  tests/lusamine_arven_fss_payload_tests.cpp \
-                  tests/lusamine_arven_item_lock_tests.cpp
-          git rm .github/workflows/issue-1835-source-bound.yml
           git commit -m 'Allow Lusamine to recover a lone eligible target'
           git push origin HEAD:"$HEAD_REF"

@@ -32,7 +32,7 @@
       // Regidrago VSTAR / Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
       // VSTAR Power and manual-attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
       // Strict-JIT and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-      // Confirmed route and implementation: https://github.com/FlareZ123/pokemon-sims/issues/1765 https://github.com/FlareZ123/pokemon-sims/pull/1770
+      // Confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/1765
       return false;
     }
 

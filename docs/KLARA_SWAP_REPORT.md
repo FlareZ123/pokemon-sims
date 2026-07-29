@@ -14,4 +14,8 @@ Only `regidrago-shell` contained Roseanne's Backup on the source-bound baseline.
 
 ## Method
 
-The final report records matched Release simulations from the same seed, trial count, scenario registry, and baseline commit. Exact matrices, deltas, hashes, and any negative-delta investigation are committed after the first Klara Release artifact is generated.
+The final report records matched Release simulations from the same seed, trial count, scenario registry, and baseline commit. Exact matrices, deltas, hashes, and any negative-delta investigation are committed after the final Klara Release artifact is generated.
+
+## Pre-final regression review
+
+The first Release matrix was positive overall but exposed two exact strict-JIT seeds where Klara recovered a Dragon before an already-live Wonder Tag route could fetch Crispin or Tate & Liza. Those seed-301 and seed-759 losses were selector errors rather than an inherent card tradeoff. The implementation now projects the remainder of the current turn with Klara disabled and holds Klara whenever the non-Klara connector chain already completes every setup axis that turn. Both exact states are permanent regression tests. Final statistics below are generated only after that correction.

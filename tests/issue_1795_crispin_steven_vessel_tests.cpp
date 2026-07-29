@@ -270,6 +270,7 @@ void exact_seed_reaches_turn_four() {
   // https://api.pokemontcg.io/v2/cards/sm7-145
   // https://api.pokemontcg.io/v2/cards/sv4-163
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // https://api.pokemontcg.io/v2/cards/swsh12-135
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/issues/1795
   expect(outcome.first_ready_turn == 4,
@@ -278,8 +279,10 @@ void exact_seed_reaches_turn_four() {
          "Seed 364 did not select the complete Supporter schedule");
   expect(trace_contains("T4 | READY"),
          "Seed 364 did not become ready on T4");
-  expect(!trace_contains("Celestial Roar"),
-         "Seed 364 still depended on random Celestial Roar");
+  expect(trace_contains("T2 | HOLD ATTACK"),
+         "Seed 364 did not preserve the known route from the random attack");
+  expect(!trace_contains("T2 | ATTACK"),
+         "Seed 364 still resolved the random Celestial Roar attack");
 }
 
 }  // namespace

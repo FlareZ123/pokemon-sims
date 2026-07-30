@@ -97,6 +97,33 @@ void test_guaranteed_gladion_treasure_route_holds_attack() {
          "Rule Box Ability lock must not suppress the Item-Supporter route.");
 }
 
+void test_k1_provenance_equivalence() {
+  const auto holds_attack = [](const bool deck_seen,
+                               const bool prizes_revealed,
+                               const std::uint64_t seed) {
+    std::mt19937_64 rng{seed};
+    sim::Engine engine = make_engine(strict_first(), rng,
+        guaranteed_next_window_state(), nullptr, deck_seen, prizes_revealed);
+    return !sim::EngineTestAccess::use_celestial_roar(engine);
+  };
+
+  // Either legal inspection supplies the same K1 knowledge for the known
+  // Gladion-to-prized-Treasure continuation. K0 leaves Celestial Roar live:
+  // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Correction precedent: https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
+  // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Official attack, Prize, Item, Supporter, attachment, and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1925
+  expect(holds_attack(true, false, 192501),
+         "Deck-search K1 lost the Gladion-Treasure hold");
+  expect(holds_attack(false, true, 192502),
+         "Prize-inspection K1 lost the Gladion-Treasure hold");
+  expect(!holds_attack(false, false, 192503),
+         "K0 used the known Prize continuation");
+}
+
 void test_missing_route_components_leave_attack_live() {
   const auto attacks = [](sim::State state, const sim::Scenario scenario,
                           const bool deck_seen, const bool prizes_revealed,
@@ -167,6 +194,7 @@ void test_seed_7_holds_and_keeps_turn_four_ready() {
 int main() {
   try {
     test_guaranteed_gladion_treasure_route_holds_attack();
+    test_k1_provenance_equivalence();
     test_missing_route_components_leave_attack_live();
     test_seed_7_holds_and_keeps_turn_four_ready();
     std::cout << "Issue 1174 Celestial Roar Gladion-Treasure tests passed\n";

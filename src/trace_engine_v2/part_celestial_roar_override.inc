@@ -121,8 +121,13 @@
 
     const bool held_dragon_payload =
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    // Full Prize inspection and a resolved deck search establish the same K1
+    // knowledge for the held Gladion-to-prized-Treasure continuation:
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Correction precedent: https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1925
     const bool held_gladion_prized_treasure_route =
-        deck_seen_ && prizes_known() && !item_locked() &&
+        prizes_known() && !item_locked() &&
         hand_count(Card::Gladion) > 0 && held_dragon_payload &&
         prize_count_after_reveal(Card::MysteriousTreasure) > 0 &&
         deck_count_after_search_started(Card::RegidragoVstar) > 0;

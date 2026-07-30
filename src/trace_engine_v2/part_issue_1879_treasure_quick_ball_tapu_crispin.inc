@@ -2,7 +2,7 @@
     if (!strict_payload_timing() || state_.turn > scenario_.max_turn ||
         item_locked() || !supporter_allowed() || !deck_seen_ ||
         !active_is_vstar() || need_regi() || need_vstar() ||
-        need_active_vstar() || !need_payload() ||
+        need_active_vstar() || !need_energy() || !need_payload() ||
         hand_count(Card::MysteriousTreasure) == 0 ||
         hand_count(Card::QuickBall) == 0 ||
         hand_count(Card::TapuLeleGX) > 0 ||
@@ -82,8 +82,22 @@
         grass_for_manual = true;
       }
     } else if (grass_in_deck) {
+      // With only Grass searchable, Crispin can legally advance this route only
+      // when Grass itself is still missing. Searching an unneeded Grass while a
+      // held Fire already completes GGF would make the Supporter have no setup
+      // effect and must not preempt the direct manual attachment:
+      // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+      // Trainer no-effect ruling: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+      // Confirmed bug boundary: https://github.com/FlareZ123/pokemon-sims/issues/1879
+      if (remaining_grass == 0) return std::nullopt;
       grass_for_manual = true;
     } else if (fire_in_deck) {
+      // The symmetric one-type branch is live only when Fire is a missing GGF
+      // component; an unneeded Fire search cannot justify consuming Crispin:
+      // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+      // Trainer no-effect ruling: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+      // Confirmed bug boundary: https://github.com/FlareZ123/pokemon-sims/issues/1879
+      if (remaining_fire == 0) return std::nullopt;
       fire_for_manual = true;
     } else {
       return std::nullopt;

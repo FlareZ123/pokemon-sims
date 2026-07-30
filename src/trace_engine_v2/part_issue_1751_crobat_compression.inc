@@ -53,3 +53,40 @@
     issue_1751_defer_crobat_ = false;
     return true;
   }
+
+  void run_turn_issue_1910_late_arven_blender_replay() {
+    const int blender_before = hand_count(Card::BrilliantBlender);
+    const int arven_discard_before = count_of(state_.discard, Card::Arven);
+    const bool supporter_before = state_.supporter_used;
+    run_turn_issue_1751_original();
+
+    const bool arven_exposed_live_blender =
+        !supporter_before && state_.supporter_used && !state_.turn_ended &&
+        count_of(state_.discard, Card::Arven) > arven_discard_before &&
+        blender_before == 0 && hand_count(Card::BrilliantBlender) > 0 &&
+        !item_locked() && deck_seen_ && !need_regi() && !need_vstar() &&
+        !need_energy() && !need_active_vstar() && need_payload() &&
+        can_play_payload_this_turn() && payload_might_be_in_deck();
+    if (!arven_exposed_live_blender) return;
+
+    // Arven searches an Item without ending the turn, so a newly exposed
+    // Brilliant Blender remains legal in the same action phase. Once K1 proves
+    // a Dragon payload remains in deck and every non-payload setup axis is
+    // complete, play the searched ACE SPEC before the enclosing ready-state check:
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Supporter, Item, search, discard, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1910
+    if (!play_brilliant_blender()) {
+      throw std::logic_error(
+          "Proven issue-1910 Arven-Blender continuation became unavailable");
+    }
+  }
+
+// The registered shell path enters the final issue-1751 wrapper after this include.
+// Route that call through the narrow post-Arven Item replay while preserving the
+// original turn implementation for every other state:
+// https://github.com/FlareZ123/pokemon-sims/issues/1910
+#define run_turn_issue_1751_original run_turn_issue_1910_late_arven_blender_replay

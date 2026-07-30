@@ -102,7 +102,10 @@ void test_k1_provenance_equivalence() {
                                const bool prizes_revealed,
                                const std::uint64_t seed) {
     std::mt19937_64 rng{seed};
-    sim::Engine engine = make_engine(strict_first(), rng,
+    // Engine stores Scenario by reference. Keep this fixture alive through use:
+    // C++ object lifetime: https://en.cppreference.com/w/cpp/language/lifetime.html
+    const sim::Scenario scenario = strict_first();
+    sim::Engine engine = make_engine(scenario, rng,
         guaranteed_next_window_state(), nullptr, deck_seen, prizes_revealed);
     return !sim::EngineTestAccess::use_celestial_roar(engine);
   };

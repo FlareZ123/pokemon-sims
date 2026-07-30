@@ -560,7 +560,10 @@
 #define run_turn run_turn_issue1673_original
 #include "part_014c_latias_bench_override.inc"
 #undef run_turn
+#define run_turn run_turn_issue_1751_original
 #include "part_issue_1673_secret_box_deadline_override.inc"
+#undef run_turn
+#include "part_issue_1751_run_turn_override.inc"
 #undef use_celestial_roar
 #undef choose_supporter
 #undef use_legacy_star

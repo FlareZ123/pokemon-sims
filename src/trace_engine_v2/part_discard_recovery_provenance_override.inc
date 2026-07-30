@@ -1,3 +1,11 @@
+  // Crobat V should resolve after deterministic hand compression when the
+  // current route can keep Dark Asset live. The flag is scoped by the final turn
+  // policy and only suppresses the generic Basic loop's Crobat branch:
+  // Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104
+  // Action-order policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1751
+  bool issue_1751_defer_crobat_{false};
+
   bool recover_discard_to_hand(const Card card) {
     const int discard_copies = count_of(state_.discard, card);
     if (discard_copies == 0) return false;
@@ -151,7 +159,11 @@
   }
 
   bool bench_crobat_if_useful() {
-    if (hand_count(Card::CrobatV) == 0 || bench_space() <= 0) return false;
+    // Generic Basic placement remains available for deterministic connectors while
+    // the issue-1751 turn policy defers only Crobat V until compression is complete:
+    // https://github.com/FlareZ123/pokemon-sims/issues/1751
+    if (issue_1751_defer_crobat_ || hand_count(Card::CrobatV) == 0 ||
+        bench_space() <= 0) return false;
     attach_fss_for_crobat_compression();
     if (!needs_crobat_connector()) return false;
     return bench_from_hand(Card::CrobatV, true);

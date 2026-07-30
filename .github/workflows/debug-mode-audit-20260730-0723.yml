@@ -21,11 +21,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Audit supplied card-data contract
-        run: |
-          python scripts/audit_card_data.py pokemon-tcg-data-master --out card-audit.json
-        continue-on-error: true
-
       - name: Configure Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator and tests

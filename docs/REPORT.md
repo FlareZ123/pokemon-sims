@@ -15,10 +15,10 @@ Seed: `20260705`.
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
 | Strict JIT, going first | 12.246% | 40% | 56.94% |
-| Matchup-flex JIT, going first | 16.341% | 48.085% | 64.051% |
+| Matchup-flex JIT, going first | 16.392% | 48.12% | 64.051% |
 | No discard control, going first | 19.985% | 56.04% | 72.375% |
 | Strict JIT, going second | 29.912% | 53.746% | 64.973% |
-| Matchup-flex JIT, going second | 37.456% | 61.25% | 71.452% |
+| Matchup-flex JIT, going second | 37.426% | 61.234% | 71.468% |
 | No discard control, going second | 39.971% | 67.119% | 78.4% |
 
 ## Lock stress tests

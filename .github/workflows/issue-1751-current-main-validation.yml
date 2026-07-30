@@ -1,0 +1,103 @@
+name: Issue 1751 Current Main Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  source-bound-validation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+
+      - name: Focused Crobat compression regressions
+        run: ctest --test-dir build -R 'regidrago_issue_(1724|1726|1751)' --output-on-failure
+
+      - name: Pass 1 exact seed 2154 compression route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Crobat V / Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+          # Official turn and Ability procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          # Confirmed issue: https://github.com/FlareZ123/pokemon-sims/issues/1751
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-serena --scenario strict-jit/go-second --seed 2154 --require-ready-by 2 | tee issue-1751-pass-1.txt
+
+      - name: Pass 2 exact seed 2014 ordered compression
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Forest Seal Stone and Brilliant Blender compression:
+          # https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/sv8-164
+          # Earliest legal route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-serena --scenario strict-jit/go-first --seed 2014 --require-ready-by 3 | tee issue-1751-pass-2.txt
+
+      - name: Pass 3 Pineco strict JIT going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Registered Pineco ALS and direct card records:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://api.pokemontcg.io/v2/cards/sv6-163
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee issue-1751-pass-3.txt
+
+      - name: Regenerate canonical shell baselines
+        run: python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+
+      - name: Regenerate named deck comparison
+        run: python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+
+      - name: Regenerate reports
+        run: |
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+
+      - name: Complete Release suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Configure sanitizers
+        run: cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON
+
+      - name: Build sanitizer targets
+        run: cmake --build build-sanitize --parallel 2
+
+      - name: Complete sanitizer suite
+        run: ctest --test-dir build-sanitize --output-on-failure
+
+      - name: Upload source-bound evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1751-current-main-${{ github.run_attempt }}
+          path: |
+            issue-1751-pass-*.txt
+            results/simulation_results.csv
+            results/baseline_manifest.json
+            results/traces/*.txt
+            results/multi_deck_comparison.csv
+            results/multi_deck_manifest.json
+            results/multi_deck_traces/*.txt
+            docs/REPORT.md
+            docs/MULTI_DECK_REPORT.md
+          if-no-files-found: error
+
+      - name: Commit tested matrices and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/REPORT.md docs/MULTI_DECK_REPORT.md results/simulation_results.csv results/baseline_manifest.json results/traces results/multi_deck_comparison.csv results/multi_deck_manifest.json results/multi_deck_traces
+          git rm .github/workflows/issue-1751-current-main-validation.yml
+          git commit -m "Regenerate source-bound matrices for #1751"
+          git push origin HEAD:${{ github.head_ref }}

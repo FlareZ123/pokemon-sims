@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: issue-1855-${{ github.event.pull_request.number || github.ref }}
@@ -78,7 +78,17 @@ jobs:
           python scripts/update_multi_deck_docs.py --repo-root .
       - name: Run complete Release suite
         run: ctest --test-dir build --output-on-failure
-      - name: Archive exact tested source
+      - name: Commit tested outputs and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm .github/workflows/issue-1855-serena-full-item-lock.yml
+          git add -A results docs README.md .github/workflows
+          git commit -m "Update setup matrices for #1855"
+          git push origin HEAD:${{ github.head_ref }}
+      - name: Archive exact committed source
         shell: bash
         run: |
           set -euo pipefail

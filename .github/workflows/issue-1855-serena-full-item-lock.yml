@@ -25,7 +25,9 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator
         run: cmake --build build --parallel 2
-      - name: Reproduce issue 1855
+      - name: Focused issue 1855 regressions
+        run: ctest --test-dir build -R regidrago_issue_1855_serena_full_item_lock_tests --output-on-failure
+      - name: Reproduce fixed issue 1855 route
         shell: bash
         run: |
           set -euo pipefail
@@ -36,6 +38,9 @@ jobs:
           # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
           # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1855
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-full-item-lock/go-second --seed 206 | tee issue-1855-seed-206.txt
+          test "$(grep -c 'T2 | DISCARD |.*Serena' issue-1855-seed-206.txt)" -eq 3
+          grep -q 'Earthen Vessel (Serena chosen discard)' issue-1855-seed-206.txt
+          test "$(grep -c 'Mysterious Treasure (Serena optional discard)' issue-1855-seed-206.txt)" -eq 2
       - name: Simulate pass 1
         shell: bash
         run: |

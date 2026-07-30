@@ -1,0 +1,91 @@
+name: Issue 1868 Source-Bound Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: issue-1868-validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run issue 1868 exact-state regressions
+        run: ./build/regidrago_unified_tests issue_1868_vessel_payload_dci_tests
+      - name: Simulate pass 1 matchup-flex going first
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+          # Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          # Dynamic DCI and JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1868
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 199 --require-ready-by 4 | tee issue-1868-pass-1.txt
+          grep -q "T4 | DISCARD.*Dialga-GX (Earthen Vessel cost)" issue-1868-pass-1.txt
+          grep -q "T4 | READY" issue-1868-pass-1.txt
+      - name: Simulate pass 2 matchup-flex going second
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+          # Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1868
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 199 --require-ready-by 4 | tee issue-1868-pass-2.txt
+          grep -q "T4 | DISCARD.*Dialga-GX (Earthen Vessel cost)" issue-1868-pass-2.txt
+          grep -q "T4 | READY" issue-1868-pass-2.txt
+      - name: Simulate pass 3 strict-JIT control
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Strict-JIT control and current-turn payload contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          # Quick Ball, Tapu Lele-GX, Steven's Resolve, Crispin, and Earthen Vessel:
+          # https://api.pokemontcg.io/v2/cards/swsh1-179
+          # https://api.pokemontcg.io/v2/cards/sm2-60
+          # https://api.pokemontcg.io/v2/cards/sm7-145
+          # https://api.pokemontcg.io/v2/cards/sv7-133
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 854 --require-ready-by 3 | tee issue-1868-pass-3.txt
+          grep -q "T3 | READY" issue-1868-pass-3.txt
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-1868-t2-t3-matrix.csv
+      - name: Generate paired two-deck matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out issue-1868-multi-deck-matrix.csv
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Archive exact tested source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee issue-1868-tested-head.txt
+          git archive --format=zip --output=issue-1868-source-snapshot.zip HEAD
+      - name: Upload source-bound evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1868-source-bound-${{ github.run_attempt }}
+          path: |
+            issue-1868-pass-*.txt
+            issue-1868-t2-t3-matrix.csv
+            issue-1868-multi-deck-matrix.csv
+            issue-1868-tested-head.txt
+            issue-1868-source-snapshot.zip
+            build/Testing
+          if-no-files-found: error

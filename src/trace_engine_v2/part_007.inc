@@ -170,9 +170,28 @@
     if (issue_1796_wonder_tag_steven_route_available()) {
       return Card::StevensResolve;
     }
+    // A same-turn strict-JIT payload plus Crispin's final Energy completion
+    // outranks Gladion's one-Prize exchange. Quick Ball has already paid the
+    // Dragon payload cost, Wonder Tag has established K1, and Crispin can supply
+    // the last Energy without consuming a later turn:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Supporter, Item, search, discard, and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, supporter contention, strict-JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1870
+    const bool crispin_finishes_current_turn_prized_energy_route =
+        strict_payload_timing() && supporter_allowed() && active_is_vstar() &&
+        payload_ready() && final_prized_energy_for_gladion().has_value() &&
+        crispin_can_advance_energy_axis() &&
+        deck_count_after_search_started(Card::Crispin) > 0;
+    if (crispin_finishes_current_turn_prized_energy_route) return Card::Crispin;
+
     // Wonder Tag is resolving after legal deck inspection. A known prized
     // immediate Pokemon axis, or final attachable Basic Energy, makes Gladion
-    // the fastest Supporter line.
+    // the fastest Supporter line when no current-turn Crispin completion exists.
     const bool prized_regi = need_regi() && deck_count_after_search_started(Card::RegidragoV) == 0 &&
                              prize_count_after_reveal(Card::RegidragoV) > 0;
     const bool prized_vstar = need_vstar() && deck_count_after_search_started(Card::RegidragoVstar) == 0 &&

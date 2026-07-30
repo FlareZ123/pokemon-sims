@@ -209,7 +209,12 @@
   }
 
   bool wonder_tag_duplicate_held_gladion_has_no_marginal_route() const {
-    if (!deck_seen_ || !prizes_known() || !supporter_allowed() ||
+    // Full Prize inspection and a resolved deck search establish the same K1
+    // knowledge for the duplicate-Gladion hold decision:
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Correction precedent: https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1929
+    if (!prizes_known() || !supporter_allowed() ||
         hand_count(Card::TapuLeleGX) == 0 ||
         hand_count(Card::Gladion) == 0 ||
         deck_count_after_search_started(Card::Gladion) == 0) {

@@ -1,0 +1,84 @@
+name: Harumi Debug Audit 20260730 0623
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harumi-debug-audit-20260730-0623-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+
+      - name: Simulate pass 1 shell strict JIT
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee control-pass-1.txt # Readiness contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+
+      - name: Simulate pass 2 shell matchup-flex JIT
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee control-pass-2.txt # Dynamic DCI and earliest route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+
+      - name: Simulate pass 3 registered Pineco route
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee control-pass-3.txt # ALS policy and printed cards: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
+
+      - name: Reproduce newest confirmation and claimed witnesses
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 951 | tee issue-1895.txt # Quick Ball, Crispin, Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 925 | tee issue-1896-flex.txt # Mysterious Treasure and current-turn JIT: https://api.pokemontcg.io/v2/cards/sm6-113 https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 925 | tee issue-1896-strict.txt # Mysterious Treasure and current-turn JIT: https://api.pokemontcg.io/v2/cards/sm6-113 https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-second --seed 258 | tee issue-1898.txt # Earthen Vessel, Dragapult ex, Guzma, Apex Dragon: https://api.pokemontcg.io/v2/cards/sv4-163 https://api.pokemontcg.io/v2/cards/sv6-130 https://api.pokemontcg.io/v2/cards/sm3-115 https://api.pokemontcg.io/v2/cards/swsh12-136
+
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260730 --out harumi-t2-t3-matrix.csv # Matrix specification: https://github.com/FlareZ123/pokemon-sims/blob/main/SIM-PLAN.md
+      - name: Generate paired all-condition matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260730 --out harumi-multi-deck-matrix.csv # Paired matrix specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MULTI_DECK_REPORT.md
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure # Repository test contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md
+      - name: Record tested source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee audit-tested-head.txt
+          git archive --format=zip --output=audit-source-snapshot.zip HEAD
+          cp build/regidrago_sim audit-regidrago_sim
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harumi-debug-audit-20260730-0623-${{ github.run_attempt }}
+          path: |
+            control-pass-*.txt
+            issue-1895.txt
+            issue-1896-*.txt
+            issue-1898.txt
+            harumi-t2-t3-matrix.csv
+            harumi-multi-deck-matrix.csv
+            audit-tested-head.txt
+            audit-source-snapshot.zip
+            audit-regidrago_sim
+            build/Testing
+          if-no-files-found: error

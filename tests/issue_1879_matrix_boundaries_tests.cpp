@@ -1,3 +1,4 @@
+// Regression source: https://github.com/FlareZ123/pokemon-sims/issues/1879
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 

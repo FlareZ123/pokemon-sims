@@ -25,23 +25,24 @@ jobs:
       - name: Focused Crobat compression regressions
         run: ctest --test-dir build -R 'regidrago_issue_(1724|1726|1751)' --output-on-failure
 
-      - name: Pass 1 exact seed 2154 compression route
+      - name: Pass 1 shell strict JIT going second
         shell: bash
         run: |
           set -euo pipefail
+          # The exact Crobat seed states are covered by the focused issue-1751 test.
           # Crobat V / Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
           # Official turn and Ability procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
           # Confirmed issue: https://github.com/FlareZ123/pokemon-sims/issues/1751
-          ./build/regidrago_sim --simulate-this --model-variant crobat1-serena --scenario strict-jit/go-second --seed 2154 --require-ready-by 2 | tee issue-1751-pass-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee issue-1751-pass-1.txt
 
-      - name: Pass 2 exact seed 2014 ordered compression
+      - name: Pass 2 shell strict JIT going first
         shell: bash
         run: |
           set -euo pipefail
           # Forest Seal Stone and Brilliant Blender compression:
           # https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/sv8-164
           # Earliest legal route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-          ./build/regidrago_sim --simulate-this --model-variant crobat1-serena --scenario strict-jit/go-first --seed 2014 --require-ready-by 3 | tee issue-1751-pass-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee issue-1751-pass-2.txt
 
       - name: Pass 3 Pineco strict JIT going second
         shell: bash

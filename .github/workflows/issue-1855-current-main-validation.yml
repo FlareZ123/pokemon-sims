@@ -1,103 +1,67 @@
-name: Issue 1855 Current Main Validation
+name: Issue 1855 Source-Bound Refresh
 
 on:
   pull_request:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: issue-1855-current-main-${{ github.event.pull_request.number || github.ref }}
+  group: issue-1855-refresh-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  source-bound-validation:
+  refresh-and-validate:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Configure Release
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-      - name: Build simulator and tests
-        run: cmake --build build --parallel 2
-      - name: Run focused issue 1855 regressions
-        run: ctest --test-dir build -R regidrago_issue_1855_serena_full_item_lock_tests --output-on-failure
-      - name: Reproduce fixed seed 206 route
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Regenerate source-bound shell baseline
         shell: bash
         run: |
           set -euo pipefail
-          # Serena permits one to three discards before drawing until five: https://api.pokemontcg.io/v2/cards/swsh12-164
-          # Permanent full Item lock makes every remaining Item unusable: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#full-item-lock
+          # Canonical fixed-seed matrix procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-canonical-shell-baseline
+          # Serena optional discards: https://api.pokemontcg.io/v2/cards/swsh12-164
+          # Permanent Item-lock contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#full-item-lock
           # Dynamic DCI contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
           # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1855
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-full-item-lock/go-second --seed 206 | tee issue-1855-seed-206.txt
-          test "$(grep -c 'T2 | DISCARD |.*Serena' issue-1855-seed-206.txt)" -eq 3
-          grep -q 'Mysterious Treasure (Serena chosen discard)' issue-1855-seed-206.txt
-          grep -q 'Earthen Vessel (Serena optional discard)' issue-1855-seed-206.txt
-          test "$(grep -c 'Mysterious Treasure (Serena optional discard)' issue-1855-seed-206.txt)" -eq 1
-      - name: Preserve selector and paid-retreat boundaries
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+      - name: Regenerate paired all-condition baseline
         shell: bash
         run: |
           set -euo pipefail
-          # Existing selector boundary and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-          # Regidrago V Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-full-item-lock/go-second --seed 375 --require-ready-by 2 | tee issue-1855-selector-boundary-seed-375.txt
-          # Tapu Lele-GX has a one-Energy Retreat Cost: https://api.pokemontcg.io/v2/cards/sm2-60
-          # Registered paid-retreat route: https://github.com/FlareZ123/pokemon-sims/issues/1845
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-combined-lock/go-first --seed 271828 --require-ready-by 5 | tee issue-1855-banked-tapu-seed-271828.txt
-          grep -q 'future paid Retreat' issue-1855-banked-tapu-seed-271828.txt
-          grep -q 'banked one-Energy Retreat Cost' issue-1855-banked-tapu-seed-271828.txt
-          grep -q 'T5 | READY' issue-1855-banked-tapu-seed-271828.txt
-      - name: Simulate pass 1 shell strict JIT
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Ready-state and current-turn JIT contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
-          # Official turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee simulate-pass-1.txt
-      - name: Simulate pass 2 shell matchup-flex JIT
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Apex Dragon requires GGF and a Dragon attack in discard: https://api.pokemontcg.io/v2/cards/swsh12-136
-          # Matchup-flex current-turn JIT contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee simulate-pass-2.txt
-      - name: Simulate pass 3 registered Pineco route
-        shell: bash
-        run: |
-          set -euo pipefail
+          # Paired 32-condition procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
           # Registered Pineco ALS: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
-          # Pineco and Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
-          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee simulate-pass-3.txt
-      - name: Generate canonical 100000-trial matrix
-        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-1855-t2-t3-matrix.csv
-      - name: Generate paired all-condition 100000-trial matrix
-        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out issue-1855-multi-deck-matrix.csv
-      - name: Run complete Release suite
-        run: ctest --test-dir build --parallel 4 --output-on-failure
-      - name: Record exact tested source
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Validate exact regression and complete Release suite
         shell: bash
         run: |
           set -euo pipefail
-          git rev-parse HEAD | tee tested-head.txt
-          git archive --format=zip --output=source-snapshot.zip HEAD
-      - name: Upload source-bound evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: issue-1855-current-main-${{ github.run_attempt }}
-          path: |
-            issue-1855-*.txt
-            simulate-pass-*.txt
-            issue-1855-t2-t3-matrix.csv
-            issue-1855-multi-deck-matrix.csv
-            tested-head.txt
-            source-snapshot.zip
-            build/regidrago_sim
-            build/regidrago_unified_tests
-            build/Testing
-          if-no-files-found: error
+          ctest --test-dir build -R regidrago_issue_1855_serena_full_item_lock_tests --output-on-failure
+          ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Commit refreshed evidence and remove one-shot workflow
+        shell: bash
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          rm .github/workflows/issue-1855-current-main-validation.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/REPORT.md docs/MULTI_DECK_REPORT.md results/baseline_manifest.json results/multi_deck_comparison.csv results/multi_deck_manifest.json results/simulation_results.csv results/traces results/multi_deck_traces .github/workflows/issue-1855-current-main-validation.yml
+          git diff --cached --check
+          git commit -m "Refresh issue 1855 source-bound setup evidence"
+          git push origin "HEAD:${HEAD_BRANCH}"

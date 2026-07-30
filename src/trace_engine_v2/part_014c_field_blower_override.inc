@@ -95,5 +95,7 @@
     run_secret_box_turn();
   }
 
+#undef secret_box_combo_enabled
+#undef run_secret_box_turn
 #define secret_box_combo_enabled secret_box_combo_enabled_issue1875
 #define run_secret_box_turn run_secret_box_turn_issue1875

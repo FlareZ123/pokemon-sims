@@ -27,11 +27,44 @@
     return std::nullopt;
   }
 
+  std::optional<Card> issue_1869_quick_ball_burnet_cost() const {
+    const bool complete_public_route =
+        scenario_.dci == DciProfile::StrictJit && deck_seen_ &&
+        !item_locked() && supporter_allowed() && active_is_vstar() &&
+        !need_energy() && need_payload() && hand_count(Card::QuickBall) > 0 &&
+        bench_space() > 0 && !in_play(Card::TapuLeleGX) &&
+        ability_available_for_pokemon(Card::TapuLeleGX) &&
+        deck_count_after_search_started(Card::TapuLeleGX) > 0 &&
+        deck_count_after_search_started(Card::ProfessorBurnet) > 0 &&
+        payload_might_be_in_deck();
+    if (!complete_public_route) return std::nullopt;
+
+    // Active GGF leaves only the current-turn payload axis. Quick Ball can spend a
+    // visible Supporter with no remaining setup role, find Tapu Lele-GX, and use
+    // Wonder Tag for Professor Burnet, which discards the Dragon payload this turn.
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+    // Erika's Invitation: https://api.pokemontcg.io/v2/cards/sv3pt5-160
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, discard, search, Bench, Ability, and Supporter procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, dynamic DCI/JIT, connector composition, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1869
+    for (const Card card : {Card::ProfessorTuro, Card::ErikasInvitation}) {
+      if (hand_count(card) > 0) return card;
+    }
+    return std::nullopt;
+  }
+
   std::optional<Card> choose_discard_issue1876(
       const bool permit_payload, const bool flex_fodder,
       const bool allow_heavy_ball = true,
       const std::optional<Card> excluded_from_cost = std::nullopt,
       const bool allow_redundant_payload = false) const {
+    if (excluded_from_cost == Card::QuickBall) {
+      if (const auto cost = issue_1869_quick_ball_burnet_cost()) return cost;
+    }
     if (excluded_from_cost == Card::MysteriousTreasure) {
       if (const auto payload = issue_1876_treasure_payload_cost()) {
         return payload;

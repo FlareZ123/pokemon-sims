@@ -163,8 +163,17 @@ bool play_mysterious_treasure(const bool permit_payload) {
     // Ultra Ball remains a legal card from hand for Treasure's discard cost, even
     // when that Ultra Ball is not itself payable because it needs two other cards:
     // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-    std::optional<Card> cost =
-        choose_discard(can_jit_discard, true, true, Card::MysteriousTreasure);
+    // The issue-1876/1896 JIT cost is route-specific and must run before the
+    // ordinary DCI selector, including when an older Dragon remains in discard.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Current-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Regression: https://github.com/FlareZ123/pokemon-sims/issues/1896
+    std::optional<Card> cost = issue_1876_treasure_payload_cost();
+    if (!cost) {
+      cost = choose_discard(can_jit_discard, true, true,
+                            Card::MysteriousTreasure);
+    }
 if (!cost && want_regi && issue_1605_arven_redundant_payload_route_) {
   // Arven already established K1 and selected this exact one-discard search
   // Item. Spend only the duplicated payload identity, after all ordinary DCI

@@ -52,7 +52,7 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee control-pass-3.txt
           grep -q "first-ready turn: 2" control-pass-3.txt
 
-      - name: Reproduce every open bug witness
+      - name: Reproduce every claimed open bug witness
         shell: bash
         run: |
           set -euo pipefail
@@ -117,6 +117,69 @@ jobs:
           grep -q "first-ready turn: not ready through T5" issue-1879-first.txt
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 163 | tee issue-1879-second.txt
           grep -q "first-ready turn: 4" issue-1879-second.txt
+
+      - name: Reproduce confirmation-pending issue 1918
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > issue-1918-probe.cpp <<'CPP'
+          #define REGIDRAGO_SIM_NO_MAIN
+          #include "src/regidrago_sim.cpp"
+          #include <iostream>
+          #include <random>
+          #include <utility>
+          namespace sim {
+          struct EngineTestAccess {
+            static void set_state(Engine& engine, State state, bool deck_seen,
+                                  bool prizes_revealed) {
+              engine.state_ = std::move(state);
+              engine.deck_seen_ = deck_seen;
+              engine.prizes_revealed_ = prizes_revealed;
+            }
+            static bool route_available(const Engine& engine) {
+              return engine.issue_1393_held_crispin_completion_available();
+            }
+          };
+          }
+          static sim::State exact_state() {
+            sim::State state;
+            state.turn = 2;
+            state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 1, 0,
+                                        sim::Tool::ForestSealStone};
+            state.bench = {
+                sim::Pokemon{sim::Card::TapuLeleGX, 1, 0, 0, sim::Tool::None},
+                sim::Pokemon{sim::Card::RegidragoV, 2, 0, 0, sim::Tool::None}};
+            state.hand = {sim::Card::QuickBall, sim::Card::RegidragoVstar,
+                          sim::Card::Crispin, sim::Card::Gladion,
+                          sim::Card::MegaDragonite, sim::Card::BrilliantBlender};
+            state.deck = {sim::Card::Grass, sim::Card::Oricorio,
+                          sim::Card::Dragapult, sim::Card::DialgaGX,
+                          sim::Card::Fire};
+            state.prizes = {sim::Card::GoodraVstar};
+            return state;
+          }
+          int main() {
+            // K1 equivalence: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+            // Current helper and issue: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_issue_1393_crispin_route_helper.inc https://github.com/FlareZ123/pokemon-sims/issues/1918
+            // Crispin, Blender, Gladion, and Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/sm4-95 https://api.pokemontcg.io/v2/cards/swsh12-136
+            const sim::Scenario scenario{"issue-1918", sim::DciProfile::StrictJit,
+                                         sim::LockMode::None, false, 4};
+            std::mt19937_64 deck_rng{1918};
+            sim::Engine deck_k1(scenario, sim::baseline_recipe(), deck_rng);
+            sim::EngineTestAccess::set_state(deck_k1, exact_state(), true, false);
+            std::cout << "deck-search K1 route="
+                      << sim::EngineTestAccess::route_available(deck_k1) << '\n';
+            std::mt19937_64 prize_rng{1918};
+            sim::Engine prize_k1(scenario, sim::baseline_recipe(), prize_rng);
+            sim::EngineTestAccess::set_state(prize_k1, exact_state(), false, true);
+            std::cout << "prize-inspection K1 route="
+                      << sim::EngineTestAccess::route_available(prize_k1) << '\n';
+          }
+          CPP
+          c++ -std=c++20 -O0 issue-1918-probe.cpp -o issue-1918-probe
+          ./issue-1918-probe | tee issue-1918.txt
+          grep -q "deck-search K1 route=1" issue-1918.txt
+          grep -q "prize-inspection K1 route=0" issue-1918.txt
 
       - name: Generate canonical T2 and T3 matrix
         run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-t2-t3-matrix.csv

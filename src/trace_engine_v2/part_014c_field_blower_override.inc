@@ -1,3 +1,5 @@
+#include "part_issue_1875_quick_ball_tapu_crispin_route.inc"
+
   bool path_removal_unlocks_live_rule_box_route() {
     if (!rule_box_abilities_locked()) return false;
 
@@ -75,3 +77,23 @@
           "Field Blower discarded the modeled Path to the Peak; Rule Box Pokémon Abilities are available again.");
     return true;
   }
+
+  bool secret_box_combo_enabled_issue1875() const {
+    return issue_1875_quick_ball_tapu_crispin_route_available() ||
+        secret_box_combo_enabled();
+  }
+
+  void run_secret_box_turn_issue1875() {
+    if (issue_1875_quick_ball_tapu_crispin_route_available()) {
+      trace("POLICY", "P-AXIS-01", "Start: " + state_line());
+      if (!complete_issue_1875_quick_ball_tapu_crispin_route()) {
+        throw std::logic_error("Issue-1875 projected route failed");
+      }
+      trace("POLICY", "P-AXIS-01", "End: " + state_line());
+      return;
+    }
+    run_secret_box_turn();
+  }
+
+#define secret_box_combo_enabled secret_box_combo_enabled_issue1875
+#define run_secret_box_turn run_secret_box_turn_issue1875

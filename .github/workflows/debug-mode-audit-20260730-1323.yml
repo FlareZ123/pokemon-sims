@@ -1,0 +1,156 @@
+name: Debug Mode Audit 20260730 1323
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: debug-mode-audit-20260730-1323-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+
+      - name: Perfect-play simulate pass 1 shell strict JIT
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Ready-state contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+          # Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee control-pass-1.txt
+          grep -q "first-ready turn: 2" control-pass-1.txt
+
+      - name: Perfect-play simulate pass 2 shell strict JIT going first
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Powerglass attaches only at end of turn after the attack: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+          # Earliest productive route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 3 | tee control-pass-2.txt
+          grep -q "first-ready turn: 3" control-pass-2.txt
+
+      - name: Perfect-play simulate pass 3 registered Pineco ALS
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Registered Pineco ALS: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+          # Pineco, Forretress ex, and Secret Box: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://api.pokemontcg.io/v2/cards/sv6-163
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee control-pass-3.txt
+          grep -q "first-ready turn: 2" control-pass-3.txt
+
+      - name: Reproduce every open bug witness
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Core printed effects: https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sv7-133
+          # K1, current-turn JIT, DCI, Supporter contention, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+          # Official Item, Supporter, Energy attachment, evolution, retreat, search, discard, and attack procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+
+          # #1912: https://github.com/FlareZ123/pokemon-sims/issues/1912
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 3698 | tee issue-1912.txt
+          grep -q "first-ready turn: not ready through T5" issue-1912.txt
+
+          # #1911 and Latias ex Skyliner: https://github.com/FlareZ123/pokemon-sims/issues/1911 https://api.pokemontcg.io/v2/cards/sv8-76
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 329 | tee issue-1911.txt
+          grep -q "first-ready turn: not ready through T5" issue-1911.txt
+
+          # #1910 and Arven: https://github.com/FlareZ123/pokemon-sims/issues/1910 https://api.pokemontcg.io/v2/cards/sv1-166
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 1955 | tee issue-1910.txt
+          grep -q "first-ready turn: 4" issue-1910.txt
+
+          # #1896 old payload suppresses current-turn Treasure cost: https://github.com/FlareZ123/pokemon-sims/issues/1896
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 925 | tee issue-1896-flex.txt
+          grep -q "first-ready turn: 4" issue-1896-flex.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 925 | tee issue-1896-strict.txt
+          grep -q "first-ready turn: 4" issue-1896-strict.txt
+
+          # #1895 Quick Ball discard selector: https://github.com/FlareZ123/pokemon-sims/issues/1895
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 951 | tee issue-1895.txt
+          grep -q "first-ready turn: 4" issue-1895.txt
+
+          # #1877 Treasure-to-Quick-Ball bridge: https://github.com/FlareZ123/pokemon-sims/issues/1877
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 169 | tee issue-1877.txt
+          grep -q "first-ready turn: 4" issue-1877.txt
+
+          # #1874 duplicate Treasure action order: https://github.com/FlareZ123/pokemon-sims/issues/1874
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 169 | tee issue-1874.txt
+          grep -q "first-ready turn: not ready through T5" issue-1874.txt
+
+          # #1872 Treasure before Vessel: https://github.com/FlareZ123/pokemon-sims/issues/1872
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 453 | tee issue-1872-first.txt
+          grep -q "first-ready turn: not ready through T5" issue-1872-first.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 453 | tee issue-1872-second.txt
+          grep -q "first-ready turn: not ready through T5" issue-1872-second.txt
+
+          # #1871 Treasure-to-Serena chain and Serena text: https://github.com/FlareZ123/pokemon-sims/issues/1871 https://api.pokemontcg.io/v2/cards/swsh12-164
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 292 | tee issue-1871.txt
+          grep -q "first-ready turn: not ready through T5" issue-1871.txt
+
+          # #1869 Quick Ball-Tapu-Burnet connector: https://github.com/FlareZ123/pokemon-sims/issues/1869 https://api.pokemontcg.io/v2/cards/sm2-60 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 108 | tee issue-1869.txt
+          grep -q "first-ready turn: 4" issue-1869.txt
+
+          # #1878 Vessel then Tapu-Crispin continuation: https://github.com/FlareZ123/pokemon-sims/issues/1878 https://compendium.pokegym.net/category/5-trainers/crispin/
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 241 | tee issue-1878.txt
+          grep -q "first-ready turn: 4" issue-1878.txt
+
+          # #1873 Blender-Crispin outranks Gladion: https://github.com/FlareZ123/pokemon-sims/issues/1873 https://api.pokemontcg.io/v2/cards/sm4-95
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 38 | tee issue-1873.txt
+          grep -q "first-ready turn: 4" issue-1873.txt
+
+          # #1879 Treasure-Quick Ball-Tapu-Crispin composition: https://github.com/FlareZ123/pokemon-sims/issues/1879
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 146 | tee issue-1879-first.txt
+          grep -q "first-ready turn: not ready through T5" issue-1879-first.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 163 | tee issue-1879-second.txt
+          grep -q "first-ready turn: 4" issue-1879-second.txt
+
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-t2-t3-matrix.csv
+      - name: Verify canonical matrix
+        run: cmp audit-t2-t3-matrix.csv results/simulation_results.csv
+      - name: Generate paired all-condition matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-multi-deck-matrix.csv
+      - name: Verify paired matrix
+        run: cmp audit-multi-deck-matrix.csv results/multi_deck_comparison.csv
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Record static-analysis inputs and tested source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git ls-files | sort > tracked-files.txt
+          git grep -nEI 'TODO|FIXME|HACK|BUG' -- '*.cpp' '*.hpp' '*.inc' '*.py' '*.cmake' '*.md' > static-markers.txt || true
+          git rev-parse HEAD | tee audit-tested-head.txt
+          git archive --format=zip --output=audit-source-snapshot.zip HEAD
+          cp build/regidrago_sim audit-regidrago_sim
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-mode-audit-20260730-1323-${{ github.run_attempt }}
+          path: |
+            control-pass-*.txt
+            issue-*.txt
+            audit-t2-t3-matrix.csv
+            audit-multi-deck-matrix.csv
+            audit-tested-head.txt
+            audit-source-snapshot.zip
+            audit-regidrago_sim
+            tracked-files.txt
+            static-markers.txt
+            build/Testing
+          if-no-files-found: error

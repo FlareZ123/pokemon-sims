@@ -192,7 +192,12 @@
   }
 
   bool issue_1645_steven_latias_grass_route_available() const {
-    if (!deck_seen_ || !prizes_known() || !supporter_allowed() ||
+    // Full Prize inspection and a resolved deck search establish the same K1
+    // knowledge for this deterministic Steven target package:
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Correction precedent: https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1927
+    if (!prizes_known() || !supporter_allowed() ||
         scenario_.dci != DciProfile::MatchupFlexJit || state_.turn != 1 ||
         scenario_.going_first || scenario_.locks != LockMode::None ||
         state_.turn + 3 > scenario_.max_turn || !state_.active ||

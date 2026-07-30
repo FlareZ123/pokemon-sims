@@ -1,0 +1,1 @@
+Temporary validation marker for issue #1874. This file is outside simulator_policy_source_digest and will never be merged.

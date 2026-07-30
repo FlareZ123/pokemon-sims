@@ -24,7 +24,7 @@ bool trace_contains(const sim::TraceLog& trace, const std::string& needle) {
 void test_seed_6_replays_arven_searched_blender_on_turn_three() {
   const auto scenario = sim::scenario_by_label("strict-jit/go-second");
   const sim::CrobatModelingDeck* deck =
-      sim::crobat_modeling_deck_by_id("crobat1-roseanne");
+      sim::crobat_modeling_deck_by_id("crobat1-klara");
   expect(scenario.has_value() && deck != nullptr,
          "The issue-1565 fixture is unavailable.");
 

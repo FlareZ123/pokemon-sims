@@ -100,6 +100,7 @@
   }
 
   bool play_mysterious_treasure(const bool permit_payload) {
+    if (issue_1817_play_prelock_treasure_tapu_route()) return true;
     if (issue_1411_play_treasure_tapu_steven_route()) return true;
     if (issue_1417_treasure_hold_turn_ == state_.turn) {
       // The recovered Mysterious Treasure is a next-turn connector. Playing it on

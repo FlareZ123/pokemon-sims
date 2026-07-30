@@ -1,3 +1,5 @@
+#include "part_issue_1821_steven_latias_grass_override.inc"
+
   bool known_burnet_t3_steven_route_available() const {
     if (!deck_seen_ || state_.turn != 2 || scenario_.going_first ||
         scenario_.dci != DciProfile::StrictJit || scenario_.max_turn < 3 ||
@@ -275,6 +277,8 @@
   }
 
   bool play_steven() {
+    if (play_issue_1821_steven_latias_grass_route()) return true;
+    if (issue_1817_play_prelock_steven_package()) return true;
     // A held Arven can complete the current turn through Forest Seal Stone and
     // Brilliant Blender, so do not enter any Steven route that ends the turn:
     // Arven: https://api.pokemontcg.io/v2/cards/sv1-166

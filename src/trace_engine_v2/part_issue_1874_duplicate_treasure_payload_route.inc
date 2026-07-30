@@ -9,19 +9,37 @@
     return std::nullopt;
   }
 
-  int issue_1874_mysterious_target_count() const {
-    int count = 0;
-    // Mysterious Treasure may search every Psychic or Dragon Pokémon below. The
-    // count proves that a legal second target remains after the first search.
+  std::optional<Card> issue_1874_second_target() const {
+    // Mysterious Treasure searches only Psychic or Dragon Pokémon. Crobat V is
+    // Darkness and must never be admitted as the post-payload target.
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-    // Legal Dragon fallbacks: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/sv6-127
-    // Prior target-classification fix: https://github.com/FlareZ123/pokemon-sims/issues/1253
+    // Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104
+    // Psychic examples: https://api.pokemontcg.io/v2/cards/sv8-76 https://api.pokemontcg.io/v2/cards/sm2-55 https://api.pokemontcg.io/v2/cards/sm2-60
+    // Dragon fallbacks: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/sv6-127
     for (const Card card : {Card::RegidragoV, Card::RegidragoVstar,
                             Card::LatiasEx, Card::Oricorio,
-                            Card::TapuLeleGX, Card::CrobatV,
-                            Card::MegaDragonite, Card::Dragapult,
-                            Card::GoodraVstar, Card::DialgaGX,
-                            Card::Appletun, Card::Dipplin}) {
+                            Card::TapuLeleGX, Card::MegaDragonite,
+                            Card::Dragapult, Card::GoodraVstar,
+                            Card::DialgaGX, Card::Appletun,
+                            Card::Dipplin}) {
+      if (deck_count_after_search_started(card) > 0) return card;
+    }
+    return std::nullopt;
+  }
+
+  int issue_1874_mysterious_target_count() const {
+    int count = 0;
+    // Count only printed Psychic or Dragon targets. This proves that one legal
+    // target remains after the first Treasure removes the selected payload.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Crobat V is Darkness and excluded: https://api.pokemontcg.io/v2/cards/swsh3-104
+    // Prior Dragon-target classification fix: https://github.com/FlareZ123/pokemon-sims/issues/1253
+    for (const Card card : {Card::RegidragoV, Card::RegidragoVstar,
+                            Card::LatiasEx, Card::Oricorio,
+                            Card::TapuLeleGX, Card::MegaDragonite,
+                            Card::Dragapult, Card::GoodraVstar,
+                            Card::DialgaGX, Card::Appletun,
+                            Card::Dipplin}) {
       count += deck_count_after_search_started(card);
     }
     return count;
@@ -94,9 +112,8 @@
       throw std::logic_error("Issue-1874 second Treasure payload disappeared");
     }
     record_deck_search_knowledge("Mysterious Treasure issue-1874 second search");
-    const Card second_target = fallback_mysterious_target_after_search_started();
-    if (deck_count_after_search_started(second_target) <= 0 ||
-        !move_deck_to_hand(second_target)) {
+    const std::optional<Card> second_target = issue_1874_second_target();
+    if (!second_target.has_value() || !move_deck_to_hand(*second_target)) {
       throw std::logic_error("Issue-1874 second Treasure target disappeared");
     }
     shuffle(state_.deck);

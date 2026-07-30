@@ -10,7 +10,7 @@ permissions:
 jobs:
   source-bound-validation:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,11 +29,11 @@ jobs:
           if text.count(old_wrapper) != 2:
               raise RuntimeError("Expected two issue-1797 final turn wrapper markers")
           text = text.replace(old_wrapper, new_wrapper)
-          old_rule = "R-GAME-ATTACH"
-          new_rule = "R-GAME-ENERGY"
-          if text.count(old_rule) != 1:
-              raise RuntimeError("Expected one issue-1797 attachment rule marker")
-          text = text.replace(old_rule, new_rule, 1)
+          old_trace = 'trace("ATTACH ENERGY", "R-GAME-ATTACH; P-COMPRESS-01",'
+          new_trace = 'trace("ATTACH ENERGY", "R-GAME-ENERGY; P-COMPRESS-01",'
+          if text.count(old_trace) != 1:
+              raise RuntimeError("Expected one issue-1797 attachment trace marker")
+          text = text.replace(old_trace, new_trace, 1)
           path.write_text(text, encoding="utf-8")
           PY
 
@@ -109,6 +109,15 @@ jobs:
 
       - name: Complete Release test suite
         run: ctest --test-dir build --output-on-failure
+
+      - name: Configure sanitizers
+        run: cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON
+
+      - name: Build sanitizer targets
+        run: cmake --build build-sanitize --parallel 2
+
+      - name: Complete sanitizer suite
+        run: ctest --test-dir build-sanitize --output-on-failure
 
       - name: Record tested source
         run: git rev-parse HEAD | tee issue-1797-tested-head.txt

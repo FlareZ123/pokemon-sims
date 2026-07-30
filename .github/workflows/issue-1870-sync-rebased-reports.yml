@@ -1,0 +1,58 @@
+name: Sync rebased issue 1870 reports
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.head_ref == 'fix/issue-1870-wonder-tag-crispin'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Write paired matrix and source-bound reports
+        shell: bash
+        env:
+          MULTI_GZIP_BASE64: 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
+        run: |
+          python - <<'PY'
+          import base64
+          import gzip
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          from scripts.baseline_provenance import simulator_policy_source_digest
+
+          root = Path.cwd()
+          multi = gzip.decompress(base64.b64decode(os.environ['MULTI_GZIP_BASE64']))
+          (root / 'results' / 'multi_deck_comparison.csv').write_bytes(multi)
+          digest = simulator_policy_source_digest(root)
+
+          baseline_path = root / 'results' / 'baseline_manifest.json'
+          baseline = json.loads(baseline_path.read_text())
+          baseline['simulator_policy_source_sha256'] = digest
+          baseline_path.write_text(json.dumps(baseline, indent=2, sort_keys=True) + '\n')
+
+          multi_path = root / 'results' / 'multi_deck_manifest.json'
+          manifest = json.loads(multi_path.read_text())
+          manifest['simulator_policy_source_sha256'] = digest
+          manifest['comparison_csv_sha256'] = hashlib.sha256(multi).hexdigest()
+          multi_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
+          PY
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+          rm .github/workflows/issue-1870-sync-rebased-reports.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add results/simulation_results.csv results/multi_deck_comparison.csv results/baseline_manifest.json results/multi_deck_manifest.json docs/REPORT.md docs/TRACE_AUDIT.md docs/MULTI_DECK_REPORT.md README.md .github/workflows/issue-1870-sync-rebased-reports.yml
+          git commit -m "Sync rebased issue 1870 source-bound reports"
+          git push origin HEAD:${{ github.head_ref }}

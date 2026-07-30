@@ -59,7 +59,8 @@ sim::Engine make_engine(const sim::Scenario& scenario, std::mt19937_64& rng,
 
 void test_exact_cost_and_boundaries() {
   std::mt19937_64 rng(1876);
-  sim::Engine engine = make_engine(flex(), rng, route_state());
+  const sim::Scenario flex_scenario = flex();
+  sim::Engine engine = make_engine(flex_scenario, rng, route_state());
 
   // The visible Dragon supplies the same-turn Apex Dragon payload while held
   // Crispin attaches the missing Grass. Klara retains its recovery role.
@@ -75,23 +76,22 @@ void test_exact_cost_and_boundaries() {
   sim::State no_crispin = route_state();
   no_crispin.hand.erase(std::find(no_crispin.hand.begin(), no_crispin.hand.end(),
                                   sim::Card::Crispin));
-  sim::Engine missing = make_engine(flex(), rng, std::move(no_crispin));
+  sim::Engine missing = make_engine(flex_scenario, rng, std::move(no_crispin));
   expect(sim::EngineTestAccess::treasure_cost(missing) != sim::Card::Dragapult,
          "Missing Crispin still admitted the payload cost.");
 
-  sim::Engine strict = make_engine(
-      sim::Scenario{"strict", sim::DciProfile::StrictJit,
-                    sim::LockMode::None, true, 5},
-      rng, route_state());
+  const sim::Scenario strict_scenario{
+      "strict", sim::DciProfile::StrictJit, sim::LockMode::None, true, 5};
+  sim::Engine strict = make_engine(strict_scenario, rng, route_state());
   expect(sim::EngineTestAccess::treasure_cost(strict) != sim::Card::Dragapult,
          "Strict JIT admitted the matchup-flex cost.");
 
-  sim::Engine locked = make_engine(flex(sim::LockMode::FullItem), rng,
-                                   route_state());
+  const sim::Scenario locked_scenario = flex(sim::LockMode::FullItem);
+  sim::Engine locked = make_engine(locked_scenario, rng, route_state());
   expect(sim::EngineTestAccess::treasure_cost(locked) != sim::Card::Dragapult,
          "Item lock admitted the Treasure-specific cost.");
 
-  sim::Engine k0 = make_engine(flex(), rng, route_state(), false);
+  sim::Engine k0 = make_engine(flex_scenario, rng, route_state(), false);
   expect(sim::EngineTestAccess::treasure_cost(k0) != sim::Card::Dragapult,
          "K0 admitted the K1-only cost override.");
 }

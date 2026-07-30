@@ -25,22 +25,22 @@ sim::State exact_state() {
   sim::State state;
   state.turn = 3;
   state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 1, 1,
-                    sim::Tool::ForestSealStone};
+                              sim::Tool::ForestSealStone};
   state.hand = {sim::Card::ProfessorBurnet};
   state.deck = {sim::Card::Crispin, sim::Card::Grass, sim::Card::Fire,
-      sim::Card::Gladion};
+                sim::Card::Gladion};
   state.prizes = {sim::Card::Grass, sim::Card::Oricorio};
   state.discard = {sim::Card::QuickBall, sim::Card::MegaDragonite};
   state.discarded_this_turn = {sim::Card::QuickBall,
-                     sim::Card::MegaDragonite};
+                               sim::Card::MegaDragonite};
   return state;
 }
 
 sim::Card selected_supporter(sim::State state,
-                   const sim::DciProfile dci =
-                       sim::DciProfile::StrictJit) {
+                             const sim::DciProfile dci =
+                                 sim::DciProfile::StrictJit) {
   const sim::Scenario scenario{"issue-1870", dci, sim::LockMode::None,
-                     true, 5};
+                               true, 5};
   const sim::DeckRecipe recipe = sim::baseline_recipe();
   std::mt19937_64 rng{1870};
   sim::Engine engine(scenario, recipe, rng);
@@ -84,7 +84,7 @@ void test_non_strict_profile_preserves_gladion_priority() {
 void test_non_vstar_state_preserves_gladion_priority() {
   sim::State state = exact_state();
   state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 1, 1,
-                    sim::Tool::ForestSealStone};
+                              sim::Tool::ForestSealStone};
   state.hand.push_back(sim::Card::RegidragoVstar);
   if (selected_supporter(std::move(state)) != sim::Card::Gladion) {
     throw std::runtime_error(
@@ -109,6 +109,10 @@ void test_spent_supporter_preserves_gladion_priority() {
 }  // namespace
 
 int main() {
+  // This regression is validated together with the merged final-Energy Vessel
+  // and Professor Burnet routes from issue 1866:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1866
+  // https://github.com/FlareZ123/pokemon-sims/pull/1881
   // Fixed-seed 100,000-trial shell and Pineco coverage for every documented
   // T2/T3 condition is source-bound beside this regression:
   // https://github.com/FlareZ123/pokemon-sims/blob/main/results/simulation_results.csv

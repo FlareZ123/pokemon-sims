@@ -1,0 +1,58 @@
+--- a/src/trace_engine_v2/part_007.inc
++++ b/src/trace_engine_v2/part_007.inc
+@@ -56,7 +56,11 @@
+         state_.active->card != Card::RegidragoV ||
+         state_.active->entered_turn >= state_.turn ||
+         state_.active->grass < 2 || state_.active->fire != 0 ||
+-        !deck_seen_ || !prizes_revealed_ ||
++        // K1 is complete after either legal deck inspection or full Prize inspection:
++        // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
++        // https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
++        // https://github.com/FlareZ123/pokemon-sims/issues/1923
++        !prizes_known() ||
+         hand_count(Card::Fire) == 0 || hand_count(Card::Gladion) > 0 ||
+         hand_count(Card::MysteriousTreasure) > 0 ||
+         !need_vstar() || !need_energy() || !need_payload() ||
+--- a/tests/issue_1166_wonder_tag_future_gladion_tests.cpp
++++ b/tests/issue_1166_wonder_tag_future_gladion_tests.cpp
+@@ -101,7 +101,31 @@
+   }
+ 
+   state = route_state();
+-  expect_crispin(std::move(state), "unknown Prize map", sim::LockMode::None, 5, true, false);
++  expect_crispin(std::move(state), "K0", sim::LockMode::None, 5, false, false);
++}
++
++void test_k1_provenance_equivalence() {
++  const auto route_is_live = [](const bool deck_seen,
++                                const bool prizes_revealed) {
++    Fixture fixture;
++    sim::EngineTestAccess::set_state(
++        fixture.engine, route_state(), deck_seen, prizes_revealed);
++    return sim::EngineTestAccess::future_gladion_route(fixture.engine);
++  };
++
++  // Either legal inspection supplies the same K1 knowledge. K0 still cannot use
++  // the known prized-Treasure route:
++  // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
++  // Correction precedent: https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
++  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
++  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
++  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
++  // Official search, Ability, Prize, Supporter, attachment, and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
++  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1923
++  if (!route_is_live(true, false) || !route_is_live(false, true) ||
++      route_is_live(false, false)) {
++    throw std::runtime_error("Issue 1923 K1 provenance boundary failed");
++  }
+ }
+ 
+ void test_requires_held_fire_and_protected_payload() {
+@@ -128,6 +152,7 @@
+ int main() {
+   test_banks_gladion_over_redundant_crispin();
+   test_requires_known_prized_treasure_chain();
++  test_k1_provenance_equivalence();
+   test_requires_held_fire_and_protected_payload();
+   test_requires_future_legal_window();
+   return 0;

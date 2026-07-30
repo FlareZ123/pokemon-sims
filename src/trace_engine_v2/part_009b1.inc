@@ -244,8 +244,12 @@
   }
 
   std::optional<Card> issue_1895_quick_ball_payload_cost() const {
+    // Preserve the established one-cost Quick Ball + prior-turn Forretress route when it is complete.
+    // Forretress ex / Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // Confirmed route specification: https://github.com/FlareZ123/pokemon-sims/issues/1744
     const bool complete_public_route =
         strict_payload_timing() && deck_seen_ && !item_locked() &&
+        !issue_1744_quick_ball_forretress_route_available() &&
         supporter_allowed() && active_is_vstar() &&
         state_.active->grass == 1 && state_.active->fire == 1 &&
         need_payload() && hand_count(Card::QuickBall) > 0 &&

@@ -1,0 +1,46 @@
+name: Apply PR 1899 Forretress route boundary
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/issue-1895-quick-ball-payload-cost'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Preserve the established Forretress completion route
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/trace_engine_v2/part_009b1.inc')
+          text = path.read_text()
+          old = '''    const bool complete_public_route =
+                strict_payload_timing() && deck_seen_ && !item_locked() &&
+                supporter_allowed() && active_is_vstar() &&'''
+          new = '''    // Preserve the established one-cost Quick Ball + prior-turn Forretress route when it is complete.
+                // Forretress ex / Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+                // Confirmed route specification: https://github.com/FlareZ123/pokemon-sims/issues/1744
+                const bool complete_public_route =
+                strict_payload_timing() && deck_seen_ && !item_locked() &&
+                !issue_1744_quick_ball_forretress_route_available() &&
+                supporter_allowed() && active_is_vstar() &&'''
+          if old not in text:
+              raise SystemExit('Expected PR 1899 route condition not found')
+          path.write_text(text.replace(old, new))
+          PY
+          git diff --check
+          rm .github/workflows/apply-pr-1899-route-boundary.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m 'Preserve Forretress route in issue 1895 fix'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}

@@ -10,6 +10,16 @@
 namespace sim {
 
 struct EngineTestAccess {
+  static void set_state(Engine& engine, State state, const bool deck_seen,
+                        const bool prizes_revealed) {
+    engine.state_ = std::move(state);
+    engine.deck_seen_ = deck_seen;
+    engine.prizes_revealed_ = prizes_revealed;
+  }
+  static bool duplicate_crispin_route(const Engine& engine) {
+    return engine.issue_1516_quick_ball_tapu_duplicate_crispin_is_redundant(
+        false);
+  }
   static const State& state(const Engine& engine) {
     return engine.state_;
   }
@@ -45,6 +55,58 @@ SeedResult run_seed(const std::string& scenario_label,
   sim::TraceLog trace{true, {}};
   sim::Engine engine(*scenario, deck->recipe, rng, &trace);
   return {engine.run(), std::move(trace)};
+}
+
+sim::State issue_1922_state() {
+  sim::State state;
+  state.turn = 1;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0};
+  state.hand = {sim::Card::ChaoticSwell, sim::Card::QuickBall,
+                sim::Card::Gladion, sim::Card::Crispin,
+                sim::Card::ErikasInvitation, sim::Card::Grass,
+                sim::Card::Fire};
+  state.deck = {sim::Card::TapuLeleGX, sim::Card::Crispin,
+                sim::Card::RegidragoVstar, sim::Card::Arven,
+                sim::Card::MysteriousTreasure, sim::Card::ForestSealStone,
+                sim::Card::Oricorio, sim::Card::Grass, sim::Card::Fire};
+  state.prizes = {sim::Card::MegaDragonite, sim::Card::Guzma,
+                  sim::Card::Powerglass, sim::Card::Channeler,
+                  sim::Card::Dipplin, sim::Card::Arven};
+  state.discard = {sim::Card::EarthenVessel, sim::Card::Dragapult};
+  return state;
+}
+
+void test_k1_provenance_equivalence() {
+  const auto route_is_live = [](const bool deck_seen,
+                                const bool prizes_revealed,
+                                const std::uint64_t seed) {
+    const sim::Scenario scenario{
+        "issue-1922", sim::DciProfile::NoDiscardControl,
+        sim::LockMode::None, true, 5};
+    const sim::DeckRecipe recipe = sim::baseline_recipe();
+    std::mt19937_64 rng{seed};
+    sim::Engine engine{scenario, recipe, rng};
+    sim::EngineTestAccess::set_state(
+        engine, issue_1922_state(), deck_seen, prizes_revealed);
+    return sim::EngineTestAccess::duplicate_crispin_route(engine);
+  };
+
+  // Either legal inspection supplies the same K1 knowledge for the duplicate
+  // Wonder Tag to Crispin projection. K0 cannot use the prized payload identity:
+  // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Correction precedent: https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Official search, Ability, Item-cost, Prize, and Supporter procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1922
+  expect(route_is_live(true, false, 192201),
+         "Deck-search K1 rejected the duplicate-Crispin hold");
+  expect(route_is_live(false, true, 192202),
+         "Prize-inspection K1 rejected the duplicate-Crispin hold");
+  expect(!route_is_live(false, false, 192203),
+         "K0 used the duplicate-Crispin hold");
 }
 
 void test_seed_42_preserves_quick_ball_and_tapu() {
@@ -103,6 +165,7 @@ void test_strict_jit_seed_104_keeps_distinct_tapu_route() {
 }  // namespace
 
 int main() {
+  test_k1_provenance_equivalence();
   test_seed_42_preserves_quick_ball_and_tapu();
   test_strict_jit_seed_104_keeps_distinct_tapu_route();
   return 0;

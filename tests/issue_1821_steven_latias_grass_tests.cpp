@@ -11,10 +11,12 @@
 namespace sim {
 
 struct EngineTestAccess {
-  static void set_state(Engine& engine, State state, const bool k1 = true) {
+  static void set_state(Engine& engine, State state,
+                        const bool deck_seen = true,
+                        const bool prizes_revealed = true) {
     engine.state_ = std::move(state);
-    engine.deck_seen_ = k1;
-    engine.prizes_revealed_ = k1;
+    engine.deck_seen_ = deck_seen;
+    engine.prizes_revealed_ = prizes_revealed;
   }
   static bool route(const Engine& engine) {
     return engine.issue_1821_steven_latias_grass_route_available();
@@ -135,9 +137,36 @@ void exact_k1_route_uses_retreat_and_three_targets() {
 
 void k0_rejects_route() {
   Fixture fixture;
-  sim::EngineTestAccess::set_state(fixture.engine, route_state(), false);
+  sim::EngineTestAccess::set_state(fixture.engine, route_state(), false, false);
   expect(!sim::EngineTestAccess::route(fixture.engine),
          "The route read deck or Prize identities at K0");
+}
+
+void k1_provenance_equivalence() {
+  const auto route_is_live = [](const bool deck_seen,
+                                const bool prizes_revealed) {
+    Fixture fixture;
+    sim::EngineTestAccess::set_state(
+        fixture.engine, route_state(), deck_seen, prizes_revealed);
+    return sim::EngineTestAccess::route(fixture.engine);
+  };
+
+  // Either legal inspection supplies the same K1 knowledge for the Steven,
+  // Latias ex, and Grass route. K0 remains rejected:
+  // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Correction precedent: https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
+  // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+  // Official attachment, retreat, Supporter, search, evolution, Ability, and Item procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1928
+  expect(route_is_live(true, false),
+         "Deck-search K1 rejected the issue-1821 route");
+  expect(route_is_live(false, true),
+         "Prize-inspection K1 rejected the issue-1821 route");
+  expect(!route_is_live(false, false),
+         "K0 used the issue-1821 route");
 }
 
 void missing_latias_rejects_route() {
@@ -189,6 +218,7 @@ int main() {
   try {
     exact_k1_route_uses_retreat_and_three_targets();
     k0_rejects_route();
+    k1_provenance_equivalence();
     missing_latias_rejects_route();
     short_horizon_rejects_route();
     exact_seed_reaches_turn_three();

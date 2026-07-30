@@ -20,7 +20,12 @@
     // Official attachment, retreat, Supporter, search, evolution, Ability, and Item procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, strict-JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1821
-    return deck_seen_ && prizes_known() && state_.turn == 1 &&
+    // Full Prize inspection and a resolved deck search establish the same K1
+    // knowledge for this deterministic Steven target package:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
+    // https://github.com/FlareZ123/pokemon-sims/issues/1928
+    return prizes_known() && state_.turn == 1 &&
         !scenario_.going_first && scenario_.dci == DciProfile::StrictJit &&
         scenario_.locks == LockMode::None && scenario_.max_turn >= 3 &&
         supporter_allowed() && !item_locked() && !state_.manual_energy_used &&

@@ -1,0 +1,29 @@
+name: Issue 1910 Source Digest
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  digest:
+    if: github.head_ref == 'fix/issue-1910-late-arven-blender-replay'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record simulator policy source digest
+        run: |
+          # Source-bound baseline contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/baseline_provenance.py
+          python -c "from pathlib import Path; from scripts.baseline_provenance import simulator_policy_source_digest; print(simulator_policy_source_digest(Path('.').resolve()))" | tee simulator-policy-source-sha256.txt
+          git rev-parse HEAD | tee tested-head.txt
+      - name: Upload exact digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1910-source-digest-${{ github.run_attempt }}
+          path: |
+            simulator-policy-source-sha256.txt
+            tested-head.txt
+          if-no-files-found: error

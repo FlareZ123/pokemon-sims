@@ -34,51 +34,116 @@
         active_evolution_axis_complete && (fire_held || fss_fire_available);
   }
 
-  bool issue_1646_vessel_burnet_finish_visible() const {
-    // The Active VSTAR is already at GF, so one searchable Grass and the unused
-    // manual attachment complete the Energy axis. Professor Burnet is the paid
-    // current-turn payload outlet. In this exact public K1 graph, Quick Ball is a
-    // dominated connector: using it for Tapu Lele-GX would consume another Bench
-    // slot and force Brilliant Blender, while paying Vessel with Quick Ball keeps
-    // the singleton ACE SPEC and completes both remaining axes this turn:
+  std::optional<Card> issue_1866_vessel_burnet_cost() const {
+    // Once Active Regidrago VSTAR is one manual attachment from GGF and held
+    // Professor Burnet deterministically supplies the current-turn payload,
+    // these visible cards have no remaining setup role on the complete route.
+    // Preserve Basic Energy, Dragon payloads, recovery, ACE SPEC, and other live
+    // connectors while selecting the narrow route-replaced Vessel cost:
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Erika's Invitation: https://api.pokemontcg.io/v2/cards/sv3pt5-160
+    // Guzma: https://api.pokemontcg.io/v2/cards/sm3-115
+    // Dynamic DCI and resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Refined confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/1866
+    for (const Card card : {
+             Card::QuickBall,
+             Card::MysteriousTreasure,
+             Card::ErikasInvitation,
+             Card::Guzma,
+             Card::Channeler,
+             Card::FieldBlower,
+             Card::ChaoticSwell,
+             Card::PathToPeak,
+             Card::TeamYellsCheer,
+             Card::Powerglass,
+         }) {
+      if (hand_count(card) > 0) return card;
+    }
+    return std::nullopt;
+  }
+
+  bool issue_1646_vessel_burnet_finish_visible() const {
+    const Pokemon* active = state_.active ? &*state_.active : nullptr;
+    if (active == nullptr || active->card != Card::RegidragoVstar) return false;
+
+    const int missing_grass = std::max(0, 2 - active->grass);
+    const int missing_fire = std::max(0, 1 - active->fire);
+    const bool exactly_one_energy_missing =
+        missing_grass + missing_fire == 1;
+    const bool missing_energy_in_deck =
+        (missing_grass == 1 &&
+         deck_count_after_search_started(Card::Grass) > 0) ||
+        (missing_fire == 1 &&
+         deck_count_after_search_started(Card::Fire) > 0);
+
+    // Earthen Vessel's printed cost and search resolve the only missing GGF
+    // component, Professor Burnet independently establishes a current-turn
+    // Dragon payload, and the unused manual attachment completes readiness.
+    // The route applies to either final Basic Energy orientation and does not
+    // require Brilliant Blender. A held Dragon remains the stronger direct
+    // Vessel cost and therefore blocks this paid-Supporter route. K1 and the
+    // narrow cost selector prevent hidden information use and preserve every
+    // still-live connector:
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Regidrago VSTAR / Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Core Item, Supporter, attachment, search, discard, and shuffle procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // K1, dynamic DCI, strict JIT, and resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1646
+    // Official Item, Supporter, search, discard, shuffle, and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, strict JIT, DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Original route: https://github.com/FlareZ123/pokemon-sims/issues/1646
+    // Refined confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/1866
     return scenario_.dci == DciProfile::StrictJit &&
-        scenario_.locks == LockMode::None && state_.turn == 3 &&
-        prizes_known() && supporter_allowed() && !state_.manual_energy_used &&
-        state_.active && state_.active->card == Card::RegidragoVstar &&
-        state_.active->grass == 1 && state_.active->fire >= 1 &&
-        need_payload() && hand_count(Card::EarthenVessel) > 0 &&
-        hand_count(Card::QuickBall) > 0 &&
+        scenario_.locks == LockMode::None && state_.turn >= 3 &&
+        state_.turn <= scenario_.max_turn && prizes_known() &&
+        supporter_allowed() && !state_.manual_energy_used &&
+        exactly_one_energy_missing && missing_energy_in_deck &&
+        need_payload() &&
+        std::none_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
+        hand_count(Card::EarthenVessel) > 0 &&
         hand_count(Card::ProfessorBurnet) > 0 &&
-        hand_count(Card::BrilliantBlender) > 0 &&
-        deck_count_after_search_started(Card::Grass) > 0 &&
-        payload_might_be_in_deck();
+        payload_might_be_in_deck() &&
+        issue_1866_vessel_burnet_cost().has_value();
   }
 
   bool play_issue_1646_vessel_burnet_finish() {
     if (!issue_1646_vessel_burnet_finish_visible()) return false;
     if (item_locked() || !deck_search_available()) return false;
 
+    const Card cost = *issue_1866_vessel_burnet_cost();
+    const Card missing_energy =
+        state_.active->grass < 2 ? Card::Grass : Card::Fire;
+
     if (!remove_one(state_.hand, Card::EarthenVessel)) {
-      throw std::logic_error("Issue 1646 Earthen Vessel disappeared");
+      throw std::logic_error("Issue 1866 Earthen Vessel disappeared");
     }
     state_.discard.push_back(Card::EarthenVessel);
-    discard_from_hand(Card::QuickBall, "Earthen Vessel cost", "R-EV-01");
+    if (!discard_from_hand(cost, "Earthen Vessel cost",
+                           "R-EV-01; P-DCI-01; P-JIT-01")) {
+      throw std::logic_error("Issue 1866 Vessel cost disappeared");
+    }
     record_deck_search_knowledge("Earthen Vessel");
 
-    if (!move_deck_to_hand(Card::Grass)) {
-      throw std::logic_error("Issue 1646 Grass target disappeared");
+    if (!move_deck_to_hand(missing_energy)) {
+      throw std::logic_error("Issue 1866 Basic Energy target disappeared");
     }
     shuffle(state_.deck);
-    trace("Earthen Vessel", "R-EV-01; R-GAME-ITEM; P-DCI-01; P-COMPRESS-01",
-          "Discarded the dominated Quick Ball and searched Grass Energy for the held Burnet finish.");
+    trace("Earthen Vessel",
+          "R-EV-01; R-GAME-ITEM; P-KNOWLEDGE-01; P-DCI-01; P-JIT-01; P-COMPRESS-01",
+          "Discarded " + std::string(name(cost)) +
+              " as the route-replaced cost and searched " +
+              std::string(name(missing_energy)) +
+              " for the held Professor Burnet finish.");
+
+    // Resolve the proven Supporter half immediately so Brilliant Blender cannot
+    // preempt the deterministic Burnet payload before the manual attachment:
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Supporter timing and action order: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Refined confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/1866
+    if (!play_professor_burnet()) {
+      throw std::logic_error("Issue 1866 Professor Burnet route disappeared");
+    }
     return true;
   }
 

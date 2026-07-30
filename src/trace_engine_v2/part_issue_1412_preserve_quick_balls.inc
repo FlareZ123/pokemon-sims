@@ -238,7 +238,47 @@
     return true;
   }
 
+  bool play_issue_1898_pineco_vessel_payload_finish() {
+    const auto payload = std::find_if(
+        state_.hand.begin(), state_.hand.end(), is_payload);
+    if (scenario_.dci != DciProfile::MatchupFlexJit ||
+        scenario_.locks != LockMode::None || !prizes_known() || item_locked() ||
+        !deck_search_available() || state_.manual_energy_used ||
+        !state_.active || state_.active->card != Card::RegidragoVstar ||
+        state_.active->grass < 2 || state_.active->fire != 0 ||
+        !need_payload() || hand_count(Card::EarthenVessel) == 0 ||
+        deck_count_after_search_started(Card::Fire) == 0 ||
+        payload == state_.hand.end()) {
+      return false;
+    }
+
+    const Card discarded_payload = *payload;
+    // Earthen Vessel requires another card from hand as its printed cost. In
+    // this public K1 state, the unused manual attachment and a searchable Fire
+    // Energy complete Apex Dragon's GGF cost, so the held Dragon is DCI 1: the
+    // same Vessel payment establishes the required current-turn payload while
+    // preserving Guzma's discrete gust-and-switch value.
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Dragapult ex payload witness: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Regidrago VSTAR / Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Guzma: https://api.pokemontcg.io/v2/cards/sm3-115
+    // Official Item-cost, discard, search, and manual-attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, dynamic DCI/JIT, discrete value, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1898
+    remove_one(state_.hand, Card::EarthenVessel);
+    state_.discard.push_back(Card::EarthenVessel);
+    if (!discard_from_hand(discarded_payload, "Earthen Vessel cost",
+                           "R-EV-01; P-DCI-01; P-JIT-01")) {
+      throw std::logic_error("Issue-1898 Dragon payload cost disappeared");
+    }
+    record_deck_search_knowledge("Earthen Vessel issue-1898 route");
+    search_energy_to_hand(2, "R-EV-01; R-GAME-ITEM; P-JIT-01",
+                          "Earthen Vessel");
+    return true;
+  }
+
   bool play_earthen_vessel(const bool permit_payload) {
+    if (play_issue_1898_pineco_vessel_payload_finish()) return true;
     if (play_issue_1868_vessel_payload_finish()) return true;
     // Legacy Star may recover Earthen Vessel on the reported T2 `GF` state
     // whose manual Energy attachment is already spent. Preserve the Item until

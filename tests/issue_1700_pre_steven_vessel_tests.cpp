@@ -6,10 +6,21 @@
 #include <random>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 namespace sim {
 
-struct EngineTestAccess {};
+struct EngineTestAccess {
+  static void set_state(Engine& engine, State state, const bool deck_seen,
+                        const bool prizes_revealed) {
+    engine.state_ = std::move(state);
+    engine.deck_seen_ = deck_seen;
+    engine.prizes_revealed_ = prizes_revealed;
+  }
+  static bool route(const Engine& engine) {
+    return engine.issue_1700_pre_steven_vessel_route_available();
+  }
+};
 
 }  // namespace sim
 
@@ -24,6 +35,52 @@ bool trace_contains(const sim::TraceLog& trace, const std::string& expected) {
                      [&expected](const std::string& line) {
                        return line.find(expected) != std::string::npos;
                      });
+}
+
+sim::State issue_1926_state() {
+  sim::State state;
+  state.turn = 1;
+  state.active = sim::Pokemon{sim::Card::Oricorio, 0, 0, 0};
+  state.bench = {sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0}};
+  state.hand = {sim::Card::StevensResolve, sim::Card::EarthenVessel,
+                sim::Card::BrilliantBlender, sim::Card::RegidragoVstar,
+                sim::Card::Dragapult};
+  state.deck = {sim::Card::LatiasEx, sim::Card::Grass, sim::Card::Grass,
+                sim::Card::Fire, sim::Card::MegaDragonite};
+  state.prizes = {sim::Card::Crispin, sim::Card::Gladion};
+  return state;
+}
+
+void verify_k1_provenance_equivalence() {
+  const auto route_is_live = [](const bool deck_seen,
+                                const bool prizes_revealed,
+                                const std::uint64_t seed) {
+    const sim::Scenario scenario{
+        "issue-1926", sim::DciProfile::StrictJit, sim::LockMode::None, false, 5};
+    const sim::DeckRecipe recipe = sim::baseline_recipe();
+    std::mt19937_64 rng{seed};
+    sim::Engine engine{scenario, recipe, rng};
+    sim::EngineTestAccess::set_state(
+        engine, issue_1926_state(), deck_seen, prizes_revealed);
+    return sim::EngineTestAccess::route(engine);
+  };
+
+  // Either legal inspection supplies the same K1 knowledge for the pre-Steven
+  // Vessel route. K0 still cannot inspect the deck or Prize identities:
+  // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Correction precedent: https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Official Item, search, attachment, Supporter, evolution, Ability, and retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1926
+  expect(route_is_live(true, false, 192601),
+         "Deck-search K1 rejected the pre-Steven Vessel route");
+  expect(route_is_live(false, true, 192602),
+         "Prize-inspection K1 rejected the pre-Steven Vessel route");
+  expect(!route_is_live(false, false, 192603),
+         "K0 used the pre-Steven Vessel route");
 }
 
 void verify_modeling_seed_218() {
@@ -113,6 +170,7 @@ void verify_lock_control() {
 
 int main() {
   try {
+    verify_k1_provenance_equivalence();
     verify_modeling_seed_218();
     verify_registered_seed_218("strict-jit/go-second");
     verify_registered_seed_218("matchup-flex-jit/go-second");

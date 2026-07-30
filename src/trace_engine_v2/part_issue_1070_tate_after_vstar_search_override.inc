@@ -119,7 +119,12 @@
   }
 
   bool issue_1700_pre_steven_vessel_route_available() const {
-    if (!deck_seen_ || !prizes_known() || !supporter_allowed() ||
+    // Full Prize inspection and a resolved deck search establish the same K1
+    // knowledge for this deterministic pre-Steven route:
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Correction precedent: https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1926
+    if (!prizes_known() || !supporter_allowed() ||
         item_locked() || scenario_.locks != LockMode::None ||
         state_.turn != 1 || scenario_.going_first ||
         state_.turn + 2 > scenario_.max_turn || state_.manual_energy_used ||

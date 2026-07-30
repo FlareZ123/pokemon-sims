@@ -35,10 +35,40 @@
     return true;
   }
 
-  void run_turn() {
+  void run_turn_issue1775_original() {
+    if (complete_issue_1796_t3_finish()) {
+      // The K1 Wonder Tag route has completed every public setup axis on T3:
+      // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1796
+      trace("POLICY", "P-AXIS-01; R-STEVEN-01; R-MT-01; P-JIT-01; P-COMPRESS-01",
+            "Completed the Wonder Tag, Steven, Treasure, and Latias ex T3 route: " +
+                state_line());
+      return;
+    }
+    // A route committed by the prior two public Supporter decisions must finish before
+    // generic Item and discard selection can spend Earthen Vessel or its Dragon cost:
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1795
+    if (complete_issue_1795_vessel_finish()) {
+      trace("POLICY", "P-AXIS-01; R-EV-01; P-JIT-01; P-COMPRESS-01",
+            "Completed the committed Crispin, Steven, and Earthen Vessel T4 route: " +
+                state_line());
+      return;
+    }
+
     run_turn_issue1675_original();
     if (complete_issue_1675_latias_late_promotion()) {
       trace("POLICY", "P-AXIS-01; R-GAME-BENCH; R-GAME-RETREAT",
             "Completed the deadline Latias ex promotion route: " + state_line());
     }
   }
+
+#include "part_issue_1775_gladion_treasure_route_override.inc"

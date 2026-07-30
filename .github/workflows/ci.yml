@@ -116,19 +116,26 @@ jobs:
           set -euo pipefail
           # Seed 35 has a complete K1 direct route. Steven banks Crispin and a
           # Dragon payload, then held Mysterious Treasure supplies its own discard
-          # cost while preserving Secret Box, Pineco, Forretress ex, Bench space,
-          # and the self-Knock-Out for later turns:
+          # cost while preserving Secret Box, held Forretress ex, and the unused
+          # self-Knock-Out. The already-Benched Pineco remains as the hidden-draw-safe
+          # Forretress fallback because the final searchable Fire may be drawn on T2:
           # https://api.pokemontcg.io/v2/cards/sm7-145
           # https://api.pokemontcg.io/v2/cards/sv7-133
           # https://api.pokemontcg.io/v2/cards/sm6-113
           # https://api.pokemontcg.io/v2/cards/sv6-130
           # https://api.pokemontcg.io/v2/cards/swsh12-136
           # https://api.pokemontcg.io/v2/cards/sv6-163
+          # https://api.pokemontcg.io/v2/cards/sv4pt5-1
           # https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # https://compendium.pokegym.net/category/5-trainers/crispin/
           # https://www.pokemon.com/us/pokemon-tcg/rules
-          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-          # https://github.com/FlareZ123/pokemon-sims/issues/1420
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+          # https://github.com/FlareZ123/pokemon-sims/issues/1497#issuecomment-5072427212
+          # https://github.com/FlareZ123/pokemon-sims/pull/1760
+          # https://github.com/FlareZ123/pokemon-sims/issues/1761
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee pineco-trace-35.txt
+          grep -q "T1 | BENCH.*Pineco from hand" pineco-trace-35.txt
           grep -q "banked Crispin and Dragapult ex" pineco-trace-35.txt
           grep -q "Dragapult ex (Mysterious Treasure cost)" pineco-trace-35.txt
           grep -q "without advancing the Pineco line" pineco-trace-35.txt

@@ -59,7 +59,7 @@ void test_lusamine_recovers_arven_for_item_lock_fss_route() {
   assert(std::count(state.discard.begin(), state.discard.end(), Card::Arven) == 1);
 }
 
-void test_lusamine_holds_with_only_one_eligible_target() {
+void test_lusamine_recovers_only_eligible_target() {
   using namespace sim;
   const Scenario scenario{"lusamine-one-target", DciProfile::StrictJit, LockMode::None, false, 4};
   const DeckRecipe recipe = baseline_recipe();
@@ -72,14 +72,16 @@ void test_lusamine_holds_with_only_one_eligible_target() {
   state.hand = {Card::Lusamine};
   state.discard = {Card::ProfessorBurnet, Card::Grass};
 
-  // Lusamine requires exactly 2 Supporter and/or Stadium cards from the public
-  // discard pile. One eligible target does not satisfy the printed effect:
-  // https://api.pokemontcg.io/v2/cards/sm4-96
-  // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
-  assert(!EngineTestAccess::play_lusamine(engine));
-  assert(!state.supporter_used);
-  assert(state.hand.size() == 1U && state.hand.front() == Card::Lusamine);
-  assert(state.discard.size() == 2U && contains(state.discard, Card::ProfessorBurnet) &&
+  // Fixed-count public-zone effects select as many eligible cards as possible.
+  // Grass is ineligible, so Lusamine recovers the lone Professor Burnet target:
+  // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
+  // Fixed-count ruling: https://compendium.pokegym.net/compendium-ex.html#HOLON_FARMER
+  // Trainer resolution order: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1835
+  assert(EngineTestAccess::play_lusamine(engine));
+  assert(state.supporter_used);
+  assert(state.hand.size() == 1U && state.hand.front() == Card::ProfessorBurnet);
+  assert(state.discard.size() == 2U && contains(state.discard, Card::Lusamine) &&
          contains(state.discard, Card::Grass));
 }
 
@@ -173,7 +175,7 @@ void test_roseanne_holds_without_a_payable_post_recovery_search() {
 
 int main() {
   test_lusamine_recovers_arven_for_item_lock_fss_route();
-  test_lusamine_holds_with_only_one_eligible_target();
+  test_lusamine_recovers_only_eligible_target();
   test_lusamine_accepts_two_copies_of_one_eligible_card();
   test_roseanne_recovers_vstar_into_evolution_incense_route();
   test_roseanne_holds_without_a_payable_post_recovery_search();

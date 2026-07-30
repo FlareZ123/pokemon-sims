@@ -14,12 +14,17 @@ The model is deliberately a single-player setup model. It does not resolve every
 
 The validated registry contains exactly two decks:
 
-- `regidrago-shell`: the historical repository list. This remains the default when `--deck` is omitted.
+- `regidrago-shell`: the historical repository list with Klara `swsh6-145` permanently replacing Roseanne's Backup. This remains the default when `--deck` is omitted.
 - `regidrago-pineco`: the Secret Box list with two Pineco, two Forretress ex, two Dawn, two Forest of Vitality, four Tapu Lele-GX, and Appletun `sv8-140` as a discard-only Dragon payload.
 
 The withdrawn Pineco Brilliant Blender proposal is not registered. Every registered recipe must contain exactly 60 cards, obey the four-copy limit outside Basic Energy, contain at most one ACE SPEC, and include the lower stage for modeled in-play evolution lines.
 
 Direct identities: Secret Box https://api.pokemontcg.io/v2/cards/sv6-163, Appletun https://api.pokemontcg.io/v2/cards/sv8-140, Pineco https://api.pokemontcg.io/v2/cards/sv4pt5-1, Forretress ex https://api.pokemontcg.io/v2/cards/sv4pt5-2, Dawn https://api.pokemontcg.io/v2/cards/me2-87, and Forest of Vitality https://api.pokemontcg.io/v2/cards/me1-117.
+
+
+## Klara recovery policy
+
+The registered shell uses Klara `swsh6-145`. It can recover up to two Pokémon and up to two Basic Energy from discard directly to hand in one Supporter action. Setup policy preserves the sole current-turn strict-JIT Dragon, admits an older-Dragon recovery only when a legal Item can discard it again that turn, and uses optional additional targets for safe discard-control denial and immediate Basic Energy recovery. `regidrago-pineco` did not contain Roseanne's Backup, so that registered recipe is unchanged. Direct sources: https://api.pokemontcg.io/v2/cards/swsh6-145 https://api.pokemontcg.io/v2/cards/sv5-146 https://github.com/FlareZ123/pokemon-sims/issues/1773
 
 ## Battle VIP Pass behavior
 

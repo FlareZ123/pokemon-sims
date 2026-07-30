@@ -329,7 +329,7 @@ if (revealed_treasure_next_turn_completion) {
   // searches Regidrago VSTAR, and permits evolution of the prior-turn Active:
   // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-  // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2-166
+  // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
   // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
   // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Core Prize exchange, Item cost, Energy attachment, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules

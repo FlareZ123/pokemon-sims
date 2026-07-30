@@ -45,3 +45,5 @@
     }
     return original;
   }
+
+#include "part_issue_1749_redundant_regi_override.inc"

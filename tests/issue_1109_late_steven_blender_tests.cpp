@@ -61,6 +61,7 @@ void test_exact_k1_state_admits_route() {
   // Steven reserves the known-searchable VSTAR. The prior-turn Active already has
   // GGF, and held Blender supplies the payload on the next strict-JIT ready turn:
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
   // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://www.pokemon.com/us/pokemon-tcg/rules
@@ -118,10 +119,9 @@ void test_seed_143_uses_steven_and_reaches_by_turn_four() {
   sim::Engine engine(*scenario, recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 
-  // The complete Steven route must outrank spending Gladion on a redundant Basic.
-  // A later policy may legally discover an earlier Steven plus Burnet continuation,
-  // so this integration regression preserves the route and its original T4 deadline
-  // while the exact-state test above continues to cover held Blender admission:
+  // The complete route must outrank spending Gladion on a redundant Basic.
+  // The registered shell may now use Klara for an earlier legal T3 completion, while
+  // the exact-state test above continues to cover held-Blender Steven admission:
   // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
   // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
@@ -133,7 +133,11 @@ void test_seed_143_uses_steven_and_reaches_by_turn_four() {
   const bool used_steven_by_t3 =
       trace_contains(trace, "T2 | PLAY SUPPORTER | rules: R-STEVEN-01") ||
       trace_contains(trace, "T3 | PLAY SUPPORTER | rules: R-STEVEN-01");
-  expect(used_steven_by_t3, "Seed 143 must play Steven by T3.");
+  const bool used_klara_by_t3 =
+      trace_contains(trace, "T2 | PLAY SUPPORTER | rules: R-KLARA-01") ||
+      trace_contains(trace, "T3 | PLAY SUPPORTER | rules: R-KLARA-01");
+  expect(used_steven_by_t3 || used_klara_by_t3,
+         "Seed 143 must use Steven or the earlier legal Klara route by T3.");
   expect(!trace_contains(trace, "T2 | PLAY SUPPORTER | rules: R-GLADION-01") &&
              !trace_contains(trace, "T3 | PLAY SUPPORTER | rules: R-GLADION-01"),
          "Seed 143 must not spend T2 or T3 Gladion on a backup Basic.");

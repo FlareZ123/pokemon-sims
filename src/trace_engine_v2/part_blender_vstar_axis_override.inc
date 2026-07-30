@@ -171,7 +171,53 @@
         payload_might_be_in_deck();
   }
 
+  bool play_issue_1700_known_prize_gladion_before_blender() {
+    const bool prepared_regidrago = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV &&
+              pokemon.entered_turn < state_.turn && pokemon.grass == 1 &&
+              pokemon.fire == 0;
+        });
+    const auto prized_fire =
+        std::find(state_.prizes.begin(), state_.prizes.end(), Card::Fire);
+
+    if (!supporter_allowed() || state_.turn != 2 || scenario_.going_first ||
+        scenario_.locks != LockMode::None || !prizes_known() ||
+        prized_fire == state_.prizes.end() || !prepared_regidrago ||
+        hand_count(Card::Gladion) == 0 ||
+        hand_count(Card::BrilliantBlender) == 0 ||
+        hand_count(Card::Grass) == 0 ||
+        hand_count(Card::RegidragoVstar) == 0 ||
+        hand_count(Card::LatiasEx) == 0 ||
+        count_of(state_.discard, Card::EarthenVessel) == 0 ||
+        count_of(state_.discard, Card::StevensResolve) == 0 ||
+        bench_space() == 0 || !ability_available_for_pokemon(Card::LatiasEx)) {
+      return false;
+    }
+
+    // Gladion exchanges itself for one known Prize. Recovering Fire before the T2
+    // Grass attachment uses the otherwise idle Supporter slot and preserves T3 Fire
+    // plus Brilliant Blender as the earliest complete GGF and current-turn payload:
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Prize, Supporter, attachment, evolution, retreat, and Item procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1, supporter contention, DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1700
+    remove_one(state_.hand, Card::Gladion);
+    state_.hand.push_back(Card::Fire);
+    *prized_fire = Card::Gladion;
+    shuffle(state_.prizes);
+    state_.supporter_used = true;
+    trace("PLAY SUPPORTER",
+          "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
+          "Looked at the known Prize cards and exchanged Gladion for Fire Energy before the second Grass attachment.");
+    return true;
+  }
+
   bool play_brilliant_blender() {
+    if (play_issue_1700_known_prize_gladion_before_blender()) return true; // Gladion and confirmed route: https://api.pokemontcg.io/v2/cards/sm4-95 https://github.com/FlareZ123/pokemon-sims/issues/1700
+
     if (issue_1646_hold_blender_for_burnet_finish_visible()) {
       if (trace_ != nullptr) {
         trace_->add_policy_once(

@@ -39,6 +39,31 @@ if(NOT strict_seed_19 MATCHES "T2 \\| READY \\|")
   message(FATAL_ERROR "Strict seed 19 did not retain T2 readiness:\n${strict_seed_19}")
 endif()
 
+# Audited-main seed 2026072802 is the K0 regression witness. Matchup-flex JIT has
+# spent the T2 manual attachment, holds the sole missing Fire Energy, and has no
+# observed VSTAR route. Randomly processing three unknown cards cannot improve the
+# marginal chance that a later draw is Regidrago VSTAR, while the attack can discard
+# VSTAR copies and connectors. Holding preserves the fixed T4 Burnet route:
+# Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+# Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+# Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+# Core attachment, evolution, Supporter, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+# K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+# Hidden-order boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+# Earliest-route and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+# Reopened regression: https://github.com/FlareZ123/pokemon-sims/issues/1079
+# Known-route control: https://github.com/FlareZ123/pokemon-sims/issues/1174
+run_trace("matchup-flex-jit/go-first" 2026072802 matchup_flex_k0_regression)
+if(NOT matchup_flex_k0_regression MATCHES "T2 \\| HOLD ATTACK \\|")
+  message(FATAL_ERROR "Matchup-flex K0 regression seed did not hold Celestial Roar:\n${matchup_flex_k0_regression}")
+endif()
+if(matchup_flex_k0_regression MATCHES "T2 \\| ATTACK \\|.*Celestial Roar")
+  message(FATAL_ERROR "Matchup-flex K0 regression seed still used Celestial Roar:\n${matchup_flex_k0_regression}")
+endif()
+if(NOT matchup_flex_k0_regression MATCHES "T4 \\| READY \\|")
+  message(FATAL_ERROR "Matchup-flex K0 regression seed did not preserve the T4 ready route:\n${matchup_flex_k0_regression}")
+endif()
+
 # With two Energy still missing, one future manual attachment does not guarantee GGF.
 # Celestial Roar must remain available as a live acceleration route:
 # https://api.pokemontcg.io/v2/cards/swsh12-135

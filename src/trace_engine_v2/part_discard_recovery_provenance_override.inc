@@ -126,20 +126,29 @@
   bool attach_fss_for_crobat_compression() {
     if (!fss_crobat_compression_available()) return false;
     Pokemon* target = nullptr;
-    if (state_.active &&
+    for (Pokemon& pokemon : state_.bench) {
+      if ((pokemon.card == Card::RegidragoV ||
+           pokemon.card == Card::RegidragoVstar) &&
+          pokemon.tool == Tool::None) {
+        target = &pokemon;
+        break;
+      }
+    }
+    // Forest Seal Stone grants Star Alchemy from either position. Prefer an open
+    // Benched Pokémon V so the Active Regidrago keeps its one Tool slot available
+    // for Powerglass; retain the Active as the legal fallback when no Bench holder
+    // exists:
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Official Pokémon Tool procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1732
+    if (target == nullptr && state_.active &&
         (state_.active->card == Card::RegidragoV ||
          state_.active->card == Card::RegidragoVstar) &&
         state_.active->tool == Tool::None) {
       target = &*state_.active;
-    } else {
-      for (Pokemon& pokemon : state_.bench) {
-        if ((pokemon.card == Card::RegidragoV ||
-             pokemon.card == Card::RegidragoVstar) &&
-            pokemon.tool == Tool::None) {
-          target = &pokemon;
-          break;
-        }
-      }
     }
     if (target == nullptr) return false;
     remove_one(state_.hand, Card::ForestSealStone);

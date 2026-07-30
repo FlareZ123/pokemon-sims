@@ -40,9 +40,67 @@
         std::any_of(state_.deck.begin(), state_.deck.end(), is_payload);
   }
 
+  bool issue_1719_earthen_vessel_next_window_route() const {
+    if (!deck_seen_ || !strict_payload_timing() || state_.turn_ended ||
+        !state_.active || state_.active->card != Card::RegidragoV ||
+        !state_.manual_energy_used || state_.turn >= scenario_.max_turn) {
+      return false;
+    }
+
+    const int missing_grass = std::max(0, 2 - state_.active->grass);
+    const int missing_fire = std::max(0, 1 - state_.active->fire);
+    const bool item_available_next_turn =
+        scenario_.locks != LockMode::FullItem &&
+        scenario_.locks != LockMode::FullCombined &&
+        !(scenario_.locks == LockMode::TurnTwoItem && state_.turn + 1 >= 2);
+    const bool required_energy_in_known_deck =
+        (missing_grass == 1 &&
+         deck_count_after_search_started(Card::Grass) > 0) ||
+        (missing_fire == 1 &&
+         deck_count_after_search_started(Card::Fire) > 0);
+    const bool held_payload_cost =
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    const bool live_vstar_axis =
+        hand_count(Card::RegidragoVstar) > 0 ||
+        deck_count_after_search_started(Card::RegidragoVstar) > 0;
+
+    // Earthen Vessel already covers the one missing Basic Energy and the strict-JIT
+    // payload outlet on the next legal evolution window. Celestial Roar cannot change
+    // the marginal identity of the next unknown draw, while its random top-three
+    // processing can permanently remove Regidrago VSTAR and search outs before that
+    // live axis is reached. Hold only from K1 when the Vessel cost, searched Energy,
+    // future manual attachment, Item access, and VSTAR axis are all observable:
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, attachment, evolution, and attack procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Observable-state policy, strict-JIT, dynamic DCI, and resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1719
+    return missing_grass + missing_fire == 1 &&
+        hand_count(Card::EarthenVessel) > 0 && item_available_next_turn &&
+        required_energy_in_known_deck && held_payload_cost && live_vstar_axis;
+  }
+
   bool use_celestial_roar() {
     if (first_turn_going_first() || state_.turn_ended || !state_.active ||
         state_.active->card != Card::RegidragoV) {
+      return false;
+    }
+
+    if (issue_1719_earthen_vessel_next_window_route()) {
+      // The held Vessel searches the sole missing Basic Energy and discards the held
+      // Dragon payload during the next strict-JIT ready turn. Random top-three
+      // processing cannot improve that earliest legal route and may remove its live
+      // VSTAR or search axis:
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Official attack, Item, attachment, and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+      // Earliest-route and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1719
+      trace("HOLD ATTACK",
+            "R-RV-01; R-EV-01; R-GAME-ENERGY; P-KNOWLEDGE-01; P-JIT-01; P-COMPRESS-01",
+            "A payable Earthen Vessel, held Dragon payload, and live VSTAR axis already cover the next legal ready window.");
       return false;
     }
 
@@ -94,10 +152,33 @@
     const bool no_control_banked_payload_route =
         !strict_payload_timing() && !need_payload() &&
         hand_count(Card::RegidragoVstar) > 0;
+    // Before any legal deck or Prize inspection, two held Dragon payloads make one
+    // copy dynamically discard-capable for a later hand-cost outlet, while Professor
+    // Burnet preserves a second payload channel once the deck is inspected. Random
+    // top-three processing cannot improve the marginal chance of drawing the
+    // unresolved VSTAR or connector on a later turn. When held Basic Energy already
+    // covers the sole missing GGF component, strict and matchup-flex JIT gain no
+    // payload credit from this attack, while Celestial Roar can permanently discard
+    // scarce route pieces. Preserve the later #1174 boundary for K0 hands without
+    // this redundant-payload plus Burnet route and for K1 states lacking a proven
+    // payload continuation:
+    // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core attachment, evolution, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K0/K1 and hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+    // Strict-JIT timing and resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Reopened regression: https://github.com/FlareZ123/pokemon-sims/issues/1079
+    // Known-route boundary: https://github.com/FlareZ123/pokemon-sims/issues/1174
+    const int held_payload_count = static_cast<int>(std::count_if(
+        state_.hand.begin(), state_.hand.end(), is_payload));
+    const bool k0_held_energy_preservation =
+        strict_payload_timing() && !prizes_known() &&
+        hand_count(Card::ProfessorBurnet) > 0 && held_payload_count >= 2;
     const bool held_energy_and_payload_route_guarantee_next_window =
         state_.manual_energy_used && state_.turn < scenario_.max_turn &&
         missing_grass + missing_fire == 1 && held_needed_energy &&
-        (strict_held_payload_route || no_control_banked_payload_route);
+        (k0_held_energy_preservation || strict_held_payload_route ||
+         no_control_banked_payload_route);
     if (held_energy_and_payload_route_guarantee_next_window) {
       // The unevolved Regidrago V cannot become Regidrago VSTAR before a later legal
       // evolution window. One held Basic Energy already guarantees GGF through that
@@ -121,8 +202,10 @@
       // Existing confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1079
       // Confirmed Gladion-Treasure continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/1174
       // Confirmed Quick Ball-Tapu-Burnet continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/1715
-      trace("HOLD ATTACK", "R-RV-01; R-GAME-ENERGY; R-SERENA-01; R-BURNET-01; R-GLADION-01; R-MT-01; R-QB-01; R-TAPU-01; P-JIT-01; P-COMPRESS-01",
-            "Held Energy and a guaranteed payload route already cover the next legal ready window.");
+      trace("HOLD ATTACK", "R-RV-01; R-GAME-ENERGY; R-SERENA-01; R-BURNET-01; R-GLADION-01; R-MT-01; R-QB-01; R-TAPU-01; P-KNOWLEDGE-01; P-JIT-01; P-COMPRESS-01",
+            k0_held_energy_preservation
+                ? "K0 held Energy, Professor Burnet, and redundant Dragon payloads preserve a stronger unresolved route than random top-three processing."
+                : "Held Energy and a guaranteed payload route already cover the next legal ready window.");
       return false;
     }
 

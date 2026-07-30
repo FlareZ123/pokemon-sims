@@ -75,6 +75,25 @@ int main() {
                   "The shell trace audit group is missing.");
   expect_contains(workflow, "Run three reviewed Pineco setup audits",
                   "The Pineco trace audit group is missing.");
+  // Seed 35 visibly Benches Pineco on T1, so the permanent explanation must
+  // describe the already-Benched fallback and may not claim that Pineco or its
+  // Bench slot stayed unspent:
+  // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+  // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  // Crispin ruling: https://compendium.pokegym.net/category/5-trainers/crispin/
+  // Future-card-oracle policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+  // Re-verified route: https://github.com/FlareZ123/pokemon-sims/issues/1497#issuecomment-5072427212
+  // Source-bound audit: https://github.com/FlareZ123/pokemon-sims/pull/1760
+  // Confirmed documentation bug: https://github.com/FlareZ123/pokemon-sims/issues/1761
+  expect_contains(workflow, "The already-Benched Pineco remains as the hidden-draw-safe",
+                  "The seed-35 explanation no longer describes the actual Pineco state.");
+  expect_contains(workflow, "grep -q \"T1 | BENCH.*Pineco from hand\"",
+                  "The seed-35 CI audit no longer proves the visible Pineco Bench action.");
+  if (workflow.find("preserving Secret Box, Pineco, Forretress ex, Bench space") !=
+      std::string::npos) {
+    throw std::runtime_error(
+        "The seed-35 explanation still falsely preserves Pineco and Bench space.");
+  }
   expect_contains(workflow, "Verify canonical shell matrix",
                   "The canonical matrix comparison is missing.");
   expect_contains(workflow, "Verify committed paired matrix",

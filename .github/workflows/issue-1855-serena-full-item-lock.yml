@@ -39,8 +39,20 @@ jobs:
           # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1855
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-full-item-lock/go-second --seed 206 | tee issue-1855-seed-206.txt
           test "$(grep -c 'T2 | DISCARD |.*Serena' issue-1855-seed-206.txt)" -eq 3
-          grep -q 'Earthen Vessel (Serena chosen discard)' issue-1855-seed-206.txt
-          test "$(grep -c 'Mysterious Treasure (Serena optional discard)' issue-1855-seed-206.txt)" -eq 2
+          grep -q 'Mysterious Treasure (Serena chosen discard)' issue-1855-seed-206.txt
+          grep -q 'Earthen Vessel (Serena optional discard)' issue-1855-seed-206.txt
+          test "$(grep -c 'Mysterious Treasure (Serena optional discard)' issue-1855-seed-206.txt)" -eq 1
+      - name: Preserve Serena selector boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Issue 1855 changes optional Serena costs after the existing selector
+          # accepts the play. It must preserve the established seed-375 T2 route:
+          # Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+          # Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+          # Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Confirmed bug scope: https://github.com/FlareZ123/pokemon-sims/issues/1855
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-full-item-lock/go-second --seed 375 --require-ready-by 2 | tee issue-1855-selector-boundary-seed-375.txt
       - name: Simulate pass 1
         shell: bash
         run: |
@@ -101,6 +113,7 @@ jobs:
           name: issue-1855-source-bound-${{ github.run_attempt }}
           path: |
             issue-1855-seed-206.txt
+            issue-1855-selector-boundary-seed-375.txt
             simulate-pass-*.txt
             generated-results
             README.md

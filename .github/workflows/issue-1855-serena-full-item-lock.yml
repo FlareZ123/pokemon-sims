@@ -67,6 +67,16 @@ jobs:
           # https://api.pokemontcg.io/v2/cards/sv4pt5-1
           # https://api.pokemontcg.io/v2/cards/sv4pt5-2
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee simulate-pass-3.txt
+      - name: Regenerate canonical 100000-trial outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir generated-results --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir generated-results --trials 100000 --matrix-seed 20260705
+          rm -rf results
+          cp -a generated-results results
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
       - name: Run complete Release suite
         run: ctest --test-dir build --output-on-failure
       - name: Archive exact tested source
@@ -83,6 +93,11 @@ jobs:
           path: |
             issue-1855-seed-206.txt
             simulate-pass-*.txt
+            generated-results
+            README.md
+            docs/REPORT.md
+            docs/TRACE_AUDIT.md
+            docs/MULTI_DECK_REPORT.md
             tested-head.txt
             source-snapshot.zip
           if-no-files-found: error

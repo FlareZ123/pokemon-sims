@@ -145,6 +145,20 @@ void test_lock_resource_and_target_boundaries() {
   expect(!sim::EngineTestAccess::route_available(targetless_second),
          "The route was admitted without a second legal Treasure target.");
 
+  // Crobat V is Darkness, so it cannot serve as the second Psychic-or-Dragon
+  // Mysterious Treasure target after the sole payload leaves the deck.
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104
+  // Official search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  sim::State crobat_only_second = base_state();
+  crobat_only_second.deck = {sim::Card::MegaDragonite,
+                             sim::Card::CrobatV,
+                             sim::Card::Grass};
+  sim::Engine illegal_crobat_target =
+      make_engine(no_lock, rng, std::move(crobat_only_second));
+  expect(!sim::EngineTestAccess::route_available(illegal_crobat_target),
+         "Darkness-type Crobat V was counted as a legal Treasure target.");
+
   sim::State missing_fire = base_state();
   missing_fire.hand.erase(std::find(missing_fire.hand.begin(),
                                     missing_fire.hand.end(), sim::Card::Fire));

@@ -56,7 +56,10 @@ sim::Engine make_engine(const sim::Scenario& scenario, std::mt19937_64& rng,
 
 void test_exact_route_and_boundaries() {
   std::mt19937_64 rng(1895);
-  sim::Engine engine = make_engine(strict(), rng, route_state());
+  // Engine retains these Scenario references: https://eel.is/c++draft/class.temporary#6.10
+  const sim::Scenario strict_scenario = strict();
+  const sim::Scenario item_locked_scenario = strict(sim::LockMode::FullItem);
+  sim::Engine engine = make_engine(strict_scenario, rng, route_state());
 
   // Quick Ball's Dragon cost is the current-turn Apex Dragon payload, while
   // held Crispin attaches the missing Grass from a two-type K1 deck.
@@ -73,38 +76,38 @@ void test_exact_route_and_boundaries() {
   expect(sim::EngineTestAccess::complete_route(engine),
          "The complete held-Crispin Quick Ball route failed.");
 
-  sim::Engine k0 = make_engine(strict(), rng, route_state(), false);
+  sim::Engine k0 = make_engine(strict_scenario, rng, route_state(), false);
   expect(!sim::EngineTestAccess::payload_cost(k0).has_value(),
          "K0 admitted the K1-only payload cost.");
 
-  sim::Engine item_locked = make_engine(
-      strict(sim::LockMode::FullItem), rng, route_state());
+  sim::Engine item_locked =
+      make_engine(item_locked_scenario, rng, route_state());
   expect(!sim::EngineTestAccess::payload_cost(item_locked).has_value(),
          "Item lock admitted the Quick Ball route.");
 
   sim::State supporter_spent = route_state();
   supporter_spent.supporter_used = true;
-  sim::Engine spent = make_engine(strict(), rng, std::move(supporter_spent));
+  sim::Engine spent = make_engine(strict_scenario, rng, std::move(supporter_spent));
   expect(!sim::EngineTestAccess::payload_cost(spent).has_value(),
          "A spent Supporter action admitted the Crispin route.");
 
   sim::State one_type = route_state();
   one_type.deck.erase(std::find(one_type.deck.begin(), one_type.deck.end(),
                                 sim::Card::Fire));
-  sim::Engine missing_type = make_engine(strict(), rng, std::move(one_type));
+  sim::Engine missing_type = make_engine(strict_scenario, rng, std::move(one_type));
   expect(!sim::EngineTestAccess::payload_cost(missing_type).has_value(),
          "One searchable Energy type admitted the two-type Crispin finish.");
 
   sim::State no_target = route_state();
   no_target.deck = {sim::Card::Grass, sim::Card::Fire};
-  sim::Engine targetless = make_engine(strict(), rng, std::move(no_target));
+  sim::Engine targetless = make_engine(strict_scenario, rng, std::move(no_target));
   expect(!sim::EngineTestAccess::payload_cost(targetless).has_value(),
          "Quick Ball without a legal Basic target admitted the cost.");
 
   sim::State payload_done = route_state();
   payload_done.discard = {sim::Card::Dragapult};
   payload_done.discarded_this_turn = {sim::Card::Dragapult};
-  sim::Engine done = make_engine(strict(), rng, std::move(payload_done));
+  sim::Engine done = make_engine(strict_scenario, rng, std::move(payload_done));
   expect(!sim::EngineTestAccess::payload_cost(done).has_value(),
          "An already-satisfied current-turn payload spent another Dragon.");
 }

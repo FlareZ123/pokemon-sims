@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: issue-1868-validation-${{ github.event.pull_request.number || github.ref }}
@@ -14,9 +14,12 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -64,13 +67,31 @@ jobs:
           # https://api.pokemontcg.io/v2/cards/sv4-163
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 854 --require-ready-by 3 | tee issue-1868-pass-3.txt
           grep -q "T3 | READY" issue-1868-pass-3.txt
-      - name: Generate canonical T2 and T3 matrix
-        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-1868-t2-t3-matrix.csv
-      - name: Generate paired two-deck matrix
-        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out issue-1868-multi-deck-matrix.csv
+      - name: Regenerate canonical source-bound outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf generated-results
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir generated-results --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir generated-results --trials 100000 --matrix-seed 20260705
+          cp -a generated-results/. results/
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+          cp results/simulation_results.csv issue-1868-t2-t3-matrix.csv
+          cp results/multi_deck_comparison.csv issue-1868-multi-deck-matrix.csv
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
-      - name: Archive exact tested source
+      - name: Commit tested outputs and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm .github/workflows/issue-1868-validation.yml
+          git add -A results docs .github/workflows
+          git commit -m "Update setup matrices for #1868"
+          git push origin HEAD:${{ github.head_ref }}
+      - name: Archive exact committed source
         shell: bash
         run: |
           set -euo pipefail
@@ -87,5 +108,9 @@ jobs:
             issue-1868-multi-deck-matrix.csv
             issue-1868-tested-head.txt
             issue-1868-source-snapshot.zip
+            generated-results
+            results
+            docs/REPORT.md
+            docs/MULTI_DECK_REPORT.md
             build/Testing
           if-no-files-found: error

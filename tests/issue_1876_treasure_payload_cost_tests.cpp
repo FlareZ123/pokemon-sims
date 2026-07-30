@@ -102,9 +102,11 @@ void test_exact_cost_and_boundaries() {
 
 void test_old_payload_and_prize_inspection_regression() {
   std::mt19937_64 rng(1896);
+  // Engine retains this Scenario reference: https://eel.is/c++draft/class.temporary#6.10
+  const sim::Scenario flex_scenario = flex();
   sim::State state = route_state();
   state.discard = {sim::Card::DialgaGX};
-  sim::Engine engine = make_engine(flex(), rng, state, false);
+  sim::Engine engine = make_engine(flex_scenario, rng, state, false);
   sim::EngineTestAccess::set_prizes_revealed(engine, true);
 
   // A Dialga-GX discarded on an earlier turn does not satisfy current-turn JIT.
@@ -121,7 +123,8 @@ void test_old_payload_and_prize_inspection_regression() {
          "An older payload suppressed the current-turn Treasure payload cost.");
 
   state.discarded_this_turn = {sim::Card::DialgaGX};
-  sim::Engine already_ready = make_engine(flex(), rng, std::move(state), false);
+  sim::Engine already_ready =
+      make_engine(flex_scenario, rng, std::move(state), false);
   sim::EngineTestAccess::set_prizes_revealed(already_ready, true);
   expect(sim::EngineTestAccess::treasure_cost(already_ready) != sim::Card::Dragapult,
          "An already-satisfied current-turn payload spent another Dragon.");

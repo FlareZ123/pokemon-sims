@@ -11,7 +11,8 @@
 
     // Project only the visible held route. Crispin uses the one Supporter play to
     // complete GGF, then the still-held ACE SPEC establishes the same-turn Dragon
-    // payload during the later Item fixed point:
+    // payload during the later Item fixed point. This strict-JIT supporter policy
+    // remains disjoint from the matchup-flex Treasure-cost selector in issue 1876:
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
@@ -19,7 +20,7 @@
     // Crispin ruling: https://compendium.pokegym.net/category/5-trainers/crispin/
     // Official Supporter, Item, search, discard, and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, Supporter contention, dynamic DCI, strict-JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1873
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1873 https://github.com/FlareZ123/pokemon-sims/issues/1876
     const std::mt19937_64 live_rng = rng_;
     Engine projected = *this;
     projected.trace_ = nullptr;

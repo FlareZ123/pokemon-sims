@@ -72,6 +72,7 @@ void exact_k1_state_selects_the_dragon_payload() {
   // https://api.pokemontcg.io/v2/cards/sv4-163
   // https://api.pokemontcg.io/v2/cards/sm5-100
   // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
   // https://github.com/FlareZ123/pokemon-sims/issues/1868
   expect(sim::EngineTestAccess::play_vessel(fixture.engine),
          "The complete Vessel route was rejected");

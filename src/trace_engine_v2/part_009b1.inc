@@ -243,6 +243,38 @@
         : std::nullopt;
   }
 
+  std::optional<Card> issue_1895_quick_ball_payload_cost() const {
+    const bool complete_public_route =
+        strict_payload_timing() && deck_seen_ && !item_locked() &&
+        supporter_allowed() && active_is_vstar() &&
+        state_.active->grass == 1 && state_.active->fire == 1 &&
+        need_payload() && hand_count(Card::QuickBall) > 0 &&
+        hand_count(Card::Crispin) > 0 &&
+        deck_count_after_search_started(Card::Grass) > 0 &&
+        deck_count_after_search_started(Card::Fire) > 0 &&
+        std::any_of(state_.deck.begin(), state_.deck.end(), is_basic);
+    if (!complete_public_route) return std::nullopt;
+
+    // Quick Ball may discard any other card from hand. In this public K1 GF
+    // state, held Crispin attaches the missing Grass, so a held Dragon is DCI 1
+    // because Quick Ball's printed cost establishes the current-turn Apex Dragon
+    // payload while its legal Basic target may remain in hand.
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Dragapult ex, Mega Dragonite ex, and Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/sv6-130 https://api.pokemontcg.io/v2/cards/me2pt5-152 https://api.pokemontcg.io/v2/cards/swsh11-136
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, discard-cost, search, Supporter, Energy-attachment, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Crispin ruling: https://compendium.pokegym.net/category/5-trainers/crispin/
+    // K1, dynamic DCI/JIT, Supporter contention, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1895
+    for (const Card card : {Card::Appletun, Card::MegaDragonite,
+                            Card::Dragapult, Card::GoodraVstar,
+                            Card::DialgaGX}) {
+      if (hand_count(card) > 0) return card;
+    }
+    return std::nullopt;
+  }
+
   bool play_quick_ball(const bool permit_payload) {
     if (item_locked() || hand_count(Card::QuickBall) == 0) return false;
     // Quick Ball may pay a Dragon payload cost when its searched Basic advances a
@@ -325,8 +357,11 @@
                               has_payable_payload_outlet_after_costed_search(Card::QuickBall);
     const bool has_preferred_search_target =
         want_regi || want_latias || want_tapu || want_oricorio || want_crobat || want_payload;
+    const std::optional<Card> issue_1895_payload_cost =
+        issue_1895_quick_ball_payload_cost();
     const bool can_use_payload_only_outlet =
-        can_pay_payload_cost && blender_energy_axis_can_finish_this_turn();
+        (can_pay_payload_cost && blender_energy_axis_can_finish_this_turn()) ||
+        issue_1895_payload_cost.has_value();
     // A payload-only Quick Ball line advances no searched Basic axis. Preserve the
     // Item and Dragon unless GGF can finish now. A live searched Basic keeps the
     // existing route legal, including Tapu Lele-GX into Wonder Tag into Crispin:
@@ -335,8 +370,8 @@
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Refined confirmed bug and controls: https://github.com/FlareZ123/pokemon-sims/issues/1092
     if (!has_preferred_search_target && !can_use_payload_only_outlet) return false;
-    std::optional<Card> cost;
-    if (issue_1797_tapu_route) {
+    std::optional<Card> cost = issue_1895_payload_cost;
+    if (!cost && issue_1797_tapu_route) {
       cost = issue_1797_quick_ball_cost();
     }
     if (!cost) {

@@ -48,9 +48,19 @@
     // Official Item, Supporter, attachment, search, and discard procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, DCI/JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1871
-    if (!attach_manual()) {
+    // Use the exact Grass attachment instead of the generic attachment dispatcher.
+    // The dispatcher may replay an unrelated held Brilliant Blender after GGF is
+    // completed, which can consume the selected deck payload before Treasure.
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Official once-per-turn attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Earliest deterministic route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    if (!remove_one(state_.hand, Card::Grass)) {
       throw std::logic_error("Issue-1871 Grass attachment disappeared");
     }
+    ++state_.active->grass;
+    state_.manual_energy_used = true;
+    trace("ATTACH", "R-GAME-ENERGY; P-COMPRESS-01",
+          "Grass Energy manually to Regidrago VSTAR before the Treasure-Serena finish.");
 
     remove_one(state_.hand, Card::MysteriousTreasure);
     state_.discard.push_back(Card::MysteriousTreasure);

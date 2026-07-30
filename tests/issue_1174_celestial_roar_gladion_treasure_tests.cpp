@@ -102,7 +102,7 @@ void test_k1_provenance_equivalence() {
                                const bool prizes_revealed,
                                const std::uint64_t seed) {
     std::mt19937_64 rng{seed};
-    // Engine stores Scenario by reference, so keep the fixture alive through use:
+    // Engine stores Scenario by reference. Keep this fixture alive through use:
     // C++ object lifetime: https://en.cppreference.com/w/cpp/language/lifetime.html
     const sim::Scenario scenario = strict_first();
     sim::Engine engine = make_engine(scenario, rng,

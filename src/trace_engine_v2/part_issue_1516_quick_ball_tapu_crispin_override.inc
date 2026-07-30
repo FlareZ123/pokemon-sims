@@ -1,6 +1,11 @@
   bool issue_1516_quick_ball_tapu_duplicate_crispin_is_redundant(
       const bool permit_payload) const {
-    if (!deck_seen_ || !prizes_known() ||
+    // Full Prize inspection and a resolved deck search establish the same K1
+    // knowledge, so this route depends on known zones rather than provenance:
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Correction precedent: https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1922
+    if (!prizes_known() ||
         scenario_.dci != DciProfile::NoDiscardControl ||
         hand_count(Card::QuickBall) == 0 ||
         hand_count(Card::Crispin) == 0 ||

@@ -1,0 +1,100 @@
+name: Debug Mode Audit 20260730 1154
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: debug-mode-audit-20260730-1154-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+
+      - name: Simulate pass 1 shell strict JIT
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee control-pass-1.txt # Readiness contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+
+      - name: Simulate pass 2 shell matchup-flex JIT
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee control-pass-2.txt # Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+
+      - name: Simulate pass 3 registered Pineco ALS
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee control-pass-3.txt # Registered ALS: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+
+      - name: Reproduce every reviewed bug witness
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-full-item-lock/go-second --seed 206 | tee issue-1855.txt # Serena: https://api.pokemontcg.io/v2/cards/swsh12-164 https://github.com/FlareZ123/pokemon-sims/issues/1855
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 108 | tee issue-1869.txt # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 292 | tee issue-1871.txt # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 453 | tee issue-1872-first.txt # Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 453 | tee issue-1872-second.txt # Issue: https://github.com/FlareZ123/pokemon-sims/issues/1872
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 38 | tee issue-1873.txt # Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 169 | tee issue-1874.txt # Issue: https://github.com/FlareZ123/pokemon-sims/issues/1874
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 169 | tee issue-1877.txt # Issue: https://github.com/FlareZ123/pokemon-sims/issues/1877
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 241 | tee issue-1878.txt # Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 146 | tee issue-1879-seed-146.txt # Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 163 | tee issue-1879-seed-163.txt # Crispin ruling: https://compendium.pokegym.net/category/5-trainers/crispin/
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 951 | tee issue-1895-seed-951.txt # Issue: https://github.com/FlareZ123/pokemon-sims/issues/1895
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 489 | tee issue-1895-seed-489.txt # Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 925 | tee issue-1896-flex.txt # Issue: https://github.com/FlareZ123/pokemon-sims/issues/1896
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 925 | tee issue-1896-strict.txt # Dynamic JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 1955 | tee issue-1910.txt # Arven and same-turn Item replay: https://api.pokemontcg.io/v2/cards/sv1-166 https://api.pokemontcg.io/v2/cards/sv8-164 https://github.com/FlareZ123/pokemon-sims/issues/1910
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 329 | tee issue-1911.txt # Post-promotion Blender replay: https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/sv8-76 https://github.com/FlareZ123/pokemon-sims/issues/1911
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 3698 | tee issue-1912.txt # Post-attachment Blender replay: https://api.pokemontcg.io/v2/cards/sv8-164 https://github.com/FlareZ123/pokemon-sims/issues/1912
+
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-t2-t3-matrix.csv # Matrix specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-canonical-shell-baseline
+      - name: Generate paired all-condition matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-multi-deck-matrix.csv # Paired specification: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure # Test contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-tests
+      - name: Record repository-wide static inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git ls-files | sort > tracked-files.txt
+          git grep -nEI 'TODO|FIXME|HACK|BUG' -- '*.cpp' '*.hpp' '*.inc' '*.py' '*.cmake' '*.md' > static-markers.txt || true
+          git rev-parse HEAD | tee audit-tested-head.txt
+          git archive --format=zip --output=audit-source-snapshot.zip HEAD
+          cp build/regidrago_sim audit-regidrago_sim
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-mode-audit-20260730-1154-${{ github.run_attempt }}
+          path: |
+            control-pass-*.txt
+            issue-*.txt
+            audit-t2-t3-matrix.csv
+            audit-multi-deck-matrix.csv
+            audit-tested-head.txt
+            audit-source-snapshot.zip
+            audit-regidrago_sim
+            tracked-files.txt
+            static-markers.txt
+            build/Testing
+          if-no-files-found: error

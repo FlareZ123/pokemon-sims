@@ -56,7 +56,11 @@
         state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
         state_.active->grass < 2 || state_.active->fire != 0 ||
-        !deck_seen_ || !prizes_revealed_ ||
+        // K1 is complete after either legal deck inspection or full Prize inspection:
+        // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+        // https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
+        // https://github.com/FlareZ123/pokemon-sims/issues/1923
+        !prizes_known() ||
         hand_count(Card::Fire) == 0 || hand_count(Card::Gladion) > 0 ||
         hand_count(Card::MysteriousTreasure) > 0 ||
         !need_vstar() || !need_energy() || !need_payload() ||

@@ -9,10 +9,15 @@
 
 namespace sim {
 struct EngineTestAccess {
-  static void set_state(Engine& engine, State state) {
+  static void set_state_with_knowledge(Engine& engine, State state,
+                                       const bool deck_seen,
+                                       const bool prizes_revealed) {
     engine.state_ = std::move(state);
-    engine.deck_seen_ = true;
-    engine.prizes_revealed_ = true;
+    engine.deck_seen_ = deck_seen;
+    engine.prizes_revealed_ = prizes_revealed;
+  }
+  static void set_state(Engine& engine, State state) {
+    set_state_with_knowledge(engine, std::move(state), true, true);
   }
   static void choose_supporter(Engine& engine) {
     engine.choose_supporter_issue_1152();
@@ -103,6 +108,30 @@ void test_exact_route_holds_fss_and_plays_crispin() {
          "Gladion must remain in hand when it does not advance the earliest route.");
 }
 
+void test_prize_inspection_alone_establishes_k1() {
+  const sim::Scenario scenario{"issue-1918", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  std::mt19937_64 rng{1918};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  sim::Engine engine(scenario, recipe, rng);
+
+  // Gladion or Hisuian Heavy Ball exposes the complete Prize zone. The fixed
+  // recipe and public zones then establish K1 without a separate deck search:
+  // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1918
+  sim::EngineTestAccess::set_state_with_knowledge(
+      engine, exact_state(), false, true);
+  expect(sim::EngineTestAccess::route_available(engine),
+         "Full Prize inspection alone must permit the K1 Crispin route.");
+
+  sim::EngineTestAccess::set_state_with_knowledge(
+      engine, exact_state(), false, false);
+  expect(!sim::EngineTestAccess::route_available(engine),
+         "The route must remain unavailable at K0.");
+}
+
 void test_missing_fire_preserves_gladion_fallback() {
   const sim::Scenario scenario{"issue-1393-control", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
@@ -124,6 +153,7 @@ void test_missing_fire_preserves_gladion_fallback() {
 int main() {
   try {
     test_exact_route_holds_fss_and_plays_crispin();
+    test_prize_inspection_alone_establishes_k1();
     test_seed_61_reaches_turn_two();
     test_missing_fire_preserves_gladion_fallback();
     std::cout << "Issue 1393 Crispin-before-Gladion tests passed\n";

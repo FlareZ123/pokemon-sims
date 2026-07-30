@@ -1,3 +1,5 @@
+#include "part_issue_1879_treasure_quick_ball_tapu_crispin.inc"
+
   static long double issue_1721_combination(const int n, const int k) {
     if (k < 0 || n < k) return 0.0L;
     long double result = 1.0L;
@@ -186,6 +188,7 @@
   }
 
   bool play_quick_ball(const bool permit_payload) {
+    if (complete_issue_1879_treasure_quick_ball_tapu_crispin_route()) return true;
     if (play_issue_1721_arven_powerglass_route()) return true;
     const bool issue_1595_hold_quick_ball_for_turo =
         scenario_.dci == DciProfile::MatchupFlexJit && state_.turn == 4 &&

@@ -53,6 +53,20 @@ jobs:
           # Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
           # Confirmed bug scope: https://github.com/FlareZ123/pokemon-sims/issues/1855
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-full-item-lock/go-second --seed 375 --require-ready-by 2 | tee issue-1855-selector-boundary-seed-375.txt
+      - name: Preserve banked Tapu retreat route
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Combined-lock seed 271828 has already banked Tapu's printed Retreat
+          # Cost and follows the registered diagnostic T5 Regidrago route:
+          # Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+          # Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Paid-Retreat route specification: https://github.com/FlareZ123/pokemon-sims/issues/1845
+          # Confirmed optional-discard bug: https://github.com/FlareZ123/pokemon-sims/issues/1855
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-combined-lock/go-first --seed 271828 --require-ready-by 5 | tee issue-1855-banked-tapu-seed-271828.txt
+          grep -q 'future paid Retreat' issue-1855-banked-tapu-seed-271828.txt
+          grep -q 'banked one-Energy Retreat Cost' issue-1855-banked-tapu-seed-271828.txt
+          grep -q 'T5 | READY' issue-1855-banked-tapu-seed-271828.txt
       - name: Simulate pass 1
         shell: bash
         run: |
@@ -114,6 +128,7 @@ jobs:
           path: |
             issue-1855-seed-206.txt
             issue-1855-selector-boundary-seed-375.txt
+            issue-1855-banked-tapu-seed-271828.txt
             simulate-pass-*.txt
             generated-results
             README.md

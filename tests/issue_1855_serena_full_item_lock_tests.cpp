@@ -142,6 +142,43 @@ void test_permanent_lock_fix_does_not_open_new_serena_route() {
          "Rejected Serena projection mutated the hand");
 }
 
+void test_banked_tapu_route_preserves_existing_serena_plan() {
+  sim::Scenario scenario{"issue-1855-banked-tapu", sim::DciProfile::StrictJit,
+                         sim::LockMode::FullCombined, true, 5};
+  sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{185505};
+  sim::Engine engine(scenario, recipe, rng);
+
+  sim::State state;
+  state.turn = 3;
+  state.active = sim::Pokemon{sim::Card::TapuLeleGX, 1, 1, 0, sim::Tool::None};
+  state.bench.push_back(
+      sim::Pokemon{sim::Card::RegidragoV, 3, 1, 0, sim::Tool::None});
+  state.hand = {sim::Card::Serena, sim::Card::MysteriousTreasure,
+                sim::Card::MysteriousTreasure, sim::Card::Grass,
+                sim::Card::Channeler, sim::Card::RegidragoVstar};
+  state.deck = {sim::Card::TeamYellsCheer, sim::Card::Dragapult,
+                sim::Card::ChaoticSwell, sim::Card::Fire,
+                sim::Card::ProfessorBurnet};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // The combined-lock ALS has already banked Tapu's printed Retreat Cost and
+  // established a Regidrago target. Preserve its registered Serena plan rather
+  // than shifting the diagnostic route with a new optional discard:
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+  // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Paid-Retreat route specification: https://github.com/FlareZ123/pokemon-sims/issues/1845
+  // Confirmed optional-discard bug: https://github.com/FlareZ123/pokemon-sims/issues/1855
+  expect(sim::EngineTestAccess::play_serena(engine),
+         "Existing banked-Tapu Serena route did not resolve");
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  expect(count(after.discard, sim::Card::MysteriousTreasure) == 1,
+         "Optional-discard fix replaced the banked-Tapu route plan");
+  expect(count(after.hand, sim::Card::MysteriousTreasure) == 1,
+         "Banked-Tapu route did not preserve its second Treasure");
+}
+
 void test_scheduled_lock_does_not_promote_currently_live_items() {
   sim::Scenario scenario{"issue-1855-scheduled-lock", sim::DciProfile::StrictJit,
                          sim::LockMode::TurnTwoItem, false, 4};
@@ -212,6 +249,7 @@ int main() {
     test_full_and_combined_lock_refresh();
     test_one_locked_item_uses_optional_slot_after_existing_first_cost();
     test_permanent_lock_fix_does_not_open_new_serena_route();
+    test_banked_tapu_route_preserves_existing_serena_plan();
     test_scheduled_lock_does_not_promote_currently_live_items();
     test_zero_draw_payload_completion_preserves_dead_items();
   } catch (const std::exception& error) {

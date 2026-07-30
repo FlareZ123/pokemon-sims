@@ -94,18 +94,22 @@ void test_held_payload_route_and_boundaries() {
   expect(!sim::EngineTestAccess::route_available(benched),
          "A full Bench admitted the Tapu route.");
 
-  sim::Engine item_locked = make_engine(strict(sim::LockMode::FullItem), rng,
-                                        base_state());
+  const sim::Scenario item_lock_scenario = strict(sim::LockMode::FullItem);
+  sim::Engine item_locked = make_engine(item_lock_scenario, rng, base_state());
   expect(!sim::EngineTestAccess::route_available(item_locked),
          "Item lock admitted the Quick Ball route.");
 
-  sim::Engine ability_locked = make_engine(
-      strict(sim::LockMode::FullRuleBoxAbility), rng, base_state());
+  const sim::Scenario ability_lock_scenario =
+      strict(sim::LockMode::FullRuleBoxAbility);
+  sim::Engine ability_locked =
+      make_engine(ability_lock_scenario, rng, base_state());
   expect(!sim::EngineTestAccess::route_available(ability_locked),
          "Rule Box Ability lock admitted Wonder Tag.");
 
-  sim::Engine supporter_locked = make_engine(
-      strict(sim::LockMode::FullSupporter), rng, base_state());
+  const sim::Scenario supporter_lock_scenario =
+      strict(sim::LockMode::FullSupporter);
+  sim::Engine supporter_locked =
+      make_engine(supporter_lock_scenario, rng, base_state());
   expect(!sim::EngineTestAccess::route_available(supporter_locked),
          "Supporter lock admitted Crispin.");
 

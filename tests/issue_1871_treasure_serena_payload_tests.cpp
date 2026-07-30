@@ -47,7 +47,8 @@ sim::State base_state() {
   state.turn = 3;
   state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 1, 1};
   state.hand = {sim::Card::QuickBall, sim::Card::MysteriousTreasure,
-                sim::Card::Grass, sim::Card::Grass, sim::Card::Serena};
+                sim::Card::Grass, sim::Card::Grass, sim::Card::Serena,
+                sim::Card::BrilliantBlender};
   state.deck = {sim::Card::MegaDragonite, sim::Card::RegidragoV,
                 sim::Card::Fire, sim::Card::Grass, sim::Card::Channeler};
   return state;
@@ -78,6 +79,9 @@ void test_exact_route_and_k1_boundaries() {
                    sim::Card::MegaDragonite) !=
              engine.state().discarded_this_turn.end(),
          "Serena did not discard the searched Dragon this turn.");
+  expect(std::find(engine.state().hand.begin(), engine.state().hand.end(),
+                   sim::Card::BrilliantBlender) != engine.state().hand.end(),
+         "The deterministic route replayed Brilliant Blender.");
 
   sim::Engine prize_k1 = make_engine(scenario, rng, base_state(), false, true);
   expect(sim::EngineTestAccess::route_available(prize_k1),

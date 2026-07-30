@@ -90,3 +90,48 @@
 // original turn implementation for every other state:
 // https://github.com/FlareZ123/pokemon-sims/issues/1910
 #define run_turn_issue_1751_original run_turn_issue_1910_late_arven_blender_replay
+
+  void run_turn_issue_1911_post_transition_blender_replay() {
+    const auto prior_turn_regi_v = [this](const Pokemon& pokemon) {
+      return pokemon.card == Card::RegidragoV &&
+          pokemon.entered_turn < state_.turn;
+    };
+    const bool evolution_or_promotion_pending_before =
+        !active_is_vstar() && hand_count(Card::RegidragoVstar) > 0 &&
+        ((state_.active && prior_turn_regi_v(*state_.active)) ||
+         std::any_of(state_.bench.begin(), state_.bench.end(), prior_turn_regi_v));
+    const int blender_before = hand_count(Card::BrilliantBlender);
+    run_turn_issue_1751_original();
+
+    const bool transition_exposed_live_blender =
+        evolution_or_promotion_pending_before && blender_before > 0 &&
+        !state_.turn_ended && hand_count(Card::BrilliantBlender) > 0 &&
+        !item_locked() && deck_seen_ && !need_regi() && !need_vstar() &&
+        !need_energy() && !need_active_vstar() && need_payload() &&
+        can_play_payload_this_turn() && payload_might_be_in_deck();
+    if (!transition_exposed_live_blender) return;
+
+    // Evolving or promoting Regidrago VSTAR can complete the last non-payload
+    // setup axis without ending the action phase. A held Brilliant Blender must
+    // then be reconsidered before the enclosing ready-state check:
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official evolution, Ability, retreat, Item, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, current-turn JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1911
+    // The ordinary Blender selector preserves the ACE SPEC for an in-hand
+    // Serena payload outlet. The same turn scheduler has already held that
+    // Supporter because this exact non-Supporter Blender route was proven, so
+    // calling the generic selector here would deadlock the two valid choices.
+    // Resolve the already-selected Item route through its legal core action:
+    // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+    // Existing resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/issues/976
+    if (!play_brilliant_blender_legacy_original()) {
+      throw std::logic_error(
+          "Proven issue-1911 post-transition Blender became unavailable");
+    }
+  }
+
+#undef run_turn_issue_1751_original
+#define run_turn_issue_1751_original run_turn_issue_1911_post_transition_blender_replay

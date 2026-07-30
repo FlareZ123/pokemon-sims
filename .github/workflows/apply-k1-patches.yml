@@ -1,0 +1,39 @@
+name: Apply reviewed K1 patches
+
+on:
+  push:
+    branches: [automation/apply-k1-provenance-patches]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply isolated issue patches and dispatch CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .github/agent-patches/*.patch /tmp/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          for issue in 1923 1924 1925 1926 1927 1928 1929; do
+            branch="fix/${issue}-prize-k1"
+            git fetch origin "${branch}"
+            git switch -C "${branch}" "origin/${branch}"
+            git apply --check "/tmp/${issue}.patch"
+            git apply "/tmp/${issue}.patch"
+            git add src tests
+            git commit -m "Fix issue ${issue} Prize-inspection K1 provenance"
+            git push origin "${branch}"
+            gh workflow run ci.yml --ref "${branch}"
+          done

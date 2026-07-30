@@ -165,9 +165,12 @@
     // fallbacks. Dipplin's legal-search status stays separate from is_payload:
     // https://api.pokemontcg.io/v2/cards/sv8-140
     // https://api.pokemontcg.io/v2/cards/sv6-127
+    // Crobat V is Darkness and is excluded from this typed fallback:
+    // https://api.pokemontcg.io/v2/cards/swsh3-104
     // https://github.com/FlareZ123/pokemon-sims/issues/1253
+    // https://github.com/FlareZ123/pokemon-sims/issues/1949
     for (const Card target : {Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio,
-                              Card::TapuLeleGX, Card::CrobatV, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
+                              Card::TapuLeleGX, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
                               Card::DialgaGX, Card::Appletun, Card::Dipplin}) {
       if (deck_count_after_search_started(target) > 0) return target;
     }

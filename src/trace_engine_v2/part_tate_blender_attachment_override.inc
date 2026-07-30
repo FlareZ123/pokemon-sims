@@ -66,6 +66,42 @@ bool retreat_banked_tapu_to_regidrago() {
   return true;
 }
 
+bool issue_1912_post_attachment_blender_available() const {
+  // A legal manual attachment does not end the action phase. When it completes
+  // the Active Regidrago VSTAR's GGF cost, the already-held Brilliant Blender
+  // remains playable and can establish the required current-turn Dragon payload:
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Official Energy attachment, Item, search, discard, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // K1, current-turn JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1912
+  return strict_payload_timing() && prizes_known() && !item_locked() &&
+      state_.active && state_.active->card == Card::RegidragoVstar &&
+      state_.active->grass >= 2 && state_.active->fire >= 1 &&
+      hand_count(Card::BrilliantBlender) > 0 && need_payload() &&
+      payload_might_be_in_deck();
+}
+
+bool issue_1912_replay_blender_after_attachment() {
+  if (!issue_1912_post_attachment_blender_available()) return false;
+  if (supporter_allowed() && hand_count(Card::TateLiza) > 0 && trace_ != nullptr) {
+    // Executing the held non-Supporter finish still means Tate & Liza is being
+    // preserved from shuffling that deterministic route away:
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Confirmed held-route policy: https://github.com/FlareZ123/pokemon-sims/issues/1057
+    // Confirmed replay bug: https://github.com/FlareZ123/pokemon-sims/issues/1912
+    trace_->add_policy_once(
+        state_, "issue-1057-held-non-supporter-route", state_.turn,
+        "HOLD SUPPORTER", "R-TATE-01; P-KNOWLEDGE-01; P-COMPRESS-01",
+        "Retained Tate & Liza because held non-Supporter cards already complete the current-turn ready route.");
+  }
+  issue_1912_post_attachment_blender_replay_ = true;
+  const bool played = play_brilliant_blender();
+  issue_1912_post_attachment_blender_replay_ = false;
+  return played;
+}
+
 bool attach_manual() {
   if (issue_1845_proactive_tapu_attachment_available()) {
     if (!remove_one(state_.hand, Card::Grass)) {
@@ -246,7 +282,20 @@ bool attach_manual() {
     }
   }
 
+  const Pokemon* before_attachment = target_regi();
+  const bool attachment_can_complete_ggf =
+      !state_.manual_energy_used && before_attachment != nullptr &&
+      (before_attachment->grass < 2 || before_attachment->fire < 1);
   const bool attached = attach_manual_tate_blender_original();
+  if (attached && attachment_can_complete_ggf) {
+    // Reopen only the deterministic held Blender action unlocked by this
+    // attachment. This preserves unrelated pre-attachment Item ordering:
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1912
+    issue_1912_replay_blender_after_attachment();
+  }
   if (retreat_banked_tapu_to_regidrago()) return true;
   return attached;
 }

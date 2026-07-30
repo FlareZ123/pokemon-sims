@@ -88,6 +88,38 @@
     return true;
   }
 
+  bool issue_1797_wonder_tag_steven_route_available() const {
+    const int deck_grass = deck_count_after_search_started(Card::Grass);
+    const int deck_fire = deck_count_after_search_started(Card::Fire);
+    const bool deck_payload = std::any_of(
+        state_.deck.begin(), state_.deck.end(), is_payload);
+    const bool route_cost_paid = count_of(state_.discard, Card::TateLiza) > 0 ||
+        count_of(state_.discard, Card::Lusamine) > 0;
+
+    // Wonder Tag resolves on T1 after K1 Quick Ball. It may search Steven's Resolve
+    // even though the going-first rule prevents playing that Supporter until T2:
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Official first-turn and Ability search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 and complete-route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1797
+    return scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
+        scenario_.locks == LockMode::None && state_.turn == 1 &&
+        scenario_.max_turn >= 3 && prizes_known() && !state_.supporter_used &&
+        state_.active && state_.active->card == Card::RegidragoV &&
+        state_.active->grass == 0 && state_.active->fire == 0 &&
+        count_of(state_.discard, Card::QuickBall) > 0 && route_cost_paid &&
+        in_play(Card::TapuLeleGX) &&
+        ability_available_for_pokemon(Card::TapuLeleGX) &&
+        hand_count(Card::RegidragoVstar) > 0 && hand_count(Card::Grass) >= 2 &&
+        deck_count_after_search_started(Card::StevensResolve) > 0 &&
+        deck_count_after_search_started(Card::Crispin) > 0 &&
+        deck_count_after_search_started(Card::EarthenVessel) > 0 &&
+        deck_grass > 0 && deck_fire > 0 && deck_grass + deck_fire >= 5 &&
+        deck_payload;
+  }
+
   bool issue_1796_wonder_tag_steven_route_available() const {
     const bool prior_turn_regidrago = std::any_of(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
@@ -132,6 +164,9 @@
   }
 
   Card choose_supporter_after_search_started() const {
+    if (issue_1797_wonder_tag_steven_route_available()) {
+      return Card::StevensResolve;
+    }
     if (issue_1796_wonder_tag_steven_route_available()) {
       return Card::StevensResolve;
     }

@@ -57,7 +57,7 @@ jobs:
           # https://api.pokemontcg.io/v2/cards/sv4pt5-2
           # https://api.pokemontcg.io/v2/cards/sv6-163
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee audit-pass-3.txt
-      - name: Reproduce seed 40 missed T3 Vessel-Burnet route
+      - name: Reproduce seed 40 missing-Grass Vessel-Burnet pass
         shell: bash
         run: |
           set -euo pipefail
@@ -66,13 +66,45 @@ jobs:
           # https://api.pokemontcg.io/v2/cards/sv4-163
           # https://api.pokemontcg.io/v2/cards/swsh12-136
           # Official procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-          # Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Regression issue: https://github.com/FlareZ123/pokemon-sims/issues/1866
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 40 | tee audit-seed-40.txt
           grep -q "first-ready turn: 5" audit-seed-40.txt
           grep -q "T3 | POLICY.*Start: Active=Regidrago VSTAR \[GF\].*Professor Burnet.*Earthen Vessel" audit-seed-40.txt
           grep -q "T3 | POLICY.*End: Active=Regidrago VSTAR \[GF\]" audit-seed-40.txt
           ! grep -q "T3 | PLAY SUPPORTER.*BURNET" audit-seed-40.txt
           ! grep -q "T3 | Earthen Vessel" audit-seed-40.txt
+      - name: Reproduce seed 138 missing-Fire Vessel-Burnet pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Professor Burnet, Earthen Vessel, and Regidrago VSTAR:
+          # https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          # Refinement of: https://github.com/FlareZ123/pokemon-sims/issues/1866
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 138 | tee audit-seed-138.txt
+          grep -q "first-ready turn: 5" audit-seed-138.txt
+          grep -q "T3 | POLICY.*Start: Active=Regidrago VSTAR \[GG\].*Earthen Vessel.*Professor Burnet" audit-seed-138.txt
+          grep -q "T3 | POLICY.*End: Active=Regidrago VSTAR \[GG\]" audit-seed-138.txt
+          ! grep -q "T3 | PLAY SUPPORTER.*BURNET" audit-seed-138.txt
+          ! grep -q "T3 | Earthen Vessel" audit-seed-138.txt
+      - name: Reproduce seed 398 missing-Grass T4 Vessel-Burnet pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Professor Burnet, Earthen Vessel, and Regidrago VSTAR:
+          # https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          # https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Official procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          # Refinement of: https://github.com/FlareZ123/pokemon-sims/issues/1866
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 398 | tee audit-seed-398.txt
+          grep -q "first-ready turn: 5" audit-seed-398.txt
+          grep -q "T4 | POLICY.*Start: Active=Regidrago VSTAR \[GF\].*Professor Burnet.*Earthen Vessel" audit-seed-398.txt
+          grep -q "T4 | POLICY.*End: Active=Regidrago VSTAR \[GF\]" audit-seed-398.txt
+          ! grep -q "T4 | PLAY SUPPORTER.*BURNET" audit-seed-398.txt
+          ! grep -q "T4 | Earthen Vessel" audit-seed-398.txt
       - name: Generate canonical T2 and T3 matrix
         run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-t2-t3-matrix.csv
       - name: Generate paired two-deck matrix
@@ -92,7 +124,7 @@ jobs:
           name: debug-main-current-${{ github.run_attempt }}
           path: |
             audit-pass-*.txt
-            audit-seed-40.txt
+            audit-seed-*.txt
             audit-t2-t3-matrix.csv
             audit-multi-deck-matrix.csv
             audit-tested-head.txt

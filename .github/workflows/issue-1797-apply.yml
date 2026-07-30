@@ -98,6 +98,9 @@ jobs:
           python scripts/update_setup_docs.py --repo-root .
           python scripts/update_multi_deck_docs.py --repo-root .
 
+      - name: Remove temporary patch artifacts before audit
+        run: rm scripts/apply_issue_1797.py .github/workflows/issue-1797-apply.yml
+
       - name: Complete Release test suite
         run: ctest --test-dir build --output-on-failure
 
@@ -127,7 +130,6 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/trace_engine_v2/part_007.inc src/trace_engine_v2/part_009b1.inc src/trace_engine_v2/part_014c_issue_1152_bridge.inc src/trace_engine_v2/part_issue_1675_latias_late_promotion_override.inc tests/issue_1797_quick_ball_tapu_steven_tests.cpp docs/REPORT.md docs/MULTI_DECK_REPORT.md results/simulation_results.csv results/baseline_manifest.json results/traces results/multi_deck_comparison.csv results/multi_deck_manifest.json results/multi_deck_traces
-          git rm scripts/apply_issue_1797.py .github/workflows/issue-1797-apply.yml
+          git add -A src tests docs results scripts .github/workflows
           git commit -m "Prefer Quick Ball Tapu Steven route for #1797"
           git push origin HEAD:${{ github.head_ref }}

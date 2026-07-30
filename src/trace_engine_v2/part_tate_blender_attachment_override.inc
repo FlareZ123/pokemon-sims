@@ -126,11 +126,16 @@ bool attach_manual() {
       throw std::logic_error("Issue-1772 projected Crispin completion disappeared");
     }
   }
+  // Full Prize inspection establishes the same K1 state as a resolved deck
+  // search, so the route must depend on known zones rather than provenance:
+  // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Correction precedent: https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1932
   const bool issue_1552_public_t2_state =
       !secret_box_combo_enabled() &&
       scenario_.dci == DciProfile::StrictJit &&
       scenario_.locks == LockMode::None && scenario_.going_first &&
-      state_.turn == 2 && deck_seen_ && prizes_known() &&
+      state_.turn == 2 && prizes_known() &&
       !state_.manual_energy_used && supporter_allowed() &&
       state_.active && state_.active->card == Card::RegidragoV &&
       state_.active->entered_turn < state_.turn &&
@@ -165,7 +170,7 @@ bool attach_manual() {
     // Regidrago VSTAR / GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Evolution, Item, Bench, Ability, Supporter, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // K1, DCI, strict-JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k1-after-a-legal-deck-or-prize-inspection https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1552
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1552 https://github.com/FlareZ123/pokemon-sims/issues/1932
     if (!evolve_best_regi()) {
       throw std::logic_error(
           "projected issue-1552 T2 evolution disappeared");

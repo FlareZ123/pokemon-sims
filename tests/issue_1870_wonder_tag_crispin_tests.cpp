@@ -113,8 +113,8 @@ int main() {
   // and Professor Burnet routes from issue 1866:
   // https://github.com/FlareZ123/pokemon-sims/issues/1866
   // https://github.com/FlareZ123/pokemon-sims/pull/1881
-  // The integrated shell matrix is regenerated from the combined source before
-  // the paired shell/Pineco matrix and complete test suites run:
+  // Both fixed-seed 100,000-trial matrices are regenerated from the combined
+  // source before the complete Release and sanitizer suites run:
   // https://github.com/FlareZ123/pokemon-sims/blob/main/results/simulation_results.csv
   // https://github.com/FlareZ123/pokemon-sims/blob/main/results/multi_deck_comparison.csv
   test_crispin_preempts_final_prized_energy_gladion();

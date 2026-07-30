@@ -12,6 +12,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record tracked source and static-analysis inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Repository specifications used for the audit:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
+          git ls-files | sort > tracked-files.txt
+          git grep -nEI 'TODO|FIXME|HACK|BUG' -- '*.cpp' '*.hpp' '*.inc' '*.py' '*.cmake' '*.md' > static-markers.txt || true
+          git rev-parse HEAD | tee audit-tested-head.txt
+          git archive --format=zip --output=audit-source-snapshot.zip HEAD
+      - name: Upload source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-mode-source-20260730-1741-${{ github.run_attempt }}
+          path: |
+            audit-tested-head.txt
+            audit-source-snapshot.zip
+            tracked-files.txt
+            static-markers.txt
+          if-no-files-found: error
+
   audit:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -67,19 +94,6 @@ jobs:
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
 
-      - name: Record static-analysis inputs and tested source
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Repository specifications used for the audit:
-          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
-          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
-          git ls-files | sort > tracked-files.txt
-          git grep -nEI 'TODO|FIXME|HACK|BUG' -- '*.cpp' '*.hpp' '*.inc' '*.py' '*.cmake' '*.md' > static-markers.txt || true
-          git rev-parse HEAD | tee audit-tested-head.txt
-          git archive --format=zip --output=audit-source-snapshot.zip HEAD
-          cp build/regidrago_sim audit-regidrago_sim
-
       - name: Upload audit evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -89,10 +103,5 @@ jobs:
             control-pass-*.txt
             audit-t2-t3-matrix.csv
             audit-multi-deck-matrix.csv
-            audit-tested-head.txt
-            audit-source-snapshot.zip
-            audit-regidrago_sim
-            tracked-files.txt
-            static-markers.txt
             build/Testing
           if-no-files-found: error

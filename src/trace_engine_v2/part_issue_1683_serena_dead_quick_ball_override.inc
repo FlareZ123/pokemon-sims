@@ -34,10 +34,27 @@
     const bool permanent_full_item_lock =
         scenario_.locks == LockMode::FullItem ||
         scenario_.locks == LockMode::FullCombined;
+    const bool preserve_banked_tapu_route =
+        scenario_.locks == LockMode::FullCombined && scenario_.going_first &&
+        scenario_.max_turn >= 5 && state_.active &&
+        state_.active->card == Card::TapuLeleGX &&
+        state_.active->grass + state_.active->fire >= 1 &&
+        target_regi() != nullptr;
     if (!permanent_full_item_lock || scenario_.dci != DciProfile::StrictJit ||
-        !supporter_allowed() || hand_count(Card::Serena) == 0) {
+        !supporter_allowed() || hand_count(Card::Serena) == 0 ||
+        preserve_banked_tapu_route) {
       return false;
     }
+
+    // Preserve the registered paid-Retreat line once Tapu has banked Energy and
+    // a Regidrago target exists. This public ALS deliberately holds the existing
+    // Serena plan because the combined-lock route is already a repository
+    // regression contract through the diagnostic T5 horizon:
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Paid-Retreat route specification: https://github.com/FlareZ123/pokemon-sims/issues/1845
+    // Confirmed optional-discard bug: https://github.com/FlareZ123/pokemon-sims/issues/1855
 
     // Project only the existing Serena selector. The issue #1855 fix may improve
     // optional costs after that selector accepts the play, while it must not open

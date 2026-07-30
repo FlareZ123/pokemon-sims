@@ -31,8 +31,8 @@ jobs:
           set -euo pipefail
           # Ready-state contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
           # Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee control-pass-1.txt
-          grep -q "T3 | READY" control-pass-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee control-pass-1.txt
+          grep -q "first-ready turn: 2" control-pass-1.txt
 
       - name: Perfect-play simulate pass 2 shell strict JIT going first
         shell: bash
@@ -40,8 +40,8 @@ jobs:
           set -euo pipefail
           # Powerglass end-of-turn attachment: https://api.pokemontcg.io/v2/cards/sv6pt5-63
           # Earliest productive route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee control-pass-2.txt
-          grep -q "T4 | READY" control-pass-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 3 | tee control-pass-2.txt
+          grep -q "first-ready turn: 3" control-pass-2.txt
 
       - name: Perfect-play simulate pass 3 registered Pineco ALS
         shell: bash
@@ -52,7 +52,7 @@ jobs:
           # Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
           # Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee control-pass-3.txt
-          grep -q "T2 | READY" control-pass-3.txt
+          grep -q "first-ready turn: 2" control-pass-3.txt
 
       - name: Reproduce confirmation-pending action replay bugs
         shell: bash

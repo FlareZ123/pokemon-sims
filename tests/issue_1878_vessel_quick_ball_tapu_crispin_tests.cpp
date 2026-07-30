@@ -108,25 +108,28 @@ void test_exact_route_and_knowledge_boundaries() {
 
 void test_lock_resource_and_target_boundaries() {
   std::mt19937_64 rng(241);
+  const sim::Scenario no_lock = strict();
+  const sim::Scenario item_lock = strict(sim::LockMode::FullItem);
+  const sim::Scenario supporter_lock = strict(sim::LockMode::FullSupporter);
+  const sim::Scenario ability_lock = strict(sim::LockMode::FullRuleBoxAbility);
 
-  sim::Engine item_locked =
-      make_engine(strict(sim::LockMode::FullItem), rng, base_state());
+  sim::Engine item_locked = make_engine(item_lock, rng, base_state());
   expect(!sim::EngineTestAccess::route_available(item_locked),
          "Item lock admitted the route.");
 
   sim::Engine supporter_locked =
-      make_engine(strict(sim::LockMode::FullSupporter), rng, base_state());
+      make_engine(supporter_lock, rng, base_state());
   expect(!sim::EngineTestAccess::route_available(supporter_locked),
          "Supporter lock admitted Crispin.");
 
   sim::Engine ability_locked =
-      make_engine(strict(sim::LockMode::FullRuleBoxAbility), rng, base_state());
+      make_engine(ability_lock, rng, base_state());
   expect(!sim::EngineTestAccess::route_available(ability_locked),
          "Rule Box Ability lock admitted Wonder Tag.");
 
   sim::State full_bench = base_state();
   full_bench.bench.assign(5, sim::Pokemon{sim::Card::RegidragoV, 1});
-  sim::Engine benched = make_engine(strict(), rng, std::move(full_bench));
+  sim::Engine benched = make_engine(no_lock, rng, std::move(full_bench));
   expect(!sim::EngineTestAccess::route_available(benched),
          "A full Bench admitted the Tapu route.");
 
@@ -135,14 +138,14 @@ void test_lock_resource_and_target_boundaries() {
                                            insufficient_grass.deck.end(),
                                            sim::Card::Grass));
   sim::Engine low_grass =
-      make_engine(strict(), rng, std::move(insufficient_grass));
+      make_engine(no_lock, rng, std::move(insufficient_grass));
   expect(!sim::EngineTestAccess::route_available(low_grass),
          "Too few searchable Grass Energy admitted the route.");
 
   sim::State missing_fire = base_state();
   missing_fire.deck.erase(std::find(missing_fire.deck.begin(),
                                     missing_fire.deck.end(), sim::Card::Fire));
-  sim::Engine no_fire = make_engine(strict(), rng, std::move(missing_fire));
+  sim::Engine no_fire = make_engine(no_lock, rng, std::move(missing_fire));
   expect(!sim::EngineTestAccess::route_available(no_fire),
          "Crispin was admitted without a searchable Fire Energy.");
 
@@ -151,7 +154,7 @@ void test_lock_resource_and_target_boundaries() {
       std::find(no_safe_vessel_cost.hand.begin(),
                 no_safe_vessel_cost.hand.end(), sim::Card::StevensResolve));
   sim::Engine no_cost =
-      make_engine(strict(), rng, std::move(no_safe_vessel_cost));
+      make_engine(no_lock, rng, std::move(no_safe_vessel_cost));
   expect(!sim::EngineTestAccess::route_available(no_cost),
          "The route was admitted without a route-replaced Vessel cost.");
 
@@ -159,7 +162,7 @@ void test_lock_resource_and_target_boundaries() {
   no_payload.hand.erase(std::find(no_payload.hand.begin(), no_payload.hand.end(),
                                   sim::Card::Dragapult));
   sim::Engine missing_payload =
-      make_engine(strict(), rng, std::move(no_payload));
+      make_engine(no_lock, rng, std::move(no_payload));
   expect(!sim::EngineTestAccess::route_available(missing_payload),
          "The route was admitted without a held Dragon payload.");
 }

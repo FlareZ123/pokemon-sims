@@ -13,6 +13,7 @@
     // held Crispin attaches the missing Grass, so a visible Dragon is DCI 1
     // because this exact cost creates the current-turn Apex Dragon payload.
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Supplied card-data corpus: https://github.com/PokemonTCG/pokemon-tcg-data/blob/master/cards/en/sm6.json
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Dialga-GX and Dragapult ex: https://api.pokemontcg.io/v2/cards/sm5-100 https://api.pokemontcg.io/v2/cards/sv6-130
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136

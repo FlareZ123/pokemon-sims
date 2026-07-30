@@ -16,7 +16,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Adapt patch to current final turn wrapper
+      - name: Adapt patch to current source contracts
         shell: bash
         run: |
           set -euo pipefail
@@ -24,11 +24,17 @@ jobs:
           from pathlib import Path
           path = Path("scripts/apply_issue_1797.py")
           text = path.read_text(encoding="utf-8")
-          old = "  void run_turn() {"
-          new = "  void run_turn_issue1775_original() {"
-          if text.count(old) != 2:
+          old_wrapper = "  void run_turn() {"
+          new_wrapper = "  void run_turn_issue1775_original() {"
+          if text.count(old_wrapper) != 2:
               raise RuntimeError("Expected two issue-1797 final turn wrapper markers")
-          path.write_text(text.replace(old, new), encoding="utf-8")
+          text = text.replace(old_wrapper, new_wrapper)
+          old_rule = "R-GAME-ATTACH"
+          new_rule = "R-GAME-ENERGY"
+          if text.count(old_rule) != 1:
+              raise RuntimeError("Expected one issue-1797 attachment rule marker")
+          text = text.replace(old_rule, new_rule, 1)
+          path.write_text(text, encoding="utf-8")
           PY
 
       - name: Apply source-bound issue 1797 patch

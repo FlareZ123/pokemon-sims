@@ -118,7 +118,32 @@ void test_requires_source_bounded_connectors() {
   expect_rejected(std::move(state), "unprized Treasure");
 
   state = route_state();
-  expect_rejected(std::move(state), "unknown deck", sim::LockMode::None, 5, false, true);
+  expect_rejected(std::move(state), "K0", sim::LockMode::None, 5, false, false);
+}
+
+void test_k1_provenance_equivalence() {
+  const auto route_is_live = [](const bool deck_seen,
+                                const bool prizes_revealed) {
+    Fixture fixture;
+    sim::EngineTestAccess::set_state(
+        fixture.engine, route_state(), deck_seen, prizes_revealed);
+    return sim::EngineTestAccess::route_live(fixture.engine);
+  };
+
+  // Either legal inspection supplies the same K1 knowledge. K0 still cannot use
+  // the Turo, Tapu replay, Wonder Tag, Gladion, and prized-Treasure route:
+  // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Correction precedent: https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
+  // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Official return-to-hand, Active replacement, Bench, Ability, Prize, and Supporter procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1924
+  if (!route_is_live(true, false) || !route_is_live(false, true) ||
+      route_is_live(false, false)) {
+    throw std::runtime_error("Issue 1924 K1 provenance boundary failed");
+  }
 }
 
 void test_requires_future_legal_window() {
@@ -136,6 +161,7 @@ int main() {
   test_returns_and_replays_tapu_for_future_supporter();
   test_requires_prior_turn_powered_regidrago();
   test_requires_source_bounded_connectors();
+  test_k1_provenance_equivalence();
   test_requires_future_legal_window();
   return 0;
 }

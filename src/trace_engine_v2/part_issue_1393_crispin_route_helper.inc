@@ -1,7 +1,8 @@
   bool issue_1393_held_crispin_completion_available() const {
+    // A resolved full Prize inspection establishes K1 without a deck search: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     if (scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || state_.turn != 2 ||
-        !deck_seen_ || !prizes_known() || !supporter_allowed() ||
+        !prizes_known() || !supporter_allowed() ||
         state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||

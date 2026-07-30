@@ -1,3 +1,4 @@
+#include "part_issue_1872_treasure_vessel_payload_route.inc"
 #include "part_issue_1878_vessel_quick_ball_tapu_crispin_route.inc"
 #include "part_issue_1875_quick_ball_tapu_crispin_route.inc"
 
@@ -80,12 +81,25 @@
   }
 
   bool secret_box_combo_enabled_issue1875() const {
-    return issue_1878_vessel_quick_ball_tapu_crispin_route_available() ||
+    return issue_1872_treasure_vessel_payload_route_available() ||
+        issue_1878_vessel_quick_ball_tapu_crispin_route_available() ||
         issue_1875_quick_ball_tapu_crispin_route_available() ||
         secret_box_combo_enabled();
   }
 
   void run_secret_box_turn_issue1875() {
+    // Spend Chaotic Swell on Treasure, search the known Dragon, and let Vessel
+    // discard that Dragon before generic ordering can consume the Stadium on Vessel.
+    // https://github.com/FlareZ123/pokemon-sims/issues/1872
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    if (issue_1872_treasure_vessel_payload_route_available()) {
+      trace("POLICY", "P-AXIS-01", "Start: " + state_line());
+      if (!complete_issue_1872_treasure_vessel_payload_route()) {
+        throw std::logic_error("Issue-1872 projected route failed");
+      }
+      trace("POLICY", "P-AXIS-01", "End: " + state_line());
+      return;
+    }
     // Run the confirmed complete route before generic action ordering can spend
     // its Dragon payload on Earthen Vessel and strand the Quick Ball continuation.
     // https://github.com/FlareZ123/pokemon-sims/issues/1878

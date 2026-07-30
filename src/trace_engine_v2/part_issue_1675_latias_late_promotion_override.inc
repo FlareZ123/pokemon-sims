@@ -38,6 +38,16 @@
   }
 
   void run_turn_issue1775_original() {
+    if (complete_issue_1797_t2_steven_package()) return;
+    if (complete_issue_1797_t3_finish()) {
+      // The K1 Heavy Ball, Quick Ball, Wonder Tag, Steven, Crispin, and Vessel route
+      // completes the registered strict-JIT setup on T3:
+      // https://api.pokemontcg.io/v2/cards/swsh10-146 https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sm2-60 https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://github.com/FlareZ123/pokemon-sims/issues/1797
+      trace("POLICY", "P-AXIS-01; R-QB-01; R-STEVEN-01; R-EV-01; P-JIT-01; P-COMPRESS-01",
+            "Completed the issue-1797 deterministic T3 route: " + state_line());
+      return;
+    }
     if (complete_issue_1796_t3_finish()) {
       // The K1 Wonder Tag route has completed every public setup axis on T3:
       // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60

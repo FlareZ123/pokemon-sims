@@ -130,6 +130,194 @@
     return crispin_can_advance_energy_axis();
   }
 
+  int issue_1797_finish_turn_ = 0;
+
+  bool complete_issue_1797_t2_steven_package() {
+    if (state_.turn != 2 || issue_1797_finish_turn_ != 0) return false;
+
+    const bool tapu_in_play = in_play(Card::TapuLeleGX);
+    const bool quick_ball_paid = count_of(state_.discard, Card::QuickBall) > 0 &&
+        (count_of(state_.discard, Card::TateLiza) > 0 ||
+         count_of(state_.discard, Card::Lusamine) > 0);
+    const bool payload_available = std::any_of(
+        state_.hand.begin(), state_.hand.end(), is_payload) ||
+        std::any_of(state_.deck.begin(), state_.deck.end(), is_payload);
+    const bool route_available = scenario_.dci == DciProfile::StrictJit &&
+        scenario_.going_first && scenario_.locks == LockMode::None &&
+        scenario_.max_turn >= 3 && prizes_known() && supporter_allowed() &&
+        !state_.manual_energy_used && !item_locked() && state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        state_.active->grass == 1 && state_.active->fire == 0 && tapu_in_play &&
+        quick_ball_paid && hand_count(Card::RegidragoVstar) > 0 &&
+        hand_count(Card::Grass) > 0 && hand_count(Card::StevensResolve) > 0 &&
+        (hand_count(Card::Crispin) > 0 ||
+         deck_count_after_search_started(Card::Crispin) > 0) &&
+        (hand_count(Card::EarthenVessel) > 0 ||
+         deck_count_after_search_started(Card::EarthenVessel) > 0) &&
+        payload_available;
+    if (!route_available) return false;
+
+    remove_one(state_.hand, Card::Grass);
+    ++state_.active->grass;
+    state_.manual_energy_used = true;
+    trace("ATTACH ENERGY", "R-GAME-ENERGY; P-COMPRESS-01",
+          "Attached the held second Grass Energy before Steven's Resolve ends T2.");
+
+    remove_one(state_.hand, Card::StevensResolve);
+    state_.discard.push_back(Card::StevensResolve);
+    state_.supporter_used = true;
+    outcome_.used_steven = true;
+    record_deck_search_knowledge("Steven's Resolve issue-1797 package");
+
+    std::vector<Card> found;
+    if (hand_count(Card::Crispin) == 0) {
+      if (!move_deck_to_hand(Card::Crispin)) {
+        throw std::logic_error("Issue-1797 Crispin target disappeared");
+      }
+      found.push_back(Card::Crispin);
+    }
+    if (hand_count(Card::EarthenVessel) == 0) {
+      if (!move_deck_to_hand(Card::EarthenVessel)) {
+        throw std::logic_error("Issue-1797 Earthen Vessel target disappeared");
+      }
+      found.push_back(Card::EarthenVessel);
+    }
+    if (!std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      const auto payload_it = std::find_if(
+          state_.deck.begin(), state_.deck.end(), is_payload);
+      if (payload_it == state_.deck.end()) {
+        throw std::logic_error("Issue-1797 Dragon payload target disappeared");
+      }
+      const Card payload = *payload_it;
+      if (!move_deck_to_hand(payload)) {
+        throw std::logic_error("Issue-1797 Dragon payload search failed");
+      }
+      found.push_back(payload);
+    }
+    shuffle(state_.deck);
+    state_.turn_ended = true;
+    issue_1797_finish_turn_ = 3;
+
+    // Steven searches the missing parts of the known Crispin, Vessel, and Dragon
+    // package, then ends T2 after the second Grass attachment has been preserved:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Mega Dragonite ex example payload: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Official Supporter, attachment, and search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Complete observable route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1797
+    trace("PLAY SUPPORTER", "R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
+          "Banked the issue-1797 T3 package: " + join_cards(found) +
+              ". Turn ended.");
+    return true;
+  }
+
+  bool complete_issue_1797_t3_finish() {
+    if (issue_1797_finish_turn_ != state_.turn) return false;
+
+    std::optional<Card> payload;
+    for (const Card card : state_.hand) {
+      if (is_payload(card)) {
+        payload = card;
+        break;
+      }
+    }
+    const int deck_grass = deck_count_after_search_started(Card::Grass);
+    const int deck_fire = deck_count_after_search_started(Card::Fire);
+    const int crispin_search_count =
+        (deck_fire > 0 ? 1 : 0) + (deck_grass > 0 ? 1 : 0);
+    const bool fire_accessible = hand_count(Card::Fire) > 0 || deck_fire > 0;
+    const bool vessel_target_survives =
+        deck_grass + deck_fire > crispin_search_count;
+    const bool route_available = scenario_.dci == DciProfile::StrictJit &&
+        scenario_.going_first && scenario_.locks == LockMode::None &&
+        state_.turn == 3 && state_.turn <= scenario_.max_turn && prizes_known() &&
+        !state_.turn_ended && supporter_allowed() && !state_.manual_energy_used &&
+        !item_locked() && state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        state_.active->grass >= 2 && state_.active->fire == 0 &&
+        hand_count(Card::RegidragoVstar) > 0 && hand_count(Card::Crispin) > 0 &&
+        hand_count(Card::EarthenVessel) > 0 && payload.has_value() &&
+        fire_accessible && crispin_search_count > 0 && vessel_target_survives;
+    if (!route_available) {
+      issue_1797_finish_turn_ = 0;
+      return false;
+    }
+
+    evolve_best_regi();
+    if (!active_is_vstar()) {
+      throw std::logic_error("Issue-1797 Active Regidrago V did not evolve");
+    }
+
+    remove_one(state_.hand, Card::Crispin);
+    state_.discard.push_back(Card::Crispin);
+    state_.supporter_used = true;
+    record_deck_search_knowledge("Crispin issue-1797 finish");
+    bool searched_fire = false;
+    bool searched_grass = false;
+    if (deck_fire > 0 && move_deck_to_hand(Card::Fire)) {
+      searched_fire = true;
+    }
+    if (deck_grass > 0 && move_deck_to_hand(Card::Grass)) {
+      searched_grass = true;
+    }
+    shuffle(state_.deck);
+
+    if (searched_fire) {
+      remove_one(state_.hand, Card::Fire);
+      ++state_.active->fire;
+      trace("CRISPIN ATTACH", "R-CRISPIN-01; R-GAME-ENERGY",
+            "Searched Fire and attached it to the Active Regidrago VSTAR.");
+    } else {
+      if (hand_count(Card::Fire) == 0) {
+        throw std::logic_error("Issue-1797 held Fire disappeared");
+      }
+      remove_one(state_.hand, Card::Fire);
+      ++state_.active->fire;
+      state_.manual_energy_used = true;
+      trace("ATTACH ENERGY", "R-GAME-ENERGY; R-CRISPIN-01",
+            "Used the held Fire because the intervening draw removed Fire from Crispin's deck targets.");
+    }
+    trace("PLAY SUPPORTER", "R-CRISPIN-01; R-GAME-SUPPORTER",
+          std::string("Crispin searched ") +
+              (searched_fire ? "Fire" : "no Fire") + " and " +
+              (searched_grass ? "Grass" : "no Grass") + ".");
+
+    remove_one(state_.hand, Card::EarthenVessel);
+    state_.discard.push_back(Card::EarthenVessel);
+    if (!discard_from_hand(*payload, "Earthen Vessel issue-1797 Dragon cost",
+                           "R-EV-01; P-DCI-01; P-JIT-01")) {
+      throw std::logic_error("Issue-1797 Vessel payload cost disappeared");
+    }
+    record_deck_search_knowledge("Earthen Vessel issue-1797 finish");
+    bool vessel_found = false;
+    if (move_deck_to_hand(Card::Grass)) vessel_found = true;
+    if (move_deck_to_hand(Card::Fire)) vessel_found = true;
+    if (!vessel_found) {
+      throw std::logic_error("Issue-1797 Vessel Energy target disappeared");
+    }
+    shuffle(state_.deck);
+    issue_1797_finish_turn_ = 0;
+
+    // Crispin attaches the missing Fire when it remains in deck. If a public draw
+    // moved that Fire into hand, the manual attachment supplies it instead. Vessel
+    // then discards the Steven-searched Dragon during the same T3 ready check:
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Mega Dragonite ex example payload: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official evolution, Supporter, attachment, Item, discard, search, and attack procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Strict-JIT and setup horizon: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1797
+    trace("EARTHEN VESSEL", "R-EV-01; R-GAME-ITEM; P-DCI-01; P-JIT-01",
+          "Discarded the held Dragon payload and searched the remaining Basic Energy.");
+    return active_is_vstar() && state_.active->grass >= 2 &&
+        state_.active->fire >= 1 && payload_ready();
+  }
+
   int issue_1796_finish_turn_ = 0;
 
   bool issue_1796_t2_steven_route_available() const {

@@ -180,6 +180,69 @@
     if (fire_needed() == 0 && hand_count(Card::Fire) == 1) return Card::Fire;
     return std::nullopt;
   }
+  bool issue_1797_quick_ball_tapu_steven_route_available() const {
+    const int deck_grass = deck_count_after_search_started(Card::Grass);
+    const int deck_fire = deck_count_after_search_started(Card::Fire);
+    const bool deck_payload = std::any_of(
+        state_.deck.begin(), state_.deck.end(), is_payload);
+    const bool legal_discard_cost = hand_count(Card::TateLiza) > 0 ||
+        hand_count(Card::Lusamine) > 0;
+
+    // Hisuian Heavy Ball has already established K1. Going first prevents a T1
+    // Supporter play, while Quick Ball, Bench play, Wonder Tag, and the manual
+    // attachment remain legal. Two held Grass preserve T1 and T2 attachment
+    // throughput, while held Regidrago VSTAR preserves the evolution axis:
+    // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official first-turn, Item, Ability, search, Bench, attachment, evolution, and Supporter procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, strict-JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1797
+    return scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
+        scenario_.locks == LockMode::None && state_.turn == 1 &&
+        scenario_.max_turn >= 3 && prizes_known() && !item_locked() &&
+        !state_.manual_energy_used && !state_.supporter_used && state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->grass == 0 && state_.active->fire == 0 &&
+        count_of(state_.discard, Card::HisuianHeavyBall) > 0 &&
+        hand_count(Card::QuickBall) > 0 &&
+        hand_count(Card::RegidragoVstar) > 0 &&
+        hand_count(Card::Grass) >= 2 && legal_discard_cost &&
+        bench_space() > 0 && ability_available_for_pokemon(Card::TapuLeleGX) &&
+        hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
+        deck_count_after_search_started(Card::TapuLeleGX) > 0 &&
+        deck_count_after_search_started(Card::StevensResolve) > 0 &&
+        deck_count_after_search_started(Card::Crispin) > 0 &&
+        deck_count_after_search_started(Card::EarthenVessel) > 0 &&
+        deck_grass > 0 && deck_fire > 0 && deck_grass + deck_fire >= 5 &&
+        deck_payload;
+  }
+
+  std::optional<Card> issue_1797_quick_ball_cost() const {
+    if (!issue_1797_quick_ball_tapu_steven_route_available()) {
+      return std::nullopt;
+    }
+    // The complete K1 route replaces the next-turn Supporter role of Tate & Liza or
+    // Lusamine with Steven's Resolve. Spend Tate & Liza first, then Lusamine, while
+    // preserving the two Grass attachments, held VSTAR, and all three T2 package axes:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Dynamic DCI and earliest route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1797
+    if (hand_count(Card::TateLiza) > 0) return Card::TateLiza;
+    return hand_count(Card::Lusamine) > 0
+        ? std::optional<Card>{Card::Lusamine}
+        : std::nullopt;
+  }
+
   bool play_quick_ball(const bool permit_payload) {
     if (item_locked() || hand_count(Card::QuickBall) == 0) return false;
     // Quick Ball may pay a Dragon payload cost when its searched Basic advances a
@@ -221,8 +284,12 @@
         bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
         !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
         might_be_unseen(Card::LatiasEx);
-    const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 &&
-                           needs_tapu_connector() && might_be_unseen(Card::TapuLeleGX);
+    const bool issue_1797_tapu_route =
+        issue_1797_quick_ball_tapu_steven_route_available();
+    const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 &&
+        !in_play(Card::TapuLeleGX) && bench_space() > 0 &&
+        (needs_tapu_connector() || issue_1797_tapu_route) &&
+        might_be_unseen(Card::TapuLeleGX);
     const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 &&
                                   needs_oricorio_connector() && might_be_unseen(Card::Oricorio);
     // Quick Ball pays one discard, searches Crobat V, then Crobat leaves the hand
@@ -268,7 +335,13 @@
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Refined confirmed bug and controls: https://github.com/FlareZ123/pokemon-sims/issues/1092
     if (!has_preferred_search_target && !can_use_payload_only_outlet) return false;
-    auto cost = choose_discard(can_pay_payload_cost, true, true, Card::QuickBall);
+    std::optional<Card> cost;
+    if (issue_1797_tapu_route) {
+      cost = issue_1797_quick_ball_cost();
+    }
+    if (!cost) {
+      cost = choose_discard(can_pay_payload_cost, true, true, Card::QuickBall);
+    }
     if (!cost && want_latias) {
       cost = quick_ball_final_surplus_energy_cost();
     }

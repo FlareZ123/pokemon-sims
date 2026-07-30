@@ -1,3 +1,5 @@
+#include "part_issue_1877_treasure_quick_ball_payload_bridge.inc"
+
   bool issue_1775_gladion_treasure_route_available() const {
     if (!prizes_known() || !strict_payload_timing() || item_locked() ||
         !supporter_allowed() || scenario_.dci != DciProfile::StrictJit ||
@@ -113,6 +115,12 @@
   }
 
   void run_turn() {
+    if (complete_issue_1877_treasure_quick_ball_payload_bridge()) {
+      trace("POLICY",
+            "P-AXIS-01; P-KNOWLEDGE-01; P-DCI-01; P-JIT-01; R-MT-01; R-QB-01",
+            "Completed the K1 Treasure-to-Quick-Ball payload bridge: " + state_line());
+      return;
+    }
     if (complete_issue_1775_gladion_treasure_route()) {
       trace("POLICY",
             "P-AXIS-01; P-KNOWLEDGE-01; P-DCI-01; P-JIT-01; R-GLADION-01; R-EV-01; R-MT-01",

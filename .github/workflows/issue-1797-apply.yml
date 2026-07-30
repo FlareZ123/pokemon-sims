@@ -29,11 +29,11 @@ jobs:
           if text.count(old_wrapper) != 2:
               raise RuntimeError("Expected two issue-1797 final turn wrapper markers")
           text = text.replace(old_wrapper, new_wrapper)
-          old_trace = 'trace("ATTACH ENERGY", "R-GAME-ATTACH; P-COMPRESS-01",'
-          new_trace = 'trace("ATTACH ENERGY", "R-GAME-ENERGY; P-COMPRESS-01",'
-          if text.count(old_trace) != 1:
-              raise RuntimeError("Expected one issue-1797 attachment trace marker")
-          text = text.replace(old_trace, new_trace, 1)
+          old_rule = "R-GAME-ATTACH"
+          new_rule = "R-GAME-ENERGY"
+          if text.count(old_rule) != 3:
+              raise RuntimeError("Expected three issue-1797 attachment rule markers")
+          text = text.replace(old_rule, new_rule)
           path.write_text(text, encoding="utf-8")
           PY
 

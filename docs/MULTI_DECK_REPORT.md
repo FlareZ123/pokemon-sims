@@ -10,7 +10,7 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 
 | Scenario | Shell T2 | Pineco T2 | Δ T2 | Shell T3 | Pineco T3 | Δ T3 | Shell T4 | Pineco T4 | Δ T4 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Strict JIT, going first | 12.239% | 19.553% | +7.314 pp | 39.465% | 48.167% | +8.702 pp | 56.484% | 66.047% | +9.563 pp |
+| Strict JIT, going first | 12.236% | 19.553% | +7.317 pp | 39.488% | 48.167% | +8.679 pp | 56.478% | 66.047% | +9.569 pp |
 | Strict JIT, going second | 29.433% | 47.413% | +17.980 pp | 53.117% | 62.868% | +9.751 pp | 64.603% | 73.485% | +8.882 pp |
 | Matchup-flex JIT, going first | 16.469% | 21.065% | +4.596 pp | 47.651% | 49.657% | +2.006 pp | 63.566% | 67.868% | +4.302 pp |
 | Matchup-flex JIT, going second | 37.264% | 51.129% | +13.865 pp | 61.063% | 66.565% | +5.502 pp | 71.376% | 76.284% | +4.908 pp |
@@ -21,7 +21,7 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 
 | Scenario | T2 ± SE | T3 ± SE | T4 ± SE | Failure ± SE |
 |---|---:|---:|---:|---:|
-| Strict JIT, going first | 12.239% ± 0.104 | 39.465% ± 0.155 | 56.484% ± 0.157 | 43.516% ± 0.157 |
+| Strict JIT, going first | 12.236% ± 0.104 | 39.488% ± 0.155 | 56.478% ± 0.157 | 43.522% ± 0.157 |
 | Matchup-flex JIT, going first | 16.469% ± 0.117 | 47.651% ± 0.158 | 63.566% ± 0.152 | 36.434% ± 0.152 |
 | No discard control, going first | 19.985% ± 0.126 | 56.040% ± 0.157 | 72.375% ± 0.141 | 27.625% ± 0.141 |
 | Strict JIT, turn-two Item lock, first | 4.551% ± 0.066 | 10.285% ± 0.096 | 18.044% ± 0.122 | 81.956% ± 0.122 |
@@ -42,7 +42,7 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 
 | Scenario | Ready on T2 | Ready on T3 | Ready on T4 | Ready on T5 diagnostic |
 |---|---:|---:|---:|---:|
-| Strict JIT, going first | 12.239% | 27.226% | 17.019% | 10.609% |
+| Strict JIT, going first | 12.236% | 27.252% | 16.990% | 10.610% |
 | Matchup-flex JIT, going first | 16.469% | 31.182% | 15.915% | 9.666% |
 | No discard control, going first | 19.985% | 36.055% | 16.335% | 9.000% |
 | Strict JIT, going second | 29.433% | 23.684% | 11.486% | 7.831% |
@@ -160,6 +160,6 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 ## Provenance
 
-Simulator policy digest: `9afe82d88fdd527568efbd27c19e95445512067b8fc1d17f38a30864f0b8a499`.
+Simulator policy digest: `c3148d2858b02889e933d23073bc154e0302219d0732e80927290cfe733a92b2`.
 
-Comparison CSV SHA-256: `70d2febfbe763e735706219d038c34bfede029e4066207be51cfd2f2d2625c9e`.
+Comparison CSV SHA-256: `587c1166bdca8b943c0bbe00512c6974749f2d5cc3e502f51bec1ad53e98a226`.

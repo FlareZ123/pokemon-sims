@@ -234,8 +234,16 @@
     }
     const bool live_serena_payload_outlet = payload_already_held &&
         supporter_allowed() && hand_count(Card::Serena) > 0;
-    if (live_one_discard_payload_outlet || live_ultra_ball_payload_outlet ||
-        live_serena_payload_outlet) {
+    if (!issue_1912_post_attachment_blender_replay_ &&
+        (live_one_discard_payload_outlet || live_ultra_ball_payload_outlet ||
+         live_serena_payload_outlet)) {
+      // Ordinarily preserve the one-copy ACE SPEC when another visible outlet
+      // already creates the same payload axis. The confirmed issue-1912 replay
+      // is narrower: the scheduler has selected Blender as the held non-Supporter
+      // completion after the final attachment and must execute that action now.
+      // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+      // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1912
       return false;
     }
 

@@ -70,6 +70,13 @@ class Engine {
   // K0: no deck/Prize inspection. K1: a legal inspection established Prize knowledge.
   bool deck_seen_{false};
   bool prizes_revealed_{false};
+  // A final manual attachment can unlock a deterministic held Blender route.
+  // This transient flag bypasses only the ordinary resource-preservation check
+  // while that confirmed post-attachment action is being replayed:
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/1912
+  bool issue_1912_post_attachment_blender_replay_{false};
   // Set only after Steven's legal K1 search proves every next-turn axis for
   // issue #1420's direct Crispin plus Mysterious Treasure continuation:
   // https://github.com/FlareZ123/pokemon-sims/issues/1420

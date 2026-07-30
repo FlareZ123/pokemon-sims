@@ -16,6 +16,21 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
+      - name: Adapt patch to current final turn wrapper
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("scripts/apply_issue_1797.py")
+          text = path.read_text(encoding="utf-8")
+          old = "  void run_turn() {"
+          new = "  void run_turn_issue1775_original() {"
+          if text.count(old) != 2:
+              raise RuntimeError("Expected two issue-1797 final turn wrapper markers")
+          path.write_text(text.replace(old, new), encoding="utf-8")
+          PY
+
       - name: Apply source-bound issue 1797 patch
         run: python scripts/apply_issue_1797.py
 

@@ -1,0 +1,22 @@
+name: Issue 1949 source package
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package exact source
+        run: git archive --format=zip --output=issue-1949-source.zip HEAD
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue-1949-source
+          path: issue-1949-source.zip
+          if-no-files-found: error

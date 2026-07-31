@@ -31,9 +31,9 @@
     return available;
   }
 
-  void choose_supporter_issue1873() {
+  void choose_supporter() {
     if (!issue_1873_blender_crispin_preempts_gladion()) {
-      choose_supporter();
+      choose_supporter_issue1873_original();
       return;
     }
 
@@ -48,7 +48,3 @@
       throw std::logic_error("Issue-1873 Crispin route became unavailable");
     }
   }
-
-  // Redirect the later turn scheduler while preserving the complete existing
-  // Supporter selector as the fallback inside choose_supporter_issue1873().
-  #define choose_supporter choose_supporter_issue1873

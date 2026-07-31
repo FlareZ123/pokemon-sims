@@ -1,0 +1,119 @@
+name: Debug Mode Audit 20260731 1225
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: debug-mode-audit-20260731-1225-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Perfect-play simulate-this pass 1
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Ready-state contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+          # Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee control-pass-1.txt
+          grep -q "first-ready turn: 2" control-pass-1.txt
+
+      - name: Perfect-play simulate-this pass 2
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Powerglass attaches after the attack step: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+          # Prior timing sanity check: https://github.com/FlareZ123/pokemon-sims/issues/919
+          # Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 3 | tee control-pass-2.txt
+          grep -q "first-ready turn: 3" control-pass-2.txt
+
+      - name: Perfect-play simulate-this pass 3
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Registered Pineco ALS: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+          # Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+          # Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee control-pass-3.txt
+          grep -q "first-ready turn: 2" control-pass-3.txt
+
+      - name: Reproduce claimed open seed witnesses
+        shell: bash
+        run: |
+          set -euo pipefail
+          # K1, dynamic DCI/JIT, and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # DCI implementation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+          check() {
+            local issue="$1" deck="$2" scenario="$3" seed="$4" expected="$5" suffix="${6:-}"
+            ./build/regidrago_sim --simulate-this --deck "$deck" --scenario "$scenario" --seed "$seed" | tee "issue-${issue}${suffix}.txt"
+            grep -q "first-ready turn: $expected" "issue-${issue}${suffix}.txt"
+          }
+          check 1869 regidrago-shell strict-jit/go-second 108 4
+          check 1871 regidrago-shell strict-jit/go-first 292 "not ready through T5"
+          check 1872 regidrago-shell matchup-flex-jit/go-first 453 "not ready through T5" -first
+          check 1872 regidrago-shell matchup-flex-jit/go-second 453 "not ready through T5" -second
+          check 1873 regidrago-shell strict-jit/go-second 38 4
+          check 1879 regidrago-shell strict-jit/go-first 146 "not ready through T5" -first
+          check 1879 regidrago-shell strict-jit/go-second 163 4 -second
+          check 1895 regidrago-shell strict-jit/go-first 951 4
+          check 1911 regidrago-shell matchup-flex-jit/go-first 329 "not ready through T5"
+
+      - name: Generate and verify T2 and T3 matrices
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-t2-t3-matrix.csv
+          cmp audit-t2-t3-matrix.csv results/simulation_results.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-multi-deck-matrix.csv
+          cmp audit-multi-deck-matrix.csv results/multi_deck_comparison.csv
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Record static and exact-source evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git ls-files | sort > tracked-files.txt
+          git grep -nEI 'TODO|FIXME|HACK|BUG' -- '*.cpp' '*.hpp' '*.inc' '*.py' '*.cmake' '*.md' > static-markers.txt || true
+          git grep -nE 'deck_seen_|prizes_revealed_|prizes_known\(' -- 'src/**' > knowledge-gates.txt || true
+          git rev-parse HEAD | tee audit-tested-head.txt
+          git archive --format=zip --output=audit-source-snapshot.zip HEAD
+          cp build/regidrago_sim audit-regidrago_sim
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-mode-audit-20260731-1225-${{ github.run_attempt }}
+          path: |
+            control-pass-*.txt
+            issue-*.txt
+            audit-t2-t3-matrix.csv
+            audit-multi-deck-matrix.csv
+            audit-tested-head.txt
+            audit-source-snapshot.zip
+            audit-regidrago_sim
+            tracked-files.txt
+            static-markers.txt
+            knowledge-gates.txt
+            build/Testing
+          if-no-files-found: error

@@ -1,3 +1,4 @@
+#define choose_supporter choose_supporter_issue1873_original
   bool issue_1235_t1_quick_ball_connector_state() const {
     if (scenario_.dci != DciProfile::StrictJit || state_.turn != 1 ||
         scenario_.going_first || scenario_.locks != LockMode::None ||
@@ -188,3 +189,5 @@
           "Retained the Supporter play for the proven Active-Regidrago Treasure to Tapu Lele-GX to Crispin T2 finish.");
     }
   }
+#undef choose_supporter
+#include "part_issue_1873_blender_crispin_supporter_override.inc"

@@ -1,4 +1,5 @@
 #include "part_issue_1874_duplicate_treasure_payload_route.inc"
+#include "part_issue_1877_treasure_quick_ball_payload_bridge.inc"
 #include "part_issue_1878_vessel_quick_ball_tapu_crispin_route.inc"
 #include "part_issue_1875_quick_ball_tapu_crispin_route.inc"
 
@@ -82,6 +83,7 @@
 
   bool secret_box_combo_enabled_issue1875() const {
     return issue_1874_duplicate_treasure_payload_route_available() ||
+        issue_1877_treasure_quick_ball_payload_bridge_available() ||
         issue_1878_vessel_quick_ball_tapu_crispin_route_available() ||
         issue_1875_quick_ball_tapu_crispin_route_available() ||
         secret_box_combo_enabled();
@@ -96,6 +98,18 @@
       trace("POLICY", "P-AXIS-01", "Start: " + state_line());
       if (!complete_issue_1874_duplicate_treasure_payload_route()) {
         throw std::logic_error("Issue-1874 projected route failed");
+      }
+      trace("POLICY", "P-AXIS-01", "End: " + state_line());
+      return;
+    }
+    // GGF is complete in this route. Preserve Earthen Vessel as Treasure's safe
+    // cost, then use Quick Ball to put the searched Dragon into discard this turn.
+    // https://github.com/FlareZ123/pokemon-sims/issues/1877
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    if (issue_1877_treasure_quick_ball_payload_bridge_available()) {
+      trace("POLICY", "P-AXIS-01", "Start: " + state_line());
+      if (!complete_issue_1877_treasure_quick_ball_payload_bridge()) {
+        throw std::logic_error("Issue-1877 projected route failed");
       }
       trace("POLICY", "P-AXIS-01", "End: " + state_line());
       return;

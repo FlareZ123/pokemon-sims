@@ -25,3 +25,8 @@
   // complete route before the original Secret Box action sequence:
   // https://github.com/FlareZ123/pokemon-sims/issues/1439
   #define run_secret_box_turn run_secret_box_turn_issue1439_original
+
+  // Compose the confirmed held Blender plus Crispin route after the complete
+  // Supporter selector chain and before the later turn scheduler is parsed:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1873
+  #include "part_issue_1873_blender_crispin_supporter_override.inc"

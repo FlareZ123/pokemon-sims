@@ -1,6 +1,11 @@
   bool complete_issue_1724_crobat_stadium_compression() {
+    // Public K1 begins after either a legal deck inspection or a complete legal
+    // Prize inspection; Hisuian Heavy Ball reveals every face-down Prize card:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // https://api.pokemontcg.io/v2/cards/swsh10-146
+    // https://github.com/FlareZ123/pokemon-sims/issues/1994
     const bool payload_remains_in_known_deck =
-        deck_seen_ && payload_might_be_in_deck();
+        prizes_known() && payload_might_be_in_deck();
     const bool direct_burnet_draw = !state_.supporter_used && supporter_allowed() &&
         deck_count_after_search_started(Card::ProfessorBurnet) > 0 &&
         payload_remains_in_known_deck;
@@ -22,7 +27,8 @@
     // Deterministic-route priority and resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Future-card-oracle prohibition: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1724
-    if (!deck_seen_ || scenario_.locks != LockMode::None || state_.turn_ended ||
+    // Prize-derived K1 regression: https://github.com/FlareZ123/pokemon-sims/issues/1994
+    if (!prizes_known() || scenario_.locks != LockMode::None || state_.turn_ended ||
         !setup_axis_missing() || state_.stadium_used ||
         state_.stadium != Stadium::None ||
         hand_count(Card::ChaoticSwell) == 0 ||

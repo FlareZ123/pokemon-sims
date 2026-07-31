@@ -1,6 +1,6 @@
   std::optional<Card> issue_1876_treasure_payload_cost() const {
     const bool complete_public_route =
-        scenario_.dci == DciProfile::MatchupFlexJit && deck_seen_ &&
+        strict_payload_timing() && prizes_known() &&
         !item_locked() && supporter_allowed() && active_is_vstar() &&
         state_.active->grass == 1 && state_.active->fire == 1 &&
         need_payload() && hand_count(Card::Crispin) > 0 &&
@@ -13,12 +13,13 @@
     // held Crispin attaches the missing Grass, so a visible Dragon is DCI 1
     // because this exact cost creates the current-turn Apex Dragon payload.
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Exact sm6-113 card-data corpus: https://github.com/PokemonTCG/pokemon-tcg-data/blob/master/cards/en/sm6.json
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Dialga-GX and Dragapult ex: https://api.pokemontcg.io/v2/cards/sm5-100 https://api.pokemontcg.io/v2/cards/sv6-130
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official Item, discard, search, Supporter, and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, dynamic DCI/JIT, supporter contention, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1876
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1876 https://github.com/FlareZ123/pokemon-sims/issues/1896
     for (const Card card : {Card::Appletun, Card::MegaDragonite,
                             Card::Dragapult, Card::GoodraVstar,
                             Card::DialgaGX}) {

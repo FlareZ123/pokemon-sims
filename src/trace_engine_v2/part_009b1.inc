@@ -79,7 +79,13 @@
   }
 
   bool quick_ball_seed23_latias_route_ready() const {
-    if (!deck_seen_ || scenario_.dci != DciProfile::StrictJit ||
+    // A legal full-Prize inspection establishes the same exact K1 composition as a
+    // deck search for this route while preserving every physical target and timing gate:
+    // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, Item, Ability, evolution, retreat, Supporter, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1981
+    if (!prizes_known() || scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || state_.turn != 3 ||
         scenario_.max_turn < 4 || !state_.vstar_power_used ||
         !state_.supporter_used || !state_.manual_energy_used ||

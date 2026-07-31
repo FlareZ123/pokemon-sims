@@ -143,7 +143,41 @@
             (fire_needed() == 1 && count_of(energy, Card::Fire) > 0));
   }
 
-  void klara_fill_discrete_value_targets(std::vector<Card>& pokemon) const {
+  bool klara_crobat_connector_is_live(
+      const std::vector<Card>& pokemon,
+      const std::vector<Card>& energy) const {
+    if (pokemon.size() >= 2U || !setup_axis_missing() ||
+        klara_recoverable_copies(Card::CrobatV) <=
+            count_of(pokemon, Card::CrobatV) ||
+        state_.dark_asset_used || bench_space() <= 0 || state_.deck.empty() ||
+        !ability_available_for_pokemon(Card::CrobatV)) {
+      return false;
+    }
+
+    // Paying Klara removes one card. Recovering Crobat and then Benching it cancel
+    // each other, so direct Pokemon and Basic Energy recoveries determine the exact
+    // post-Bench hand size. Admit Crobat only when Dark Asset will draw at least one:
+    // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
+    // Crobat V and Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+    // Connector policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#crobat-v-draw-connector-policy
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1965
+    const std::size_t post_bench_hand_size =
+        state_.hand.size() - 1U + pokemon.size() + energy.size();
+    return post_bench_hand_size < 6U;
+  }
+
+  void klara_fill_discrete_value_targets(
+      std::vector<Card>& pokemon, const std::vector<Card>& energy) const {
+    if (klara_crobat_connector_is_live(pokemon, energy)) {
+      // Klara has already earned the Supporter action through a direct setup target.
+      // A live Dark Asset connector advances the unresolved state, while an older
+      // Dragon without a legal discard outlet would remain stranded in hand:
+      // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
+      // Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104
+      // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1965
+      pokemon.push_back(Card::CrobatV);
+    }
     if (pokemon.size() >= 2U) return;
 
     // Once an advancing target makes Klara worth the Supporter action, use the second
@@ -211,7 +245,7 @@
             "Held Klara because the existing non-Klara connector route completes every setup axis this turn.");
       return false;
     }
-    klara_fill_discrete_value_targets(pokemon);
+    klara_fill_discrete_value_targets(pokemon, energy);
 
     remove_one(state_.hand, Card::Klara);
     state_.discard.push_back(Card::Klara);

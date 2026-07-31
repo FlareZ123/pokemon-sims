@@ -1,39 +1,4 @@
-from __future__ import annotations
-
-import fcntl
-import os
-import tempfile
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "src/trace_engine_v2/part_klara_recovery_override.inc"
-TEST = ROOT / "tests/issue_1965_klara_crobat_tests.cpp"
-WORKFLOW = ROOT / ".github/workflows/bootstrap-issue-1965.yml"
-LOCK = ROOT / ".git/issue-1965-bootstrap.lock"
-
-
-def atomic_write(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
-    temporary = Path(temporary_name)
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
-            handle.write(content)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary, path)
-    finally:
-        temporary.unlink(missing_ok=True)
-
-
-def replace_once(content: str, old: str, new: str) -> str:
-    count = content.count(old)
-    if count != 1:
-        raise RuntimeError(f"Expected one source anchor, found {count}: {old[:100]!r}")
-    return content.replace(old, new, 1)
-
-
-TEST_CONTENT = r'''#define REGIDRAGO_SIM_NO_MAIN
+#define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
 #include <algorithm>
@@ -208,23 +173,3 @@ int main() {
     return 1;
   }
 }
-'''
-
-
-with LOCK.open("w", encoding="utf-8") as lock_handle:
-    fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
-    source = SOURCE.read_text(encoding="utf-8")
-    source = replace_once(
-        source,
-        """  void klara_fill_discrete_value_targets(std::vector<Card>& pokemon) const {\n    if (pokemon.size() >= 2U) return;\n\n    // Once an advancing target makes Klara worth the Supporter action, use the second""",
-        """  bool klara_crobat_connector_is_live(\n      const std::vector<Card>& pokemon,\n      const std::vector<Card>& energy) const {\n    if (pokemon.size() >= 2U || !setup_axis_missing() ||\n        klara_recoverable_copies(Card::CrobatV) <=\n            count_of(pokemon, Card::CrobatV) ||\n        state_.dark_asset_used || bench_space() <= 0 || state_.deck.empty() ||\n        !ability_available_for_pokemon(Card::CrobatV)) {\n      return false;\n    }\n\n    // Paying Klara removes one card. Recovering Crobat and then Benching it cancel\n    // each other, so direct Pokemon and Basic Energy recoveries determine the exact\n    // post-Bench hand size. Admit Crobat only when Dark Asset will draw at least one:\n    // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145\n    // Crobat V and Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104\n    // Connector policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#crobat-v-draw-connector-policy\n    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1965\n    const std::size_t post_bench_hand_size =\n        state_.hand.size() - 1U + pokemon.size() + energy.size();\n    return post_bench_hand_size < 6U;\n  }\n\n  void klara_fill_discrete_value_targets(\n      std::vector<Card>& pokemon, const std::vector<Card>& energy) const {\n    if (klara_crobat_connector_is_live(pokemon, energy)) {\n      // Klara has already earned the Supporter action through a direct setup target.\n      // A live Dark Asset connector advances the unresolved state, while an older\n      // Dragon without a legal discard outlet would remain stranded in hand:\n      // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145\n      // Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104\n      // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities\n      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1965\n      pokemon.push_back(Card::CrobatV);\n    }\n    if (pokemon.size() >= 2U) return;\n\n    // Once an advancing target makes Klara worth the Supporter action, use the second""",
-    )
-    source = replace_once(
-        source,
-        "klara_fill_discrete_value_targets(pokemon);",
-        "klara_fill_discrete_value_targets(pokemon, energy);",
-    )
-    atomic_write(SOURCE, source)
-    atomic_write(TEST, TEST_CONTENT)
-    Path(__file__).unlink()
-    WORKFLOW.unlink()

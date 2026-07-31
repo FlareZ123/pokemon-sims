@@ -1,6 +1,8 @@
 name: Bootstrap issue 1964
 
 on:
+  push:
+    branches: [fix/issue-1964-heavy-ball-pineco-fallback]
   pull_request:
     branches: [main]
 
@@ -9,12 +11,11 @@ permissions:
 
 jobs:
   apply-fix:
-    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
       - name: Apply source-bound fix
         run: python tools/bootstrap_issue_1964.py
@@ -25,4 +26,4 @@ jobs:
           git add -A
           git diff --cached --quiet && exit 0
           git commit -m "Recover Pineco in Heavy Ball fallback"
-          git push origin "HEAD:${{ github.head_ref }}"
+          git push origin "HEAD:${{ github.head_ref || github.ref_name }}"

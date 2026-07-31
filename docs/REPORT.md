@@ -14,10 +14,10 @@ Seed: `20260705`.
 
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
-| Strict JIT, going first | 12.026% | 39.782% | 56.676% |
+| Strict JIT, going first | 11.972% | 39.735% | 56.653% |
 | Matchup-flex JIT, going first | 16.48% | 48.257% | 64.091% |
 | No discard control, going first | 19.977% | 56.028% | 72.361% |
-| Strict JIT, going second | 29.662% | 53.518% | 64.84% |
+| Strict JIT, going second | 29.689% | 53.589% | 64.865% |
 | Matchup-flex JIT, going second | 37.221% | 61.223% | 71.51% |
 | No discard control, going second | 39.978% | 67.118% | 78.401% |
 
@@ -27,11 +27,11 @@ Seed: `20260705`.
 |---|---:|---:|---:|
 | Strict JIT, turn-two Item lock, first | 4.551% | 10.285% | 18.044% |
 | Strict JIT, full Item lock, first | 2.839% | 7.771% | 15.26% |
-| Strict JIT, Rule Box Ability lock, first | 4.259% | 26.36% | 40.121% |
+| Strict JIT, Rule Box Ability lock, first | 4.263% | 26.404% | 40.104% |
 | Strict JIT, combined lock, first | 0.313% | 3.36% | 7.469% |
 | Strict JIT, turn-two Item lock, second | 14.221% | 28.11% | 35.873% |
 | Strict JIT, full Item lock, second | 10.564% | 23.252% | 30.573% |
-| Strict JIT, Rule Box Ability lock, second | 18.418% | 35.591% | 45.956% |
+| Strict JIT, Rule Box Ability lock, second | 18.388% | 35.572% | 45.947% |
 | Strict JIT, combined lock, second | 2.51% | 11.514% | 15.884% |
 | Strict JIT, Supporter lock, first | 0.003% | 15.446% | 21.712% |
 | Strict JIT, Supporter lock, second | 8.165% | 19.457% | 25.341% |

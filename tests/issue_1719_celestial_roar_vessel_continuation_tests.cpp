@@ -10,10 +10,12 @@
 
 namespace sim {
 struct EngineTestAccess {
-  static void set_state(Engine& engine, State state, const bool k1 = true) {
+  static void set_state(Engine& engine, State state,
+                        const bool deck_seen = true,
+                        const bool prizes_revealed = false) {
     engine.state_ = std::move(state);
-    engine.deck_seen_ = k1;
-    engine.prizes_revealed_ = false;
+    engine.deck_seen_ = deck_seen;
+    engine.prizes_revealed_ = prizes_revealed;
   }
   static bool available(const Engine& engine) {
     return engine.issue_1719_earthen_vessel_next_window_route();
@@ -95,25 +97,34 @@ void test_registered_seed_holds_and_reaches_t3() {
          "The source-bound seed 42 trace omitted a required issue-1719 step.");
 }
 
-void test_exact_k1_route_is_available() {
+void test_both_k1_provenances_and_k0_boundary() {
   std::mt19937_64 rng{17190};
   const sim::Scenario scenario = exact_scenario();
   const sim::DeckRecipe& recipe = registered_shell_recipe();
   sim::Engine engine(scenario, recipe, rng);
-  sim::EngineTestAccess::set_state(engine, exact_t2_state());
+
+  // A legal deck search and a complete Hisuian Heavy Ball Prize inspection both
+  // establish K1 under the fixed-list policy, while true K0 must remain rejected:
+  // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+  // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Official Prize and search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2002
+  sim::EngineTestAccess::set_state(engine, exact_t2_state(), true, false);
   expect(sim::EngineTestAccess::available(engine),
-         "The exact K1 Earthen Vessel continuation was rejected.");
+         "The deck-search K1 Earthen Vessel continuation was rejected.");
+  sim::EngineTestAccess::set_state(engine, exact_t2_state(), false, true);
+  expect(sim::EngineTestAccess::available(engine),
+         "The Prize-inspection K1 Earthen Vessel continuation was rejected.");
+  sim::EngineTestAccess::set_state(engine, exact_t2_state(), false, false);
+  expect(!sim::EngineTestAccess::available(engine),
+         "The route used deck identities before K1.");
 }
 
-void test_knowledge_item_cost_and_attachment_gates() {
+void test_item_cost_and_attachment_gates() {
   std::mt19937_64 rng{17191};
   const sim::Scenario scenario = exact_scenario();
   const sim::DeckRecipe& recipe = registered_shell_recipe();
   sim::Engine engine(scenario, recipe, rng);
-
-  sim::EngineTestAccess::set_state(engine, exact_t2_state(), false);
-  expect(!sim::EngineTestAccess::available(engine),
-         "The route used deck identities before K1.");
 
   sim::State state = exact_t2_state();
   state.hand.erase(std::find(state.hand.begin(), state.hand.end(),
@@ -182,8 +193,8 @@ void test_item_lock_gates() {
 int main() {
   try {
     test_registered_seed_holds_and_reaches_t3();
-    test_exact_k1_route_is_available();
-    test_knowledge_item_cost_and_attachment_gates();
+    test_both_k1_provenances_and_k0_boundary();
+    test_item_cost_and_attachment_gates();
     test_energy_and_vstar_axis_gates();
     test_item_lock_gates();
     std::cout << "Issue 1719 Celestial Roar Vessel continuation tests passed\n";

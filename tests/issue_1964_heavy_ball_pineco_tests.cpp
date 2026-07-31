@@ -1,39 +1,4 @@
-from __future__ import annotations
-
-import fcntl
-import os
-import tempfile
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "src/trace_engine_v2/part_prize_payload_outlet_override.inc"
-TEST = ROOT / "tests/issue_1964_heavy_ball_pineco_tests.cpp"
-WORKFLOW = ROOT / ".github/workflows/bootstrap-issue-1964.yml"
-LOCK = ROOT / ".git/issue-1964-bootstrap.lock"
-
-
-def atomic_write(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
-    temporary = Path(temporary_name)
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
-            handle.write(content)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary, path)
-    finally:
-        temporary.unlink(missing_ok=True)
-
-
-def replace_once(content: str, old: str, new: str) -> str:
-    count = content.count(old)
-    if count != 1:
-        raise RuntimeError(f"Expected one source anchor, found {count}: {old[:80]!r}")
-    return content.replace(old, new, 1)
-
-
-TEST_CONTENT = r'''#define REGIDRAGO_SIM_NO_MAIN
+#define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
 #include <algorithm>
@@ -169,23 +134,3 @@ int main() {
     return 1;
   }
 }
-'''
-
-
-with LOCK.open("w", encoding="utf-8") as lock_handle:
-    fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
-    source = SOURCE.read_text(encoding="utf-8")
-    source = replace_once(
-        source,
-        """      for (const Card candidate : {Card::RegidragoV, Card::Oricorio, Card::TapuLeleGX,\n                                   Card::LatiasEx, Card::CrobatV, Card::DialgaGX,\n                                   Card::MawileGX}) {""",
-        """      // Hisuian Heavy Ball may exchange itself for any revealed Basic Pokemon.\n      // Pineco is a Basic Pokemon and belongs in every exhaustive modeled fallback.\n      // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146\n      // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1\n      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1964\n      for (const Card candidate : {Card::RegidragoV, Card::Pineco, Card::Oricorio,\n                                   Card::TapuLeleGX, Card::LatiasEx, Card::CrobatV,\n                                   Card::DialgaGX, Card::MawileGX}) {""",
-    )
-    source = replace_once(
-        source,
-        """      for (const Card candidate : {Card::RegidragoV, Card::TapuLeleGX, Card::Oricorio,\n                                   Card::LatiasEx, Card::CrobatV, Card::DialgaGX,\n                                   Card::MawileGX}) {""",
-        """      // Keep the unconditional post-search fallback exhaustive as well.\n      // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146\n      // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1\n      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1964\n      for (const Card candidate : {Card::RegidragoV, Card::Pineco, Card::TapuLeleGX,\n                                   Card::Oricorio, Card::LatiasEx, Card::CrobatV,\n                                   Card::DialgaGX, Card::MawileGX}) {""",
-    )
-    atomic_write(SOURCE, source)
-    atomic_write(TEST, TEST_CONTENT)
-    Path(__file__).unlink()
-    WORKFLOW.unlink()

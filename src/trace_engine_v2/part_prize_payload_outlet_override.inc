@@ -92,6 +92,16 @@
       selected = Card::TapuLeleGX;
     } else if (can_bench_recovered_basic && needs_oricorio_connector() && prized(Card::Oricorio)) {
       selected = Card::Oricorio;
+    } else if (can_bench_recovered_basic && !state_.dark_asset_used &&
+               ability_available_for_pokemon(Card::CrobatV) && !state_.deck.empty() &&
+               state_.hand.size() <= 5U && prized(Card::CrobatV)) {
+      // After Heavy Ball leaves the hand, this boundary guarantees that playing the
+      // recovered Crobat V to the Bench makes Dark Asset draw at least one card.
+      // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+      // Crobat V and Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+      // Connector policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#crobat-v-draw-connector-policy
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1960
+      selected = Card::CrobatV;
     } else if (can_bench_recovered_basic && need_active_vstar() &&
                ability_available_for_pokemon(Card::LatiasEx) && prized(Card::LatiasEx)) {
       selected = Card::LatiasEx;
@@ -113,9 +123,16 @@
     const bool avoid_stranded_dialga = payload_is_only_missing_axis && !live_payload_outlet;
     if (selected == Card::HisuianHeavyBall) {
       for (const Card candidate : {Card::RegidragoV, Card::Oricorio, Card::TapuLeleGX,
-                                   Card::LatiasEx, Card::DialgaGX, Card::MawileGX}) {
+                                   Card::LatiasEx, Card::CrobatV, Card::DialgaGX,
+                                   Card::MawileGX}) {
+        // Heavy Ball may reveal any Basic Pokemon. Crobat V remains in the exhaustive
+        // modeled target universe even when Dark Asset is currently unavailable.
+        // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+        // Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1960
         if (candidate == Card::DialgaGX && avoid_stranded_dialga) continue;
-        if ((candidate == Card::TapuLeleGX || candidate == Card::LatiasEx) &&
+        if ((candidate == Card::TapuLeleGX || candidate == Card::LatiasEx ||
+             candidate == Card::CrobatV) &&
             !ability_available_for_pokemon(candidate)) continue;
         if (prized(candidate)) {
           selected = candidate;
@@ -126,7 +143,8 @@
 
     if (selected == Card::HisuianHeavyBall) {
       for (const Card candidate : {Card::RegidragoV, Card::TapuLeleGX, Card::Oricorio,
-                                   Card::LatiasEx, Card::DialgaGX, Card::MawileGX}) {
+                                   Card::LatiasEx, Card::CrobatV, Card::DialgaGX,
+                                   Card::MawileGX}) {
         if (candidate == Card::DialgaGX && avoid_stranded_dialga) continue;
         if (prized(candidate)) {
           selected = candidate;

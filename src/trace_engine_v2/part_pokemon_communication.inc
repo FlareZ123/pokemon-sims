@@ -3,17 +3,20 @@
     Card target;
   };
 
-  static constexpr std::array<Card, 14> pokemon_communication_pokemon() {
+  static constexpr std::array<Card, 15> pokemon_communication_pokemon() {
     // Pokémon Communication may return and search any Pokémon. Keep this list
     // aligned with the complete modeled Pokémon universe:
     // https://api.pokemontcg.io/v2/cards/sm9-152
     // Appletun: https://api.pokemontcg.io/v2/cards/sv8-140
     // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
     // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // Crobat V remains a Pokemon even when Dark Asset is unavailable:
+    // https://api.pokemontcg.io/v2/cards/swsh3-104
+    // https://github.com/FlareZ123/pokemon-sims/issues/1955
     return {Card::RegidragoV, Card::RegidragoVstar, Card::Dragapult,
             Card::MegaDragonite, Card::DialgaGX, Card::GoodraVstar,
             Card::TapuLeleGX, Card::LatiasEx, Card::MawileGX,
-            Card::Oricorio, Card::Dipplin, Card::Appletun,
+            Card::Oricorio, Card::CrobatV, Card::Dipplin, Card::Appletun,
             Card::Pineco, Card::ForretressEx};
   }
 

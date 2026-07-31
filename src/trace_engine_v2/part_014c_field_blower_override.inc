@@ -1,6 +1,7 @@
 #include "part_issue_1874_duplicate_treasure_payload_route.inc"
 #include "part_issue_1877_treasure_quick_ball_payload_bridge.inc"
 #include "part_issue_1878_vessel_quick_ball_tapu_crispin_route.inc"
+#include "part_issue_1895_quick_ball_payload_route.inc"
 #include "part_issue_1875_quick_ball_tapu_crispin_route.inc"
 
   bool path_removal_unlocks_live_rule_box_route() {
@@ -82,7 +83,8 @@
   }
 
   bool secret_box_combo_enabled_issue1875() const {
-    return issue_1874_duplicate_treasure_payload_route_available() ||
+    return issue_1895_held_crispin_quick_ball_route_available() ||
+        issue_1874_duplicate_treasure_payload_route_available() ||
         issue_1877_treasure_quick_ball_payload_bridge_available() ||
         issue_1878_vessel_quick_ball_tapu_crispin_route_available() ||
         issue_1875_quick_ball_tapu_crispin_route_available() ||
@@ -90,6 +92,18 @@
   }
 
   void run_secret_box_turn_issue1875() {
+    // Run the public-K1 Quick Ball payload route before any weaker Supporter action
+    // can consume the held Crispin or generic DCI can preserve the held Dragon:
+    // https://github.com/FlareZ123/pokemon-sims/issues/1895
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    if (issue_1895_held_crispin_quick_ball_route_available()) {
+      trace("POLICY", "P-AXIS-01", "Start: " + state_line());
+      if (!complete_issue_1895_held_crispin_quick_ball_route()) {
+        throw std::logic_error("Issue-1895 projected route failed");
+      }
+      trace("POLICY", "P-AXIS-01", "End: " + state_line());
+      return;
+    }
     // Preserve the duplicate Treasures before generic Earthen Vessel ordering can
     // spend one copy and destroy the deterministic current-turn payload bridge.
     // https://github.com/FlareZ123/pokemon-sims/issues/1874

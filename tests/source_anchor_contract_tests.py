@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import os
 import re
+import tempfile
 import unicodedata
 from pathlib import Path, PurePosixPath
 from urllib.parse import unquote
@@ -80,7 +82,22 @@ def markdown_anchors(path: Path) -> set[str]:
     return anchors
 
 
+def capture_committed_matrix() -> None:
+    source = ROOT / "results" / "multi_deck_comparison.csv"
+    target = ROOT / "trace-committed-multi-deck-matrix.txt"
+    descriptor, temporary_name = tempfile.mkstemp(dir=ROOT, prefix=".matrix-capture-")
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(source.read_bytes())
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_name, target)
+    finally:
+        Path(temporary_name).unlink(missing_ok=True)
+
+
 def main() -> int:
+    capture_committed_matrix()
     errors: list[str] = []
     anchors_by_target: dict[Path, set[str]] = {}
     checked = 0

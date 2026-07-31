@@ -1,0 +1,104 @@
+name: Refresh issue 1873 baselines
+
+on:
+  push:
+    branches:
+      - fix/issue-1873-blender-crispin-current-main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-issue-1873-baselines
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build release simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Regenerate source-bound baselines
+        run: |
+          python scripts/regenerate_setup_baselines.py \
+            --exe build/regidrago_sim \
+            --out-dir results \
+            --max-seed 5000 \
+            --trials 100000 \
+            --matrix-seed 20260705
+          ./build/regidrago_sim \
+            --all-decks \
+            --trials 100000 \
+            --seed 20260705 \
+            --out results/multi_deck_comparison.csv
+          python - <<'PY'
+          from __future__ import annotations
+
+          import csv
+          import hashlib
+          import json
+          import os
+          import tempfile
+          from pathlib import Path
+
+          from scripts.baseline_provenance import simulator_policy_source_digest
+
+          root = Path.cwd()
+          csv_path = root / "results" / "multi_deck_comparison.csv"
+          manifest_path = root / "results" / "multi_deck_manifest.json"
+          with csv_path.open(newline="", encoding="utf-8") as handle:
+              rows = list(csv.DictReader(handle))
+          if not rows:
+              raise RuntimeError("paired matrix is empty")
+
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          manifest["comparison_csv_sha256"] = hashlib.sha256(csv_path.read_bytes()).hexdigest()
+          manifest["condition_count"] = len(rows)
+          manifest["decks"] = list(dict.fromkeys(row["deck"] for row in rows))
+          manifest["scenarios"] = list(
+              dict.fromkeys(
+                  row["scenario"]
+                  for row in rows
+                  if row["deck"] == manifest["decks"][0]
+              )
+          )
+          manifest["simulator_policy_source_sha256"] = simulator_policy_source_digest(root)
+          manifest["total_simulated_games"] = sum(int(row["trials"]) for row in rows)
+          manifest["trials_per_condition"] = int(rows[0]["trials"])
+
+          manifest_path.parent.mkdir(parents=True, exist_ok=True)
+          with tempfile.NamedTemporaryFile(
+              mode="w",
+              encoding="utf-8",
+              newline="\n",
+              dir=manifest_path.parent,
+              delete=False,
+          ) as handle:
+              handle.write(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+              temporary_path = Path(handle.name)
+          os.replace(temporary_path, manifest_path)
+          PY
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+          python tests/setup_report_contract_tests.py
+          python tests/multi_deck_report_contract_tests.py
+      - name: Commit exact generated evidence
+        run: |
+          rm .github/workflows/refresh-issue-1873-baselines.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Refresh issue 1873 source-bound baselines"
+          git push origin HEAD:${GITHUB_REF_NAME}

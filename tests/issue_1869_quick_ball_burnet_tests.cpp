@@ -61,7 +61,8 @@ sim::Engine make_engine(const sim::Scenario& selected, std::mt19937_64& rng,
 
 void test_deck_search_and_prize_inspection_k1() {
   std::mt19937_64 rng{1869};
-  sim::Engine deck_k1 = make_engine(scenario(), rng);
+  const sim::Scenario deck_search_scenario = scenario();
+  sim::Engine deck_k1 = make_engine(deck_search_scenario, rng);
   sim::EngineTestAccess::set_state(deck_k1, exact_state(), true, false);
 
   // Active GGF makes Turo route-replaced. Quick Ball may spend it, search Tapu,
@@ -79,13 +80,15 @@ void test_deck_search_and_prize_inspection_k1() {
              sim::Card::ProfessorTuro,
          "Deck-search K1 did not admit the Burnet connector cost.");
 
-  sim::Engine prize_k1 = make_engine(scenario(), rng);
+  const sim::Scenario prize_inspection_scenario = scenario();
+  sim::Engine prize_k1 = make_engine(prize_inspection_scenario, rng);
   sim::EngineTestAccess::set_state(prize_k1, exact_state(), false, true);
   expect(sim::EngineTestAccess::quick_ball_cost(prize_k1) ==
              sim::Card::ProfessorTuro,
          "Prize-inspection K1 did not admit the Burnet connector cost.");
 
-  sim::Engine k0 = make_engine(scenario(), rng);
+  const sim::Scenario k0_scenario = scenario();
+  sim::Engine k0 = make_engine(k0_scenario, rng);
   sim::EngineTestAccess::set_state(k0, exact_state(), false, false);
   const auto k0_cost = sim::EngineTestAccess::quick_ball_cost(k0);
   expect(k0_cost != sim::Card::ProfessorTuro &&

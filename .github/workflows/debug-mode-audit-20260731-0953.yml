@@ -72,7 +72,7 @@ jobs:
           set -euo pipefail
           # K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
           # Dynamic DCI and hidden-information boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
-          # Dragon Dialga-GX is sm5-100; sm5-82 is Magneton and sm6-82 is Metal Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100 https://api.pokemontcg.io/v2/cards/sm5-82 https://api.pokemontcg.io/v2/cards/sm6-82
+          # Modeled Dragon-type Dialga-GX source: https://api.pokemontcg.io/v2/cards/sm5-100
           git ls-files | sort > tracked-files.txt
           git grep -nEI 'TODO|FIXME|HACK|BUG' -- '*.cpp' '*.hpp' '*.inc' '*.py' '*.cmake' '*.md' > static-markers.txt || true
           git grep -nE 'deck_seen_|prizes_known\(|prizes_revealed_' -- 'src/**' 'tests/**' > knowledge-gates.txt || true

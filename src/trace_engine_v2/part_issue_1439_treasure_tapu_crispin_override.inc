@@ -20,7 +20,13 @@
     // Same-deadline resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Pineco route comparison: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1439
-    return secret_box_combo_enabled() && deck_seen_ &&
+    // Full-Prize inspection establishes the same exact K1 composition used by
+    // this selector while preserving every physical route check below:
+    // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Official Prize and search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1990
+    return secret_box_combo_enabled() && prizes_known() &&
         scenario_.dci == DciProfile::StrictJit && state_.turn > 1 &&
         !item_locked() && !rule_box_abilities_locked() &&
         supporter_allowed() && !state_.manual_energy_used &&

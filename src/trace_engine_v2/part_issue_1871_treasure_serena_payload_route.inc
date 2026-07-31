@@ -43,7 +43,7 @@
     // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
     // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
     // Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
-    // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-82
+    // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm6-82
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official Item, Supporter, attachment, search, and discard procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, DCI/JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities

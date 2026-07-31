@@ -96,9 +96,14 @@
 
 
 bool complete_issue_1596_turo_vessel_dialga_route() {
+  // Full Prize inspection establishes the same K1 composition knowledge as a legal deck search:
+  // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+  // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Official Prize and search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2000
   if (scenario_.dci != DciProfile::MatchupFlexJit || state_.turn != 3 ||
       item_locked() || !supporter_allowed() || state_.manual_energy_used ||
-      !deck_seen_ || !state_.active || state_.active->card != Card::DialgaGX ||
+      !prizes_known() || !state_.active || state_.active->card != Card::DialgaGX ||
       hand_count(Card::ProfessorTuro) == 0 ||
       hand_count(Card::EarthenVessel) == 0 ||
       deck_count_after_search_started(Card::Fire) == 0 ||

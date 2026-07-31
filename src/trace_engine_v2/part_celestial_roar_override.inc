@@ -1,5 +1,10 @@
   bool issue_1715_quick_ball_tapu_burnet_next_window_route() const {
-    if (!deck_seen_ || !strict_payload_timing() || state_.turn_ended ||
+    // Full Prize inspection establishes the same K1 composition knowledge as a legal deck search:
+    // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Official Prize and search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2001
+    if (!prizes_known() || !strict_payload_timing() || state_.turn_ended ||
         !state_.active || state_.active->card != Card::RegidragoV ||
         !state_.manual_energy_used || state_.turn >= scenario_.max_turn) {
       return false;

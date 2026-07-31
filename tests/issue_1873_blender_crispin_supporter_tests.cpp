@@ -20,9 +20,7 @@ struct EngineTestAccess {
   static bool route_available(Engine& engine) {
     return engine.issue_1873_blender_crispin_preempts_gladion();
   }
-  static void choose_supporter(Engine& engine) {
-    engine.choose_supporter_issue1873();
-  }
+  static void choose_supporter(Engine& engine) { engine.choose_supporter(); }
   static bool play_blender(Engine& engine) {
     return engine.play_brilliant_blender();
   }

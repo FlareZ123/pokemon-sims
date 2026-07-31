@@ -28,6 +28,32 @@
     return std::nullopt;
   }
 
+
+  bool issue_1895_held_crispin_quick_ball_route_available() const {
+    return issue_1895_quick_ball_payload_cost().has_value();
+  }
+
+  bool complete_issue_1895_held_crispin_quick_ball_route() {
+    if (!issue_1895_held_crispin_quick_ball_route_available()) return false;
+
+    // Start the one-discard Item before any lower-value Supporter action. Quick
+    // Ball's Dragon cost supplies the current-turn payload, and the already-held
+    // Crispin attaches the final Grass to the Active GF Regidrago VSTAR:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, discard-cost, search, Supporter, and Energy-attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Supporter contention and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1895
+    if (!play_quick_ball(false)) {
+      throw std::logic_error("Issue-1895 Quick Ball route disappeared");
+    }
+    if (!play_crispin()) {
+      throw std::logic_error("Issue-1895 Crispin finish disappeared");
+    }
+    return active_is_vstar() && !need_energy() && !need_payload();
+  }
+
   bool issue_1875_quick_ball_tapu_crispin_route_available() const {
     if (scenario_.dci != DciProfile::StrictJit || state_.turn != 3 ||
         !deck_seen_ || item_locked() || !supporter_allowed() ||

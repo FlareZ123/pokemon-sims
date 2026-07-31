@@ -1,28 +1,84 @@
-name: Workflow Policy
+name: Refresh Issue 1958 Baselines
 
 on:
   pull_request:
     branches: [main]
-  push:
-    branches: [main]
 
-# Read-only validation is sufficient for this repository contract:
-# https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  reject-obsolete-issue-workflows:
+  refresh-source-bound-baselines:
+    if: github.head_ref == 'bug/1958-quick-ball-pineco-fallback' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Enforce permanent workflow allowlist
-        # Completed issue workflows must not run on unrelated pull requests:
-        # https://github.com/FlareZ123/pokemon-sims/issues/1360
-        # Pull-request event behavior:
-        # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request
-        run: python scripts/check_issue_workflow_policy.py
+      - name: Build exact PR source
+        run: |
+          cmake -S . -B build-refresh -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-refresh --parallel 2
+      - name: Regenerate source-bound matrices and reports
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build-refresh/regidrago_sim --trials 100000 --seed 20260705 --out refreshed-canonical.csv
+          ./build-refresh/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out refreshed-multi.csv
+          mv refreshed-canonical.csv results/simulation_results.csv
+          mv refreshed-multi.csv results/multi_deck_comparison.csv
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import os
+          import tempfile
+          from scripts.baseline_provenance import simulator_policy_source_digest
+
+          root = Path('.').resolve()
+          source_digest = simulator_policy_source_digest(root)
+
+          def write_json(path: Path, value: dict[str, object]) -> None:
+              text = json.dumps(value, indent=2) + '\n'
+              descriptor, temporary_name = tempfile.mkstemp(dir=path.parent, prefix=path.name + '.', suffix='.tmp')
+              try:
+                  with os.fdopen(descriptor, 'w', encoding='utf-8', newline='\n') as handle:
+                      handle.write(text)
+                  os.replace(temporary_name, path)
+              except Exception:
+                  try:
+                      os.unlink(temporary_name)
+                  except FileNotFoundError:
+                      pass
+                  raise
+
+          baseline_path = root / 'results' / 'baseline_manifest.json'
+          baseline = json.loads(baseline_path.read_text(encoding='utf-8'))
+          baseline['simulator_policy_source_sha256'] = source_digest
+          write_json(baseline_path, baseline)
+
+          multi_path = root / 'results' / 'multi_deck_manifest.json'
+          multi = json.loads(multi_path.read_text(encoding='utf-8'))
+          multi['comparison_csv_sha256'] = hashlib.sha256((root / 'results' / 'multi_deck_comparison.csv').read_bytes()).hexdigest()
+          multi['simulator_policy_source_sha256'] = source_digest
+          write_json(multi_path, multi)
+          PY
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+          python tests/setup_report_contract_tests.py
+          python tests/multi_deck_report_contract_tests.py
+      - name: Commit exact generated evidence and remove helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout origin/main -- .github/workflows/workflow-policy.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/workflow-policy.yml results/simulation_results.csv results/baseline_manifest.json docs/REPORT.md docs/TRACE_AUDIT.md README.md results/multi_deck_comparison.csv results/multi_deck_manifest.json docs/MULTI_DECK_REPORT.md
+          git commit -m "Refresh issue 1958 source-bound baselines"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}

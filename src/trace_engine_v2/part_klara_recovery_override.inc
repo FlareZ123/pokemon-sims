@@ -166,19 +166,78 @@
     return post_bench_hand_size < 6U;
   }
 
+  bool klara_crobat_public_draw_can_advance_setup() const {
+    if (!prizes_known()) return false;
+
+    // Dark Asset is probabilistic. Its admission may use the legally known remaining
+    // deck composition after K1, while the policy must not inspect which card is next.
+    // Each accepted category has a legal same-turn action that advances a currently
+    // unresolved axis after Klara and Crobat V have consumed the Supporter and one
+    // Bench slot:
+    // Crobat V and Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Latias ex and Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Official Bench, Ability, Item, evolution, retreat, and Energy procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Public-composition and future-card-oracle boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+    // Connector and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#crobat-v-draw-connector-policy https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1978
+    const bool blender_advances_payload =
+        need_payload() && !item_locked() && can_play_payload_this_turn() &&
+        deck_count_after_search_started(Card::BrilliantBlender) > 0 &&
+        std::any_of(state_.deck.begin(), state_.deck.end(), is_payload);
+    const bool energy_advances_attacker =
+        need_energy() && !state_.manual_energy_used && target_regi() != nullptr &&
+        ((grass_needed() > 0 &&
+          deck_count_after_search_started(Card::Grass) > 0) ||
+         (fire_needed() > 0 &&
+          deck_count_after_search_started(Card::Fire) > 0));
+    const bool basic_advances_board =
+        need_regi() && bench_space() > 1 &&
+        deck_count_after_search_started(Card::RegidragoV) > 0;
+    const bool vstar_advances_board =
+        need_vstar() && has_regidrago_v_that_can_evolve_this_turn() &&
+        deck_count_after_search_started(Card::RegidragoVstar) > 0;
+    const bool latias_advances_active_axis =
+        need_active_vstar() && bench_space() > 1 && state_.active &&
+        is_basic(state_.active->card) && !state_.retreat_used &&
+        benched_vstar_promotion_ready() &&
+        ability_available_for_pokemon(Card::LatiasEx) &&
+        deck_count_after_search_started(Card::LatiasEx) > 0;
+    return blender_advances_payload || energy_advances_attacker ||
+           basic_advances_board || vstar_advances_board ||
+           latias_advances_active_axis;
+  }
+
   void klara_fill_discrete_value_targets(
       std::vector<Card>& pokemon, const std::vector<Card>& energy) const {
     if (klara_crobat_connector_is_live(pokemon, energy)) {
-      // Klara has already earned the Supporter action through a direct setup target.
-      // A live Dark Asset connector advances the unresolved state, while an older
-      // Dragon without a legal discard outlet would remain stranded in hand:
+      // Klara has earned the Supporter action through a direct target or through
+      // Crobat's public-composition draw value. Select Crobat before a lower-value
+      // older Dragon so Dark Asset remains the live connector:
       // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
       // Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104
       // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1965
+      // Prior narrower fix: https://github.com/FlareZ123/pokemon-sims/issues/1965
+      // Primary-connector fix: https://github.com/FlareZ123/pokemon-sims/issues/1978
       pokemon.push_back(Card::CrobatV);
     }
     if (pokemon.size() >= 2U) return;
+
+    // Do not spend the optional second Pokémon selection when that extra card would
+    // raise the post-Bench hand to six and erase the Dark Asset draw that justified
+    // recovering Crobat V:
+    // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
+    // Crobat V and Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+    // Connector policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#crobat-v-draw-connector-policy
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1978
+    if (count_of(pokemon, Card::CrobatV) > 0) {
+      const std::size_t post_bench_hand_after_one_more_recovery =
+          state_.hand.size() - 1U + (pokemon.size() - 1U) +
+          energy.size() + 1U;
+      if (post_bench_hand_after_one_more_recovery >= 6U) return;
+    }
 
     // Once an advancing target makes Klara worth the Supporter action, use the second
     // optional Pokémon selection for a redundant older Dragon when that does not remove
@@ -239,7 +298,20 @@
 
     std::vector<Card> pokemon = klara_pokemon_recovery_targets();
     const std::vector<Card> energy = klara_energy_recovery_targets();
-    if (!klara_targets_advance_setup(pokemon, energy)) return false;
+    const bool direct_target_advances =
+        klara_targets_advance_setup(pokemon, energy);
+    const bool primary_crobat_connector_advances =
+        !direct_target_advances &&
+        klara_crobat_connector_is_live(pokemon, energy) &&
+        klara_crobat_public_draw_can_advance_setup();
+    // Deterministic direct recoveries retain priority. Crobat is admitted as the
+    // primary target only from public K1 composition and never from the known next
+    // card or deck order:
+    // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
+    // Crobat V and Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+    // Future-card-oracle boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1978
+    if (!direct_target_advances && !primary_crobat_connector_advances) return false;
     if (non_klara_current_turn_completion_exists()) {
       trace("HOLD SUPPORTER", "R-KLARA-01; P-CONNECTOR-01",
             "Held Klara because the existing non-Klara connector route completes every setup axis this turn.");

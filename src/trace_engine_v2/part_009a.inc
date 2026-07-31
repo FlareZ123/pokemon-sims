@@ -8,9 +8,12 @@
     // https://api.pokemontcg.io/v2/cards/sv8-140
     // https://api.pokemontcg.io/v2/cards/sv4pt5-1
     // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // Crobat V is a Basic Pokemon V and remains a legal Ultra Ball target:
+    // https://api.pokemontcg.io/v2/cards/swsh3-104
     // https://github.com/FlareZ123/pokemon-sims/issues/1254
+    // https://github.com/FlareZ123/pokemon-sims/issues/1952
     for (const Card target : {Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio,
-                              Card::TapuLeleGX, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
+                              Card::TapuLeleGX, Card::CrobatV, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
                               Card::DialgaGX, Card::MawileGX, Card::Dipplin, Card::Appletun,
                               Card::Pineco, Card::ForretressEx}) {
       if (deck_count_after_search_started(target) > 0) return target;

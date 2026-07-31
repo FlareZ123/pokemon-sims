@@ -179,6 +179,7 @@
 
   Card fallback_quick_ball_target_after_search_started() const {
     for (const Card target : {Card::RegidragoV, Card::LatiasEx, Card::Oricorio, Card::TapuLeleGX,
-                              Card::CrobatV, Card::MawileGX, Card::DialgaGX}) {
+                              Card::CrobatV, Card::MawileGX, Card::DialgaGX,
+                              Card::Pineco}) {  // Quick Ball/Pineco: https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://github.com/FlareZ123/pokemon-sims/issues/1958
       if (deck_count_after_search_started(target) > 0) return target;
     }

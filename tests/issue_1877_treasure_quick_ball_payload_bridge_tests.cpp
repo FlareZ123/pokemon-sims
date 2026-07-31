@@ -151,23 +151,28 @@ void test_legality_and_resource_boundaries() {
          "An already-complete payload axis admitted the redundant bridge.");
 }
 
-void test_registered_seed_169_reaches_t3() {
+void test_registered_seed_740_reaches_t3() {
   const auto scenario = sim::scenario_by_label("strict-jit/go-second");
   const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
   expect(scenario.has_value() && deck != nullptr,
          "The registered issue-1877 fixture is unavailable.");
 
-  std::mt19937_64 rng(169);
+  // Seed 169 now follows the strictly faster T2 Quick Ball, Tapu Lele-GX, and
+  // Professor Burnet route fixed by issue 1869, so seed 740 is the current
+  // source-bound witness for the original Treasure-to-Quick-Ball bridge:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1869
+  // https://github.com/FlareZ123/pokemon-sims/issues/1877
+  std::mt19937_64 rng(740);
   sim::TraceLog trace{true, {}};
   sim::Engine engine(*scenario, deck->recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
   expect(outcome.first_ready_turn == 3,
-         "Seed 169 did not reach strict-JIT readiness on T3.");
+         "Seed 740 did not reach strict-JIT readiness on T3.");
   expect(trace_contains(trace,
                         "Mysterious Treasure spent route-replaced Earthen Vessel") &&
              trace_contains(trace,
                             "Quick Ball discarded the searched Dragon payload"),
-         "Seed 169 did not use the corrected Treasure-to-Quick-Ball bridge.");
+         "Seed 740 did not use the corrected Treasure-to-Quick-Ball bridge.");
 }
 }  // namespace
 
@@ -175,7 +180,7 @@ int main() {
   try {
     test_exact_route_and_knowledge_boundaries();
     test_legality_and_resource_boundaries();
-    test_registered_seed_169_reaches_t3();
+    test_registered_seed_740_reaches_t3();
     std::cout << "Issue 1877 Treasure-to-Quick-Ball bridge tests passed\n";
     return 0;
   } catch (const std::exception& error) {

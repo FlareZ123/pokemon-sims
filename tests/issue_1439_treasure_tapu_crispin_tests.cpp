@@ -10,9 +10,11 @@
 
 namespace sim {
 struct EngineTestAccess {
-  static void set_state(Engine& engine, State state, const bool deck_seen) {
+  static void set_state(Engine& engine, State state, const bool deck_seen,
+                        const bool prizes_revealed = false) {
     engine.state_ = std::move(state);
     engine.deck_seen_ = deck_seen;
+    engine.prizes_revealed_ = prizes_revealed;
   }
   static bool play_route(Engine& engine) {
     return engine.play_issue_1439_treasure_tapu_crispin_completion();
@@ -80,6 +82,34 @@ struct Fixture {
         rng(1439),
         engine(scenario, recipe, rng) {}
 };
+
+bool route_resolves(const bool deck_seen, const bool prizes_revealed,
+                    const std::uint64_t seed) {
+  Fixture fixture;
+  fixture.rng.seed(seed);
+  sim::EngineTestAccess::set_state(fixture.engine, exact_route_state(), deck_seen,
+                                   prizes_revealed);
+  return sim::EngineTestAccess::play_route(fixture.engine);
+}
+
+void test_k1_provenance_equivalence() {
+  // A legal deck search or complete Prize inspection establishes the same K1
+  // composition for this exact route. True K0 remains blocked:
+  // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Official Prize, Item, Bench, Ability, Supporter, attachment, and search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1990
+  expect(route_resolves(true, false, 199000),
+         "Deck-search K1 must admit the complete issue-1439 route.");
+  expect(route_resolves(false, true, 199001),
+         "Prize-inspection K1 must admit the same complete route.");
+  expect(!route_resolves(false, false, 199002),
+         "True K0 must keep the composition-dependent route blocked.");
+}
 
 void test_exact_state_uses_lower_resource_route() {
   Fixture fixture;
@@ -226,6 +256,7 @@ void test_registered_seed_52_preserves_secret_box() {
 
 int main() {
   try {
+    test_k1_provenance_equivalence();
     test_exact_state_uses_lower_resource_route();
     test_route_boundaries();
     test_registered_seed_52_preserves_secret_box();

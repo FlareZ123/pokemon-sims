@@ -1,7 +1,7 @@
   std::optional<Card> issue_1877_deck_payload() const {
     // Every target is a Psychic or Dragon Pokémon legal for Mysterious Treasure.
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-    // Appletun: https://api.pokemontcg.io/v2/cards/swsh7-121
+    // Appletun: https://api.pokemontcg.io/v2/cards/sv8-140
     // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
     // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
     // Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
@@ -15,8 +15,7 @@
   }
 
   std::optional<Card> issue_1877_basic_target() const {
-    // Quick Ball searches any Basic Pokémon. Use a fixed public priority after K1
-    // so target selection never depends on hidden deck order.
+    // Quick Ball searches any Basic Pokémon. Use a fixed public priority after K1.
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     for (const Card card : {Card::RegidragoV, Card::LatiasEx,
@@ -29,8 +28,7 @@
   }
 
   bool issue_1877_treasure_quick_ball_payload_bridge_available() const {
-    // Full deck inspection or full Prize inspection establishes K1. The route is
-    // illegal at true K0 because it relies on known unprized search targets.
+    // Full deck inspection or full Prize inspection establishes K1.
     // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Dynamic DCI and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1877
@@ -52,8 +50,6 @@
     const Card basic = *issue_1877_basic_target();
 
     // GGF is complete, so Earthen Vessel's Energy role is route-replaced.
-    // Treasure spends Vessel to search a Dragon, then Quick Ball discards that
-    // Dragon as the current-turn Apex Dragon payload and searches a legal Basic.
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179

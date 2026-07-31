@@ -19,10 +19,11 @@
     // Forretress ex / Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
     // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Official Item, evolution, Ability, attachment, Knock Out, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Hisuian Heavy Ball establishes K1 by revealing the full Prize set: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Item, evolution, Ability, attachment, Knock Out, Prize, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, dynamic DCI, and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1744
-    return secret_box_combo_enabled() && deck_seen_ && strict_payload_timing() &&
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1744 https://github.com/FlareZ123/pokemon-sims/issues/1980
+    return secret_box_combo_enabled() && prizes_known() && strict_payload_timing() &&
         state_.turn == 3 && scenario_.locks == LockMode::None && !item_locked() &&
         !state_.turn_ended && state_.active &&
         state_.active->card == Card::RegidragoVstar &&

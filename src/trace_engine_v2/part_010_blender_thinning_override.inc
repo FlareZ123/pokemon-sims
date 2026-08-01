@@ -173,6 +173,12 @@
   }
 
   bool play_brilliant_blender() {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2091
+
     // Brilliant Blender may search for and discard up to 5 deck cards:
     // https://api.pokemontcg.io/v2/cards/sv8-164
     if (item_locked() || hand_count(Card::BrilliantBlender) == 0 ||
@@ -205,9 +211,9 @@
                               Card::EarthenVessel}) {
         if (hand_count(item) == 0) continue;
         const bool known_dead_mysterious = item == Card::MysteriousTreasure &&
-            deck_seen_ && std::none_of(state_.deck.begin(), state_.deck.end(),
+            prizes_known() && std::none_of(state_.deck.begin(), state_.deck.end(),
                                       is_dragon_or_psychic);
-        const bool known_dead_quick = item == Card::QuickBall && deck_seen_ &&
+        const bool known_dead_quick = item == Card::QuickBall && prizes_known() &&
             std::none_of(state_.deck.begin(), state_.deck.end(), is_basic);
         if (known_dead_mysterious || known_dead_quick ||
             (item == Card::EarthenVessel && !earthen_vessel_has_legal_target())) {

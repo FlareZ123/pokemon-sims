@@ -132,11 +132,17 @@
   }
 
   bool steven_should_yield_to_crispin_mysterious_route() const {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2101
+
     const bool exact_lock_window = scenario_.locks == LockMode::TurnTwoItem &&
         state_.turn == 1 && !scenario_.going_first && !item_locked();
     const bool active_regi_can_attack = state_.active &&
         state_.active->card == Card::RegidragoV && !state_.manual_energy_used;
-    const bool inspected_vstar_and_crispin_targets = deck_seen_ &&
+    const bool inspected_vstar_and_crispin_targets = prizes_known() &&
         deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
         deck_count_after_search_started(Card::Crispin) > 0;
     const bool payable_mysterious_route = hand_count(Card::MysteriousTreasure) > 0 &&

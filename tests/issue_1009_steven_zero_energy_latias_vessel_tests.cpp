@@ -10,9 +10,16 @@
 
 namespace sim {
 struct EngineTestAccess {
-  static void set_k1_state(Engine& engine, State state) {
+  static void set_state(Engine& engine, State state,
+                        const bool deck_seen,
+                        const bool prizes_revealed) {
     engine.state_ = std::move(state);
-    engine.deck_seen_ = true;
+    engine.deck_seen_ = deck_seen;
+    engine.prizes_revealed_ = prizes_revealed;
+  }
+
+  static void set_k1_state(Engine& engine, State state) {
+    set_state(engine, std::move(state), true, false);
   }
 
   static bool steven_candidate(const Engine& engine) {
@@ -85,6 +92,49 @@ sim::Engine make_engine(const sim::Scenario& scenario, sim::TraceLog& trace,
                         std::mt19937_64& rng) {
   static const sim::DeckRecipe recipe = sim::baseline_recipe();
   return sim::Engine(scenario, recipe, rng, &trace);
+}
+
+void test_k1_provenance_and_k0_boundary() {
+  // A legal deck search and a complete Hisuian Heavy Ball Prize inspection both
+  // establish exact fixed-list K1, while true K0 must remain rejected:
+  // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+  // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Official Prize, Supporter, Ability, Item, discard, search, attachment, evolution, retreat, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Existing route regression: https://github.com/FlareZ123/pokemon-sims/issues/1009
+  // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2023
+  const sim::Scenario scenario{"issue-2023-k1-provenance",
+                               sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 5};
+
+  std::mt19937_64 deck_rng{202301};
+  sim::TraceLog deck_trace;
+  sim::Engine deck_k1 = make_engine(scenario, deck_trace, deck_rng);
+  sim::EngineTestAccess::set_state(
+      deck_k1, seed_17_pre_steven_state(), true, false);
+  expect(sim::EngineTestAccess::steven_candidate(deck_k1),
+         "The deck-search K1 Steven-Latias-Vessel route was rejected.");
+
+  std::mt19937_64 prize_rng{202302};
+  sim::TraceLog prize_trace;
+  sim::Engine prize_k1 = make_engine(scenario, prize_trace, prize_rng);
+  sim::EngineTestAccess::set_state(
+      prize_k1, seed_17_pre_steven_state(), false, true);
+  expect(sim::EngineTestAccess::steven_candidate(prize_k1),
+         "The Prize-inspection K1 Steven-Latias-Vessel route was rejected.");
+
+  std::mt19937_64 k0_rng{202303};
+  sim::TraceLog k0_trace;
+  sim::Engine k0 = make_engine(scenario, k0_trace, k0_rng);
+  sim::EngineTestAccess::set_state(
+      k0, seed_17_pre_steven_state(), false, false);
+  expect(!sim::EngineTestAccess::steven_candidate(k0),
+         "The Steven-Latias-Vessel selector used exact hidden composition before K1.");
 }
 
 void test_exact_k1_state_admits_complete_three_card_route() {
@@ -214,6 +264,7 @@ void test_seed_17_uses_vessel_on_t3_and_preserves_supporter() {
 
 int main() {
   try {
+    test_k1_provenance_and_k0_boundary();
     test_exact_k1_state_admits_complete_three_card_route();
     test_item_lock_rejects_following_turn_vessel_route();
     test_rule_box_lock_rejects_latias_route();

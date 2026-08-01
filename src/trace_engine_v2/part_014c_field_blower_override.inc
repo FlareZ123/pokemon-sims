@@ -1,3 +1,4 @@
+#include "part_issue_1871_treasure_serena_payload_route.inc"
 #include "part_issue_1872_treasure_vessel_payload_route.inc"
 #include "part_issue_1874_duplicate_treasure_payload_route.inc"
 #include "part_issue_1877_treasure_quick_ball_payload_bridge.inc"
@@ -83,7 +84,8 @@
   }
 
   bool secret_box_combo_enabled_issue1875() const {
-    return issue_1872_treasure_vessel_payload_route_available() ||
+    return issue_1871_treasure_serena_payload_route_available() ||
+        issue_1872_treasure_vessel_payload_route_available() ||
         issue_1874_duplicate_treasure_payload_route_available() ||
         issue_1877_treasure_quick_ball_payload_bridge_available() ||
         issue_1878_vessel_quick_ball_tapu_crispin_route_available() ||
@@ -92,6 +94,18 @@
   }
 
   void run_secret_box_turn_issue1875() {
+    // Run the deterministic Treasure-to-Serena payload line before Legacy Star or
+    // generic Item order can replace a certain public-K1 finish with a random route.
+    // https://github.com/FlareZ123/pokemon-sims/issues/1871
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    if (issue_1871_treasure_serena_payload_route_available()) {
+      trace("POLICY", "P-AXIS-01", "Start: " + state_line());
+      if (!complete_issue_1871_treasure_serena_payload_route()) {
+        throw std::logic_error("Issue-1871 projected route failed");
+      }
+      trace("POLICY", "P-AXIS-01", "End: " + state_line());
+      return;
+    }
     // Search the current-turn Dragon before generic Earthen Vessel ordering spends
     // the only safe Treasure cost and loses the deterministic T4 payload channel.
     // https://github.com/FlareZ123/pokemon-sims/issues/1872

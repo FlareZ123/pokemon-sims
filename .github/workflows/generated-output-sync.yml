@@ -1,0 +1,49 @@
+name: Generated Output Sync
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: generated-output-sync-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build exact Release simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Regenerate source-bound outputs
+        run: |
+          # Canonical generator contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
+          # Paired generator contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/generate_multi_deck_comparison.py
+          # Generated-document contracts: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/update_setup_docs.py https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/update_multi_deck_docs.py
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Commit exact generated state and remove sync workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/generated-output-sync.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md docs results .github/workflows/generated-output-sync.yml
+          git commit -m "Refresh source-bound generated outputs"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

@@ -9,10 +9,15 @@
 
 namespace sim {
 struct EngineTestAccess {
-  static void set_state(Engine& engine, State state, const bool k1 = true) {
+  static void set_state(Engine& engine, State state,
+                        const bool deck_seen = true,
+                        const bool prizes_revealed = false) {
     engine.state_ = std::move(state);
-    engine.deck_seen_ = k1;
-    engine.prizes_revealed_ = false;
+    engine.deck_seen_ = deck_seen;
+    engine.prizes_revealed_ = prizes_revealed;
+  }
+  static bool prizes_known(const Engine& engine) {
+    return engine.prizes_known();
   }
   static bool route_available(const Engine& engine) {
     return engine.issue_1771_steven_t4_package_available();
@@ -98,6 +103,26 @@ void test_exact_package_is_selected() {
          "The corrected route trace was not emitted.");
 }
 
+void test_prize_inspection_k1_selects_exact_package() {
+  sim::Scenario selected = scenario();
+  std::mt19937_64 rng{2065};
+  sim::Engine engine = make_engine(selected, rng);
+  sim::EngineTestAccess::set_state(engine, exact_t3_state(), false, true);
+
+  // A complete legal Prize inspection supplies the same fixed-list K1 inventory
+  // as a deck search, so the exact Steven package remains deterministic:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // https://api.pokemontcg.io/v2/cards/sm7-145
+  // https://api.pokemontcg.io/v2/cards/sv8-76
+  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/2065
+  expect(sim::EngineTestAccess::prizes_known(engine),
+         "The Prize-inspection fixture did not establish K1.");
+  expect(sim::EngineTestAccess::route_available(engine),
+         "The exact Prize-inspection K1 Steven package was rejected.");
+}
+
 void test_route_gates() {
   const auto rejected = [](sim::State state, sim::Scenario selected,
                            const bool k1, const std::uint64_t seed,
@@ -177,6 +202,7 @@ void test_registered_seed_reaches_t4() {
 
 int main() {
   test_exact_package_is_selected();
+  test_prize_inspection_k1_selects_exact_package();
   test_route_gates();
   test_registered_seed_reaches_t4();
 }

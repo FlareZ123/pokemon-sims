@@ -1,0 +1,119 @@
+name: K1 Stacked CI
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: k1-stacked-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# This temporary workflow validates isolated stacked PRs whose immediate base is
+# another bug branch. The permanent CI workflow remains authoritative for main.
+# GitHub pull_request branch filtering: https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate internal Markdown source anchors
+        run: python tests/source_anchor_contract_tests.py
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and unified tests
+        run: cmake --build build --parallel 2
+      - name: Build strict C++20 contract
+        run: |
+          cmake -S . -B build-pedantic -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS=-pedantic-errors
+          cmake --build build-pedantic --parallel 2
+      - name: Run issue-specific Prize-K1 regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          base_sha='${{ github.event.pull_request.base.sha }}'
+          mapfile -t tests < <(git diff --name-only --diff-filter=A "$base_sha" HEAD | grep -E '^tests/issue_[0-9]+_prize_k1_.*\.cpp$')
+          test "${#tests[@]}" -gt 0
+          mkdir -p focused-tests
+          index=0
+          for source in "${tests[@]}"; do
+            index=$((index + 1))
+            binary="focused-tests/test-$index"
+            g++ -std=c++20 -O0 -UNDEBUG -Wall -Wextra -Wpedantic -Wconversion -Wshadow "$source" -o "$binary"
+            "$binary"
+          done
+      - name: Run three reviewed simulate-this audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-1.txt
+          grep -q 'READY' trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee trace-43.txt
+          grep -q 'T2 | READY' trace-43.txt
+          grep -q 'Mysterious Treasure to Tapu Lele-GX to Crispin' trace-43.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-pineco-35.txt
+          grep -q 'T2 | READY' trace-pineco-35.txt
+          grep -q 'Dragapult ex (Mysterious Treasure cost)' trace-pineco-35.txt
+      - name: Verify source-bound provenance
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from scripts.baseline_provenance import simulator_policy_source_digest
+
+          root = Path('.').resolve()
+          digest = simulator_policy_source_digest(root)
+          baseline = json.loads((root / 'results/baseline_manifest.json').read_text())
+          if baseline['simulator_policy_source_sha256'] != digest:
+              raise SystemExit('baseline source digest is stale')
+          for relative in ('results/multi_deck_manifest.json', 'docs/MULTI_DECK_REPORT.md'):
+              if digest not in (root / relative).read_text():
+                  raise SystemExit(f'{relative} is missing the current source digest')
+          print(digest)
+          PY
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Generate final cumulative T2 and T3 matrix
+        if: github.head_ref == 'fix/2103-wonder-tag-arven-payload'
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+      - name: Verify final cumulative T2 and T3 matrix
+        if: github.head_ref == 'fix/2103-wonder-tag-arven-payload'
+        run: cmp t2-t3-matrix.csv results/simulation_results.csv
+      - name: Upload stacked validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k1-stacked-release-${{ github.event.pull_request.number }}-${{ github.run_attempt }}
+          path: |
+            trace-*.txt
+            t2-t3-matrix.csv
+            build/Testing
+          if-no-files-found: warn
+
+  sanitizers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure ASan and UBSan
+        run: >-
+          cmake -S . -B build-sanitizers -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - name: Build sanitizer targets once
+        run: cmake --build build-sanitizers --parallel 2
+      - name: Run complete sanitizer suite
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: ctest --test-dir build-sanitizers --parallel 2 --output-on-failure

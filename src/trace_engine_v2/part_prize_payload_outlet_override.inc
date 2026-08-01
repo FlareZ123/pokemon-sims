@@ -122,9 +122,14 @@
 
     const bool avoid_stranded_dialga = payload_is_only_missing_axis && !live_payload_outlet;
     if (selected == Card::HisuianHeavyBall) {
-      for (const Card candidate : {Card::RegidragoV, Card::Oricorio, Card::TapuLeleGX,
-                                   Card::LatiasEx, Card::CrobatV, Card::DialgaGX,
-                                   Card::MawileGX}) {
+      // Hisuian Heavy Ball may exchange itself for any revealed Basic Pokemon.
+      // Pineco is a Basic Pokemon and belongs in every exhaustive modeled fallback.
+      // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+      // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1964
+      for (const Card candidate : {Card::RegidragoV, Card::Pineco, Card::Oricorio,
+                                   Card::TapuLeleGX, Card::LatiasEx, Card::CrobatV,
+                                   Card::DialgaGX, Card::MawileGX}) {
         // Heavy Ball may reveal any Basic Pokemon. Crobat V remains in the exhaustive
         // modeled target universe even when Dark Asset is currently unavailable.
         // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
@@ -142,9 +147,13 @@
     }
 
     if (selected == Card::HisuianHeavyBall) {
-      for (const Card candidate : {Card::RegidragoV, Card::TapuLeleGX, Card::Oricorio,
-                                   Card::LatiasEx, Card::CrobatV, Card::DialgaGX,
-                                   Card::MawileGX}) {
+      // Keep the unconditional post-search fallback exhaustive as well.
+      // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+      // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1964
+      for (const Card candidate : {Card::RegidragoV, Card::Pineco, Card::TapuLeleGX,
+                                   Card::Oricorio, Card::LatiasEx, Card::CrobatV,
+                                   Card::DialgaGX, Card::MawileGX}) {
         if (candidate == Card::DialgaGX && avoid_stranded_dialga) continue;
         if (prized(candidate)) {
           selected = candidate;

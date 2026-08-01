@@ -1,3 +1,4 @@
+#include "part_issue_1872_treasure_vessel_payload_route.inc"
 #include "part_issue_1874_duplicate_treasure_payload_route.inc"
 #include "part_issue_1877_treasure_quick_ball_payload_bridge.inc"
 #include "part_issue_1878_vessel_quick_ball_tapu_crispin_route.inc"
@@ -82,7 +83,8 @@
   }
 
   bool secret_box_combo_enabled_issue1875() const {
-    return issue_1874_duplicate_treasure_payload_route_available() ||
+    return issue_1872_treasure_vessel_payload_route_available() ||
+        issue_1874_duplicate_treasure_payload_route_available() ||
         issue_1877_treasure_quick_ball_payload_bridge_available() ||
         issue_1878_vessel_quick_ball_tapu_crispin_route_available() ||
         issue_1875_quick_ball_tapu_crispin_route_available() ||
@@ -90,6 +92,18 @@
   }
 
   void run_secret_box_turn_issue1875() {
+    // Search the current-turn Dragon before generic Earthen Vessel ordering spends
+    // the only safe Treasure cost and loses the deterministic T4 payload channel.
+    // https://github.com/FlareZ123/pokemon-sims/issues/1872
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    if (issue_1872_treasure_vessel_payload_route_available()) {
+      trace("POLICY", "P-AXIS-01", "Start: " + state_line());
+      if (!complete_issue_1872_treasure_vessel_payload_route()) {
+        throw std::logic_error("Issue-1872 projected route failed");
+      }
+      trace("POLICY", "P-AXIS-01", "End: " + state_line());
+      return;
+    }
     // Preserve the duplicate Treasures before generic Earthen Vessel ordering can
     // spend one copy and destroy the deterministic current-turn payload bridge.
     // https://github.com/FlareZ123/pokemon-sims/issues/1874

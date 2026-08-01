@@ -13,6 +13,12 @@
   }
 
   bool wonder_tag_can_bank_steven_for_known_t4_fss_route() const {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2082
+
     // Field Blower removes Path to the Peak, so Wonder Tag is live once the active
     // lock state is cleared. Star Alchemy remains usable through Path itself:
     // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
@@ -23,7 +29,7 @@
     if (state_.turn != 1 || !scenario_.going_first ||
         scenario_.dci != DciProfile::StrictJit || rule_box_abilities_locked() ||
         issue_1022_items_locked_by_turn_four() || scenario_.max_turn < 4 ||
-        !deck_seen_ || state_.manual_energy_used || !state_.active ||
+        !prizes_known() || state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::Oricorio || state_.retreat_used ||
         bench_space() <= 0 || !need_regi() ||
         hand_count(Card::RegidragoV) > 0 || in_play(Card::RegidragoV) ||
@@ -62,6 +68,12 @@
   }
 
   bool banked_steven_has_known_t4_fss_route() const {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2082
+
     // Wonder Tag has already resolved. The remaining route is legal under a
     // removed Path, while future Item lock still blocks its T4 Tool and search Items:
     // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
@@ -70,7 +82,7 @@
     return issue_1022_banked_route_ && state_.turn == 2 &&
         scenario_.going_first && scenario_.dci == DciProfile::StrictJit &&
         !issue_1022_items_locked_by_turn_four() && scenario_.max_turn >= 4 &&
-        supporter_allowed() && deck_seen_ && state_.active &&
+        supporter_allowed() && prizes_known() && state_.active &&
         state_.active->card == Card::Oricorio && state_.active->grass >= 1 &&
         !state_.manual_energy_used && !state_.retreat_used && need_regi() &&
         hand_count(Card::StevensResolve) > 0 &&

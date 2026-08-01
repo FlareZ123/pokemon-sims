@@ -29,7 +29,7 @@ Seed: `20260705`.
 | Strict JIT, full Item lock, first | 2.869% | 7.902% | 15.391% |
 | Strict JIT, Rule Box Ability lock, first | 4.451% | 26.414% | 40.069% |
 | Strict JIT, combined lock, first | 0.304% | 3.357% | 7.499% |
-| Strict JIT, turn-two Item lock, second | 14.132% | 28.108% | 35.908% |
+| Strict JIT, turn-two Item lock, second | 14.138% | 28.125% | 35.922% |
 | Strict JIT, full Item lock, second | 10.552% | 23.177% | 30.515% |
 | Strict JIT, Rule Box Ability lock, second | 18.213% | 35.52% | 45.997% |
 | Strict JIT, combined lock, second | 2.481% | 11.482% | 15.888% |

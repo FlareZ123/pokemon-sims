@@ -1,0 +1,23 @@
+name: Export Source Snapshot
+
+on:
+  push:
+    branches:
+      - fix/2069-prize-k1-oricorio-first
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-snapshot
+          path: |
+            .
+            !.git
+          if-no-files-found: error
+          retention-days: 1

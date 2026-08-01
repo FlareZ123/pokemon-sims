@@ -9,8 +9,21 @@
 namespace sim {
 struct EngineTestAccess {
   static State& state(Engine& engine) { return engine.state_; }
-  static void establish_k1(Engine& engine) { engine.deck_seen_ = true; }
-  static void clear_k1(Engine& engine) { engine.deck_seen_ = false; }
+  static void establish_deck_k1(Engine& engine) {
+    engine.deck_seen_ = true;
+    engine.prizes_revealed_ = false;
+  }
+  static void establish_prize_k1(Engine& engine) {
+    engine.deck_seen_ = false;
+    engine.prizes_revealed_ = true;
+  }
+  static void clear_k1(Engine& engine) {
+    engine.deck_seen_ = false;
+    engine.prizes_revealed_ = false;
+  }
+  static bool prizes_known(const Engine& engine) {
+    return engine.prizes_known();
+  }
   static bool route_without_backup(Engine& engine) {
     return engine.issue_1749_existing_regi_ready_route_without_backup();
   }
@@ -39,7 +52,7 @@ void install_complete_route(sim::Engine& engine) {
                 sim::Card::RegidragoVstar, sim::Card::RegidragoV};
   state.deck = {sim::Card::BrilliantBlender, sim::Card::MegaDragonite,
                 sim::Card::Dragapult};
-  sim::EngineTestAccess::establish_k1(engine);
+  sim::EngineTestAccess::establish_deck_k1(engine);
 }
 
 bool exact_route_with(const auto& mutate) {
@@ -53,7 +66,20 @@ bool exact_route_with(const auto& mutate) {
   return sim::EngineTestAccess::route_without_backup(engine);
 }
 
-void test_complete_public_route_suppresses_backup() {
+void expect_complete_route_preserves_backup(sim::Engine& engine,
+                                            const char* route_message) {
+  expect(sim::EngineTestAccess::route_without_backup(engine), route_message);
+  sim::EngineTestAccess::play_basics(engine);
+  const auto& state = sim::EngineTestAccess::state(engine);
+  expect(std::count(state.hand.begin(), state.hand.end(), sim::Card::RegidragoV) == 1,
+         "The complete route still spent the held backup Regidrago V.");
+  expect(std::count_if(state.bench.begin(), state.bench.end(), [](const sim::Pokemon& pokemon) {
+           return pokemon.card == sim::Card::RegidragoV;
+         }) == 0,
+         "The complete route still added a redundant Benched Regidrago V.");
+}
+
+void test_deck_search_k1_suppresses_backup() {
   sim::Scenario scenario{"issue-1749-unit", sim::DciProfile::MatchupFlexJit,
                          sim::LockMode::None, false, 5};
   sim::DeckRecipe recipe(sim::kDeckRecipe.begin(), sim::kDeckRecipe.end());
@@ -69,17 +95,35 @@ void test_complete_public_route_suppresses_backup() {
   // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
   // Official Bench, attachment, evolution, Item, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
   // Repository K1 and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1749
-  expect(sim::EngineTestAccess::route_without_backup(engine),
-         "The exact K1 completion route was not recognized.");
-  sim::EngineTestAccess::play_basics(engine);
-  const auto& state = sim::EngineTestAccess::state(engine);
-  expect(std::count(state.hand.begin(), state.hand.end(), sim::Card::RegidragoV) == 1,
-         "The complete route still spent the held backup Regidrago V.");
-  expect(std::count_if(state.bench.begin(), state.bench.end(), [](const sim::Pokemon& pokemon) {
-           return pokemon.card == sim::Card::RegidragoV;
-         }) == 0,
-         "The complete route still added a redundant Benched Regidrago V.");
+  // Original route bug: https://github.com/FlareZ123/pokemon-sims/issues/1749
+  expect(sim::EngineTestAccess::prizes_known(engine),
+         "Deck inspection did not establish K1.");
+  expect_complete_route_preserves_backup(
+      engine, "The deck-search K1 completion route was not recognized.");
+}
+
+void test_prize_inspection_k1_suppresses_backup() {
+  sim::Scenario scenario{"issue-2068-prize-k1", sim::DciProfile::MatchupFlexJit,
+                         sim::LockMode::None, false, 5};
+  sim::DeckRecipe recipe(sim::kDeckRecipe.begin(), sim::kDeckRecipe.end());
+  std::mt19937_64 rng{2068};
+  sim::Engine engine = make_engine(scenario, recipe, rng);
+  install_complete_route(engine);
+  sim::EngineTestAccess::establish_prize_k1(engine);
+
+  // Hisuian Heavy Ball exposes the complete face-down Prize set. With a fixed
+  // deck list, that proves the same remaining Blender and Dragon inventory as a
+  // resolved deck search, while the board and hand already complete every axis:
+  // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+  // Regidrago V / Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Repository K1 and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2068
+  expect(sim::EngineTestAccess::prizes_known(engine),
+         "Complete Prize inspection did not establish K1.");
+  expect_complete_route_preserves_backup(
+      engine, "The Prize-inspection K1 completion route was not recognized.");
 }
 
 void test_post_attachment_and_post_search_route_stays_suppressed() {
@@ -137,7 +181,8 @@ void test_seed_20260728_preserves_the_redundant_regidrago() {
 }  // namespace
 
 int main() {
-  test_complete_public_route_suppresses_backup();
+  test_deck_search_k1_suppresses_backup();
+  test_prize_inspection_k1_suppresses_backup();
   test_post_attachment_and_post_search_route_stays_suppressed();
   test_incomplete_routes_keep_backup_placement_available();
   test_seed_20260728_preserves_the_redundant_regidrago();

@@ -108,7 +108,13 @@
   }
 
   bool issue_1476_t2_oricorio_first_route_available_after_search_started() const {
-    if (!deck_seen_ || state_.turn != 1 || !scenario_.going_first ||
+    // A resolved deck search or complete Prize inspection establishes the same
+    // fixed-list K1. This route reads exact remaining-deck inventory, so it must
+    // use the repository-wide knowledge predicate rather than one provenance:
+    // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2069
+    if (!prizes_known() || state_.turn != 1 || !scenario_.going_first ||
         scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || scenario_.max_turn < 2 ||
         item_locked() || state_.manual_energy_used || !state_.active ||

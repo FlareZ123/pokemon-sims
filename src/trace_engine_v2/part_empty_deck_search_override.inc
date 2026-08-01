@@ -117,11 +117,13 @@
   bool second_ultra_ball_has_post_payload_target() const {
     // K0 preserves hidden-deck uncertainty. At K1, remove the exact first payload
     // target and require another Pokémon for the promised second Ultra Ball search:
-    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-    // https://api.pokemontcg.io/v2/cards/me2pt5-152
-    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-    if (!deck_seen_) return true;
+    // Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Hisuian Heavy Ball Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Trainer no-effect ruling: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2063
+    if (!prizes_known()) return true;
 
     std::optional<Card> planned_payload;
     // Appletun is a modeled Pokémon payload and must participate in the exact

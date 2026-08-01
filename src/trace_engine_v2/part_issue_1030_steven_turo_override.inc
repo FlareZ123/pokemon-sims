@@ -151,9 +151,14 @@
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Original full-Item-lock route: https://github.com/FlareZ123/pokemon-sims/issues/1223
     // Confirmed no-lock bug: https://github.com/FlareZ123/pokemon-sims/issues/1378
+    // Full Prize inspection establishes the same K1 composition knowledge as a legal deck search:
+    // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Official Prize and search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2022
     const bool supported_lock_state = scenario_.locks == LockMode::FullItem ||
         scenario_.locks == LockMode::None;
-    if (!deck_seen_ || !supporter_allowed() ||
+    if (!prizes_known() || !supporter_allowed() ||
         scenario_.dci != DciProfile::StrictJit || !supported_lock_state ||
         state_.turn + 2 > scenario_.max_turn || !state_.active ||
         !is_basic(state_.active->card) ||

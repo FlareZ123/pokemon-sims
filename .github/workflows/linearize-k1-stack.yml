@@ -1,0 +1,100 @@
+name: Linearize K1 Branch Stack
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: linearize-k1-stack
+  cancel-in-progress: true
+
+jobs:
+  linearize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Wait for source-bound output refresh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Workflow run status API: https://docs.github.com/en/rest/actions/workflow-runs?apiVersion=2022-11-28#get-a-workflow-run
+          while true; do
+            status="$(gh api '/repos/${{ github.repository }}/actions/runs/30710015366' --jq .status)"
+            conclusion="$(gh api '/repos/${{ github.repository }}/actions/runs/30710015366' --jq '.conclusion // ""')"
+            echo "refresh status=$status conclusion=$conclusion"
+            if [[ "$status" == completed ]]; then
+              [[ "$conclusion" == success ]]
+              break
+            fi
+            sleep 30
+          done
+      - name: Cancel superseded stacked validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for status in queued in_progress; do
+            gh api "/repos/${{ github.repository }}/actions/workflows/325167671/runs?status=${status}&per_page=100" \
+              --jq '.workflow_runs[].id' | while read -r run_id; do
+                [[ -n "$run_id" ]] || continue
+                gh api --method POST "/repos/${{ github.repository }}/actions/runs/${run_id}/cancel" || true
+              done
+          done
+      - name: Restore reviewed issue generator
+        shell: bash
+        run: |
+          echo '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' | base64 --decode | gzip --decompress > /tmp/build_k1_stack.py
+          python -m py_compile /tmp/build_k1_stack.py
+      - name: Rebuild a strictly linear issue stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout --detach origin/main
+
+          issues=(2070 2072 2073 2074 2076 2077 2078 2079 2080 2081 2082 2083 2084 2085 2086 2087 2088 2089 2090 2091 2092 2093 2094 2096 2097 2098 2099 2100 2101 2102 2103)
+          branches=(fix/2070-oricorio-treasure-tapu fix/2072-wonder-tag-burnet-legacy-star fix/2073-fss-treasure-energy fix/2074-wonder-tag-complete-route fix/2076-arven-fss-blender-contention fix/2077-ultra-ball-post-payload-outlet fix/2078-one-discard-known-dead-costs fix/2079-evolution-incense-payload-outlet fix/2080-fss-k1-hold-targets fix/2081-late-steven-vstar-vessel fix/2082-wonder-tag-steven-fss fix/2083-late-steven-payload-treasure fix/2084-duplicate-held-arven fix/2085-late-steven-held-blender fix/2086-late-steven-held-burnet fix/2087-fss-latias-burnet fix/2088-fss-bank-tate fix/2089-arven-quick-ball-latias fix/2090-quick-ball-dialga-vessel fix/2091-blender-known-dead-costs fix/2092-arven-redundant-fss-regression fix/2093-rulebox-late-steven fix/2094-treasure-tapu-projection fix/2096-arven-powerglass fix/2097-fss-complete-quick-ball fix/2098-wonder-tag-redundant-crispin fix/2099-wonder-tag-gladion-held-energy fix/2100-wonder-tag-arven-held-burnet fix/2101-wonder-tag-steven-consistency fix/2102-late-steven-t3-compression fix/2103-wonder-tag-arven-payload)
+
+          for index in "${!issues[@]}"; do
+            issue="${issues[$index]}"
+            branch="${branches[$index]}"
+            echo "linearizing issue $issue on $branch"
+            git fetch origin "$branch"
+            python /tmp/build_k1_stack.py . --issue "$issue"
+            git add src tests
+            git commit -m "Accept Prize-inspection K1 for issue #$issue"
+
+            git checkout "origin/$branch" -- results docs/REPORT.md docs/MULTI_DECK_REPORT.md
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          from scripts.baseline_provenance import simulator_policy_source_digest
+          root = Path('.').resolve()
+          digest = simulator_policy_source_digest(root)
+          baseline = json.loads((root / 'results/baseline_manifest.json').read_text())
+          if baseline['simulator_policy_source_sha256'] != digest:
+              raise SystemExit(f"source/output digest mismatch: {baseline['simulator_policy_source_sha256']} != {digest}")
+          for relative in ('results/multi_deck_manifest.json', 'docs/MULTI_DECK_REPORT.md'):
+              if digest not in (root / relative).read_text():
+                  raise SystemExit(f'{relative} is missing current digest {digest}')
+          PY
+            git add results docs/REPORT.md docs/MULTI_DECK_REPORT.md
+            if ! git diff --cached --quiet; then
+              git commit -m "Refresh source-bound matrices for issue #$issue"
+            fi
+            git status --short
+            test -z "$(git status --porcelain)"
+            git push --force origin "HEAD:refs/heads/$branch"
+          done

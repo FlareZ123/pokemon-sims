@@ -351,6 +351,12 @@
   }
 
   bool late_steven_active_vstar_crispin_treasure_route_available() const {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2093
+
     // Path to the Peak suppresses Rule Box Pokémon Abilities only. This route uses
     // Steven's Resolve, Crispin, Mysterious Treasure, evolution, and attachments,
     // so Rule Box Ability lock remains legal. Item and combined locks still block
@@ -362,7 +368,7 @@
     const bool route_lock_allows_items =
         scenario_.locks == LockMode::None ||
         scenario_.locks == LockMode::FullRuleBoxAbility;
-    if (!deck_seen_ || state_.turn != 2 || !scenario_.going_first ||
+    if (!prizes_known() || state_.turn != 2 || !scenario_.going_first ||
         scenario_.dci != DciProfile::StrictJit ||
         !route_lock_allows_items || scenario_.max_turn < 3 ||
         !supporter_allowed() || item_locked() || state_.manual_energy_used ||

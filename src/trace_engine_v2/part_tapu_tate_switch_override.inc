@@ -53,7 +53,13 @@
   }
 
   bool wonder_tag_crispin_is_redundant_with_held_complete_route() const {
-    if (!deck_seen_ || item_locked() || state_.manual_energy_used ||
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2098
+
+    if (!prizes_known() || item_locked() || state_.manual_energy_used ||
         !need_energy() || !need_vstar() || !need_payload() || need_regi() ||
         hand_count(Card::MysteriousTreasure) == 0 ||
         deck_count_after_search_started(Card::RegidragoVstar) == 0 ||

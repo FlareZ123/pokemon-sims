@@ -33,7 +33,7 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 | No discard control, going second | 39.979% ± 0.155 | 67.119% ± 0.149 | 78.401% ± 0.130 | 21.599% ± 0.130 |
 | Strict JIT, turn-two Item lock, second | 14.204% ± 0.110 | 28.102% ± 0.142 | 35.866% ± 0.152 | 64.134% ± 0.152 |
 | Strict JIT, full Item lock, second | 10.566% ± 0.097 | 23.251% ± 0.134 | 30.570% ± 0.146 | 69.430% ± 0.146 |
-| Strict JIT, Rule Box Ability lock, second | 18.307% ± 0.122 | 35.638% ± 0.151 | 46.176% ± 0.158 | 53.824% ± 0.158 |
+| Strict JIT, Rule Box Ability lock, second | 18.314% ± 0.122 | 35.634% ± 0.151 | 46.155% ± 0.158 | 53.845% ± 0.158 |
 | Strict JIT, combined lock, second | 2.513% ± 0.049 | 11.497% ± 0.101 | 15.868% ± 0.116 | 84.132% ± 0.116 |
 | Strict JIT, Supporter lock, first | 0.003% ± 0.002 | 15.466% ± 0.114 | 21.733% ± 0.130 | 78.267% ± 0.130 |
 | Strict JIT, Supporter lock, second | 8.147% ± 0.087 | 19.434% ± 0.125 | 25.319% ± 0.138 | 74.681% ± 0.138 |
@@ -42,11 +42,11 @@ Both decks use the same derived seed for each scenario. This common-random-numbe
 
 | Scenario | Ready on T2 | Ready on T3 | Ready on T4 | Ready on T5 diagnostic |
 |---|---:|---:|---:|---:|
-| Strict JIT, going first | 12.007% | 27.636% | 17.026% | 10.604% |
-| Matchup-flex JIT, going first | 16.471% | 31.810% | 15.833% | 9.495% |
+| Strict JIT, going first | 12.007% | 27.636% | 17.026% | 10.601% |
+| Matchup-flex JIT, going first | 16.471% | 31.810% | 15.833% | 9.521% |
 | No discard control, going first | 19.977% | 36.051% | 16.333% | 9.006% |
-| Strict JIT, going second | 29.625% | 24.088% | 11.374% | 7.908% |
-| Matchup-flex JIT, going second | 37.229% | 23.946% | 10.249% | 6.954% |
+| Strict JIT, going second | 29.625% | 24.088% | 11.374% | 7.874% |
+| Matchup-flex JIT, going second | 37.229% | 23.946% | 10.249% | 6.941% |
 | No discard control, going second | 39.979% | 27.140% | 11.282% | 6.602% |
 
 ## Regidrago-Pineco with Secret Box
@@ -160,6 +160,6 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 ## Provenance
 
-Simulator policy digest: `93a614fa779abdb98843c08b03b171dd20789fa1f7baa1de7b4d94f00fcfdbe2`.
+Simulator policy digest: `91963e8de08798cbb7e5377ee43aed48398ecd183a1303cd74915295b542a379`.
 
-Comparison CSV SHA-256: `e88e80d8a387c4df65f81383789568bd909688c6a45e852e51831ced5c9df518`.
+Comparison CSV SHA-256: `d3a45b056c5e598e92f894e23df4b1e1061a9d3b8e12387efd4313c8d9cb38fa`.

@@ -1,3 +1,4 @@
+// Exact-source CI trigger for the confirmed issue-2001 regression: https://github.com/FlareZ123/pokemon-sims/issues/2001
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
@@ -10,10 +11,12 @@
 
 namespace sim {
 struct EngineTestAccess {
-  static void set_state(Engine& engine, State state, const bool k1 = true) {
+  static void set_state(Engine& engine, State state,
+                        const bool deck_seen = true,
+                        const bool prizes_revealed = false) {
     engine.state_ = std::move(state);
-    engine.deck_seen_ = k1;
-    engine.prizes_revealed_ = false;
+    engine.deck_seen_ = deck_seen;
+    engine.prizes_revealed_ = prizes_revealed;
   }
   static bool available(const Engine& engine) {
     return engine.issue_1715_quick_ball_tapu_burnet_next_window_route();
@@ -95,14 +98,30 @@ void test_registered_seed_holds_and_reaches_t2() {
          "The source-bound seed 777 trace omitted a required issue-1715 step.");
 }
 
-void test_exact_k1_route_is_available() {
+void test_both_k1_provenances_and_k0_boundary() {
   std::mt19937_64 rng{17150};
   const sim::Scenario scenario = exact_scenario();
   const sim::DeckRecipe& recipe = registered_shell_recipe();
   sim::Engine engine(scenario, recipe, rng);
-  sim::EngineTestAccess::set_state(engine, exact_t1_state());
+
+  // A legal deck inspection and a complete Hisuian Heavy Ball Prize inspection
+  // establish the same fixed-list K1. True K0 remains unable to use deck identities:
+  // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Official Prize, Item, Bench, Ability, Supporter, search, discard, evolution, attachment, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2001
+  sim::EngineTestAccess::set_state(engine, exact_t1_state(), true, false);
   expect(sim::EngineTestAccess::available(engine),
-         "The exact K1 Quick Ball-Tapu-Burnet continuation was rejected.");
+         "The deck-search K1 Quick Ball-Tapu-Burnet continuation was rejected.");
+  sim::EngineTestAccess::set_state(engine, exact_t1_state(), false, true);
+  expect(sim::EngineTestAccess::available(engine),
+         "The Prize-inspection K1 Quick Ball-Tapu-Burnet continuation was rejected.");
+  sim::EngineTestAccess::set_state(engine, exact_t1_state(), false, false);
+  expect(!sim::EngineTestAccess::available(engine),
+         "The route used deck identities before K1.");
 }
 
 void test_knowledge_cost_and_energy_gates() {
@@ -110,10 +129,6 @@ void test_knowledge_cost_and_energy_gates() {
   const sim::Scenario scenario = exact_scenario();
   const sim::DeckRecipe& recipe = registered_shell_recipe();
   sim::Engine engine(scenario, recipe, rng);
-
-  sim::EngineTestAccess::set_state(engine, exact_t1_state(), false);
-  expect(!sim::EngineTestAccess::available(engine),
-         "The route used deck identities before K1.");
 
   sim::State state = exact_t1_state();
   state.hand.erase(std::find(state.hand.begin(), state.hand.end(),
@@ -190,7 +205,7 @@ void test_bench_and_lock_gates() {
 int main() {
   try {
     test_registered_seed_holds_and_reaches_t2();
-    test_exact_k1_route_is_available();
+    test_both_k1_provenances_and_k0_boundary();
     test_knowledge_cost_and_energy_gates();
     test_deck_connector_gates();
     test_bench_and_lock_gates();

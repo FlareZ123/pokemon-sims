@@ -24,7 +24,7 @@
     "strict-jit-supporter-lock/go-first",
     "strict-jit-supporter-lock/go-second"
   ],
-  "simulator_policy_source_sha256": "bccca93730ec6659421d55b2dc65b266ec6d24fe3c3b494978384c57affb945b",
+  "simulator_policy_source_sha256": "c571414e5767eabc2ce8764b40d5eceee6e00a0861153eb1cd2a0e4ecf681f70",
   "total_simulated_games": 3200000,
   "traces": [
     {

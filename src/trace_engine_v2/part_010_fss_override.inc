@@ -1,5 +1,10 @@
   bool fss_should_take_crispin_over_redundant_blender() const {
-    if (!deck_seen_ || !need_energy() || !supporter_allowed() ||
+    // Full Prize inspection establishes the same K1 composition knowledge as a legal deck search:
+    // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Official Prize and search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2013
+    if (!prizes_known() || !need_energy() || !supporter_allowed() ||
         state_.manual_energy_used || !crispin_can_advance_energy_axis() ||
         deck_count_after_search_started(Card::Crispin) == 0 ||
         !has_live_one_discard_hand_payload_line()) {

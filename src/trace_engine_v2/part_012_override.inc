@@ -1,4 +1,10 @@
   bool has_payable_payload_outlet_after_costed_search(const Card excluded) {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2077
+
     // Mysterious Treasure and Quick Ball discard from hand before searching, while
     // Ultra Ball must later discard the fetched payload plus one other hand card:
     // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179
@@ -58,7 +64,7 @@
     // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
     std::optional<Card> planned_payload;
-    if (deck_seen_) {
+    if (prizes_known()) {
       if (excluded == Card::QuickBall) {
         if (deck_count_after_search_started(Card::DialgaGX) > 0) {
           planned_payload = Card::DialgaGX;
@@ -96,7 +102,7 @@
     const auto outlet_has_legal_target = [this, planned_payload,
                                           &target_remains_after_payload](const Card outlet) {
       // Before legal inspection, preserve the existing fixed-list uncertainty.
-      if (!deck_seen_) return state_.deck.size() > 1U;
+      if (!prizes_known()) return state_.deck.size() > 1U;
       if (!planned_payload) return false;
       switch (outlet) {
         case Card::MysteriousTreasure:

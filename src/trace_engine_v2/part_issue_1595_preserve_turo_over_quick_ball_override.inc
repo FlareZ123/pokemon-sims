@@ -1,3 +1,5 @@
+#include "part_issue_1879_treasure_quick_ball_tapu_crispin.inc"
+
   static long double issue_1721_combination(const int n, const int k) {
     if (k < 0 || n < k) return 0.0L;
     long double result = 1.0L;
@@ -186,6 +188,11 @@
   }
 
   bool play_quick_ball(const bool permit_payload) {
+    // Compose Treasure, Quick Ball, Wonder Tag, and Crispin before generic Quick
+    // Ball handling can spend the connector or choose a weaker independent cost.
+    // https://github.com/FlareZ123/pokemon-sims/issues/1879
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    if (complete_issue_1879_treasure_quick_ball_tapu_crispin_route()) return true;
     if (play_issue_1721_arven_powerglass_route()) return true;
     const bool issue_1595_hold_quick_ball_for_turo =
         scenario_.dci == DciProfile::MatchupFlexJit && state_.turn == 4 &&

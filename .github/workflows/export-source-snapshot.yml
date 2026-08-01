@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - fix/2069-prize-k1-oricorio-first
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read

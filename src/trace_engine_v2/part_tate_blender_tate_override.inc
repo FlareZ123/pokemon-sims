@@ -11,6 +11,12 @@
   }
 
   bool has_live_one_discard_hand_payload_line() const {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2078
+
     // Each modeled one-discard outlet must begin a deck search after paying its cost.
     // An empty deck makes that promised post-Tate payload route unavailable:
     // https://api.pokemontcg.io/v2/cards/sm6-113
@@ -36,13 +42,13 @@
       // cannot justify a Trainer that is known to have no effect:
       // https://api.pokemontcg.io/v2/cards/sm6-113
       // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
-      const bool known_dead_mysterious = item == Card::MysteriousTreasure && deck_seen_ &&
+      const bool known_dead_mysterious = item == Card::MysteriousTreasure && prizes_known() &&
           std::none_of(state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic);
       if (known_dead_mysterious) continue;
       // The same target-aware legality applies to Quick Ball's Basic Pokémon search:
       // https://api.pokemontcg.io/v2/cards/swsh1-179
       // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
-      const bool known_dead_quick = item == Card::QuickBall && deck_seen_ &&
+      const bool known_dead_quick = item == Card::QuickBall && prizes_known() &&
           std::none_of(state_.deck.begin(), state_.deck.end(), is_basic);
       if (known_dead_quick) continue;
       // Earthen Vessel is live only while K0 keeps Basic Energy plausible or K1

@@ -69,6 +69,13 @@ const sim::Scenario& scenario_for_lock(const sim::LockMode lock) {
   static const sim::Scenario combined{
       "issue-1186-combined", sim::DciProfile::StrictJit,
       sim::LockMode::FullCombined, false, 5};
+  // FullSupporter is a supported production lock and canonical matrix scenario:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_002.inc
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/results/multi_deck_comparison.csv
+  // Confirmed helper defect: https://github.com/FlareZ123/pokemon-sims/issues/2029
+  static const sim::Scenario full_supporter{
+      "issue-2029-full-supporter", sim::DciProfile::StrictJit,
+      sim::LockMode::FullSupporter, false, 5};
 
   switch (lock) {
     case sim::LockMode::None: return none;
@@ -76,6 +83,9 @@ const sim::Scenario& scenario_for_lock(const sim::LockMode lock) {
     case sim::LockMode::FullItem: return full_item;
     case sim::LockMode::FullRuleBoxAbility: return rulebox;
     case sim::LockMode::FullCombined: return combined;
+    // Supported enum mapping: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_002.inc
+    // Confirmed helper defect: https://github.com/FlareZ123/pokemon-sims/issues/2029
+    case sim::LockMode::FullSupporter: return full_supporter;
   }
   throw std::invalid_argument("Unsupported lock mode");
 }
@@ -126,6 +136,19 @@ void test_k1_provenance_and_k0_boundary() {
       sim::LockMode::None, k0_rng, known_route_state(), false, false);
   expect(!sim::EngineTestAccess::known_burnet_route(k0),
          "The Steven-Burnet selector used exact hidden composition before K1.");
+}
+
+void test_full_supporter_mapping() {
+  // The focused helper must accept every supported LockMode value, including the
+  // canonical FullSupporter scenario, instead of reaching its invalid fallback:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_002.inc
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/results/multi_deck_comparison.csv
+  // https://github.com/FlareZ123/pokemon-sims/issues/2029
+  const sim::Scenario& scenario = scenario_for_lock(sim::LockMode::FullSupporter);
+  expect(scenario.locks == sim::LockMode::FullSupporter,
+         "The focused helper did not preserve the FullSupporter lock mode.");
+  expect(scenario.label == "issue-2029-full-supporter",
+         "The focused helper did not return its FullSupporter scenario.");
 }
 
 void test_lock_scope_and_controls() {
@@ -225,6 +248,7 @@ void test_rulebox_seed_101_reserves_vstar_and_burnet() {
 
 int main() {
   test_k1_provenance_and_k0_boundary();
+  test_full_supporter_mapping();
   test_lock_scope_and_controls();
   test_seed_101_reserves_vstar_and_burnet();
   test_rulebox_seed_101_reserves_vstar_and_burnet();

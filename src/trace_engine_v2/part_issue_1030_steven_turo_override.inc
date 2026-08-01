@@ -1,7 +1,12 @@
 #include "part_issue_1821_steven_latias_grass_override.inc"
 
   bool known_burnet_t3_steven_route_available() const {
-    if (!deck_seen_ || state_.turn != 2 || scenario_.going_first ||
+    // Full Prize inspection establishes the same K1 composition knowledge as a legal deck search:
+    // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Official Prize and search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2021
+    if (!prizes_known() || state_.turn != 2 || scenario_.going_first ||
         scenario_.dci != DciProfile::StrictJit || scenario_.max_turn < 3 ||
         !supporter_allowed() || !state_.active ||
         state_.active->card != Card::RegidragoV ||

@@ -613,7 +613,13 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
   }
 
   bool late_steven_vstar_with_held_blender_route_available() const {
-    if (!deck_seen_ || state_.turn >= scenario_.max_turn ||
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2085
+
+    if (!prizes_known() || state_.turn >= scenario_.max_turn ||
         scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || !supporter_allowed() ||
         !state_.active || state_.active->card != Card::RegidragoV ||

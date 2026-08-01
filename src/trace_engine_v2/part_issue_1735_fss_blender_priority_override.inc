@@ -1,8 +1,14 @@
   bool fss_blender_bank_with_complete_manual_schedule_available() const {
+    // A resolved deck search or complete Prize inspection establishes the same
+    // fixed-list K1. This route reads exact remaining-deck inventory, so it must
+    // use the repository-wide knowledge predicate rather than one provenance:
+    // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2067
     if (state_.turn != 1 || scenario_.going_first ||
         scenario_.dci != DciProfile::NoDiscardControl ||
         scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
-        !deck_seen_ || supporter_allowed() || !state_.manual_energy_used ||
+        !prizes_known() || supporter_allowed() || !state_.manual_energy_used ||
         item_locked() || !state_.active ||
         state_.active->card != Card::RegidragoV ||
         state_.active->tool != Tool::ForestSealStone ||

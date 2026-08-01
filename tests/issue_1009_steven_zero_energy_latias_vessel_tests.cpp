@@ -10,9 +10,12 @@
 
 namespace sim {
 struct EngineTestAccess {
-  static void set_k1_state(Engine& engine, State state) {
+  static void set_state(Engine& engine, State state,
+                        const bool deck_seen = true,
+                        const bool prizes_revealed = false) {
     engine.state_ = std::move(state);
-    engine.deck_seen_ = true;
+    engine.deck_seen_ = deck_seen;
+    engine.prizes_revealed_ = prizes_revealed;
   }
 
   static bool steven_candidate(const Engine& engine) {
@@ -87,25 +90,37 @@ sim::Engine make_engine(const sim::Scenario& scenario, sim::TraceLog& trace,
   return sim::Engine(scenario, recipe, rng, &trace);
 }
 
-void test_exact_k1_state_admits_complete_three_card_route() {
+void test_both_k1_provenances_and_k0_boundary() {
   const sim::Scenario scenario{"issue-1009-positive", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 5};
   std::mt19937_64 rng{1009};
   sim::TraceLog trace;
   sim::Engine engine = make_engine(scenario, trace, rng);
-  sim::EngineTestAccess::set_k1_state(engine, seed_17_pre_steven_state());
 
-  // K1 proves that these three unrestricted targets deterministically complete T3
-  // from the zero-Energy Regidrago, held VSTAR, held Dragon, and Basic Active:
+  // A legal deck inspection and a complete Hisuian Heavy Ball Prize inspection
+  // establish the same fixed-list K1. True K0 remains unable to use deck identities:
+  // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
   // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
   // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
-  // https://www.pokemon.com/us/pokemon-tcg/rules
-  // https://github.com/FlareZ123/pokemon-sims/issues/1009
+  // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Official Prize, Supporter, search, shuffle, attachment, evolution, Ability, Retreat, Item, discard, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Existing route regression: https://github.com/FlareZ123/pokemon-sims/issues/1009
+  // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2023
+  sim::EngineTestAccess::set_state(
+      engine, seed_17_pre_steven_state(), true, false);
   expect(sim::EngineTestAccess::steven_candidate(engine),
-         "The exact K1 state must admit the complete Latias-Vessel route.");
+         "The deck-search K1 Latias-Vessel route was rejected.");
+  sim::EngineTestAccess::set_state(
+      engine, seed_17_pre_steven_state(), false, true);
+  expect(sim::EngineTestAccess::steven_candidate(engine),
+         "The Prize-inspection K1 Latias-Vessel route was rejected.");
+  sim::EngineTestAccess::set_state(
+      engine, seed_17_pre_steven_state(), false, false);
+  expect(!sim::EngineTestAccess::steven_candidate(engine),
+         "The Latias-Vessel route used deck identities before K1.");
 }
 
 void test_item_lock_rejects_following_turn_vessel_route() {
@@ -114,7 +129,7 @@ void test_item_lock_rejects_following_turn_vessel_route() {
   std::mt19937_64 rng{1010};
   sim::TraceLog trace;
   sim::Engine engine = make_engine(scenario, trace, rng);
-  sim::EngineTestAccess::set_k1_state(engine, seed_17_pre_steven_state());
+  sim::EngineTestAccess::set_state(engine, seed_17_pre_steven_state());
 
   // Earthen Vessel cannot serve as the T3 connector after modeled Item lock begins:
   // https://api.pokemontcg.io/v2/cards/sv4-163
@@ -130,7 +145,7 @@ void test_rule_box_lock_rejects_latias_route() {
   std::mt19937_64 rng{1011};
   sim::TraceLog trace;
   sim::Engine engine = make_engine(scenario, trace, rng);
-  sim::EngineTestAccess::set_k1_state(engine, seed_17_pre_steven_state());
+  sim::EngineTestAccess::set_state(engine, seed_17_pre_steven_state());
 
   // Latias ex is a Rule Box Pokémon, so Skyliner is unavailable under this lock:
   // https://api.pokemontcg.io/v2/cards/sv8-76
@@ -149,7 +164,7 @@ void test_missing_payload_rejects_vessel_compression() {
   sim::State state = seed_17_pre_steven_state();
   std::replace(state.hand.begin(), state.hand.end(), sim::Card::MegaDragonite,
                sim::Card::Arven);
-  sim::EngineTestAccess::set_k1_state(engine, std::move(state));
+  sim::EngineTestAccess::set_state(engine, std::move(state));
 
   // Vessel compresses strict JIT only when its cost can discard a held Dragon during
   // the ready turn: https://api.pokemontcg.io/v2/cards/sv4-163
@@ -169,7 +184,7 @@ void test_insufficient_energy_inventory_rejects_draw_fragile_route() {
   state.deck.erase(std::remove(state.deck.begin(), state.deck.end(), sim::Card::Grass),
                    state.deck.end());
   state.deck.push_back(sim::Card::Grass);
-  sim::EngineTestAccess::set_k1_state(engine, std::move(state));
+  sim::EngineTestAccess::set_state(engine, std::move(state));
 
   // Crispin plus the two-turn Vessel route requires at least two Grass copies in the
   // inspected deck before Steven resolves: https://api.pokemontcg.io/v2/cards/sv7-133
@@ -214,7 +229,7 @@ void test_seed_17_uses_vessel_on_t3_and_preserves_supporter() {
 
 int main() {
   try {
-    test_exact_k1_state_admits_complete_three_card_route();
+    test_both_k1_provenances_and_k0_boundary();
     test_item_lock_rejects_following_turn_vessel_route();
     test_rule_box_lock_rejects_latias_route();
     test_missing_payload_rejects_vessel_compression();

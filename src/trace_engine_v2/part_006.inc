@@ -464,6 +464,12 @@ bool issue_1605_arven_crobat_route_available() const {
   }
 
   bool wonder_tag_arven_held_payload_route_available() const {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2103
+
     // At K1, Wonder Tag may find Arven, Arven may find a one-discard Item, and that
     // Item may discard the held Dragon only when its mandatory search retains a
     // legal target. Arven is a Supporter and is still in deck during target choice:
@@ -476,7 +482,7 @@ bool issue_1605_arven_crobat_route_available() const {
     // Trainer resolution ruling: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
     // Strict-JIT contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
     // Regression: https://github.com/FlareZ123/pokemon-sims/issues/648
-    if (!deck_seen_ || item_locked() || !can_play_payload_this_turn() ||
+    if (!prizes_known() || item_locked() || !can_play_payload_this_turn() ||
         !need_payload() || need_regi() || need_vstar() || need_energy() ||
         need_active_vstar() || hand_count(Card::Arven) > 0 ||
         deck_count_after_search_started(Card::Arven) == 0 ||

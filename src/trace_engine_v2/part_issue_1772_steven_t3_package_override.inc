@@ -14,7 +14,12 @@
     const bool payload_held =
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
 
-    if (!deck_seen_ || !strict_payload_timing() || !supporter_allowed() ||
+    // Full Prize inspection establishes the same fixed-list K1 as a resolved
+    // deck search, so this route must use the repository-wide knowledge predicate:
+    // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2066
+    if (!prizes_known() || !strict_payload_timing() || !supporter_allowed() ||
         item_locked() || state_.turn != 2 || state_.turn + 1 > scenario_.max_turn ||
         !state_.active || !is_basic(state_.active->card) ||
         state_.active->card == Card::RegidragoV || state_.retreat_used ||

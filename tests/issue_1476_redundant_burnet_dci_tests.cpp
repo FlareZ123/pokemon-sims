@@ -13,11 +13,16 @@ namespace sim {
 
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state,
-                        const bool deck_seen = false) {
-    engine.state_ = std::move(state);
-    engine.deck_seen_ = deck_seen;
-    engine.prizes_revealed_ = deck_seen;
-  }
+    const bool deck_seen = false,
+    const bool prizes_revealed = false) {
+  engine.state_ = std::move(state);
+  engine.deck_seen_ = deck_seen;
+  engine.prizes_revealed_ = prizes_revealed;
+}
+
+static bool prizes_known(const Engine& engine) {
+  return engine.prizes_known();
+}
 
   static std::optional<Card> choose_discard(const Engine& engine) {
     return engine.choose_discard(
@@ -176,45 +181,71 @@ void test_k1_t2_route_requires_every_inspected_axis() {
       "issue-1476-k1", sim::DciProfile::StrictJit,
       sim::LockMode::None, true, 2};
 
-  const auto route_available = [&](sim::State state, const std::uint64_t seed) {
+  const auto route_available = [&](sim::State state, const std::uint64_t seed,
+                         const bool deck_seen,
+                         const bool prizes_revealed) {
     std::mt19937_64 rng(seed);
     sim::Engine engine(scenario, deck->recipe, rng);
-    sim::EngineTestAccess::set_state(engine, std::move(state), true);
-    return sim::EngineTestAccess::t2_route_available(engine);
+    sim::EngineTestAccess::set_state(engine, std::move(state), deck_seen,
+                          prizes_revealed);
+    return std::pair{sim::EngineTestAccess::prizes_known(engine),
+           sim::EngineTestAccess::t2_route_available(engine)};
   };
 
-  expect(route_available(inspected_t1_route_state(), 147610),
-         "The minimum legal inspected T2 route was rejected.");
+  const auto deck_k1 = route_available(inspected_t1_route_state(), 147610,
+                             true, false);
+  expect(deck_k1.first && deck_k1.second,
+         "The deck-search K1 T2 route was rejected.");
+
+  // Heavy Ball exposes every face-down Prize card. With a fixed 60-card list,
+  // complete Prize inspection proves the same Oricorio, Tapu Lele-GX, Crispin,
+  // Energy, and payload inventory used by the already-validated deck-search route:
+  // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+  // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+  // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Official Prize inspection, search, Bench, Ability, attachment, Supporter, and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // K1 and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2069
+  const auto prize_k1 = route_available(inspected_t1_route_state(), 147609,
+                              false, true);
+  expect(prize_k1.first && prize_k1.second,
+         "The Prize-inspection K1 T2 route was rejected.");
+
+  const auto true_k0 = route_available(inspected_t1_route_state(), 147608,
+                             false, false);
+  expect(!true_k0.first && !true_k0.second,
+         "The exact hidden-zone route was admitted at true K0.");
 
   const auto rejected_without = [&](const sim::Card card, const char* message,
-                                    const std::uint64_t seed) {
+                          const std::uint64_t seed) {
     sim::State state = inspected_t1_route_state();
     state.deck.erase(std::find(state.deck.begin(), state.deck.end(), card));
-    expect(!route_available(std::move(state), seed), message);
+    expect(!route_available(std::move(state), seed, true, false).second, message);
   };
 
   rejected_without(sim::Card::Oricorio,
-                   "The route survived without Oricorio in the inspected deck.",
-                   147611);
+         "The route survived without Oricorio in the inspected deck.",
+         147611);
   rejected_without(sim::Card::TapuLeleGX,
-                   "The route survived without Tapu Lele-GX in the inspected deck.",
-                   147612);
+         "The route survived without Tapu Lele-GX in the inspected deck.",
+         147612);
   rejected_without(sim::Card::Crispin,
-                   "The route survived without Crispin in the inspected deck.",
-                   147613);
+         "The route survived without Crispin in the inspected deck.",
+         147613);
   rejected_without(sim::Card::Grass,
-                   "The route survived with only one inspected Grass Energy.",
-                   147614);
+         "The route survived with only one inspected Grass Energy.",
+         147614);
   rejected_without(sim::Card::Fire,
-                   "The route survived without inspected Fire Energy.",
-                   147615);
+         "The route survived without inspected Fire Energy.",
+         147615);
 
   sim::State one_payload = inspected_t1_route_state();
   one_payload.deck.erase(std::find(one_payload.deck.begin(), one_payload.deck.end(),
-                                   sim::Card::MegaDragonite));
+                         sim::Card::MegaDragonite));
   one_payload.deck.erase(std::find(one_payload.deck.begin(), one_payload.deck.end(),
-                                   sim::Card::GoodraVstar));
-  expect(!route_available(std::move(one_payload), 147616),
+                         sim::Card::GoodraVstar));
+  expect(!route_available(std::move(one_payload), 147616, true, false).second,
          "The route failed to reserve a Blender payload against the T2 draw.");
 }
 

@@ -10,9 +10,12 @@
 
 namespace sim {
 struct EngineTestAccess {
-  static void set_state(Engine& engine, State state, const bool deck_seen = true) {
+  static void set_state(Engine& engine, State state,
+                        const bool deck_seen = true,
+                        const bool prizes_revealed = false) {
     engine.state_ = std::move(state);
     engine.deck_seen_ = deck_seen;
+    engine.prizes_revealed_ = prizes_revealed;
   }
   static bool route_available(const Engine& engine) {
     return engine.issue_1223_full_item_lock_steven_grass_route_available();
@@ -50,16 +53,53 @@ sim::State route_state() {
 }
 
 sim::Engine make_engine(const sim::Scenario& chosen, std::mt19937_64& rng,
-                        sim::State state) {
+                        sim::State state, const bool deck_seen = true,
+                        const bool prizes_revealed = false) {
   static const sim::DeckRecipe recipe = sim::baseline_recipe();
   sim::Engine engine(chosen, recipe, rng, nullptr);
-  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_state(
+      engine, std::move(state), deck_seen, prizes_revealed);
   return engine;
 }
 
 void erase_one(std::vector<sim::Card>& cards, const sim::Card card) {
   const auto it = std::find(cards.begin(), cards.end(), card);
   if (it != cards.end()) cards.erase(it);
+}
+
+void test_k1_provenance_and_k0_boundary() {
+  // A legal deck search and a complete Hisuian Heavy Ball Prize inspection both
+  // establish exact fixed-list K1, while true K0 must remain rejected:
+  // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+  // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Official Prize, Supporter, Ability, Tool, search, attachment, evolution, retreat, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Existing route regression: https://github.com/FlareZ123/pokemon-sims/issues/1223
+  // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2022
+  const sim::Scenario chosen = full_item_scenario();
+
+  std::mt19937_64 deck_rng{202201};
+  sim::Engine deck_k1 = make_engine(
+      chosen, deck_rng, route_state(), true, false);
+  expect(sim::EngineTestAccess::route_available(deck_k1),
+         "The deck-search K1 issue-1223 route was rejected.");
+
+  std::mt19937_64 prize_rng{202202};
+  sim::Engine prize_k1 = make_engine(
+      chosen, prize_rng, route_state(), false, true);
+  expect(sim::EngineTestAccess::route_available(prize_k1),
+         "The Prize-inspection K1 issue-1223 route was rejected.");
+
+  std::mt19937_64 k0_rng{202203};
+  sim::Engine k0 = make_engine(
+      chosen, k0_rng, route_state(), false, false);
+  expect(!sim::EngineTestAccess::route_available(k0),
+         "The issue-1223 selector used exact hidden composition before K1.");
 }
 
 void test_exact_route_and_blockers() {
@@ -156,6 +196,7 @@ void test_seed_12_regression() {
 
 int main() {
   try {
+    test_k1_provenance_and_k0_boundary();
     test_exact_route_and_blockers();
     test_seed_12_regression();
     std::cout << "Issue 1223 Steven Grass target tests passed\n";

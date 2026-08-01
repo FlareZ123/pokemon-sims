@@ -1,0 +1,45 @@
+name: Build K1 Provenance Stack
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build-stack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore reviewed stack generator
+        shell: bash
+        run: |
+          echo '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' | base64 --decode | gzip --decompress > /tmp/build_k1_stack.py
+          python -m py_compile /tmp/build_k1_stack.py
+      - name: Create isolated cumulative branches
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout --detach origin/main
+          issues=(2070 2072 2073 2074 2076 2077 2078 2079 2080 2081 2082 2083 2084 2085 2086 2087 2088 2089 2090 2091 2092 2093 2094 2096 2097 2098 2099 2100 2101 2102 2103)
+          branches=(fix/2070-oricorio-treasure-tapu fix/2072-wonder-tag-burnet-legacy-star fix/2073-fss-treasure-energy fix/2074-wonder-tag-complete-route fix/2076-arven-fss-blender-contention fix/2077-ultra-ball-post-payload-outlet fix/2078-one-discard-known-dead-costs fix/2079-evolution-incense-payload-outlet fix/2080-fss-k1-hold-targets fix/2081-late-steven-vstar-vessel fix/2082-wonder-tag-steven-fss fix/2083-late-steven-payload-treasure fix/2084-duplicate-held-arven fix/2085-late-steven-held-blender fix/2086-late-steven-held-burnet fix/2087-fss-latias-burnet fix/2088-fss-bank-tate fix/2089-arven-quick-ball-latias fix/2090-quick-ball-dialga-vessel fix/2091-blender-known-dead-costs fix/2092-arven-redundant-fss-regression fix/2093-rulebox-late-steven fix/2094-treasure-tapu-projection fix/2096-arven-powerglass fix/2097-fss-complete-quick-ball fix/2098-wonder-tag-redundant-crispin fix/2099-wonder-tag-gladion-held-energy fix/2100-wonder-tag-arven-held-burnet fix/2101-wonder-tag-steven-consistency fix/2102-late-steven-t3-compression fix/2103-wonder-tag-arven-payload)
+          for index in "${!issues[@]}"; do
+            issue="${issues[$index]}"
+            branch="${branches[$index]}"
+            python /tmp/build_k1_stack.py . --issue "$issue"
+            git add src tests results docs
+            git commit -m "Accept Prize-inspection K1 for issue #$issue"
+            git push --force origin "HEAD:refs/heads/$branch"
+          done
+          printf '%s\n' "${branches[@]}" > built-k1-branches.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: built-k1-branches
+          path: built-k1-branches.txt

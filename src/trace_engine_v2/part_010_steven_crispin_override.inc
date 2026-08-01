@@ -410,7 +410,13 @@
   }
 
   std::optional<Card> late_steven_payload_treasure_bridge_payload() const {
-    if (!deck_seen_ || state_.turn < 2 || state_.turn >= scenario_.max_turn ||
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2083
+
+    if (!prizes_known() || state_.turn < 2 || state_.turn >= scenario_.max_turn ||
         scenario_.locks != LockMode::None || !supporter_allowed() || item_locked() ||
         !state_.active || state_.active->card != Card::RegidragoVstar ||
         state_.active->grass < 2 || state_.active->fire < 1 ||

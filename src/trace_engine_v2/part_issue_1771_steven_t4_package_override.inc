@@ -8,7 +8,10 @@
     const bool payload_in_known_deck =
         std::any_of(state_.deck.begin(), state_.deck.end(), is_payload);
 
-    if (!deck_seen_ || !strict_payload_timing() || !supporter_allowed() ||
+    // Complete legal deck or Prize inspection establishes K1:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance defect: https://github.com/FlareZ123/pokemon-sims/issues/2065
+    if (!prizes_known() || !strict_payload_timing() || !supporter_allowed() ||
         state_.turn != 3 || state_.turn + 1 > scenario_.max_turn ||
         !state_.active || !is_basic(state_.active->card) ||
         state_.active->card == Card::RegidragoV || state_.retreat_used ||

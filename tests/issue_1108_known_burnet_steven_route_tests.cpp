@@ -9,9 +9,12 @@
 
 namespace sim {
 struct EngineTestAccess {
-  static void set_state(Engine& engine, State state) {
+  static void set_state(Engine& engine, State state,
+                        const bool deck_seen = true,
+                        const bool prizes_revealed = false) {
     engine.state_ = std::move(state);
-    engine.deck_seen_ = true;
+    engine.deck_seen_ = deck_seen;
+    engine.prizes_revealed_ = prizes_revealed;
   }
   static bool known_burnet_route(const Engine& engine) {
     return engine.known_burnet_t3_steven_route_available();
@@ -78,10 +81,13 @@ const sim::Scenario& scenario_for_lock(const sim::LockMode lock) {
 }
 
 sim::Engine make_engine(const sim::LockMode lock, std::mt19937_64& rng,
-                        sim::State state = known_route_state()) {
+                        sim::State state = known_route_state(),
+                        const bool deck_seen = true,
+                        const bool prizes_revealed = false) {
   static const sim::DeckRecipe recipe = sim::baseline_recipe();
   sim::Engine engine(scenario_for_lock(lock), recipe, rng);
-  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_state(
+      engine, std::move(state), deck_seen, prizes_revealed);
   return engine;
 }
 
@@ -90,6 +96,36 @@ void expect_lock_route(const sim::LockMode lock, const std::uint64_t seed,
   std::mt19937_64 rng{seed};
   sim::Engine engine = make_engine(lock, rng);
   expect(sim::EngineTestAccess::known_burnet_route(engine), message);
+}
+
+void test_k1_provenance_and_k0_boundary() {
+  // A legal deck search and a complete Hisuian Heavy Ball Prize inspection both
+  // establish exact fixed-list K1, while true K0 must remain rejected:
+  // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Official Prize, Supporter, evolution, search, shuffle, discard, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Existing route regression: https://github.com/FlareZ123/pokemon-sims/issues/1108
+  // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2021
+  std::mt19937_64 deck_rng{202101};
+  sim::Engine deck_k1 = make_engine(
+      sim::LockMode::None, deck_rng, known_route_state(), true, false);
+  expect(sim::EngineTestAccess::known_burnet_route(deck_k1),
+         "The deck-search K1 Steven-Burnet route was rejected.");
+
+  std::mt19937_64 prize_rng{202102};
+  sim::Engine prize_k1 = make_engine(
+      sim::LockMode::None, prize_rng, known_route_state(), false, true);
+  expect(sim::EngineTestAccess::known_burnet_route(prize_k1),
+         "The Prize-inspection K1 Steven-Burnet route was rejected.");
+
+  std::mt19937_64 k0_rng{202103};
+  sim::Engine k0 = make_engine(
+      sim::LockMode::None, k0_rng, known_route_state(), false, false);
+  expect(!sim::EngineTestAccess::known_burnet_route(k0),
+         "The Steven-Burnet selector used exact hidden composition before K1.");
 }
 
 void test_lock_scope_and_controls() {
@@ -188,6 +224,7 @@ void test_rulebox_seed_101_reserves_vstar_and_burnet() {
 }  // namespace
 
 int main() {
+  test_k1_provenance_and_k0_boundary();
   test_lock_scope_and_controls();
   test_seed_101_reserves_vstar_and_burnet();
   test_rulebox_seed_101_reserves_vstar_and_burnet();

@@ -5,6 +5,7 @@ on:
     branches: [main]
 
 permissions:
+  actions: write
   contents: write
 
 concurrency:
@@ -12,7 +13,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  cancel-stale-validation:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Cancel superseded K1 validation runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Workflow-run cancellation API: https://docs.github.com/en/rest/actions/workflow-runs?apiVersion=2022-11-28#cancel-a-workflow-run
+          for status in queued in_progress; do
+            gh api "/repos/${{ github.repository }}/actions/workflows/325167671/runs?status=${status}&per_page=100" \
+              --jq '.workflow_runs[].id' | while read -r run_id; do
+                test -n "$run_id" || continue
+                gh api --method POST "/repos/${{ github.repository }}/actions/runs/${run_id}/cancel" || true
+              done
+          done
+
   refresh:
+    needs: cancel-stale-validation
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:

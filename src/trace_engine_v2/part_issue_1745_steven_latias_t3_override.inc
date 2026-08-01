@@ -1,5 +1,12 @@
   bool issue_1745_steven_latias_t3_route_available() const {
-    if (!deck_seen_ || scenario_.going_first ||
+    // A legal deck inspection and a complete Prize inspection both establish K1
+    // for the fixed-list route; all physical timing, lock, target, and board gates
+    // remain explicit below:
+    // Hisuian Heavy Ball Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Official Prize, search, evolution, attachment, Bench, Ability, Retreat, and Supporter procedure: https://assets.pokemon.com/assets/cms2-en-uk/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2061
+    if (!prizes_known() || scenario_.going_first ||
         scenario_.dci != DciProfile::NoDiscardControl ||
         scenario_.locks != LockMode::None || state_.turn != 2 ||
         scenario_.max_turn < 3 || !supporter_allowed() ||
@@ -33,9 +40,10 @@
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
     // Tapu Lele-GX Basic identity: https://api.pokemontcg.io/v2/cards/sm2-60
-    // Official Supporter, evolution, attachment, Ability, Retreat, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Official Supporter, evolution, attachment, Ability, Retreat, and turn procedure: https://assets.pokemon.com/assets/cms2-en-uk/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, no-discard-control payload, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1745
+    // Confirmed route bug: https://github.com/FlareZ123/pokemon-sims/issues/1745
+    // Confirmed K1 provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2061
     return deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
         deck_count_after_search_started(Card::LatiasEx) > 0 &&
         deck_count_after_search_started(Card::Grass) > 0;
@@ -62,8 +70,8 @@
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
-    // Official search and turn-ending procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1745
+    // Official search and turn-ending procedure: https://assets.pokemon.com/assets/cms2-en-uk/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Confirmed route bug: https://github.com/FlareZ123/pokemon-sims/issues/1745
     trace("PLAY SUPPORTER",
           "R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
           "Searched the deterministic T3 Latias route: Regidrago VSTAR, Latias ex, Grass Energy. Turn ended.");

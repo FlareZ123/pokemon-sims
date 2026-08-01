@@ -52,9 +52,9 @@ sim::State two_ultra_state() {
 }
 
 sim::Engine make_engine(std::mt19937_64& rng) {
-  const sim::Scenario scenario{"issue-2063-prize-k1",
-                               sim::DciProfile::StrictJit,
-                               sim::LockMode::None, false, 4};
+  static const sim::Scenario scenario{"issue-2063-prize-k1",
+                                      sim::DciProfile::StrictJit,
+                                      sim::LockMode::None, false, 4};
   return sim::Engine(scenario, sim::baseline_recipe(), rng);
 }
 

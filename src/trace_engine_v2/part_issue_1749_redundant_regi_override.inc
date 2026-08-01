@@ -5,10 +5,11 @@
     // Regidrago V / Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Hisuian Heavy Ball / full Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
     // Bench and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1 and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1749
-    if (!deck_seen_ || state_.turn_ended || item_locked() ||
+    // Original route bug / confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/1749 https://github.com/FlareZ123/pokemon-sims/issues/2068
+    if (!prizes_known() || state_.turn_ended || item_locked() ||
         !state_.active || state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
         hand_count(Card::RegidragoVstar) == 0 ||

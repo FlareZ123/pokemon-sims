@@ -29,8 +29,14 @@
   }
 
   bool issue_1875_quick_ball_tapu_crispin_route_available() const {
+    // A resolved Hisuian Heavy Ball reveals every face-down Prize card, so the
+    // fixed-list K1 composition knowledge is equivalent to a resolved deck search.
+    // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Official Prize and search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1979
     if (scenario_.dci != DciProfile::StrictJit || state_.turn != 3 ||
-        !deck_seen_ || item_locked() || !supporter_allowed() ||
+        !prizes_known() || item_locked() || !supporter_allowed() ||
         state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::RegidragoVstar ||
         state_.active->grass != 1 || state_.active->fire != 0 ||

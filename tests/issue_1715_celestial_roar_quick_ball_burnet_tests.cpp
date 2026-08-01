@@ -1,3 +1,4 @@
+// Exact-source CI trigger for the confirmed issue-2001 regression: https://github.com/FlareZ123/pokemon-sims/issues/2001
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 

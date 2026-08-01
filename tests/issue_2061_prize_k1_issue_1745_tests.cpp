@@ -51,9 +51,9 @@ sim::State complete_route_state() {
 }
 
 sim::Engine make_engine(std::mt19937_64& rng) {
-  const sim::Scenario scenario{"issue-2061-prize-k1",
-                               sim::DciProfile::NoDiscardControl,
-                               sim::LockMode::None, false, 5};
+  static const sim::Scenario scenario{"issue-2061-prize-k1",
+                                      sim::DciProfile::NoDiscardControl,
+                                      sim::LockMode::None, false, 5};
   const sim::CrobatModelingDeck* deck =
       sim::crobat_modeling_deck_by_id("crobat1-erika");
   if (deck == nullptr) throw std::runtime_error("Modeling recipe is unavailable.");

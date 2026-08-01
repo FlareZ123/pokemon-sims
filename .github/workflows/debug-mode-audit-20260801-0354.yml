@@ -26,8 +26,8 @@ jobs:
         run: |
           set -euo pipefail
           git rev-parse HEAD | tee audit-tested-head.txt
-          git show -s --format=%P HEAD | tee audit-tested-parents.txt
-          grep -q "8bd11653e92cc490030f0e96cde1bdacddb261c7" audit-tested-parents.txt
+          echo "${{ github.event.pull_request.base.sha }}" | tee audit-tested-base.txt
+          test "${{ github.event.pull_request.base.sha }}" = "8bd11653e92cc490030f0e96cde1bdacddb261c7"
 
       - name: Configure and build Release
         run: |
@@ -138,7 +138,7 @@ jobs:
             audit-simulation-results.csv
             audit-multi-deck-comparison.csv
             audit-tested-head.txt
-            audit-tested-parents.txt
+            audit-tested-base.txt
             audit-source-snapshot.zip
             audit-regidrago_sim
             tracked-files.txt

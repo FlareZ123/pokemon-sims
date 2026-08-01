@@ -34,75 +34,121 @@ jobs:
   refresh:
     needs: cancel-stale-validation
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      max-parallel: 8
-      matrix:
-        branch:
-          - fix/2070-oricorio-treasure-tapu
-          - fix/2072-wonder-tag-burnet-legacy-star
-          - fix/2073-fss-treasure-energy
-          - fix/2074-wonder-tag-complete-route
-          - fix/2076-arven-fss-blender-contention
-          - fix/2077-ultra-ball-post-payload-outlet
-          - fix/2078-one-discard-known-dead-costs
-          - fix/2079-evolution-incense-payload-outlet
-          - fix/2080-fss-k1-hold-targets
-          - fix/2081-late-steven-vstar-vessel
-          - fix/2082-wonder-tag-steven-fss
-          - fix/2083-late-steven-payload-treasure
-          - fix/2084-duplicate-held-arven
-          - fix/2085-late-steven-held-blender
-          - fix/2086-late-steven-held-burnet
-          - fix/2087-fss-latias-burnet
-          - fix/2088-fss-bank-tate
-          - fix/2089-arven-quick-ball-latias
-          - fix/2090-quick-ball-dialga-vessel
-          - fix/2091-blender-known-dead-costs
-          - fix/2092-arven-redundant-fss-regression
-          - fix/2093-rulebox-late-steven
-          - fix/2094-treasure-tapu-projection
-          - fix/2096-arven-powerglass
-          - fix/2097-fss-complete-quick-ball
-          - fix/2098-wonder-tag-redundant-crispin
-          - fix/2099-wonder-tag-gladion-held-energy
-          - fix/2100-wonder-tag-arven-held-burnet
-          - fix/2101-wonder-tag-steven-consistency
-          - fix/2102-late-steven-t3-compression
-          - fix/2103-wonder-tag-arven-payload
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.branch }}
+          ref: automation/refresh-k1-stack-outputs
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Configure and build Release simulator
-        run: |
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --parallel 2
-      - name: Regenerate canonical setup baselines
-        run: |
-          # Repository generation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-canonical-shell-baseline
-          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
-          python scripts/update_setup_docs.py --repo-root .
-      - name: Regenerate paired named-deck outputs
-        run: |
-          # Repository generation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
-          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
-          python scripts/update_multi_deck_docs.py --repo-root .
-      - name: Commit source-bound outputs
+      - name: Rebuild stack and refresh source-bound outputs
         shell: bash
         run: |
           set -euo pipefail
+
+          branches=(
+            fix/2070-oricorio-treasure-tapu
+            fix/2072-wonder-tag-burnet-legacy-star
+            fix/2073-fss-treasure-energy
+            fix/2074-wonder-tag-complete-route
+            fix/2076-arven-fss-blender-contention
+            fix/2077-ultra-ball-post-payload-outlet
+            fix/2078-one-discard-known-dead-costs
+            fix/2079-evolution-incense-payload-outlet
+            fix/2080-fss-k1-hold-targets
+            fix/2081-late-steven-vstar-vessel
+            fix/2082-wonder-tag-steven-fss
+            fix/2083-late-steven-payload-treasure
+            fix/2084-duplicate-held-arven
+            fix/2085-late-steven-held-blender
+            fix/2086-late-steven-held-burnet
+            fix/2087-fss-latias-burnet
+            fix/2088-fss-bank-tate
+            fix/2089-arven-quick-ball-latias
+            fix/2090-quick-ball-dialga-vessel
+            fix/2091-blender-known-dead-costs
+            fix/2092-arven-redundant-fss-regression
+            fix/2093-rulebox-late-steven
+            fix/2094-treasure-tapu-projection
+            fix/2096-arven-powerglass
+            fix/2097-fss-complete-quick-ball
+            fix/2098-wonder-tag-redundant-crispin
+            fix/2099-wonder-tag-gladion-held-energy
+            fix/2100-wonder-tag-arven-held-burnet
+            fix/2101-wonder-tag-steven-consistency
+            fix/2102-late-steven-t3-compression
+            fix/2103-wonder-tag-arven-payload
+          )
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add results docs/REPORT.md docs/MULTI_DECK_REPORT.md
-          if git diff --cached --quiet; then
-            echo "No generated output changes for ${{ matrix.branch }}"
-            exit 0
-          fi
-          git commit -m "Refresh source-bound matrices for ${{ matrix.branch }}"
-          git push origin "HEAD:${{ matrix.branch }}"
+          git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'
+
+          snapshot_root=refs/refresh/original
+          git update-ref "$snapshot_root/main" refs/remotes/origin/main
+          for branch in "${branches[@]}"; do
+            git update-ref "$snapshot_root/$branch" "refs/remotes/origin/$branch"
+          done
+
+          parent_original="$snapshot_root/main"
+          parent_head=$(git rev-parse refs/remotes/origin/main)
+
+          for branch in "${branches[@]}"; do
+            child_original="$snapshot_root/$branch"
+            child_original_sha=$(git rev-parse "$child_original")
+
+            # A child range is defined against the pre-run parent snapshot so a newly generated parent commit cannot leak into commit selection: https://git-scm.com/docs/gitrev-list
+            if git rev-list --merges "$parent_original..$child_original" | grep -q .; then
+              echo "Refusing to rewrite $branch because its issue-specific range contains a merge commit." >&2
+              exit 1
+            fi
+
+            mapfile -t child_commits < <(git rev-list --reverse "$parent_original..$child_original")
+            preserved_commits=()
+            for commit in "${child_commits[@]}"; do
+              subject=$(git show -s --format=%s "$commit")
+              if [[ "$subject" == "Refresh source-bound matrices for "* ]]; then
+                continue
+              fi
+              preserved_commits+=("$commit")
+            done
+
+            if (( ${#preserved_commits[@]} == 0 )); then
+              echo "No issue-specific commit remains for $branch after generated-output commits are excluded." >&2
+              exit 1
+            fi
+
+            git switch --detach "$parent_head"
+            git branch -f refresh-work "$parent_head"
+            git switch refresh-work
+
+            # Replay only the child's issue-specific commits onto the freshly rebuilt parent: https://git-scm.com/docs/git-cherry-pick
+            for commit in "${preserved_commits[@]}"; do
+              git cherry-pick "$commit"
+            done
+
+            cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+            cmake --build build --parallel 2
+
+            # Repository generation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-canonical-shell-baseline
+            python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+            python scripts/update_setup_docs.py --repo-root .
+
+            # Repository generation contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+            python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+            python scripts/update_multi_deck_docs.py --repo-root .
+
+            git add results docs/REPORT.md docs/MULTI_DECK_REPORT.md
+            if ! git diff --cached --quiet; then
+              git commit -m "Refresh source-bound matrices for $branch"
+            fi
+
+            # Preserve stack ancestry and reject concurrent branch movement with an exact force-with-lease expectation: https://git-scm.com/docs/git-push#Documentation/git-push.txt---force-with-leaseltrefnamegtltexpectgt
+            # Confirmed divergent-stack reproduction: https://github.com/FlareZ123/pokemon-sims/issues/2147
+            git push --force-with-lease="refs/heads/$branch:$child_original_sha" origin "HEAD:refs/heads/$branch"
+
+            parent_original="$child_original"
+            parent_head=$(git rev-parse HEAD)
+          done

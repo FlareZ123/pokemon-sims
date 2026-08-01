@@ -34,20 +34,25 @@ jobs:
         run: |
           cmake -S . -B build-pedantic -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS=-pedantic-errors
           cmake --build build-pedantic --parallel 2
-      - name: Run issue-specific Prize-K1 regressions
+      - name: Run issue-specific regressions
         shell: bash
         run: |
           set -euo pipefail
           base_sha='${{ github.event.pull_request.base.sha }}'
-          mapfile -t tests < <(git diff --name-only --diff-filter=A "$base_sha" HEAD | grep -E '^tests/issue_[0-9]+_prize_k1_.*\.cpp$')
-          test "${#tests[@]}" -gt 0
+          # Issue #2147 requires a workflow regression rather than a Prize-K1 C++ regression: https://github.com/FlareZ123/pokemon-sims/issues/2147
+          mapfile -t cpp_tests < <(git diff --name-only --diff-filter=A "$base_sha" HEAD | grep -E '^tests/issue_[0-9]+_prize_k1_.*\.cpp$' || true)
+          mapfile -t python_tests < <(git diff --name-only --diff-filter=A "$base_sha" HEAD | grep -E '^tests/issue_[0-9]+_.*_test\.py$' || true)
+          test "$(( ${#cpp_tests[@]} + ${#python_tests[@]} ))" -gt 0
           mkdir -p focused-tests
           index=0
-          for source in "${tests[@]}"; do
+          for source in "${cpp_tests[@]}"; do
             index=$((index + 1))
             binary="focused-tests/test-$index"
             g++ -std=c++20 -O0 -UNDEBUG -Wall -Wextra -Wpedantic -Wconversion -Wshadow "$source" -o "$binary"
             "$binary"
+          done
+          for source in "${python_tests[@]}"; do
+            python "$source"
           done
       - name: Run three reviewed simulate-this audits
         shell: bash

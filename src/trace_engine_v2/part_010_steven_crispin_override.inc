@@ -303,7 +303,13 @@
   }
 
   bool late_steven_vstar_vessel_route_available() const {
-    if (!deck_seen_ || state_.turn < 2 || state_.turn >= scenario_.max_turn ||
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2081
+
+    if (!prizes_known() || state_.turn < 2 || state_.turn >= scenario_.max_turn ||
         scenario_.dci != DciProfile::StrictJit || scenario_.locks != LockMode::None ||
         !supporter_allowed() || !state_.active ||
         state_.active->card != Card::RegidragoV ||

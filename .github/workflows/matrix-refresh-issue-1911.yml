@@ -1,0 +1,59 @@
+name: Matrix Refresh Issue 1911
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: matrix-refresh-issue-1911-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build exact Release simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Regenerate all source-bound outputs
+        run: |
+          # Canonical generator contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
+          # Paired generator contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/generate_multi_deck_comparison.py
+          # Generated-document contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/update_setup_docs.py https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/update_multi_deck_docs.py
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Record exact generated delta
+        run: |
+          git diff -- README.md docs results > issue-1911-generated.patch
+          git status --short > issue-1911-generated-status.txt
+          git rev-parse HEAD > issue-1911-generated-head.txt
+      - name: Upload generated outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-1911-generated-${{ github.run_attempt }}
+          path: |
+            README.md
+            docs/REPORT.md
+            docs/TRACE_AUDIT.md
+            docs/MULTI_DECK_REPORT.md
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            results/baseline_manifest.json
+            results/multi_deck_manifest.json
+            results/traces
+            results/multi_deck_traces
+            issue-1911-generated.patch
+            issue-1911-generated-status.txt
+            issue-1911-generated-head.txt
+          if-no-files-found: error

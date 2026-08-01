@@ -1,0 +1,60 @@
+name: Refresh issue 1872 evidence
+
+on:
+  push:
+    branches:
+      - fix/issue-1872-treasure-vessel-current-main-20260801
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-1872-treasure-vessel-current-main-20260801
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build build --parallel 2
+      - run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out results/simulation_results.csv
+      - run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out results/multi_deck_comparison.csv
+      - name: Refresh manifests and reports
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          from scripts.baseline_provenance import simulator_policy_source_digest
+
+          root = Path('.').resolve()
+          digest = simulator_policy_source_digest(root)
+          files = (
+              ('results/baseline_manifest.json', 'results/simulation_results.csv', 'matrix_csv_sha256'),
+              ('results/multi_deck_manifest.json', 'results/multi_deck_comparison.csv', 'comparison_csv_sha256'),
+          )
+          for manifest_name, csv_name, hash_key in files:
+              manifest_path = root / manifest_name
+              csv_path = root / csv_name
+              data = json.loads(manifest_path.read_text(encoding='utf-8'))
+              data['simulator_policy_source_sha256'] = digest
+              data[hash_key] = hashlib.sha256(csv_path.read_bytes()).hexdigest()
+              manifest_path.write_text(json.dumps(data, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          PY
+          python scripts/update_setup_docs.py
+          python scripts/update_multi_deck_docs.py
+      - name: Commit exact generated evidence and remove helper
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/refresh-issue-1872-evidence.yml
+          git add results/simulation_results.csv results/multi_deck_comparison.csv results/baseline_manifest.json results/multi_deck_manifest.json docs/REPORT.md docs/MULTI_DECK_REPORT.md docs/TRACE_AUDIT.md README.md
+          git commit -m "Refresh rebased issue 1872 generated evidence"
+          git push origin HEAD:fix/issue-1872-treasure-vessel-current-main-20260801

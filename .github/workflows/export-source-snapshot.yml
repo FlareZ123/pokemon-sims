@@ -21,37 +21,36 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           import re
+          import textwrap
 
           source = Path('src/trace_engine_v2/part_issue_1476_redundant_burnet_route_override.inc')
           text = source.read_text()
-          old = '''  bool issue_1476_t2_oricorio_first_route_available_after_search_started() const {
-              if (!deck_seen_ || state_.turn != 1 || !scenario_.going_first ||
-          '''
-          new = '''  bool issue_1476_t2_oricorio_first_route_available_after_search_started() const {
-              // A resolved deck search or complete Prize inspection establishes the same
-              // fixed-list K1. This route reads exact remaining-deck inventory, so it must
-              // use the repository-wide knowledge predicate rather than one provenance:
-              // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
-              // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-              // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2069
-              if (!prizes_known() || state_.turn != 1 || !scenario_.going_first ||
-          '''
-          old = old.replace('          ', '')
-          new = new.replace('          ', '')
+          old = """  bool issue_1476_t2_oricorio_first_route_available_after_search_started() const {
+            if (!deck_seen_ || state_.turn != 1 || !scenario_.going_first ||
+          """
+          new = """  bool issue_1476_t2_oricorio_first_route_available_after_search_started() const {
+            // A resolved deck search or complete Prize inspection establishes the same
+            // fixed-list K1. This route reads exact remaining-deck inventory, so it must
+            // use the repository-wide knowledge predicate rather than one provenance:
+            // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+            // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+            // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2069
+            if (!prizes_known() || state_.turn != 1 || !scenario_.going_first ||
+          """
           if old not in text:
               raise SystemExit('source anchor not found')
           source.write_text(text.replace(old, new, 1))
 
           test = Path('tests/issue_1476_redundant_burnet_dci_tests.cpp')
           text = test.read_text()
-          old = '''  static void set_state(Engine& engine, State state,
+          old = """  static void set_state(Engine& engine, State state,
                                   const bool deck_seen = false) {
               engine.state_ = std::move(state);
               engine.deck_seen_ = deck_seen;
               engine.prizes_revealed_ = deck_seen;
             }
-          '''
-          new = '''  static void set_state(Engine& engine, State state,
+          """
+          new = """  static void set_state(Engine& engine, State state,
                                   const bool deck_seen = false,
                                   const bool prizes_revealed = false) {
               engine.state_ = std::move(state);
@@ -62,14 +61,15 @@ jobs:
             static bool prizes_known(const Engine& engine) {
               return engine.prizes_known();
             }
-          '''
-          old = old.replace('          ', '')
-          new = new.replace('          ', '')
+          """
+          old = textwrap.dedent(old)
+          new = textwrap.dedent(new)
           if old not in text:
               raise SystemExit('test access anchor not found')
           text = text.replace(old, new, 1)
 
-          replacement = r'''void test_k1_t2_route_requires_every_inspected_axis() {
+          replacement = textwrap.dedent(r'''\
+          void test_k1_t2_route_requires_every_inspected_axis() {
             const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
             expect(deck != nullptr, "The registered shell recipe is unavailable.");
             const sim::Scenario scenario{
@@ -144,8 +144,7 @@ jobs:
                    "The route failed to reserve a Blender payload against the T2 draw.");
           }
 
-          void test_seed_129_reaches_t2_through_oricorio_first()'''
-          replacement = replacement.replace('          ', '')
+          void test_seed_129_reaches_t2_through_oricorio_first()''')
           pattern = re.compile(
               r'void test_k1_t2_route_requires_every_inspected_axis\(\) \{.*?\n\}\n\nvoid test_seed_129_reaches_t2_through_oricorio_first\(\)',
               re.DOTALL,
@@ -155,7 +154,7 @@ jobs:
               raise SystemExit('route regression anchor not found')
           test.write_text(text)
           PY
-      - name: Run focused local regression
+      - name: Run focused regression
         shell: bash
         run: |
           g++ -std=c++20 -O0 -UNDEBUG -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
@@ -166,7 +165,6 @@ jobs:
         run: |
           python - <<'PY'
           import json
-          import re
           from pathlib import Path
           from scripts.baseline_provenance import simulator_policy_source_digest
 
@@ -177,7 +175,6 @@ jobs:
           old = data['simulator_policy_source_sha256']
           data['simulator_policy_source_sha256'] = digest
           baseline.write_text(json.dumps(data, indent=2, sort_keys=True) + '\n')
-
           for path in [root / 'results/multi_deck_manifest.json',
                        root / 'docs/MULTI_DECK_REPORT.md']:
               text = path.read_text()

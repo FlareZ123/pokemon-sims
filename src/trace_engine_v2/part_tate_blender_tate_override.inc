@@ -105,6 +105,21 @@
   }
 
   bool play_tate_draw() {
+    if (tate_switch_then_next_turn_burnet_route()) {
+      // Tate's switch mode resolves the Active-position axis now, while the held
+      // Professor Burnet remains available on the following turn to establish the
+      // strict current-turn Dragon payload. Do not shuffle either deterministic
+      // connector through Tate's draw mode:
+      // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+      // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // One-Supporter-per-turn and switching procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Earliest deterministic route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2154
+      trace("HOLD SUPPORTER", "R-TATE-01; R-BURNET-01; R-RVS-01; P-JIT-01; P-COMPRESS-01",
+            "Preserved Tate & Liza switch mode and the next-turn Professor Burnet payload route.");
+      return false;
+    }
     if (tate_draw_after_active_vstar_evolution_route()) {
       // The prior-turn Active Regidrago V already has GGF. Preserve the searched
       // evolution through this fixed-point pass, then Tate still draws exactly five:

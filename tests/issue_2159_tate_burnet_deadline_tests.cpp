@@ -69,7 +69,7 @@ void test_t3_projection_remains_live() {
   // the final setup-success turn under the repository contract:
   // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
   // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-  // One-Supporter-per-turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // One-Supporter-per-turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
   // T4 setup-success cutoff: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
   // Confirmed boundary bug: https://github.com/FlareZ123/pokemon-sims/issues/2159
   expect(sim::EngineTestAccess::tate_burnet_route(engine),

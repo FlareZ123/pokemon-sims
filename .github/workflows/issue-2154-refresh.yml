@@ -1,0 +1,51 @@
+name: Issue 2154 Matrix Refresh
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+# This branch-scoped workflow generates source-bound artifacts from the exact PR
+# source. It is removed after the reviewed outputs are committed:
+# https://github.com/FlareZ123/pokemon-sims/issues/2154
+jobs:
+  refresh:
+    if: github.head_ref == 'fix/2154-tate-switch-burnet-route'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build Release simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Regenerate canonical shell evidence
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+      - name: Regenerate paired deck evidence
+        run: |
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Validate generated evidence
+        run: |
+          cmp results/simulation_results.csv <(./build/regidrago_sim --trials 100000 --seed 20260705 --out /dev/stdout)
+          python tests/source_anchor_contract_tests.py
+      - name: Upload refreshed source-bound outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-2154-source-bound-outputs-${{ github.run_attempt }}
+          path: |
+            results/simulation_results.csv
+            results/baseline_manifest.json
+            results/baseline_traces
+            docs/REPORT.md
+            results/multi_deck_comparison.csv
+            results/multi_deck_manifest.json
+            results/multi_deck_traces
+            docs/MULTI_DECK_REPORT.md
+          if-no-files-found: error

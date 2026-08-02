@@ -1,3 +1,12 @@
+from pathlib import Path
+import sys
+
+# Direct execution starts Python from tests/, so add the tracked repository root
+# before importing the workflow selector:
+# https://docs.python.org/3/library/sys_path_init.html
+# https://github.com/FlareZ123/pokemon-sims/issues/2152
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from scripts.select_added_prize_k1_tests import select_added_prize_k1_tests
 
 

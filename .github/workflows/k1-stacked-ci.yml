@@ -24,6 +24,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Validate K1 stacked selector contract
+        run: python tests/k1_stacked_ci_contract_tests.py
       - name: Validate internal Markdown source anchors
         run: python tests/source_anchor_contract_tests.py
       - name: Configure Release
@@ -39,8 +41,19 @@ jobs:
         run: |
           set -euo pipefail
           base_sha='${{ github.event.pull_request.base.sha }}'
-          mapfile -t tests < <(git diff --name-only --diff-filter=A "$base_sha" HEAD | grep -E '^tests/issue_[0-9]+_prize_k1_.*\.cpp$')
-          test "${#tests[@]}" -gt 0
+          # A general pull_request trigger includes ordinary source, documentation,
+          # and audit PRs. Those diffs have no focused Prize-K1 test and must skip
+          # this one step instead of failing the whole workflow:
+          # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request
+          # https://github.com/FlareZ123/pokemon-sims/issues/2152
+          mapfile -t tests < <(
+            git diff --name-only --diff-filter=A "$base_sha" HEAD |
+              python scripts/select_added_prize_k1_tests.py
+          )
+          if (( ${#tests[@]} == 0 )); then
+            echo "No newly added issue-specific Prize-K1 regression; skipping focused compile."
+            exit 0
+          fi
           mkdir -p focused-tests
           index=0
           for source in "${tests[@]}"; do

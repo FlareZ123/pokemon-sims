@@ -1,0 +1,39 @@
+name: Issue 2153 Simulate This
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-issue-2153:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel 2
+      - name: Full test suite
+        run: ctest --test-dir build --output-on-failure
+      - name: Exact seed 408 regression
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 408 --require-ready-by 3
+      - name: Perfect-play trace pass 1
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 408 --require-ready-by 3
+      - name: Perfect-play trace pass 2
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4
+      - name: Perfect-play trace pass 3
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2
+      - name: Seed 438 Latias-prized diagnostic
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 438 || true
+      - name: Generate canonical T2/T3 matrix
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-2153-matrix.csv
+          cat issue-2153-matrix.csv
+      - name: Upload matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-2153-t2-t3-matrix
+          path: issue-2153-matrix.csv

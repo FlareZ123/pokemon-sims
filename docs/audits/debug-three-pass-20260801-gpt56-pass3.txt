@@ -1,0 +1,9 @@
+Debug-mode CI audit marker.
+
+Pass: 3 of 3
+Base main commit: acd5f558702ce5a42cabc023f1fe772abb43c105
+Purpose: trigger the repository's full pull-request CI, including all --simulate-this trace audits and canonical T2/T3 matrix comparisons.
+Production behavior changed: no
+Pass 1: CI run 30725747583 succeeded.
+Pass 2: CI run 30726143106 succeeded.
+UTC trigger timestamp: 2026-08-02T01:08:00Z

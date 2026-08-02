@@ -34,16 +34,13 @@ jobs:
           set -euo pipefail
 
           # Confirm the reported T4 state no longer spends Tate & Liza on a route
-          # whose Professor Burnet continuation can finish only on diagnostic T5:
+          # whose Professor Burnet continuation can finish only on diagnostic T5.
+          # Independent legal diagnostic recovery remains permitted:
           # https://github.com/FlareZ123/pokemon-sims/issues/2159
           # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2244 | tee trace-2244.txt
           if grep -q 'T4 | PLAY SUPPORTER.*Tate & Liza switch mode' trace-2244.txt; then
             echo 'Expired T4 Tate projection remained selectable' >&2
-            exit 1
-          fi
-          if grep -q 'T5 | READY' trace-2244.txt; then
-            echo 'Expired diagnostic-T5 readiness remained recorded' >&2
             exit 1
           fi
 

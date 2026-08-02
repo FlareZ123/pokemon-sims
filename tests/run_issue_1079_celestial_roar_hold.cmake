@@ -84,17 +84,15 @@ endif()
 # No-control timing and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
 # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1623
 run_trace("no-discard-control/go-second" 91 no_control_seed_91)
-if(NOT no_control_seed_91 MATCHES "T1 \| HOLD ATTACK \|")
-  message(FATAL_ERROR "No-control seed 91 did not hold Celestial Roar:
-${no_control_seed_91}")
+# CMake quoted-argument escapes and MATCHES regex semantics: https://cmake.org/cmake/help/latest/manual/cmake-language.7.html#quoted-argument https://cmake.org/cmake/help/latest/command/if.html#matches
+if(NOT no_control_seed_91 MATCHES "T1 \\| HOLD ATTACK \\|")
+  message(FATAL_ERROR "No-control seed 91 did not hold Celestial Roar:\n${no_control_seed_91}")
 endif()
-if(no_control_seed_91 MATCHES "T1 \| ATTACK \|.*Celestial Roar")
-  message(FATAL_ERROR "No-control seed 91 still used Celestial Roar:
-${no_control_seed_91}")
+if(no_control_seed_91 MATCHES "T1 \\| ATTACK \\|.*Celestial Roar")
+  message(FATAL_ERROR "No-control seed 91 still used Celestial Roar:\n${no_control_seed_91}")
 endif()
-if(NOT no_control_seed_91 MATCHES "T2 \| READY \|")
-  message(FATAL_ERROR "No-control seed 91 lost T2 readiness:
-${no_control_seed_91}")
+if(NOT no_control_seed_91 MATCHES "T2 \\| READY \\|")
+  message(FATAL_ERROR "No-control seed 91 lost T2 readiness:\n${no_control_seed_91}")
 endif()
 
 # No-discard-control may still bank an early Dragon payload when that axis is

@@ -50,6 +50,12 @@
   }
 
   bool fss_should_hold_for_complete_quick_ball_route() const {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2097
+
     const bool powered_prior_turn_regi = std::any_of(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
           return pokemon.card == Card::RegidragoV &&
@@ -78,7 +84,7 @@
     // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/979
-    return deck_seen_ && !supporter_allowed() && !item_locked() &&
+    return prizes_known() && !supporter_allowed() && !item_locked() &&
         !state_.retreat_used && can_play_payload_this_turn() &&
         need_payload() && !need_energy() && powered_prior_turn_regi &&
         bench_space() > 0 && state_.active && is_basic(state_.active->card) &&
@@ -90,7 +96,13 @@
   }
 
   bool fss_should_hold_for_observable_complete_route() const {
-    if (!deck_seen_ || state_.vstar_power_used) return false;
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2080
+
+    if (!prizes_known() || state_.vstar_power_used) return false;
 
     // Project the remainder of the current turn with Star Alchemy unavailable and
     // with an isolated RNG copy. The shadow begins from the exact public K1 state,
@@ -150,6 +162,12 @@
   }
 
   bool fss_should_bank_tate_for_next_turn_blender_route() const {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2088
+
     const bool powered_prior_turn_benched_regi = std::any_of(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
           return pokemon.card == Card::RegidragoV &&
@@ -183,7 +201,7 @@
     // Strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // T5 diagnostic recovery: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/T5_FAILURE_POLICY.md
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1139
-    return deck_seen_ && strict_payload_timing() && !supporter_allowed() &&
+    return prizes_known() && strict_payload_timing() && !supporter_allowed() &&
         !item_locked() && state_.turn < scenario_.max_turn &&
         state_.active &&
         state_.active->card != Card::RegidragoV &&
@@ -196,7 +214,13 @@
   }
 
   bool fss_should_take_grass_for_seed23_latias_burnet_route() const {
-    if (!deck_seen_ || scenario_.dci != DciProfile::StrictJit ||
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2080
+
+    if (!prizes_known() || scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || state_.turn != 3 ||
         scenario_.max_turn < 4 ||
         !supporter_allowed() || state_.manual_energy_used ||
@@ -243,7 +267,13 @@
   }
 
   Card fss_target_after_search_started() const {
-    const bool appletun_burnet_bank = deck_seen_ && !supporter_allowed() &&
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2080
+
+    const bool appletun_burnet_bank = prizes_known() && !supporter_allowed() &&
         !state_.vstar_power_used && state_.turn < scenario_.max_turn &&
         need_payload() && !need_regi() && !need_vstar() && !need_energy() &&
         !need_active_vstar() && can_play_payload_this_turn() &&
@@ -311,7 +341,7 @@
     // Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Strict-JIT contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
     // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    const bool held_payload_is_only_missing_axis = deck_seen_ && need_payload() &&
+    const bool held_payload_is_only_missing_axis = prizes_known() && need_payload() &&
         !need_regi() && !need_vstar() && !need_energy() && !need_active_vstar() &&
         can_play_payload_this_turn() && !item_locked() &&
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);

@@ -6,7 +6,13 @@
   bool wonder_tag_selected_steven_this_turn_{false};
 
   bool wonder_tag_burnet_is_redundant_with_legacy_star_route() const {
-    if (!deck_seen_ || !supporter_allowed() || state_.manual_energy_used ||
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2072
+
+    if (!prizes_known() || !supporter_allowed() || state_.manual_energy_used ||
         state_.vstar_power_used || !need_energy() || has_vstar() ||
         !need_payload() || need_regi() || hand_count(Card::TapuLeleGX) == 0 ||
         hand_count(Card::Crispin) == 0 ||
@@ -70,7 +76,13 @@
   }
 
   bool wonder_tag_gladion_is_redundant_with_held_manual_energy() const {
-    if (!deck_seen_ || !supporter_allowed() || state_.manual_energy_used ||
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2099
+
+    if (!prizes_known() || !supporter_allowed() || state_.manual_energy_used ||
         hand_count(Card::TapuLeleGX) == 0 || hand_count(Card::Gladion) > 0 ||
         !might_be_unseen(Card::Gladion)) {
       return false;
@@ -93,7 +105,13 @@
   }
 
   bool wonder_tag_arven_is_redundant_with_held_burnet_route() const {
-    if (!deck_seen_ || !supporter_allowed() || state_.manual_energy_used ||
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2100
+
+    if (!prizes_known() || !supporter_allowed() || state_.manual_energy_used ||
         !need_energy() || has_vstar() || !need_payload() || need_regi() ||
         hand_count(Card::TapuLeleGX) == 0 || hand_count(Card::Arven) > 0 ||
         hand_count(Card::ProfessorBurnet) == 0 ||

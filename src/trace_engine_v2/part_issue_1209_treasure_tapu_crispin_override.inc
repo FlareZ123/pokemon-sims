@@ -75,8 +75,14 @@
   }
 
   bool issue_1209_t2_treasure_tapu_context_available() const {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2094
+
     if (scenario_.dci != DciProfile::StrictJit || state_.turn != 2 ||
-        scenario_.locks != LockMode::None || !deck_seen_ ||
+        scenario_.locks != LockMode::None || !prizes_known() ||
         !supporter_allowed() || state_.supporter_used ||
         hand_count(Card::Arven) == 0 ||
         hand_count(Card::MysteriousTreasure) == 0 ||

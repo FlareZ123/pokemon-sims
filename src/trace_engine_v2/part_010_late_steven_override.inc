@@ -57,6 +57,12 @@
   }
 
   bool late_steven_has_known_t3_compression_route() const {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2102
+
     // A legal held-Treasure projection may prove the no-discard-control Steven
     // package before generic T1 connector spending. The existing run-turn block
     // then attaches Fire and delegates actual Treasure plus Steven resolution to
@@ -69,7 +75,7 @@
 
     if (state_.turn != 2 || scenario_.locks != LockMode::None || !supporter_allowed() ||
         hand_count(Card::StevensResolve) == 0 || hand_count(Card::TateLiza) == 0 ||
-        hand_count(Card::QuickBall) == 0 || !deck_seen_ || !state_.active ||
+        hand_count(Card::QuickBall) == 0 || !prizes_known() || !state_.active ||
         state_.active->card != Card::TapuLeleGX || state_.retreat_used ||
         bench_space() == 0 || !ability_available_for_pokemon(Card::LatiasEx) ||
         hand_count(Card::LatiasEx) > 0 || in_play(Card::LatiasEx) ||

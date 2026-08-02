@@ -31,6 +31,12 @@
 
 
   std::optional<Card> quick_ball_dialga_vessel_route_cost() const {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2090
+
     // Once Active Regidrago VSTAR already has GGF and the only missing axis is a
     // current-turn Dragon payload, Quick Ball may use a route-conditioned cost,
     // search Basic Dialga-GX, and let a separately held Earthen Vessel discard it.
@@ -44,7 +50,7 @@
     // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1237
     const bool complete_public_route =
-        scenario_.dci == DciProfile::StrictJit && deck_seen_ && !item_locked() &&
+        scenario_.dci == DciProfile::StrictJit && prizes_known() && !item_locked() &&
         active_is_vstar() && !need_regi() && !need_vstar() && !need_energy() &&
         !need_active_vstar() && need_payload() &&
         hand_count(Card::QuickBall) > 0 && hand_count(Card::EarthenVessel) > 0 &&

@@ -86,6 +86,12 @@
   }
 
   bool ultra_ball_has_live_post_payload_outlet() {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2077
+
     const bool second_ultra_outlet = second_ultra_ball_can_discard_fetched_payload();
     const bool serena_outlet = supporter_allowed() && hand_count(Card::Serena) > 0;
 
@@ -97,7 +103,7 @@
     // Ultra Ball https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-    if (!deck_seen_) {
+    if (!prizes_known()) {
       return hand_count(Card::MysteriousTreasure) > 0 || hand_count(Card::QuickBall) > 0 ||
              hand_count(Card::EarthenVessel) > 0 || second_ultra_outlet || serena_outlet;
     }

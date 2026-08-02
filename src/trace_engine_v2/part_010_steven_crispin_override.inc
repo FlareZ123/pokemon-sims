@@ -13,6 +13,12 @@
   }
 
   bool wonder_tag_can_bank_steven_for_known_t4_fss_route() const {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2082
+
     // Field Blower removes Path to the Peak, so Wonder Tag is live once the active
     // lock state is cleared. Star Alchemy remains usable through Path itself:
     // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
@@ -23,7 +29,7 @@
     if (state_.turn != 1 || !scenario_.going_first ||
         scenario_.dci != DciProfile::StrictJit || rule_box_abilities_locked() ||
         issue_1022_items_locked_by_turn_four() || scenario_.max_turn < 4 ||
-        !deck_seen_ || state_.manual_energy_used || !state_.active ||
+        !prizes_known() || state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::Oricorio || state_.retreat_used ||
         bench_space() <= 0 || !need_regi() ||
         hand_count(Card::RegidragoV) > 0 || in_play(Card::RegidragoV) ||
@@ -62,6 +68,12 @@
   }
 
   bool banked_steven_has_known_t4_fss_route() const {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2082
+
     // Wonder Tag has already resolved. The remaining route is legal under a
     // removed Path, while future Item lock still blocks its T4 Tool and search Items:
     // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
@@ -70,7 +82,7 @@
     return issue_1022_banked_route_ && state_.turn == 2 &&
         scenario_.going_first && scenario_.dci == DciProfile::StrictJit &&
         !issue_1022_items_locked_by_turn_four() && scenario_.max_turn >= 4 &&
-        supporter_allowed() && deck_seen_ && state_.active &&
+        supporter_allowed() && prizes_known() && state_.active &&
         state_.active->card == Card::Oricorio && state_.active->grass >= 1 &&
         !state_.manual_energy_used && !state_.retreat_used && need_regi() &&
         hand_count(Card::StevensResolve) > 0 &&
@@ -120,11 +132,17 @@
   }
 
   bool steven_should_yield_to_crispin_mysterious_route() const {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2101
+
     const bool exact_lock_window = scenario_.locks == LockMode::TurnTwoItem &&
         state_.turn == 1 && !scenario_.going_first && !item_locked();
     const bool active_regi_can_attack = state_.active &&
         state_.active->card == Card::RegidragoV && !state_.manual_energy_used;
-    const bool inspected_vstar_and_crispin_targets = deck_seen_ &&
+    const bool inspected_vstar_and_crispin_targets = prizes_known() &&
         deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
         deck_count_after_search_started(Card::Crispin) > 0;
     const bool payable_mysterious_route = hand_count(Card::MysteriousTreasure) > 0 &&
@@ -303,7 +321,13 @@
   }
 
   bool late_steven_vstar_vessel_route_available() const {
-    if (!deck_seen_ || state_.turn < 2 || state_.turn >= scenario_.max_turn ||
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2081
+
+    if (!prizes_known() || state_.turn < 2 || state_.turn >= scenario_.max_turn ||
         scenario_.dci != DciProfile::StrictJit || scenario_.locks != LockMode::None ||
         !supporter_allowed() || !state_.active ||
         state_.active->card != Card::RegidragoV ||
@@ -333,6 +357,12 @@
   }
 
   bool late_steven_active_vstar_crispin_treasure_route_available() const {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2093
+
     // Path to the Peak suppresses Rule Box Pokémon Abilities only. This route uses
     // Steven's Resolve, Crispin, Mysterious Treasure, evolution, and attachments,
     // so Rule Box Ability lock remains legal. Item and combined locks still block
@@ -344,7 +374,7 @@
     const bool route_lock_allows_items =
         scenario_.locks == LockMode::None ||
         scenario_.locks == LockMode::FullRuleBoxAbility;
-    if (!deck_seen_ || state_.turn != 2 || !scenario_.going_first ||
+    if (!prizes_known() || state_.turn != 2 || !scenario_.going_first ||
         scenario_.dci != DciProfile::StrictJit ||
         !route_lock_allows_items || scenario_.max_turn < 3 ||
         !supporter_allowed() || item_locked() || state_.manual_energy_used ||
@@ -392,7 +422,13 @@
   }
 
   std::optional<Card> late_steven_payload_treasure_bridge_payload() const {
-    if (!deck_seen_ || state_.turn < 2 || state_.turn >= scenario_.max_turn ||
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2083
+
+    if (!prizes_known() || state_.turn < 2 || state_.turn >= scenario_.max_turn ||
         scenario_.locks != LockMode::None || !supporter_allowed() || item_locked() ||
         !state_.active || state_.active->card != Card::RegidragoVstar ||
         state_.active->grass < 2 || state_.active->fire < 1 ||
@@ -556,7 +592,13 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
   }
 
   bool late_steven_vstar_grass_with_held_burnet_route_available() const {
-    if (!deck_seen_ || state_.turn >= scenario_.max_turn ||
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2086
+
+    if (!prizes_known() || state_.turn >= scenario_.max_turn ||
         scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || !supporter_allowed() ||
         !state_.active || state_.active->card != Card::RegidragoV ||
@@ -589,7 +631,13 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
   }
 
   bool late_steven_vstar_with_held_blender_route_available() const {
-    if (!deck_seen_ || state_.turn >= scenario_.max_turn ||
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2085
+
+    if (!prizes_known() || state_.turn >= scenario_.max_turn ||
         scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || !supporter_allowed() ||
         !state_.active || state_.active->card != Card::RegidragoV ||

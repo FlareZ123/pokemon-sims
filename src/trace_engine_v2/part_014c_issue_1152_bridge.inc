@@ -22,8 +22,14 @@
   }
 
   bool held_quick_ball_latias_completes_current_turn_without_arven() {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2089
+
     if (!supporter_allowed() || hand_count(Card::Arven) == 0 || item_locked() ||
-        !deck_seen_ || hand_count(Card::QuickBall) == 0 ||
+        !prizes_known() || hand_count(Card::QuickBall) == 0 ||
         hand_count(Card::RegidragoVstar) == 0 || bench_space() == 0 ||
         !state_.active || !is_basic(state_.active->card) ||
         state_.active->card == Card::RegidragoV ||

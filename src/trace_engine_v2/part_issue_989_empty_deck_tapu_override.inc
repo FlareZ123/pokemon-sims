@@ -1,5 +1,11 @@
   bool wonder_tag_duplicate_held_arven_has_no_marginal_route() const {
-    if (!deck_seen_ || !supporter_allowed() ||
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2084
+
+    if (!prizes_known() || !supporter_allowed() ||
         hand_count(Card::TapuLeleGX) == 0 || hand_count(Card::Arven) == 0 ||
         deck_count_after_search_started(Card::Arven) == 0 || !need_energy() ||
         state_.manual_energy_used || item_locked()) {

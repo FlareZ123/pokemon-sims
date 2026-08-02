@@ -33,7 +33,13 @@
   }
 
   bool arven_fss_blender_contention_route_live() const {
-    if (!deck_seen_ || !supporter_allowed() || hand_count(Card::Arven) == 0 ||
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2076
+
+    if (!prizes_known() || !supporter_allowed() || hand_count(Card::Arven) == 0 ||
         item_locked() || state_.vstar_power_used || !can_play_payload_this_turn()) {
       return false;
     }

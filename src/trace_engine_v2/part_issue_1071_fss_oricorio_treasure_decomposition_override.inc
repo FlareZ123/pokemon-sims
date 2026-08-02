@@ -1,8 +1,14 @@
   bool fss_latias_over_redundant_burnet_route_available() const {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2087
+
     const bool latias_ability_available =
         scenario_.locks != LockMode::FullRuleBoxAbility &&
         scenario_.locks != LockMode::FullCombined;
-    if (!deck_seen_ || scenario_.dci != DciProfile::StrictJit ||
+    if (!prizes_known() || scenario_.dci != DciProfile::StrictJit ||
         state_.turn != 2 || state_.turn >= scenario_.max_turn ||
         !supporter_allowed() ||
         state_.manual_energy_used || state_.retreat_used || !state_.active ||
@@ -96,10 +102,16 @@
   }
 
   bool fss_latias_post_crispin_burnet_route_available() const {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2087
+
     const bool latias_ability_available =
         scenario_.locks != LockMode::FullRuleBoxAbility &&
         scenario_.locks != LockMode::FullCombined;
-    if (!deck_seen_ || scenario_.dci != DciProfile::StrictJit ||
+    if (!prizes_known() || scenario_.dci != DciProfile::StrictJit ||
         state_.turn != 3 || !supporter_allowed() || state_.retreat_used ||
         !state_.active || state_.active->card != Card::Oricorio ||
         bench_space() <= 0 || in_play(Card::LatiasEx) ||

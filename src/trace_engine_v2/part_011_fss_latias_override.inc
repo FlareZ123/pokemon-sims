@@ -1,4 +1,10 @@
   bool use_fss() {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2087
+
     const auto live_fss_holder = [](const Pokemon& pokemon) {
       return pokemon.tool == Tool::ForestSealStone && is_pokemon_v(pokemon.card);
     };
@@ -103,7 +109,7 @@
       return false;
     }
 
-    if (deck_seen_) {
+    if (prizes_known()) {
       // K1 must preserve the once-per-game VSTAR Power when the inspected deck has no
       // card or complete chain that advances a currently unresolved setup axis:
       // https://api.pokemontcg.io/v2/cards/swsh12-156

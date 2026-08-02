@@ -184,13 +184,19 @@
   }
 
   bool evolution_incense_has_live_post_payload_outlet() {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2079
+
     const bool serena_outlet = supporter_allowed() && hand_count(Card::Serena) > 0;
     const bool ultra_ball_outlet = ultra_ball_can_discard_fetched_incense_payload();
 
     // Before a legal deck inspection, fixed-list targets remain plausible. Preserve
     // each held discard-search Item as a possible continuation under K0:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
-    if (!deck_seen_) {
+    if (!prizes_known()) {
       return hand_count(Card::MysteriousTreasure) > 0 || hand_count(Card::QuickBall) > 0 ||
              hand_count(Card::EarthenVessel) > 0 || ultra_ball_outlet || serena_outlet;
     }

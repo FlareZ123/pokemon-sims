@@ -55,6 +55,12 @@
   }
 
   bool issue_1721_arven_powerglass_route_available() const {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2096
+
     // This narrow route is chosen only from the public hand, board, lock state,
     // and a completed K1 deck inspection. Field Blower has zero modeled setup
     // value because no Stadium or Tool target exists in the goldfish state:
@@ -69,7 +75,7 @@
     // Dynamic DCI and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1721
     if (scenario_.dci != DciProfile::StrictJit || scenario_.going_first ||
-        state_.turn != 1 || !deck_seen_ || !supporter_allowed() ||
+        state_.turn != 1 || !prizes_known() || !supporter_allowed() ||
         state_.manual_energy_used || item_locked() ||
         rule_box_abilities_locked() || state_.stadium != Stadium::None ||
         !state_.active || state_.active->card != Card::RegidragoV ||

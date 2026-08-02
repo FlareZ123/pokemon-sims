@@ -1,6 +1,13 @@
   bool tate_switch_then_next_turn_burnet_route() const {
+    // Registered scenarios run through T5 only to record diagnostic recovery, while
+    // setup success ends at T4. The projected Burnet turn must remain inside both
+    // the configured simulation horizon and that setup-success deadline:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_015.inc
+    // Confirmed deadline bug: https://github.com/FlareZ123/pokemon-sims/issues/2159
+    const int setup_success_deadline = std::min(scenario_.max_turn, 4);
     if (!prizes_known() || !supporter_allowed() || !strict_payload_timing() ||
-        state_.turn >= scenario_.max_turn || hand_count(Card::TateLiza) == 0 ||
+        state_.turn + 1 > setup_success_deadline || hand_count(Card::TateLiza) == 0 ||
         hand_count(Card::ProfessorBurnet) == 0 || need_regi() || need_vstar() ||
         need_energy() || !need_active_vstar() || !need_payload() ||
         !benched_vstar_promotion_ready() || can_free_retreat_with_latias()) {

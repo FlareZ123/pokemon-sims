@@ -4,10 +4,10 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
 
 # This branch-scoped workflow generates source-bound artifacts from the exact PR
-# source. It is removed after the reviewed outputs are committed:
+# source, commits the reviewed outputs, and removes itself from the final branch:
 # https://github.com/FlareZ123/pokemon-sims/issues/2154
 jobs:
   refresh:
@@ -16,6 +16,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -68,3 +71,14 @@ jobs:
             results/multi_deck_traces
             docs/MULTI_DECK_REPORT.md
           if-no-files-found: error
+      - name: Commit verified outputs and remove generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/issue-2154-refresh.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A docs/REPORT.md docs/MULTI_DECK_REPORT.md results .github/workflows/issue-2154-refresh.yml
+          git diff --cached --check
+          git commit -m "Refresh source-bound matrices for issue #2154"
+          git push origin "HEAD:${{ github.head_ref }}"

@@ -327,8 +327,11 @@
 #undef play_mysterious_treasure
 #undef play_quick_ball
 #define play_quick_ball play_quick_ball_issue1516_original
+#define play_mysterious_treasure play_mysterious_treasure_issue2165_original
 #include "trace_engine_v2/part_issue_1476_redundant_burnet_route_override.inc"
+#undef play_mysterious_treasure
 #undef play_quick_ball
+#include "trace_engine_v2/part_issue_2165_burnet_treasure_order_override.inc"
 #define play_quick_ball play_quick_ball_issue1595_original
 #include "trace_engine_v2/part_issue_1516_quick_ball_tapu_crispin_override.inc"
 #undef play_quick_ball

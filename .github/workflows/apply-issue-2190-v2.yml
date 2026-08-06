@@ -1,0 +1,63 @@
+name: Apply issue 2190 confirmed fix v2
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/apply-issue-2190-v2.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'fix/issue-2190-secret-box-shadow'
+    runs-on: ubuntu-latest
+    timeout-minutes: 31
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-2190-secret-box-shadow
+          fetch-depth: 0
+      - name: Remove the confirmed shadowing declaration
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("tests/issue_1118_multi_deck_secret_box_tests.cpp")
+          source = path.read_text(encoding="utf-8")
+          old = """  const auto must_reject = [](sim::State state, const sim::LockMode lock,
+                              const char* message) {
+    Fixture fixture(lock, sim::DciProfile::MatchupFlexJit);
+    sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+"""
+          new = """  // Keep the candidate state distinct from the outer completed-route fixture:
+  // https://github.com/FlareZ123/pokemon-sims/issues/2190
+  const auto must_reject = [](sim::State candidate_state,
+                              const sim::LockMode lock,
+                              const char* message) {
+    Fixture fixture(lock, sim::DciProfile::MatchupFlexJit);
+    sim::EngineTestAccess::set_state(fixture.engine,
+                                     std::move(candidate_state));
+"""
+          if source.count(old) != 1:
+              raise SystemExit("issue-2190 shadow anchor count was not exactly one")
+          path.write_text(source.replace(old, new, 1), encoding="utf-8")
+          Path(".github/workflows/apply-issue-2190.yml").unlink(missing_ok=True)
+          Path(".github/workflows/apply-issue-2190-v2.yml").unlink()
+      - name: Compile the focused source with shadow warnings as errors
+        run: >-
+          c++ -std=c++20 -O0 -Wall -Wextra -Wpedantic -Wconversion -Wshadow
+          -Werror=shadow -I src tests/issue_1118_multi_deck_secret_box_tests.cpp
+          -o issue_1118_secret_box_shadow_tests
+      - name: Run the complete focused regression executable
+        run: ./issue_1118_secret_box_shadow_tests
+      - name: Commit isolated confirmed fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Remove Secret Box regression state shadow"
+          git push origin HEAD:fix/issue-2190-secret-box-shadow

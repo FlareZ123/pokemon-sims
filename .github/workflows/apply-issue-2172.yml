@@ -1,9 +1,10 @@
 name: Apply issue 2172 test registration
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/issue-2172-register-prize-fallback-tests
+      - fix/issue-2175-prize-k1-quick-ball
+      - main
     paths:
       - .github/workflows/apply-issue-2172.yml
 
@@ -12,6 +13,7 @@ permissions:
 
 jobs:
   apply:
+    if: github.event.pull_request.head.ref == 'fix/issue-2172-register-prize-fallback-tests'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -122,10 +122,11 @@ sim::TrialOutcome run_seed_one_conditioned_policy(const bool use_opening_bench_s
 
 void test_seed_one_downstream_policy_characterization() {
   // Matched seed 1 holds the shuffled 53-card remainder, six Prize cards, and all
-  // downstream choices constant. Holding Tapu reaches T3 through Wonder Tag. After
-  // #718 removes the invalid early Blender spend, the setup-Benched route has no live
-  // VSTAR-card connector and remains unready through the T4 fixture deadline. Issue
-  // #932 owns the distinct opening-selector correction:
+  // downstream choices constant. Holding Tapu reaches T3 through Wonder Tag. The
+  // setup-Benched route also reaches T3 after #2203 proves that Gladion can recover
+  // Mysterious Treasure, Treasure can discard Mega Dragonite ex as the current-turn
+  // payload, and the same search can fetch the evolution-legal Regidrago VSTAR. Issue
+  // #932 still owns the distinct opening-selector choice itself:
   // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
   // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv7-133
@@ -136,11 +137,12 @@ void test_seed_one_downstream_policy_characterization() {
   // https://github.com/FlareZ123/pokemon-sims/issues/885
   // https://github.com/FlareZ123/pokemon-sims/issues/718
   // https://github.com/FlareZ123/pokemon-sims/issues/932
+  // https://github.com/FlareZ123/pokemon-sims/issues/2203
   const sim::TrialOutcome held_tapu = run_seed_one_conditioned_policy(false);
   const sim::TrialOutcome setup_benched_tapu = run_seed_one_conditioned_policy(true);
-  if (held_tapu.first_ready_turn != 3 || setup_benched_tapu.first_ready_turn != 0) {
+  if (held_tapu.first_ready_turn != 3 || setup_benched_tapu.first_ready_turn != 3) {
     throw std::runtime_error(
-        "Matched seed 1 should reach T3 with held Tapu and remain unready through T4 after setup placement.");
+        "Matched seed 1 should reach T3 through either legal Tapu placement policy after the Treasure VSTAR payload fix.");
   }
 }
 

@@ -197,6 +197,19 @@ struct TraceLog {
   std::vector<std::string> lines;
   std::map<std::string, std::string> last_policy_state_by_key;
 
+  TraceLog() = default;
+
+  // Preserve the existing one-, two-, and three-argument construction forms
+  // while initializing every member through a declared constructor:
+  // https://eel.is/c++draft/dcl.init.aggr
+  // https://github.com/FlareZ123/pokemon-sims/issues/2177
+  explicit TraceLog(
+      const bool is_enabled, std::vector<std::string> initial_lines = {},
+      std::map<std::string, std::string> initial_policy_states = {})
+      : enabled(is_enabled),
+        lines(std::move(initial_lines)),
+        last_policy_state_by_key(std::move(initial_policy_states)) {}
+
   static std::string policy_state_fingerprint(const State& state) {
     // Fixed-point policy may query the same no-op decision repeatedly. Public trace
     // events are emitted once per equivalent visible state and may reappear after a

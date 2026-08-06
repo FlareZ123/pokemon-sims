@@ -35,14 +35,14 @@ int main() {
 
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
   // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
-  // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+  // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
   // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Official Item, discard, search, Bench, Ability, and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
   // K1, current-turn JIT, DCI, and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2200
   if (outcome.first_ready_turn != 3 || outcome.setup_failed ||
       !has(trace, "Mysterious Treasure issue-2200 current-turn payload cost") ||
-      !has(trace, "Dragapult ex") || !has(trace, "searched Oricorio") ||
+      !has(trace, "Mega Dragonite ex") || !has(trace, "searched Oricorio") ||
       !has(trace, "T3 | READY")) {
     throw std::runtime_error("issue-2200 seed omitted the Dragon-cost Oricorio finish");
   }

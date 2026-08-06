@@ -1,0 +1,94 @@
+name: Issue 2200 Temporary Validation
+
+on:
+  push:
+    branches:
+      - fix/issue-2200-narrow-cost-reclaim
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and unified tests
+        run: cmake --build build --parallel 2
+      - name: Build strict C++20 contract
+        run: |
+          cmake -S . -B build-pedantic -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS=-pedantic-errors
+          cmake --build build-pedantic --parallel 2
+      - name: Run focused issue 2200 regression
+        run: ctest --test-dir build -R issue_2200 --output-on-failure
+      - name: Run three simulate-this audits
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 242 --require-ready-by 3 | tee trace-issue-2200.txt
+          grep -q "Dragapult ex (Mysterious Treasure cost)" trace-issue-2200.txt
+          grep -q "Oricorio" trace-issue-2200.txt
+          grep -q "T3 | READY" trace-issue-2200.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-control-1.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-control-2.txt
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+      - name: Generate paired two-deck matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out multi-deck-matrix.csv
+      - name: Record simulator policy source digest
+        run: >-
+          python -c "from pathlib import Path; from scripts.baseline_provenance import simulator_policy_source_digest; print(simulator_policy_source_digest(Path('.').resolve()))"
+          | tee simulator-policy-source-sha256.txt
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Record tested source
+        if: always()
+        run: git rev-parse HEAD > tested-head.txt
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-2200-release-${{ github.run_attempt }}
+          path: |
+            trace-*.txt
+            t2-t3-matrix.csv
+            multi-deck-matrix.csv
+            simulator-policy-source-sha256.txt
+            tested-head.txt
+            build/regidrago_sim
+            build/regidrago_unified_tests
+            build/Testing
+          if-no-files-found: warn
+
+  sanitizers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure ASan and UBSan
+        run: >-
+          cmake -S . -B build-sanitizers -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - name: Build sanitizer targets
+        run: cmake --build build-sanitizers --parallel 2
+      - name: Run complete sanitizer suite
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: ctest --test-dir build-sanitizers --parallel 2 --output-on-failure
+      - name: Upload sanitizer diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-2200-sanitizers-${{ github.run_attempt }}
+          path: build-sanitizers/Testing
+          if-no-files-found: warn

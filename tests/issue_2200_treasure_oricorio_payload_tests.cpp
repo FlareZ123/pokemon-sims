@@ -6,6 +6,12 @@
 #include <stdexcept>
 #include <string>
 
+namespace sim {
+
+struct EngineTestAccess {};
+
+}  // namespace sim
+
 namespace {
 
 bool has(const sim::TraceLog& trace, const std::string& needle) {

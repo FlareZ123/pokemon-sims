@@ -1,0 +1,64 @@
+name: Apply issue 2165 fix
+
+on:
+  pull_request:
+    branches:
+      - fix/issue-2164-quick-ball-latias-finish
+      - main
+    paths:
+      - .github/workflows/apply-issue-2165.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'fix/issue-2165-burnet-treasure-order'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-2165-burnet-treasure-order
+          fetch-depth: 0
+      - name: Compose issue 2165 override
+        shell: python
+        run: |
+          import base64
+          import subprocess
+
+          patch = base64.b64decode("ZGlmZiAtLWdpdCBhL3NyYy9yZWdpZHJhZ29fc2ltLmNwcCBiL3NyYy9yZWdpZHJhZ29fc2ltLmNwcAppbmRleCBjNjllNDJjLi5lZmUxZWQ2IDEwMDY0NAotLS0gYS9zcmMvcmVnaWRyYWdvX3NpbS5jcHAKKysrIGIvc3JjL3JlZ2lkcmFnb19zaW0uY3BwCkBAIC0zMjgsNiArMzI4LDkgQEAKICN1bmRlZiBwbGF5X3F1aWNrX2JhbGwKICNkZWZpbmUgcGxheV9xdWlja19iYWxsIHBsYXlfcXVpY2tfYmFsbF9pc3N1ZTE1MTZfb3JpZ2luYWwKICNpbmNsdWRlICJ0cmFjZV9lbmdpbmVfdjIvcGFydF9pc3N1ZV8xNDc2X3JlZHVuZGFudF9idXJuZXRfcm91dGVfb3ZlcnJpZGUuaW5jIgorI2RlZmluZSBwbGF5X215c3RlcmlvdXNfdHJlYXN1cmUgcGxheV9teXN0ZXJpb3VzX3RyZWFzdXJlX2lzc3VlMjE2NV9vcmlnaW5hbAorI2luY2x1ZGUgInRyYWNlX2VuZ2luZV92Mi9wYXJ0X2lzc3VlXzIxNjVfYnVybmV0X3RyZWFzdXJlX29yZGVyX292ZXJyaWRlLmluYyIKKyN1bmRlZiBwbGF5X215c3RlcmlvdXNfdHJlYXN1cmUKICN1bmRlZiBwbGF5X3F1aWNrX2JhbGwKICNkZWZpbmUgcGxheV9xdWlja19iYWxsIHBsYXlfcXVpY2tfYmFsbF9pc3N1ZTE1OTVfb3JpZ2luYWwKICNpbmNsdWRlICJ0cmFjZV9lbmdpbmVfdjIvcGFydF9pc3N1ZV8xNTE2X3F1aWNrX2JhbGxfdGFwdV9jcmlzcGluX292ZXJyaWRlLmluYyIK")
+          subprocess.run(["git", "apply", "--whitespace=error-all", "-"], input=patch, check=True)
+      - name: Configure Release validation
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and unified tests
+        run: cmake --build build --target regidrago_sim regidrago_unified_tests --parallel 2
+      - name: Run focused ordering regression
+        run: ./build/regidrago_unified_tests issue_2165_burnet_treasure_order_tests
+      - name: Run three independent simulator audits
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-3.txt
+          grep -F "READY" trace-1.txt
+          grep -F "READY" trace-2.txt
+          grep -F "READY" trace-3.txt
+      - name: Refresh canonical setup evidence
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe ./build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python tests/setup_report_contract_tests.py
+      - name: Refresh paired setup evidence
+        run: |
+          python scripts/generate_multi_deck_comparison.py --exe ./build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+          python tests/multi_deck_report_contract_tests.py
+      - name: Commit isolated fix and evidence
+        run: |
+          rm .github/workflows/apply-issue-2165.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Prefer Treasure before Burnet fallback"
+          git push origin HEAD:fix/issue-2165-burnet-treasure-order

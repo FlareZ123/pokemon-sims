@@ -225,5 +225,19 @@
             "Held redundant Quick Ball because Professor Turo already completes the post-Blender Active route.");
       return false;
     }
-    return play_quick_ball_issue1595_original(permit_payload);
+
+    // Full Prize inspection establishes exact K1 deck composition even when no
+    // physical deck search has occurred. Reuse the existing Quick Ball chain with
+    // exact deck knowledge, retain deck-search provenance after a successful Item,
+    // and restore Prize-only provenance when the Item is not played:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Trainer no-effect ruling: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+    // Official Prize, Item, discard, and deck-search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Repository K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2175
+    const bool prize_k1_without_deck_search = prizes_known() && !deck_seen_;
+    if (prize_k1_without_deck_search) deck_seen_ = true;
+    const bool played = play_quick_ball_issue1595_original(permit_payload);
+    if (prize_k1_without_deck_search && !played) deck_seen_ = false;
+    return played;
   }

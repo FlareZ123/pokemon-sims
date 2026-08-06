@@ -38,11 +38,17 @@ void seed_438_does_not_invent_prized_latias() {
   sim::Engine engine{*selected, deck->recipe, rng, &trace};
   static_cast<void>(engine.run());
 
+  const bool k1_was_legally_established = std::any_of(
+      trace.lines.begin(), trace.lines.end(), [](const std::string& line) {
+        return line.find("DECK KNOWLEDGE") != std::string::npos;
+      });
   const bool latias_is_known_prized = std::any_of(
       trace.lines.begin(), trace.lines.end(), [](const std::string& line) {
         return line.find("DEBUG ONLY: prizes=") != std::string::npos &&
             line.find("Latias ex") != std::string::npos;
       });
+  expect(k1_was_legally_established,
+         "Seed 438 did not establish K1 before the prized-Latias decision");
   expect(latias_is_known_prized,
          "Seed 438 no longer proves Latias ex is prized");
   expect(!sim::EngineTestAccess::used_issue_2153_route(trace),

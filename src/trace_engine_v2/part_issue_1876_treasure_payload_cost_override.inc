@@ -1,4 +1,37 @@
+  std::optional<Card> issue_2203_treasure_vstar_payload_cost() const {
+    const bool route_available =
+        strict_payload_timing() && prizes_known() && !item_locked() &&
+        state_.supporter_used && state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        state_.active->grass >= 2 && state_.active->fire >= 1 &&
+        need_vstar() && need_payload() &&
+        hand_count(Card::MysteriousTreasure) > 0 &&
+        hand_count(Card::RegidragoVstar) == 0 &&
+        deck_count_after_search_started(Card::RegidragoVstar) > 0;
+    if (!route_available) return std::nullopt;
+
+    // The prior-turn Regidrago V already has Apex Dragon's GGF cost after the
+    // Supporter action. Treasure can use its mandatory discard as the same-turn
+    // payload outlet, search Regidrago VSTAR, and evolve immediately:
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Regidrago V and VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, discard, search, Supporter, Energy, and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, dynamic DCI, current-turn JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2203
+    for (const Card card : {Card::Appletun, Card::MegaDragonite,
+                            Card::Dragapult, Card::GoodraVstar,
+                            Card::DialgaGX}) {
+      if (hand_count(card) > 0) return card;
+    }
+    return std::nullopt;
+  }
+
   std::optional<Card> issue_1876_treasure_payload_cost() const {
+    if (const auto cost = issue_2203_treasure_vstar_payload_cost()) {
+      return cost;
+    }
     const bool complete_public_route =
         strict_payload_timing() && prizes_known() &&
         !item_locked() && supporter_allowed() && active_is_vstar() &&

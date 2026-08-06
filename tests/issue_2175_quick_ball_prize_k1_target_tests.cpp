@@ -131,7 +131,7 @@ void test_true_k0_retains_recipe_plausibility() {
 
   // Before legal inspection, the simulator keeps fixed-list Basic targets plausible:
   // https://api.pokemontcg.io/v2/cards/swsh1-179
-  // htttps://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
   // https://github.com/FlareZ123/pokemon-sims/issues/2175
   expect_live_quick_ball(engine,
                          "True K0 lost the documented recipe-plausibility path.");

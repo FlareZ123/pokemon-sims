@@ -1,0 +1,50 @@
+name: Refresh issue 2175 baselines
+
+on:
+  push:
+    branches:
+      - fix/issue-2175-prize-k1-quick-ball
+    paths:
+      - .github/workflows/refresh-issue-2175-baselines.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-2175-prize-k1-quick-ball
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build Release simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target regidrago_sim --parallel 2
+      - name: Regenerate canonical setup matrix
+        run: |
+          python scripts/regenerate_setup_baselines.py --simulator ./build/regidrago_sim --results-dir results --trials 100000 --base-seed 424242
+          python scripts/update_setup_docs.py --results-dir results --doc docs/SETUP_REPORT.md
+      - name: Regenerate paired deck matrix
+        run: |
+          python scripts/generate_multi_deck_comparison.py --simulator ./build/regidrago_sim --output results/multi_deck_setup.csv --trials 100000 --base-seed 424242
+          python scripts/update_multi_deck_docs.py --csv results/multi_deck_setup.csv --doc docs/MULTI_DECK_REPORT.md
+      - name: Validate regenerated reports
+        run: |
+          python tests/setup_report_contract_tests.py
+          python tests/multi_deck_report_contract_tests.py
+          python scripts/verify_setup_matrix.py --csv results/simulation_results.csv --trials 100000
+      - name: Commit regenerated evidence
+        run: |
+          rm .github/workflows/refresh-issue-2175-baselines.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Refresh setup evidence for Quick Ball K1 fix"
+          git push origin HEAD:fix/issue-2175-prize-k1-quick-ball

@@ -113,10 +113,15 @@ bool play_mysterious_treasure(const bool permit_payload) {
     // remains plausible only when a fixed-list copy is not accounted for in public
     // zones. At K1, the inspected deck is checked exactly before paying the cost:
     // https://api.pokemontcg.io/v2/cards/sm6-113
+    // Appletun is an off-recipe Dragon target that the exact K1 deck must admit:
+    // https://api.pokemontcg.io/v2/cards/sv8-140
     // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+    // https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/issues/693
-    const bool search_has_target = deck_seen_
+    // https://github.com/FlareZ123/pokemon-sims/issues/2188
+    const bool search_has_target = prizes_known()
         ? std::any_of(state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic)
         : std::any_of(recipe_.begin(), recipe_.end(), [this](const auto& entry) {
             return is_dragon_or_psychic(entry.first) && might_be_unseen(entry.first);

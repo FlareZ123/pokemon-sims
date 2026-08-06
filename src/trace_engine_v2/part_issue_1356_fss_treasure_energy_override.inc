@@ -1,3 +1,4 @@
+#undef play_mysterious_treasure
 #define play_mysterious_treasure play_mysterious_treasure_issue2200_original
 #include "part_issue_1356_fss_treasure_energy_override_base.inc"
 #undef play_mysterious_treasure
@@ -66,7 +67,8 @@
     return true;
   }
 
-  bool play_mysterious_treasure(const bool permit_payload) {
+  bool play_mysterious_treasure_issue1476_original(
+      const bool permit_payload) {
     if (play_issue_2200_treasure_oricorio_payload_route()) return true;
     return play_mysterious_treasure_issue2200_original(permit_payload);
   }

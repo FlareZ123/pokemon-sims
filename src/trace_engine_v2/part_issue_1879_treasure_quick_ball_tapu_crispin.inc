@@ -181,3 +181,97 @@
     }
     return true;
   }
+
+  std::optional<Card> issue_2199_quick_ball_latias_payload_cost() const {
+    // A fully powered Benched Regidrago VSTAR makes these held Dragon payloads
+    // must-discard on the current ready turn. The fixed order is public policy,
+    // independent of hidden deck order:
+    // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
+    // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+    // Appletun: https://api.pokemontcg.io/v2/cards/sv8-140
+    // Dynamic DCI/JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2199
+    for (const Card candidate : {Card::MegaDragonite, Card::Dragapult,
+                                 Card::GoodraVstar, Card::DialgaGX,
+                                 Card::Appletun}) {
+      if (hand_count(candidate) > 0) return candidate;
+    }
+    return std::nullopt;
+  }
+
+  bool issue_2199_quick_ball_latias_payload_route_available() const {
+    const bool jit_profile = scenario_.dci == DciProfile::StrictJit ||
+        scenario_.dci == DciProfile::MatchupFlexJit;
+    if (!jit_profile || state_.turn > scenario_.max_turn || !prizes_known() ||
+        item_locked() || state_.retreat_used || !state_.active ||
+        !is_basic(state_.active->card) ||
+        state_.active->card == Card::RegidragoV ||
+        state_.active->card == Card::RegidragoVstar ||
+        bench_space() == 0 ||
+        !ability_available_for_pokemon(Card::LatiasEx) ||
+        in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
+        deck_count_after_search_started(Card::LatiasEx) == 0 ||
+        hand_count(Card::QuickBall) == 0 || !need_active_vstar() ||
+        !need_payload() ||
+        !issue_2199_quick_ball_latias_payload_cost().has_value()) {
+      return false;
+    }
+
+    // Quick Ball searches the exact K1 Latias ex. Skyliner then gives the Basic
+    // Active free Retreat, while Quick Ball's Dragon cost supplies the unresolved
+    // current-turn Apex Dragon payload. The Benched attacker is already at GGF:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, discard, search, Bench, Ability, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 and earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2199
+    return std::any_of(
+        state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoVstar &&
+              pokemon.grass >= 2 && pokemon.fire >= 1;
+        });
+  }
+
+  bool play_issue_2199_quick_ball_latias_payload_route() {
+    if (!issue_2199_quick_ball_latias_payload_route_available()) return false;
+    const Card payload = *issue_2199_quick_ball_latias_payload_cost();
+
+    // The same paid Quick Ball action completes two remaining axes: its mandatory
+    // discard becomes the current-turn Dragon payload, and Latias ex supplies the
+    // legal Active-position connector. Lower-DCI utility remains in hand:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, discard, search, Bench, Ability, shuffle, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Dynamic DCI, current-turn JIT, and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2199
+    remove_one(state_.hand, Card::QuickBall);
+    state_.discard.push_back(Card::QuickBall);
+    if (!discard_from_hand(payload,
+                           "Quick Ball issue-2199 current-turn payload cost",
+                           "R-QB-01; P-DCI-01; P-JIT-01; P-CONNECTOR-01")) {
+      throw std::logic_error("Issue-2199 Quick Ball payload cost disappeared");
+    }
+    record_deck_search_knowledge("Quick Ball issue-2199 Latias route");
+    if (!move_deck_to_hand(Card::LatiasEx)) {
+      throw std::logic_error("Issue-2199 Latias ex target disappeared");
+    }
+    shuffle(state_.deck);
+    trace("QUICK BALL", "R-QB-01; R-LATIAS-01; P-JIT-01; P-CONNECTOR-01",
+          "Discarded " + std::string(name(payload)) +
+              " as the current-turn payload and searched Latias ex for promotion.");
+    return true;
+  }
+
+  bool play_quick_ball_issue_2199_dispatch(const bool permit_payload) {
+    if (permit_payload && play_issue_2199_quick_ball_latias_payload_route()) {
+      return true;
+    }
+    return play_quick_ball_issue1595_original(permit_payload);
+  }
+
+#define play_quick_ball_issue1595_original(permit_payload) \
+  play_quick_ball_issue_2199_dispatch(permit_payload)

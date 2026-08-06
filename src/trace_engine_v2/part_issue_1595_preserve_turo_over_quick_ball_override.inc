@@ -198,6 +198,7 @@
         strict_payload_timing() && prizes_known() && !item_locked() &&
         supporter_allowed() && active_is_vstar() &&
         state_.active->grass == 1 && state_.active->fire == 1 &&
+        (state_.manual_energy_used || hand_count(Card::Grass) == 0) &&
         need_payload() && hand_count(Card::QuickBall) > 0 &&
         hand_count(Card::Crispin) == 0 && bench_space() > 0 &&
         hand_count(Card::TapuLeleGX) == 0 &&
@@ -208,9 +209,10 @@
         deck_count_after_search_started(Card::Fire) > 0;
     if (!route_available) return std::nullopt;
 
-    // Quick Ball's mandatory discard is the current-turn JIT outlet. The searched
-    // Tapu Lele-GX uses Wonder Tag for Crispin, whose different-type Energy search
-    // attaches the missing Grass to the Active GF Regidrago VSTAR:
+    // Quick Ball's mandatory discard is the current-turn JIT outlet. This route
+    // applies only when a held manual Grass attachment cannot already complete GGF.
+    // The searched Tapu Lele-GX uses Wonder Tag for Crispin, whose different-type
+    // Energy search attaches the missing Grass to the Active GF Regidrago VSTAR:
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133

@@ -1,4 +1,42 @@
+  std::optional<Card> issue_2204_treasure_latias_payload_cost() const {
+    const bool ready_benched_vstar =
+        std::any_of(state_.bench.begin(), state_.bench.end(),
+                    [](const Pokemon& pokemon) {
+                      return pokemon.card == Card::RegidragoVstar &&
+                             pokemon.grass >= 2 && pokemon.fire >= 1;
+                    });
+    const bool route_available =
+        strict_payload_timing() && prizes_known() && !item_locked() &&
+        need_active_vstar() && need_payload() && state_.active &&
+        is_basic(state_.active->card) && !state_.retreat_used &&
+        ready_benched_vstar && bench_space() > 0 &&
+        ability_available_for_pokemon(Card::LatiasEx) &&
+        hand_count(Card::LatiasEx) == 0 && !in_play(Card::LatiasEx) &&
+        hand_count(Card::MysteriousTreasure) > 0 &&
+        deck_count_after_search_started(Card::LatiasEx) > 0;
+    if (!route_available) return std::nullopt;
+
+    // Treasure's mandatory discard is the current-turn JIT outlet. The same
+    // search finds Latias ex, whose Skyliner removes the Basic Active's Retreat
+    // Cost so the powered Benched Regidrago VSTAR can be promoted immediately:
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, discard, search, Bench, Ability, Retreat, and promotion procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, dynamic DCI, current-turn JIT, Active-position, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2204
+    for (const Card card : {Card::Appletun, Card::MegaDragonite,
+                            Card::Dragapult, Card::GoodraVstar,
+                            Card::DialgaGX}) {
+      if (hand_count(card) > 0) return card;
+    }
+    return std::nullopt;
+  }
+
   std::optional<Card> issue_1876_treasure_payload_cost() const {
+    if (const auto cost = issue_2204_treasure_latias_payload_cost()) {
+      return cost;
+    }
     const bool complete_public_route =
         strict_payload_timing() && prizes_known() &&
         !item_locked() && supporter_allowed() && active_is_vstar() &&

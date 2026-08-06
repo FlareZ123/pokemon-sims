@@ -1,3 +1,36 @@
+  std::optional<Card> issue_2200_treasure_oricorio_payload_cost() const {
+    const bool complete_public_route =
+        strict_payload_timing() && prizes_known() && !item_locked() &&
+        active_is_vstar() && state_.active->grass >= 2 &&
+        state_.active->fire == 0 && need_payload() &&
+        !state_.manual_energy_used && bench_space() > 0 &&
+        hand_count(Card::MysteriousTreasure) > 0 &&
+        hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
+        ability_available_for_pokemon(Card::Oricorio) &&
+        deck_count_after_search_started(Card::Oricorio) > 0 &&
+        deck_count_after_search_started(Card::Fire) > 0 &&
+        needs_oricorio_connector();
+    if (!complete_public_route) return std::nullopt;
+
+    // Mysterious Treasure pays its discard before searching Oricorio. In this
+    // exact public K1 GG state, Vital Dance can find Basic Fire Energy and the
+    // unused manual attachment completes GGF, so a held Dragon becomes DCI 1 on
+    // the same turn that Apex Dragon becomes ready:
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, discard, search, Bench, Ability, and Energy attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, dynamic DCI, current-turn JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Reopened confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2200
+    for (const Card card : {Card::Appletun, Card::MegaDragonite,
+                            Card::Dragapult, Card::GoodraVstar,
+                            Card::DialgaGX}) {
+      if (hand_count(card) > 0) return card;
+    }
+    return std::nullopt;
+  }
+
   std::optional<Card> issue_1876_treasure_payload_cost() const {
     const bool complete_public_route =
         strict_payload_timing() && prizes_known() &&
@@ -70,6 +103,9 @@
       if (const auto cost = issue_1869_quick_ball_burnet_cost()) return cost;
     }
     if (excluded_from_cost == Card::MysteriousTreasure) {
+      if (const auto payload = issue_2200_treasure_oricorio_payload_cost()) {
+        return payload;
+      }
       if (const auto payload = issue_1876_treasure_payload_cost()) {
         return payload;
       }

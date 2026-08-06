@@ -112,7 +112,8 @@ void test_k1_rejects_known_empty_basic_axis() {
       engine, live_payload_state({sim::Card::Grass}));
   sim::EngineTestAccess::set_knowledge(engine, false, true);
 
-  // A Trainer cannot be played when K1 proves its search will have no effect:
+  // A Trainer cannot be played when K1 proves its search will have no effect.
+  // Search-card legality ruling:
   // https://api.pokemontcg.io/v2/cards/swsh1-179
   // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states

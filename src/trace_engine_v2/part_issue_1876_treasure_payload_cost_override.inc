@@ -19,7 +19,9 @@
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
     // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Hisuian Heavy Ball, the rejected lower-DCI cost: https://api.pokemontcg.io/v2/cards/swsh10-146
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Supplied card-data corpus: https://github.com/PokemonTCG/pokemon-tcg-data/tree/master/cards/en
     // Official Item, discard, search, Bench, Ability, and Energy attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, dynamic DCI, current-turn JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Reopened confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2200

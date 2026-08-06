@@ -464,7 +464,20 @@ int main() {
     test_wonder_tag_arven_quick_ball_held_payload_route();
     test_wonder_tag_arven_vessel_held_payload_route();
     test_wonder_tag_arven_held_payload_controls();
-    std::cout << "Prize-inspection K1 Wonder Tag-Arven tests passed\n";
+    // Register every Prize-inspection K1 fallback regression in this executable.
+    // Gladion, Quick Ball, Mysterious Treasure, Tate & Liza, and Regidrago VSTAR sources:
+    // https://api.pokemontcg.io/v2/cards/sm4-95
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // K1 test-registration bug: https://github.com/FlareZ123/pokemon-sims/issues/2172
+    test_quick_ball_fallback_uses_tapu_for_prized_regidrago_v();
+    test_mysterious_treasure_fallback_uses_tapu_for_prized_vstar();
+    test_wonder_tag_fetches_tate_for_the_only_missing_active_axis();
+    test_gladion_recovers_prized_payload_for_earthen_vessel();
+    test_gladion_recovers_prized_payload_for_quick_ball();
+    std::cout << "Prize-inspection K1 Wonder Tag-Arven and fallback tests passed\n";
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

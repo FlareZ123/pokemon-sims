@@ -441,10 +441,14 @@ void test_direct_secret_box_treasure_completion() {
         "The direct Box-Treasure-VSTAR route did not complete on a full Bench.");
   }
 
-  const auto must_reject = [](sim::State state, const sim::LockMode lock,
+  // Keep the candidate state distinct from the outer completed-route fixture:
+  // https://github.com/FlareZ123/pokemon-sims/issues/2190
+  const auto must_reject = [](sim::State candidate_state,
+                              const sim::LockMode lock,
                               const char* message) {
     Fixture fixture(lock, sim::DciProfile::MatchupFlexJit);
-    sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+    sim::EngineTestAccess::set_state(fixture.engine,
+                                     std::move(candidate_state));
     sim::EngineTestAccess::set_deck_seen(fixture.engine);
     if (sim::EngineTestAccess::play_secret_box(fixture.engine)) {
       throw std::runtime_error(message);

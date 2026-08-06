@@ -1,3 +1,4 @@
+// Confirmed K1 target-boundary regression: https://github.com/FlareZ123/pokemon-sims/issues/2188
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 

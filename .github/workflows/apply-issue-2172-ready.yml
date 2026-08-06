@@ -1,0 +1,64 @@
+name: Apply issue 2172 ready fix
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/apply-issue-2172-ready.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'fix/issue-2172-register-prize-fallback-tests'
+    runs-on: ubuntu-latest
+    timeout-minutes: 31
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-2172-register-prize-fallback-tests
+          fetch-depth: 0
+      - name: Register every existing Prize-K1 fallback test
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("tests/issue_2103_prize_k1_tapu_gladion_prize_fallback_tests.cpp")
+          source = path.read_text(encoding="utf-8")
+          old = '    std::cout << "Prize-inspection K1 Wonder Tag-Arven tests passed\\n";\n'
+          new = '''    // Register every Prize-inspection K1 fallback regression in this executable.
+    // Gladion, Quick Ball, Mysterious Treasure, Tate & Liza, and Regidrago VSTAR sources:
+    // https://api.pokemontcg.io/v2/cards/sm4-95
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // K1 test-registration bug: https://github.com/FlareZ123/pokemon-sims/issues/2172
+    test_quick_ball_fallback_uses_tapu_for_prized_regidrago_v();
+    test_mysterious_treasure_fallback_uses_tapu_for_prized_vstar();
+    test_wonder_tag_fetches_tate_for_the_only_missing_active_axis();
+    test_gladion_recovers_prized_payload_for_earthen_vessel();
+    test_gladion_recovers_prized_payload_for_quick_ball();
+    std::cout << "Prize-inspection K1 Wonder Tag-Arven and fallback tests passed\\n";
+'''
+          if source.count(old) != 1:
+              raise SystemExit("issue-2172 registration anchor count was not exactly one")
+          path.write_text(source.replace(old, new, 1), encoding="utf-8")
+          Path(".github/workflows/apply-issue-2172.yml").unlink()
+          Path(".github/workflows/apply-issue-2172-ready.yml").unlink()
+      - name: Configure focused validation
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build unified tests
+        run: cmake --build build --target regidrago_unified_tests --parallel 2
+      - name: Run registered Prize-K1 fallback suite
+        run: ./build/regidrago_unified_tests issue_2103_prize_k1_tapu_gladion_prize_fallback_tests
+      - name: Commit isolated registration fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Register Prize-K1 fallback regressions"
+          git push origin HEAD:fix/issue-2172-register-prize-fallback-tests

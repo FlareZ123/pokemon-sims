@@ -5,6 +5,14 @@
 #include <string>
 #include <type_traits>
 
+namespace sim {
+// The unified test generator requires one access block per standalone case.
+// This constructor regression exercises public TraceLog state only:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/tests/generate_unified_tests.py
+// https://github.com/FlareZ123/pokemon-sims/issues/2177
+struct EngineTestAccess {};
+}  // namespace sim
+
 namespace {
 
 void expect(const bool condition, const char* message) {

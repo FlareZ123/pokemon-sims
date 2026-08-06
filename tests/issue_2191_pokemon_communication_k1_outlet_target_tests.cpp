@@ -1,3 +1,4 @@
+// Focused K0/K1 continuation regression: https://github.com/FlareZ123/pokemon-sims/issues/2191
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 

@@ -24,25 +24,12 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
+          import base64
 
           path = Path("tests/issue_2103_prize_k1_tapu_gladion_prize_fallback_tests.cpp")
           source = path.read_text(encoding="utf-8")
           old = '    std::cout << "Prize-inspection K1 Wonder Tag-Arven tests passed\\n";\n'
-          new = '''    // Register every Prize-inspection K1 fallback regression in this executable.
-    // Gladion, Quick Ball, Mysterious Treasure, Tate & Liza, and Regidrago VSTAR sources:
-    // https://api.pokemontcg.io/v2/cards/sm4-95
-    // https://api.pokemontcg.io/v2/cards/swsh1-179
-    // https://api.pokemontcg.io/v2/cards/sm6-113
-    // https://api.pokemontcg.io/v2/cards/sm7-148
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // K1 test-registration bug: https://github.com/FlareZ123/pokemon-sims/issues/2172
-    test_quick_ball_fallback_uses_tapu_for_prized_regidrago_v();
-    test_mysterious_treasure_fallback_uses_tapu_for_prized_vstar();
-    test_wonder_tag_fetches_tate_for_the_only_missing_active_axis();
-    test_gladion_recovers_prized_payload_for_earthen_vessel();
-    test_gladion_recovers_prized_payload_for_quick_ball();
-    std::cout << "Prize-inspection K1 Wonder Tag-Arven and fallback tests passed\\n";
-'''
+          new = base64.b64decode("ICAgIC8vIFJlZ2lzdGVyIGV2ZXJ5IFByaXplLWluc3BlY3Rpb24gSzEgZmFsbGJhY2sgcmVncmVzc2lvbiBpbiB0aGlzIGV4ZWN1dGFibGUuCiAgICAvLyBHbGFkaW9uLCBRdWljayBCYWxsLCBNeXN0ZXJpb3VzIFRyZWFzdXJlLCBUYXRlICYgTGl6YSwgYW5kIFJlZ2lkcmFnbyBWU1RBUiBzb3VyY2VzOgogICAgLy8gaHR0cHM6Ly9hcGkucG9rZW1vbnRjZy5pby92Mi9jYXJkcy9zbTQtOTUKICAgIC8vIGh0dHBzOi8vYXBpLnBva2Vtb250Y2cuaW8vdjIvY2FyZHMvc3dzaDEtMTc5CiAgICAvLyBodHRwczovL2FwaS5wb2tlbW9udGNnLmlvL3YyL2NhcmRzL3NtNi0xMTMKICAgIC8vIGh0dHBzOi8vYXBpLnBva2Vtb250Y2cuaW8vdjIvY2FyZHMvc203LTE0OAogICAgLy8gaHR0cHM6Ly9hcGkucG9rZW1vbnRjZy5pby92Mi9jYXJkcy9zd3NoMTItMTM2CiAgICAvLyBLMSB0ZXN0LXJlZ2lzdHJhdGlvbiBidWc6IGh0dHBzOi8vZ2l0aHViLmNvbS9GbGFyZVoxMjMvcG9rZW1vbi1zaW1zL2lzc3Vlcy8yMTcyCiAgICB0ZXN0X3F1aWNrX2JhbGxfZmFsbGJhY2tfdXNlc190YXB1X2Zvcl9wcml6ZWRfcmVnaWRyYWdvX3YoKTsKICAgIHRlc3RfbXlzdGVyaW91c190cmVhc3VyZV9mYWxsYmFja191c2VzX3RhcHVfZm9yX3ByaXplZF92c3RhcigpOwogICAgdGVzdF93b25kZXJfdGFnX2ZldGNoZXNfdGF0ZV9mb3JfdGhlX29ubHlfbWlzc2luZ19hY3RpdmVfYXhpcygpOwogICAgdGVzdF9nbGFkaW9uX3JlY292ZXJzX3ByaXplZF9wYXlsb2FkX2Zvcl9lYXJ0aGVuX3Zlc3NlbCgpOwogICAgdGVzdF9nbGFkaW9uX3JlY292ZXJzX3ByaXplZF9wYXlsb2FkX2Zvcl9xdWlja19iYWxsKCk7CiAgICBzdGQ6OmNvdXQgPDwgIlByaXplLWluc3BlY3Rpb24gSzEgV29uZGVyIFRhZy1BcnZlbiBhbmQgZmFsbGJhY2sgdGVzdHMgcGFzc2VkXG4iOwo=").decode("utf-8")
           if source.count(old) != 1:
               raise SystemExit("issue-2172 registration anchor count was not exactly one")
           path.write_text(source.replace(old, new, 1), encoding="utf-8")

@@ -192,7 +192,8 @@
     // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
     // https://github.com/FlareZ123/pokemon-sims/issues/808
-    if (deck_seen_ || prizes_revealed_) {
+    const bool exact_deck_known = prizes_known();
+    if (exact_deck_known) {
       if (!remove_one(state_.deck, fetched)) {
         restore();
         return false;
@@ -200,23 +201,34 @@
       state_.deck.push_back(returned);
     }
 
-    // Pokémon Communication returns one Pokémon before the later search. That
-    // returned card is a guaranteed target for a subsequent search Item only when it
-    // belongs to that Item's printed target class:
+    // At K1, the physical post-exchange deck is the complete legal target source,
+    // including supported off-recipe Pokémon. At K0, preserve fixed-list public-zone
+    // plausibility plus the guaranteed returned Pokémon:
     // Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-    // Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-    const bool mysterious_target = is_dragon_or_psychic(returned) ||
-        std::any_of(recipe_.begin(), recipe_.end(), [this](const auto& entry) {
-          return is_dragon_or_psychic(entry.first) &&
-                 might_be_unseen(entry.first);
-        });
-    const bool quick_target = is_basic(returned) ||
-        std::any_of(recipe_.begin(), recipe_.end(), [this](const auto& entry) {
-          return is_basic(entry.first) && might_be_unseen(entry.first);
-        });
+    // Appletun: https://api.pokemontcg.io/v2/cards/sv8-140
+    // Mawile-GX: https://api.pokemontcg.io/v2/cards/sm11-141
+    // Core Item and deck-search procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1 exact-deck policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/2191
+    const bool mysterious_target = exact_deck_known
+        ? std::any_of(state_.deck.begin(), state_.deck.end(),
+                      is_dragon_or_psychic)
+        : is_dragon_or_psychic(returned) ||
+              std::any_of(recipe_.begin(), recipe_.end(),
+                          [this](const auto& entry) {
+                            return is_dragon_or_psychic(entry.first) &&
+                                   might_be_unseen(entry.first);
+                          });
+    const bool quick_target = exact_deck_known
+        ? std::any_of(state_.deck.begin(), state_.deck.end(), is_basic)
+        : is_basic(returned) ||
+              std::any_of(recipe_.begin(), recipe_.end(),
+                          [this](const auto& entry) {
+                            return is_basic(entry.first) &&
+                                   might_be_unseen(entry.first);
+                          });
     const bool vessel_target = might_be_unseen(Card::Grass) ||
                                might_be_unseen(Card::Fire);
 

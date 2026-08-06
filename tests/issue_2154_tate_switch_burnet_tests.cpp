@@ -155,34 +155,45 @@ void test_route_boundaries() {
            "K0 must not infer the payload availability needed by Burnet.", false);
 }
 
-void test_seed_150_reaches_turn_four_in_order() {
+void test_seed_150_uses_superior_paid_retreat_route() {
   const auto scenario = sim::scenario_by_label("matchup-flex-jit/go-first");
   if (!scenario) throw std::runtime_error("Missing matchup-flex-jit/go-first scenario");
 
   sim::DeckRecipe recipe{sim::baseline_recipe()};
   std::mt19937_64 rng{150};
-  sim::TraceLog trace{true, {}};
+  sim::TraceLog trace{true, {}, {}};
   sim::Engine engine(*scenario, recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 
+  const std::size_t attach = trace_index(
+      trace, 3, "ATTACH", "immediate Retreat Cost");
+  const std::size_t retreat = trace_index(
+      trace, 3, "RETREAT", "before Professor Burnet");
+  const std::size_t burnet = trace_index(
+      trace, 3, "PLAY SUPPORTER", "Searched and discarded");
+  const std::size_t ready = trace_index(
+      trace, 3, "READY", "Active Regidrago VSTAR has GGF");
   const std::size_t tate = trace_index(
       trace, 3, "PLAY SUPPORTER", "Tate & Liza switch mode");
-  const std::size_t burnet = trace_index(
-      trace, 4, "PLAY SUPPORTER", "Searched and discarded");
-  const std::size_t ready = trace_index(
-      trace, 4, "READY", "Active Regidrago VSTAR has GGF");
 
-  // The fixed-seed regression uses only the K1-visible T3 route described by the
-  // confirmed report and reaches readiness through sequential Supporter turns:
-  // https://api.pokemontcg.io/v2/cards/sm7-148
-  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-  // https://api.pokemontcg.io/v2/cards/swsh12-136
-  // https://www.pokemon.com/us/pokemon-tcg/rules
-  // https://github.com/FlareZ123/pokemon-sims/issues/2154
-  expect(outcome.first_ready_turn == 4,
-         "Seed 150 did not reach matchup-flex readiness on T4.");
-  expect(tate < burnet && burnet < ready,
-         "Seed 150 did not preserve Tate switch then Burnet ordering.");
+  // Seed 150 has a visible Basic Energy after K1 is established. Paying
+  // Oricorio's printed one-Colorless Retreat Cost preserves the Supporter action
+  // for Professor Burnet and reaches readiness one turn before the older
+  // sequential Tate-and-Burnet fallback. The original exact #2154 state above
+  // remains covered because it has no held Retreat payment:
+  // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Official attachment, Retreat, Supporter, search, and discard procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // K1 and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed issues: https://github.com/FlareZ123/pokemon-sims/issues/2154 https://github.com/FlareZ123/pokemon-sims/issues/2158
+  expect(outcome.first_ready_turn == 3,
+         "Seed 150 did not reach matchup-flex readiness on T3.");
+  expect(attach < retreat && retreat < burnet && burnet < ready,
+         "Seed 150 did not preserve attach, paid Retreat, Burnet, READY ordering.");
+  expect(tate == trace.lines.size(),
+         "Seed 150 used the slower Tate switch despite a complete paid Retreat route.");
 }
 
 void test_item_lock_seed_392_reaches_turn_four_in_order() {
@@ -194,7 +205,7 @@ void test_item_lock_seed_392_reaches_turn_four_in_order() {
 
   sim::DeckRecipe recipe{sim::baseline_recipe()};
   std::mt19937_64 rng{392};
-  sim::TraceLog trace{true, {}};
+  sim::TraceLog trace{true, {}, {}};
   sim::Engine engine(*scenario, recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 
@@ -223,7 +234,7 @@ void test_item_lock_seed_392_reaches_turn_four_in_order() {
 int main() {
   test_exact_switch_then_burnet_route();
   test_route_boundaries();
-  test_seed_150_reaches_turn_four_in_order();
+  test_seed_150_uses_superior_paid_retreat_route();
   test_item_lock_seed_392_reaches_turn_four_in_order();
   return 0;
 }

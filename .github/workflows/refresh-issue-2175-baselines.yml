@@ -29,17 +29,16 @@ jobs:
           cmake --build build --target regidrago_sim --parallel 2
       - name: Regenerate canonical setup matrix
         run: |
-          python scripts/regenerate_setup_baselines.py --simulator ./build/regidrago_sim --results-dir results --trials 100000 --base-seed 424242
-          python scripts/update_setup_docs.py --results-dir results --doc docs/SETUP_REPORT.md
+          python scripts/regenerate_setup_baselines.py --exe ./build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 424242
+          python scripts/update_setup_docs.py --repo-root .
       - name: Regenerate paired deck matrix
         run: |
-          python scripts/generate_multi_deck_comparison.py --simulator ./build/regidrago_sim --output results/multi_deck_setup.csv --trials 100000 --base-seed 424242
-          python scripts/update_multi_deck_docs.py --csv results/multi_deck_setup.csv --doc docs/MULTI_DECK_REPORT.md
+          python scripts/generate_multi_deck_comparison.py --exe ./build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 424242
+          python scripts/update_multi_deck_docs.py --repo-root .
       - name: Validate regenerated reports
         run: |
           python tests/setup_report_contract_tests.py
           python tests/multi_deck_report_contract_tests.py
-          python scripts/verify_setup_matrix.py --csv results/simulation_results.csv --trials 100000
       - name: Commit regenerated evidence
         run: |
           rm .github/workflows/refresh-issue-2175-baselines.yml

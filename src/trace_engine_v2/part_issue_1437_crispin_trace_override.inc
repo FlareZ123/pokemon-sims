@@ -1,3 +1,5 @@
+#undef play_quick_ball_issue1595_original
+
   void trace_issue_1437_crispin_provenance(
       const std::string_view action, const std::string_view rules,
       const std::string_view detail) {

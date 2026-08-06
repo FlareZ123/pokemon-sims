@@ -98,6 +98,7 @@ void test_deck_search_k1_keeps_exact_live_basic() {
   // Deck-search K1 continues to inspect the real deck for Quick Ball's Basic target:
   // https://api.pokemontcg.io/v2/cards/swsh1-179
   // https://api.pokemontcg.io/v2/cards/sm11-141
+  // https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
   // https://github.com/FlareZ123/pokemon-sims/issues/2175
   expect_live_quick_ball(engine,

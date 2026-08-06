@@ -1,0 +1,40 @@
+name: Fix issue 2175 source URL
+
+on:
+  push:
+    branches:
+      - fix/issue-2175-prize-k1-quick-ball
+    paths:
+      - .github/workflows/fix-issue-2175-url.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-2175-prize-k1-quick-ball
+          fetch-depth: 0
+      - name: Correct direct source URL
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path("tests/issue_2175_quick_ball_prize_k1_target_tests.cpp")
+          source = path.read_text(encoding="utf-8")
+          old = "htttps://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy"
+          new = "https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy"
+          if source.count(old) != 1:
+              raise SystemExit("source URL typo anchor count was not exactly one")
+          path.write_text(source.replace(old, new, 1), encoding="utf-8")
+          Path(".github/workflows/fix-issue-2175-url.yml").unlink()
+      - name: Commit URL correction
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Correct issue 2175 source URL"
+          git push origin HEAD:fix/issue-2175-prize-k1-quick-ball

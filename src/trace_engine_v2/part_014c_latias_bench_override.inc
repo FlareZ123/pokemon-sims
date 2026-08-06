@@ -52,6 +52,75 @@
     return second.has_value();
   }
 
+  std::optional<Card> issue_2164_quick_ball_payload_cost() const {
+    for (const Card card : {Card::Appletun, Card::MegaDragonite,
+                            Card::Dragapult, Card::GoodraVstar,
+                            Card::DialgaGX}) {
+      if (hand_count(card) > 0) return card;
+    }
+    return std::nullopt;
+  }
+
+  bool issue_2164_quick_ball_latias_finish_available() const {
+    if (!strict_payload_timing() || item_locked() || state_.turn_ended ||
+        state_.manual_energy_used || state_.retreat_used || !prizes_known() ||
+        !state_.active || state_.active->card != Card::DialgaGX ||
+        !is_basic(state_.active->card) || bench_space() == 0 ||
+        !ability_available_for_pokemon(Card::LatiasEx) ||
+        in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
+        hand_count(Card::QuickBall) == 0 || hand_count(Card::Fire) == 0 ||
+        hand_count(Card::RegidragoVstar) == 0 || !need_payload() ||
+        std::count(state_.deck.begin(), state_.deck.end(), Card::LatiasEx) == 0 ||
+        !issue_2164_quick_ball_payload_cost()) {
+      return false;
+    }
+
+    // The complete public K1 route is available only when a prior-turn Benched
+    // Regidrago V already has GG. Quick Ball's Dragon cost supplies the strict-JIT
+    // payload, Latias ex supplies the Basic Active's zero-Retreat connector, the held
+    // Fire supplies the unused manual attachment, and the held VSTAR supplies the
+    // legal evolution. This is the shortest route that completes every missing axis:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Dialga-GX, Basic Pokémon: https://api.pokemontcg.io/v2/cards/sm5-100
+    // Regidrago V / VSTAR and Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, Bench, Ability, attachment, evolution, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, earliest-route, and dynamic-DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2164
+    return std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV &&
+                 pokemon.entered_turn < state_.turn &&
+                 pokemon.grass == 2 && pokemon.fire == 0;
+        });
+  }
+
+  bool complete_issue_2164_quick_ball_latias_finish() {
+    if (!issue_2164_quick_ball_latias_finish_available()) return false;
+    const std::optional<Card> payload = issue_2164_quick_ball_payload_cost();
+    if (!payload || !remove_one(state_.hand, Card::QuickBall)) return false;
+
+    state_.discard.push_back(Card::QuickBall);
+    if (!discard_from_hand(*payload,
+                           "Quick Ball issue-2164 current-turn payload cost",
+                           "R-QB-01")) {
+      return false;
+    }
+    record_deck_search_knowledge("Quick Ball");
+    if (!move_deck_to_hand(Card::LatiasEx)) return false;
+    shuffle(state_.deck);
+    trace("PLAY ITEM", "R-QB-01; R-GAME-ITEM",
+          "Searched a Basic Pokémon: Latias ex for the issue-2164 current-turn finish.");
+
+    if (!bench_from_hand(Card::LatiasEx, false) || !attach_manual()) {
+      return false;
+    }
+    evolve_best_regi();
+    if (!retreat_to_benched_vstar_with_latias()) return false;
+    return active_is_vstar() && !need_energy() && payload_ready();
+  }
+
   bool bench_latias_for_pending_vstar_promotion() {
     if (bench_space() != 1 || hand_count(Card::LatiasEx) == 0 ||
         in_play(Card::LatiasEx) || !ability_available_for_pokemon(Card::LatiasEx) ||
@@ -570,6 +639,10 @@ void run_turn() {
     // https://api.pokemontcg.io/v2/cards/sm7-148
     // https://github.com/FlareZ123/pokemon-sims/issues/869
     play_known_steven_t3_payload_outlet();
+    if (complete_issue_2164_quick_ball_latias_finish()) {
+      trace("POLICY", "P-AXIS-01", "End: " + state_line());
+      return;
+    }
     play_items_until_stable(!strict_payload_timing());
     attach_live_fss();
     use_fss();

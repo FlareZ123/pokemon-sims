@@ -1,0 +1,35 @@
+
+Deck: regidrago-shell | Seed: 69 | first-ready turn: 4 | setup result: success
+Seed: 69 | first-ready turn: 4 | setup result: success
+===== SIMULATE THIS =====
+Deck: regidrago-shell
+Scenario: strict-jit/go-first | DCI: strict-JIT | Locks: none
+Mulligans: 0
+Opening player-known state: Active=Dialga-GX [-] | Bench=(none) | Hand=Grass Energy, Grass Energy, Steven's Resolve, Grass Energy, Mega Dragonite ex, Regidrago VSTAR | Discard=(none)
+DEBUG ONLY: prizes=Professor Turo's Scenario, Mysterious Treasure, Earthen Vessel, Path to the Peak, Fire Energy, Lusamine. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Regidrago VSTAR
+T1 | TURN START | rules: R-GAME-FIRST-TURN | Going first: drew for the turn; no Supporter or attack is permitted.
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Dialga-GX [-] | Bench=(none) | Hand=Grass Energy, Grass Energy, Steven's Resolve, Grass Energy, Mega Dragonite ex, Regidrago VSTAR, Regidrago VSTAR | Discard=(none)
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Dialga-GX [-] | Bench=(none) | Hand=Grass Energy, Grass Energy, Steven's Resolve, Grass Energy, Mega Dragonite ex, Regidrago VSTAR, Regidrago VSTAR | Discard=(none)
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Serena
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Dialga-GX [-] | Bench=(none) | Hand=Grass Energy, Grass Energy, Steven's Resolve, Grass Energy, Mega Dragonite ex, Regidrago VSTAR, Regidrago VSTAR, Serena | Discard=(none)
+T2 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Steven's Resolve: deck inspected; Prize identities are now deducible for later decisions.
+T2 | PLAY SUPPORTER | rules: R-STEVEN-01; R-GAME-SUPPORTER | Searched up to 3 cards: Regidrago V, Crispin, Brilliant Blender. Turn ended.
+T2 | TURN END | rules: R-STEVEN-01 or R-RV-01 | Active=Dialga-GX [-] | Bench=(none) | Hand=Grass Energy, Grass Energy, Grass Energy, Mega Dragonite ex, Regidrago VSTAR, Regidrago VSTAR, Serena, Regidrago V, Crispin, Brilliant Blender | Discard=Steven's Resolve
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Quick Ball
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Dialga-GX [-] | Bench=(none) | Hand=Grass Energy, Grass Energy, Grass Energy, Mega Dragonite ex, Regidrago VSTAR, Regidrago VSTAR, Serena, Regidrago V, Crispin, Brilliant Blender, Quick Ball | Discard=Steven's Resolve
+T3 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T3 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T3 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Dialga-GX [-] | Bench=Regidrago V [GG] | Hand=Grass Energy, Grass Energy, Mega Dragonite ex, Regidrago VSTAR, Regidrago VSTAR, Serena, Brilliant Blender, Fire Energy, Quick Ball | Discard=Steven's Resolve, Crispin
+T4 | DRAW | rules: R-GAME-DRAW | start-of-turn: Hisuian Goodra VSTAR
+T4 | POLICY | rules: P-AXIS-01 | Start: Active=Dialga-GX [-] | Bench=Regidrago V [GG] | Hand=Grass Energy, Grass Energy, Mega Dragonite ex, Regidrago VSTAR, Regidrago VSTAR, Serena, Brilliant Blender, Fire Energy, Quick Ball, Hisuian Goodra VSTAR | Discard=Steven's Resolve, Crispin
+T4 | DISCARD | rules: R-QB-01 | Mega Dragonite ex (Quick Ball issue-2164 current-turn payload cost)
+T4 | PLAY ITEM | rules: R-QB-01; R-GAME-ITEM | Searched a Basic Pokémon: Latias ex for the issue-2164 current-turn finish.
+T4 | BENCH | rules: R-GAME-BENCH | Latias ex from hand.
+T4 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T4 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T4 | RETREAT | rules: R-LATIAS-01; R-GAME-RETREAT | Latias ex gives the Basic Active no Retreat Cost; promoted the best-powered Benched Regidrago VSTAR.
+T4 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Dialga-GX [-]; Latias ex [-] | Hand=Grass Energy, Grass Energy, Regidrago VSTAR, Serena, Brilliant Blender, Hisuian Goodra VSTAR | Discard=Steven's Resolve, Crispin, Quick Ball, Mega Dragonite ex
+T4 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

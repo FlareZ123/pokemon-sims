@@ -193,7 +193,62 @@
     return true;
   }
 
+  std::optional<Card> issue_2201_tapu_crispin_payload_cost() const {
+    const bool route_available =
+        strict_payload_timing() && prizes_known() && !item_locked() &&
+        supporter_allowed() && active_is_vstar() &&
+        state_.active->grass == 1 && state_.active->fire == 1 &&
+        need_payload() && hand_count(Card::QuickBall) > 0 &&
+        hand_count(Card::Crispin) == 0 && bench_space() > 0 &&
+        hand_count(Card::TapuLeleGX) == 0 &&
+        ability_available_for_pokemon(Card::TapuLeleGX) &&
+        deck_count_after_search_started(Card::TapuLeleGX) > 0 &&
+        deck_count_after_search_started(Card::Crispin) > 0 &&
+        deck_count_after_search_started(Card::Grass) > 0 &&
+        deck_count_after_search_started(Card::Fire) > 0;
+    if (!route_available) return std::nullopt;
+
+    // Quick Ball's mandatory discard is the current-turn JIT outlet. The searched
+    // Tapu Lele-GX uses Wonder Tag for Crispin, whose different-type Energy search
+    // attaches the missing Grass to the Active GF Regidrago VSTAR:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, discard, search, Bench, Ability, Supporter, and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, dynamic DCI, current-turn JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2201
+    for (const Card card : {Card::Appletun, Card::MegaDragonite,
+                            Card::Dragapult, Card::GoodraVstar,
+                            Card::DialgaGX}) {
+      if (hand_count(card) > 0) return card;
+    }
+    return std::nullopt;
+  }
+
+  bool play_issue_2201_quick_ball_tapu_crispin_route() {
+    const auto cost = issue_2201_tapu_crispin_payload_cost();
+    if (!cost) return false;
+
+    remove_one(state_.hand, Card::QuickBall);
+    state_.discard.push_back(Card::QuickBall);
+    if (!discard_from_hand(*cost,
+                           "Quick Ball issue-2201 Tapu-Crispin payload cost",
+                           "R-QB-01; P-DCI-01; P-JIT-01; P-CONNECTOR-01")) {
+      throw std::logic_error("Issue-2201 Quick Ball payload cost disappeared");
+    }
+    record_deck_search_knowledge("Quick Ball issue-2201 Tapu-Crispin route");
+    if (!move_deck_to_hand(Card::TapuLeleGX)) {
+      throw std::logic_error("Issue-2201 Tapu Lele-GX target disappeared");
+    }
+    shuffle(state_.deck);
+    trace("PLAY ITEM", "R-QB-01; R-TAPU-01; R-CRISPIN-01; P-JIT-01",
+          "Discarded the current-turn Dragon payload and searched Tapu Lele-GX for Crispin.");
+    return true;
+  }
+
   bool play_quick_ball(const bool permit_payload) {
+    if (play_issue_2201_quick_ball_tapu_crispin_route()) return true;
     // Compose Treasure, Quick Ball, Wonder Tag, and Crispin before generic Quick
     // Ball handling can spend the connector or choose a weaker independent cost.
     // https://github.com/FlareZ123/pokemon-sims/issues/1879

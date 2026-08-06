@@ -1,9 +1,9 @@
 name: Refresh issue 2175 baselines
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/issue-2175-prize-k1-quick-ball
+      - main
     paths:
       - .github/workflows/refresh-issue-2175-baselines.yml
 
@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   refresh:
+    if: github.event.pull_request.head.ref == 'fix/issue-2175-prize-k1-quick-ball'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:

@@ -1,0 +1,25 @@
+name: Current Source Export
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/source-export-current.yml
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Export exact PR merge source
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-source-export
+          path: |
+            .
+            !.git
+          include-hidden-files: true
+          retention-days: 1

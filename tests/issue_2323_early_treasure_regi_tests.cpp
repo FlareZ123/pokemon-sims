@@ -21,6 +21,9 @@ struct EngineTestAccess {
   static bool issue_2323_available(Engine& engine) {
     return engine.issue_2323_redundant_payload_cost().has_value();
   }
+  static bool issue_2323_protects_final_payload(Engine& engine) {
+    return engine.issue_2323_protect_final_t1_payload();
+  }
 };
 }  // namespace sim
 
@@ -36,32 +39,46 @@ bool has(const sim::TraceLog& trace, const std::string& needle) {
                      });
 }
 
-void test_seed_871_reaches_t3_without_future_oracle() {
+int t1_payload_discards(const sim::TraceLog& trace) {
+  int count = 0;
+  for (const std::string& line : trace.lines) {
+    if (line.find("T1 | DISCARD") == std::string::npos) continue;
+    if (line.find("Appletun") != std::string::npos ||
+        line.find("Mega Dragonite ex") != std::string::npos ||
+        line.find("Dragapult ex") != std::string::npos ||
+        line.find("Hisuian Goodra VSTAR") != std::string::npos ||
+        line.find("Dialga-GX") != std::string::npos) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+void test_seed_871_starts_timer_and_preserves_final_payload() {
   const auto scenario = sim::scenario_by_label("strict-jit/go-second");
   const auto* deck = sim::deck_by_id("regidrago-shell");
   expect(scenario && deck, "issue-2323 exact seed fixture unavailable");
   std::mt19937_64 rng{871};
   sim::TraceLog trace{true, {}};
   sim::Engine engine(*scenario, deck->recipe, rng, &trace);
-  const auto outcome = engine.run();
+  (void)engine.run();
 
+  // The refined regression is intentionally limited to the observable T1 route.
+  // A legal Mysterious Treasure search shuffles the deck, so the no-action
+  // baseline's later fixed T2/T3 draws are not valid post-search expectations.
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
   // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
-  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
-  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
-  // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
-  // Official Item, discard, search, Bench, Supporter, attachment, evolution, Ability, Prize, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-  // K0/K1, strict-JIT, DCI, and earliest-route contracts: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-  // Confirmed bug and source-bound reproduction: https://github.com/FlareZ123/pokemon-sims/issues/2323 https://github.com/FlareZ123/pokemon-sims/pull/2321
-  expect(outcome.first_ready_turn == 3 && !outcome.setup_failed,
-         "issue-2323 seed 871 did not become ready on T3");
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Official discard, search, shuffle, Bench, Supporter, attachment, and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // K0/K1, strict-JIT, dynamic DCI, and earliest-route contracts: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  // Refined bug and source-bound original reproduction: https://github.com/FlareZ123/pokemon-sims/issues/2323 https://github.com/FlareZ123/pokemon-sims/pull/2321
   expect(has(trace, "Mysterious Treasure issue-2323 redundant-payload cost") &&
              has(trace, "T1 | DECK KNOWLEDGE") &&
-             has(trace, "T1 | BENCH") && has(trace, "Regidrago V") &&
-             has(trace, "T3 | READY"),
-         "issue-2323 seed 871 omitted the K0 Treasure timer route or T3 finish");
+             has(trace, "T1 | BENCH") && has(trace, "Regidrago V"),
+         "issue-2323 seed 871 omitted the K0 Treasure timer route");
+  expect(t1_payload_discards(trace) == 1,
+         "issue-2323 seed 871 consumed the final protected T1 Dragon payload");
 }
 
 sim::State k0_state() {
@@ -103,7 +120,7 @@ void test_k0_boundary_controls() {
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
   // Strict-JIT and dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
   // K0/K1: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2323
+  // Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/2323
   expect(available_for("strict-jit/go-second", k0_state()),
          "issue-2323 rejected its exact K0 structural state");
 
@@ -158,12 +175,47 @@ void test_k0_boundary_controls() {
   expect(!available_for("strict-jit/go-second", k0_state(), false, 2),
          "issue-2323 opened after the evolution horizon could no longer improve T3");
 }
+
+void test_final_payload_guard_boundary() {
+  auto scenario = sim::scenario_by_label("strict-jit/go-second");
+  const auto* deck = sim::deck_by_id("regidrago-shell");
+  expect(scenario && deck, "issue-2323 payload-guard fixture unavailable");
+  std::mt19937_64 rng{2323};
+  sim::Engine engine(*scenario, deck->recipe, rng);
+
+  sim::State state;
+  state.turn = 1;
+  state.active = sim::Pokemon{sim::Card::DialgaGX, 0, 0, 0,
+                              sim::Tool::None};
+  state.bench.push_back(
+      sim::Pokemon{sim::Card::RegidragoV, 1, 2, 0, sim::Tool::None});
+  state.hand = {sim::Card::Dragapult, sim::Card::EarthenVessel,
+                sim::Card::Fire};
+  state.discard = {sim::Card::MysteriousTreasure,
+                   sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+  state.deck = {sim::Card::RegidragoVstar, sim::Card::Grass,
+                sim::Card::Fire};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_knowledge(engine, true);
+
+  // A T1 payload discarded before an eventual ready turn does not satisfy strict
+  // JIT. Once the earliest Regidrago V timer is established, the final held Dragon
+  // stays UDP until a same-turn readiness outlet exists.
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Strict-JIT / dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  // Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/2323
+  expect(sim::EngineTestAccess::issue_2323_protects_final_payload(engine),
+         "issue-2323 did not protect the final post-Treasure T1 payload");
+}
 }  // namespace
 
 int main() {
   try {
-    test_seed_871_reaches_t3_without_future_oracle();
+    test_seed_871_starts_timer_and_preserves_final_payload();
     test_k0_boundary_controls();
+    test_final_payload_guard_boundary();
     std::cout << "Issue 2323 early Treasure Regidrago tests passed\n";
     return 0;
   } catch (const std::exception& error) {

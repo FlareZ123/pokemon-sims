@@ -1,11 +1,8 @@
 name: Validate issue 2164 branch
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - .issue-2164-main-validation-trigger
-      - .issue-2164-main-validation-trigger-2
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: write
@@ -17,6 +14,7 @@ concurrency:
 
 jobs:
   validate:
+    if: github.event.issue.pull_request && github.event.issue.number == 2212 && github.event.comment.body == '/validate-issue-2164-branch'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:

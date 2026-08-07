@@ -16,19 +16,21 @@ sys.path.insert(0, str(REPO_ROOT))
 from scripts.baseline_provenance import simulator_policy_source_digest
 
 DECKS = ("regidrago-shell", "regidrago-pineco")
+# Full-turn-one Item-lock scenarios are intentionally absent from current-paper
+# Expanded aggregate reporting. Combined lock uses TurnTwoItem timing for Items:
+# https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf
+# https://github.com/FlareZ123/pokemon-sims/issues/2247
 SCENARIOS = (
     "strict-jit/go-first",
     "matchup-flex-jit/go-first",
     "no-discard-control/go-first",
     "strict-jit-turn2-item-lock/go-first",
-    "strict-jit-full-item-lock/go-first",
     "strict-jit-rulebox-ability-lock/go-first",
     "strict-jit-combined-lock/go-first",
     "strict-jit/go-second",
     "matchup-flex-jit/go-second",
     "no-discard-control/go-second",
     "strict-jit-turn2-item-lock/go-second",
-    "strict-jit-full-item-lock/go-second",
     "strict-jit-rulebox-ability-lock/go-second",
     "strict-jit-combined-lock/go-second",
     "strict-jit-supporter-lock/go-first",

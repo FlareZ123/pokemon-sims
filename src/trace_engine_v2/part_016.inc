@@ -98,7 +98,12 @@ void write_crobat_modeling_matrix(const std::filesystem::path& output,
   const auto scenarios = all_scenarios();
   for (std::size_t scenario_index = 0; scenario_index < scenarios.size(); ++scenario_index) {
     const Scenario& scenario = scenarios[scenario_index];
-    const std::uint64_t common_seed = seed + 104729ULL * scenario_index;
+    // Slot 4 belonged to the retired go-first full Item-lock row. Keep every
+    // surviving scenario on its historical random stream after #2247 removes it:
+    // https://github.com/FlareZ123/pokemon-sims/issues/1118
+    // https://github.com/FlareZ123/pokemon-sims/issues/2247
+    const std::size_t seed_slot = scenario_index < 4 ? scenario_index : scenario_index + 1;
+    const std::uint64_t common_seed = seed + 104729ULL * seed_slot;
     for (const CrobatModelingDeck& deck : crobat_modeling_decks()) {
       const Aggregate aggregate = simulate(scenario, deck.recipe, trials, common_seed);
       // aggregate.dark_asset counts games with at least one use; cards may accumulate
@@ -364,8 +369,15 @@ int main(int argc, char** argv) {
         !parse_unsigned_decimal("nope") && !parse_unsigned_decimal(" 1") &&
         !parse_unsigned_decimal("") &&
         !parse_unsigned_decimal("18446744073709551616");
+    // The impossible go-first full Item-lock aggregate label is intentionally
+    // retired for current paper Expanded and must stay unregistered:
+    // https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // https://github.com/FlareZ123/pokemon-sims/issues/2247
+    const bool retired_item_lock_rejected =
+        !sim::scenario_by_label("strict-jit-full-item-lock/go-first") &&
+        sim::scenario_by_label("strict-jit-full-item-lock/go-second").has_value();
     return sim::self_test() && positive_count_parser_ok && deadline_parser_ok &&
-        seed_parser_ok ? 0 : 1;
+        seed_parser_ok && retired_item_lock_rejected ? 0 : 1;
   }
 
   try {
@@ -482,11 +494,13 @@ int main(int argc, char** argv) {
     for (const sim::NamedDeck* deck : decks) {
       for (std::size_t index = 0; index < scenarios.size(); ++index) {
         const sim::Scenario& scenario = scenarios[index];
-        // Decks share the same scenario seed, creating common random numbers for
-        // paired comparisons while preserving the historical shell seed schedule:
+        // Decks share the same scenario seed. Slot 4 is reserved for the retired
+        // go-first full Item-lock row so every surviving row keeps its old stream:
         // https://github.com/FlareZ123/pokemon-sims/issues/1118
+        // https://github.com/FlareZ123/pokemon-sims/issues/2247
+        const std::size_t seed_slot = index < 4 ? index : index + 1;
         const sim::Aggregate a = sim::simulate(
-            scenario, deck->recipe, trials, seed + 104729ULL * index);
+            scenario, deck->recipe, trials, seed + 104729ULL * seed_slot);
         const auto per_game = [&a](const std::uint64_t count) {
           return a.trials == 0 ? 0.0 :
               static_cast<double>(count) / static_cast<double>(a.trials);

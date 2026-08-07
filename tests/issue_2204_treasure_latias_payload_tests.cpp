@@ -7,6 +7,8 @@
 #include <stdexcept>
 #include <string>
 
+namespace sim { struct EngineTestAccess {}; }
+
 namespace {
 bool has(const sim::TraceLog& trace, const std::string& needle) {
   return std::any_of(trace.lines.begin(), trace.lines.end(),

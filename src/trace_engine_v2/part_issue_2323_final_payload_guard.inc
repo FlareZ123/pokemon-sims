@@ -1,7 +1,7 @@
   bool issue_2323_protect_final_t1_payload() const {
     if (scenario_.dci != DciProfile::StrictJit || scenario_.going_first ||
         scenario_.locks != LockMode::None || state_.turn != 1 ||
-        !prizes_known() || can_play_payload_this_turn() || !need_payload()) {
+        !prizes_known() || can_play_payload_this_turn()) {
       return false;
     }
 
@@ -20,12 +20,14 @@
                     });
 
     // The early Mysterious Treasure route has already spent one of two held Dragon
-    // payloads, searched and played Regidrago V, and established K1. Strict-JIT does
-    // not credit that T1 Dragon toward a later ready turn, so the final held Dragon
-    // must remain UDP until a same-turn readiness outlet exists. This guard only
-    // filters a generic discard candidate when exactly one protected payload remains;
-    // every ordinary non-payload DCI candidate selected by the existing policy keeps
-    // its original precedence.
+    // payloads, searched and played Regidrago V, and established K1. The generic
+    // current-turn need_payload() axis is already satisfied by that first discard,
+    // but strict-JIT cannot credit it toward the later turn when the new Regidrago V
+    // can evolve and attack. The final held Dragon therefore remains UDP until a
+    // same-turn readiness outlet exists. This guard only filters a generic discard
+    // candidate when exactly one protected payload remains; every ordinary
+    // non-payload DCI candidate selected by the existing policy keeps its original
+    // precedence.
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163

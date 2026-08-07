@@ -1,3 +1,4 @@
+#define play_mysterious_treasure play_mysterious_treasure_issue2165_original
   bool issue_1478_t1_field_blower_direct_regi_route_available() const {
     if (scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || state_.turn != 1 ||
@@ -261,3 +262,5 @@
     // Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/1476#issuecomment-5068202693
     return play_quick_ball_issue1476_original(permit_payload);
   }
+#undef play_mysterious_treasure
+#include "part_issue_2165_burnet_treasure_order_override.inc"

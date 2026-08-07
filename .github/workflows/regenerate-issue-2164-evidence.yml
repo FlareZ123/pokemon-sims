@@ -1,0 +1,68 @@
+name: Regenerate issue 2164 evidence
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/regenerate-issue-2164-evidence.yml
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/issue-2164-current-main-reclaim'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-2164-current-main-reclaim
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Build strict C++20 contract
+        run: |
+          cmake -S . -B build-pedantic -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS=-pedantic-errors
+          cmake --build build-pedantic --parallel 2
+      - name: Run focused and complete Release tests
+        run: |
+          ./build/regidrago_unified_tests issue_2164_quick_ball_latias_finish_tests
+          ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Review three simulate-this traces
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 69 --require-ready-by 4 | tee trace-strict-69.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 69 --require-ready-by 4 | tee trace-flex-69.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-control.txt
+          grep -q 'T4 | READY' trace-strict-69.txt
+          grep -q 'T4 | READY' trace-flex-69.txt
+          grep -q 'searched Latias ex' trace-strict-69.txt
+          grep -q 'Mega Dragonite ex' trace-strict-69.txt
+      - name: Regenerate source-bound matrices and reports
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Run complete ASan and UBSan suite
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: |
+          cmake -S . -B build-sanitizers -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build-sanitizers --parallel 2
+          ctest --test-dir build-sanitizers --parallel 2 --output-on-failure
+      - name: Commit exact tested evidence and remove temporary workflow
+        run: |
+          rm .github/workflows/regenerate-issue-2164-evidence.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git diff --cached --check
+          git commit -m 'Regenerate issue 2164 source-bound evidence'
+          git push origin HEAD:fix/issue-2164-current-main-reclaim

@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <utility>
 
+// Final PR CI exercises this materialized regression after the temporary bootstrap
+// workflow has removed itself: https://github.com/FlareZ123/pokemon-sims/issues/2292
 namespace sim {
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state, const bool deck_seen = true) {

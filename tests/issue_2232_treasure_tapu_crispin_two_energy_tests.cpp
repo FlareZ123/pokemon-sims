@@ -7,6 +7,10 @@
 #include <stdexcept>
 #include <string>
 
+namespace sim {
+struct EngineTestAccess {};
+}  // namespace sim
+
 namespace {
 void expect(const bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);

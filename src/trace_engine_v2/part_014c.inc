@@ -394,8 +394,8 @@ const NamedDeck* deck_by_id(const std::string_view id) {
 
 std::vector<Scenario> all_scenarios() {
   std::vector<Scenario> result;
-  // Preserve the historical aggregate order. The removed go-first full Item-lock
-  // row occupied seed slot 4, so aggregate writers keep that slot reserved:
+  // Preserve historical surviving-row order. Seed slots for the two retired
+  // full-turn-one Item-lock rows remain reserved by the aggregate writers:
   // https://github.com/FlareZ123/pokemon-sims/issues/1118
   // https://github.com/FlareZ123/pokemon-sims/issues/2247
   for (const bool first : {true, false}) {
@@ -404,16 +404,16 @@ std::vector<Scenario> all_scenarios() {
     result.push_back({"matchup-flex-jit/" + seat, DciProfile::MatchupFlexJit, LockMode::None, first, 5});
     result.push_back({"no-discard-control/" + seat, DciProfile::NoDiscardControl, LockMode::None, first, 5});
     result.push_back({"strict-jit-turn2-item-lock/" + seat, DciProfile::StrictJit, LockMode::TurnTwoItem, first, 5});
-    // Current paper rules do not permit an opposing attack-based Item lock before
-    // a player going first has completed that player's first turn. Forest of Giant
-    // Plants, the historical immediate Vileplume evolution enabler, is banned in Expanded.
-    // https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Full-turn-one Item lock is intentionally absent from current-paper aggregate
+    // scenarios. The starting player cannot attack on the first turn, and Forest
+    // of Giant Plants is banned in Expanded. Keep FullItem only for synthetic tests:
+    // https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf
     // https://www.pokemon.com/es/sol-luna-sombras-ardientes-anuncio-trimestral-sobre-lista-de-cartas-prohibidas-y-cambios-en-las-reglas/
     // https://github.com/FlareZ123/pokemon-sims/issues/2247
-    if (!first) {
-      result.push_back({"strict-jit-full-item-lock/" + seat, DciProfile::StrictJit, LockMode::FullItem, first, 5});
-    }
     result.push_back({"strict-jit-rulebox-ability-lock/" + seat, DciProfile::StrictJit, LockMode::FullRuleBoxAbility, first, 5});
+    // FullCombined keeps Rule Box Ability suppression from turn 1, while its Item
+    // component starts on turn 2 in Engine::item_locked():
+    // https://github.com/FlareZ123/pokemon-sims/issues/2247
     result.push_back({"strict-jit-combined-lock/" + seat, DciProfile::StrictJit, LockMode::FullCombined, first, 5});
   }
   result.push_back({"strict-jit-supporter-lock/go-first",

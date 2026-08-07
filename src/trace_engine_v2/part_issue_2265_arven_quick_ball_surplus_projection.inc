@@ -35,10 +35,8 @@
     return quick_ball_final_surplus_energy_cost().has_value();
   }
 
-  bool play_arven() {
-    if (!issue_2265_arven_quick_ball_surplus_route_live()) {
-      return play_arven_issue2265_original();
-    }
+  bool play_issue_2265_arven_quick_ball_surplus_route() {
+    if (!issue_2265_arven_quick_ball_surplus_route_live()) return false;
 
     // Search only the Item required by the proven continuation. Arven says to search
     // for an Item and a Pokémon Tool; a typed deck search may choose fewer matching

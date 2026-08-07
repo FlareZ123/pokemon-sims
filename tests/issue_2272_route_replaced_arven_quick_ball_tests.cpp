@@ -44,7 +44,7 @@ sim::State seed_456_t4_state() {
       sim::Pokemon{sim::Card::RegidragoVstar, 2, 2, 1, sim::Tool::None},
   };
   state.hand = {sim::Card::FieldBlower, sim::Card::Arven,
-                sim::Card::PathToThePeak, sim::Card::BrilliantBlender,
+                sim::Card::PathToPeak, sim::Card::BrilliantBlender,
                 sim::Card::MysteriousTreasure, sim::Card::QuickBall};
   state.deck = {sim::Card::LatiasEx, sim::Card::MegaDragonite,
                 sim::Card::Grass, sim::Card::Fire};

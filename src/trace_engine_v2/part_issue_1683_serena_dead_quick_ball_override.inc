@@ -1,3 +1,69 @@
+  bool issue_2205_serena_payload_latias_draw_route_available() const {
+    const bool ready_benched_vstar =
+        std::any_of(state_.bench.begin(), state_.bench.end(),
+                    [](const Pokemon& pokemon) {
+                      return pokemon.card == Card::RegidragoVstar &&
+                             pokemon.grass >= 2 && pokemon.fire >= 1;
+                    });
+    const bool held_payload =
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+
+    // Serena removes itself plus exactly two cards on this route. The second
+    // Dragon discard adds one draw toward the required Mysterious Treasure only
+    // when the pre-Serena hand contains at most seven cards. At eight or more,
+    // both the one-cost and two-cost states remain at five or more cards, so the
+    // Dragon would be spent without increasing the draw count.
+    // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // K1, dynamic DCI, current-turn JIT, and earliest route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug and review boundary: https://github.com/FlareZ123/pokemon-sims/issues/2205 https://github.com/FlareZ123/pokemon-sims/pull/2218#pullrequestreview-4878965621
+    return scenario_.dci == DciProfile::MatchupFlexJit && prizes_known() &&
+           supporter_allowed() && hand_count(Card::Serena) > 0 &&
+           state_.hand.size() <= 7U && need_active_vstar() && need_payload() &&
+           state_.active && is_basic(state_.active->card) &&
+           !state_.retreat_used && ready_benched_vstar && bench_space() > 0 &&
+           ability_available_for_pokemon(Card::LatiasEx) &&
+           hand_count(Card::LatiasEx) == 0 && !in_play(Card::LatiasEx) &&
+           deck_count_after_search_started(Card::LatiasEx) > 0 &&
+           deck_count_after_search_started(Card::MysteriousTreasure) > 0 &&
+           held_payload;
+  }
+
+  bool play_issue_2205_serena_payload_latias_draw_route() {
+    if (!issue_2205_serena_payload_latias_draw_route_available()) return false;
+
+    const auto payload =
+        std::find_if(state_.hand.begin(), state_.hand.end(), is_payload);
+    if (payload == state_.hand.end()) return false;
+    const auto first = choose_discard(false, true);
+    if (!first || *first == Card::Serena || is_payload(*first)) return false;
+
+    // The ordinary low-DCI cost is followed by the held Dragon. Under the
+    // <=7-card boundary above, that optional discard increases Serena's draw by
+    // exactly one and establishes the payload if the public K1 Treasure-to-Latias
+    // connector is drawn and completed this turn.
+    // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Supporter, optional discard, draw, Item, search, Bench, Ability, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Dynamic DCI/JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2205
+    const Card payload_card = *payload;
+    remove_one(state_.hand, Card::Serena);
+    state_.discard.push_back(Card::Serena);
+    discard_from_hand(*first, "Serena chosen discard", "R-SERENA-01");
+    discard_from_hand(payload_card, "Serena issue-2205 optional payload discard",
+                      "R-SERENA-01; P-DCI-01; P-JIT-01; P-CONNECTOR-01");
+    state_.supporter_used = true;
+    while (state_.hand.size() < 5U && !state_.deck.empty()) draw_card("Serena");
+    trace("PLAY SUPPORTER", "R-SERENA-01; R-GAME-SUPPORTER; P-JIT-01",
+          "Used Serena draw mode with the current-turn Dragon payload for the Treasure-to-Latias route.");
+    return true;
+  }
+
   bool issue_1683_rulebox_locked_quick_ball_is_serena_cost() const {
     if (scenario_.dci != DciProfile::StrictJit ||
         !rule_box_abilities_locked() || hand_count(Card::QuickBall) != 1 ||
@@ -151,6 +217,7 @@
   }
 
   bool play_serena(const bool allow_zero_draw_payload_completion = false) {
+    if (play_issue_2205_serena_payload_latias_draw_route()) return true;
     if (play_serena_permanent_item_lock_if_selected(
             allow_zero_draw_payload_completion)) {
       return true;

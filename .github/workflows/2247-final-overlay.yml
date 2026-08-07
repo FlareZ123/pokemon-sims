@@ -21,7 +21,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          SOURCE_SHA=dc6851cc50bd6ec2db5270522f6f7030a59b7812
+          SOURCE_SHA=c552afcfef2bbd06dcdfbe48d6efe4874812b417
           git fetch origin fix/2253-crobat-source-binding --depth=1
           test "$(git rev-parse FETCH_HEAD)" = "$SOURCE_SHA"
           git checkout "$SOURCE_SHA" -- \

@@ -38,13 +38,14 @@ void expect_seed_ready_with_vessel_payload(const char* scenario_label,
   // At public K1 with Active Regidrago VSTAR at GG, Earthen Vessel can search
   // Fire and the unused manual attachment completes GGF. A held Dragapult ex is
   // therefore DCI 1 for this exact Vessel cost because that payment also creates
-  // the required current-turn Apex Dragon payload.
+  // the required current-turn Apex Dragon payload. This exact GG witness remains
+  // distinct from merged #2224, which covers the opposite GF Energy orientation.
   // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
   // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
   // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Official Item, discard, search, and Energy attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
   // K1, dynamic DCI/JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2231
+  // Confirmed bugs defining the two orientations: https://github.com/FlareZ123/pokemon-sims/issues/2224 https://github.com/FlareZ123/pokemon-sims/issues/2231
   expect(outcome.first_ready_turn == 4,
          "Issue 2231 seed did not reach readiness on T4.");
   expect(trace_contains(trace, "Dragapult ex (Earthen Vessel cost)"),

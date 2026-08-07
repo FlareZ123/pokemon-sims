@@ -10,7 +10,7 @@ from typing import Iterator, TextIO
 
 
 # This inventory mirrors the source registry emitted by --model-crobat.
-# Live registry: https://github.com/FlareZ123/pokemon-sims/blob/fix/2252-crobat-compression-on-2247/src/trace_engine_v2/part_016.inc
+# Live registry: https://github.com/FlareZ123/pokemon-sims/blob/fix/2247-purge-go-first-full-item-lock/src/trace_engine_v2/part_016.inc
 # Klara card data: https://api.pokemontcg.io/v2/cards/swsh6-145
 # Confirmed stale-artifact/source-binding bug: https://github.com/FlareZ123/pokemon-sims/issues/2253
 EXPECTED_VARIANTS = (

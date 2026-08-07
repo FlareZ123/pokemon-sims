@@ -98,11 +98,13 @@ void write_crobat_modeling_matrix(const std::filesystem::path& output,
   const auto scenarios = all_scenarios();
   for (std::size_t scenario_index = 0; scenario_index < scenarios.size(); ++scenario_index) {
     const Scenario& scenario = scenarios[scenario_index];
-    // Slot 4 belonged to the retired go-first full Item-lock row. Keep every
-    // surviving scenario on its historical random stream after #2247 removes it:
+    // Historical slots 4 and 11 belonged to the retired full-turn-one Item-lock
+    // rows. Keep every surviving scenario on its old random stream:
     // https://github.com/FlareZ123/pokemon-sims/issues/1118
     // https://github.com/FlareZ123/pokemon-sims/issues/2247
-    const std::size_t seed_slot = scenario_index < 4 ? scenario_index : scenario_index + 1;
+    const std::size_t seed_slot = scenario_index +
+        (scenario_index >= 4 ? 1U : 0U) +
+        (scenario_index >= 10 ? 1U : 0U);
     const std::uint64_t common_seed = seed + 104729ULL * seed_slot;
     for (const CrobatModelingDeck& deck : crobat_modeling_decks()) {
       const Aggregate aggregate = simulate(scenario, deck.recipe, trials, common_seed);
@@ -369,13 +371,15 @@ int main(int argc, char** argv) {
         !parse_unsigned_decimal("nope") && !parse_unsigned_decimal(" 1") &&
         !parse_unsigned_decimal("") &&
         !parse_unsigned_decimal("18446744073709551616");
-    // The impossible go-first full Item-lock aggregate label is intentionally
-    // retired for current paper Expanded and must stay unregistered:
-    // https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Full-turn-one Item-lock labels are intentionally retired from current-paper
+    // aggregate and trace registration. TurnTwoItem and combined remain registered:
+    // https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf
     // https://github.com/FlareZ123/pokemon-sims/issues/2247
     const bool retired_item_lock_rejected =
         !sim::scenario_by_label("strict-jit-full-item-lock/go-first") &&
-        sim::scenario_by_label("strict-jit-full-item-lock/go-second").has_value();
+        !sim::scenario_by_label("strict-jit-full-item-lock/go-second") &&
+        sim::scenario_by_label("strict-jit-turn2-item-lock/go-first").has_value() &&
+        sim::scenario_by_label("strict-jit-combined-lock/go-first").has_value();
     return sim::self_test() && positive_count_parser_ok && deadline_parser_ok &&
         seed_parser_ok && retired_item_lock_rejected ? 0 : 1;
   }
@@ -494,11 +498,13 @@ int main(int argc, char** argv) {
     for (const sim::NamedDeck* deck : decks) {
       for (std::size_t index = 0; index < scenarios.size(); ++index) {
         const sim::Scenario& scenario = scenarios[index];
-        // Decks share the same scenario seed. Slot 4 is reserved for the retired
-        // go-first full Item-lock row so every surviving row keeps its old stream:
+        // Decks share the same scenario seed. Historical slots 4 and 11 remain
+        // reserved for the two retired full-turn-one Item-lock rows:
         // https://github.com/FlareZ123/pokemon-sims/issues/1118
         // https://github.com/FlareZ123/pokemon-sims/issues/2247
-        const std::size_t seed_slot = index < 4 ? index : index + 1;
+        const std::size_t seed_slot = index +
+            (index >= 4 ? 1U : 0U) +
+            (index >= 10 ? 1U : 0U);
         const sim::Aggregate a = sim::simulate(
             scenario, deck->recipe, trials, seed + 104729ULL * seed_slot);
         const auto per_game = [&a](const std::uint64_t count) {

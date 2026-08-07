@@ -48,7 +48,18 @@
     state_.path_lock_removed = true;
     trace("PLAY STADIUM", "R-CHAOTIC-SWELL-01; R-CROBAT-01; P-COMPRESS-01",
           "Played Chaotic Swell into the empty Stadium zone to make the legal Crobat V Dark Asset draw live.");
-    if (!bench_crobat_if_useful()) {
+
+    // The current issue-1724 guard above has already checked every connector-priority
+    // condition that decides whether Crobat is the selected Basic. Re-entering
+    // bench_crobat_if_useful() would run an older macro-bound Tapu/Oricorio policy
+    // and can contradict that completed decision. After Chaotic Swell resolves,
+    // Crobat V is still a Basic in hand and the proven Bench slot remains available,
+    // so execute the selected legal hand-to-Bench transition directly:
+    // Crobat V / Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+    // Official Basic Bench and Ability procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Current-route priority contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed stale-recheck bug: https://github.com/FlareZ123/pokemon-sims/issues/2252
+    if (!bench_from_hand(Card::CrobatV, true)) {
       throw std::logic_error(
           "Issue-1724 Crobat V Bench action disappeared after legal compression");
     }

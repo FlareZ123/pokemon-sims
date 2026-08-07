@@ -38,6 +38,8 @@ void expect_seed_346_t4(const char* scenario_label) {
   // attachment is unused, Arven can search Earthen Vessel, and Vessel can discard
   // held Dragapult ex while searching Grass. This consumes the same Supporter
   // permission as Gladion and completes Energy plus same-turn payload together.
+  // The merged #2227 Treasure selector is on a distinct Item-cost path, so this
+  // fixture also serves as a current-main non-interaction check for that merge.
   // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
   // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
   // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
@@ -45,7 +47,7 @@ void expect_seed_346_t4(const char* scenario_label) {
   // Gladion / Oricorio comparison: https://api.pokemontcg.io/v2/cards/sm4-95 https://api.pokemontcg.io/v2/cards/sm2-55
   // Official Supporter, Item, discard, search, and Energy procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
   // K1, supporter contention, dynamic DCI/JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2225
+  // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/2225 https://github.com/FlareZ123/pokemon-sims/issues/2227
   expect(outcome.first_ready_turn == 4,
          "Seed 346 did not reach readiness on T4.");
   expect(trace_contains(trace,

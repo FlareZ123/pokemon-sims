@@ -87,11 +87,13 @@ void test_two_unevolved_lines_keep_existing_behavior() {
   Fixture fixture{1475, std::move(state)};
 
   // The existing ordinary selector already permits a third Basic after two
-  // unevolved Regidrago V are public. The VSTAR accounting fix must preserve it:
+  // unevolved Regidrago V are public. The #2270 split preserves that source
+  // byte-for-byte under the issue-specific original include:
   // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
   // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-  // Existing selector source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_006.inc#L114-L153
+  // Existing selector source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_006_issue2270_original.inc#L114-L153
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1473
+  // Preserved-source wrapper: https://github.com/FlareZ123/pokemon-sims/issues/2270
   const auto selected = sim::EngineTestAccess::choose_discard(fixture.engine);
   if (!selected || *selected != sim::Card::RegidragoV) {
     throw std::runtime_error(

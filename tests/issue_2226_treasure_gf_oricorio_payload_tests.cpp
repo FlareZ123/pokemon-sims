@@ -47,6 +47,7 @@ void test_strict_seed_475_reaches_t4() {
   // Official Item, discard, search, Ability, VSTAR Power, attachment, and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
   // K1, dynamic DCI/JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2226
+  // Current-main reclaim PR: https://github.com/FlareZ123/pokemon-sims/pull/2303
   expect(outcome.first_ready_turn == 4,
          "Strict seed 475 did not reach readiness on T4.");
   expect(trace_contains(trace, "Dragapult ex (Mysterious Treasure cost)"),

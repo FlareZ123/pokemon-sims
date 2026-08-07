@@ -13,16 +13,14 @@ SCENARIO_LABELS = {
     "matchup-flex-jit/go-first": "Matchup-flex JIT, going first",
     "no-discard-control/go-first": "No discard control, going first",
     "strict-jit-turn2-item-lock/go-first": "Strict JIT, turn-two Item lock, first",
-    "strict-jit-full-item-lock/go-first": "Strict JIT, full Item lock, first",
     "strict-jit-rulebox-ability-lock/go-first": "Strict JIT, Rule Box Ability lock, first",
-    "strict-jit-combined-lock/go-first": "Strict JIT, combined lock, first",
+    "strict-jit-combined-lock/go-first": "Strict JIT, turn-two Item + Rule Box Ability lock, first",
     "strict-jit/go-second": "Strict JIT, going second",
     "matchup-flex-jit/go-second": "Matchup-flex JIT, going second",
     "no-discard-control/go-second": "No discard control, going second",
     "strict-jit-turn2-item-lock/go-second": "Strict JIT, turn-two Item lock, second",
-    "strict-jit-full-item-lock/go-second": "Strict JIT, full Item lock, second",
     "strict-jit-rulebox-ability-lock/go-second": "Strict JIT, Rule Box Ability lock, second",
-    "strict-jit-combined-lock/go-second": "Strict JIT, combined lock, second",
+    "strict-jit-combined-lock/go-second": "Strict JIT, turn-two Item + Rule Box Ability lock, second",
     "strict-jit-supporter-lock/go-first": "Strict JIT, Supporter lock, first",
     "strict-jit-supporter-lock/go-second": "Strict JIT, Supporter lock, second",
 }
@@ -204,6 +202,8 @@ This report is generated from [`../results/multi_deck_comparison.csv`](../result
 Fixed seed: `{manifest['matrix_seed']}`. Trials per condition: `{int(manifest['trials_per_condition']):,}`. Conditions: `{manifest['condition_count']}`. Total simulated games: `{int(manifest['total_simulated_games']):,}`.
 
 Both decks use the same derived seed for each scenario. This common-random-number design reduces comparison noise while preserving the historical shell seed schedule. `regidrago-shell` remains the default when `--deck` is omitted. `regidrago-pineco` is the Secret Box recipe with Pineco, Forretress ex, Dawn, Forest of Vitality, and Appletun `sv8-140`. The withdrawn Pineco Brilliant Blender variant is absent from the registry and results.
+
+Turn-one full Item-lock rows are intentionally omitted and must not be reintroduced as current-paper Expanded matchup scenarios. Use the turn-two Item-lock rows. Combined lock means Rule Box Ability suppression plus Item lock beginning on turn 2. Sources: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf https://www.pokemon.com/es/sol-luna-sombras-ardientes-anuncio-trimestral-sobre-lista-de-cartas-prohibidas-y-cambios-en-las-reglas/ https://github.com/FlareZ123/pokemon-sims/issues/2247
 
 ## Direct comparison
 

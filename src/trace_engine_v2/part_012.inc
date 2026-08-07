@@ -157,7 +157,8 @@ const bool can_pay_search_cost =
 bool issue_1598_bank_prized_treasure_{false};
 
   bool issue_2292_gladion_final_prize_energy_finish(const Card energy) const {
-    if (!prizes_known() || !supporter_allowed() || state_.manual_energy_used ||
+    if (scenario_.dci != DciProfile::StrictJit || !prizes_known() ||
+        !supporter_allowed() || state_.manual_energy_used ||
         hand_count(Card::Gladion) == 0 || hand_count(energy) > 0 ||
         !state_.active || state_.active->card != Card::RegidragoVstar ||
         prize_count_after_reveal(energy) == 0 ||

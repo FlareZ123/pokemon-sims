@@ -333,7 +333,10 @@
 #define play_quick_ball play_quick_ball_issue1595_original
 #include "trace_engine_v2/part_issue_1516_quick_ball_tapu_crispin_override.inc"
 #undef play_quick_ball
+#define play_quick_ball play_quick_ball_issue2272_original
 #include "trace_engine_v2/part_issue_1595_preserve_turo_over_quick_ball_override.inc"
+#undef play_quick_ball
+#include "trace_engine_v2/part_issue_2272_route_replaced_arven_quick_ball_override.inc"
 #include "trace_engine_v2/part_issue_1437_crispin_trace_override.inc"
 #define trace trace_issue_1437_crispin_provenance
 #include "trace_engine_v2/part_issue_1118_secret_box.inc"

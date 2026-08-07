@@ -1,3 +1,41 @@
+  std::optional<Card> issue_2226_treasure_gf_oricorio_payload_cost() const {
+    const bool route_available =
+        scenario_.dci == DciProfile::StrictJit && prizes_known() &&
+        !item_locked() && state_.supporter_used &&
+        !state_.manual_energy_used && state_.vstar_power_used &&
+        state_.active && state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        state_.active->grass == 1 && state_.active->fire == 1 &&
+        state_.active->tool == Tool::ForestSealStone && need_payload() &&
+        hand_count(Card::RegidragoVstar) > 0 && bench_space() > 0 &&
+        hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
+        ability_available_for_pokemon(Card::Oricorio) &&
+        deck_count_after_search_started(Card::Oricorio) > 0 &&
+        deck_count_after_search_started(Card::Grass) > 0;
+    if (!route_available) return std::nullopt;
+
+    // K1 was established before this cost. Arven has already found Forest Seal
+    // Stone and this Treasure, Star Alchemy has already supplied Regidrago VSTAR,
+    // and the remaining public route is Treasure -> Oricorio -> Vital Dance ->
+    // manual Grass -> evolve. Spending a held Dragon as Treasure's printed cost
+    // creates the strict current-turn payload while preserving that exact finish.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Oricorio GRI 55 / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Dragapult ex payload witness: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, discard, search, Ability, VSTAR Power, attachment, and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, dynamic DCI/JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2226
+    for (const Card card : {Card::Dragapult, Card::Appletun,
+                            Card::MegaDragonite, Card::GoodraVstar,
+                            Card::DialgaGX}) {
+      if (hand_count(card) > 0) return card;
+    }
+    return std::nullopt;
+  }
+
   std::optional<Card> issue_2227_treasure_gg_tapu_crispin_payload_cost() const {
     const bool route_available =
         strict_payload_timing() && prizes_known() && !item_locked() &&
@@ -68,6 +106,9 @@
   }
 
   std::optional<Card> issue_1876_treasure_payload_cost() const {
+    if (const auto cost = issue_2226_treasure_gf_oricorio_payload_cost()) {
+      return cost;
+    }
     if (const auto cost = issue_2227_treasure_gg_tapu_crispin_payload_cost()) {
       return cost;
     }

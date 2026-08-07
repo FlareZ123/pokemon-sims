@@ -102,17 +102,20 @@
     state_.active = *promoted;
     state_.bench.erase(promoted);
 
-    // Turo returns the Active Pokémon to hand. A Benched Pokémon becomes Active,
-    // then replaying Tapu Lele-GX from hand legally triggers Wonder Tag:
-    // https://api.pokemontcg.io/v2/cards/sv4-171
-    // https://api.pokemontcg.io/v2/cards/sm2-60
-    // https://www.pokemon.com/us/pokemon-tcg/rules
-    // https://github.com/FlareZ123/pokemon-sims/issues/1165
+    // Turo has now resolved its return and replacement-Active state changes. Record
+    // that Supporter action before replaying Tapu, because the later hand-to-Bench
+    // play emits BENCH and then Wonder Tag in chronological order:
+    // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Core Supporter, Active replacement, Bench, and Ability procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Readable-trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+    // Confirmed chronology bug: https://github.com/FlareZ123/pokemon-sims/issues/2244
+    trace("PLAY SUPPORTER", "R-GAME-SUPPORTER; R-TAPU-01; P-KNOWLEDGE-01",
+          "Professor Turo returned Tapu Lele-GX and promoted the established Regidrago V.");
+
     if (!bench_from_hand(Card::TapuLeleGX, true)) {
       throw std::logic_error("Professor Turo returned Tapu Lele-GX but its replay failed");
     }
-    trace("PLAY SUPPORTER", "R-GAME-SUPPORTER; R-TAPU-01; P-KNOWLEDGE-01",
-          "Professor Turo returned and replayed Tapu Lele-GX after promoting the established Regidrago V.");
     return true;
   }
 
@@ -228,6 +231,19 @@
     state_.bench.erase(oricorio);
     state_.hand.push_back(Card::Oricorio);
 
+    // Professor Turo has now resolved its return and attachment cleanup. Record the
+    // Supporter action before the returned Oricorio can be replayed from hand, because
+    // that later Bench play triggers Vital Dance and precedes the manual attachment:
+    // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Core Supporter, Bench, Ability, search, and Energy-attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Underlying Turo-Oricorio route: https://github.com/FlareZ123/pokemon-sims/issues/267
+    // Prior Tapu replay chronology precedent: https://github.com/FlareZ123/pokemon-sims/issues/2244
+    // Readable-trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+    // Confirmed Oricorio chronology bug: https://github.com/FlareZ123/pokemon-sims/issues/2310
+    trace("PLAY SUPPORTER", "R-GAME-SUPPORTER; R-ORICORIO-01",
+          "Professor Turo returned Oricorio to hand for the Active-specific final Energy route.");
+
     // Replaying the returned Basic Pokémon onto the open Bench triggers Vital Dance.
     // Search the exact Basic Energy required by the Active Regidrago VSTAR; Vital
     // Dance permits searching for up to 2, so selecting only the required card is legal:
@@ -261,8 +277,6 @@
             "Manually attached the Vital Dance Energy to the Active Regidrago VSTAR.");
     }
 
-    trace("PLAY SUPPORTER", "R-GAME-SUPPORTER; R-ORICORIO-01",
-          "Professor Turo returned and replayed Oricorio for the Active-specific final Energy route.");
     return true;
   }
 

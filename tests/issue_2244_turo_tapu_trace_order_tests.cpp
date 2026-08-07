@@ -63,20 +63,19 @@ void test_turo_records_before_tapu_replay() {
   // Professor Turo finishes returning the Active Tapu Lele-GX and choosing the
   // replacement Active before Tapu can be played from hand to the Bench. Wonder
   // Tag then triggers from that later Bench play, so readable history must preserve
-  // PLAY SUPPORTER -> BENCH -> WONDER TAG.
+  // PLAY SUPPORTER -> BENCH -> WONDER TAG. Match stable action details because the
+  // public trace schema inserts a `rules:` field between action and description.
   // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
   // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
   // Gladion searched by Wonder Tag: https://api.pokemontcg.io/v2/cards/sm4-95
   // Core Supporter, Active replacement, Bench, and Ability procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // Stable state fixture precedent: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/issue_1165_turo_tapu_replay_tests.cpp
-  // Readable-trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+  // Readable-trace contract and `rules:` field: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
   // Confirmed chronology bug: https://github.com/FlareZ123/pokemon-sims/issues/2244
-  const std::size_t supporter =
-      trace_index(trace, "T3 | PLAY SUPPORTER | Professor Turo returned Tapu Lele-GX");
-  const std::size_t bench =
-      trace_index(trace, "T3 | BENCH | Tapu Lele-GX from hand.");
-  const std::size_t wonder_tag =
-      trace_index(trace, "T3 | WONDER TAG | Searched and revealed Gladion.");
+  const std::size_t supporter = trace_index(
+      trace, "Professor Turo returned Tapu Lele-GX and promoted the established Regidrago V.");
+  const std::size_t bench = trace_index(trace, "Tapu Lele-GX from hand.");
+  const std::size_t wonder_tag = trace_index(trace, "Searched and revealed Gladion.");
 
   expect(supporter < trace.lines.size(),
          "The route did not record the Professor Turo Supporter action.");

@@ -19,18 +19,32 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2272
-    return scenario_.dci == DciProfile::StrictJit && prizes_known() &&
-           !item_locked() && hand_count(Card::QuickBall) > 0 &&
-           hand_count(Card::Arven) > 0 && hand_count(Card::BrilliantBlender) > 0 &&
-           !need_regi() && !need_vstar() && !need_energy() &&
-           need_active_vstar() && need_payload() &&
-           benched_vstar_promotion_ready() && state_.active &&
-           is_basic(state_.active->card) && !state_.retreat_used &&
-           bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
-           !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
-           std::count(state_.deck.begin(), state_.deck.end(), Card::LatiasEx) > 0 &&
-           std::any_of(state_.deck.begin(), state_.deck.end(), is_payload) &&
-           can_play_payload_this_turn();
+    if (scenario_.dci != DciProfile::StrictJit || !prizes_known() || item_locked() ||
+        hand_count(Card::QuickBall) == 0 || hand_count(Card::Arven) == 0 ||
+        hand_count(Card::BrilliantBlender) == 0 || need_regi() || need_vstar() ||
+        need_energy() || !need_active_vstar() || !need_payload() ||
+        !benched_vstar_promotion_ready() || !state_.active ||
+        !is_basic(state_.active->card) || state_.retreat_used || bench_space() <= 0 ||
+        !ability_available_for_pokemon(Card::LatiasEx) || in_play(Card::LatiasEx) ||
+        hand_count(Card::LatiasEx) > 0 ||
+        std::count(state_.deck.begin(), state_.deck.end(), Card::LatiasEx) == 0 ||
+        !std::any_of(state_.deck.begin(), state_.deck.end(), is_payload) ||
+        !can_play_payload_this_turn() ||
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    // Keep every existing lower-DCI Quick Ball cost ahead of Arven. In particular,
+    // a post-turn-one Battle VIP Pass or another already-discardable card must be
+    // spent before this live Supporter. Existing Latias-specific surplus-Energy and
+    // replaced-Tate fallbacks likewise retain their prior ordering.
+    // Battle VIP Pass: https://api.pokemontcg.io/v2/cards/swsh8-225
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2272
+    return !choose_discard(false, true, true, Card::QuickBall).has_value() &&
+           !quick_ball_final_surplus_energy_cost().has_value() &&
+           !quick_ball_latias_replaced_tate_cost().has_value();
   }
 
   bool play_issue_2272_route_replaced_arven_quick_ball() {

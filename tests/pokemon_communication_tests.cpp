@@ -220,7 +220,7 @@ void test_resolver_requires_a_pokemon_in_hand() {
 void test_every_item_lock_blocks_communication() {
   constexpr std::array<std::pair<sim::LockMode, int>, 3> cases{{
       {sim::LockMode::FullItem, 1},
-      {sim::LockMode::FullCombined, 1},
+      {sim::LockMode::FullCombined, 2},
       {sim::LockMode::TurnTwoItem, 2},
   }};
   for (std::size_t index = 0; index < cases.size(); ++index) {
@@ -234,9 +234,11 @@ void test_every_item_lock_blocks_communication() {
     sim::EngineTestAccess::set_state(fixture.engine, state);
     sim::EngineTestAccess::set_deck_seen(fixture.engine);
 
-    // Pokémon Communication is an Item and is unavailable in each modeled Item-lock
-    // state: https://api.pokemontcg.io/v2/cards/sm9-152
-    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // Pokémon Communication is an Item and is unavailable once each modeled Item
+    // lock is active. Combined lock begins its Item component on T2:
+    // https://api.pokemontcg.io/v2/cards/sm9-152
+    // https://assets.pokemon.com/assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf
+    // https://github.com/FlareZ123/pokemon-sims/issues/2247
     if (sim::EngineTestAccess::play_pokemon_communication(fixture.engine) ||
         sim::EngineTestAccess::state(fixture.engine).hand != state.hand) {
       throw std::runtime_error("A modeled Item lock allowed Pokémon Communication.");

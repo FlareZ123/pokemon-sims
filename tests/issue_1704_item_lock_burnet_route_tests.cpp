@@ -139,12 +139,11 @@ void test_entry_requires_held_vstar() {
 
 void test_other_lock_profiles_keep_existing_policy() {
   for (const std::string label : {"strict-jit/go-second",
-                                  "strict-jit-full-item-lock/go-second",
                                   "strict-jit-turn2-item-lock/go-first"}) {
     const auto scenario = sim::scenario_by_label(label);
     const sim::NamedDeck* deck = sim::deck_by_id("regidrago-pineco");
     expect(scenario.has_value() && deck != nullptr,
-           "Issue 1704 negative-control scenario is unavailable.");
+           "Issue 1704 registered negative-control scenario is unavailable.");
     std::mt19937_64 rng{1};
     sim::TraceLog trace{true, {}};
     sim::Engine engine(*scenario, deck->recipe, rng, &trace);
@@ -153,6 +152,23 @@ void test_other_lock_profiles_keep_existing_policy() {
                !trace_contains(trace, "scheduled Item-lock route"),
            "The route override must remain limited to T2 Item lock going second.");
   }
+
+  // Retain the old permanent-lock boundary only as an explicit synthetic fixture.
+  // Full-turn-one Item-lock labels are intentionally absent from registration:
+  // https://assets.pokemon.com/assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf
+  // https://github.com/FlareZ123/pokemon-sims/issues/2247
+  const sim::Scenario full_lock{"issue-1704-synthetic-full-item-lock",
+                                sim::DciProfile::StrictJit,
+                                sim::LockMode::FullItem, false, 5};
+  const sim::NamedDeck* deck = sim::deck_by_id("regidrago-pineco");
+  expect(deck != nullptr, "Issue 1704 synthetic lock-control deck is unavailable.");
+  std::mt19937_64 rng{1};
+  sim::TraceLog trace{true, {}};
+  sim::Engine engine(full_lock, deck->recipe, rng, &trace);
+  static_cast<void>(engine.run());
+  expect(!trace_contains(trace, "Issue-1704") &&
+             !trace_contains(trace, "scheduled Item-lock route"),
+         "The scheduled-lock override must not run under synthetic FullItem.");
 }
 
 }  // namespace

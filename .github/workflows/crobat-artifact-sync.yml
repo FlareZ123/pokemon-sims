@@ -1,0 +1,40 @@
+name: Crobat Artifact Sync
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  sync:
+    if: github.head_ref == 'audit/2253-crobat-regeneration'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download verified regeneration artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download 31162571795 --repo "$GITHUB_REPOSITORY" --name crobat-regeneration-2253-1 --dir /tmp/crobat2253
+      - name: Promote generated artifacts to bug branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin fix/2253-crobat-source-binding
+          git switch fix/2253-crobat-source-binding
+          cp /tmp/crobat2253/crobat_variant_model.csv results/crobat_variant_model.csv
+          cp /tmp/crobat2253/CROBAT_MODEL_REPORT.md docs/CROBAT_MODEL_REPORT.md
+          python scripts/update_crobat_modeling_docs.py --csv results/crobat_variant_model.csv --out /tmp/source-bound-report.md
+          cmp /tmp/source-bound-report.md docs/CROBAT_MODEL_REPORT.md
+          git add results/crobat_variant_model.csv docs/CROBAT_MODEL_REPORT.md
+          if git diff --cached --quiet; then
+            echo "Generated artifacts already match the bug branch."
+            exit 0
+          fi
+          git commit -m "Regenerate source-bound Crobat artifacts for #2253"
+          git push origin HEAD:fix/2253-crobat-source-binding

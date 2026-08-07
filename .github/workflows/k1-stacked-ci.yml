@@ -24,6 +24,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Probe simulator policy source digest
+        run: >-
+          python -c "from pathlib import Path; from scripts.baseline_provenance import simulator_policy_source_digest; print(simulator_policy_source_digest(Path('.').resolve()))"
       - name: Validate K1 stacked selector contract
         run: python tests/k1_stacked_ci_contract_tests.py
       - name: Validate internal Markdown source anchors

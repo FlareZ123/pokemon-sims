@@ -121,8 +121,11 @@
         // play, so Basic Oricorio is a legal promotion source for this route:
         // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
         // Oricorio GRI 55: https://api.pokemontcg.io/v2/cards/sm2-55
+        // Tapu Lele-GX remains delegated to the established #1533 scheduler route:
+        // https://github.com/FlareZ123/pokemon-sims/issues/1533
         // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/2269
-        !is_basic(state_.active->card) || bench_space() == 0 ||
+        !is_basic(state_.active->card) ||
+        state_.active->card == Card::TapuLeleGX || bench_space() == 0 ||
         !ability_available_for_pokemon(Card::LatiasEx) ||
         in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
         deck_count_after_search_started(Card::LatiasEx) == 0 ||

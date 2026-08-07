@@ -104,8 +104,16 @@ void selector_preserves_required_boundaries() {
     Fixture strict{sim::DciProfile::StrictJit};
     sim::EngineTestAccess::set_state(strict.engine, complete_state());
     sim::EngineTestAccess::play_vessel(strict.engine);
-    expect(!spent_payload(strict.engine),
-           "The matchup-flex route escaped into strict JIT.");
+    // Confirmed issue 2231 establishes that the exact public GG -> Vessel Fire
+    // route is also required in strict JIT. Both JIT profiles require a same-turn
+    // payload, and the Vessel cost supplies it without consuming another axis.
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // K1/DCI/JIT contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed strict-profile bug: https://github.com/FlareZ123/pokemon-sims/issues/2231
+    expect(spent_payload(strict.engine),
+           "The confirmed strict-JIT GG Vessel route did not spend its payload.");
   }
   {
     Fixture k0;

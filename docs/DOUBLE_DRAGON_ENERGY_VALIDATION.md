@@ -12,11 +12,11 @@ Core rules: https://www.pokemon.com/us/pokemon-tcg/rules
 
 The validation-only `regidrago-dde-model` recipe replaces one Grass Energy and one Fire Energy in the canonical shell with two Double Dragon Energy. It is intentionally not registered in `deck_registry()` and therefore does not alter `--all-decks` or the canonical shell/Pineco comparison.
 
-The final implementation was rebased onto current `main` at `c112d9e7971d53c84dc664eb83b3732388031f54`. Rebased validation run `31156804077` built the current-main tree, passed the focused DDE and compatibility regressions, generated the DDE matrix, regenerated both canonical provenance surfaces, passed the complete Release suite, and produced the validation artifact used for the replay audit below.
+The final implementation was synchronized with current `main` at `f83eb1b63655911cc04e8899c4c3a71ed6ed669a`. Live-main validation run `31156804077` merged that mainline state before building, passed the focused DDE and compatibility regressions, generated the DDE matrix, regenerated both canonical provenance surfaces, passed the complete Release suite, and produced the validation artifact used for the replay audit below.
 
 ## Five `--simulate-this` audits
 
-These deterministic full-game traces were replayed on the exact current-main validated binary and manually inspected around every DDE-relevant decision. "Optimal" follows the repository policy definition: best legal action among modeled routes and player-known state, without using future draw order as an oracle.
+These deterministic full-game traces were replayed on the exact live-main validated binary and manually inspected around every DDE-relevant decision. "Optimal" follows the repository policy definition: best legal action among modeled routes and player-known state, without using future draw order as an oracle.
 
 | Scenario | Seed | DDE decision | Audit result |
 |---|---:|---|---|
@@ -34,11 +34,11 @@ Matrix seed: `20260807`. The current-main scenario registry contains 14 aggregat
 
 | Scenario | Ready by T2 | Ready by T3 |
 |---|---:|---:|
-| `strict-jit/go-first` | 17.450% | 42.855% |
-| `matchup-flex-jit/go-first` | 21.023% | 50.583% |
+| `strict-jit/go-first` | 17.500% | 43.054% |
+| `matchup-flex-jit/go-first` | 21.092% | 51.000% |
 | `no-discard-control/go-first` | 23.218% | 57.419% |
-| `strict-jit/go-second` | 31.897% | 54.514% |
-| `matchup-flex-jit/go-second` | 38.780% | 62.339% |
+| `strict-jit/go-second` | 32.078% | 54.659% |
+| `matchup-flex-jit/go-second` | 38.847% | 62.590% |
 | `no-discard-control/go-second` | 41.715% | 67.651% |
 
-The complete 14-scenario DDE matrix passed in the rebased validation run. Canonical registered-deck simulation CSVs remain numerically unchanged by the DDE model; only simulator-source provenance digests are refreshed.
+The complete 14-scenario DDE matrix passed in the live-main validation run. Canonical registered-deck simulation CSVs remain numerically unchanged by the DDE model; only simulator-source provenance digests are refreshed.

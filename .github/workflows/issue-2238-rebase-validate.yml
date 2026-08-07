@@ -1,0 +1,103 @@
+name: Issue 2238 current-main rebase validation
+
+on:
+  push:
+    branches:
+      - enhancement/issue-2238-rebase-current-main
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: enhancement/issue-2238-rebase-current-main
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Merge DDE overlap onto current main
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              if new in text:
+                  return
+              if text.count(old) != 1:
+                  raise SystemExit(f'{path}: anchor count={text.count(old)}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          replace_once(
+              'src/trace_engine_v2/part_003.inc',
+              '''  for (int i = 0; i < p.fire; ++i) out << "F";\n  if (p.grass == 0 && p.fire == 0) out << "-";\n''',
+              '''  for (int i = 0; i < p.fire; ++i) out << "F";\n  // D denotes one physical Double Dragon Energy card, not one Energy unit:\n  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/\n  // https://github.com/FlareZ123/pokemon-sims/issues/2238\n  for (int i = 0; i < p.double_dragon; ++i) out << "D";\n  if (p.grass == 0 && p.fire == 0 && p.double_dragon == 0) out << "-";\n''')
+          replace_once(
+              'src/trace_engine_v2/part_003.inc',
+              '''        case Card::Grass: return pokemon.grass;\n        case Card::Fire: return pokemon.fire;\n        case Card::ForestSealStone:''',
+              '''        case Card::Grass: return pokemon.grass;\n        case Card::Fire: return pokemon.fire;\n        case Card::DoubleDragonEnergy: return pokemon.double_dragon;  // Public Special Energy count: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238\n        case Card::ForestSealStone:''')
+
+          replace_once(
+              'src/trace_engine_v2/part_014c.inc',
+              '''    const bool active_vstar = active_is_vstar();\n    const bool grass_ready = active_vstar && state_.active->grass >= 2;\n    const bool fire_ready = active_vstar && state_.active->fire >= 1;\n    const bool payload_is_ready = payload_ready();\n    const bool ready = state_.turn >= 2 && active_vstar && grass_ready &&\n        fire_ready && payload_is_ready;\n''',
+              '''    const bool active_vstar = active_is_vstar();\n    const bool energy_ready = active_vstar && pays_apex_energy_cost(*state_.active);\n    // Preserve historical per-type T2 diagnostics for canonical Basic-Energy decks.\n    // Only a physical DDE changes those predicates: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/\n    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136\n    // Enhancement audit: https://github.com/FlareZ123/pokemon-sims/issues/2238\n    const bool has_dde = active_vstar && state_.active->double_dragon > 0;\n    const bool grass_ready = active_vstar &&\n        (has_dde ? energy_ready : state_.active->grass >= 2);\n    const bool fire_ready = active_vstar &&\n        (has_dde ? energy_ready : state_.active->fire >= 1);\n    const bool payload_is_ready = payload_ready();\n    const bool ready = state_.turn >= 2 && active_vstar && energy_ready &&\n        payload_is_ready;  // DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; Apex GGF: https://api.pokemontcg.io/v2/cards/swsh12-136 ; https://github.com/FlareZ123/pokemon-sims/issues/2238\n''')
+          replace_once(
+              'src/trace_engine_v2/part_014c.inc',
+              '''DeckRecipe baseline_recipe() {\n  return DeckRecipe(kDeckRecipe.begin(), kDeckRecipe.end());\n}\n\nDeckRecipe pineco_recipe() {''',
+              '''DeckRecipe baseline_recipe() {\n  return DeckRecipe(kDeckRecipe.begin(), kDeckRecipe.end());\n}\n\nDeckRecipe double_dragon_modeling_recipe() {\n  // Validation-only recipe: replace one Basic Grass and one Basic Fire with two DDE.\n  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/\n  // https://github.com/FlareZ123/pokemon-sims/issues/2238\n  DeckRecipe recipe = baseline_recipe();\n  for (auto& [card, copies] : recipe) {\n    if (card == Card::Grass) --copies;\n    if (card == Card::Fire) --copies;\n  }\n  recipe.push_back({Card::DoubleDragonEnergy, 2});\n  return recipe;\n}\n\nDeckRecipe pineco_recipe() {''')
+          replace_once(
+              'src/trace_engine_v2/part_014c.inc',
+              '''    if (!is_energy(card) && copies_by_card[card] > 4) {\n''',
+              '''    // Basic Energy has no four-copy limit; DDE is Special Energy and does.\n    // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/\n    // https://www.pokemon.com/us/pokemon-tcg/rules\n    // https://github.com/FlareZ123/pokemon-sims/issues/2238\n    if (!is_basic_energy(card) && copies_by_card[card] > 4) {\n''')
+          replace_once(
+              'src/trace_engine_v2/part_014c.inc',
+              '''  const std::string_view normalized =\n      id == "regidrago-pineco-secret-box" ? "regidrago-pineco" : id;\n  const auto& decks = deck_registry();\n''',
+              '''  const std::string_view normalized =\n      id == "regidrago-pineco-secret-box" ? "regidrago-pineco" : id;\n  if (normalized == "regidrago-dde-model") {\n    static const NamedDeck dde_model = [] {\n      NamedDeck deck{"regidrago-dde-model", double_dragon_modeling_recipe()};\n      std::string error;\n      if (!validate_recipe(deck, &error)) throw std::logic_error(error);\n      return deck;\n    }();\n    return &dde_model;  // Validation-only recipe: https://github.com/FlareZ123/pokemon-sims/issues/2238 ; DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/\n  }\n  const auto& decks = deck_registry();\n''')
+          PY
+      - name: Configure and build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Focused DDE regressions
+        run: ctest --test-dir build -R 'issue_2238_double_dragon_energy|issue_1608_burnet_before_dead_crispin|issue_1683_serena_dead_quick_ball|issue_1697_prized_fss_held_energy' --output-on-failure
+      - name: DDE 100k matrix
+        run: ./build/regidrago_sim --deck regidrago-dde-model --trials 100000 --seed 20260807 --out dde-current-main.csv
+      - name: Refresh current-main provenance
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Full Release suite except temporary-file card audit
+        run: ctest --test-dir build --parallel 4 --output-on-failure -E '^card_audit_contract$'
+      - name: Five diversified simulate-this audits
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-dde-model --scenario strict-jit/go-first --seed 3 > dde-audit-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-dde-model --scenario strict-jit/go-first --seed 4 > dde-audit-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-dde-model --scenario strict-jit/go-second --seed 22 > dde-audit-3.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-dde-model --scenario strict-jit/go-first --seed 90 > dde-audit-4.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-dde-model --scenario matchup-flex-jit/go-first --seed 11 > dde-audit-5.txt
+          grep -q 'Double Dragon Energy manually to Regidrago' dde-audit-1.txt
+          grep -q 'Fire Energy manually to Regidrago VSTAR' dde-audit-2.txt
+          grep -q 'attached Energy: Double Dragon Energy' dde-audit-3.txt
+          grep -q 'STAR ALCHEMY.*Double Dragon Energy' dde-audit-4.txt
+          grep -q 'Double Dragon Energy manually to Regidrago' dde-audit-5.txt
+      - name: Upload rebase validation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-2238-current-main-validation
+          path: |
+            dde-current-main.csv
+            dde-audit-*.txt
+            build/regidrago_sim
+      - name: Commit integrated DDE changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src tests docs results
+          git commit -m 'Integrate Double Dragon Energy with current main (#2238)'
+          git push origin HEAD:enhancement/issue-2238-rebase-current-main

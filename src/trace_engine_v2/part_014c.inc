@@ -394,16 +394,25 @@ const NamedDeck* deck_by_id(const std::string_view id) {
 
 std::vector<Scenario> all_scenarios() {
   std::vector<Scenario> result;
-  // Preserve the historical 14-row order exactly. The seed schedule derives
-  // from this index, so new conditions are appended after every existing row:
+  // Preserve the historical aggregate order. The removed go-first full Item-lock
+  // row occupied seed slot 4, so aggregate writers keep that slot reserved:
   // https://github.com/FlareZ123/pokemon-sims/issues/1118
+  // https://github.com/FlareZ123/pokemon-sims/issues/2247
   for (const bool first : {true, false}) {
     const std::string seat = first ? "go-first" : "go-second";
     result.push_back({"strict-jit/" + seat, DciProfile::StrictJit, LockMode::None, first, 5});
     result.push_back({"matchup-flex-jit/" + seat, DciProfile::MatchupFlexJit, LockMode::None, first, 5});
     result.push_back({"no-discard-control/" + seat, DciProfile::NoDiscardControl, LockMode::None, first, 5});
     result.push_back({"strict-jit-turn2-item-lock/" + seat, DciProfile::StrictJit, LockMode::TurnTwoItem, first, 5});
-    result.push_back({"strict-jit-full-item-lock/" + seat, DciProfile::StrictJit, LockMode::FullItem, first, 5});
+    // Current paper rules do not permit an opposing attack-based Item lock before
+    // a player going first has completed that player's first turn. Forest of Giant
+    // Plants, the historical immediate Vileplume evolution enabler, is banned in Expanded.
+    // https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // https://www.pokemon.com/es/sol-luna-sombras-ardientes-anuncio-trimestral-sobre-lista-de-cartas-prohibidas-y-cambios-en-las-reglas/
+    // https://github.com/FlareZ123/pokemon-sims/issues/2247
+    if (!first) {
+      result.push_back({"strict-jit-full-item-lock/" + seat, DciProfile::StrictJit, LockMode::FullItem, first, 5});
+    }
     result.push_back({"strict-jit-rulebox-ability-lock/" + seat, DciProfile::StrictJit, LockMode::FullRuleBoxAbility, first, 5});
     result.push_back({"strict-jit-combined-lock/" + seat, DciProfile::StrictJit, LockMode::FullCombined, first, 5});
   }

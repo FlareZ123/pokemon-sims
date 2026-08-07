@@ -1,11 +1,11 @@
   bool needs_tapu_connector() {
     if (needs_tapu_connector_issue2270_original()) return true;
 
-    // The original complete-route wrapper requires its pre-#2270 base predicate to
-    // fire before it consults the K1 Arven payload bridge. The live Latias promotion
-    // is the one additional current-turn route: Wonder Tag finds Arven, Arven finds
-    // Quick Ball, Quick Ball discards the held Dragon and searches Latias ex, then
-    // Skyliner supplies the Basic Active's free Retreat into the GGF VSTAR.
+    // The original complete-route wrapper keeps every pre-#2270 Wonder Tag route
+    // and its Bench/target controls. Admit only the new Latias-promotion branch here:
+    // Wonder Tag finds Arven, Arven finds Quick Ball, Quick Ball discards the held
+    // Dragon and searches Latias ex, then Skyliner gives the Basic Active free
+    // Retreat into the GGF VSTAR.
     // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
@@ -17,6 +17,6 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/2270
-    return wonder_tag_arven_held_payload_route_available() &&
+    return issue_2270_wonder_tag_arven_latias_route_available() &&
            original_wonder_tag_route_has_live_target();
   }

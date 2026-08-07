@@ -22,8 +22,8 @@ jobs:
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build --parallel 2
-          ctest --test-dir build -R 'issue_2301' --output-on-failure
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 38 --require-ready-by 4 | tee issue-2301-seed38.txt
+          ctest --test-dir build -R 'issue_2301' --output-on-failure
       - name: Refresh source-bound matrices
         run: |
           python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705

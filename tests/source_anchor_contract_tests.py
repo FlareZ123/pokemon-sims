@@ -25,6 +25,13 @@ CUSTOM_ANCHOR_RE = re.compile(
     r"<a\s+(?:name|id)=[\"'](?P<anchor>[^\"']+)[\"'][^>]*>",
     re.IGNORECASE,
 )
+CROBAT_SCOPE_RE = re.compile(
+    r"exactly (?P<variants>\d+) current variants and (?P<scenarios>\d+) registered "
+    r"aggregate scenarios, for (?P<conditions>\d+) conditions\. At the canonical "
+    r"(?P<trials>[\d,]+) trials per condition, that is "
+    r"(?P<millions>\d+(?:\.\d+)?) million simulated games\."
+)
+CROBAT_FINAL_VALIDATION_RUNS = ("31164362259", "31164362295")
 
 
 def candidate_files() -> list[Path]:
@@ -80,6 +87,44 @@ def markdown_anchors(path: Path) -> set[str]:
     return anchors
 
 
+def validate_crobat_readme_provenance(errors: list[str]) -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    report = (ROOT / "docs" / "CROBAT_MODEL_REPORT.md").read_text(encoding="utf-8")
+    scope = CROBAT_SCOPE_RE.search(report)
+    if scope is None:
+        errors.append("docs/CROBAT_MODEL_REPORT.md: source-bound Crobat scope is missing")
+        return
+
+    variants = int(scope.group("variants"))
+    scenarios = int(scope.group("scenarios"))
+    conditions = int(scope.group("conditions"))
+    trials = int(scope.group("trials").replace(",", ""))
+    games = variants * scenarios * trials
+    reported_millions = float(scope.group("millions"))
+    if variants * scenarios != conditions or games / 1_000_000 != reported_millions:
+        errors.append("docs/CROBAT_MODEL_REPORT.md: Crobat scope arithmetic is inconsistent")
+        return
+
+    expected_summary = f"the {reported_millions:g}-million-game Crobat matrix"
+    if expected_summary not in readme:
+        errors.append(
+            "README.md: Crobat validation count does not match "
+            "docs/CROBAT_MODEL_REPORT.md"
+        )
+    for run_id in CROBAT_FINAL_VALIDATION_RUNS:
+        if f"https://github.com/FlareZ123/pokemon-sims/actions/runs/{run_id}" not in readme:
+            errors.append(
+                f"README.md: missing final Crobat validation run {run_id} from #2253"
+            )
+
+    # The report is source-bound by #2253; this README summary must follow that
+    # same 13 x 14 inventory and final current-main evidence instead of reviving
+    # pre-binding metadata: https://github.com/FlareZ123/pokemon-sims/issues/2253#issuecomment-5215306149
+    # Confirmed documentation/provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2279
+    if "the 20.8-million-game Crobat matrix" in readme:
+        errors.append("README.md: stale 20.8-million-game Crobat summary remains")
+
+
 def main() -> int:
     errors: list[str] = []
     anchors_by_target: dict[Path, set[str]] = {}
@@ -117,6 +162,8 @@ def main() -> int:
                     f"{source_path.relative_to(ROOT)}: missing #{anchor} in "
                     f"{relative_target}"
                 )
+
+    validate_crobat_readme_provenance(errors)
 
     if checked == 0:
         errors.append("no internal blob/main Markdown section links were found")

@@ -1,0 +1,57 @@
+name: Crobat Regeneration Audit
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  regenerate:
+    if: github.head_ref == 'audit/2253-crobat-regeneration'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Regenerate canonical Crobat model
+        run: >-
+          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260723
+          --out crobat_variant_model.csv
+      - name: Regenerate source-bound Crobat report
+        run: >-
+          python scripts/update_crobat_modeling_docs.py --csv crobat_variant_model.csv
+          --out CROBAT_MODEL_REPORT.md
+      - name: Verify exact source-bound row inventory
+        run: |
+          python - <<'PY'
+          import csv
+          from pathlib import Path
+
+          rows = list(csv.DictReader(Path('crobat_variant_model.csv').open(newline='', encoding='utf-8')))
+          pairs = {(row['variant'], row['scenario']) for row in rows}
+          if len(rows) != 182 or len(pairs) != 182:
+              raise SystemExit(f'expected 182 unique rows, got rows={len(rows)}, unique={len(pairs)}')
+          if any(row['variant'] == 'crobat1-roseanne' for row in rows):
+              raise SystemExit('retired crobat1-roseanne remains in regenerated output')
+          if not any(row['variant'] == 'crobat1-klara' for row in rows):
+              raise SystemExit('crobat1-klara missing from regenerated output')
+          if any('full-item-lock' in row['scenario'] for row in rows):
+              raise SystemExit('retired full-turn-one Item-lock scenario remains in regenerated output')
+          PY
+      - name: Upload regeneration artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: crobat-regeneration-2253-${{ github.run_attempt }}
+          path: |
+            crobat_variant_model.csv
+            CROBAT_MODEL_REPORT.md
+          if-no-files-found: error

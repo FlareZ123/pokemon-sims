@@ -5,15 +5,25 @@ on:
     branches: [main]
     paths:
       - .issue-2164-main-validation-trigger
+      - .issue-2164-main-validation-trigger-2
 
 permissions:
   contents: write
+  pull-requests: write
+
+concurrency:
+  group: validate-issue-2164-branch
+  cancel-in-progress: true
 
 jobs:
   validate:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
+      - name: Publish run identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment 2212 --repo ${{ github.repository }} --body "Issue 2164 source-bound validation started: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
       - uses: actions/checkout@v4
         with:
           ref: fix/issue-2164-current-main-reclaim
@@ -78,3 +88,8 @@ jobs:
             build/Testing
             build-sanitizers/Testing
           if-no-files-found: warn
+      - name: Publish final status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment 2212 --repo ${{ github.repository }} --body "Issue 2164 source-bound validation finished with status ${{ job.status }}: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

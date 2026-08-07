@@ -159,8 +159,112 @@
     return true;
   }
 
+  std::optional<Card> issue_2301_quick_ball_vessel_timer_cost() const {
+    // This exception is deliberately narrow. On the Pineco strict-JIT T3 timer
+    // state, one of exactly two distinct held payloads may pay Quick Ball only
+    // when a held Earthen Vessel preserves the second Dragon for the projected
+    // T4 same-turn payload event and the rest of the connector route is publicly
+    // plausible at K0 or proven at K1. Lower-DCI costs keep priority.
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Dawn: https://api.pokemontcg.io/v2/cards/me2-87
+    // Pineco / Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Official Item, discard, search, Bench, evolution, Ability, attachment, KO and retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K0/K1, strict-JIT, dynamic DCI and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2301
+    if (scenario_.dci != DciProfile::StrictJit || scenario_.going_first ||
+        scenario_.locks != LockMode::None || state_.turn != 3 ||
+        state_.turn + 1 > scenario_.max_turn || prizes_known() || item_locked() ||
+        !supporter_allowed() || state_.manual_energy_used || state_.retreat_used ||
+        state_.vstar_power_used || !state_.active ||
+        state_.active->card != Card::TapuLeleGX || !state_.bench.empty() ||
+        bench_space() < 2 || state_.stadium != Stadium::ForestOfVitality ||
+        hand_count(Card::QuickBall) == 0 || hand_count(Card::EarthenVessel) == 0 ||
+        hand_count(Card::Grass) == 0 || hand_count(Card::RegidragoVstar) == 0 ||
+        hand_count(Card::Crispin) == 0 || hand_count(Card::SecretBox) == 0 ||
+        !need_regi()) {
+      return std::nullopt;
+    }
+
+    int held_payloads = 0;
+    int distinct_payloads = 0;
+    for (const Card card : {Card::Appletun, Card::MegaDragonite,
+                            Card::Dragapult, Card::GoodraVstar,
+                            Card::DialgaGX}) {
+      const int copies = hand_count(card);
+      held_payloads += copies;
+      distinct_payloads += copies > 0 ? 1 : 0;
+    }
+    if (held_payloads != 2 || distinct_payloads != 2) return std::nullopt;
+
+    // Any ordinary cost with lower DCI must be consumed first. The Dragon fallback
+    // exists only when the generic selector would otherwise pass the turn.
+    // Battle VIP Pass dead-card DCI precedent: https://api.pokemontcg.io/v2/cards/swsh8-225
+    // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2301
+    if (choose_discard(false, true, true, Card::QuickBall).has_value()) {
+      return std::nullopt;
+    }
+
+    // At K0 these checks use only fixed-list plausibility. The Quick Ball search
+    // itself establishes K1 before any later route decision can inspect exact
+    // deck/Prize identities, so no hidden-zone oracle is introduced here.
+    // K0/K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Future-card oracle prohibition: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2301
+    if (!might_be_unseen(Card::RegidragoV) ||
+        !might_be_unseen(Card::ForestSealStone) || !might_be_unseen(Card::Dawn) ||
+        !might_be_unseen(Card::Pineco) || !might_be_unseen(Card::ForretressEx) ||
+        !might_be_unseen(Card::Grass) || !might_be_unseen(Card::Fire)) {
+      return std::nullopt;
+    }
+
+    for (const Card card : {Card::Appletun, Card::MegaDragonite,
+                            Card::Dragapult, Card::GoodraVstar,
+                            Card::DialgaGX}) {
+      if (hand_count(card) > 0) return card;
+    }
+    return std::nullopt;
+  }
+
+  bool play_issue_2301_quick_ball_vessel_timer_route() {
+    const auto cost = issue_2301_quick_ball_vessel_timer_cost();
+    if (!cost) return false;
+
+    // Quick Ball's printed cost happens before its hidden-deck search. Spending
+    // one Dragon establishes the Basic/evolution timer while Earthen Vessel keeps
+    // the second Dragon available for the actual T4 strict-JIT discard event.
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item-cost and hidden-deck search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K0/K1 and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2301
+    if (!remove_one(state_.hand, Card::QuickBall)) {
+      throw std::logic_error("issue-2301 Quick Ball disappeared");
+    }
+    state_.discard.push_back(Card::QuickBall);
+    if (!discard_from_hand(*cost, "Quick Ball issue-2301 timer cost",
+                           "R-QB-01; P-DCI-01; P-JIT-01")) {
+      throw std::logic_error("issue-2301 Dragon cost disappeared");
+    }
+    record_deck_search_knowledge("Quick Ball issue-2301 Regidrago timer route");
+    const bool found = move_deck_to_hand(Card::RegidragoV);
+    shuffle(state_.deck);
+    trace("QUICK BALL", "R-QB-01; P-DCI-01; P-CONNECTOR-01",
+          found ? "Discarded one of two distinct Dragons and searched Regidrago V; reserved the second Dragon for Earthen Vessel."
+                : "Discarded one of two distinct Dragons; Regidrago V was unavailable after the legal K0 search.");
+    return true;
+  }
+
   bool play_quick_ball(const bool permit_payload) {
     if (play_issue_2199_quick_ball_latias_payload_route()) return true;
     if (play_issue_2272_route_replaced_arven_quick_ball()) return true;
+    if (play_issue_2301_quick_ball_vessel_timer_route()) return true;
     return play_quick_ball_issue2272_original(permit_payload);
   }

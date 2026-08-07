@@ -1,6 +1,6 @@
 {
-  "comparison_csv_sha256": "53193858c14381946660d2d0e08cce3b48f3290c87249615b23b73949661e512",
-  "condition_count": 32,
+  "comparison_csv_sha256": "31787919fb67001c72db76b2b75813c9c513e9614a9f6884971423059524dd96",
+  "condition_count": 28,
   "decks": [
     "regidrago-shell",
     "regidrago-pineco"
@@ -11,21 +11,19 @@
     "matchup-flex-jit/go-first",
     "no-discard-control/go-first",
     "strict-jit-turn2-item-lock/go-first",
-    "strict-jit-full-item-lock/go-first",
     "strict-jit-rulebox-ability-lock/go-first",
     "strict-jit-combined-lock/go-first",
     "strict-jit/go-second",
     "matchup-flex-jit/go-second",
     "no-discard-control/go-second",
     "strict-jit-turn2-item-lock/go-second",
-    "strict-jit-full-item-lock/go-second",
     "strict-jit-rulebox-ability-lock/go-second",
     "strict-jit-combined-lock/go-second",
     "strict-jit-supporter-lock/go-first",
     "strict-jit-supporter-lock/go-second"
   ],
-  "simulator_policy_source_sha256": "30ba1474a5bfb0b34e1548701778b1f71aed7586acd610ae757360d8f16eaf56",
-  "total_simulated_games": 3200000,
+  "simulator_policy_source_sha256": "40d62f89d4ef2e5ceb6a2f73940fb4602caf3222c0c8522e587bcd0c98ae14a3",
+  "total_simulated_games": 2800000,
   "traces": [
     {
       "deadline": 3,

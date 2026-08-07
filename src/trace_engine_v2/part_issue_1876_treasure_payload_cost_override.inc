@@ -32,8 +32,46 @@
     return std::nullopt;
   }
 
+  std::optional<Card> issue_2232_treasure_tapu_crispin_two_energy_cost() const {
+    const bool complete_public_route =
+        strict_payload_timing() && prizes_known() && !item_locked() &&
+        supporter_allowed() && active_is_vstar() &&
+        state_.active->grass == 1 && state_.active->fire == 0 &&
+        !state_.manual_energy_used && need_payload() && bench_space() > 0 &&
+        !in_play(Card::TapuLeleGX) && hand_count(Card::TapuLeleGX) == 0 &&
+        ability_available_for_pokemon(Card::TapuLeleGX) &&
+        deck_count_after_search_started(Card::TapuLeleGX) > 0 &&
+        deck_count_after_search_started(Card::Crispin) > 0 &&
+        deck_count_after_search_started(Card::Grass) > 0 &&
+        deck_count_after_search_started(Card::Fire) > 0;
+    if (!complete_public_route) return std::nullopt;
+
+    // Mysterious Treasure can spend a held Dragon while searching Tapu Lele-GX.
+    // Wonder Tag then finds Crispin, which attaches one missing Basic Energy and
+    // puts the other into hand for the unused manual attachment. The same Treasure
+    // payment therefore establishes the strict current-turn payload and completes
+    // the Active Regidrago VSTAR from G to GGF without consuming another route.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Mega Dragonite ex and Hisuian Goodra VSTAR payload witnesses: https://api.pokemontcg.io/v2/cards/me2pt5-152 https://api.pokemontcg.io/v2/cards/swsh11-136
+    // Regidrago VSTAR / Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, Ability, Supporter, discard, search, and Energy procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, dynamic DCI/JIT, connector contention, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2232
+    for (const Card card : {Card::Appletun, Card::MegaDragonite,
+                            Card::Dragapult, Card::GoodraVstar,
+                            Card::DialgaGX}) {
+      if (hand_count(card) > 0) return card;
+    }
+    return std::nullopt;
+  }
+
   std::optional<Card> issue_1876_treasure_payload_cost() const {
     if (const auto cost = issue_2227_treasure_gg_tapu_crispin_payload_cost()) {
+      return cost;
+    }
+    if (const auto cost = issue_2232_treasure_tapu_crispin_two_energy_cost()) {
       return cost;
     }
     const bool complete_public_route =

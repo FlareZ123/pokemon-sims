@@ -76,7 +76,7 @@
       // Official Supporter, Item, discard, Bench, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
       // K1, supporter contention, dynamic DCI/JIT, and earliest-route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
       // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2265
-      if (!play_arven()) {
+      if (!play_issue_2265_arven_quick_ball_surplus_route()) {
         throw std::logic_error("Issue-2265 Arven Quick Ball route became unavailable");
       }
       return;

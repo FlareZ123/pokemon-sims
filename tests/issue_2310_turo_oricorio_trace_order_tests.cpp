@@ -68,7 +68,7 @@ void test_turo_records_before_oricorio_replay_and_energy_resolution() {
   // Confirmed Oricorio chronology bug: https://github.com/FlareZ123/pokemon-sims/issues/2310
   const std::size_t supporter = trace_index(
       trace, "Professor Turo returned Oricorio to hand for the Active-specific final Energy route.");
-  const std::size_t bench = trace_index(trace, "Oricorio from hand.");
+  const std::size_t bench = trace_index(trace, "Oricorio GRI 55 from hand.");
   const std::size_t vital_dance = trace_index(
       trace, "Searched the exact Basic Energy required by the Active Regidrago VSTAR.");
   const std::size_t attach = trace_index(

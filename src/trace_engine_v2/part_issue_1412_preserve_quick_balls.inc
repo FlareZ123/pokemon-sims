@@ -241,7 +241,7 @@
   bool play_issue_1898_pineco_vessel_payload_finish() {
     const auto payload = std::find_if(
         state_.hand.begin(), state_.hand.end(), is_payload);
-    if (scenario_.dci != DciProfile::MatchupFlexJit ||
+    if (!strict_payload_timing() ||
         scenario_.locks != LockMode::None || !prizes_known() || item_locked() ||
         !deck_search_available() || state_.manual_energy_used ||
         !state_.active || state_.active->card != Card::RegidragoVstar ||
@@ -264,7 +264,7 @@
     // Guzma: https://api.pokemontcg.io/v2/cards/sm3-115
     // Official Item-cost, discard, search, and manual-attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, dynamic DCI/JIT, discrete value, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1898
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1898 https://github.com/FlareZ123/pokemon-sims/issues/2231
     remove_one(state_.hand, Card::EarthenVessel);
     state_.discard.push_back(Card::EarthenVessel);
     if (!discard_from_hand(discarded_payload, "Earthen Vessel cost",

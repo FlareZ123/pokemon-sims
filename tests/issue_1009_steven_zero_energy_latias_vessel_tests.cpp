@@ -216,7 +216,7 @@ void test_seed_17_uses_vessel_on_t3_and_preserves_supporter() {
   expect(!trace_contains(trace, "T2 | DISCARD | rules: R-EV-01"),
          "Seed 17 must preserve Vessel and the held Dragon through T2.");
   expect(trace_contains(trace,
-                        "T3 | DISCARD | rules: R-EV-01 | Mega Dragonite ex (Earthen Vessel cost)"),
+                        "T3 | DISCARD | rules: R-EV-01; P-DCI-01; P-JIT-01 | Mega Dragonite ex (Earthen Vessel cost)"),
          "Seed 17 must discard the held Dragon with Vessel on T3.");
   expect(!trace_contains(trace, "T3 | PLAY SUPPORTER | rules: R-BURNET-01"),
          "The compressed T3 route must preserve the Supporter slot.");

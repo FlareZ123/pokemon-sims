@@ -17,17 +17,18 @@ helper = r'''  bool issue_2291_wonder_tag_arven_fss_vessel_route() const {
         deck_count_after_search_started(Card::EarthenVessel) == 0 ||
         deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
         deck_count_after_search_started(Card::Grass) == 0 ||
+        deck_count_after_search_started(Card::Fire) != 0 ||
         !in_play(Card::TapuLeleGX) ||
-        !ability_available_for_pokemon(Card::TapuLeleGX) ||
-        crispin_can_advance_energy_axis() ||
         !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
       return false;
     }
 
-    // Wonder Tag should search Arven when K1 proves Crispin cannot produce its
-    // two-different-Energy attachment, while Arven compresses the missing axes:
-    // FSS -> Star Alchemy -> VSTAR, and Vessel -> Grass with a held Dragon paying
-    // the Vessel discard cost and becoming the same-turn strict-JIT payload.
+    // Wonder Tag should search Arven when K1 proves Crispin can find only Grass.
+    // Crispin's printed/ruling-defined attachment requires two different Basic
+    // Energy types to have been found, so this one-type state cannot use Crispin
+    // to attach. Arven instead compresses the missing axes: FSS -> Star Alchemy ->
+    // VSTAR, then Vessel -> Grass with a held Dragon paying the Vessel discard cost
+    // and becoming the same-turn strict-JIT payload.
     // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Crispin ruling: https://compendium.pokegym.net/category/5-trainers/crispin/
@@ -47,7 +48,7 @@ if helper not in text:
         raise RuntimeError("#2291 selector anchor mismatch")
     text = text.replace(anchor, helper + anchor, 1)
 old = """  Card choose_supporter_after_search_started() const {\n    if (issue_1797_wonder_tag_steven_route_available()) {\n"""
-new = """  Card choose_supporter_after_search_started() const {\n    if (issue_2291_wonder_tag_arven_fss_vessel_route()) {\n      // Arven completes the live K1 FSS/Vessel route when Crispin is energy-dead.\n      // Confirmed selector bug: https://github.com/FlareZ123/pokemon-sims/issues/2291\n      return Card::Arven;\n    }\n    if (issue_1797_wonder_tag_steven_route_available()) {\n"""
+new = """  Card choose_supporter_after_search_started() const {\n    if (issue_2291_wonder_tag_arven_fss_vessel_route()) {\n      // Arven completes the live K1 FSS/Vessel route when Crispin can find only\n      // one Basic Energy type: https://github.com/FlareZ123/pokemon-sims/issues/2291\n      return Card::Arven;\n    }\n    if (issue_1797_wonder_tag_steven_route_available()) {\n"""
 if new not in text:
     if text.count(old) != 1:
         raise RuntimeError("#2291 selector insertion mismatch")

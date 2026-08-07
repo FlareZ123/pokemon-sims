@@ -63,6 +63,24 @@
   }
 
   void choose_supporter() {
+    if (issue_2265_arven_quick_ball_surplus_route_live()) {
+      // K1 proves Arven can fetch the physical Quick Ball whose existing dynamic-DCI
+      // classifier admits the now-surplus Basic Energy. This visible Arven -> Quick
+      // Ball -> Latias ex -> Brilliant Blender sequence completes every unresolved
+      // axis this turn, so it preempts slower or non-completing Supporter choices:
+      // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+      // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+      // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Official Supporter, Item, discard, Bench, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // K1, supporter contention, dynamic DCI/JIT, and earliest-route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2265
+      if (!play_arven()) {
+        throw std::logic_error("Issue-2265 Arven Quick Ball route became unavailable");
+      }
+      return;
+    }
     if (play_issue_2225_arven_vessel_finish()) return;
     choose_supporter_issue2225_original();
   }

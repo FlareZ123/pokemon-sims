@@ -1,0 +1,43 @@
+
+Deck: regidrago-shell | Seed: 475 | first-ready turn: 4 | setup result: success
+Seed: 475 | first-ready turn: 4 | setup result: success
+===== SIMULATE THIS =====
+Deck: regidrago-shell
+Scenario: strict-jit/go-first | DCI: strict-JIT | Locks: none
+Mulligans: 0
+Opening player-known state: Active=Regidrago V [-] | Bench=(none) | Hand=Lusamine, Dipplin TWM 127, Fire Energy, Gladion, Quick Ball, Gladion | Discard=(none)
+DEBUG ONLY: prizes=Earthen Vessel, Grass Energy, Mega Dragonite ex, Team Yell's Cheer, Latias ex, Tapu Lele-GX. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Path to the Peak
+T1 | TURN START | rules: R-GAME-FIRST-TURN | Going first: drew for the turn; no Supporter or attack is permitted.
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [-] | Bench=(none) | Hand=Lusamine, Dipplin TWM 127, Fire Energy, Gladion, Quick Ball, Gladion, Path to the Peak | Discard=(none)
+T1 | DISCARD | rules: R-QB-01 | Dipplin TWM 127 (Quick Ball cost)
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Quick Ball: deck inspected; Prize identities are now deducible for later decisions.
+T1 | PLAY ITEM | rules: R-QB-01; R-GAME-ITEM | Searched a Basic Pokémon: Tapu Lele-GX.
+T1 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
+T1 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Crispin.
+T1 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [F] | Bench=Tapu Lele-GX [-] | Hand=Lusamine, Gladion, Gladion, Path to the Peak, Crispin | Discard=Quick Ball, Dipplin TWM 127
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Dragapult ex
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [F] | Bench=Tapu Lele-GX [-] | Hand=Lusamine, Gladion, Gladion, Path to the Peak, Crispin, Dragapult ex | Discard=Quick Ball, Dipplin TWM 127
+T2 | PLAY SUPPORTER | rules: R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01 | Looked at Prize cards and exchanged Gladion for Mega Dragonite ex.
+T2 | ATTACK | rules: R-RV-01; R-GAME-ATTACK | Regidrago V used Celestial Roar; processed top 3: Regidrago VSTAR, Crispin, Quick Ball; attached Energy: (none); remaining discarded: Regidrago VSTAR, Crispin, Quick Ball.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [F] | Bench=Tapu Lele-GX [-] | Hand=Lusamine, Gladion, Path to the Peak, Crispin, Dragapult ex, Mega Dragonite ex | Discard=Quick Ball, Dipplin TWM 127, Regidrago VSTAR, Crispin, Quick Ball
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Arven
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [F] | Bench=Tapu Lele-GX [-] | Hand=Lusamine, Gladion, Path to the Peak, Crispin, Dragapult ex, Mega Dragonite ex, Arven | Discard=Quick Ball, Dipplin TWM 127, Regidrago VSTAR, Crispin, Quick Ball
+T3 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T3 | ATTACK | rules: R-RV-01; R-GAME-ATTACK | Regidrago V used Celestial Roar; processed top 3: Brilliant Blender, Hisuian Goodra VSTAR, Guzma; attached Energy: (none); remaining discarded: Brilliant Blender, Hisuian Goodra VSTAR, Guzma.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [GF] | Bench=Tapu Lele-GX [-] | Hand=Lusamine, Gladion, Path to the Peak, Dragapult ex, Mega Dragonite ex, Arven, Fire Energy | Discard=Quick Ball, Dipplin TWM 127, Regidrago VSTAR, Crispin, Quick Ball, Crispin, Brilliant Blender, Hisuian Goodra VSTAR, Guzma
+T4 | DRAW | rules: R-GAME-DRAW | start-of-turn: Mysterious Treasure
+T4 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [GF] | Bench=Tapu Lele-GX [-] | Hand=Lusamine, Gladion, Path to the Peak, Dragapult ex, Mega Dragonite ex, Arven, Fire Energy, Mysterious Treasure | Discard=Quick Ball, Dipplin TWM 127, Regidrago VSTAR, Crispin, Quick Ball, Crispin, Brilliant Blender, Hisuian Goodra VSTAR, Guzma
+T4 | PLAY SUPPORTER | rules: R-ARVEN-01; R-GAME-SUPPORTER | Searched an Item and a Pokémon Tool: Mysterious Treasure, Forest Seal Stone.
+T4 | ATTACH TOOL | rules: R-FSS-01; R-GAME-TOOL | Attached Forest Seal Stone to Regidrago V.
+T4 | STAR ALCHEMY | rules: R-FSS-02; R-VSTAR-01 | Searched any card: Regidrago VSTAR.
+T4 | DISCARD | rules: R-MT-01 | Dragapult ex (Mysterious Treasure cost)
+T4 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM | Searched a Psychic or Dragon Pokémon: Oricorio GRI 55.
+T4 | BENCH | rules: R-GAME-BENCH | Oricorio GRI 55 from hand.
+T4 | Vital Dance | rules: R-ORICORIO-01 | Searched up to 2 Basic Energy: Grass Energy, Grass Energy.
+T4 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T4 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T4 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=Tapu Lele-GX [-]; Oricorio GRI 55 [-] | Hand=Lusamine, Gladion, Path to the Peak, Mega Dragonite ex, Fire Energy, Mysterious Treasure, Grass Energy | Discard=Quick Ball, Dipplin TWM 127, Regidrago VSTAR, Crispin, Quick Ball, Crispin, Brilliant Blender, Hisuian Goodra VSTAR, Guzma, Arven, Mysterious Treasure, Dragapult ex
+T4 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

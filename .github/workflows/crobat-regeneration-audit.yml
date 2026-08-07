@@ -9,23 +9,111 @@ permissions:
   contents: read
 
 jobs:
-  regenerate:
+  shard:
     if: github.head_ref == 'audit/2253-crobat-regeneration'
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario_index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact-source scenario shard
+        run: |
+          cat > /tmp/crobat_shard.cpp <<'CPP'
+          #define REGIDRAGO_SIM_NO_MAIN
+          #include "src/regidrago_sim.cpp"
+
+          #include <cstdint>
+          #include <iomanip>
+          #include <iostream>
+          #include <numeric>
+          #include <sstream>
+
+          int main(int argc, char** argv) {
+            if (argc != 2) return 2;
+            const std::size_t scenario_index = static_cast<std::size_t>(std::stoull(argv[1]));
+            const auto scenarios = sim::all_scenarios();
+            if (scenario_index >= scenarios.size()) return 2;
+            const sim::Scenario& scenario = scenarios[scenario_index];
+            const std::uint64_t trials = 100000;
+            const std::uint64_t seed = 20260723;
+            // Match write_crobat_modeling_matrix() exactly. Historical slots 4 and
+            // 11 remain reserved after #2247 removes the two retired aggregate rows:
+            // https://github.com/FlareZ123/pokemon-sims/issues/2247
+            // https://github.com/FlareZ123/pokemon-sims/blob/fix/2253-crobat-source-binding/src/trace_engine_v2/part_016.inc
+            const std::size_t seed_slot = scenario_index +
+                (scenario_index >= 4 ? 1U : 0U) +
+                (scenario_index >= 10 ? 1U : 0U);
+            const std::uint64_t common_seed = seed + 104729ULL * seed_slot;
+
+            std::ostringstream csv;
+            csv << "variant,cuts,crobat_copies,scenario,trials,ready_by_t2_pct,"
+                   "ready_by_t3_pct,ready_by_t4_pct,dark_asset_use_pct,avg_dark_asset_cards_drawn_per_game_using\n";
+            for (const sim::CrobatModelingDeck& deck : sim::crobat_modeling_decks()) {
+              const sim::Aggregate aggregate = sim::simulate(scenario, deck.recipe, trials, common_seed);
+              const double average_draw = aggregate.dark_asset == 0 ? 0.0 :
+                  static_cast<double>(aggregate.dark_asset_cards_drawn) /
+                  static_cast<double>(aggregate.dark_asset);
+              csv << deck.id << ',' << '"' << deck.cuts << '"' << ','
+                  << std::accumulate(deck.recipe.begin(), deck.recipe.end(), 0,
+                       [](const int total, const auto& entry) {
+                         return total + (entry.first == sim::Card::CrobatV ? entry.second : 0);
+                       }) << ','
+                  << scenario.label << ',' << trials << ',' << std::fixed
+                  << std::setprecision(6) << sim::pct(aggregate.by2, trials) << ','
+                  << sim::pct(aggregate.by3, trials) << ',' << sim::pct(aggregate.by4, trials) << ','
+                  << sim::pct(aggregate.dark_asset, trials) << ',' << average_draw << '\n';
+            }
+            std::cout << csv.str();
+            return 0;
+          }
+          CPP
+          c++ -std=c++20 -O3 -Isrc -I. /tmp/crobat_shard.cpp -o /tmp/crobat_shard
+      - name: Run 100000-trial scenario shard
+        run: /tmp/crobat_shard ${{ matrix.scenario_index }} > crobat-shard-${{ matrix.scenario_index }}.csv
+      - name: Upload scenario shard
+        uses: actions/upload-artifact@v4
+        with:
+          name: crobat-shard-${{ matrix.scenario_index }}
+          path: crobat-shard-${{ matrix.scenario_index }}.csv
+          if-no-files-found: error
+
+  assemble:
+    if: github.head_ref == 'audit/2253-crobat-regeneration'
+    needs: shard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Configure Release
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-      - name: Build simulator
-        run: cmake --build build --target regidrago_sim --parallel 2
-      - name: Regenerate canonical Crobat model
-        run: >-
-          ./build/regidrago_sim --model-crobat --trials 100000 --seed 20260723
-          --out crobat_variant_model.csv
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: crobat-shard-*
+          path: shards
+      - name: Assemble canonical scenario-major matrix
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          out = Path('crobat_variant_model.csv')
+          pieces = []
+          header = None
+          for index in range(14):
+              path = Path('shards') / f'crobat-shard-{index}' / f'crobat-shard-{index}.csv'
+              lines = path.read_text(encoding='utf-8').splitlines()
+              if len(lines) != 14:
+                  raise SystemExit(f'{path}: expected header + 13 rows, got {len(lines)} lines')
+              if header is None:
+                  header = lines[0]
+              elif lines[0] != header:
+                  raise SystemExit(f'{path}: header mismatch')
+              pieces.extend(lines[1:])
+          out.write_text(header + '\n' + '\n'.join(pieces) + '\n', encoding='utf-8')
+          PY
       - name: Regenerate source-bound Crobat report
         run: >-
           python scripts/update_crobat_modeling_docs.py --csv crobat_variant_model.csv

@@ -46,7 +46,7 @@
     }
     bool found = move_deck_to_hand(target);
     if (!found) {
-      for (const Card fallback : {Card::RegidragoVstar, Card::Crispin, Card::BrilliantBlender,
+      for (const Card fallback : {Card::RegidragoVstar, Card::DoubleDragonEnergy, Card::Crispin, Card::BrilliantBlender,
                                   Card::ProfessorBurnet, Card::Arven, Card::MysteriousTreasure,
                                   Card::QuickBall, Card::EarthenVessel, Card::LatiasEx}) {
         if (fallback == Card::Crispin && !crispin_can_advance_energy_axis()) continue;

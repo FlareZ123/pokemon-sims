@@ -2,7 +2,9 @@
   out << name(p.card) << " [";
   for (int i = 0; i < p.grass; ++i) out << "G";
   for (int i = 0; i < p.fire; ++i) out << "F";
-  if (p.grass == 0 && p.fire == 0) out << "-";
+  // D is one physical Double Dragon Energy card.
+  for (int i = 0; i < p.double_dragon; ++i) out << "D";
+  if (p.grass == 0 && p.fire == 0 && p.double_dragon == 0) out << "-";
   out << "]";
   if (p.tool == Tool::ForestSealStone) out << " + Forest Seal Stone";
   if (p.tool == Tool::WishfulBaton) out << " + Wishful Baton";
@@ -123,6 +125,7 @@ class Engine {
       switch (card) {
         case Card::Grass: return pokemon.grass;
         case Card::Fire: return pokemon.fire;
+        case Card::DoubleDragonEnergy: return pokemon.double_dragon;
         case Card::ForestSealStone: return pokemon.tool == Tool::ForestSealStone ? 1 : 0;
         case Card::WishfulBaton: return pokemon.tool == Tool::WishfulBaton ? 1 : 0;
         case Card::Powerglass: return pokemon.tool == Tool::Powerglass ? 1 : 0;

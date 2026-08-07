@@ -419,19 +419,24 @@
     if (state_.manual_energy_used) return false;
     Pokemon* target = target_regi();
     if (target == nullptr || !need_energy()) return false;
-    Card wanted = Card::Grass;
-    if (grass_needed() > 0 && hand_count(Card::Grass) > 0) {
-      wanted = Card::Grass;
-    } else if (fire_needed() > 0 && hand_count(Card::Fire) > 0) {
-      wanted = Card::Fire;
-    } else {
-      // Do not use the once-per-turn attachment on an Energy type that does not advance GGF.
-      return false;
+    const auto wanted = preferred_manual_energy_from_hand(*target);
+    if (!wanted) return false;
+    if (!remove_one(state_.hand, *wanted)) {
+      throw std::logic_error("selected manual Energy disappeared");
     }
-    remove_one(state_.hand, wanted);
-    if (wanted == Card::Grass) ++target->grass; else ++target->fire;
+    if (!attach_energy_card(*target, *wanted)) {
+      // DDE can only remain attached to Dragon Pokémon. target_regi() is
+      // Regidrago V/VSTAR, both Dragon, so reaching this branch is a bug:
+      // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // https://api.pokemontcg.io/v2/cards/swsh12-135
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://github.com/FlareZ123/pokemon-sims/issues/2238
+      throw std::logic_error("selected manual Energy was illegal on Regidrago");
+    }
     state_.manual_energy_used = true;
-    trace("ATTACH", "R-GAME-ENERGY", std::string(name(wanted)) + " manually to " + std::string(name(target->card)) + ".");
+    trace("ATTACH", "R-GAME-ENERGY",
+          std::string(name(*wanted)) + " manually to " +
+              std::string(name(target->card)) + ".");  // DDE-aware selection preserves the existing action contract: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
     return true;
   }
 

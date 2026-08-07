@@ -331,7 +331,10 @@
     for (const Pokemon& pokemon : state_.bench) {
       if (pokemon.card == Card::RegidragoV &&
           pokemon.entered_turn < state_.turn && pokemon.grass == 1 &&
-          pokemon.fire == 0) {
+          pokemon.fire == 0 && !pays_apex_energy_cost(pokemon)) {
+        // DDE-ready attackers do not need the historical Crispin package:
+        // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        // https://github.com/FlareZ123/pokemon-sims/issues/2238
         regidrago = &pokemon;
         break;
       }
@@ -420,6 +423,11 @@
     }
     const Card payload = *payload_it;
 
+    // DDE can make the selected Regidrago Energy-complete before the
+    // historical Crispin package resolves. Preserve the Supporter and
+    // manual attachment when the shared payment predicate is already true:
+    // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // https://github.com/FlareZ123/pokemon-sims/issues/2238
     evolve_best_regi();
     const bool benched_vstar = std::any_of(
         state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
@@ -428,11 +436,13 @@
     if (!benched_vstar) {
       throw std::logic_error("Issue-1796 Regidrago V did not evolve");
     }
-    if (!play_crispin()) {
-      throw std::logic_error("Issue-1796 Crispin Energy package disappeared");
-    }
-    if (!attach_manual()) {
-      throw std::logic_error("Issue-1796 manual Fire attachment disappeared");
+    if (need_energy()) {
+      if (!play_crispin()) {
+        throw std::logic_error("Issue-1796 Crispin Energy package disappeared");
+      }
+      if (!attach_manual()) {
+        throw std::logic_error("Issue-1796 manual Energy attachment disappeared");
+      }
     }
 
     remove_one(state_.hand, Card::MysteriousTreasure);
@@ -467,8 +477,8 @@
     // Official Item, discard, search, evolution, Bench, Ability, attachment, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Strict-JIT and success horizon: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1796
-    return active_is_vstar() && state_.active->grass >= 2 &&
-        state_.active->fire >= 1 && payload_ready();
+    return active_is_vstar() && pays_apex_energy_cost(*state_.active) &&
+        payload_ready();  // DDE-aware GGF payment: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
   }
 
   int issue_1795_steven_turn_ = 0;
@@ -483,8 +493,9 @@
         deck_count_after_search_started(Card::EarthenVessel) > 0;
     const bool still_needs_steven = hand_count(Card::RegidragoVstar) == 0 ||
         hand_count(Card::EarthenVessel) == 0;
-    const bool has_final_grass = hand_count(Card::Grass) > 0 ||
-        deck_count_after_search_started(Card::Grass) > 0;
+    const bool has_final_grass = !need_energy() ||
+        hand_count(Card::Grass) > 0 ||
+        deck_count_after_search_started(Card::Grass) > 0;  // DDE-ready attackers need no redundant final Basic: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
     const bool held_payload = std::any_of(
         state_.hand.begin(), state_.hand.end(), is_payload);
 
@@ -557,8 +568,9 @@
         break;
       }
     }
-    const bool has_final_grass = hand_count(Card::Grass) > 0 ||
-        deck_count_after_search_started(Card::Grass) > 0;
+    const bool has_final_grass = !need_energy() ||
+        hand_count(Card::Grass) > 0 ||
+        deck_count_after_search_started(Card::Grass) > 0;  // DDE-ready attackers need no redundant final Basic: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
     const bool route_available =
         scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
         scenario_.locks == LockMode::None && !state_.turn_ended &&
@@ -586,15 +598,48 @@
       throw std::logic_error("Issue-1795 Vessel payload cost disappeared");
     }
     record_deck_search_knowledge("Earthen Vessel issue-1795 finish");
-    if (hand_count(Card::Grass) == 0 && !move_deck_to_hand(Card::Grass)) {
-      throw std::logic_error("Issue-1795 final Grass target disappeared");
+    std::optional<Card> searched_basic;
+    if (need_energy()) {
+      const Pokemon* target = target_regi();
+      if (target == nullptr) {
+        throw std::logic_error("Issue-1795 Energy target disappeared");
+      }
+      // Vessel searches Basic Energy only. Prefer a held Energy that already
+      // completes GGF; otherwise search the first Basic whose projected
+      // attachment completes the DDE-aware payment. DDE itself is never a
+      // legal Vessel search target because it is Special Energy:
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // https://github.com/FlareZ123/pokemon-sims/issues/2238
+      const auto held_finish = preferred_manual_energy_from_hand(*target);
+      Pokemon projected = *target;
+      const bool held_already_finishes = held_finish &&
+          attach_energy_card(projected, *held_finish) &&
+          pays_apex_energy_cost(projected);
+      if (!held_already_finishes) {
+        for (const Card basic : {Card::Grass, Card::Fire}) {
+          if (deck_count_after_search_started(basic) <= 0) continue;
+          Pokemon candidate = *target;
+          if (attach_energy_card(candidate, basic) &&
+              pays_apex_energy_cost(candidate)) {
+            searched_basic = basic;
+            break;
+          }
+        }
+        if (!searched_basic || !move_deck_to_hand(*searched_basic)) {
+          throw std::logic_error("Issue-1795 final Basic Energy target disappeared");
+        }
+      }
     }
     shuffle(state_.deck);
     trace("Earthen Vessel", "R-EV-01; R-GAME-ITEM; P-DCI-01; P-JIT-01",
-          "Discarded the held Dragon payload and searched the final Grass Energy.");
+          searched_basic ?
+              "Discarded the held Dragon payload and searched " +
+                  std::string(name(*searched_basic)) + " for the final attachment." :
+              "Discarded the held Dragon payload; no redundant Basic Energy search was needed.");
 
-    if (!attach_manual()) {
-      throw std::logic_error("Issue-1795 final Grass attachment became unavailable");
+    if (need_energy() && !attach_manual()) {
+      throw std::logic_error("Issue-1795 final Energy attachment became unavailable");
     }
     issue_1795_vessel_turn_ = 0;
 
@@ -607,8 +652,8 @@
     // Official evolution, Item, discard, search, attachment, and attack procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Strict-JIT and success horizon: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1795
-    return active_is_vstar() && state_.active->grass >= 2 &&
-        state_.active->fire >= 1 && payload_ready();
+    return active_is_vstar() && pays_apex_energy_cost(*state_.active) &&
+        payload_ready();  // DDE-aware GGF payment: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
   }
 
   bool use_celestial_roar_issue_1795() {

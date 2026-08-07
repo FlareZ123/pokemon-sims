@@ -77,7 +77,7 @@ bool issue_1912_post_attachment_blender_available() const {
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1912
   return strict_payload_timing() && prizes_known() && !item_locked() &&
       state_.active && state_.active->card == Card::RegidragoVstar &&
-      state_.active->grass >= 2 && state_.active->fire >= 1 &&
+      pays_apex_energy_cost(*state_.active) &&
       hand_count(Card::BrilliantBlender) > 0 && need_payload() &&
       payload_might_be_in_deck();
 }
@@ -197,6 +197,23 @@ bool attach_manual() {
     trace("ATTACH", "R-GAME-ENERGY; R-TAPU-01; P-DCI-01",
           "Grass Energy manually to Tapu Lele-GX for a future paid Retreat.");
     return true;
+  }
+  if (!state_.manual_energy_used) {
+    Pokemon* dde_target = target_regi();
+    if (dde_target != nullptr) {
+      const auto preferred = preferred_manual_energy_from_hand(*dde_target);
+      if (preferred && *preferred == Card::DoubleDragonEnergy) {
+        // DDE preempts older Basic-only attachment packages only when the
+        // shared selector proves strictly greater current-turn Energy
+        // progress. Equal finishes still preserve DDE:
+        // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+        // https://github.com/FlareZ123/pokemon-sims/issues/2238
+        const bool attached = attach_manual_tate_blender_original();
+        if (attached) issue_1912_replay_blender_after_attachment();
+        return attached;
+      }
+    }
   }
   if (issue_1772_t3_crispin_completion_available()) {
     // The banked K1 route needs Crispin to supply the first Grass before the
@@ -375,7 +392,7 @@ bool attach_manual() {
   const Pokemon* before_attachment = target_regi();
   const bool attachment_can_complete_ggf =
       !state_.manual_energy_used && before_attachment != nullptr &&
-      (before_attachment->grass < 2 || before_attachment->fire < 1);
+      !pays_apex_energy_cost(*before_attachment);
   const bool attached = attach_manual_tate_blender_original();
   if (attached && attachment_can_complete_ggf) {
     // Reopen only the deterministic held Blender action unlocked by this

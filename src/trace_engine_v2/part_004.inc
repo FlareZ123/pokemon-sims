@@ -36,6 +36,109 @@
   bool active_is_vstar() const { return state_.active && state_.active->card == Card::RegidragoVstar; }
   int bench_space() const { return 5 - static_cast<int>(state_.bench.size()); }
 
+  int total_energy_units(const Pokemon& pokemon) const {
+    // Each physical DDE supplies exactly two Energy of every type while
+    // legally attached to Dragon Pokémon:
+    // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // https://github.com/FlareZ123/pokemon-sims/issues/2238
+    return pokemon.grass + pokemon.fire + 2 * pokemon.double_dragon;
+  }
+
+  bool pays_apex_energy_cost(const Pokemon& pokemon) const {
+    // Without DDE, retain exact GGF typing. With at least one legally
+    // attached DDE, its all-type provision can satisfy whichever typed
+    // components remain as long as three total Energy units exist:
+    // DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2238
+    if (pokemon.double_dragon <= 0) {
+      return pokemon.grass >= 2 && pokemon.fire >= 1;
+    }
+    return is_dragon(pokemon.card) && total_energy_units(pokemon) >= 3;
+  }
+
+  int apex_energy_progress(const Pokemon& pokemon) const {
+    if (pays_apex_energy_cost(pokemon)) return 3;
+    if (pokemon.double_dragon > 0 && is_dragon(pokemon.card)) {
+      return std::min(2, total_energy_units(pokemon));
+    }
+    return std::min(2, pokemon.grass) + std::min(1, pokemon.fire);
+  }
+
+  bool attach_energy_card(Pokemon& pokemon, const Card energy) const {
+    if (energy == Card::Grass) { ++pokemon.grass; return true; }
+    if (energy == Card::Fire) { ++pokemon.fire; return true; }
+    if (energy == Card::DoubleDragonEnergy && is_dragon(pokemon.card)) {
+      ++pokemon.double_dragon;
+      return true;
+    }
+    return false;
+  }
+
+  template <typename Available>
+  std::optional<Card> preferred_manual_energy_for(
+      const Pokemon& target, Available available) const {
+    if (!is_dragon(target.card) || pays_apex_energy_cost(target)) {
+      return std::nullopt;
+    }
+    const auto projected_progress = [this, &target](const Card card) {
+      Pokemon projected = target;
+      if (!attach_energy_card(projected, card)) return -1;
+      return apex_energy_progress(projected);
+    };
+    // If a Basic Energy and DDE both finish this turn, spend the Basic
+    // and preserve DDE's higher future AMR/compression value:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // https://github.com/FlareZ123/pokemon-sims/issues/2238
+    for (const Card basic : {Card::Grass, Card::Fire}) {
+      if (!available(basic)) continue;
+      Pokemon projected = target;
+      if (attach_energy_card(projected, basic) &&
+          pays_apex_energy_cost(projected)) return basic;
+    }
+    Card best = Card::Grass;
+    int best_progress = apex_energy_progress(target);
+    bool found = false;
+    for (const Card basic : {Card::Grass, Card::Fire}) {
+      if (!available(basic)) continue;
+      const int progress = projected_progress(basic);
+      if (!found || progress > best_progress) {
+        best = basic;
+        best_progress = progress;
+        found = true;
+      }
+    }
+    if (available(Card::DoubleDragonEnergy)) {
+      const int dde_progress = projected_progress(Card::DoubleDragonEnergy);
+      // DDE is selected only for a strictly stronger Energy-axis result.
+      // Equal progress remains on a Basic to preserve the two-unit Special:
+      // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // https://github.com/FlareZ123/pokemon-sims/issues/2238
+      if (!found || dde_progress > best_progress) {
+        best = Card::DoubleDragonEnergy;
+        best_progress = dde_progress;
+        found = true;
+      }
+    }
+    return found && best_progress > apex_energy_progress(target)
+        ? std::optional<Card>{best}
+        : std::nullopt;
+  }
+
+  std::optional<Card> preferred_manual_energy_from_hand(
+      const Pokemon& target) const {
+    return preferred_manual_energy_for(
+        target, [this](const Card card) { return hand_count(card) > 0; });
+  }
+
+  std::optional<Card> preferred_manual_energy_from_known_deck(
+      const Pokemon& target) const {
+    return preferred_manual_energy_for(target, [this](const Card card) {
+      return deck_count_after_search_started(card) > 0;
+    });
+  }
+
   int score_regi(const Pokemon& p, const bool active) const {
     if (p.card != Card::RegidragoV && p.card != Card::RegidragoVstar) return -100000;
     const bool active_regi_can_evolve_from_hand = state_.turn > 1 && state_.active &&
@@ -57,7 +160,7 @@
         !active_regi_can_evolve_from_hand && supporter_allowed() &&
         hand_count(Card::TateLiza) > 0 && payload_ready();
     const int route_bonus = latias_promotion_route || tate_promotion_route ? 1000 : 0;
-    return route_bonus + 100 * std::min(2, p.grass) + 100 * std::min(1, p.fire) +
+    return route_bonus + 100 * apex_energy_progress(p) +
            (p.card == Card::RegidragoVstar ? 15 : 0) + (active ? 3 : 0);
   }
 
@@ -68,7 +171,7 @@
     // stable Bench order remains the tie-break because replacement requires >:
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    return 100 * std::min(2, pokemon.grass) + 100 * std::min(1, pokemon.fire);
+    return 100 * apex_energy_progress(pokemon);
   }
 
   Pokemon* best_benched_vstar_for_promotion() {
@@ -104,7 +207,7 @@
     // https://api.pokemontcg.io/v2/cards/sm7-148
     // https://api.pokemontcg.io/v2/cards/sv8-76
     // https://api.pokemontcg.io/v2/cards/swsh12-136
-    return target != nullptr && target->grass >= 2 && target->fire >= 1;
+    return target != nullptr && pays_apex_energy_cost(*target);
   }
 
   Pokemon* target_regi() {
@@ -137,13 +240,27 @@
 
   int grass_needed() const {
     const Pokemon* target = target_regi();
-    return target == nullptr ? 2 : std::max(0, 2 - target->grass);
+    if (target == nullptr) return 2;
+    if (pays_apex_energy_cost(*target)) return 0;
+    // One DDE by itself is one Energy unit short of GGF, and either Basic
+    // type can supply that final unit. Mark both as live search options;
+    // readiness itself remains governed by pays_apex_energy_cost():
+    // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // https://github.com/FlareZ123/pokemon-sims/issues/2238
+    if (target->double_dragon > 0) return 1;
+    return std::max(0, 2 - target->grass);
   }
   int fire_needed() const {
     const Pokemon* target = target_regi();
-    return target == nullptr ? 1 : std::max(0, 1 - target->fire);
+    if (target == nullptr) return 1;
+    if (pays_apex_energy_cost(*target)) return 0;
+    if (target->double_dragon > 0) return 1;
+    return std::max(0, 1 - target->fire);
   }
-  bool need_energy() const { return grass_needed() > 0 || fire_needed() > 0; }
+  bool need_energy() const {
+    const Pokemon* target = target_regi();
+    return target == nullptr || !pays_apex_energy_cost(*target);
+  }
 
   // Crispin can advance the axis when an actually needed type remains in deck
   // at K1, or could still be unseen at K0. A resolved Heavy Ball or Gladion
@@ -175,13 +292,26 @@
   // missing VSTAR, active-position, or payload route.
   // Card text source: https://api.pokemontcg.io/v2/cards/sm4-95
   std::optional<Card> final_prized_energy_for_gladion() const {
-    if (!prizes_known() || state_.manual_energy_used || grass_needed() + fire_needed() != 1 ||
-        need_regi() || need_vstar() || need_active_vstar() || need_payload()) {
+    if (!prizes_known() || state_.manual_energy_used || need_regi() ||
+        need_vstar() || need_active_vstar() || need_payload()) {
       return std::nullopt;
     }
-    if (grass_needed() == 1 && prize_count_after_reveal(Card::Grass) > 0) return Card::Grass;
-    if (fire_needed() == 1 && prize_count_after_reveal(Card::Fire) > 0) return Card::Fire;
-    return std::nullopt;
+    const Pokemon* target = target_regi();
+    if (target == nullptr || pays_apex_energy_cost(*target)) return std::nullopt;
+    const auto chosen = preferred_manual_energy_for(*target, [this](const Card card) {
+      return prize_count_after_reveal(card) > 0;
+    });
+    if (!chosen) return std::nullopt;
+    Pokemon projected = *target;
+    if (!attach_energy_card(projected, *chosen) ||
+        !pays_apex_energy_cost(projected)) return std::nullopt;
+    // Gladion can exchange itself for any known Prize, including Special
+    // Energy. DDE is selected only when that one attachment is the complete
+    // deterministic Energy finish:
+    // https://api.pokemontcg.io/v2/cards/sm4-95
+    // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // https://github.com/FlareZ123/pokemon-sims/issues/2238
+    return chosen;
   }
 
   bool payload_ready() const {

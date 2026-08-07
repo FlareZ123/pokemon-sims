@@ -40,6 +40,7 @@
         state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::RegidragoVstar ||
         state_.active->grass != 1 || state_.active->fire != 0 ||
+        !need_energy() ||  // DDE + Grass already pays GGF; do not spend Fire, Quick Ball, Wonder Tag, or Crispin redundantly: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://api.pokemontcg.io/v2/cards/swsh12-136 ; https://github.com/FlareZ123/pokemon-sims/issues/2238
         !need_payload() || hand_count(Card::Fire) == 0 ||
         hand_count(Card::QuickBall) == 0 || hand_count(Card::Crispin) > 0 ||
         bench_space() == 0 || in_play(Card::TapuLeleGX) ||

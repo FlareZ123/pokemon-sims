@@ -69,6 +69,7 @@ struct Pokemon {
   int grass{0};
   int fire{0};
   Tool tool{Tool::None};
+  int double_dragon{0};  // Physical DDE cards; each provides exactly two flexible Energy while attached to Dragon: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
 };
 
 struct State {
@@ -230,7 +231,8 @@ struct TraceLog {
     const auto append_pokemon = [&out](const Pokemon& pokemon) {
       out << static_cast<int>(pokemon.card) << ':' << pokemon.entered_turn << ':'
           << pokemon.grass << ':' << pokemon.fire << ':'
-          << static_cast<int>(pokemon.tool) << ';';
+          << static_cast<int>(pokemon.tool) << ':'
+          << pokemon.double_dragon << ';';  // DDE is public attached state: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
     };
 
     append_cards(state.deck);

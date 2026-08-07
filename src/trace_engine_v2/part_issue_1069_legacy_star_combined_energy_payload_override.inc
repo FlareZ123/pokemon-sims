@@ -1,6 +1,18 @@
-  bool held_blender_only_blocks_combined_legacy_star_route() const {
-    if (hand_count(Card::BrilliantBlender) == 0 || !active_is_vstar() ||
-        state_.manual_energy_used || supporter_allowed() || !need_energy() ||
+  bool held_payload_only_outlet_blocks_combined_legacy_star_route() const {
+    // These held cards can establish a current-turn Dragon payload, but none can
+    // supply the missing Basic Energy by itself. They therefore cannot suppress a
+    // Legacy Star line that is needed to bridge both axes:
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Confirmed non-Blender regression: https://github.com/FlareZ123/pokemon-sims/issues/2313
+    const bool held_item_payload_only_outlet = !item_locked() &&
+        (hand_count(Card::BrilliantBlender) > 0 ||
+         hand_count(Card::MysteriousTreasure) > 0);
+    const bool held_supporter_payload_only_outlet =
+        supporter_allowed() && hand_count(Card::ProfessorBurnet) > 0;
+    if ((!held_item_payload_only_outlet && !held_supporter_payload_only_outlet) ||
+        !active_is_vstar() || state_.manual_energy_used || !need_energy() ||
         !need_payload() || !can_play_payload_this_turn() ||
         !payload_might_be_in_deck() || state_.deck.empty()) {
       return false;
@@ -56,26 +68,38 @@
       return false;
     }
 
-    if (!held_blender_only_blocks_combined_legacy_star_route()) {
+    if (!held_payload_only_outlet_blocks_combined_legacy_star_route()) {
       return use_legacy_star_issue1069_original();
     }
 
     const int held_blenders = hand_count(Card::BrilliantBlender);
+    const int held_treasures = hand_count(Card::MysteriousTreasure);
+    const int held_burnets = hand_count(Card::ProfessorBurnet);
     std::erase(state_.hand, Card::BrilliantBlender);
+    std::erase(state_.hand, Card::MysteriousTreasure);
+    std::erase(state_.hand, Card::ProfessorBurnet);
     const bool used = use_legacy_star_issue1069_original();
     state_.hand.insert(state_.hand.end(), static_cast<std::size_t>(held_blenders),
                        Card::BrilliantBlender);
+    state_.hand.insert(state_.hand.end(), static_cast<std::size_t>(held_treasures),
+                       Card::MysteriousTreasure);
+    state_.hand.insert(state_.hand.end(), static_cast<std::size_t>(held_burnets),
+                       Card::ProfessorBurnet);
 
-    // Brilliant Blender can solve only the Dragon-payload axis. When no matching
-    // Basic Energy is held and the Supporter play is already spent, temporarily
-    // excluding Blender from route admission lets one Legacy Star resolution discard
-    // the current-turn payload and recover the missing manual-attachment Energy. The
-    // physical Blender remains in hand throughout and is restored after evaluation:
+    // Legacy Star may recover any two cards after its seven-card discard. When a
+    // payload-only outlet is the sole preflight suppressor, temporarily excluding
+    // that outlet lets the existing adaptive recovery policy evaluate the missing
+    // Energy axis as well. The held cards are restored immediately after the VSTAR
+    // Power evaluation, so later same-turn play can still use them when required:
+    // Regidrago VSTAR / Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
-    // Regidrago VSTAR and Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Manual Energy attachment and Ability procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Strict-JIT payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1069
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Official Item, Supporter, Ability, discard, search, and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 and earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Dynamic DCI and strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Original Blender regression: https://github.com/FlareZ123/pokemon-sims/issues/1069
+    // Confirmed non-Blender regression: https://github.com/FlareZ123/pokemon-sims/issues/2313
     return used;
   }

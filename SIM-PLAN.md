@@ -139,10 +139,11 @@ A/S payloads can enter the discard before the attack turn. This produces an opti
 | Scenario | Meaning |
 |---|---|
 | None | Baseline goldfish condition. |
-| Turn-2 item lock | Turn 1 is normal. Item cards cannot be played from turn 2 onward. This represents a fast lock that still permits an initial setup turn. |
-| Full item lock | No Item cards can be played during the simulated turns. |
+| Turn-2 item lock | Turn 1 is normal. Item cards cannot be played from turn 2 onward. This is the registered current-paper Item-lock timing. |
 | Full Rule Box ability lock | Rule Box Pokémon Abilities are unavailable. The model treats Forest Seal Stone as usable through Path to the Peak because the VSTAR Power is on the Tool. |
-| Combined | Full item lock and Rule Box ability lock together. |
+| Combined | Rule Box Pokémon Abilities are suppressed from the start, while Item cards remain legal on turn 1 and become locked from turn 2 onward. This uses the same Item timing as the Turn-2 item-lock scenario. |
+
+`LockMode::FullItem` remains only for focused synthetic or historical regression fixtures and has no registered aggregate or trace label. The current-paper aggregate omits turn-one full Item-lock rows because the starting player cannot attack on the first turn and Forest of Giant Plants, the historical immediate-evolution enabler for turn-one Vileplume-style locks, is banned in Expanded. Sources: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf https://www.pokemon.com/es/sol-luna-sombras-ardientes-anuncio-trimestral-sobre-lista-de-cartas-prohibidas-y-cambios-en-las-reglas/ https://github.com/FlareZ123/pokemon-sims/issues/2247
 
 “Lock with no outs” is a stress-test condition. Channeler is not treated as a generic answer because its text removes effects of attacks on your Pokémon. It cannot generally remove an opponent’s ongoing Item or Ability lock.
 

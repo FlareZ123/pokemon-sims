@@ -49,8 +49,13 @@ endfunction()
 # Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
 # Strict-JIT payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
 # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1086
+# Current-paper Item-lock timing: https://github.com/FlareZ123/pokemon-sims/issues/2247
 assert_serena_route("strict-jit-turn2-item-lock/go-second" scheduled_lock_trace)
-assert_serena_route("strict-jit-full-item-lock/go-second" full_lock_trace)
+
+# The former full-turn-one Item-lock CLI duplicate is intentionally absent. FullItem
+# remains available only to focused synthetic/historical C++ fixtures:
+# https://assets.pokemon.com/assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf
+# https://github.com/FlareZ123/pokemon-sims/issues/2247
 
 # When one manual attachment cannot complete GGF, Crispin remains the direct Energy
 # connector and must retain priority over Serena:

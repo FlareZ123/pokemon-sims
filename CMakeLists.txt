@@ -271,18 +271,11 @@ add_test(NAME trace_issue_1110_tate_yields_to_burnet
 add_test(NAME trace_issue_1108_known_burnet_steven_route
   COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 101 --require-ready-by 3)
 
-# A legal Latias ex promotion plus Serena's mandatory Dragon discard completes
-# both remaining axes before Gladion may spend the Supporter play:
-# https://api.pokemontcg.io/v2/cards/sv8-76
-# https://api.pokemontcg.io/v2/cards/swsh12-164
-# https://api.pokemontcg.io/v2/cards/me2pt5-152
-# https://api.pokemontcg.io/v2/cards/sm4-95
-# https://api.pokemontcg.io/v2/cards/swsh12-136
-# https://www.pokemon.com/us/pokemon-tcg/rules
-# https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+# Issue #1126's full-lock behavior remains covered by the focused synthetic
+# `LockMode::FullItem` fixture in tests/issue_1126_latias_serena_preempts_gladion_tests.cpp.
+# The retired `strict-jit-full-item-lock/*` CLI labels must not be restored:
 # https://github.com/FlareZ123/pokemon-sims/issues/1126
-add_test(NAME trace_issue_1126_latias_serena_preempts_gladion
-  COMMAND regidrago_sim --simulate-this --scenario strict-jit-full-item-lock/go-first --seed 16189 --require-ready-by 5)
+# https://github.com/FlareZ123/pokemon-sims/issues/2247
 
 add_test(NAME regidrago_sim_matrix_smoke COMMAND regidrago_sim --trials 100 --seed 20260705 --out ${CMAKE_CURRENT_BINARY_DIR}/smoke_results.csv)
 set_tests_properties(regidrago_sim_matrix_smoke PROPERTIES RUN_SERIAL TRUE)

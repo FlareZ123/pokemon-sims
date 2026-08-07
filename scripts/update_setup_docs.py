@@ -17,13 +17,11 @@ SCENARIO_LABELS = {
     "matchup-flex-jit/go-second": "Matchup-flex JIT, going second",
     "no-discard-control/go-second": "No discard control, going second",
     "strict-jit-turn2-item-lock/go-first": "Strict JIT, turn-two Item lock, first",
-    "strict-jit-full-item-lock/go-first": "Strict JIT, full Item lock, first",
     "strict-jit-rulebox-ability-lock/go-first": "Strict JIT, Rule Box Ability lock, first",
-    "strict-jit-combined-lock/go-first": "Strict JIT, combined lock, first",
+    "strict-jit-combined-lock/go-first": "Strict JIT, turn-two Item + Rule Box Ability lock, first",
     "strict-jit-turn2-item-lock/go-second": "Strict JIT, turn-two Item lock, second",
-    "strict-jit-full-item-lock/go-second": "Strict JIT, full Item lock, second",
     "strict-jit-rulebox-ability-lock/go-second": "Strict JIT, Rule Box Ability lock, second",
-    "strict-jit-combined-lock/go-second": "Strict JIT, combined lock, second",
+    "strict-jit-combined-lock/go-second": "Strict JIT, turn-two Item + Rule Box Ability lock, second",
     "strict-jit-supporter-lock/go-first": "Strict JIT, Supporter lock, first",
     "strict-jit-supporter-lock/go-second": "Strict JIT, Supporter lock, second",
 }
@@ -111,6 +109,8 @@ Seed: `{manifest['matrix_seed']}`.
 {table(baseline)}
 
 ## Lock stress tests
+
+Turn-one full Item-lock rows are intentionally omitted and must not be reintroduced as current-paper Expanded matchup scenarios. The official turn procedure prevents the starting player from attacking on the first turn, and Forest of Giant Plants, the historical immediate-evolution enabler for turn-one Vileplume-style locks, is banned in Expanded. Use the turn-two Item-lock rows instead. Combined lock means Rule Box Ability suppression plus Item lock beginning on turn 2. Sources: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf https://www.pokemon.com/es/sol-luna-sombras-ardientes-anuncio-trimestral-sobre-lista-de-cartas-prohibidas-y-cambios-en-las-reglas/ https://github.com/FlareZ123/pokemon-sims/issues/2247
 
 {table(locks)}
 

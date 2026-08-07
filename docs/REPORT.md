@@ -23,16 +23,16 @@ Seed: `20260705`.
 
 ## Lock stress tests
 
+Turn-one full Item-lock rows are intentionally omitted and must not be reintroduced as current-paper Expanded matchup scenarios. The official turn procedure prevents the starting player from attacking on the first turn, and Forest of Giant Plants, the historical immediate-evolution enabler for turn-one Vileplume-style locks, is banned in Expanded. Use the turn-two Item-lock rows instead. Combined lock means Rule Box Ability suppression plus Item lock beginning on turn 2. Sources: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf https://www.pokemon.com/es/sol-luna-sombras-ardientes-anuncio-trimestral-sobre-lista-de-cartas-prohibidas-y-cambios-en-las-reglas/ https://github.com/FlareZ123/pokemon-sims/issues/2247
+
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
 | Strict JIT, turn-two Item lock, first | 4.601% | 10.393% | 18.262% |
-| Strict JIT, full Item lock, first | 2.85% | 7.89% | 15.425% |
 | Strict JIT, Rule Box Ability lock, first | 4.392% | 26.663% | 40.243% |
-| Strict JIT, combined lock, first | 0.308% | 3.371% | 7.514% |
+| Strict JIT, turn-two Item + Rule Box Ability lock, first | 0.812% | 4.674% | 9.572% |
 | Strict JIT, turn-two Item lock, second | 14.177% | 28.393% | 36.916% |
-| Strict JIT, full Item lock, second | 10.515% | 23.371% | 31.33% |
 | Strict JIT, Rule Box Ability lock, second | 18.214% | 35.658% | 46.258% |
-| Strict JIT, combined lock, second | 2.51% | 11.587% | 16.268% |
+| Strict JIT, turn-two Item + Rule Box Ability lock, second | 3.793% | 14.286% | 19.84% |
 | Strict JIT, Supporter lock, first | 0.003% | 15.382% | 21.683% |
 | Strict JIT, Supporter lock, second | 8.123% | 19.412% | 25.305% |
 

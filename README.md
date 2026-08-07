@@ -77,6 +77,8 @@ The historical aggregate CLI remains backward compatible:
 ./build/regidrago_sim --trials 100000 --seed 20260705 --out results/simulation_results.csv
 ```
 
+Turn-one full Item-lock scenarios are intentionally not registered for current-paper Expanded reporting and must not be reintroduced. The starting player cannot attack on the first turn, and Forest of Giant Plants, the historical immediate-evolution enabler for turn-one Vileplume-style locks, is banned in Expanded. Use `strict-jit-turn2-item-lock/*` for Item lock after the initial setup opportunity. `strict-jit-combined-lock/*` combines Rule Box Ability suppression with that same turn-two Item timing. `LockMode::FullItem` remains only for focused synthetic or historical fixtures. Sources: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf https://www.pokemon.com/es/sol-luna-sombras-ardientes-anuncio-trimestral-sobre-lista-de-cartas-prohibidas-y-cambios-en-las-reglas/ https://github.com/FlareZ123/pokemon-sims/issues/2247
+
 ## Generate the paired two-deck matrices
 
 ```bash
@@ -84,7 +86,7 @@ python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out
 python scripts/update_multi_deck_docs.py --repo-root .
 ```
 
-The paired generator runs both decks across all 16 scenarios, producing 32 independent 100,000-trial rows and 3.2 million simulated games. It writes `results/multi_deck_comparison.csv`, `results/multi_deck_manifest.json`, reviewed named-deck traces, and [`docs/MULTI_DECK_REPORT.md`](docs/MULTI_DECK_REPORT.md). Both decks use the same derived seed for each scenario.
+The paired generator runs both decks across all 14 registered aggregate scenarios, producing 28 independent 100,000-trial rows and 2.8 million simulated games. It writes `results/multi_deck_comparison.csv`, `results/multi_deck_manifest.json`, reviewed named-deck traces, and [`docs/MULTI_DECK_REPORT.md`](docs/MULTI_DECK_REPORT.md). Both decks use the same derived seed for each scenario.
 
 The equivalent direct command is:
 

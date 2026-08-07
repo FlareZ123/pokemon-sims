@@ -33,6 +33,11 @@ void expect(const bool condition, const char* message) {
 }
 
 sim::Scenario scenario() {
+  // FullCombined now means Rule Box Ability suppression from the start plus Item
+  // lock beginning on turn 2. These exact-state tests exercise the proactive
+  // attachment/retreat policy independent of the retired historical seed trace:
+  // https://assets.pokemon.com/assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf
+  // https://github.com/FlareZ123/pokemon-sims/issues/2247
   return sim::Scenario{"issue-1845-proactive-tapu-retreat",
                        sim::DciProfile::StrictJit,
                        sim::LockMode::FullCombined, true, 5};
@@ -158,33 +163,6 @@ void banked_energy_pays_later_retreat() {
          "Paid retreat did not discard the banked Grass");
 }
 
-void exact_seed_reaches_turn_five() {
-  const auto selected =
-      sim::scenario_by_label("strict-jit-combined-lock/go-first");
-  const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
-  expect(selected.has_value(), "Missing combined-lock going-first scenario");
-  expect(deck != nullptr, "Missing registered shell deck");
-
-  std::mt19937_64 rng{271828};
-  sim::TraceLog trace{true, {}};
-  sim::Engine engine{*selected, deck->recipe, rng, &trace};
-  const sim::TrialOutcome outcome = engine.run();
-  const auto contains = [&trace](const std::string& text) {
-    return std::any_of(trace.lines.begin(), trace.lines.end(),
-                       [&text](const std::string& line) {
-                         return line.find(text) != std::string::npos;
-                       });
-  };
-
-  expect(outcome.first_ready_turn == 5,
-         "Seed 271828 did not improve to diagnostic T5 readiness");
-  expect(contains("future paid Retreat"),
-         "Seed 271828 did not bank the public surplus Grass");
-  expect(contains("banked one-Energy Retreat Cost"),
-         "Seed 271828 did not pay Tapu's stored Retreat Cost");
-  expect(contains("T5 | READY"), "Seed 271828 was not ready on T5");
-}
-
 }  // namespace
 
 int main() {
@@ -195,7 +173,6 @@ int main() {
     stronger_switch_routes_are_rejected();
     used_resources_and_paid_active_are_rejected();
     banked_energy_pays_later_retreat();
-    exact_seed_reaches_turn_five();
   } catch (const std::exception& error) {
     std::cerr << "issue-1845 proactive Tapu test failure: " << error.what()
               << '\n';

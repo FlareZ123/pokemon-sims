@@ -152,18 +152,22 @@ void verify_registered_seed_218(const std::string& label) {
 }
 
 void verify_lock_control() {
-  const auto scenario =
-      sim::scenario_by_label("strict-jit-full-item-lock/go-second");
+  const sim::Scenario scenario{
+      "issue-1700-synthetic-full-item-lock", sim::DciProfile::StrictJit,
+      sim::LockMode::FullItem, false, 5};
   const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
-  expect(scenario.has_value() && deck != nullptr,
-         "Issue 1700 lock control is unavailable.");
+  expect(deck != nullptr, "Issue 1700 lock-control deck is unavailable.");
 
   std::mt19937_64 rng{218};
   sim::TraceLog trace{true, {}};
-  sim::Engine engine(*scenario, deck->recipe, rng, &trace);
+  sim::Engine engine(scenario, deck->recipe, rng, &trace);
   static_cast<void>(engine.run());
+  // FullItem remains available only as an explicit synthetic/historical fixture.
+  // Current-paper aggregate labels for turn-one Item lock are retired:
+  // https://assets.pokemon.com/assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf
+  // https://github.com/FlareZ123/pokemon-sims/issues/2247
   expect(!trace_contains(trace, "post-Vessel T3 route"),
-         "The override must not play Earthen Vessel through Item lock.");
+         "The synthetic full-lock control must not play Earthen Vessel through Item lock.");
 }
 
 }  // namespace

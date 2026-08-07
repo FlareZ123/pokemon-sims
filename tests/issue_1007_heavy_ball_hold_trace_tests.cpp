@@ -38,23 +38,26 @@ std::size_t heavy_ball_hold_count(const sim::TraceLog& trace) {
       }));
 }
 
-void test_seed_69_emits_one_hold_for_the_unchanged_state() {
+void test_seed_80_emits_one_hold_for_the_unchanged_state() {
   const sim::Scenario scenario{"strict-jit/go-first", sim::DciProfile::StrictJit,
                                sim::LockMode::None, true, 5};
   const sim::DeckRecipe recipe = sim::baseline_recipe();
-  std::mt19937_64 rng{69};
+  std::mt19937_64 rng{80};
   sim::TraceLog trace;
   trace.enabled = true;
   sim::Engine engine(scenario, recipe, rng, &trace);
   engine.run();
 
   // K1 proves that Heavy Ball has no Basic Prize target, so retaining the Item is
-  // legal. Fixed-point re-evaluation must expose one decision for the unchanged state:
+  // legal. Fixed-point re-evaluation must expose one decision for the unchanged state.
+  // Seed 80 preserves that issue-1007 integration witness after issue #2164 makes
+  // seed 69 correctly take the deterministic Quick Ball -> Latias ex T4 finish:
   // https://api.pokemontcg.io/v2/cards/swsh10-146
   // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
   // https://github.com/FlareZ123/pokemon-sims/issues/1007
+  // https://github.com/FlareZ123/pokemon-sims/issues/2164
   expect(heavy_ball_hold_count(trace) == 1U,
-         "Seed 69 must emit exactly one unchanged-state Heavy Ball hold event.");
+         "Seed 80 must emit exactly one unchanged-state Heavy Ball hold event.");
   expect(std::count(engine.state().hand.begin(), engine.state().hand.end(),
                     sim::Card::HisuianHeavyBall) == 1,
          "The trace fix must preserve Heavy Ball as a held discard-cost resource.");
@@ -96,7 +99,7 @@ void test_state_change_allows_a_new_hold_event() {
 
 int main() {
   try {
-    test_seed_69_emits_one_hold_for_the_unchanged_state();
+    test_seed_80_emits_one_hold_for_the_unchanged_state();
     test_state_change_allows_a_new_hold_event();
     std::cout << "Issue 1007 Heavy Ball hold trace tests passed\n";
     return 0;

@@ -28,8 +28,8 @@
     // Official Item, discard, search, Ability, VSTAR Power, attachment, and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, dynamic DCI/JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2226
-    for (const Card card : {Card::Appletun, Card::MegaDragonite,
-                            Card::Dragapult, Card::GoodraVstar,
+    for (const Card card : {Card::Dragapult, Card::Appletun,
+                            Card::MegaDragonite, Card::GoodraVstar,
                             Card::DialgaGX}) {
       if (hand_count(card) > 0) return card;
     }

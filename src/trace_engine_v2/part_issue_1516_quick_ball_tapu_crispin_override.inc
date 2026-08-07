@@ -68,8 +68,7 @@
         deck_count_after_search_started(Card::LatiasEx) == 0 ||
         hand_count(Card::QuickBall) == 0 || hand_count(Card::Fire) == 0 ||
         hand_count(Card::RegidragoVstar) == 0 ||
-        hand_count(Card::MegaDragonite) == 0 ||
-        !need_active_vstar() || payload_ready()) {
+        hand_count(Card::MegaDragonite) == 0 || payload_ready()) {
       return false;
     }
 
@@ -81,14 +80,11 @@
         });
     if (!prior_turn_gg_regidrago) return false;
 
-    // This predicate intentionally checks the observed GG board plus held Fire
-    // instead of generic need_energy(). In this route the manual Fire is already
-    // available, so need_energy() may report the energy axis as satisfiable before
-    // Quick Ball resolves even though the Active/payload axes are still unfinished.
-    // Quick Ball can discard the held Dragon payload and search Latias ex.
-    // Skyliner removes Dialga-GX's Retreat Cost, while held Fire and Regidrago
-    // VSTAR complete the prior-turn GG Regidrago V. The payload has DCI 1 and
-    // Latias has maximum AMR in this exact public K1 state:
+    // This predicate checks the observed pre-evolution GG Regidrago V directly.
+    // need_active_vstar() is false until a VSTAR is physically in play, so that
+    // generic post-evolution predicate cannot gate this pre-evolution completion.
+    // The held Fire and VSTAR complete the attacker after Quick Ball creates the
+    // current-turn payload outlet and searches Latias ex for Skyliner promotion.
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
     // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76

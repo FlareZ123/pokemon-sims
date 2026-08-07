@@ -77,6 +77,7 @@
     return available;
   }
 
+#define choose_supporter choose_supporter_issue2225_original
   void choose_supporter() {
     if (tate_switch_then_next_turn_burnet_route()) {
       // The current Supporter action repairs Active position. Burnet remains held
@@ -107,3 +108,5 @@
       throw std::logic_error("Issue-1873 Crispin route became unavailable");
     }
   }
+#undef choose_supporter
+#include "part_issue_2225_arven_vessel_supporter_override.inc"

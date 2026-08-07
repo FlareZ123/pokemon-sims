@@ -245,6 +245,9 @@
 #define play_arven play_arven_empty_deck_original
 #include "trace_engine_v2/part_012_arven_fss_blender_contention_override.inc"
 #undef play_arven
+#define play_arven play_arven_issue2265_original
+#include "trace_engine_v2/part_issue_2265_arven_quick_ball_surplus_projection.inc"
+#undef play_arven
 #define choose_supporter choose_supporter_original
 #include "trace_engine_v2/part_014b.inc"
 #undef choose_supporter

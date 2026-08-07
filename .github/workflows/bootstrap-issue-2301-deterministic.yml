@@ -20,6 +20,7 @@ jobs:
       - run: |
           python scripts/apply_issue_2301_deterministic.py
           python scripts/patch_issue_2301_policy_entry.py
+          python scripts/patch_issue_2301_test_fixture.py
       - name: Build and verify focused regression
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -34,7 +35,7 @@ jobs:
           python scripts/update_multi_deck_docs.py --repo-root .
       - name: Commit materialized deterministic fix
         run: |
-          git rm scripts/apply_issue_2301_deterministic.py scripts/patch_issue_2301_policy_entry.py .github/workflows/bootstrap-issue-2301-deterministic.yml
+          git rm scripts/apply_issue_2301_deterministic.py scripts/patch_issue_2301_policy_entry.py scripts/patch_issue_2301_test_fixture.py .github/workflows/bootstrap-issue-2301-deterministic.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A

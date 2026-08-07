@@ -22,9 +22,10 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // Original confirmed route family: https://github.com/FlareZ123/pokemon-sims/issues/648
     // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/2270
-    if (!prizes_known() || item_locked() || !can_play_payload_this_turn() ||
-        !need_payload() || need_regi() || need_vstar() || need_energy() ||
-        !need_active_vstar() || hand_count(Card::Arven) > 0 ||
+    if (!prizes_known() || !supporter_allowed() || item_locked() ||
+        !can_play_payload_this_turn() || !need_payload() || need_regi() ||
+        need_vstar() || need_energy() || !need_active_vstar() ||
+        hand_count(Card::Arven) > 0 ||
         deck_count_after_search_started(Card::Arven) == 0 ||
         std::none_of(state_.hand.begin(), state_.hand.end(), is_payload) ||
         !state_.active || !is_basic(state_.active->card) || state_.retreat_used ||

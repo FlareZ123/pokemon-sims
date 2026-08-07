@@ -335,7 +335,12 @@
 #define play_quick_ball play_quick_ball_issue2272_original
 #include "trace_engine_v2/part_issue_1595_preserve_turo_over_quick_ball_override.inc"
 #undef play_quick_ball
+// #2301 wraps the cumulative Quick Ball policy with one source-bound Pineco timer route:
+// https://github.com/FlareZ123/pokemon-sims/issues/2301
+#define play_quick_ball play_quick_ball_issue2301_original
 #include "trace_engine_v2/part_issue_2272_route_replaced_arven_quick_ball_override.inc"
+#undef play_quick_ball
+#include "trace_engine_v2/part_issue_2301_pineco_quick_ball_vessel_route.inc"
 #include "trace_engine_v2/part_issue_1437_crispin_trace_override.inc"
 #define trace trace_issue_1437_crispin_provenance
 #include "trace_engine_v2/part_issue_1118_secret_box.inc"

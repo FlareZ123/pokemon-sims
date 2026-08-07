@@ -1,0 +1,44 @@
+
+Deck: regidrago-pineco | Seed: 38 | first-ready turn: 4 | setup result: success
+Seed: 38 | first-ready turn: 4 | setup result: success
+===== SIMULATE THIS =====
+Deck: regidrago-pineco
+Scenario: strict-jit/go-second | DCI: strict-JIT | Locks: none
+Mulligans: 0
+Opening player-known state: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Forest of Vitality, Quick Ball, Earthen Vessel, Grass Energy, Regidrago VSTAR, Crispin | Discard=(none)
+DEBUG ONLY: prizes=Forretress ex, Tapu Lele-GX, Dialga-GX, Gladion, Grass Energy, Dawn. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Secret Box
+T1 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | Start Pineco policy: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Forest of Vitality, Quick Ball, Earthen Vessel, Grass Energy, Regidrago VSTAR, Crispin, Secret Box | Discard=(none)
+T1 | PLAY STADIUM | rules: R-FOREST-VITALITY-01; R-GAME-EVOLUTION | Played Forest of Vitality. Grass Pokémon may evolve during their entry turn after the first turn.
+T1 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | End Pineco policy: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Quick Ball, Earthen Vessel, Grass Energy, Regidrago VSTAR, Crispin, Secret Box | Discard=(none)
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Hisuian Goodra VSTAR
+T2 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | Start Pineco policy: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Quick Ball, Earthen Vessel, Grass Energy, Regidrago VSTAR, Crispin, Secret Box, Hisuian Goodra VSTAR | Discard=(none)
+T2 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | End Pineco policy: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Quick Ball, Earthen Vessel, Grass Energy, Regidrago VSTAR, Crispin, Secret Box, Hisuian Goodra VSTAR | Discard=(none)
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Mega Dragonite ex
+T3 | DISCARD | rules: R-QB-01; P-DCI-01; P-JIT-01 | Mega Dragonite ex (Quick Ball issue-2301 timer cost)
+T3 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Quick Ball issue-2301 timer route: deck inspected; Prize identities are now deducible for later decisions.
+T3 | QUICK BALL | rules: R-QB-01; P-DCI-01; P-KNOWLEDGE-01 | Discarded one of two distinct Dragons, searched Regidrago V, and proved the draw-independent T4 Vessel/Secret Box route at K1.
+T3 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T3 | ATTACH | rules: R-GAME-ENERGY; P-AXIS-01 | Grass Energy manually to the issue-2301 Regidrago V; preserved the T4 Vessel, Secret Box, Crispin, VSTAR, and second Dragon.
+T3 | BANK ROUTE | rules: P-KNOWLEDGE-01; P-DCI-01; P-JIT-01 | Banked the exact K1-proven T4 Vessel/Secret Box/Forest Seal Stone/Dawn/Forretress continuation without using a future draw identity.
+T3 | POLICY | rules: P-AXIS-01; P-KNOWLEDGE-01; P-JIT-01 | End Pineco policy after banking issue-2301 T4 route: Active=Tapu Lele-GX [-] | Bench=Regidrago V [G] | Hand=Earthen Vessel, Regidrago VSTAR, Crispin, Secret Box, Hisuian Goodra VSTAR | Discard=Quick Ball, Mega Dragonite ex
+T4 | DRAW | rules: R-GAME-DRAW | start-of-turn: Fire Energy
+T4 | DISCARD | rules: R-EV-01; P-JIT-01; P-DCI-01 | Hisuian Goodra VSTAR (Earthen Vessel issue-2301 T4 payload cost)
+T4 | PLAY ITEM | rules: R-EV-01; R-GAME-ITEM; P-JIT-01 | Earthen Vessel discarded the reserved Dragon on T4 and made Grass plus Fire available for the proven finish.
+T4 | DISCARD | rules: R-SECRET-BOX-01; P-DCI-01 | Regidrago VSTAR (Secret Box issue-2301 replaced VSTAR cost)
+T4 | DISCARD | rules: R-SECRET-BOX-01; P-DCI-01 | Crispin (Secret Box issue-2301 replaced Crispin cost)
+T4 | DISCARD | rules: R-SECRET-BOX-01; P-DCI-01 | Grass Energy (Secret Box issue-2301 surplus Grass cost)
+T4 | PLAY ITEM | rules: R-SECRET-BOX-01; R-GAME-ITEM; P-DCI-01 | Secret Box spent the replaced VSTAR, Crispin, and Grass; searched Forest Seal Stone and Dawn without consuming the mandatory T4 draw as a cost.
+T4 | ATTACH TOOL | rules: R-FSS-01; R-GAME-TOOL | Attached Forest Seal Stone to the prior-turn Regidrago V for Star Alchemy.
+T4 | USE VSTAR POWER | rules: R-FSS-01; P-KNOWLEDGE-01 | Star Alchemy made a replacement Regidrago VSTAR available after Secret Box spent the original held copy.
+T4 | PLAY SUPPORTER | rules: R-DAWN-01; R-GAME-SUPPORTER | Dawn made Pineco and Forretress ex available for the Forest of Vitality line.
+T4 | BENCH | rules: R-GAME-BENCH | Pineco from hand.
+T4 | EVOLVE | rules: R-FOREST-VITALITY-01; R-GAME-EVOLVE | Forest of Vitality evolved the newly Benched Grass Pineco into Grass Forretress ex on T4.
+T4 | USE ABILITY | rules: R-FORRETRESS-01; R-GAME-ABILITY | Exploding Energy attached one Grass to Regidrago V and one Grass to Active Tapu Lele-GX, then Knocked Out Forretress ex.
+T4 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to the issue-2301 Regidrago V, completing GGF.
+T4 | EVOLVE | rules: R-GAME-EVOLVE; R-RVS-01 | Evolved the prior-turn Regidrago V into Regidrago VSTAR after GGF was complete.
+T4 | RETREAT | rules: R-GAME-RETREAT; R-TAPU-01 | Discarded Tapu Lele-GX's attached Grass and promoted the GGF Regidrago VSTAR.
+T4 | COMPLETE ROUTE | rules: P-JIT-01; P-AXIS-01 | Completed the deterministic issue-2301 T4 route with the Vessel-cost Dragon discarded this turn.
+T4 | POLICY | rules: P-AXIS-01; P-JIT-01 | End Pineco policy after deterministic issue-2301 T4 completion: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=Tapu Lele-GX [-] | Hand=(none) | Discard=Quick Ball, Mega Dragonite ex, Earthen Vessel, Hisuian Goodra VSTAR, Secret Box, Regidrago VSTAR, Crispin, Grass Energy, Dawn, Forretress ex, Grass Energy
+T4 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

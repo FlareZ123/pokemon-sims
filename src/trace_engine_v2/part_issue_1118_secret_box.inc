@@ -1248,6 +1248,20 @@ if (card == Card::RegidragoV && established_prior_turn_regi) return 7;
       return;
     }
 
+    // #2301 is banked only after a real T3 Quick Ball search establishes K1 and
+    // proves every exact T4 target. Resolve it before generic Secret Box selection
+    // can spend the reserved Vessel, Dragon, VSTAR, or Crispin on a weaker route:
+    // https://github.com/FlareZ123/pokemon-sims/issues/2301
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    if (issue_2301_banked_t4_route_ && state_.turn == 4) {
+      if (complete_issue_2301_banked_t4_route()) {
+        trace("POLICY", "P-AXIS-01; P-JIT-01",
+              "End Pineco policy after deterministic issue-2301 T4 completion: " + state_line());
+        return;
+      }
+      issue_2301_banked_t4_route_ = false;
+    }
+
     if (issue_1420_direct_t2_treasure_route_) {
       // Read the exact post-draw K1 state before spending Crispin, the manual
       // attachment, or the held payload. Resolve the direct Crispin continuation
@@ -1314,6 +1328,18 @@ if (card == Card::RegidragoV && established_prior_turn_regi) return 7;
     bench_tapu_for_secret_box_connector();
     play_basics_from_hand();
     play_items_until_stable(!strict_payload_timing());
+    // The #2301 Quick Ball action is the only T3 Item needed for its banked route.
+    // Bench Regidrago V and attach the held Grass immediately, then end policy for
+    // this turn so Crispin and Earthen Vessel remain physically available on T4:
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://github.com/FlareZ123/pokemon-sims/issues/2301
+    if (issue_2301_banked_t4_route_ && state_.turn == 3 &&
+        finish_issue_2301_t3_bank()) {
+      trace("POLICY", "P-AXIS-01; P-KNOWLEDGE-01",
+            "End Pineco policy after banking issue-2301 T4 route: " + state_line());
+      return;
+    }
 
     attach_live_fss();
     if (!use_fss_for_issue_1593_treasure_route() &&

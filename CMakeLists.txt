@@ -319,3 +319,15 @@ add_test(NAME trace_issue_1139_fss_banks_tate
 add_test(NAME issue_1333_tapu_live_print_contract
   COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/issue_1333_tapu_live_print_tests.py)
+
+# Wonder Tag may search Gladion for a K1-known final Prize Energy even when another
+# same-type copy remains in deck; the Supporter and manual attachment finish T4.
+# Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+# Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+# Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+# Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+# Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+# Core Prize, Supporter, Item, and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+# Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/2292
+add_test(NAME trace_issue_2292_strict_first_seed692
+  COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 692 --require-ready-by 4)

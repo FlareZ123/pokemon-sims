@@ -5,10 +5,11 @@
 #include <iostream>
 #include <random>
 #include <stdexcept>
-#include <string>
 
 namespace sim {
-struct EngineTestAccess {};
+struct EngineTestAccess {
+  static const State& state(const Engine& engine) { return engine.state_; }
+};
 }  // namespace sim
 
 namespace {
@@ -16,11 +17,9 @@ void expect(const bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);
 }
 
-bool trace_contains(const sim::TraceLog& trace, const std::string& text) {
-  return std::any_of(trace.lines.begin(), trace.lines.end(),
-                     [&text](const std::string& line) {
-                       return line.find(text) != std::string::npos;
-                     });
+bool discarded(const sim::Engine& engine, const sim::Card card) {
+  const auto& cards = sim::EngineTestAccess::state(engine).discard;
+  return std::find(cards.begin(), cards.end(), card) != cards.end();
 }
 
 void expect_seed_ready_with_vessel_payload(const char* scenario_label,
@@ -31,8 +30,7 @@ void expect_seed_ready_with_vessel_payload(const char* scenario_label,
          "The registered issue-2231 fixture is unavailable.");
 
   std::mt19937_64 rng(seed);
-  sim::TraceLog trace{true, {}};
-  sim::Engine engine(*scenario, deck->recipe, rng, &trace);
+  sim::Engine engine(*scenario, deck->recipe, rng);
   const sim::TrialOutcome outcome = engine.run();
 
   // At public K1 with Active Regidrago VSTAR at GG, Earthen Vessel can search
@@ -48,10 +46,10 @@ void expect_seed_ready_with_vessel_payload(const char* scenario_label,
   // Confirmed bugs defining the two orientations: https://github.com/FlareZ123/pokemon-sims/issues/2224 https://github.com/FlareZ123/pokemon-sims/issues/2231
   expect(outcome.first_ready_turn == 4,
          "Issue 2231 seed did not reach readiness on T4.");
-  expect(trace_contains(trace, "Dragapult ex (Earthen Vessel cost)"),
-         "Issue 2231 seed did not use the held Dragon as Vessel's cost.");
-  expect(!trace_contains(trace, "Dipplin TWM 127 (Earthen Vessel cost)"),
-         "Issue 2231 seed still discarded Dipplin instead of the payload.");
+  expect(discarded(engine, sim::Card::Dragapult),
+         "Issue 2231 seed did not leave Dragapult ex in the discard pile.");
+  expect(!discarded(engine, sim::Card::Dipplin),
+         "Issue 2231 seed discarded Dipplin instead of the payload.");
 }
 
 void test_strict_seed_witnesses() {

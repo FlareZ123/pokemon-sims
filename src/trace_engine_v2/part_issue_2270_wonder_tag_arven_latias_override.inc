@@ -1,8 +1,4 @@
-  bool wonder_tag_arven_held_payload_route_available() const {
-    if (wonder_tag_arven_held_payload_route_available_issue2270_original()) {
-      return true;
-    }
-
+  bool issue_2270_wonder_tag_arven_latias_route_available() const {
     // #648's original Wonder Tag -> Arven -> one-discard Item bridge rejected every
     // state with a missing Active-position axis. Quick Ball can legally solve that
     // axis at the same time as its held Dragon cost solves strict-JIT: search Latias
@@ -53,4 +49,14 @@
     // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/2270
     const int required_open_slots = in_play(Card::TapuLeleGX) ? 1 : 2;
     return bench_space() >= required_open_slots;
+  }
+
+  bool wonder_tag_arven_held_payload_route_available() const {
+    // Preserve every pre-#2270 #648 route exactly. The final Tapu connector uses
+    // the dedicated #2270 predicate below so legacy Arven-payload feasibility does
+    // not bypass its existing Bench/target controls.
+    // Original route family: https://github.com/FlareZ123/pokemon-sims/issues/648
+    // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/2270
+    return wonder_tag_arven_held_payload_route_available_issue2270_original() ||
+           issue_2270_wonder_tag_arven_latias_route_available();
   }

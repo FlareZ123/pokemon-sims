@@ -54,7 +54,73 @@
     return selected_duplicate_crispin;
   }
 
+  bool issue_2164_quick_ball_latias_finish_available() const {
+    if ((scenario_.dci != DciProfile::StrictJit &&
+         scenario_.dci != DciProfile::MatchupFlexJit) ||
+        !scenario_.going_first || state_.turn != 4 ||
+        state_.turn > scenario_.max_turn || !prizes_known() ||
+        item_locked() || rule_box_abilities_locked() ||
+        state_.manual_energy_used || state_.retreat_used ||
+        !state_.active || state_.active->card != Card::DialgaGX ||
+        bench_space() == 0 ||
+        !ability_available_for_pokemon(Card::LatiasEx) ||
+        in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
+        deck_count_after_search_started(Card::LatiasEx) == 0 ||
+        hand_count(Card::QuickBall) == 0 || hand_count(Card::Fire) == 0 ||
+        hand_count(Card::RegidragoVstar) == 0 ||
+        hand_count(Card::MegaDragonite) == 0 || payload_ready()) {
+      return false;
+    }
+
+    const bool prior_turn_gg_regidrago = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV &&
+                 pokemon.entered_turn < state_.turn &&
+                 pokemon.grass >= 2 && pokemon.fire == 0;
+        });
+    if (!prior_turn_gg_regidrago) return false;
+
+    // This predicate checks the observed pre-evolution GG Regidrago V directly.
+    // need_active_vstar() is false until a VSTAR is physically in play, so that
+    // generic post-evolution predicate cannot gate this pre-evolution completion.
+    // The held Fire and VSTAR complete the attacker after Quick Ball creates the
+    // current-turn payload outlet and searches Latias ex for Skyliner promotion.
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Dialga-GX is Basic: https://api.pokemontcg.io/v2/cards/sm5-100
+    // Regidrago V / VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, discard, search, Bench, Ability, attachment, evolution, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, DCI, current-turn JIT, connector contention, and earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2164
+    return true;
+  }
+
+  bool play_issue_2164_quick_ball_latias_finish() {
+    if (!issue_2164_quick_ball_latias_finish_available()) return false;
+
+    remove_one(state_.hand, Card::QuickBall);
+    state_.discard.push_back(Card::QuickBall);
+    if (!discard_from_hand(Card::MegaDragonite,
+                           "Quick Ball issue-2164 current-turn payload cost",
+                           "R-QB-01; P-JIT-01; P-DCI-01; P-COMPRESS-01")) {
+      throw std::logic_error("Issue-2164 Mega Dragonite ex cost disappeared");
+    }
+    record_deck_search_knowledge("Quick Ball issue-2164 Latias route");
+    if (!move_deck_to_hand(Card::LatiasEx)) {
+      throw std::logic_error("Issue-2164 Latias ex target disappeared");
+    }
+    shuffle(state_.deck);
+    trace("QUICK BALL", "R-QB-01; R-LATIAS-01; P-JIT-01; P-DCI-01; P-COMPRESS-01",
+          "Discarded Mega Dragonite ex and searched Latias ex for the deterministic T4 promotion route.");
+    if (!bench_from_hand(Card::LatiasEx, false)) {
+      throw std::logic_error("Issue-2164 Latias ex Bench action failed");
+    }
+    return true;
+  }
+
   bool play_quick_ball(const bool permit_payload) {
+    if (play_issue_2164_quick_ball_latias_finish()) return true;
     if (issue_1516_quick_ball_tapu_duplicate_crispin_is_redundant(
             permit_payload)) {
       if (trace_ != nullptr) {

@@ -28,6 +28,38 @@
     return std::nullopt;
   }
 
+  std::optional<Card> issue_2230_treasure_crispin_vstar_payload_cost() const {
+    const bool complete_public_route =
+        strict_payload_timing() && prizes_known() &&
+        !item_locked() && supporter_allowed() &&
+        state_.active && state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        state_.active->grass >= 2 && state_.active->fire == 0 &&
+        need_vstar() && need_payload() && hand_count(Card::Crispin) > 0 &&
+        deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
+        deck_count_after_search_started(Card::Fire) > 0;
+    if (!complete_public_route) return std::nullopt;
+
+    // Mysterious Treasure searches the evolution-legal Regidrago VSTAR after
+    // paying its one-card cost. In this public K1 GG state, held Crispin can
+    // attach the missing Fire before evolution, so spending a held Dragon as
+    // Treasure's cost establishes the same-turn Apex Dragon payload while the
+    // searched VSTAR and Crispin complete every remaining setup axis.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Mega Dragonite ex payload witness: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, discard, search, Supporter, attachment, and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, dynamic DCI/JIT, supporter contention, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2230
+    for (const Card card : {Card::Appletun, Card::MegaDragonite,
+                            Card::Dragapult, Card::GoodraVstar,
+                            Card::DialgaGX}) {
+      if (hand_count(card) > 0) return card;
+    }
+    return std::nullopt;
+  }
+
   std::optional<Card> issue_1869_quick_ball_burnet_cost() const {
     const bool complete_public_route =
         scenario_.dci == DciProfile::StrictJit && prizes_known() &&
@@ -70,6 +102,9 @@
       if (const auto cost = issue_1869_quick_ball_burnet_cost()) return cost;
     }
     if (excluded_from_cost == Card::MysteriousTreasure) {
+      if (const auto payload = issue_2230_treasure_crispin_vstar_payload_cost()) {
+        return payload;
+      }
       if (const auto payload = issue_1876_treasure_payload_cost()) {
         return payload;
       }

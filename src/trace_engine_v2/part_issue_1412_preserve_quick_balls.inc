@@ -146,7 +146,6 @@
     }
     return true;
   }
-
   bool play_issue_1672_vessel_payload_finish() {
     const Pokemon* setup_regi = target_regi();
     const auto payload = std::find_if(
@@ -204,7 +203,8 @@
   bool play_issue_1868_vessel_payload_finish() {
     const auto payload = std::find_if(
         state_.hand.begin(), state_.hand.end(), is_payload);
-    if (scenario_.dci != DciProfile::MatchupFlexJit ||
+    if ((scenario_.dci != DciProfile::StrictJit &&
+         scenario_.dci != DciProfile::MatchupFlexJit) ||
         scenario_.locks != LockMode::None || !prizes_known() || item_locked() ||
         !deck_search_available() || state_.manual_energy_used ||
         !state_.active || state_.active->card != Card::RegidragoVstar ||
@@ -219,20 +219,21 @@
     // Earthen Vessel discards another card before searching Basic Energy. In
     // this public K1 state, its Grass search plus the unused manual attachment
     // completes GGF, so the held Dragon becomes DCI 1 because that same cost
-    // supplies the required matchup-flex current-turn Apex Dragon payload:
+    // supplies the required strict/matchup-flex current-turn Apex Dragon payload:
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-    // Dialga-GX payload witness: https://api.pokemontcg.io/v2/cards/sm5-100
+    // Mega Dragonite ex payload witness: https://api.pokemontcg.io/v2/cards/me2pt5-152
     // Regidrago VSTAR / Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official Item, discard, search, and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, dynamic DCI, current-turn JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1868
+    // Original matchup-flex bug: https://github.com/FlareZ123/pokemon-sims/issues/1868
+    // Confirmed strict regression: https://github.com/FlareZ123/pokemon-sims/issues/2224
     remove_one(state_.hand, Card::EarthenVessel);
     state_.discard.push_back(Card::EarthenVessel);
     if (!discard_from_hand(discarded_payload, "Earthen Vessel cost",
                            "R-EV-01; P-DCI-01; P-JIT-01")) {
-      throw std::logic_error("Issue-1868 Dragon payload cost disappeared");
+      throw std::logic_error("Issue-1868/2224 Dragon payload cost disappeared");
     }
-    record_deck_search_knowledge("Earthen Vessel issue-1868 route");
+    record_deck_search_knowledge("Earthen Vessel issue-1868/2224 route");
     search_energy_to_hand(2, "R-EV-01; R-GAME-ITEM; P-JIT-01",
                           "Earthen Vessel");
     return true;

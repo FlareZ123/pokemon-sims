@@ -100,8 +100,27 @@ void selector_preserves_the_documented_boundaries() {
     Fixture strict{sim::DciProfile::StrictJit};
     sim::EngineTestAccess::set_state(strict.engine, complete_state());
     sim::EngineTestAccess::play_vessel(strict.engine);
-    expect(!did_discard_dialga(strict.engine),
-           "Matchup-flex payload override escaped into strict JIT");
+    // Strict JIT has the same current-turn payload requirement as matchup-flex
+    // JIT. In this exact K1 state, Vessel pays the Dragon while searching the
+    // final Grass, so the discard is immediately productive in both profiles:
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Strict JIT specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Dynamic DCI specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed strict regression: https://github.com/FlareZ123/pokemon-sims/issues/2224
+    expect(did_discard_dialga(strict.engine),
+           "Strict JIT did not receive the same complete K1 payload override");
+  }
+  {
+    Fixture no_discard{sim::DciProfile::NoDiscardControl};
+    sim::EngineTestAccess::set_state(no_discard.engine, complete_state());
+    sim::EngineTestAccess::play_vessel(no_discard.engine);
+    // The issue-1868/2224 override belongs only to JIT profiles; the control
+    // profile preserves the ordinary discard policy boundary:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://github.com/FlareZ123/pokemon-sims/issues/2224
+    expect(!did_discard_dialga(no_discard.engine),
+           "No-discard-control entered the strict/matchup-flex JIT override");
   }
   {
     Fixture k0;

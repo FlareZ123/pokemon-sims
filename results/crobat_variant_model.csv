@@ -1,209 +1,183 @@
 variant,cuts,crobat_copies,scenario,trials,ready_by_t2_pct,ready_by_t3_pct,ready_by_t4_pct,dark_asset_use_pct,avg_dark_asset_cards_drawn_per_game_using
-regidrago-shell,"none",0,strict-jit/go-first,100000,12.202000,38.777000,55.391000,0.000000,0.000000
-crobat1-erika,"Erika's Invitation",1,strict-jit/go-first,100000,11.808000,38.156000,55.034000,15.205000,1.404341
-crobat1-channeler,"Channeler",1,strict-jit/go-first,100000,11.738000,37.860000,54.704000,15.165000,1.393340
-crobat1-team-yell,"Team Yell's Cheer",1,strict-jit/go-first,100000,11.762000,37.782000,54.489000,15.426000,1.389148
-crobat1-roseanne,"Roseanne's Backup",1,strict-jit/go-first,100000,11.803000,38.047000,54.993000,15.547000,1.389979
-crobat1-turo,"Professor Turo's Scenario",1,strict-jit/go-first,100000,11.884000,37.808000,54.437000,15.589000,1.389313
-crobat1-powerglass,"Powerglass",1,strict-jit/go-first,100000,11.884000,38.086000,54.810000,15.336000,1.394497
-crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit/go-first,100000,11.082000,36.354000,52.821000,14.836000,1.399838
-crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit/go-first,100000,10.452000,36.338000,52.907000,15.737000,1.390926
-crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit/go-first,100000,11.728000,37.429000,54.442000,26.745000,1.342756
-crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit/go-first,100000,11.768000,37.714000,54.610000,26.652000,1.347366
-crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit/go-first,100000,10.383000,36.238000,52.650000,26.958000,1.339157
-crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit/go-first,100000,5.889000,32.841000,49.421000,28.514000,1.377990
-regidrago-shell,"none",0,matchup-flex-jit/go-first,100000,16.317000,47.530000,63.332000,0.000000,0.000000
-crobat1-erika,"Erika's Invitation",1,matchup-flex-jit/go-first,100000,15.842000,46.940000,62.974000,19.225000,1.549909
-crobat1-channeler,"Channeler",1,matchup-flex-jit/go-first,100000,15.636000,46.789000,62.951000,19.130000,1.563879
-crobat1-team-yell,"Team Yell's Cheer",1,matchup-flex-jit/go-first,100000,15.741000,46.867000,63.208000,19.188000,1.565510
-crobat1-roseanne,"Roseanne's Backup",1,matchup-flex-jit/go-first,100000,15.741000,46.867000,63.208000,19.188000,1.565510
-crobat1-turo,"Professor Turo's Scenario",1,matchup-flex-jit/go-first,100000,15.943000,46.891000,62.996000,18.921000,1.570530
-crobat1-powerglass,"Powerglass",1,matchup-flex-jit/go-first,100000,15.961000,46.705000,63.005000,19.296000,1.562604
-crobat1-heavy-ball,"Hisuian Heavy Ball",1,matchup-flex-jit/go-first,100000,15.574000,46.026000,62.298000,19.187000,1.583364
-crobat1-tapu-lele,"Tapu Lele-GX",1,matchup-flex-jit/go-first,100000,14.584000,46.180000,61.977000,20.483000,1.577162
-crobat2-erika-channeler,"Erika's Invitation + Channeler",2,matchup-flex-jit/go-first,100000,15.458000,46.202000,62.417000,31.987000,1.483509
-crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,matchup-flex-jit/go-first,100000,15.246000,46.071000,62.601000,32.094000,1.496666
-crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,matchup-flex-jit/go-first,100000,14.168000,45.539000,61.482000,33.122000,1.505012
-crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,matchup-flex-jit/go-first,100000,7.595000,42.700000,58.306000,37.580000,1.547978
-regidrago-shell,"none",0,no-discard-control/go-first,100000,20.104000,55.835000,72.071000,0.000000,0.000000
-crobat1-erika,"Erika's Invitation",1,no-discard-control/go-first,100000,19.229000,55.385000,71.951000,19.516000,1.597356
-crobat1-channeler,"Channeler",1,no-discard-control/go-first,100000,19.470000,55.549000,71.994000,19.511000,1.588642
-crobat1-team-yell,"Team Yell's Cheer",1,no-discard-control/go-first,100000,19.497000,55.600000,72.015000,19.554000,1.602843
-crobat1-roseanne,"Roseanne's Backup",1,no-discard-control/go-first,100000,19.497000,55.600000,72.015000,19.554000,1.602843
-crobat1-turo,"Professor Turo's Scenario",1,no-discard-control/go-first,100000,19.395000,55.098000,71.293000,19.571000,1.603444
-crobat1-powerglass,"Powerglass",1,no-discard-control/go-first,100000,19.618000,55.437000,72.198000,19.619000,1.602171
-crobat1-heavy-ball,"Hisuian Heavy Ball",1,no-discard-control/go-first,100000,19.206000,54.458000,71.027000,19.327000,1.600145
-crobat1-tapu-lele,"Tapu Lele-GX",1,no-discard-control/go-first,100000,18.130000,54.445000,69.871000,20.514000,1.603490
-crobat2-erika-channeler,"Erika's Invitation + Channeler",2,no-discard-control/go-first,100000,18.978000,54.890000,71.856000,32.440000,1.531504
-crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,no-discard-control/go-first,100000,19.023000,55.028000,71.865000,32.466000,1.519651
-crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,no-discard-control/go-first,100000,17.753000,53.652000,69.652000,33.798000,1.550861
-crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,no-discard-control/go-first,100000,8.217000,51.407000,66.805000,38.247000,1.577274
-regidrago-shell,"none",0,strict-jit-turn2-item-lock/go-first,100000,4.539000,10.075000,17.543000,0.000000,0.000000
-crobat1-erika,"Erika's Invitation",1,strict-jit-turn2-item-lock/go-first,100000,4.421000,10.179000,17.567000,12.414000,1.282181
-crobat1-channeler,"Channeler",1,strict-jit-turn2-item-lock/go-first,100000,4.435000,10.055000,17.466000,12.047000,1.281979
-crobat1-team-yell,"Team Yell's Cheer",1,strict-jit-turn2-item-lock/go-first,100000,4.375000,10.040000,17.367000,12.100000,1.285041
-crobat1-roseanne,"Roseanne's Backup",1,strict-jit-turn2-item-lock/go-first,100000,4.451000,10.174000,17.642000,12.447000,1.291396
-crobat1-turo,"Professor Turo's Scenario",1,strict-jit-turn2-item-lock/go-first,100000,4.455000,10.145000,17.534000,12.371000,1.288982
-crobat1-powerglass,"Powerglass",1,strict-jit-turn2-item-lock/go-first,100000,4.510000,9.996000,17.353000,12.252000,1.285994
-crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit-turn2-item-lock/go-first,100000,4.273000,9.677000,16.946000,11.901000,1.299135
-crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit-turn2-item-lock/go-first,100000,3.916000,9.181000,15.844000,12.395000,1.276563
-crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit-turn2-item-lock/go-first,100000,4.244000,9.936000,17.250000,22.763000,1.284716
-crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit-turn2-item-lock/go-first,100000,4.273000,9.933000,17.283000,22.703000,1.289389
-crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit-turn2-item-lock/go-first,100000,3.816000,9.123000,15.595000,22.643000,1.281235
-crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit-turn2-item-lock/go-first,100000,2.921000,8.015000,13.597000,22.890000,1.266536
-regidrago-shell,"none",0,strict-jit-full-item-lock/go-first,100000,2.915000,7.832000,14.954000,0.000000,0.000000
-crobat1-erika,"Erika's Invitation",1,strict-jit-full-item-lock/go-first,100000,2.936000,7.625000,14.655000,9.708000,1.210754
-crobat1-channeler,"Channeler",1,strict-jit-full-item-lock/go-first,100000,2.819000,7.613000,14.784000,9.823000,1.215209
-crobat1-team-yell,"Team Yell's Cheer",1,strict-jit-full-item-lock/go-first,100000,2.694000,7.468000,14.467000,9.881000,1.218905
-crobat1-roseanne,"Roseanne's Backup",1,strict-jit-full-item-lock/go-first,100000,2.694000,7.468000,14.467000,9.881000,1.218905
-crobat1-turo,"Professor Turo's Scenario",1,strict-jit-full-item-lock/go-first,100000,2.712000,7.501000,14.421000,9.802000,1.217813
-crobat1-powerglass,"Powerglass",1,strict-jit-full-item-lock/go-first,100000,2.786000,7.466000,14.592000,9.855000,1.216438
-crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit-full-item-lock/go-first,100000,2.753000,7.572000,14.688000,9.785000,1.213081
-crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit-full-item-lock/go-first,100000,2.522000,7.109000,13.464000,9.835000,1.209964
-crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit-full-item-lock/go-first,100000,2.738000,7.474000,14.345000,18.117000,1.215157
-crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit-full-item-lock/go-first,100000,2.692000,7.383000,14.396000,18.174000,1.223781
-crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit-full-item-lock/go-first,100000,2.411000,6.898000,13.043000,18.181000,1.216545
-crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit-full-item-lock/go-first,100000,2.107000,6.232000,11.740000,18.246000,1.202675
-regidrago-shell,"none",0,strict-jit-rulebox-ability-lock/go-first,100000,4.357000,25.904000,38.912000,0.000000,0.000000
-crobat1-erika,"Erika's Invitation",1,strict-jit-rulebox-ability-lock/go-first,100000,4.162000,24.920000,37.930000,4.636000,1.706212
-crobat1-channeler,"Channeler",1,strict-jit-rulebox-ability-lock/go-first,100000,4.226000,24.643000,37.437000,4.622000,1.717655
-crobat1-team-yell,"Team Yell's Cheer",1,strict-jit-rulebox-ability-lock/go-first,100000,4.271000,24.870000,37.882000,4.475000,1.742570
-crobat1-roseanne,"Roseanne's Backup",1,strict-jit-rulebox-ability-lock/go-first,100000,4.381000,24.838000,37.776000,4.568000,1.737084
-crobat1-turo,"Professor Turo's Scenario",1,strict-jit-rulebox-ability-lock/go-first,100000,4.329000,24.666000,37.147000,4.577000,1.718374
-crobat1-powerglass,"Powerglass",1,strict-jit-rulebox-ability-lock/go-first,100000,4.283000,24.821000,37.850000,4.648000,1.681368
-crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit-rulebox-ability-lock/go-first,100000,4.085000,24.078000,36.872000,4.487000,1.688656
-crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit-rulebox-ability-lock/go-first,100000,4.225000,25.582000,38.465000,4.650000,1.704731
-crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit-rulebox-ability-lock/go-first,100000,4.157000,24.121000,36.841000,8.098000,1.666090
-crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit-rulebox-ability-lock/go-first,100000,4.127000,24.006000,36.761000,8.075000,1.653746
-crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit-rulebox-ability-lock/go-first,100000,4.072000,24.221000,36.918000,7.968000,1.674699
-crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit-rulebox-ability-lock/go-first,100000,3.421000,24.117000,36.736000,8.085000,1.726654
-regidrago-shell,"none",0,strict-jit-combined-lock/go-first,100000,0.328000,3.290000,7.274000,0.000000,0.000000
-crobat1-erika,"Erika's Invitation",1,strict-jit-combined-lock/go-first,100000,0.309000,3.165000,7.017000,2.429000,1.381227
-crobat1-channeler,"Channeler",1,strict-jit-combined-lock/go-first,100000,0.290000,3.201000,7.059000,2.500000,1.398000
-crobat1-team-yell,"Team Yell's Cheer",1,strict-jit-combined-lock/go-first,100000,0.354000,3.142000,6.974000,2.422000,1.387283
-crobat1-roseanne,"Roseanne's Backup",1,strict-jit-combined-lock/go-first,100000,0.354000,3.142000,6.974000,2.422000,1.387283
-crobat1-turo,"Professor Turo's Scenario",1,strict-jit-combined-lock/go-first,100000,0.358000,3.195000,7.067000,2.458000,1.377136
-crobat1-powerglass,"Powerglass",1,strict-jit-combined-lock/go-first,100000,0.319000,3.185000,7.046000,2.545000,1.368173
-crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit-combined-lock/go-first,100000,0.300000,3.120000,7.073000,2.559000,1.380617
-crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit-combined-lock/go-first,100000,0.266000,3.245000,7.116000,2.456000,1.375407
-crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit-combined-lock/go-first,100000,0.305000,3.050000,6.766000,4.663000,1.380871
-crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit-combined-lock/go-first,100000,0.323000,3.001000,6.802000,4.619000,1.382983
-crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit-combined-lock/go-first,100000,0.302000,3.101000,6.756000,4.530000,1.386755
-crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit-combined-lock/go-first,100000,0.243000,3.160000,6.900000,4.573000,1.394927
-regidrago-shell,"none",0,strict-jit/go-second,100000,29.599000,52.499000,63.704000,0.000000,0.000000
-crobat1-erika,"Erika's Invitation",1,strict-jit/go-second,100000,28.814000,51.858000,63.362000,14.043000,1.401196
-crobat1-channeler,"Channeler",1,strict-jit/go-second,100000,28.675000,51.712000,63.133000,13.864000,1.389354
-crobat1-team-yell,"Team Yell's Cheer",1,strict-jit/go-second,100000,28.582000,51.669000,63.094000,13.875000,1.377802
-crobat1-roseanne,"Roseanne's Backup",1,strict-jit/go-second,100000,28.887000,51.986000,63.558000,14.161000,1.391639
-crobat1-turo,"Professor Turo's Scenario",1,strict-jit/go-second,100000,28.828000,51.436000,62.703000,14.132000,1.393575
-crobat1-powerglass,"Powerglass",1,strict-jit/go-second,100000,28.779000,51.977000,63.485000,14.227000,1.387151
-crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit/go-second,100000,27.633000,50.128000,61.647000,13.417000,1.388611
-crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit/go-second,100000,27.144000,48.954000,60.413000,14.308000,1.392508
-crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit/go-second,100000,28.013000,51.139000,62.978000,24.441000,1.359683
-crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit/go-second,100000,27.886000,50.912000,62.530000,24.589000,1.348570
-crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit/go-second,100000,26.760000,48.646000,60.255000,24.653000,1.365027
-crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit/go-second,100000,22.620000,43.741000,55.730000,26.901000,1.397792
-regidrago-shell,"none",0,matchup-flex-jit/go-second,100000,37.428000,60.945000,71.238000,0.000000,0.000000
-crobat1-erika,"Erika's Invitation",1,matchup-flex-jit/go-second,100000,36.214000,59.932000,70.513000,18.396000,1.541694
-crobat1-channeler,"Channeler",1,matchup-flex-jit/go-second,100000,35.956000,59.888000,70.734000,18.680000,1.535118
-crobat1-team-yell,"Team Yell's Cheer",1,matchup-flex-jit/go-second,100000,35.842000,59.795000,70.457000,18.464000,1.555893
-crobat1-roseanne,"Roseanne's Backup",1,matchup-flex-jit/go-second,100000,35.827000,59.785000,70.461000,18.462000,1.555303
-crobat1-turo,"Professor Turo's Scenario",1,matchup-flex-jit/go-second,100000,36.033000,59.815000,70.287000,18.284000,1.550372
-crobat1-powerglass,"Powerglass",1,matchup-flex-jit/go-second,100000,36.040000,59.925000,70.528000,18.388000,1.547585
-crobat1-heavy-ball,"Hisuian Heavy Ball",1,matchup-flex-jit/go-second,100000,35.649000,59.110000,69.572000,18.419000,1.570498
-crobat1-tapu-lele,"Tapu Lele-GX",1,matchup-flex-jit/go-second,100000,35.475000,58.377000,68.611000,19.368000,1.569031
-crobat2-erika-channeler,"Erika's Invitation + Channeler",2,matchup-flex-jit/go-second,100000,35.055000,58.846000,69.861000,30.778000,1.494866
-crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,matchup-flex-jit/go-second,100000,35.243000,59.222000,70.032000,30.445000,1.501954
-crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,matchup-flex-jit/go-second,100000,34.278000,57.515000,67.935000,31.560000,1.512516
-crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,matchup-flex-jit/go-second,100000,27.597000,51.792000,63.119000,36.487000,1.566037
-regidrago-shell,"none",0,no-discard-control/go-second,100000,40.286000,66.881000,78.105000,0.000000,0.000000
-crobat1-erika,"Erika's Invitation",1,no-discard-control/go-second,100000,38.930000,66.402000,77.880000,19.133000,1.598756
-crobat1-channeler,"Channeler",1,no-discard-control/go-second,100000,39.190000,66.304000,77.883000,19.256000,1.592854
-crobat1-team-yell,"Team Yell's Cheer",1,no-discard-control/go-second,100000,39.057000,66.247000,77.808000,19.056000,1.596453
-crobat1-roseanne,"Roseanne's Backup",1,no-discard-control/go-second,100000,39.057000,66.247000,77.808000,19.056000,1.596453
-crobat1-turo,"Professor Turo's Scenario",1,no-discard-control/go-second,100000,39.057000,65.664000,77.197000,19.038000,1.590556
-crobat1-powerglass,"Powerglass",1,no-discard-control/go-second,100000,39.229000,66.502000,78.062000,19.069000,1.596675
-crobat1-heavy-ball,"Hisuian Heavy Ball",1,no-discard-control/go-second,100000,38.601000,65.602000,77.295000,19.111000,1.613521
-crobat1-tapu-lele,"Tapu Lele-GX",1,no-discard-control/go-second,100000,38.383000,64.710000,75.591000,20.132000,1.633866
-crobat2-erika-channeler,"Erika's Invitation + Channeler",2,no-discard-control/go-second,100000,38.088000,65.415000,77.216000,31.403000,1.550075
-crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,no-discard-control/go-second,100000,38.297000,65.600000,77.504000,31.504000,1.558881
-crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,no-discard-control/go-second,100000,37.329000,63.697000,75.164000,32.358000,1.575901
-crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,no-discard-control/go-second,100000,28.605000,60.319000,71.116000,37.983000,1.621252
-regidrago-shell,"none",0,strict-jit-turn2-item-lock/go-second,100000,14.010000,27.871000,35.491000,0.000000,0.000000
-crobat1-erika,"Erika's Invitation",1,strict-jit-turn2-item-lock/go-second,100000,13.836000,27.245000,34.959000,11.654000,1.330101
-crobat1-channeler,"Channeler",1,strict-jit-turn2-item-lock/go-second,100000,13.704000,27.207000,34.714000,11.558000,1.310348
-crobat1-team-yell,"Team Yell's Cheer",1,strict-jit-turn2-item-lock/go-second,100000,13.807000,27.398000,34.780000,11.574000,1.303871
-crobat1-roseanne,"Roseanne's Backup",1,strict-jit-turn2-item-lock/go-second,100000,13.735000,27.297000,34.846000,11.692000,1.312778
-crobat1-turo,"Professor Turo's Scenario",1,strict-jit-turn2-item-lock/go-second,100000,13.668000,26.929000,34.103000,11.769000,1.319228
-crobat1-powerglass,"Powerglass",1,strict-jit-turn2-item-lock/go-second,100000,13.717000,27.039000,34.688000,11.813000,1.321595
-crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit-turn2-item-lock/go-second,100000,13.070000,26.152000,33.629000,11.185000,1.332588
-crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit-turn2-item-lock/go-second,100000,12.378000,24.786000,31.420000,11.989000,1.297856
-crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit-turn2-item-lock/go-second,100000,13.388000,26.539000,33.887000,21.081000,1.311038
-crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit-turn2-item-lock/go-second,100000,13.163000,26.470000,33.701000,20.936000,1.315629
-crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit-turn2-item-lock/go-second,100000,12.083000,24.024000,30.591000,21.372000,1.313728
-crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit-turn2-item-lock/go-second,100000,9.769000,20.010000,25.283000,21.881000,1.298752
-regidrago-shell,"none",0,strict-jit-full-item-lock/go-second,100000,10.543000,23.165000,30.322000,0.000000,0.000000
-crobat1-erika,"Erika's Invitation",1,strict-jit-full-item-lock/go-second,100000,10.098000,22.125000,29.083000,8.923000,1.231536
-crobat1-channeler,"Channeler",1,strict-jit-full-item-lock/go-second,100000,10.109000,22.138000,29.296000,8.974000,1.239358
-crobat1-team-yell,"Team Yell's Cheer",1,strict-jit-full-item-lock/go-second,100000,10.209000,22.281000,29.066000,8.998000,1.242498
-crobat1-roseanne,"Roseanne's Backup",1,strict-jit-full-item-lock/go-second,100000,10.209000,22.281000,29.066000,8.998000,1.242498
-crobat1-turo,"Professor Turo's Scenario",1,strict-jit-full-item-lock/go-second,100000,10.284000,22.205000,28.779000,9.030000,1.240421
-crobat1-powerglass,"Powerglass",1,strict-jit-full-item-lock/go-second,100000,10.260000,22.319000,29.329000,8.891000,1.242043
-crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit-full-item-lock/go-second,100000,10.429000,22.641000,29.477000,8.974000,1.238355
-crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit-full-item-lock/go-second,100000,9.379000,20.427000,26.524000,8.899000,1.227778
-crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit-full-item-lock/go-second,100000,10.002000,21.672000,28.478000,16.244000,1.241751
-crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit-full-item-lock/go-second,100000,9.734000,21.541000,28.475000,16.573000,1.239607
-crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit-full-item-lock/go-second,100000,9.095000,19.798000,25.900000,16.588000,1.244996
-crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit-full-item-lock/go-second,100000,7.947000,17.304000,22.233000,17.123000,1.237050
-regidrago-shell,"none",0,strict-jit-rulebox-ability-lock/go-second,100000,17.932000,34.506000,44.839000,0.000000,0.000000
-crobat1-erika,"Erika's Invitation",1,strict-jit-rulebox-ability-lock/go-second,100000,17.274000,33.440000,43.690000,4.503000,1.683766
-crobat1-channeler,"Channeler",1,strict-jit-rulebox-ability-lock/go-second,100000,17.190000,33.088000,43.333000,4.539000,1.654549
-crobat1-team-yell,"Team Yell's Cheer",1,strict-jit-rulebox-ability-lock/go-second,100000,17.499000,33.433000,43.749000,4.420000,1.666516
-crobat1-roseanne,"Roseanne's Backup",1,strict-jit-rulebox-ability-lock/go-second,100000,17.444000,33.567000,43.988000,4.505000,1.678357
-crobat1-turo,"Professor Turo's Scenario",1,strict-jit-rulebox-ability-lock/go-second,100000,17.531000,33.049000,42.753000,4.415000,1.662967
-crobat1-powerglass,"Powerglass",1,strict-jit-rulebox-ability-lock/go-second,100000,17.452000,33.632000,43.994000,4.408000,1.643829
-crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit-rulebox-ability-lock/go-second,100000,16.904000,32.916000,43.075000,4.355000,1.639495
-crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit-rulebox-ability-lock/go-second,100000,17.616000,33.605000,43.828000,4.388000,1.689380
-crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit-rulebox-ability-lock/go-second,100000,16.654000,32.304000,42.382000,7.740000,1.624677
-crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit-rulebox-ability-lock/go-second,100000,16.620000,32.253000,42.485000,7.706000,1.637815
-crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit-rulebox-ability-lock/go-second,100000,16.905000,32.656000,42.660000,7.707000,1.657584
-crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit-rulebox-ability-lock/go-second,100000,16.866000,32.528000,42.342000,7.729000,1.720016
-regidrago-shell,"none",0,strict-jit-combined-lock/go-second,100000,2.404000,11.427000,15.485000,0.000000,0.000000
-crobat1-erika,"Erika's Invitation",1,strict-jit-combined-lock/go-second,100000,2.439000,11.093000,15.064000,2.444000,1.379296
-crobat1-channeler,"Channeler",1,strict-jit-combined-lock/go-second,100000,2.399000,10.971000,14.803000,2.381000,1.366233
-crobat1-team-yell,"Team Yell's Cheer",1,strict-jit-combined-lock/go-second,100000,2.356000,10.898000,14.844000,2.411000,1.380755
-crobat1-roseanne,"Roseanne's Backup",1,strict-jit-combined-lock/go-second,100000,2.356000,10.898000,14.844000,2.411000,1.380755
-crobat1-turo,"Professor Turo's Scenario",1,strict-jit-combined-lock/go-second,100000,2.392000,10.796000,14.500000,2.395000,1.386639
-crobat1-powerglass,"Powerglass",1,strict-jit-combined-lock/go-second,100000,2.271000,10.777000,14.758000,2.392000,1.383779
-crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit-combined-lock/go-second,100000,2.321000,10.872000,14.675000,2.400000,1.391250
-crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit-combined-lock/go-second,100000,2.406000,11.201000,15.182000,2.379000,1.345944
-crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit-combined-lock/go-second,100000,2.302000,10.634000,14.374000,4.560000,1.376096
-crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit-combined-lock/go-second,100000,2.150000,10.339000,14.099000,4.459000,1.388204
-crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit-combined-lock/go-second,100000,2.190000,10.432000,14.192000,4.294000,1.381230
-crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit-combined-lock/go-second,100000,2.056000,10.692000,14.378000,4.277000,1.379238
-regidrago-shell,"none",0,strict-jit-supporter-lock/go-first,100000,0.005000,14.972000,21.347000,0.000000,0.000000
-crobat1-erika,"Erika's Invitation",1,strict-jit-supporter-lock/go-first,100000,0.006000,15.116000,21.476000,22.270000,1.519802
-crobat1-channeler,"Channeler",1,strict-jit-supporter-lock/go-first,100000,0.005000,15.023000,21.405000,22.348000,1.508994
-crobat1-team-yell,"Team Yell's Cheer",1,strict-jit-supporter-lock/go-first,100000,0.005000,15.035000,21.408000,22.347000,1.514610
-crobat1-roseanne,"Roseanne's Backup",1,strict-jit-supporter-lock/go-first,100000,0.005000,15.035000,21.408000,22.347000,1.514610
-crobat1-turo,"Professor Turo's Scenario",1,strict-jit-supporter-lock/go-first,100000,0.005000,15.035000,21.408000,22.347000,1.514610
-crobat1-powerglass,"Powerglass",1,strict-jit-supporter-lock/go-first,100000,0.000000,14.916000,21.301000,22.513000,1.513792
-crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit-supporter-lock/go-first,100000,0.005000,14.818000,21.069000,21.822000,1.509440
-crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit-supporter-lock/go-first,100000,0.006000,15.742000,22.170000,22.821000,1.489593
-crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit-supporter-lock/go-first,100000,0.009000,14.745000,21.178000,34.288000,1.465002
-crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit-supporter-lock/go-first,100000,0.010000,14.768000,21.250000,34.211000,1.463506
-crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit-supporter-lock/go-first,100000,0.007000,15.460000,21.892000,34.479000,1.456075
-crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit-supporter-lock/go-first,100000,0.010000,16.427000,23.100000,34.441000,1.447635
-regidrago-shell,"none",0,strict-jit-supporter-lock/go-second,100000,8.175000,19.593000,25.363000,0.000000,0.000000
-crobat1-erika,"Erika's Invitation",1,strict-jit-supporter-lock/go-second,100000,7.791000,18.991000,24.729000,21.591000,1.503451
-crobat1-channeler,"Channeler",1,strict-jit-supporter-lock/go-second,100000,7.693000,18.903000,24.675000,21.654000,1.489101
-crobat1-team-yell,"Team Yell's Cheer",1,strict-jit-supporter-lock/go-second,100000,7.644000,18.781000,24.584000,21.669000,1.491762
-crobat1-roseanne,"Roseanne's Backup",1,strict-jit-supporter-lock/go-second,100000,7.644000,18.781000,24.584000,21.669000,1.491762
-crobat1-turo,"Professor Turo's Scenario",1,strict-jit-supporter-lock/go-second,100000,7.644000,18.781000,24.584000,21.669000,1.491762
-crobat1-powerglass,"Powerglass",1,strict-jit-supporter-lock/go-second,100000,7.822000,19.036000,24.591000,21.565000,1.489914
-crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit-supporter-lock/go-second,100000,7.763000,18.740000,24.272000,21.214000,1.494155
-crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit-supporter-lock/go-second,100000,8.331000,20.172000,26.154000,21.605000,1.473178
-crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit-supporter-lock/go-second,100000,7.718000,18.904000,24.802000,33.071000,1.451997
-crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit-supporter-lock/go-second,100000,7.643000,18.865000,24.772000,33.016000,1.452750
-crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit-supporter-lock/go-second,100000,7.940000,19.560000,25.333000,33.125000,1.448543
-crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit-supporter-lock/go-second,100000,8.463000,20.702000,26.733000,33.027000,1.423774
+regidrago-shell,"none",0,strict-jit/go-first,100000,12.180000,40.630000,57.272000,0.000000,0.000000
+crobat1-erika,"Erika's Invitation",1,strict-jit/go-first,100000,12.144000,40.694000,57.624000,15.319000,1.747503
+crobat1-channeler,"Channeler",1,strict-jit/go-first,100000,12.338000,40.793000,57.450000,15.130000,1.727429
+crobat1-team-yell,"Team Yell's Cheer",1,strict-jit/go-first,100000,12.282000,40.579000,57.324000,15.419000,1.743823
+crobat1-klara,"Klara",1,strict-jit/go-first,100000,12.331000,40.552000,57.049000,15.151000,1.763910
+crobat1-turo,"Professor Turo's Scenario",1,strict-jit/go-first,100000,12.388000,40.553000,57.001000,15.225000,1.747586
+crobat1-powerglass,"Powerglass",1,strict-jit/go-first,100000,12.399000,41.171000,57.919000,15.238000,1.734545
+crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit/go-first,100000,11.743000,39.191000,55.676000,14.061000,1.710974
+crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit/go-first,100000,11.233000,39.928000,56.342000,15.502000,1.735324
+crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit/go-first,100000,12.330000,40.666000,57.625000,26.551000,1.720237
+crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit/go-first,100000,12.276000,40.703000,57.573000,26.425000,1.726093
+crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit/go-first,100000,10.971000,39.254000,55.891000,27.300000,1.717106
+crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit/go-first,100000,6.200000,35.395000,52.552000,28.971000,1.718684
+regidrago-shell,"none",0,matchup-flex-jit/go-first,100000,16.296000,48.932000,64.758000,0.000000,0.000000
+crobat1-erika,"Erika's Invitation",1,matchup-flex-jit/go-first,100000,16.365000,49.537000,65.355000,18.594000,2.099172
+crobat1-channeler,"Channeler",1,matchup-flex-jit/go-first,100000,16.268000,49.247000,65.465000,18.514000,2.108675
+crobat1-team-yell,"Team Yell's Cheer",1,matchup-flex-jit/go-first,100000,16.265000,49.449000,65.352000,18.384000,2.101882
+crobat1-klara,"Klara",1,matchup-flex-jit/go-first,100000,16.378000,49.518000,65.281000,18.411000,2.112813
+crobat1-turo,"Professor Turo's Scenario",1,matchup-flex-jit/go-first,100000,16.281000,49.066000,64.927000,18.568000,2.101626
+crobat1-powerglass,"Powerglass",1,matchup-flex-jit/go-first,100000,16.360000,49.126000,65.151000,18.607000,2.102542
+crobat1-heavy-ball,"Hisuian Heavy Ball",1,matchup-flex-jit/go-first,100000,15.941000,48.307000,64.194000,17.751000,2.090530
+crobat1-tapu-lele,"Tapu Lele-GX",1,matchup-flex-jit/go-first,100000,14.993000,48.331000,63.742000,19.669000,2.111851
+crobat2-erika-channeler,"Erika's Invitation + Channeler",2,matchup-flex-jit/go-first,100000,16.148000,49.376000,65.297000,31.216000,2.064807
+crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,matchup-flex-jit/go-first,100000,16.112000,49.371000,65.628000,31.100000,2.054051
+crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,matchup-flex-jit/go-first,100000,14.930000,48.416000,64.064000,32.185000,2.061022
+crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,matchup-flex-jit/go-first,100000,8.165000,45.368000,61.310000,36.960000,2.091991
+regidrago-shell,"none",0,no-discard-control/go-first,100000,20.078000,56.246000,72.304000,0.000000,0.000000
+crobat1-erika,"Erika's Invitation",1,no-discard-control/go-first,100000,19.933000,56.916000,73.453000,18.400000,2.268859
+crobat1-channeler,"Channeler",1,no-discard-control/go-first,100000,20.177000,56.599000,73.073000,18.300000,2.285027
+crobat1-team-yell,"Team Yell's Cheer",1,no-discard-control/go-first,100000,19.936000,56.650000,73.005000,18.251000,2.278998
+crobat1-klara,"Klara",1,no-discard-control/go-first,100000,20.051000,56.515000,73.000000,18.226000,2.274279
+crobat1-turo,"Professor Turo's Scenario",1,no-discard-control/go-first,100000,19.928000,56.362000,72.198000,18.403000,2.270445
+crobat1-powerglass,"Powerglass",1,no-discard-control/go-first,100000,20.131000,56.782000,73.188000,18.363000,2.271905
+crobat1-heavy-ball,"Hisuian Heavy Ball",1,no-discard-control/go-first,100000,19.526000,55.535000,72.035000,17.433000,2.268628
+crobat1-tapu-lele,"Tapu Lele-GX",1,no-discard-control/go-first,100000,18.538000,55.911000,71.402000,19.327000,2.300771
+crobat2-erika-channeler,"Erika's Invitation + Channeler",2,no-discard-control/go-first,100000,19.572000,56.801000,73.307000,31.388000,2.229005
+crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,no-discard-control/go-first,100000,19.802000,56.896000,73.465000,31.352000,2.227960
+crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,no-discard-control/go-first,100000,18.525000,55.744000,71.355000,32.378000,2.238279
+crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,no-discard-control/go-first,100000,8.997000,53.802000,68.840000,36.877000,2.280229
+regidrago-shell,"none",0,strict-jit-turn2-item-lock/go-first,100000,4.624000,10.549000,18.352000,0.000000,0.000000
+crobat1-erika,"Erika's Invitation",1,strict-jit-turn2-item-lock/go-first,100000,4.558000,10.550000,18.314000,12.225000,1.653906
+crobat1-channeler,"Channeler",1,strict-jit-turn2-item-lock/go-first,100000,4.373000,10.504000,18.318000,12.114000,1.630263
+crobat1-team-yell,"Team Yell's Cheer",1,strict-jit-turn2-item-lock/go-first,100000,4.375000,10.341000,18.138000,12.034000,1.636281
+crobat1-klara,"Klara",1,strict-jit-turn2-item-lock/go-first,100000,4.377000,10.231000,18.014000,12.113000,1.653760
+crobat1-turo,"Professor Turo's Scenario",1,strict-jit-turn2-item-lock/go-first,100000,4.254000,10.354000,17.963000,12.304000,1.660436
+crobat1-powerglass,"Powerglass",1,strict-jit-turn2-item-lock/go-first,100000,4.385000,10.222000,17.998000,12.371000,1.647805
+crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit-turn2-item-lock/go-first,100000,4.347000,10.197000,17.785000,11.440000,1.629108
+crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit-turn2-item-lock/go-first,100000,3.912000,9.577000,16.449000,12.530000,1.622985
+crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit-turn2-item-lock/go-first,100000,4.226000,10.353000,18.252000,22.667000,1.645211
+crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit-turn2-item-lock/go-first,100000,4.297000,10.437000,18.172000,22.443000,1.644522
+crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit-turn2-item-lock/go-first,100000,3.923000,9.615000,16.678000,22.701000,1.652658
+crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit-turn2-item-lock/go-first,100000,3.050000,8.726000,14.811000,23.366000,1.624412
+regidrago-shell,"none",0,strict-jit-rulebox-ability-lock/go-first,100000,4.475000,26.766000,40.298000,0.000000,0.000000
+crobat1-erika,"Erika's Invitation",1,strict-jit-rulebox-ability-lock/go-first,100000,4.474000,25.946000,39.442000,4.183000,2.129333
+crobat1-channeler,"Channeler",1,strict-jit-rulebox-ability-lock/go-first,100000,4.369000,25.852000,39.172000,4.256000,2.111372
+crobat1-team-yell,"Team Yell's Cheer",1,strict-jit-rulebox-ability-lock/go-first,100000,4.436000,26.001000,39.467000,4.190000,2.104057
+crobat1-klara,"Klara",1,strict-jit-rulebox-ability-lock/go-first,100000,4.451000,25.679000,38.956000,4.367000,2.115411
+crobat1-turo,"Professor Turo's Scenario",1,strict-jit-rulebox-ability-lock/go-first,100000,4.351000,25.658000,38.346000,4.286000,2.098460
+crobat1-powerglass,"Powerglass",1,strict-jit-rulebox-ability-lock/go-first,100000,4.497000,26.135000,39.775000,4.235000,2.112161
+crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit-rulebox-ability-lock/go-first,100000,4.195000,25.320000,38.586000,4.029000,2.072226
+crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit-rulebox-ability-lock/go-first,100000,4.221000,26.285000,39.854000,4.199000,2.147416
+crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit-rulebox-ability-lock/go-first,100000,4.279000,25.342000,38.499000,7.360000,2.087908
+crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit-rulebox-ability-lock/go-first,100000,4.326000,25.264000,38.495000,7.577000,2.088030
+crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit-rulebox-ability-lock/go-first,100000,4.166000,25.615000,38.784000,7.386000,2.100325
+crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit-rulebox-ability-lock/go-first,100000,3.545000,25.344000,38.533000,7.553000,2.139680
+regidrago-shell,"none",0,strict-jit-combined-lock/go-first,100000,0.782000,4.873000,9.869000,0.000000,0.000000
+crobat1-erika,"Erika's Invitation",1,strict-jit-combined-lock/go-first,100000,0.804000,4.663000,9.419000,3.256000,1.906634
+crobat1-channeler,"Channeler",1,strict-jit-combined-lock/go-first,100000,0.866000,4.710000,9.490000,3.172000,1.887137
+crobat1-team-yell,"Team Yell's Cheer",1,strict-jit-combined-lock/go-first,100000,0.836000,4.686000,9.373000,3.227000,1.903936
+crobat1-klara,"Klara",1,strict-jit-combined-lock/go-first,100000,0.868000,4.706000,9.439000,3.196000,1.908949
+crobat1-turo,"Professor Turo's Scenario",1,strict-jit-combined-lock/go-first,100000,0.865000,4.673000,9.374000,3.228000,1.920384
+crobat1-powerglass,"Powerglass",1,strict-jit-combined-lock/go-first,100000,0.789000,4.646000,9.431000,3.167000,1.905589
+crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit-combined-lock/go-first,100000,0.760000,4.426000,9.096000,3.073000,1.854865
+crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit-combined-lock/go-first,100000,0.714000,4.632000,9.405000,3.237000,1.935743
+crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit-combined-lock/go-first,100000,0.812000,4.591000,9.196000,6.077000,1.922330
+crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit-combined-lock/go-first,100000,0.808000,4.517000,9.160000,5.829000,1.919026
+crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit-combined-lock/go-first,100000,0.701000,4.479000,9.102000,5.776000,1.917417
+crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit-combined-lock/go-first,100000,0.526000,4.528000,8.995000,5.738000,1.917741
+regidrago-shell,"none",0,strict-jit/go-second,100000,29.860000,54.296000,65.565000,0.000000,0.000000
+crobat1-erika,"Erika's Invitation",1,strict-jit/go-second,100000,29.301000,53.844000,65.459000,14.812000,1.738928
+crobat1-channeler,"Channeler",1,strict-jit/go-second,100000,29.572000,53.537000,65.304000,14.758000,1.741157
+crobat1-team-yell,"Team Yell's Cheer",1,strict-jit/go-second,100000,29.487000,53.744000,65.235000,14.851000,1.733149
+crobat1-klara,"Klara",1,strict-jit/go-second,100000,29.552000,53.546000,65.192000,14.710000,1.747587
+crobat1-turo,"Professor Turo's Scenario",1,strict-jit/go-second,100000,29.714000,53.819000,65.148000,14.868000,1.751211
+crobat1-powerglass,"Powerglass",1,strict-jit/go-second,100000,29.561000,53.813000,65.625000,14.947000,1.743159
+crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit/go-second,100000,28.279000,51.893000,63.677000,13.697000,1.712419
+crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit/go-second,100000,27.879000,51.012000,62.564000,15.315000,1.727783
+crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit/go-second,100000,28.873000,53.182000,65.115000,26.068000,1.731510
+crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit/go-second,100000,29.045000,53.278000,65.139000,25.904000,1.728884
+crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit/go-second,100000,27.446000,51.006000,62.587000,26.478000,1.722449
+crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit/go-second,100000,23.260000,45.501000,57.812000,28.302000,1.721044
+regidrago-shell,"none",0,matchup-flex-jit/go-second,100000,37.669000,61.927000,72.207000,0.000000,0.000000
+crobat1-erika,"Erika's Invitation",1,matchup-flex-jit/go-second,100000,37.062000,61.840000,72.324000,17.985000,2.135557
+crobat1-channeler,"Channeler",1,matchup-flex-jit/go-second,100000,37.238000,61.949000,72.361000,18.099000,2.150008
+crobat1-team-yell,"Team Yell's Cheer",1,matchup-flex-jit/go-second,100000,36.934000,61.685000,72.334000,18.555000,2.142819
+crobat1-klara,"Klara",1,matchup-flex-jit/go-second,100000,37.235000,61.653000,72.308000,18.140000,2.143164
+crobat1-turo,"Professor Turo's Scenario",1,matchup-flex-jit/go-second,100000,37.089000,61.639000,72.079000,18.139000,2.134351
+crobat1-powerglass,"Powerglass",1,matchup-flex-jit/go-second,100000,36.861000,61.661000,72.489000,18.319000,2.137398
+crobat1-heavy-ball,"Hisuian Heavy Ball",1,matchup-flex-jit/go-second,100000,36.388000,60.602000,71.068000,17.647000,2.137984
+crobat1-tapu-lele,"Tapu Lele-GX",1,matchup-flex-jit/go-second,100000,36.232000,60.204000,70.749000,19.333000,2.152227
+crobat2-erika-channeler,"Erika's Invitation + Channeler",2,matchup-flex-jit/go-second,100000,36.523000,61.343000,71.901000,30.386000,2.089087
+crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,matchup-flex-jit/go-second,100000,36.448000,61.451000,72.303000,30.444000,2.098345
+crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,matchup-flex-jit/go-second,100000,35.487000,59.566000,70.166000,31.528000,2.103939
+crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,matchup-flex-jit/go-second,100000,28.490000,54.063000,65.453000,37.095000,2.114544
+regidrago-shell,"none",0,no-discard-control/go-second,100000,40.355000,67.417000,78.589000,0.000000,0.000000
+crobat1-erika,"Erika's Invitation",1,no-discard-control/go-second,100000,39.807000,67.341000,78.737000,18.442000,2.344160
+crobat1-channeler,"Channeler",1,no-discard-control/go-second,100000,40.173000,67.674000,78.889000,18.230000,2.346023
+crobat1-team-yell,"Team Yell's Cheer",1,no-discard-control/go-second,100000,40.049000,67.769000,78.913000,18.451000,2.350767
+crobat1-klara,"Klara",1,no-discard-control/go-second,100000,40.133000,67.660000,78.866000,18.273000,2.356318
+crobat1-turo,"Professor Turo's Scenario",1,no-discard-control/go-second,100000,40.404000,67.149000,78.258000,18.241000,2.342635
+crobat1-powerglass,"Powerglass",1,no-discard-control/go-second,100000,40.055000,67.295000,78.659000,18.333000,2.341952
+crobat1-heavy-ball,"Hisuian Heavy Ball",1,no-discard-control/go-second,100000,39.390000,66.862000,78.234000,17.371000,2.337517
+crobat1-tapu-lele,"Tapu Lele-GX",1,no-discard-control/go-second,100000,39.551000,66.467000,77.131000,19.604000,2.373291
+crobat2-erika-channeler,"Erika's Invitation + Channeler",2,no-discard-control/go-second,100000,39.573000,67.666000,79.059000,31.256000,2.297767
+crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,no-discard-control/go-second,100000,39.976000,68.058000,79.342000,31.138000,2.312351
+crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,no-discard-control/go-second,100000,38.892000,65.787000,76.718000,32.098000,2.309272
+crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,no-discard-control/go-second,100000,29.643000,62.509000,72.734000,37.617000,2.318792
+regidrago-shell,"none",0,strict-jit-turn2-item-lock/go-second,100000,14.152000,28.358000,36.809000,0.000000,0.000000
+crobat1-erika,"Erika's Invitation",1,strict-jit-turn2-item-lock/go-second,100000,13.670000,27.653000,36.061000,12.501000,1.680426
+crobat1-channeler,"Channeler",1,strict-jit-turn2-item-lock/go-second,100000,13.794000,27.629000,35.973000,12.379000,1.681234
+crobat1-team-yell,"Team Yell's Cheer",1,strict-jit-turn2-item-lock/go-second,100000,13.924000,27.667000,36.036000,12.484000,1.669817
+crobat1-klara,"Klara",1,strict-jit-turn2-item-lock/go-second,100000,13.770000,27.512000,35.746000,12.475000,1.696273
+crobat1-turo,"Professor Turo's Scenario",1,strict-jit-turn2-item-lock/go-second,100000,13.691000,27.519000,35.398000,12.771000,1.702921
+crobat1-powerglass,"Powerglass",1,strict-jit-turn2-item-lock/go-second,100000,13.896000,27.700000,36.146000,12.810000,1.679547
+crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit-turn2-item-lock/go-second,100000,13.264000,26.463000,34.594000,11.544000,1.655665
+crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit-turn2-item-lock/go-second,100000,12.672000,25.461000,32.746000,12.820000,1.649922
+crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit-turn2-item-lock/go-second,100000,13.431000,27.309000,35.486000,22.607000,1.675189
+crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit-turn2-item-lock/go-second,100000,13.513000,27.313000,35.491000,22.861000,1.675911
+crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit-turn2-item-lock/go-second,100000,12.337000,24.984000,32.241000,23.161000,1.669660
+crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit-turn2-item-lock/go-second,100000,10.062000,21.017000,26.957000,23.796000,1.631072
+regidrago-shell,"none",0,strict-jit-rulebox-ability-lock/go-second,100000,18.279000,35.715000,46.376000,0.000000,0.000000
+crobat1-erika,"Erika's Invitation",1,strict-jit-rulebox-ability-lock/go-second,100000,17.688000,34.931000,45.453000,4.150000,2.118072
+crobat1-channeler,"Channeler",1,strict-jit-rulebox-ability-lock/go-second,100000,17.562000,34.389000,44.799000,4.083000,2.130296
+crobat1-team-yell,"Team Yell's Cheer",1,strict-jit-rulebox-ability-lock/go-second,100000,17.906000,34.940000,45.366000,4.090000,2.094377
+crobat1-klara,"Klara",1,strict-jit-rulebox-ability-lock/go-second,100000,17.712000,34.271000,44.758000,4.089000,2.107606
+crobat1-turo,"Professor Turo's Scenario",1,strict-jit-rulebox-ability-lock/go-second,100000,17.780000,34.037000,44.095000,4.118000,2.106119
+crobat1-powerglass,"Powerglass",1,strict-jit-rulebox-ability-lock/go-second,100000,17.700000,34.634000,45.312000,4.193000,2.100167
+crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit-rulebox-ability-lock/go-second,100000,17.273000,33.812000,44.208000,3.858000,2.075687
+crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit-rulebox-ability-lock/go-second,100000,18.247000,35.233000,45.667000,4.099000,2.088802
+crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit-rulebox-ability-lock/go-second,100000,17.216000,33.716000,44.211000,7.189000,2.092085
+crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit-rulebox-ability-lock/go-second,100000,17.125000,33.822000,44.218000,7.309000,2.087153
+crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit-rulebox-ability-lock/go-second,100000,17.278000,33.838000,44.278000,7.070000,2.122489
+crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit-rulebox-ability-lock/go-second,100000,17.081000,33.630000,43.972000,7.154000,2.126642
+regidrago-shell,"none",0,strict-jit-combined-lock/go-second,100000,3.761000,14.548000,19.990000,0.000000,0.000000
+crobat1-erika,"Erika's Invitation",1,strict-jit-combined-lock/go-second,100000,3.821000,13.915000,19.236000,3.220000,1.950311
+crobat1-channeler,"Channeler",1,strict-jit-combined-lock/go-second,100000,3.718000,13.974000,19.238000,3.244000,1.938964
+crobat1-team-yell,"Team Yell's Cheer",1,strict-jit-combined-lock/go-second,100000,3.643000,13.815000,19.124000,3.194000,1.914840
+crobat1-klara,"Klara",1,strict-jit-combined-lock/go-second,100000,3.664000,14.000000,19.204000,3.125000,1.921280
+crobat1-turo,"Professor Turo's Scenario",1,strict-jit-combined-lock/go-second,100000,3.672000,13.770000,18.778000,3.211000,1.935846
+crobat1-powerglass,"Powerglass",1,strict-jit-combined-lock/go-second,100000,3.660000,13.710000,18.980000,3.174000,1.933522
+crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit-combined-lock/go-second,100000,3.452000,13.290000,18.670000,2.924000,1.902873
+crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit-combined-lock/go-second,100000,3.575000,13.962000,19.184000,3.138000,1.928617
+crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit-combined-lock/go-second,100000,3.704000,13.520000,18.664000,5.732000,1.924285
+crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit-combined-lock/go-second,100000,3.519000,13.395000,18.631000,5.846000,1.916011
+crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit-combined-lock/go-second,100000,3.459000,13.230000,18.230000,5.713000,1.949239
+crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit-combined-lock/go-second,100000,3.100000,12.756000,17.530000,5.606000,1.949518
+regidrago-shell,"none",0,strict-jit-supporter-lock/go-first,100000,0.006000,15.146000,21.476000,0.000000,0.000000
+crobat1-erika,"Erika's Invitation",1,strict-jit-supporter-lock/go-first,100000,0.006000,15.816000,22.393000,22.456000,2.069825
+crobat1-channeler,"Channeler",1,strict-jit-supporter-lock/go-first,100000,0.003000,15.844000,22.385000,22.442000,2.063096
+crobat1-team-yell,"Team Yell's Cheer",1,strict-jit-supporter-lock/go-first,100000,0.002000,15.933000,22.517000,22.663000,2.065525
+crobat1-klara,"Klara",1,strict-jit-supporter-lock/go-first,100000,0.002000,15.933000,22.517000,22.663000,2.065525
+crobat1-turo,"Professor Turo's Scenario",1,strict-jit-supporter-lock/go-first,100000,0.002000,15.933000,22.517000,22.663000,2.065525
+crobat1-powerglass,"Powerglass",1,strict-jit-supporter-lock/go-first,100000,0.000000,15.659000,22.055000,22.586000,2.085407
+crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit-supporter-lock/go-first,100000,0.003000,15.352000,21.596000,21.302000,2.042015
+crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit-supporter-lock/go-first,100000,0.004000,16.592000,23.205000,22.813000,2.046289
+crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit-supporter-lock/go-first,100000,0.003000,16.345000,22.884000,34.385000,2.034056
+crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit-supporter-lock/go-first,100000,0.003000,16.394000,22.904000,34.278000,2.036992
+crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit-supporter-lock/go-first,100000,0.002000,16.958000,23.709000,34.550000,2.025210
+crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit-supporter-lock/go-first,100000,0.005000,17.894000,24.446000,34.450000,2.007605
+regidrago-shell,"none",0,strict-jit-supporter-lock/go-second,100000,8.075000,19.349000,25.138000,0.000000,0.000000
+crobat1-erika,"Erika's Invitation",1,strict-jit-supporter-lock/go-second,100000,8.027000,19.894000,25.826000,21.337000,2.037400
+crobat1-channeler,"Channeler",1,strict-jit-supporter-lock/go-second,100000,7.990000,19.887000,26.017000,21.572000,2.044270
+crobat1-team-yell,"Team Yell's Cheer",1,strict-jit-supporter-lock/go-second,100000,7.996000,19.853000,25.927000,21.575000,2.042503
+crobat1-klara,"Klara",1,strict-jit-supporter-lock/go-second,100000,7.996000,19.853000,25.927000,21.575000,2.042503
+crobat1-turo,"Professor Turo's Scenario",1,strict-jit-supporter-lock/go-second,100000,7.996000,19.853000,25.927000,21.575000,2.042503
+crobat1-powerglass,"Powerglass",1,strict-jit-supporter-lock/go-second,100000,8.033000,19.829000,25.675000,21.448000,2.052872
+crobat1-heavy-ball,"Hisuian Heavy Ball",1,strict-jit-supporter-lock/go-second,100000,7.826000,19.148000,24.815000,20.225000,2.030309
+crobat1-tapu-lele,"Tapu Lele-GX",1,strict-jit-supporter-lock/go-second,100000,8.272000,20.691000,26.623000,21.655000,2.026276
+crobat2-erika-channeler,"Erika's Invitation + Channeler",2,strict-jit-supporter-lock/go-second,100000,7.694000,19.851000,25.726000,33.176000,2.022788
+crobat2-erika-team-yell,"Erika's Invitation + Team Yell's Cheer",2,strict-jit-supporter-lock/go-second,100000,7.742000,19.813000,25.766000,33.217000,2.023693
+crobat2-erika-tapu-lele,"Erika's Invitation + Tapu Lele-GX",2,strict-jit-supporter-lock/go-second,100000,8.031000,20.831000,26.783000,33.366000,2.008092
+crobat2-tapu-lele-both,"Tapu Lele-GX + Tapu Lele-GX",2,strict-jit-supporter-lock/go-second,100000,8.554000,21.852000,27.799000,33.060000,1.994918

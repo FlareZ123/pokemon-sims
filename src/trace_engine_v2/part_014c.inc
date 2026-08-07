@@ -242,11 +242,15 @@
   void record_ready() {
     recover_grant_for_strict_jit_payload();
     const bool active_vstar = active_is_vstar();
-    const bool grass_ready = active_vstar && state_.active->grass >= 2;
-    const bool fire_ready = active_vstar && state_.active->fire >= 1;
+    const bool energy_ready = active_vstar && pays_apex_energy_cost(*state_.active);
+    const bool has_dde = active_vstar && state_.active->double_dragon > 0;
+    const bool grass_ready = active_vstar &&
+        (has_dde ? energy_ready : state_.active->grass >= 2);
+    const bool fire_ready = active_vstar &&
+        (has_dde ? energy_ready : state_.active->fire >= 1);
     const bool payload_is_ready = payload_ready();
-    const bool ready = state_.turn >= 2 && active_vstar && grass_ready &&
-        fire_ready && payload_is_ready;
+    const bool ready = state_.turn >= 2 && active_vstar && energy_ready &&
+        payload_is_ready;
     if (!ready) {
       if (state_.turn == 2) {
         outcome_.t2_missing_active_vstar = !active_vstar;
@@ -295,6 +299,16 @@ DeckRecipe baseline_recipe() {
   return DeckRecipe(kDeckRecipe.begin(), kDeckRecipe.end());
 }
 
+DeckRecipe double_dragon_modeling_recipe() {
+  DeckRecipe recipe = baseline_recipe();
+  for (auto& [card, copies] : recipe) {
+    if (card == Card::Grass) --copies;
+    if (card == Card::Fire) --copies;
+  }
+  recipe.push_back({Card::DoubleDragonEnergy, 2});
+  return recipe;
+}
+
 DeckRecipe pineco_recipe() {
   // Exact issue-1118 Secret Box recipe. Appletun is a Stage 1 Dragon payload and
   // remains unplayable because the recipe intentionally contains no Applin:
@@ -340,7 +354,7 @@ bool validate_recipe(const NamedDeck& deck, std::string* error = nullptr) {
     if (copies <= 0) return fail("card copy count must be positive");
     total += copies;
     copies_by_card[card] += copies;
-    if (!is_energy(card) && copies_by_card[card] > 4) {
+    if (!is_basic_energy(card) && copies_by_card[card] > 4) {
       return fail(std::string(name(card)) + " exceeds the four-copy limit");
     }
     if (is_ace_spec(card)) ace_specs += copies;
@@ -384,6 +398,15 @@ const std::vector<NamedDeck>& deck_registry() {
 const NamedDeck* deck_by_id(const std::string_view id) {
   const std::string_view normalized =
       id == "regidrago-pineco-secret-box" ? "regidrago-pineco" : id;
+  if (normalized == "regidrago-dde-model") {
+    static const NamedDeck dde_model = [] {
+      NamedDeck deck{"regidrago-dde-model", double_dragon_modeling_recipe()};
+      std::string error;
+      if (!validate_recipe(deck, &error)) throw std::logic_error(error);
+      return deck;
+    }();
+    return &dde_model;
+  }
   const auto& decks = deck_registry();
   const auto found = std::find_if(
       decks.begin(), decks.end(), [normalized](const NamedDeck& deck) {

@@ -12,8 +12,8 @@
     const bool held_supporter_payload_only_outlet =
         supporter_allowed() && hand_count(Card::ProfessorBurnet) > 0;
     if ((!held_item_payload_only_outlet && !held_supporter_payload_only_outlet) ||
-        !active_is_vstar() || state_.manual_energy_used || !need_energy() ||
-        !need_payload() || !can_play_payload_this_turn() ||
+        !deck_seen_ || !active_is_vstar() || state_.manual_energy_used ||
+        !need_energy() || !need_payload() || !can_play_payload_this_turn() ||
         !payload_might_be_in_deck() || state_.deck.empty()) {
       return false;
     }
@@ -23,7 +23,28 @@
     if (missing_grass + missing_fire != 1) return false;
 
     const Card needed_energy = missing_grass == 1 ? Card::Grass : Card::Fire;
-    return hand_count(needed_energy) == 0 && might_be_unseen(needed_energy);
+    if (hand_count(needed_energy) > 0) return false;
+
+    // Admission must be deterministic before Legacy Star reveals its seven cards.
+    // A needed Energy already in discard is directly recoverable. Otherwise, an
+    // Earthen Vessel already in discard is the public fallback when the needed
+    // Energy remains in deck: if Legacy Star mills that Energy it can recover it,
+    // and if it does not, it can recover Vessel and search the still-present Energy.
+    // This avoids spending the one-use VSTAR Power merely because hidden top-seven
+    // order happens to reveal a favorable Vessel or Energy, while preserving the
+    // exact K1 seed-4 proof where Vessel is public before the Ability is used:
+    // Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Hidden-information / K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Existing deterministic Vessel-Burnet route preserved by this boundary: https://github.com/FlareZ123/pokemon-sims/issues/1866
+    // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/2313
+    const bool direct_energy_recovery =
+        count_of(state_.discard, needed_energy) > 0;
+    const bool public_vessel_fallback =
+        count_of(state_.discard, Card::EarthenVessel) > 0 &&
+        count_of(state_.deck, needed_energy) > 0;
+    return direct_energy_recovery || public_vessel_fallback;
   }
 
   bool use_legacy_star() {
@@ -87,10 +108,11 @@
                        Card::ProfessorBurnet);
 
     // Legacy Star may recover any two cards after its seven-card discard. When a
-    // payload-only outlet is the sole preflight suppressor, temporarily excluding
-    // that outlet lets the existing adaptive recovery policy evaluate the missing
-    // Energy axis as well. The held cards are restored immediately after the VSTAR
-    // Power evaluation, so later same-turn play can still use them when required:
+    // payload-only outlet is the sole preflight suppressor and a public K1 Energy
+    // recovery bridge already exists, temporarily excluding that outlet lets the
+    // existing adaptive recovery policy evaluate the missing Energy axis. The held
+    // cards are restored immediately after the VSTAR Power evaluation, so later
+    // same-turn play can still use them when required:
     // Regidrago VSTAR / Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164

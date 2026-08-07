@@ -1,0 +1,39 @@
+name: Bootstrap 2244 baselines
+
+on:
+  push:
+    branches:
+      - fix/2244-current-main-trace-order-reclaim-sol
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Regenerate source-bound setup evidence
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Commit generated evidence and remove bootstrap
+        run: |
+          rm .github/workflows/bootstrap-2244-baselines.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md docs/REPORT.md docs/TRACE_AUDIT.md docs/MULTI_DECK_REPORT.md results .github/workflows/bootstrap-2244-baselines.yml
+          git commit -m "Regenerate source-bound baselines for #2244"
+          git push origin HEAD:fix/2244-current-main-trace-order-reclaim-sol

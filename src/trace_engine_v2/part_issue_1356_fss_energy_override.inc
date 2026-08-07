@@ -86,6 +86,32 @@
   }
 
   bool use_fss() {
+    // Star Alchemy is a once-per-game VSTAR Power. If the only missing setup axis
+    // is Energy and held DDE already completes Apex Dragon's GGF cost this turn,
+    // searching another card cannot improve the earliest-ready turn. Scope this
+    // preservation rule specifically to DDE so the temporary modeling recipe does
+    // not alter canonical Basic-Energy deck policy:
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Resource-preserving earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Enhancement audit: https://github.com/FlareZ123/pokemon-sims/issues/2238
+    if (!state_.vstar_power_used && !state_.manual_energy_used && need_energy() &&
+        !need_regi() && !need_vstar() && !need_active_vstar() && !need_payload()) {
+      const Pokemon* target = target_regi();
+      if (target != nullptr) {
+        const auto held = preferred_manual_energy_from_hand(*target);
+        if (held && *held == Card::DoubleDragonEnergy) {
+          Pokemon projected = *target;
+          if (attach_energy_card(projected, *held) &&
+              pays_apex_energy_cost(projected)) {
+            trace("HOLD VSTAR POWER", "R-FSS-02; R-GAME-ENERGY; P-COMPRESS-01",
+                  "Preserved Star Alchemy because a held Energy already completes the sole missing Energy axis.");
+            return false;
+          }
+        }
+      }
+    }
     const auto live_fss_holder = [](const Pokemon& pokemon) {
       return pokemon.tool == Tool::ForestSealStone && is_pokemon_v(pokemon.card);
     };

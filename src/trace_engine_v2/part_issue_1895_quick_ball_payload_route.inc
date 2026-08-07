@@ -7,6 +7,7 @@
         !issue_1744_quick_ball_forretress_route_available() &&
         supporter_allowed() && active_is_vstar() &&
         state_.active->grass == 1 && state_.active->fire == 1 &&
+        need_energy() &&  // This route exists to let Crispin finish Energy; DDE-ready states must preserve that Supporter: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://api.pokemontcg.io/v2/cards/swsh12-136 ; https://github.com/FlareZ123/pokemon-sims/issues/2238
         need_payload() && hand_count(Card::QuickBall) > 0 &&
         hand_count(Card::Crispin) > 0 &&
         deck_count_after_search_started(Card::Grass) > 0 &&

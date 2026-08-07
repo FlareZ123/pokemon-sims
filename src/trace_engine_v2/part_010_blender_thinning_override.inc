@@ -4,70 +4,69 @@
     const Pokemon* target = target_regi();
     if (target == nullptr || target->card != Card::RegidragoVstar) return true;
 
-    // Evaluate the intended attacker even while a Basic support Pokémon is Active.
-    // A Latias ex promotion route solves only the Retreat axis; the selected Benched
-    // Regidrago VSTAR must still be able to reach Apex Dragon's GGF cost before a
-    // strict-JIT Brilliant Blender payload expires:
-    // https://api.pokemontcg.io/v2/cards/sv8-164
-    // https://api.pokemontcg.io/v2/cards/sv8-76
+    // Issue #2238: project the actual flexible Energy state instead of deriving
+    // completion from raw Basic Grass/Fire counters. Double Dragon Energy provides
+    // two Energy of every type while attached to a Dragon Pokemon, so states such as
+    // DDE + Fire are already legal GGF payments for Apex Dragon:
+    // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
     // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
-    // https://github.com/FlareZ123/pokemon-sims/issues/1031
-    const int grass_missing = std::max(0, 2 - target->grass);
-    const int fire_missing = std::max(0, 1 - target->fire);
-    const int energy_missing = grass_missing + fire_missing;
-    if (energy_missing == 0) return true;
+    // https://github.com/FlareZ123/pokemon-sims/issues/2238
+    if (pays_apex_energy_cost(*target)) return true;
 
-    // Strict JIT recognizes only a Dragon discarded during the same turn that the
-    // Active Regidrago VSTAR reaches Apex Dragon's GGF cost. Brilliant Blender is
-    // a one-use ACE SPEC, so preserve it after every observable same-turn Energy
-    // route has closed:
-    // https://api.pokemontcg.io/v2/cards/sv8-164
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // https://www.pokemon.com/us/pokemon-tcg/rules
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // https://github.com/FlareZ123/pokemon-sims/issues/737
     const bool manual_attachment_available = !state_.manual_energy_used;
-    const bool one_energy_missing = energy_missing == 1;
-    const Card final_energy = grass_missing > 0 ? Card::Grass : Card::Fire;
-    if (manual_attachment_available && one_energy_missing &&
-        hand_count(final_energy) > 0) {
-      return true;
-    }
+    const auto ready_after = [this](const Pokemon& base, const Card energy) {
+      Pokemon projected = base;
+      return attach_energy_card(projected, energy) &&
+             pays_apex_energy_cost(projected);
+    };
+    const auto held_or_added_manual_finishes =
+        [this, &ready_after, manual_attachment_available](
+            const Pokemon& base, const bool add_grass, const bool add_fire) {
+          if (!manual_attachment_available) return false;
+          for (const Card energy : {Card::Grass, Card::Fire,
+                                    Card::DoubleDragonEnergy}) {
+            const bool available = hand_count(energy) > 0 ||
+                (energy == Card::Grass && add_grass) ||
+                (energy == Card::Fire && add_fire);
+            if (available && ready_after(base, energy)) return true;
+          }
+          return false;
+        };
 
-    const bool final_energy_might_be_in_deck = might_be_unseen(final_energy);
+    // A normal manual attachment may itself complete the current attacker. DDE is
+    // legal here because target_regi() is a Regidrago VSTAR, a Dragon Pokemon:
+    // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    if (held_or_added_manual_finishes(*target, false, false)) return true;
+
+    // Vital Dance and Earthen Vessel search Basic Energy only. Project each Basic
+    // candidate against the DDE-aware attack-cost predicate rather than pretending a
+    // fixed Grass or Fire component is still missing:
+    // https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    const bool grass_might_be_in_deck = might_be_unseen(Card::Grass);
+    const bool fire_might_be_in_deck = might_be_unseen(Card::Fire);
+    const bool searchable_basic_finishes =
+        (grass_might_be_in_deck && ready_after(*target, Card::Grass)) ||
+        (fire_might_be_in_deck && ready_after(*target, Card::Fire));
+
     const bool held_oricorio_route = manual_attachment_available &&
-        one_energy_missing && final_energy_might_be_in_deck &&
-        hand_count(Card::Oricorio) > 0 && !in_play(Card::Oricorio) &&
-        bench_space() > 0 && ability_available_for_pokemon(Card::Oricorio);
-    if (held_oricorio_route) {
-      // Vital Dance searches Basic Energy into hand, after which the unused manual
-      // attachment can supply the final GGF component:
-      // https://api.pokemontcg.io/v2/cards/sm2-55
-      // https://www.pokemon.com/us/pokemon-tcg/rules
-      // https://github.com/FlareZ123/pokemon-sims/issues/737
-      return true;
-    }
+        searchable_basic_finishes && hand_count(Card::Oricorio) > 0 &&
+        !in_play(Card::Oricorio) && bench_space() > 0 &&
+        ability_available_for_pokemon(Card::Oricorio);
+    if (held_oricorio_route) return true;
 
     bool held_vessel_route = false;
-    if (manual_attachment_available && one_energy_missing &&
-        final_energy_might_be_in_deck && !item_locked() &&
-        hand_count(Card::EarthenVessel) > 0) {
+    if (manual_attachment_available && searchable_basic_finishes &&
+        !item_locked() && hand_count(Card::EarthenVessel) > 0) {
       const std::vector<Card> original_hand = state_.hand;
       remove_one(state_.hand, Card::BrilliantBlender);
       held_vessel_route =
           choose_discard(false, true, true, Card::EarthenVessel).has_value();
       state_.hand = original_hand;
     }
-    if (held_vessel_route) {
-      // Earthen Vessel may search the final Basic Energy only when another card can
-      // pay its discard cost while the held Blender remains protected:
-      // https://api.pokemontcg.io/v2/cards/sv4-163
-      // https://www.pokemon.com/us/pokemon-tcg/rules
-      // https://github.com/FlareZ123/pokemon-sims/issues/737
-      return true;
-    }
+    if (held_vessel_route) return true;
 
     if (!supporter_allowed() || hand_count(Card::Crispin) == 0) return false;
 
@@ -79,38 +78,32 @@
         : might_be_unseen(Card::Fire);
     if (!grass_available && !fire_available) return false;
 
-    int remaining_grass = grass_missing;
-    int remaining_fire = fire_missing;
-    int grass_in_hand = hand_count(Card::Grass);
-    int fire_in_hand = hand_count(Card::Fire);
-
-    // Crispin attaches one searched type only when both Grass and Fire are present;
-    // the other enters hand. With one searchable type, it attaches none and puts that
-    // Energy into hand, matching the active resolver:
+    // Crispin searches up to two Basic Energy of different types. With both types
+    // available, one is attached and the other enters hand; with only one modeled
+    // type available, the active resolver puts that card into hand. Explore the legal
+    // attachment choice(s), then the still-unused manual attachment, using the same
+    // DDE-aware payment predicate as actual readiness:
     // https://api.pokemontcg.io/v2/cards/sv7-133
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_011.inc#L72-L108
-    // https://github.com/FlareZ123/pokemon-sims/issues/737
+    // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // https://github.com/FlareZ123/pokemon-sims/issues/2238
     if (grass_available && fire_available) {
-      if (remaining_grass > 0) {
-        --remaining_grass;
-        ++fire_in_hand;
-      } else if (remaining_fire > 0) {
-        --remaining_fire;
-        ++grass_in_hand;
+      for (const Card crispin_attachment : {Card::Grass, Card::Fire}) {
+        Pokemon projected = *target;
+        if (!attach_energy_card(projected, crispin_attachment)) continue;
+        if (pays_apex_energy_cost(projected)) return true;
+        const bool grass_to_hand = crispin_attachment == Card::Fire;
+        const bool fire_to_hand = crispin_attachment == Card::Grass;
+        if (held_or_added_manual_finishes(projected, grass_to_hand, fire_to_hand)) {
+          return true;
+        }
       }
-    } else if (grass_available) {
-      ++grass_in_hand;
-    } else {
-      ++fire_in_hand;
-    }
-
-    if (remaining_grass + remaining_fire == 0) return true;
-    if (!manual_attachment_available ||
-        remaining_grass + remaining_fire != 1) {
       return false;
     }
-    return (remaining_grass == 1 && grass_in_hand > 0) ||
-           (remaining_fire == 1 && fire_in_hand > 0);
+
+    // One searchable Basic is put into hand rather than attached by the current
+    // Crispin resolver, so it helps strict JIT only if the manual attachment remains.
+    return held_or_added_manual_finishes(
+        *target, grass_available, fire_available);
   }
 
   bool blender_active_axis_can_finish_this_turn() const {

@@ -145,7 +145,28 @@
       }
     }
 
-    // Recover energy only if it enables a manual attachment this turn. Do not recover a strict-JIT payload.
+    // Legacy Star may recover any card. DDE is a legal Energy recovery and
+    // is considered before Basics only when the common manual-attachment
+    // policy proves its two flexible units are strictly stronger:
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // https://github.com/FlareZ123/pokemon-sims/issues/2238
+    if (recovered.size() < 2U && !state_.manual_energy_used && need_energy() &&
+        count_of(state_.discard, Card::DoubleDragonEnergy) > 0) {
+      const Pokemon* target = target_regi();
+      if (target != nullptr) {
+        const auto preferred = preferred_manual_energy_for(*target, [this](const Card card) {
+          return count_of(state_.discard, card) > 0;
+        });
+        if (preferred && *preferred == Card::DoubleDragonEnergy) {
+          if (!recover_discard_to_hand(Card::DoubleDragonEnergy)) {
+            throw std::logic_error("Legacy Star DDE target disappeared");
+          }
+          recovered.push_back(Card::DoubleDragonEnergy);
+        }
+      }
+    }
+    // Recover Basic energy only if it enables a manual attachment this turn. Do not recover a strict-JIT payload.
     for (const Card desired : {Card::Grass, Card::Fire, Card::Crispin, Card::Arven}) {
       if (recovered.size() >= 2U) break;
       if (is_payload(desired) && strict_payload_timing()) continue;
@@ -164,7 +185,7 @@
     if (first_turn_going_first() || state_.turn_ended || !state_.active || state_.active->card != Card::RegidragoV) return false;
     // Card text source: https://api.pokemontcg.io/v2/cards/swsh12-135
     // Celestial Roar costs one Colorless Energy. Any attached Energy pays it.
-    if (state_.active->grass + state_.active->fire < 1) return false;
+    if (total_energy_units(*state_.active) < 1) return false;  // DDE supplies two Colorless-capable units while attached to Dragon: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
     // Attack policy: turn-one going-second Celestial Roar is used only when Steven's Resolve did not end the turn.
     if (state_.turn != 1 || scenario_.going_first) return false;
     std::vector<Card> processed;
@@ -174,11 +195,16 @@
       const Card top = state_.deck.back();
       state_.deck.pop_back();
       processed.push_back(top);
-      if (top == Card::Grass) {
-        ++state_.active->grass;
-        attached.push_back(top);
-      } else if (top == Card::Fire) {
-        ++state_.active->fire;
+      if (is_energy(top)) {
+        // Celestial Roar attaches Energy cards. DDE is Special Energy and
+        // Regidrago V is Dragon, so it attaches legally as one physical card
+        // providing two flexible Energy units:
+        // https://api.pokemontcg.io/v2/cards/swsh12-135
+        // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        // https://github.com/FlareZ123/pokemon-sims/issues/2238
+        if (!attach_energy_card(*state_.active, top)) {
+          throw std::logic_error("Celestial Roar selected an illegal Energy attachment");
+        }
         attached.push_back(top);
       } else {
         state_.discard.push_back(top);

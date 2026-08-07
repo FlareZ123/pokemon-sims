@@ -80,6 +80,7 @@ enum class Card : std::uint8_t {
   ForestOfVitality,
   PathToPeak,
   HisuianHeavyBall,
+  DoubleDragonEnergy,  // Special Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2238
   Grass,
   Fire,
 };

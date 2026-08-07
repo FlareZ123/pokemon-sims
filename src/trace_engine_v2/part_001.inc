@@ -37,6 +37,7 @@
     case Card::ForestOfVitality: return "Forest of Vitality";
     case Card::PathToPeak: return "Path to the Peak";
     case Card::HisuianHeavyBall: return "Hisuian Heavy Ball";
+    case Card::DoubleDragonEnergy: return "Double Dragon Energy";  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
     case Card::Grass: return "Grass Energy";
     case Card::Fire: return "Fire Energy";
   }
@@ -135,6 +136,26 @@ constexpr bool is_dragon_or_psychic(const Card card) {
 // is a Dragon Pokémon for legal search effects: https://api.pokemontcg.io/v2/cards/sv6-127
 // Maintainer policy excludes Syrup Catcher from the A/S win-condition set, so
 // Dipplin never satisfies readiness or opens a payload-discard route.
+// DDE may remain attached only to Dragon Pokémon. Keep this classifier
+// separate from Mysterious Treasure's combined Psychic-or-Dragon target set:
+// https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+// https://github.com/FlareZ123/pokemon-sims/issues/2238
+constexpr bool is_dragon(const Card card) {
+  switch (card) {
+    case Card::RegidragoV:
+    case Card::RegidragoVstar:
+    case Card::Dragapult:
+    case Card::MegaDragonite:
+    case Card::DialgaGX:
+    case Card::GoodraVstar:
+    case Card::Dipplin:
+    case Card::Appletun:
+      return true;
+    default:
+      return false;
+  }
+}
+
 constexpr bool is_payload(const Card card) {
   return card == Card::Dragapult || card == Card::MegaDragonite || card == Card::DialgaGX ||
          card == Card::GoodraVstar || card == Card::Appletun;
@@ -160,7 +181,17 @@ constexpr int retreat_cost(const Card card) {
   }
 }
 
-constexpr bool is_energy(const Card card) { return card == Card::Grass || card == Card::Fire; }
+// Grass and Fire are the modeled Basic Energy cards. DDE is a Special
+// Energy, so Basic-only searches must continue to use is_basic_energy or
+// their explicit Grass/Fire target lists:
+// https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+// https://github.com/FlareZ123/pokemon-sims/issues/2238
+constexpr bool is_basic_energy(const Card card) {
+  return card == Card::Grass || card == Card::Fire;
+}
+constexpr bool is_energy(const Card card) {
+  return is_basic_energy(card) || card == Card::DoubleDragonEnergy;
+}
 constexpr bool is_supporter(const Card card) {
   switch (card) {
     case Card::Dawn:

@@ -28,6 +28,9 @@
   bool run_forretress_combo_search_step(bool permit_payload);
 
   std::string current_deck_id() const {
+    if (total_copies(Card::DoubleDragonEnergy) > 0) {
+      return "regidrago-dde-model";  // Modeling recipe: https://github.com/FlareZ123/pokemon-sims/issues/2238 ; DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    }
     if (total_copies(Card::CrobatV) > 0) {
       return "modeling-crobat-variant";
     }

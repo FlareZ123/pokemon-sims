@@ -11,11 +11,13 @@
       return false;
     }
 
-    const int missing_grass = std::max(0, 2 - state_.active->grass);
-    const int missing_fire = std::max(0, 1 - state_.active->fire);
-    const bool held_final_energy =
-        (missing_grass == 1 && hand_count(Card::Grass) > 0) ||
-        (missing_fire == 1 && hand_count(Card::Fire) > 0);
+    const auto held_energy = preferred_manual_energy_from_hand(*state_.active);
+    bool held_final_energy = false;
+    if (held_energy) {
+      Pokemon projected = *state_.active;
+      held_final_energy = attach_energy_card(projected, *held_energy) &&
+          pays_apex_energy_cost(projected);
+    }  // DDE may be the exact next-window two-unit finish: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; Apex GGF: https://api.pokemontcg.io/v2/cards/swsh12-136 ; enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2238
     const bool item_available_next_turn =
         scenario_.locks != LockMode::FullItem &&
         scenario_.locks != LockMode::FullCombined &&
@@ -35,7 +37,7 @@
     // Official Item, Bench, Ability, Supporter, attachment, evolution, and attack procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, strict-JIT, dynamic DCI, and resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1715
-    return missing_grass + missing_fire == 1 && held_final_energy &&
+    return held_final_energy &&
         hand_count(Card::QuickBall) > 0 &&
         hand_count(Card::RegidragoVstar) >= 2 && bench_space() > 0 &&
         item_available_next_turn &&
@@ -64,11 +66,21 @@
         scenario_.locks != LockMode::FullItem &&
         scenario_.locks != LockMode::FullCombined &&
         !(scenario_.locks == LockMode::TurnTwoItem && state_.turn + 1 >= 2);
-    const bool required_energy_in_known_deck =
-        (missing_grass == 1 &&
-         deck_count_after_search_started(Card::Grass) > 0) ||
-        (missing_fire == 1 &&
-         deck_count_after_search_started(Card::Fire) > 0);
+    const bool required_energy_in_known_deck = [&]() {
+      // Earthen Vessel is Basic-Energy-only. With DDE already attached,
+      // either Basic type can be the final third Energy unit; DDE itself
+      // remains ineligible for this search:
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // https://github.com/FlareZ123/pokemon-sims/issues/2238
+      for (const Card basic : {Card::Grass, Card::Fire}) {
+        if (deck_count_after_search_started(basic) <= 0) continue;
+        Pokemon projected = *state_.active;
+        if (attach_energy_card(projected, basic) &&
+            pays_apex_energy_cost(projected)) return true;
+      }
+      return false;
+    }();
     const bool held_payload_cost =
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
     const bool live_vstar_axis =
@@ -87,7 +99,7 @@
     // Official Item, attachment, evolution, and attack procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Observable-state policy, strict-JIT, dynamic DCI, and resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1719
-    return missing_grass + missing_fire == 1 &&
+    return !pays_apex_energy_cost(*state_.active) &&
         hand_count(Card::EarthenVessel) > 0 && item_available_next_turn &&
         required_energy_in_known_deck && held_payload_cost && live_vstar_axis;
   }
@@ -122,13 +134,11 @@
     // The setup policy attacks only when Celestial Roar may advance either the
     // Active's GGF Energy axis or a permitted no-discard-control payload bank:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
-    const int missing_grass = std::max(0, 2 - state_.active->grass);
-    const int missing_fire = std::max(0, 1 - state_.active->fire);
-    const bool active_needs_energy = missing_grass + missing_fire > 0;
+    const bool active_needs_energy = !pays_apex_energy_cost(*state_.active);  // Flexible DDE payment: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; Apex GGF: https://api.pokemontcg.io/v2/cards/swsh12-136 ; enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2238
 
     // Celestial Roar costs one Colorless Energy, so any attached Energy pays it:
     // https://api.pokemontcg.io/v2/cards/swsh12-135
-    if (state_.active->grass + state_.active->fire < 1) return false;
+    if (total_energy_units(*state_.active) < 1) return false;  // DDE supplies two Colorless-capable Energy units while attached to Dragon: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://api.pokemontcg.io/v2/cards/swsh12-135 ; https://github.com/FlareZ123/pokemon-sims/issues/2238
 
     const bool held_dragon_payload =
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
@@ -150,9 +160,13 @@
          std::any_of(state_.deck.begin(), state_.deck.end(), is_payload)) ||
         held_gladion_prized_treasure_route ||
         held_quick_ball_tapu_burnet_route;
-    const bool held_needed_energy =
-        (missing_grass == 1 && hand_count(Card::Grass) > 0) ||
-        (missing_fire == 1 && hand_count(Card::Fire) > 0);
+    const bool held_needed_energy = [&]() {
+      const auto held = preferred_manual_energy_from_hand(*state_.active);
+      if (!held) return false;
+      Pokemon projected = *state_.active;
+      return attach_energy_card(projected, *held) &&
+          pays_apex_energy_cost(projected);
+    }();  // Preserve Celestial Roar when a held Basic or DDE guarantees the same next-window GGF: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
     const bool strict_held_payload_route =
         strict_payload_timing() && held_supporter_payload_route;
     // No-discard-control must also preserve the random top-three attack when a
@@ -192,7 +206,7 @@
         hand_count(Card::ProfessorBurnet) > 0 && held_payload_count >= 2;
     const bool held_energy_and_payload_route_guarantee_next_window =
         state_.manual_energy_used && state_.turn < scenario_.max_turn &&
-        missing_grass + missing_fire == 1 && held_needed_energy &&
+        held_needed_energy &&
         (k0_held_energy_preservation || strict_held_payload_route ||
          no_control_banked_payload_route);
     if (held_energy_and_payload_route_guarantee_next_window) {
@@ -230,9 +244,22 @@
     // before K1, it uses only public fixed-list counts:
     // https://api.pokemontcg.io/v2/cards/swsh12-135
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
-    const bool needed_energy_might_be_in_deck = active_needs_energy &&
-        ((state_.active->grass < 2 && might_be_unseen(Card::Grass)) ||
-         (state_.active->fire < 1 && might_be_unseen(Card::Fire)));
+    const bool needed_energy_might_be_in_deck = active_needs_energy && [&]() {
+      // Celestial Roar can attach Special Energy. A Basic or DDE counts as
+      // live only when adding it improves the Apex Energy axis. K0 uses
+      // public copy counts; K1 uses the inspected remaining deck:
+      // https://api.pokemontcg.io/v2/cards/swsh12-135
+      // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // https://github.com/FlareZ123/pokemon-sims/issues/2238
+      const int current = apex_energy_progress(*state_.active);
+      for (const Card energy : {Card::Grass, Card::Fire, Card::DoubleDragonEnergy}) {
+        if (!might_be_unseen(energy)) continue;
+        Pokemon projected = *state_.active;
+        if (attach_energy_card(projected, energy) &&
+            apex_energy_progress(projected) > current) return true;
+      }
+      return false;
+    }();
     // No-discard-control may still use the random top-three effect to bank a missing
     // Dragon payload. Strict and matchup-flex JIT require the payload to enter discard
     // during the later ready turn, so an attack by unevolved Regidrago V cannot advance
@@ -255,11 +282,15 @@
       const Card top = state_.deck.back();
       state_.deck.pop_back();
       processed.push_back(top);
-      if (top == Card::Grass) {
-        ++state_.active->grass;
-        attached.push_back(top);
-      } else if (top == Card::Fire) {
-        ++state_.active->fire;
+      if (is_energy(top)) {
+        // Celestial Roar attaches Energy cards, including DDE. Regidrago V
+        // is Dragon, so DDE remains attached and provides two flexible units:
+        // https://api.pokemontcg.io/v2/cards/swsh12-135
+        // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        // https://github.com/FlareZ123/pokemon-sims/issues/2238
+        if (!attach_energy_card(*state_.active, top)) {
+          throw std::logic_error("Celestial Roar selected an illegal Energy attachment");
+        }
         attached.push_back(top);
       } else {
         state_.discard.push_back(top);
@@ -302,8 +333,7 @@
       std::swap(*projected.state_.active, projected.state_.bench[index]);
       if (!projected.use_celestial_roar()) continue;
 
-      const int score = 100 * std::min(2, candidate.grass) +
-                        100 * std::min(1, candidate.fire);
+      const int score = 100 * apex_energy_progress(candidate);  // DDE-aware promotion score: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
       if (!best_index.has_value() || score > best_score) {
         best_index = index;
         best_score = score;

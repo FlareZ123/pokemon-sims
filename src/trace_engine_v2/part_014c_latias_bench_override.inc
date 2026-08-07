@@ -403,6 +403,7 @@ bool complete_issue_1599_quick_ball_tapu_crispin_route() {
       item_locked() || !supporter_allowed() || !deck_seen_ ||
       !state_.active || state_.active->card != Card::RegidragoVstar ||
       state_.active->grass < 2 || state_.active->fire != 0 ||
+      !need_energy() ||  // DDE can already satisfy the missing Fire component; do not spend Quick Ball/Wonder Tag/Crispin when GGF is paid: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://api.pokemontcg.io/v2/cards/swsh12-136 ; https://github.com/FlareZ123/pokemon-sims/issues/2238
       need_regi() || need_vstar() || need_active_vstar() || need_payload() ||
       hand_count(Card::QuickBall) == 0 || hand_count(Card::GoodraVstar) == 0 ||
       bench_space() == 0 || !ability_available_for_pokemon(Card::TapuLeleGX) ||

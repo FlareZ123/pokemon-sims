@@ -303,6 +303,39 @@ if (!cost) {
              needed_energy_in_deck && oricorio_in_deck && no_payload_in_hand && hand_count(Card::ProfessorBurnet) > 0 &&
              can_play_payload_this_turn() && payload_might_be_in_deck() && !has_live_blender_payload_line();
     };
+    if (need_energy() && !state_.manual_energy_used) {
+      const Pokemon* target = target_regi();
+      if (target != nullptr) {
+        const auto direct = preferred_manual_energy_from_known_deck(*target);
+        bool direct_dde_strictly_better_than_hand = false;
+        if (direct && *direct == Card::DoubleDragonEnergy) {
+          Pokemon direct_projected = *target;
+          const int direct_progress =
+              attach_energy_card(direct_projected, Card::DoubleDragonEnergy)
+                  ? apex_energy_progress(direct_projected)
+                  : -1;
+          int held_progress = apex_energy_progress(*target);
+          const auto held = preferred_manual_energy_from_hand(*target);
+          if (held) {
+            Pokemon held_projected = *target;
+            if (attach_energy_card(held_projected, *held)) {
+              held_progress = apex_energy_progress(held_projected);
+            }
+          }
+          direct_dde_strictly_better_than_hand = direct_progress > held_progress;
+        }
+        if (direct && *direct == Card::DoubleDragonEnergy &&
+            direct_dde_strictly_better_than_hand) {
+          // Star Alchemy searches any card. Take DDE ahead of longer
+          // Energy connectors only when DDE's two flexible units are a
+          // strictly stronger current-turn attachment than every Basic:
+          // https://api.pokemontcg.io/v2/cards/swsh12-156
+          // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+          // https://github.com/FlareZ123/pokemon-sims/issues/2238
+          return Card::DoubleDragonEnergy;
+        }
+      }
+    }
     if (need_energy() && oricorio_preserves_burnet_payload_line()) return Card::Oricorio;
     if (need_energy() && crispin_completes_energy_axis_this_turn() &&
         deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin;

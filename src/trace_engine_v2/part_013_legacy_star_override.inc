@@ -154,10 +154,33 @@
     const bool selected_vstar_can_be_active_this_turn = active_is_vstar() ||
         (need_active_vstar() && can_free_retreat_with_latias() && energy_target != nullptr &&
          energy_target->card == Card::RegidragoVstar);
-    const bool known_energy_completion = payload_ready() && selected_vstar_can_be_active_this_turn && need_energy() &&
+    // Preserve the established Basic-Energy Legacy Star admission exactly for
+    // canonical decks, then extend it with a DDE-only branch. This keeps the
+    // temporary DDE modeling recipe from changing registered-deck decisions:
+    // Regidrago VSTAR / Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Manual attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Enhancement audit: https://github.com/FlareZ123/pokemon-sims/issues/2238
+    const bool known_basic_energy_completion = payload_ready() &&
+        selected_vstar_can_be_active_this_turn && need_energy() &&
         !state_.manual_energy_used &&
         ((grass_needed() > 0 && count_of(state_.discard, Card::Grass) > 0) ||
          (fire_needed() > 0 && count_of(state_.discard, Card::Fire) > 0));
+    const bool known_dde_energy_completion = payload_ready() &&
+        selected_vstar_can_be_active_this_turn && need_energy() &&
+        !state_.manual_energy_used && energy_target != nullptr &&
+        count_of(state_.discard, Card::DoubleDragonEnergy) > 0 && [&]() {
+          const auto preferred = preferred_manual_energy_for(
+              *energy_target, [this](const Card card) {
+                return count_of(state_.discard, card) > 0;
+              });
+          if (!preferred || *preferred != Card::DoubleDragonEnergy) return false;
+          Pokemon projected = *energy_target;
+          return attach_energy_card(projected, *preferred) &&
+              pays_apex_energy_cost(projected);
+        }();
+    const bool known_energy_completion =
+        known_basic_energy_completion || known_dde_energy_completion;
     // A recovered Latias ex can be Benched, and Skyliner then gives the Basic Active no
     // Retreat Cost so a fully powered Benched VSTAR can be promoted this turn:
     // https://api.pokemontcg.io/v2/cards/sv8-76
@@ -473,6 +496,29 @@
         }
       }
       if (!found_vessel_bridge) restore();
+    }
+
+    // Legacy Star may recover any two cards. DDE is a legal Special Energy recovery
+    // and is selected ahead of Basic Energy only when the shared attachment policy
+    // proves its two flexible units are strictly stronger for the selected Dragon:
+    // Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Enhancement audit: https://github.com/FlareZ123/pokemon-sims/issues/2238
+    if (recovered.size() < 2U && !state_.manual_energy_used && need_energy() &&
+        count_of(state_.discard, Card::DoubleDragonEnergy) > 0) {
+      const Pokemon* target = target_regi();
+      if (target != nullptr) {
+        const auto preferred = preferred_manual_energy_for(
+            *target, [this](const Card card) {
+              return count_of(state_.discard, card) > 0;
+            });
+        if (preferred && *preferred == Card::DoubleDragonEnergy) {
+          if (!recover_discard_to_hand(Card::DoubleDragonEnergy)) {
+            throw std::logic_error("Legacy Star DDE target disappeared");
+          }
+          recovered.push_back(Card::DoubleDragonEnergy);
+        }
+      }
     }
 
     // Recover Basic Energy for a live manual attachment. Crispin and Arven cannot

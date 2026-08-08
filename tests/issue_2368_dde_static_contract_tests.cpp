@@ -1,0 +1,106 @@
+#define REGIDRAGO_SIM_NO_MAIN
+#include "../src/regidrago_sim.cpp"
+
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+
+namespace sim {
+struct EngineTestAccess {};
+}  // namespace sim
+
+namespace {
+
+void expect(const bool condition, const char* message) {
+  if (!condition) throw std::runtime_error(message);
+}
+
+std::filesystem::path source_root() {
+  std::filesystem::path directory = std::filesystem::current_path();
+  for (int depth = 0; depth < 4; ++depth) {
+    if (std::filesystem::exists(directory / "src" / "regidrago_sim.cpp")) {
+      return directory;
+    }
+    if (!directory.has_parent_path()) break;
+    directory = directory.parent_path();
+  }
+  throw std::runtime_error("Could not locate repository source root");
+}
+
+std::string read_source(const std::filesystem::path& relative) {
+  std::ifstream input(source_root() / relative);
+  expect(input.good(), "Could not open source file for issue-2368 static audit");
+  std::ostringstream buffer;
+  buffer << input.rdbuf();
+  return buffer.str();
+}
+
+void require_text(const std::string& source, const std::string& needle,
+                  const char* message) {
+  expect(source.find(needle) != std::string::npos, message);
+}
+
+void test_dde_sensitive_sequencing_uses_semantic_apex_payment() {
+  // Double Dragon Energy supplies every Energy type and two Energy while attached
+  // to a Dragon Pokémon, so raw Grass/Fire counters cannot by themselves decide
+  // whether Apex Dragon's GGF cost is complete:
+  // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Official Energy and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Semantic Energy policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug and required static audit: https://github.com/FlareZ123/pokemon-sims/issues/2368
+  const std::string issue1878 = read_source(
+      "src/trace_engine_v2/part_issue_1878_vessel_quick_ball_tapu_crispin_route.inc");
+  require_text(issue1878, "pays_apex_energy_cost(projected)",
+               "Issue-1878 route lost semantic projected Apex payment");
+  require_text(issue1878, "!need_energy() || held_manual_energy_finishes",
+               "Issue-1878 route lost DDE-aware completion admission guard");
+
+  const std::string discard = read_source(
+      "src/trace_engine_v2/part_issue_1740_preserve_live_treasure_override.inc");
+  require_text(discard, "pokemon.double_dragon > 0 && pays_apex_energy_cost(pokemon)",
+               "Dynamic DCI lost attached-DDE semantic completion guard");
+  require_text(discard, "dde_completed_energy_line && !need_energy()",
+               "Dynamic DCI lost semantic Energy-axis completion requirement");
+
+  const std::string gladion = read_source(
+      "src/trace_engine_v2/part_issue_1595_gladion_grass_turo_blender_override.inc");
+  require_text(gladion, "state_.active->double_dragon > 0 &&",
+               "Gladion route lost physical attached-DDE requirement");
+  require_text(gladion, "pays_apex_energy_cost(*state_.active)",
+               "Gladion route lost semantic Apex payment check");
+
+  const std::string tate = read_source(
+      "src/trace_engine_v2/part_tate_blender_tate_override.inc");
+  require_text(tate, "pokemon.double_dragon > 0 && pays_apex_energy_cost(pokemon)",
+               "Tate route lost attached-DDE semantic completion guard");
+  require_text(tate, "issue_2368_preserve_direct_treasure_vstar_payload_completion()",
+               "Tate draw route lost direct DDE Treasure completion preservation");
+}
+
+void test_celestial_roar_has_no_retired_raw_missing_energy_counters() {
+  // The Celestial Roar next-window helper already projects candidate attachments
+  // through semantic Energy handling; retired raw missing-Grass/Fire counters must
+  // not return as a competing readiness proxy:
+  // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+  // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+  // Confirmed cleanup: https://github.com/FlareZ123/pokemon-sims/issues/2370
+  // Parent semantic audit: https://github.com/FlareZ123/pokemon-sims/issues/2368
+  const std::string celestial = read_source(
+      "src/trace_engine_v2/part_celestial_roar_override.inc");
+  expect(celestial.find("missing_grass") == std::string::npos,
+         "Celestial Roar restored retired raw missing_grass readiness state");
+  expect(celestial.find("missing_fire") == std::string::npos,
+         "Celestial Roar restored retired raw missing_fire readiness state");
+  require_text(celestial, "pays_apex_energy_cost(projected)",
+               "Celestial Roar lost semantic projected Apex payment");
+}
+
+}  // namespace
+
+int main() {
+  test_dde_sensitive_sequencing_uses_semantic_apex_payment();
+  test_celestial_roar_has_no_retired_raw_missing_energy_counters();
+}

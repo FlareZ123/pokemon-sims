@@ -1,0 +1,49 @@
+name: Issue 2418 bootstrap
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize-and-validate:
+    if: github.head_ref == 'fix-2418-turo-dde'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix-2418-turo-dde
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Materialize the source-bound fix
+        run: python tools/issue_2418_patch_runner.py
+      - name: Validate patch shape
+        run: git diff --check
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and unified tests
+        run: cmake --build build --parallel 2
+      - name: Run focused #2418 regression
+        run: ctest --test-dir build -R '^regidrago_issue_2418_turo_dde_tests$' --output-on-failure
+      - name: Run three reviewed simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee issue-2418-trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee issue-2418-trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-2418-trace-3.txt
+      - name: Commit validated fix and remove bootstrap files
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm tools/issue_2418_patch.py tools/issue_2418_patch_runner.py .github/workflows/issue-2418-bootstrap.yml
+          git add -A
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Fix #2418 DDE-aware Professor Turo routes'
+          git push origin HEAD:fix-2418-turo-dde

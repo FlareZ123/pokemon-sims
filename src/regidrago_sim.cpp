@@ -69,7 +69,10 @@
 #define bench_tapu_if_useful bench_tapu_if_useful_original
 #define recover_discard_to_hand recover_discard_to_hand_name_only_original
 #define choose_discard choose_discard_issue1436_original
+#define wonder_tag_arven_held_payload_route_available wonder_tag_arven_held_payload_route_available_issue2270_original
 #include "trace_engine_v2/part_006.inc"
+#undef wonder_tag_arven_held_payload_route_available
+#include "trace_engine_v2/part_issue_2270_wonder_tag_arven_latias_override.inc"
 #undef recover_discard_to_hand
 #undef bench_tapu_if_useful
 #undef needs_tapu_connector
@@ -147,7 +150,10 @@
 #undef needs_tapu_connector
 #undef wonder_tag_crispin_is_redundant_with_held_complete_route
 #undef bench_tapu_if_useful
+#define needs_tapu_connector needs_tapu_connector_issue2270_original
 #include "trace_engine_v2/part_issue_989_wonder_tag_complete_route_override.inc"
+#undef needs_tapu_connector
+#include "trace_engine_v2/part_issue_2270_tapu_connector_override.inc"
 #define play_ultra_ball play_ultra_ball_empty_deck_original
 #define play_evolution_incense play_evolution_incense_empty_deck_original
 #define in_play tapu_connector_copy_aware_in_play

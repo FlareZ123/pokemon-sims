@@ -319,3 +319,16 @@ add_test(NAME trace_issue_1139_fss_banks_tate
 add_test(NAME issue_1333_tapu_live_print_contract
   COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/issue_1333_tapu_live_print_tests.py)
+
+# Known Prize Grass is an immediate Gladion connector even when another Grass
+# remains in deck, provided Supporter/manual attachment remain and JIT payload is live.
+# Gladion / Tapu Lele-GX / Quick Ball: https://api.pokemontcg.io/v2/cards/sm4-95 https://api.pokemontcg.io/v2/cards/sm2-60 https://api.pokemontcg.io/v2/cards/swsh1-179
+# Mega Dragonite ex / Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/me2pt5-152 https://api.pokemontcg.io/v2/cards/swsh12-136
+# Core rules: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+# Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2292
+add_executable(issue_2292_gladion_final_prize_energy_tests
+  tests/issue_2292_gladion_final_prize_energy_tests.cpp)
+add_test(NAME issue_2292_gladion_final_prize_energy_tests
+  COMMAND issue_2292_gladion_final_prize_energy_tests)
+add_test(NAME trace_issue_2292_strict_first_seed692
+  COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 692 --require-ready-by 4)

@@ -1,0 +1,33 @@
+name: Bootstrap issue 2294 current-main fix
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.head_ref == 'fix/2294-serena-yields-arven-sol'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Apply reviewed focused patch
+        run: |
+          git fetch origin 448101d2ab706ab759467674899d6b819b9ddb36 ccea888ffe58545b1fb7e3f968d4682d58033790
+          git diff 448101d2ab706ab759467674899d6b819b9ddb36 ccea888ffe58545b1fb7e3f968d4682d58033790 -- CMakeLists.txt src/trace_engine_v2/part_012.inc | git apply -3
+      - name: Validate exact witness
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 8 --require-ready-by 4
+      - name: Commit materialized fix
+        run: |
+          git rm .github/workflows/bootstrap-2294-sol.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add CMakeLists.txt src/trace_engine_v2/part_012.inc
+          git commit -m 'Fix #2294 Serena yielding to Arven Latias Blender route'
+          git push origin HEAD:${{ github.head_ref }}

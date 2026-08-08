@@ -33,3 +33,5 @@ CTest validates its registered deadline cases. The baseline generator separately
 ## Boundary
 
 This remains a setup-policy engine. It does not resolve a complete opposing board, damage, Knock Outs, Prize taking, hand disruption, gust, or all Expanded interactions.
+
+<!-- Debug-mode CI audit trigger: 2026-08-08T11:47-04:00. This branch intentionally changes no simulator policy. -->

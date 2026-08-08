@@ -1,0 +1,34 @@
+name: Bootstrap issue 2265 current-main fix
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.head_ref == 'fix/2265-arven-quickball-sol'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Apply reviewed focused patch
+        run: |
+          git fetch origin d27398291db04876b6c1e71ee6a0de91330d68d1 8e97d7bd5734d5b2f993c4df2f8ec819ebe9058c
+          git diff d27398291db04876b6c1e71ee6a0de91330d68d1 8e97d7bd5734d5b2f993c4df2f8ec819ebe9058c -- src/trace_engine_v2/part_012_items_and_arven.inc src/trace_engine_v2/part_014_arven_override.inc tests/arven_route_tests.cpp tests/discard_route_regression_tests.cpp | git apply -3
+      - name: Validate focused regressions and exact witness
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R 'arven_route_tests|discard_route_regression_tests' --output-on-failure
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 122 --require-ready-by 3
+      - name: Commit materialized fix
+        run: |
+          git rm .github/workflows/bootstrap-2265-sol.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/trace_engine_v2/part_012_items_and_arven.inc src/trace_engine_v2/part_014_arven_override.inc tests/arven_route_tests.cpp tests/discard_route_regression_tests.cpp
+          git commit -m 'Fix #2265 K1 Arven Quick Ball projection'
+          git push origin HEAD:${{ github.head_ref }}

@@ -7,18 +7,10 @@ from pathlib import Path
 
 PATH = Path("src/trace_engine_v2/part_014c_latias_bench_override.inc")
 LOCK = PATH.with_suffix(PATH.suffix + ".issue2295.lock")
-OLD = """    Pokemon* target = best_benched_vstar_for_promotion();
-    if (target == nullptr || target->grass < 2 || target->fire < 1) return false;
-    if (hand_count(Card::Grass) == 0 && hand_count(Card::Fire) == 0) return false;
-
-    const Card payment = hand_count(Card::Grass) > 0 ? Card::Grass : Card::Fire;
-    if (hand_count(payment) == 0 || !remove_one(state_.hand, payment)) return false;
-"""
-NEW = """    Pokemon* target = best_benched_vstar_for_promotion();
-    if (target == nullptr || target->grass < 2 || target->fire < 1) return false;
-    if (hand_count(Card::Grass) == 0 && hand_count(Card::Fire) == 0) return false;
-
-    // Project the established #1646 Burnet-priority condition before paying any
+FUNCTION_MARKER = "bool maybe_pay_basic_retreat_for_held_blender_finish()"
+PAYMENT_ANCHOR = "    const Card payment = hand_count(Card::Grass) > 0 ? Card::Grass : Card::Fire;"
+INSERTED_MARKER = "    const bool projected_burnet_priority ="
+INSERTION = """    // Project the established #1646 Burnet-priority condition before paying any
     // real resource. Promotion makes target the Active GGF Regidrago VSTAR and
     // the paid retreat consumes this turn's manual attachment. Every other input
     // is already public or K1-known, so this prevents committing the paid route
@@ -41,8 +33,6 @@ NEW = """    Pokemon* target = best_benched_vstar_for_promotion();
         !payload_deck_candidates().empty();
     if (projected_burnet_priority) return false;
 
-    const Card payment = hand_count(Card::Grass) > 0 ? Card::Grass : Card::Fire;
-    if (hand_count(payment) == 0 || !remove_one(state_.hand, payment)) return false;
 """
 
 
@@ -51,11 +41,22 @@ def main() -> int:
     try:
         os.write(descriptor, str(os.getpid()).encode("ascii"))
         text = PATH.read_text(encoding="utf-8")
-        if text.count(NEW) == 1:
+        function_start = text.find(FUNCTION_MARKER)
+        if function_start < 0 or text.find(FUNCTION_MARKER, function_start + 1) >= 0:
+            raise RuntimeError("#2295 helper function marker is missing or ambiguous")
+
+        payment_index = text.find(PAYMENT_ANCHOR, function_start)
+        if payment_index < 0:
+            raise RuntimeError("#2295 payment anchor missing after helper marker")
+        next_payment = text.find(PAYMENT_ANCHOR, payment_index + len(PAYMENT_ANCHOR))
+        if next_payment >= 0:
+            raise RuntimeError("#2295 payment anchor is ambiguous")
+
+        inserted_index = text.find(INSERTED_MARKER, function_start, payment_index)
+        if inserted_index >= 0:
             return 0
-        if text.count(OLD) != 1:
-            raise RuntimeError("#2295 refinement anchor mismatch")
-        updated = text.replace(OLD, NEW, 1)
+
+        updated = text[:payment_index] + INSERTION + text[payment_index:]
         with tempfile.NamedTemporaryFile(
             mode="w", encoding="utf-8", newline="\n", dir=PATH.parent, delete=False
         ) as handle:

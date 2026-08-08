@@ -65,15 +65,6 @@ struct EngineTestAccess {
 
 namespace {
 
-constexpr const char* kDdeCard =
-    "https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/";
-constexpr const char* kApex =
-    "https://api.pokemontcg.io/v2/cards/swsh12-136";
-constexpr const char* kRules =
-    "https://www.pokemon.com/us/pokemon-tcg/rules";
-constexpr const char* kIssue =
-    "https://github.com/FlareZ123/pokemon-sims/issues/2238";
-
 struct Fixture {
   sim::Scenario scenario;
   sim::DeckRecipe recipe;

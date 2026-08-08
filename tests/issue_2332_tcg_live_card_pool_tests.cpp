@@ -1,6 +1,5 @@
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
-#include "../src/tcg_live_card_pool.hpp"
 
 #include <iostream>
 #include <stdexcept>

@@ -1,7 +1,7 @@
 {
   "deck": "regidrago-shell",
   "matrix_seed": 20260705,
-  "simulator_policy_source_sha256": "6e87c709f40f36648c30e1d7f81740b5de3ca152536ccac0c9cf213984f28de8",
+  "simulator_policy_source_sha256": "ca976944d2139c71ab9cadc275bc8923a85a7301a7d053d976a5da6e09d7af82",
   "traces": [
     {
       "deadline": 3,
@@ -29,9 +29,9 @@
     },
     {
       "deadline": 3,
-      "file": "strict_rulebox_lock_go_second_seed_13.txt",
+      "file": "strict_rulebox_lock_go_second_seed_4.txt",
       "scenario": "strict-jit-rulebox-ability-lock/go-second",
-      "seed": 13
+      "seed": 4
     },
     {
       "deadline": 4,

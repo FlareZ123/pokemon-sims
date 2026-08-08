@@ -3,6 +3,7 @@ bool play_gladion() {
   const bool issue_2368_powered_evolvable_active =
       state_.active && state_.active->card == Card::RegidragoV &&
       state_.active->entered_turn < state_.turn &&
+      state_.active->double_dragon > 0 &&
       pays_apex_energy_cost(*state_.active);
   const bool issue_2368_public_no_vstar_route =
       need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
@@ -25,8 +26,8 @@ bool play_gladion() {
     // The public state already commits Gladion because no VSTAR connector is
     // available before its mandatory Prize inspection. After Gladion legally
     // reveals all Prizes, a prized Mysterious Treasure is the two-axis choice when
-    // DDE has already completed Energy: Treasure discards the held Dragon payload
-    // and searches the deck-resident Regidrago VSTAR this same turn.
+    // an actually attached DDE has already completed Energy: Treasure discards the
+    // held Dragon payload and searches the deck-resident Regidrago VSTAR this turn.
     // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
@@ -47,7 +48,7 @@ bool play_gladion() {
     shuffle(state_.prizes);
     trace("PLAY SUPPORTER",
           "R-GLADION-01; R-MT-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-JIT-01; P-COMPRESS-01",
-          "Gladion revealed and exchanged for Mysterious Treasure because Energy was already complete and Treasure immediately covers VSTAR plus payload.");
+          "Gladion revealed and exchanged for Mysterious Treasure because attached DDE had already completed Energy and Treasure immediately covers VSTAR plus payload.");
     return true;
   }
 

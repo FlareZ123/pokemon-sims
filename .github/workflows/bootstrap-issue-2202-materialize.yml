@@ -1,0 +1,53 @@
+name: Bootstrap issue 2202 source and evidence
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.head_ref == 'fix/2202-current-main-evidence-sol'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Port reviewed #2202 source and tests
+        run: |
+          git fetch origin fix/2202-current-main-sol
+          git show origin/fix/2202-current-main-sol:src/trace_engine_v2/part_issue_2165_burnet_treasure_order_override.inc > src/trace_engine_v2/part_issue_2165_burnet_treasure_order_override.inc
+          git show origin/fix/2202-current-main-sol:src/trace_engine_v2/part_issue_2202_treasure_tapu_crispin_override.inc > src/trace_engine_v2/part_issue_2202_treasure_tapu_crispin_override.inc
+          git show origin/fix/2202-current-main-sol:tests/issue_2202_treasure_tapu_crispin_payload_tests.cpp > tests/issue_2202_treasure_tapu_crispin_payload_tests.cpp
+      - name: Build exact pull-request source
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R 'issue_2202_treasure_tapu_crispin_payload' --output-on-failure
+      - name: Regenerate source-bound setup evidence
+        run: |
+          # Deterministic generator contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          # Paired generator contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/generate_multi_deck_comparison.py
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Verify source-bound provenance
+        run: |
+          # Provenance implementation: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/baseline_provenance.py
+          python -c "import json; from pathlib import Path; from scripts.baseline_provenance import simulator_policy_source_digest; root=Path('.').resolve(); expected=simulator_policy_source_digest(root); paths=(root/'results'/'baseline_manifest.json',root/'results'/'multi_deck_manifest.json'); assert all(json.loads(path.read_text(encoding='utf-8'))['simulator_policy_source_sha256']==expected for path in paths)"
+      - name: Commit materialized bug fix and evidence
+        run: |
+          git rm .github/workflows/bootstrap-issue-2202-materialize.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Fix #2202 Treasure payload route with source-bound evidence'
+          git push origin HEAD:${{ github.head_ref }}

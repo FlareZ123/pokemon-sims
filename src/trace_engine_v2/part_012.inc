@@ -156,6 +156,29 @@ const bool can_pay_search_cost =
 
 bool issue_1598_bank_prized_treasure_{false};
 
+  bool issue_2292_gladion_final_prize_energy_finish(const Card energy) const {
+    if (scenario_.dci != DciProfile::StrictJit || !prizes_known() ||
+        !supporter_allowed() || state_.manual_energy_used ||
+        hand_count(Card::Gladion) == 0 || hand_count(energy) > 0 ||
+        !state_.active || state_.active->card != Card::RegidragoVstar ||
+        prize_count_after_reveal(energy) == 0 ||
+        grass_needed() + fire_needed() != 1 || !payload_ready()) {
+      return false;
+    }
+
+    // Gladion may take any known Prize. When Regidrago VSTAR is exactly one manual
+    // attachment from GGF and this turn's strict-JIT Dragon is already discarded,
+    // the known prized missing Energy completes immediately even if another copy
+    // of that Energy type remains in the inspected deck.
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Prize, Supporter and manual Energy attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 / strict-JIT / earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2292
+    return (energy == Card::Grass && grass_needed() == 1 && fire_needed() == 0) ||
+           (energy == Card::Fire && grass_needed() == 0 && fire_needed() == 1);
+  }
+
 bool play_gladion() {
     if (late_steven_vstar_with_held_blender_route_available()) {
       // Gladion exchanges for one Prize card, while the confirmed route already has
@@ -227,8 +250,19 @@ bool play_gladion() {
         const auto prize_energy = final_prized_energy_for_gladion();
         const bool same_energy_absent_from_deck = prize_energy.has_value() &&
             deck_count_after_search_started(*prize_energy) == 0;
+        const bool direct_prize_energy_finish = prize_energy.has_value() &&
+            issue_2292_gladion_final_prize_energy_finish(*prize_energy);
 
-        if (prize_energy && same_energy_absent_from_deck && !live_crispin) {
+        // A same-type Energy elsewhere in deck does not make that copy accessible
+        // after Wonder Tag has already selected Gladion for the unused Supporter play.
+        // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+        // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+        // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+        // One Supporter and one manual attachment per turn: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+        // K1 and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2292
+        if (prize_energy && (same_energy_absent_from_deck || direct_prize_energy_finish) &&
+            !live_crispin) {
           known_target = *prize_energy;
         } else if (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) && !live_tate_switch &&
                    prize_count_after_reveal(Card::LatiasEx) > 0) {

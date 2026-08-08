@@ -40,10 +40,10 @@ jobs:
           python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
           python scripts/update_multi_deck_docs.py --repo-root .
 
-      - name: Verify provenance before materializing
+      - name: Verify source-bound provenance before materializing
         run: |
           # Provenance contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/baseline_provenance.py
-          python scripts/check_baseline_provenance.py --repo-root .
+          python -c "import json; from pathlib import Path; from scripts.baseline_provenance import simulator_policy_source_digest; root=Path('.').resolve(); expected=simulator_policy_source_digest(root); paths=(root/'results'/'baseline_manifest.json',root/'results'/'multi_deck_manifest.json'); assert all(json.loads(path.read_text(encoding='utf-8'))['simulator_policy_source_sha256']==expected for path in paths)"
 
       - name: Commit materialized evidence refresh
         run: |

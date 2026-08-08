@@ -1,0 +1,120 @@
+name: Issue 2368 DDE sequencing predicate audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/issue-2368-dde-sequencing-audit.yml'
+      - 'scripts/issue2368_paired_hunt.cpp'
+      - 'src/**'
+      - 'tests/**'
+
+jobs:
+  audit-dde-route-predicates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inventory DDE-sensitive production predicates
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo '=== raw attached Grass/Fire references ==='
+            grep -RInE --include='*.inc' --include='*.cpp' --include='*.hpp' '(\.grass|->grass|\.fire|->fire)' src/trace_engine_v2 src/regidrago_sim.cpp || true
+            echo
+            echo '=== semantic Energy helpers ==='
+            grep -RInE --include='*.inc' --include='*.cpp' --include='*.hpp' '(need_energy\(|pays_apex_energy_cost\(|apex_energy_progress\()' src/trace_engine_v2 src/regidrago_sim.cpp || true
+          } | tee raw_energy_predicates.txt
+      - name: Add temporary semantic T2/T3 snapshots
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p2=Path('src/trace_engine_v2/part_002.inc'); t=p2.read_text()
+          old='  bool t2_eligible_held_vstar_missed_active{false};\n  bool t2_eligible_missed_active{false};\n};'
+          new='  bool t2_eligible_held_vstar_missed_active{false};\n  bool t2_eligible_missed_active{false};\n  std::uint8_t issue2368_t2_root_mask{0};\n  std::uint8_t issue2368_t3_root_mask{0};\n  bool issue2368_t2_recorded{false};\n  bool issue2368_t3_recorded{false};\n};'
+          if old not in t: raise SystemExit('TrialOutcome anchor missing')
+          p2.write_text(t.replace(old,new,1))
+          p14=Path('src/trace_engine_v2/part_014c.inc'); t=p14.read_text()
+          old='    const bool payload_is_ready = payload_ready();\n    const bool ready = state_.turn >= 2 && active_vstar && energy_ready &&\n        payload_is_ready;\n    if (!ready) {'
+          new='''    const bool payload_is_ready = payload_ready();
+    const bool ready = state_.turn >= 2 && active_vstar && energy_ready &&
+        payload_is_ready;
+    bool vstar_in_play = false;
+    bool any_regi_energy_ready = false;
+    bool any_vstar_energy_ready = false;
+    const auto inspect_issue2368_line = [&](const Pokemon& pokemon) {
+      if (pokemon.card != Card::RegidragoV && pokemon.card != Card::RegidragoVstar) return;
+      const bool pays = pays_apex_energy_cost(pokemon);
+      any_regi_energy_ready = any_regi_energy_ready || pays;
+      if (pokemon.card == Card::RegidragoVstar) {
+        vstar_in_play = true;
+        any_vstar_energy_ready = any_vstar_energy_ready || pays;
+      }
+    };
+    if (state_.active) inspect_issue2368_line(*state_.active);
+    for (const Pokemon& pokemon : state_.bench) inspect_issue2368_line(pokemon);
+    const bool misplaced_vstar = vstar_in_play && !active_vstar;
+    const bool semantic_energy_ready = active_vstar ? energy_ready :
+        (vstar_in_play ? any_vstar_energy_ready : any_regi_energy_ready);
+    std::uint8_t issue2368_mask = 0;
+    if (!vstar_in_play) issue2368_mask |= 1U;
+    if (misplaced_vstar) issue2368_mask |= 2U;
+    if (!semantic_energy_ready) issue2368_mask |= 4U;
+    if (!payload_is_ready) issue2368_mask |= 8U;
+    if (state_.turn == 2) {
+      outcome_.issue2368_t2_root_mask = issue2368_mask;
+      outcome_.issue2368_t2_recorded = true;
+    } else if (state_.turn == 3) {
+      outcome_.issue2368_t3_root_mask = issue2368_mask;
+      outcome_.issue2368_t3_recorded = true;
+    }
+    if (!ready) {'''
+          if old not in t: raise SystemExit('record_ready anchor missing')
+          p14.write_text(t.replace(old,new,1))
+          PY
+      - name: Build paired harness
+        run: g++ -std=c++20 -O2 -I. scripts/issue2368_paired_hunt.cpp -o issue2368_paired_hunt
+      - name: Run six-scenario paired 100k bug hunt
+        id: hunt
+        continue-on-error: true
+        run: ./issue2368_paired_hunt
+      - name: Summarize paired hunt
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import csv
+          from pathlib import Path
+          p=Path('paired_bug_hunt.csv')
+          if not p.exists(): raise SystemExit('paired bug-hunt CSV missing')
+          rows=list(csv.DictReader(p.open(newline='')))
+          numeric=[k for k in rows[0] if k not in ('scenario','trials','exceptions')]
+          mean={k:sum(float(r[k]) for r in rows)/len(rows) for k in numeric}
+          lines=['# Issue 2368 paired bug hunt','',
+                 f"Mean T2 ready: {mean['base_t2_ready']:.3f}% -> {mean['dde_t2_ready']:.3f}%",
+                 f"Mean T3 ready: {mean['base_t3_ready']:.3f}% -> {mean['dde_t3_ready']:.3f}%",
+                 f"T2 ready transitions: improve {mean['t2_ready_improve']:.3f}% / regress {mean['t2_ready_regress']:.3f}%",'']
+          for axis in ('vstar','position','energy','payload'):
+              lines.append(f"T2 {axis}: {mean['base_t2_'+axis]:.3f}% -> {mean['dde_t2_'+axis]:.3f}% ; improve {mean['t2_'+axis+'_improve']:.3f}% / regress {mean['t2_'+axis+'_regress']:.3f}%")
+          lines += ['', f"Common T2-unresolved: {mean['common_t2_unresolved']:.3f}%", '']
+          for axis in ('vstar','position','energy','payload'):
+              lines.append(f"T3 common {axis}: {mean['base_t3_common_'+axis]:.3f}% -> {mean['dde_t3_common_'+axis]:.3f}% ; improve {mean['t3_common_'+axis+'_improve']:.3f}% / regress {mean['t3_common_'+axis+'_regress']:.3f}%")
+          Path('paired_bug_hunt_summary.md').write_text('\n'.join(lines)+'\n')
+          print(Path('paired_bug_hunt_summary.md').read_text())
+          PY
+      - name: Upload issue 2368 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-2368-dde-predicate-audit
+          path: |
+            raw_energy_predicates.txt
+            paired_bug_hunt.csv
+            paired_bug_hunt_summary.md
+            paired_bug_hunt_seeds.csv
+            paired_bug_hunt_traces.txt
+      - name: Fail on paired exceptions
+        if: steps.hunt.outcome != 'success'
+        run: exit 1

@@ -116,16 +116,27 @@ void reported_seed_reaches_t4(const std::uint64_t seed) {
   sim::Engine engine(*scenario, deck->recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 
-  // These source-bound witnesses must choose the Dragon Vessel cost on T4 and
-  // become ready immediately instead of delaying the strict-JIT payload axis.
+  // These source-bound witnesses must choose a permitted Dragon as the Vessel
+  // cost on T4 and avoid Dipplin. Current main may expose multiple held Dragon
+  // payloads in a witness, so the invariant is the Dragon-class cost plus T4
+  // readiness rather than one obsolete payload identity.
   // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
   // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+  // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
   // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Confirmed seed witnesses: https://github.com/FlareZ123/pokemon-sims/issues/2231
+  const bool dragon_vessel_cost =
+      trace_contains(trace, "Dragapult ex (Earthen Vessel cost)") ||
+      trace_contains(trace, "Dialga-GX (Earthen Vessel cost)") ||
+      trace_contains(trace, "Hisuian Goodra VSTAR (Earthen Vessel cost)") ||
+      trace_contains(trace, "Mega Dragonite ex (Earthen Vessel cost)") ||
+      trace_contains(trace, "Appletun (Earthen Vessel cost)");
   expect(outcome.first_ready_turn == 4 && !outcome.setup_failed,
          "A reported issue-2231 seed did not become ready on T4.");
-  expect(trace_contains(trace, "Dragapult ex (Earthen Vessel cost)"),
-         "A reported issue-2231 seed did not spend Dragapult ex to Vessel.");
+  expect(dragon_vessel_cost,
+         "A reported issue-2231 seed did not spend a Dragon payload to Vessel.");
+  expect(!trace_contains(trace, "Dipplin TWM 127 (Earthen Vessel cost)"),
+         "A reported issue-2231 seed still spent Dipplin instead of a Dragon payload.");
   expect(trace_contains(trace, "T4 | READY"),
          "A reported issue-2231 seed omitted the T4 ready state.");
 }

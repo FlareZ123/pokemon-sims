@@ -47,7 +47,143 @@
     return direct_energy_recovery || public_vessel_fallback;
   }
 
+  bool issue_2314_latias_energy_projection_available() {
+    if (!deck_seen_ || state_.vstar_power_used || !has_vstar() ||
+        !ability_available_for_pokemon(Card::RegidragoVstar) || item_locked() ||
+        state_.manual_energy_used || state_.retreat_used || !need_energy() ||
+        !need_active_vstar() || !state_.active || !is_basic(state_.active->card) ||
+        bench_space() <= 0 || in_play(Card::LatiasEx) ||
+        !ability_available_for_pokemon(Card::LatiasEx) ||
+        hand_count(Card::LatiasEx) > 0 || hand_count(Card::MysteriousTreasure) == 0 ||
+        !can_play_payload_this_turn()) {
+      return false;
+    }
+
+    Pokemon* target = target_regi();
+    if (target == nullptr || target->card != Card::RegidragoVstar) return false;
+    const int missing_grass = std::max(0, 2 - target->grass);
+    const int missing_fire = std::max(0, 1 - target->fire);
+    if (missing_grass + missing_fire != 1) return false;
+    const Card needed_energy = missing_grass == 1 ? Card::Grass : Card::Fire;
+    if (hand_count(needed_energy) > 0) return false;
+
+    const bool latias_in_deck = count_of(state_.deck, Card::LatiasEx) > 0;
+    const bool latias_in_discard = count_of(state_.discard, Card::LatiasEx) > 0;
+    if (!latias_in_deck && !latias_in_discard) return false;
+    if (count_of(state_.discard, Card::EarthenVessel) == 0 ||
+        count_of(state_.deck, needed_energy) + count_of(state_.discard, needed_energy) == 0) {
+      return false;
+    }
+
+    // If Latias is milled, held Mysterious Treasure becomes the payload outlet and
+    // still needs a legal Psychic/Dragon target. Seven other targets are sufficient
+    // when Latias begins in deck because a seven-card Legacy Star discard cannot
+    // remove Latias plus all seven; if Latias was already discarded, eight are needed.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // K1 hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed deterministic projection: https://github.com/FlareZ123/pokemon-sims/issues/2314
+    const int other_treasure_targets = static_cast<int>(std::count_if(
+        state_.deck.begin(), state_.deck.end(), [](const Card card) {
+          return card != Card::LatiasEx && is_dragon_or_psychic(card);
+        }));
+    const int required_other_targets = latias_in_deck ? 7 : 8;
+    if (other_treasure_targets < required_other_targets) return false;
+
+    // The worst reveal branch leaves both Latias and the needed Energy in deck, so
+    // recovered Earthen Vessel and held Mysterious Treasure need two distinct costs.
+    // The first cost establishes the strict-JIT Dragon payload. For the second cost,
+    // route-aware DCI may spend a held Basic Energy whose type is already fully paid
+    // on the selected VSTAR because the observable current-turn route replaces that
+    // card's setup role. This is the seed-15 Fire: the VSTAR already has F and needs G.
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Apex Dragon / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Dynamic DCI and route-replaced resources: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed seed-15 state: https://github.com/FlareZ123/pokemon-sims/issues/2314
+    const auto payload_cost = choose_discard(true, true, true, Card::EarthenVessel);
+    if (!payload_cost || !is_payload(*payload_cost)) return false;
+    const bool route_replaced_energy_cost =
+        (missing_grass == 0 && hand_count(Card::Grass) > 0) ||
+        (missing_fire == 0 && hand_count(Card::Fire) > 0);
+    if (!route_replaced_energy_cost) {
+      const std::vector<Card> original_hand = state_.hand;
+      const std::vector<Card> original_discard = state_.discard;
+      const std::vector<Card> original_discarded_this_turn = state_.discarded_this_turn;
+      if (!remove_one(state_.hand, *payload_cost)) return false;
+      state_.discard.push_back(*payload_cost);
+      state_.discarded_this_turn.push_back(*payload_cost);
+      const auto ordinary_second_cost = choose_discard(
+          false, true, true, Card::MysteriousTreasure);
+      state_.hand = original_hand;
+      state_.discard = original_discard;
+      state_.discarded_this_turn = original_discarded_this_turn;
+      if (!ordinary_second_cost) return false;
+    }
+    return true;
+  }
+
+  bool use_issue_2314_latias_energy_projection() {
+    if (!issue_2314_latias_energy_projection_available()) return false;
+
+    Pokemon* target = target_regi();
+    if (target == nullptr || target->card != Card::RegidragoVstar) {
+      throw std::logic_error("Issue 2314 projected VSTAR target disappeared");
+    }
+    const Card needed_energy = target->grass < 2 ? Card::Grass : Card::Fire;
+
+    state_.vstar_power_used = true;
+    outcome_.used_legacy_star = true;
+    std::vector<Card> discarded;
+    for (int card = 0; card < 7 && !state_.deck.empty(); ++card) {
+      const Card top = state_.deck.back();
+      state_.deck.pop_back();
+      state_.discard.push_back(top);
+      state_.discarded_this_turn.push_back(top);
+      discarded.push_back(top);
+    }
+
+    std::vector<Card> recovered;
+    if (count_of(state_.discard, Card::LatiasEx) > 0) {
+      if (!recover_discard_to_hand(Card::LatiasEx)) {
+        throw std::logic_error("Issue 2314 Legacy Star Latias target disappeared");
+      }
+      recovered.push_back(Card::LatiasEx);
+    }
+    if (count_of(state_.discard, needed_energy) > 0 && recovered.size() < 2U) {
+      if (!recover_discard_to_hand(needed_energy)) {
+        throw std::logic_error("Issue 2314 Legacy Star Energy target disappeared");
+      }
+      recovered.push_back(needed_energy);
+    } else if (count_of(state_.deck, needed_energy) > 0 && recovered.size() < 2U) {
+      if (!recover_discard_to_hand(Card::EarthenVessel)) {
+        throw std::logic_error("Issue 2314 Legacy Star Vessel target disappeared");
+      }
+      recovered.push_back(Card::EarthenVessel);
+    }
+
+    // Legacy Star's two-card recovery budget covers every legal reveal branch:
+    // recover Latias if it was discarded, recover the missing Basic Energy if it was
+    // discarded, otherwise recover the already-discarded Vessel to search that Energy.
+    // Held Treasure searches Latias whenever it remains in deck, and Skyliner then
+    // gives the Basic Active free Retreat so the powered Benched VSTAR can be promoted.
+    // Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Official Ability, Item, discard, search, attachment, Bench, and retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2314
+    trace("LEGACY STAR", "R-RVS-01; R-VSTAR-01",
+          "Discarded top 7: " + join_cards(discarded) + "; recovered: " +
+              join_cards(recovered) + ".");
+    return true;
+  }
+
   bool use_legacy_star() {
+    if (use_issue_2314_latias_energy_projection()) return true;
+
     const bool issue_1817_hold_for_burnet_finish =
         issue_1817_burnet_finish_pending_ &&
         scenario_.dci == DciProfile::StrictJit &&

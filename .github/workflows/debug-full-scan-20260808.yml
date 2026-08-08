@@ -1,0 +1,100 @@
+name: Debug full scan 2026-08-08
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/debug-full-scan-20260808.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Inventory and static policy scan
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+
+          tracked = subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')
+          tracked = [p for p in tracked if p]
+          Path('tracked-files.txt').write_text('\n'.join(tracked) + '\n', encoding='utf-8')
+
+          text_files = []
+          binary_files = []
+          suspicious = []
+          notes = []
+          energy_re = re.compile(r'(?:\bgrass\b|\bfire\b|\.grass|\.fire|->grass|->fire|grass_needed|fire_needed|need_energy\s*\()')
+          branch_re = re.compile(r'\b(?:if|return|while)\b')
+          todo_re = re.compile(r'\b(?:TODO|FIXME|HACK|XXX)\b', re.IGNORECASE)
+
+          for name in tracked:
+              path = Path(name)
+              try:
+                  text = path.read_text(encoding='utf-8')
+              except (UnicodeDecodeError, IsADirectoryError):
+                  binary_files.append(name)
+                  continue
+              text_files.append(name)
+              for number, line in enumerate(text.splitlines(), 1):
+                  if name.startswith('src/') and energy_re.search(line) and branch_re.search(line):
+                      suspicious.append(f'{name}:{number}:{line}')
+                  if todo_re.search(line):
+                      notes.append(f'{name}:{number}:{line}')
+
+          inventory = [
+              f'tracked_files={len(tracked)}',
+              f'utf8_text_files={len(text_files)}',
+              f'binary_or_non_utf8_files={len(binary_files)}',
+              f'src_energy_branch_candidates={len(suspicious)}',
+              f'todo_fixme_hack_xxx={len(notes)}',
+          ]
+          Path('audit-inventory.txt').write_text('\n'.join(inventory) + '\n', encoding='utf-8')
+          Path('raw-energy-candidates.txt').write_text('\n'.join(suspicious) + ('\n' if suspicious else ''), encoding='utf-8')
+          Path('maintenance-notes.txt').write_text('\n'.join(notes) + ('\n' if notes else ''), encoding='utf-8')
+          print('\n'.join(inventory))
+          PY
+      - name: Configure and build
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Strict C++20 compile audit
+        run: cmake -S . -B build-pedantic -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS=-pedantic-errors && cmake --build build-pedantic --parallel 2
+      - name: Card and source contracts
+        run: ctest --test-dir build -R 'card_audit_contract|card_audit_category_contract|source_anchor' --output-on-failure
+      - name: Simulate-this pass 1
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee debug-trace-1.txt
+      - name: Simulate-this pass 2
+        run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee debug-trace-2.txt
+      - name: Simulate-this pass 3
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee debug-trace-3.txt
+      - name: Upload audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-full-scan-20260808
+          path: |
+            audit-inventory.txt
+            tracked-files.txt
+            raw-energy-candidates.txt
+            maintenance-notes.txt
+            debug-trace-1.txt
+            debug-trace-2.txt
+            debug-trace-3.txt
+      - name: Remove temporary audit workflow
+        if: always()
+        shell: bash
+        run: |
+          rm .github/workflows/debug-full-scan-20260808.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/debug-full-scan-20260808.yml
+          git commit -m 'Remove temporary full debug audit workflow'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}

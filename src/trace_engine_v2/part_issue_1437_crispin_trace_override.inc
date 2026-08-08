@@ -25,3 +25,11 @@
   // complete route before the original Secret Box action sequence:
   // https://github.com/FlareZ123/pokemon-sims/issues/1439
   #define run_secret_box_turn run_secret_box_turn_issue1439_original
+
+  // Install the DDE-aware Latias search completions before their legacy definitions
+  // are composed later. The override renames only those three methods and leaves
+  // every surrounding Latias, Secret Box, and turn-policy method unchanged:
+  // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2442
+  #include "part_issue_2442_dde_latias_search_override.inc"

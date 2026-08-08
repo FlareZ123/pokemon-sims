@@ -1,3 +1,4 @@
+#define play_mysterious_treasure play_mysterious_treasure_issue2323_original
   bool issue_2165_burnet_treasure_vstar_route_available() const {
     if (scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || state_.turn != 1 ||
@@ -62,3 +63,5 @@
               : "Discarded redundant Ultra Ball; no Dragon or Psychic Pokemon remained after K1 inspection.");
     return true;
   }
+#undef play_mysterious_treasure
+#include "part_issue_2323_early_treasure_regi_override.inc"

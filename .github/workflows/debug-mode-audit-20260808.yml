@@ -1,0 +1,34 @@
+name: Debug mode audit 2026-08-08
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  audit:
+    if: github.head_ref == 'audit/debug-mode-20260808-sol2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Release simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Run complete Release test suite
+        run: ctest --test-dir build --output-on-failure
+      - name: Trace audit 1 shell strict JIT going second
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+      - name: Trace audit 2 pineco strict JIT going second
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2
+      - name: Trace audit 3 shell Rule Box lock going second
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3
+      - name: Generate all-deck 100000-trial T2 T3 matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-matrix.csv
+      - name: Print T2 T3 matrix
+        run: python -c "import csv; rows=list(csv.DictReader(open('audit-matrix.csv', encoding='utf-8'))); print('deck,scenario,T2%,T3%'); [print(f\"{r['deck']},{r['scenario']},{r['ready_by_t2_pct']},{r['ready_by_t3_pct']}\") for r in rows]"
+      - name: Upload matrix artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-mode-t2-t3-matrix
+          path: audit-matrix.csv
+          retention-days: 1

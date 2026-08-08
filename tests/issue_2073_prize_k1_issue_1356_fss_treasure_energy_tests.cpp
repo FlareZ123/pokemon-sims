@@ -201,7 +201,7 @@ void test_incomplete_split_keeps_vstar_priority() {
     }
 
     const sim::Scenario scenario = test_scenario();
-    std::mt19937_64 rng(135610 + control);
+    std::mt19937_64 rng(static_cast<std::mt19937_64::result_type>(135610 + control));  // Seed constructor takes result_type: https://eel.is/c++draft/rand.eng.mers
     sim::Engine engine = make_engine(scenario, rng);
     sim::EngineTestAccess::set_state(engine, std::move(state));
     resolve_fss(engine);

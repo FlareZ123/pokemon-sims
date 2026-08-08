@@ -86,13 +86,19 @@ void exact_composed_connector() {
   sim::Engine engine = make_engine(route_scenario(), rng, route_state(), &trace);
 
   // Quick Ball discards one other card and searches a Basic Pokemon. The Dragon
-  // cost is the required current-turn strict-JIT payload in this exact route.
+  // cost is the required current-turn strict-JIT payload. Wonder Tag obtains Arven;
+  // Arven takes Forest Seal Stone plus Earthen Vessel; Vessel spends the held Fire
+  // that is route-surplus because the Active Regidrago V already has Fire and takes
+  // the missing Grass for the unused manual attachment.
   // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
   // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
   // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
   // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+  // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
   // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-  // Official Item, discard, search, Bench, Ability, and Supporter procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Official Item, discard, search, Bench, Ability, Supporter, Tool, VSTAR Power,
+  // evolution, and Energy attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
   // K1, DCI, strict-JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Confirmed stale-claim bug: https://github.com/FlareZ123/pokemon-sims/issues/2289
   expect(sim::EngineTestAccess::route_available(engine),
@@ -112,9 +118,22 @@ void exact_composed_connector() {
                        return pokemon.card == sim::Card::TapuLeleGX;
                      }),
          "issue-2289 Tapu Lele-GX was not played to the Bench");
-  expect(std::count(after.hand.begin(), after.hand.end(), sim::Card::Arven) == 1,
-         "issue-2289 Wonder Tag did not obtain Arven");
-  expect(has(trace, "issue-2289") && has(trace, "WONDER TAG"),
+  expect(after.supporter_used &&
+             std::count(after.discard.begin(), after.discard.end(),
+                        sim::Card::Arven) == 1,
+         "issue-2289 Arven was not played as the T4 Supporter");
+  expect(std::count(after.hand.begin(), after.hand.end(),
+                    sim::Card::ForestSealStone) == 1,
+         "issue-2289 Arven did not obtain Forest Seal Stone");
+  expect(std::count(after.discard.begin(), after.discard.end(),
+                    sim::Card::EarthenVessel) == 1 &&
+             std::count(after.discard.begin(), after.discard.end(),
+                        sim::Card::Fire) == 1,
+         "issue-2289 Earthen Vessel did not spend the route-surplus Fire");
+  expect(std::count(after.hand.begin(), after.hand.end(), sim::Card::Grass) == 1,
+         "issue-2289 Earthen Vessel did not obtain Grass Energy");
+  expect(has(trace, "issue-2289") && has(trace, "WONDER TAG") &&
+             has(trace, "PLAY SUPPORTER") && has(trace, "EARTHEN VESSEL"),
          "issue-2289 connector trace was incomplete");
 }
 
@@ -240,7 +259,8 @@ void exact_seed_52_reaches_t4() {
   expect(outcome.first_ready_turn == 4 && !outcome.setup_failed,
          "issue-2289 seed 52 did not reach readiness on T4");
   expect(has(trace, "Quick Ball issue-2289 current-turn payload cost") &&
-             has(trace, "Searched and revealed Arven") &&
+             has(trace, "Arven searched Forest Seal Stone and Earthen Vessel") &&
+             has(trace, "Earthen Vessel issue-2289 route-surplus Fire cost") &&
              has(trace, "T4 | READY"),
          "issue-2289 seed 52 omitted the proven T4 connector route");
 }

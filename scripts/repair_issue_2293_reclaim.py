@@ -36,7 +36,7 @@ new = '''        state_.active->card != Card::Oricorio ||
         // Strict-JIT readiness requires a Dragon payload to enter discard this turn:
         // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
         !std::any_of(state_.discarded_this_turn.begin(), state_.discarded_this_turn.end(),
-                     is_payload)) {
+                     [this](const Card card) { return is_payload(card); })) {
 '''
 if text.count(old) != 1:
     raise RuntimeError("#2293 target-local readiness guard anchor mismatch")

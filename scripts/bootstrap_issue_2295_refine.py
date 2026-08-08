@@ -9,19 +9,20 @@ PATH = Path("src/trace_engine_v2/part_014c_latias_bench_override.inc")
 LOCK = PATH.with_suffix(PATH.suffix + ".issue2295.lock")
 OLD = """    Pokemon* target = best_benched_vstar_for_promotion();
     if (target == nullptr || target->grass < 2 || target->fire < 1) return false;
+    if (hand_count(Card::Grass) == 0 && hand_count(Card::Fire) == 0) return false;
 
     const Card payment = hand_count(Card::Grass) > 0 ? Card::Grass : Card::Fire;
     if (hand_count(payment) == 0 || !remove_one(state_.hand, payment)) return false;
 """
 NEW = """    Pokemon* target = best_benched_vstar_for_promotion();
     if (target == nullptr || target->grass < 2 || target->fire < 1) return false;
+    if (hand_count(Card::Grass) == 0 && hand_count(Card::Fire) == 0) return false;
 
-    // Project only the established #1646 Burnet-priority predicate before paying
-    // any real resource. After this helper pays a manual attachment and retreats,
-    // target becomes the Active GGF Regidrago VSTAR and manual_energy_used is true.
-    // Every remaining input to #1646 is already observable in the current state,
-    // so this exact preflight prevents a paid route from mutating the board before
-    // Brilliant Blender is intentionally held for the cheaper live Burnet outlet.
+    // Project the established #1646 Burnet-priority condition before paying any
+    // real resource. Promotion makes target the Active GGF Regidrago VSTAR and
+    // the paid retreat consumes this turn's manual attachment. Every other input
+    // is already public or K1-known, so this prevents committing the paid route
+    // when the simulator correctly prefers the cheaper live Burnet payload outlet.
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
@@ -36,7 +37,8 @@ NEW = """    Pokemon* target = best_benched_vstar_for_promotion();
         hand_count(Card::ProfessorBurnet) > 0 &&
         count_of(state_.discard, Card::EarthenVessel) > 0 &&
         count_of(state_.discard, Card::QuickBall) > 0 &&
-        count_of(state_.discarded_this_turn, Card::QuickBall) > 0;
+        count_of(state_.discarded_this_turn, Card::QuickBall) > 0 &&
+        !payload_deck_candidates().empty();
     if (projected_burnet_priority) return false;
 
     const Card payment = hand_count(Card::Grass) > 0 ? Card::Grass : Card::Fire;

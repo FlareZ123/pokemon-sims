@@ -9,14 +9,22 @@
     const bool current_turn_payload_cost_live =
         can_play_payload_this_turn() &&
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
-    if (!ordinary && !need_energy() && !current_turn_payload_cost_live) {
+    const auto dde_completed_regi = [this](const Pokemon& pokemon) {
+      return (pokemon.card == Card::RegidragoV || pokemon.card == Card::RegidragoVstar) &&
+             pokemon.double_dragon > 0 && pays_apex_energy_cost(pokemon);
+    };
+    const bool dde_completed_energy_line =
+        (state_.active && dde_completed_regi(*state_.active)) ||
+        std::any_of(state_.bench.begin(), state_.bench.end(), dde_completed_regi);
+    if (!ordinary && dde_completed_energy_line && !need_energy() &&
+        !current_turn_payload_cost_live) {
       const int excluded_crispin =
           excluded_from_cost && *excluded_from_cost == Card::Crispin ? 1 : 0;
       if (hand_count(Card::Crispin) > excluded_crispin) {
-        // Once DDE or another legal payment has completed Apex Dragon's Energy
-        // axis, singleton Crispin no longer advances setup and is valid dynamic-DCI
-        // fuel for a live Item cost. Keeping it protected can strand a held
-        // Mysterious Treasure that would establish Regidrago VSTAR.
+        // DDE can finish Apex Dragon's Energy axis while a singleton Crispin is
+        // still protected by the pre-DDE dynamic-DCI table. Only in that concrete
+        // DDE-complete state, and only when no current-turn Dragon payload should
+        // pay the cost instead, Crispin is setup-inert Item fuel.
         // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
         // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
         // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136

@@ -1,0 +1,44 @@
+
+Deck: regidrago-shell | Seed: 8 | first-ready turn: 4 | setup result: success
+Seed: 8 | first-ready turn: 4 | setup result: success
+===== SIMULATE THIS =====
+Deck: regidrago-shell
+Scenario: matchup-flex-jit/go-first | DCI: matchup-flex-JIT | Locks: none
+Mulligans: 2
+Opening player-known state: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Regidrago VSTAR, Crispin, Steven's Resolve, Arven, Mega Dragonite ex, Serena | Discard=(none)
+DEBUG ONLY: prizes=Mysterious Treasure, Dragapult ex, Tate & Liza, Grass Energy, Fire Energy, Grass Energy. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Tapu Lele-GX
+T1 | TURN START | rules: R-GAME-FIRST-TURN | Going first: drew for the turn; no Supporter or attack is permitted.
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Regidrago VSTAR, Crispin, Steven's Resolve, Arven, Mega Dragonite ex, Serena, Tapu Lele-GX | Discard=(none)
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Regidrago VSTAR, Crispin, Steven's Resolve, Arven, Mega Dragonite ex, Serena, Tapu Lele-GX | Discard=(none)
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Quick Ball
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Regidrago VSTAR, Crispin, Steven's Resolve, Arven, Mega Dragonite ex, Serena, Tapu Lele-GX, Quick Ball | Discard=(none)
+T2 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Steven's Resolve: deck inspected; Prize identities are now deducible for later decisions.
+T2 | PLAY SUPPORTER | rules: R-STEVEN-01; R-GAME-SUPPORTER | Searched up to 3 cards: Regidrago V, Brilliant Blender, Regidrago VSTAR. Turn ended.
+T2 | TURN END | rules: R-STEVEN-01 or R-RV-01 | Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Regidrago VSTAR, Crispin, Arven, Mega Dragonite ex, Serena, Tapu Lele-GX, Quick Ball, Regidrago V, Brilliant Blender, Regidrago VSTAR | Discard=Steven's Resolve
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Guzma
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=(none) | Hand=Regidrago VSTAR, Crispin, Arven, Mega Dragonite ex, Serena, Tapu Lele-GX, Quick Ball, Regidrago V, Brilliant Blender, Regidrago VSTAR, Guzma | Discard=Steven's Resolve
+T3 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T3 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T3 | DISCARD | rules: R-QB-01 | Guzma (Quick Ball cost)
+T3 | PLAY ITEM | rules: R-QB-01; R-GAME-ITEM | Searched a Basic Pokémon: Oricorio GRI 55.
+T3 | BENCH | rules: R-GAME-BENCH | Oricorio GRI 55 from hand.
+T3 | Vital Dance | rules: R-ORICORIO-01 | Searched up to 2 Basic Energy: Grass Energy, Fire Energy.
+T3 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Tapu Lele-GX [-] | Bench=Regidrago V [GG]; Oricorio GRI 55 [-] | Hand=Regidrago VSTAR, Arven, Mega Dragonite ex, Serena, Tapu Lele-GX, Brilliant Blender, Regidrago VSTAR, Fire Energy, Fire Energy | Discard=Steven's Resolve, Crispin, Quick Ball, Guzma
+T4 | DRAW | rules: R-GAME-DRAW | start-of-turn: Regidrago V
+T4 | POLICY | rules: P-AXIS-01 | Start: Active=Tapu Lele-GX [-] | Bench=Regidrago V [GG]; Oricorio GRI 55 [-] | Hand=Regidrago VSTAR, Arven, Mega Dragonite ex, Serena, Tapu Lele-GX, Brilliant Blender, Regidrago VSTAR, Fire Energy, Fire Energy, Regidrago V | Discard=Steven's Resolve, Crispin, Quick Ball, Guzma
+T4 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T4 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T4 | PLAY SUPPORTER | rules: R-ARVEN-01; R-GAME-SUPPORTER | Searched an Item and a Pokémon Tool: Mysterious Treasure, Forest Seal Stone.
+T4 | ATTACH TOOL | rules: R-FSS-01; R-GAME-TOOL | Attached Forest Seal Stone to Regidrago V.
+T4 | HOLD VSTAR POWER | rules: R-FSS-02; R-VSTAR-01; P-KNOWLEDGE-01; P-DCI-01 | Retained Star Alchemy because observable held resources already complete every current-turn setup axis.
+T4 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T4 | HOLD VSTAR POWER | rules: R-FSS-02; R-VSTAR-01; P-KNOWLEDGE-01; P-DCI-01 | Retained Star Alchemy because observable held resources already complete every current-turn setup axis.
+T4 | DISCARD | rules: R-MT-01 | Mega Dragonite ex (Mysterious Treasure cost)
+T4 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM | Searched a Psychic or Dragon Pokémon: Latias ex.
+T4 | BENCH | rules: R-GAME-BENCH | Latias ex from hand.
+T4 | RETREAT | rules: R-LATIAS-01; R-GAME-RETREAT | Latias ex gives the Basic Active no Retreat Cost; promoted the best-powered Benched Regidrago VSTAR.
+T4 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=Tapu Lele-GX [-]; Oricorio GRI 55 [-]; Regidrago V [-]; Latias ex [-] | Hand=Serena, Tapu Lele-GX, Brilliant Blender, Regidrago VSTAR, Fire Energy | Discard=Steven's Resolve, Crispin, Quick Ball, Guzma, Arven, Mysterious Treasure, Mega Dragonite ex
+T4 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

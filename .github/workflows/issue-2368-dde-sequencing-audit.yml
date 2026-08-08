@@ -40,3 +40,7 @@ jobs:
           path: |
             raw_energy_predicates.txt
             crash_seed_trace.txt
+            src/regidrago_sim.cpp
+            src/trace_engine_v2/
+            tests/issue_2238_double_dragon_energy_tests.cpp
+            tests/issue_1878_vessel_quick_ball_tapu_crispin_tests.cpp

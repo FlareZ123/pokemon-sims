@@ -62,7 +62,41 @@
     return true;
   }
 
+  bool issue_2315_tate_switch_finishes_ready_turn() const {
+    if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 ||
+        !need_active_vstar() || state_.manual_energy_used || !payload_ready() ||
+        can_free_retreat_with_latias()) {
+      return false;
+    }
+
+    const Pokemon* target = best_benched_vstar_for_promotion();
+    if (target == nullptr) return false;
+    const int missing_grass = std::max(0, 2 - target->grass);
+    const int missing_fire = std::max(0, 1 - target->fire);
+    if (missing_grass + missing_fire != 1) return false;
+    const Card needed_energy = missing_grass == 1 ? Card::Grass : Card::Fire;
+
+    // Tate & Liza's switch mode resolves the only remaining board-position axis,
+    // while the already held Basic Energy completes GGF with the unused manual
+    // attachment and the current-turn Dragon payload is already established. Its
+    // draw mode would shuffle away that deterministic finish and leave the Basic
+    // Active stranded, which is exactly the post-Legacy-Star seed-21 failure:
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Dialga-GX Basic Active witness: https://api.pokemontcg.io/v2/cards/sm5-100
+    // Official one-Supporter-per-turn, switch, and manual-attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Supporter contention and earliest-complete-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed recovery-and-switch bug: https://github.com/FlareZ123/pokemon-sims/issues/2315
+    return hand_count(needed_energy) > 0;
+  }
+
   void choose_supporter() {
+    if (issue_2315_tate_switch_finishes_ready_turn()) {
+      if (!play_tate_switch()) {
+        throw std::logic_error("Issue-2315 Tate switch finish became unavailable");
+      }
+      return;
+    }
     if (play_issue_2225_arven_vessel_finish()) return;
     choose_supporter_issue2225_original();
   }

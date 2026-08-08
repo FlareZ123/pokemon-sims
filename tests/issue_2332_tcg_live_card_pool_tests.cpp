@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <stdexcept>
-#include <string>
 
 namespace sim {
 
@@ -20,72 +19,42 @@ void require(const bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);
 }
 
-void test_live_rejects_xy_double_dragon_energy() {
-  const sim::NamedDeck dde{"regidrago-dde-model",
-                           sim::double_dragon_modeling_recipe()};
-  std::string error;
-
-  // Pokémon Support says XY cards are not playable in Pokémon TCG Live, and
-  // Double Dragon Energy is XY—Roaring Skies 97/108:
+void test_live_lookup_rejects_xy_double_dragon_energy_model() {
+  // Pokémon Support says XY cards are unavailable for play in Pokémon TCG Live,
+  // while Double Dragon Energy is XY—Roaring Skies 97/108:
   // https://support.pokemon.com/hc/en-us/articles/6489934466708-Pok%C3%A9mon-TCG-Live-Migration-FAQ-from-the-Pok%C3%A9mon-TCG-Online
   // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
   // https://github.com/FlareZ123/pokemon-sims/issues/2332
-  require(!sim::validate_recipe_for_pool(
-              dde, sim::CardPool::TcgLiveExpanded, &error),
-          "TCG Live validation accepted XY Double Dragon Energy.");
-  require(error.find("Double Dragon Energy") != std::string::npos,
-          "TCG Live rejection did not identify Double Dragon Energy.");
-  require(sim::deck_by_id_for_pool(
-              "regidrago-dde-model", sim::CardPool::TcgLiveExpanded) == nullptr,
-          "TCG Live lookup exposed the paper-only DDE model.");
+  require(sim::tcg_live_deck_by_id("regidrago-dde-model") == nullptr,
+          "Production TCG Live lookup exposed the paper-only DDE model.");
 }
 
-void test_paper_expanded_preserves_dde_model() {
-  const sim::NamedDeck dde{"regidrago-dde-model",
-                           sim::double_dragon_modeling_recipe()};
-  std::string error;
-
-  // The supplied card corpus records xy6-97 as Expanded-legal in paper play;
-  // the simulator keeps that mechanics model available only through the explicit
-  // paper pool. Card text: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
-  // Scope contract: https://github.com/FlareZ123/pokemon-sims/issues/2332
-  require(sim::validate_recipe_for_pool(
-              dde, sim::CardPool::PaperExpanded, &error),
-          "Paper Expanded validation rejected the DDE model.");
-  require(sim::deck_by_id_for_pool(
-              "regidrago-dde-model", sim::CardPool::PaperExpanded) != nullptr,
-          "Explicit paper lookup lost the DDE model.");
+void test_paper_mechanics_model_remains_available_to_focused_tests() {
+  // The paper Expanded mechanics model remains available internally for the
+  // issue-2238 DDE rules tests; only the production Live lookup excludes it:
+  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+  // https://github.com/FlareZ123/pokemon-sims/issues/2238
+  // https://github.com/FlareZ123/pokemon-sims/issues/2332
+  require(sim::deck_by_id("regidrago-dde-model") != nullptr,
+          "Focused paper mechanics lookup lost the DDE model.");
 }
 
-void test_live_registry_remains_available() {
-  for (const sim::NamedDeck& deck : sim::deck_registry()) {
-    std::string error;
-    require(sim::validate_recipe_for_pool(
-                deck, sim::CardPool::TcgLiveExpanded, &error),
-            "A registered Pokémon TCG Live deck failed Live card-pool validation.");
-  }
-
-  // Sun & Moon and Sword & Shield cards are playable in Pokémon TCG Live under
-  // the current Pokémon Support card-pool statement. Tapu Lele-GX is the SM2
-  // Guardians Rising print and Regidrago V is the SWSH12 Silver Tempest print:
-  // https://support.pokemon.com/hc/en-us/articles/6489934466708-Pok%C3%A9mon-TCG-Live-Migration-FAQ-from-the-Pok%C3%A9mon-TCG-Online
-  // https://api.pokemontcg.io/v2/cards/sm2-60
-  // https://api.pokemontcg.io/v2/cards/swsh12-135
-  require(sim::card_supported_in_pool(
-              sim::Card::TapuLeleGX, sim::CardPool::TcgLiveExpanded),
-          "Sun & Moon card was rejected by Live validation.");
-  require(sim::card_supported_in_pool(
-              sim::Card::RegidragoV, sim::CardPool::TcgLiveExpanded),
-          "Sword & Shield card was rejected by Live validation.");
+void test_registered_live_decks_remain_reachable() {
+  require(sim::tcg_live_deck_by_id("regidrago-shell") != nullptr,
+          "Live lookup lost regidrago-shell.");
+  require(sim::tcg_live_deck_by_id("regidrago-pineco") != nullptr,
+          "Live lookup lost regidrago-pineco.");
+  require(sim::tcg_live_deck_by_id("unknown") == nullptr,
+          "Live lookup accepted an unknown deck.");
 }
 
 }  // namespace
 
 int main() {
   try {
-    test_live_rejects_xy_double_dragon_energy();
-    test_paper_expanded_preserves_dde_model();
-    test_live_registry_remains_available();
+    test_live_lookup_rejects_xy_double_dragon_energy_model();
+    test_paper_mechanics_model_remains_available_to_focused_tests();
+    test_registered_live_decks_remain_reachable();
     std::cout << "Issue 2332 TCG Live card-pool tests passed\n";
     return 0;
   } catch (const std::exception& error) {

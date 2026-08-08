@@ -1,0 +1,269 @@
+name: Temporary DDE bottleneck-axis experiment
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-dde-bottleneck-axes.yml'
+  workflow_dispatch:
+
+jobs:
+  compare-bottlenecks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Checkout temporary experiment head
+        uses: actions/checkout@v4
+        with:
+          path: variant
+
+      - name: Checkout exact PR base
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: baseline
+
+      - name: Add temporary T2/T3 root-axis instrumentation
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new, label):
+              text = path.read_text()
+              if old not in text:
+                  raise SystemExit(f'{label}: patch anchor not found in {path}')
+              path.write_text(text.replace(old, new, 1))
+
+          def instrument(root):
+              root = Path(root)
+              p2 = root / 'src/trace_engine_v2/part_002.inc'
+              replace_once(
+                  p2,
+                  '''  bool t2_eligible_held_vstar_missed_active{false};\n  bool t2_eligible_missed_active{false};\n};''',
+                  '''  bool t2_eligible_held_vstar_missed_active{false};\n  bool t2_eligible_missed_active{false};\n  std::uint8_t t2_root_mask{0};\n  std::uint8_t t3_root_mask{0};\n  bool t2_missing_regi_line{false};\n  bool t3_missing_regi_line{false};\n};''',
+                  'TrialOutcome instrumentation')
+              replace_once(
+                  p2,
+                  '''  std::uint64_t t2_eligible_missed_active{0};\n  double total_mulligans{0.0};''',
+                  '''  std::uint64_t t2_eligible_missed_active{0};\n  std::array<std::uint64_t, 16> t2_root_masks{};\n  std::array<std::uint64_t, 16> t3_root_masks{};\n  std::uint64_t t2_missing_regi_line{0};\n  std::uint64_t t3_missing_regi_line{0};\n  double total_mulligans{0.0};''',
+                  'Aggregate instrumentation')
+
+              p14 = root / 'src/trace_engine_v2/part_014c.inc'
+              replace_once(
+                  p14,
+                  '''    const bool ready = state_.turn >= 2 && active_vstar && energy_ready &&\n        payload_is_ready;\n    if (!ready) {''',
+                  '''    const bool ready = state_.turn >= 2 && active_vstar && energy_ready &&\n        payload_is_ready;\n\n    bool regi_line_in_play = false;\n    bool vstar_in_play = false;\n    bool any_regi_energy_ready = false;\n    bool any_vstar_energy_ready = false;\n    const auto inspect_regi_line = [&](const Pokemon& pokemon) {\n      if (pokemon.card != Card::RegidragoV && pokemon.card != Card::RegidragoVstar) return;\n      regi_line_in_play = true;\n      const bool pays = pays_apex_energy_cost(pokemon);\n      any_regi_energy_ready = any_regi_energy_ready || pays;\n      if (pokemon.card == Card::RegidragoVstar) {\n        vstar_in_play = true;\n        any_vstar_energy_ready = any_vstar_energy_ready || pays;\n      }\n    };\n    if (state_.active) inspect_regi_line(*state_.active);\n    for (const Pokemon& pokemon : state_.bench) inspect_regi_line(pokemon);\n\n    const bool misplaced_vstar = vstar_in_play && !active_vstar;\n    const bool root_energy_ready = active_vstar ? energy_ready :\n        (vstar_in_play ? any_vstar_energy_ready : any_regi_energy_ready);\n    std::uint8_t root_mask = 0;\n    if (!vstar_in_play) root_mask |= 1U;\n    if (misplaced_vstar) root_mask |= 2U;\n    if (!root_energy_ready) root_mask |= 4U;\n    if (!payload_is_ready) root_mask |= 8U;\n    if (state_.turn == 2) {\n      outcome_.t2_root_mask = root_mask;\n      outcome_.t2_missing_regi_line = !regi_line_in_play;\n    } else if (state_.turn == 3) {\n      outcome_.t3_root_mask = root_mask;\n      outcome_.t3_missing_regi_line = !regi_line_in_play;\n    }\n\n    if (!ready) {''',
+                  'record_ready root-axis snapshot')
+
+              p15 = root / 'src/trace_engine_v2/part_015.inc'
+              replace_once(
+                  p15,
+                  '''    aggregate.t2_eligible_missed_active +=\n        outcome.t2_eligible_missed_active ? 1U : 0U;\n    aggregate.total_mulligans += outcome.mulligans;''',
+                  '''    aggregate.t2_eligible_missed_active +=\n        outcome.t2_eligible_missed_active ? 1U : 0U;\n    ++aggregate.t2_root_masks.at(outcome.t2_root_mask);\n    ++aggregate.t3_root_masks.at(outcome.t3_root_mask);\n    aggregate.t2_missing_regi_line += outcome.t2_missing_regi_line ? 1U : 0U;\n    aggregate.t3_missing_regi_line += outcome.t3_missing_regi_line ? 1U : 0U;\n    aggregate.total_mulligans += outcome.mulligans;''',
+                  'simulate root-mask aggregation')
+
+              p16 = root / 'src/trace_engine_v2/part_016.inc'
+              text = p16.read_text()
+              old_header = '           "t2_eligible_held_vstar_missed_active_pct\\n";'
+              mask_cols = ([f't2_root_mask_{i}_pct' for i in range(16)] +
+                           [f't3_root_mask_{i}_pct' for i in range(16)])
+              new_header = ('           "t2_eligible_held_vstar_missed_active_pct,'
+                            't2_missing_regi_line_pct,t3_missing_regi_line_pct,' +
+                            ','.join(mask_cols) + '\\n";')
+              if old_header not in text:
+                  raise SystemExit(f'CSV header patch anchor not found in {p16}')
+              text = text.replace(old_header, new_header, 1)
+              old_tail = '''            << sim::pct(a.t2_eligible_held_vstar_missed_active, a.trials)\n            << '\\n';'''
+              new_tail = '''            << sim::pct(a.t2_eligible_held_vstar_missed_active, a.trials) << ','\n            << sim::pct(a.t2_missing_regi_line, a.trials) << ','\n            << sim::pct(a.t3_missing_regi_line, a.trials);\n        for (const std::uint64_t count : a.t2_root_masks) {\n          csv << ',' << sim::pct(count, a.trials);\n        }\n        for (const std::uint64_t count : a.t3_root_masks) {\n          csv << ',' << sim::pct(count, a.trials);\n        }\n        csv << '\\n';'''
+              if old_tail not in text:
+                  raise SystemExit(f'CSV row patch anchor not found in {p16}')
+              p16.write_text(text.replace(old_tail, new_tail, 1))
+
+          instrument('baseline')
+          instrument('variant')
+          print('temporary T2/T3 root-axis instrumentation applied to both trees')
+          PY
+
+      - name: Apply temporary 2 Grass to 2 DDE swap
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('variant/src/trace_engine_v2/part_000.inc')
+          text = path.read_text()
+          old = 'constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{'
+          new = 'constexpr std::array<std::pair<Card, int>, 37> kDeckRecipe{{'
+          if old not in text:
+              raise SystemExit('deck recipe array declaration not found')
+          text = text.replace(old, new, 1)
+          old_line = '    {Card::HisuianHeavyBall, 1},  {Card::Grass, 6},          {Card::Fire, 3},'
+          new_line = '    {Card::HisuianHeavyBall, 1},  {Card::DoubleDragonEnergy, 2}, {Card::Grass, 4},          {Card::Fire, 3},'
+          if old_line not in text:
+              raise SystemExit('canonical Energy recipe line not found')
+          path.write_text(text.replace(old_line, new_line, 1))
+          print('temporary shell recipe: 4 Grass / 3 Fire / 2 Double Dragon Energy')
+          PY
+
+      - name: Configure and build baseline
+        run: |
+          cmake -S baseline -B baseline/build -DCMAKE_BUILD_TYPE=Release
+          cmake --build baseline/build --parallel 2
+
+      - name: Configure and build DDE variant
+        run: |
+          cmake -S variant -B variant/build -DCMAKE_BUILD_TYPE=Release
+          cmake --build variant/build --parallel 2
+
+      - name: Run exact-seed 100k matrices
+        run: |
+          baseline/build/regidrago_sim --trials 100000 --seed 20260705 --out "$GITHUB_WORKSPACE/baseline_axes.csv"
+          variant/build/regidrago_sim --trials 100000 --seed 20260705 --out "$GITHUB_WORKSPACE/dde_axes.csv"
+
+      - name: Analyze T2 and T3 bottlenecks
+        shell: bash
+        run: |
+          python - <<'PY'
+          import csv
+          from pathlib import Path
+
+          def read(path):
+              with open(path, newline='') as f:
+                  return {r['scenario']: r for r in csv.DictReader(f)}
+
+          base = read('baseline_axes.csv')
+          dde = read('dde_axes.csv')
+          if set(base) != set(dde):
+              raise SystemExit('scenario sets differ')
+          scenarios = list(base)
+          unlocked = [s for s in scenarios if all(x not in s for x in
+              ('turn2-item-lock', 'rulebox-ability-lock', 'combined-lock', 'supporter-lock'))]
+          strict = [s for s in scenarios if s in ('strict-jit/go-first', 'strict-jit/go-second')]
+          groups = {'all-14': scenarios, 'unlocked-6': unlocked, 'strict-jit-2': strict}
+
+          def metrics(row, turn):
+              masks = [float(row[f't{turn}_root_mask_{i}_pct']) for i in range(16)]
+              ready = masks[0]
+              missing_vstar = sum(v for i, v in enumerate(masks) if i & 1)
+              misplaced_vstar = sum(v for i, v in enumerate(masks) if i & 2)
+              missing_energy = sum(v for i, v in enumerate(masks) if i & 4)
+              missing_payload = sum(v for i, v in enumerate(masks) if i & 8)
+              line_absent = float(row[f't{turn}_missing_regi_line_pct'])
+              unevolved_line = max(0.0, missing_vstar - line_absent)
+              return {
+                  'ready': ready,
+                  'failure': 100.0 - ready,
+                  'line_absent': line_absent,
+                  'vstar_missing': missing_vstar,
+                  'unevolved_line': unevolved_line,
+                  'position': misplaced_vstar,
+                  'energy': missing_energy,
+                  'payload': missing_payload,
+                  'sole_vstar': masks[1],
+                  'sole_position': masks[2],
+                  'sole_energy': masks[4],
+                  'sole_payload': masks[8],
+                  'masks': masks,
+              }
+
+          for label, rows in [('baseline', base), ('dde', dde)]:
+              for s, row in rows.items():
+                  for turn in (2, 3):
+                      m = metrics(row, turn)
+                      expected = float(row[f'ready_by_t{turn}_pct'])
+                      if abs(m['ready'] - expected) > 0.00001:
+                          raise SystemExit(f'root-mask readiness mismatch: {label} {s} T{turn}: {m["ready"]} vs {expected}')
+
+          detailed = []
+          for deck_name, rows in [('baseline', base), ('2dde', dde)]:
+              for s in scenarios:
+                  for turn in (2, 3):
+                      m = metrics(rows[s], turn)
+                      combos = sorted(((v, i) for i, v in enumerate(m['masks']) if i), reverse=True)
+                      def combo_name(mask):
+                          names = []
+                          if mask & 1: names.append('VSTAR')
+                          if mask & 2: names.append('position')
+                          if mask & 4: names.append('energy')
+                          if mask & 8: names.append('payload')
+                          return '+'.join(names)
+                      top = '; '.join(f'{combo_name(i)}={v:.3f}%' for v, i in combos[:4])
+                      row = {'deck': deck_name, 'scenario': s, 'turn': turn}
+                      for key in ('ready','failure','line_absent','vstar_missing','unevolved_line','position','energy','payload',
+                                  'sole_vstar','sole_position','sole_energy','sole_payload'):
+                          row[key] = m[key]
+                      row['top_failure_combos'] = top
+                      detailed.append(row)
+
+          fields = list(detailed[0])
+          with open('axis_detail.csv', 'w', newline='') as f:
+              w = csv.DictWriter(f, fieldnames=fields)
+              w.writeheader(); w.writerows(detailed)
+
+          summary_rows = []
+          metric_keys = ['ready','failure','line_absent','vstar_missing','unevolved_line','position','energy','payload',
+                         'sole_vstar','sole_position','sole_energy','sole_payload']
+          for group_name, group_scenarios in groups.items():
+              for turn in (2, 3):
+                  bydeck = {}
+                  for deck_name, rows in [('baseline', base), ('2dde', dde)]:
+                      vals = [metrics(rows[s], turn) for s in group_scenarios]
+                      avg = {k: sum(v[k] for v in vals) / len(vals) for k in metric_keys}
+                      bydeck[deck_name] = avg
+                      summary_rows.append({'group': group_name, 'turn': turn, 'deck': deck_name, **avg})
+                  delta = {k: bydeck['2dde'][k] - bydeck['baseline'][k] for k in metric_keys}
+                  summary_rows.append({'group': group_name, 'turn': turn, 'deck': 'delta_2dde_minus_baseline', **delta})
+
+          with open('axis_summary.csv', 'w', newline='') as f:
+              w = csv.DictWriter(f, fieldnames=['group','turn','deck'] + metric_keys)
+              w.writeheader(); w.writerows(summary_rows)
+
+          def get_summary(group, turn, deck):
+              return next(r for r in summary_rows if r['group']==group and r['turn']==turn and r['deck']==deck)
+
+          lines = [
+              '# Regidrago setup bottleneck experiment', '',
+              '- Baseline: canonical shell, 6 Grass / 3 Fire.',
+              '- Variant: same shell with 2 Grass replaced by 2 Double Dragon Energy; all 3 Fire retained.',
+              '- 100,000 trials per registered scenario, seed `20260705`.',
+              '- Root-axis mask: VSTAR not in play; VSTAR in play but not Active; Energy incomplete on the most advanced Regidrago line; payload/JIT incomplete.',
+              '- `sole_*` means that axis is the only root-mask blocker at that horizon.',
+              '- `unevolved_line` is VSTAR-missing minus no-Regidrago-line.', '',
+          ]
+
+          for group in ('unlocked-6','all-14'):
+              lines += [f'## {group}', '']
+              for turn in (2,3):
+                  lines += [f'### T{turn}', '',
+                            '| Deck | Ready | No Regi line | VSTAR missing | Line present but unevolved | VSTAR stranded | Energy missing | Payload missing | Sole VSTAR | Sole position | Sole Energy | Sole payload |',
+                            '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|']
+                  for deck in ('baseline','2dde','delta_2dde_minus_baseline'):
+                      r = get_summary(group, turn, deck)
+                      label = {'baseline':'Baseline','2dde':'2 DDE','delta_2dde_minus_baseline':'Δ DDE−base'}[deck]
+                      lines.append('| ' + label + ' | ' + ' | '.join(f'{r[k]:+.3f}%' if deck.startswith('delta') else f'{r[k]:.3f}%'
+                          for k in ('ready','line_absent','vstar_missing','unevolved_line','position','energy','payload','sole_vstar','sole_position','sole_energy','sole_payload')) + ' |')
+                  lines.append('')
+
+          lines += ['## Strict-JIT scenario detail', '',
+                    '| Scenario | Turn | Deck | Ready | VSTAR missing | VSTAR stranded | Energy missing | Payload missing | Sole VSTAR | Sole position | Sole Energy | Sole payload |',
+                    '|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|']
+          for s in strict:
+              for turn in (2,3):
+                  for deck_name, rows in [('baseline', base), ('2dde', dde)]:
+                      m = metrics(rows[s], turn)
+                      lines.append(f'| {s} | T{turn} | {deck_name} | {m["ready"]:.3f}% | {m["vstar_missing"]:.3f}% | {m["position"]:.3f}% | {m["energy"]:.3f}% | {m["payload"]:.3f}% | {m["sole_vstar"]:.3f}% | {m["sole_position"]:.3f}% | {m["sole_energy"]:.3f}% | {m["sole_payload"]:.3f}% |')
+
+          Path('bottleneck_summary.md').write_text('\n'.join(lines) + '\n')
+          print(Path('bottleneck_summary.md').read_text())
+          PY
+
+      - name: Upload bottleneck evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: temp-dde-bottleneck-axes
+          path: |
+            baseline_axes.csv
+            dde_axes.csv
+            axis_detail.csv
+            axis_summary.csv
+            bottleneck_summary.md

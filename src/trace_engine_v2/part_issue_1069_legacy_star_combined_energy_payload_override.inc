@@ -181,6 +181,85 @@
     return true;
   }
 
+  bool refine_issue_2315_legacy_star_tate_recovery(
+      const bool used, const int grass_before, const int fire_before,
+      const int vessel_before) {
+    if (!used || !deck_seen_ || item_locked() || state_.manual_energy_used ||
+        !supporter_allowed() || !need_active_vstar() || !state_.active ||
+        !is_basic(state_.active->card) || count_of(state_.discard, Card::TateLiza) == 0 ||
+        hand_count(Card::EarthenVessel) <= vessel_before) {
+      return false;
+    }
+
+    Pokemon* target = target_regi();
+    if (target == nullptr || target->card != Card::RegidragoVstar) return false;
+    const int missing_grass = std::max(0, 2 - target->grass);
+    const int missing_fire = std::max(0, 1 - target->fire);
+    if (missing_grass + missing_fire != 1) return false;
+    const Card needed_energy = missing_grass == 1 ? Card::Grass : Card::Fire;
+    const int needed_energy_before = needed_energy == Card::Grass ? grass_before : fire_before;
+    if (hand_count(needed_energy) <= needed_energy_before ||
+        count_of(state_.deck, needed_energy) == 0) {
+      return false;
+    }
+
+    const std::vector<Card> original_hand = state_.hand;
+    const std::vector<Card> original_discard = state_.discard;
+    const std::vector<Card> original_discarded_this_turn = state_.discarded_this_turn;
+    if (!remove_one(state_.hand, needed_energy)) return false;
+    state_.discard.push_back(needed_energy);
+    if (!recover_discard_to_hand(Card::TateLiza)) {
+      state_.hand = original_hand;
+      state_.discard = original_discard;
+      state_.discarded_this_turn = original_discarded_this_turn;
+      return false;
+    }
+
+    // Earthen Vessel still needs a legal non-Tate cost after the recovery swap. If
+    // strict JIT is unresolved, that cost must itself establish the Dragon payload.
+    // Tate & Liza remains protected for its independent switch axis:
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Mega Dragonite ex, a modeled payload: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Apex Dragon / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Dynamic DCI / strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed post-reveal recovery bug: https://github.com/FlareZ123/pokemon-sims/issues/2315
+    const bool payload_needed_before_vessel = need_payload();
+    const auto tate = std::find(state_.hand.begin(), state_.hand.end(), Card::TateLiza);
+    if (tate == state_.hand.end()) throw std::logic_error("Issue 2315 Tate recovery disappeared");
+    const Card protected_tate = *tate;
+    state_.hand.erase(tate);
+    const auto vessel_cost = choose_discard(
+        can_play_payload_this_turn(), true, true, Card::EarthenVessel);
+    state_.hand.push_back(protected_tate);
+    const bool vessel_route_complete = vessel_cost.has_value() &&
+        (!payload_needed_before_vessel || is_payload(*vessel_cost));
+    if (!vessel_route_complete) {
+      state_.hand = original_hand;
+      state_.discard = original_discard;
+      state_.discarded_this_turn = original_discarded_this_turn;
+      return false;
+    }
+
+    // Legacy Star selects its recovery cards after the seven discarded cards are
+    // public. Vessel already searches the final Basic Energy, so Tate & Liza has
+    // strictly greater discrete value than the redundant direct Energy recovery: it
+    // completes the still-missing Active-position axis with the unused Supporter play.
+    // Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Tate & Liza switch mode: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Dialga-GX Basic Active: https://api.pokemontcg.io/v2/cards/sm5-100
+    // Official Supporter, Item, discard, search, attachment, and switch procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 / earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Existing Vessel bridge: https://github.com/FlareZ123/pokemon-sims/issues/417
+    // Related hidden-order Tate projection: https://github.com/FlareZ123/pokemon-sims/issues/1130
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2315
+    trace("LEGACY STAR RECOVERY", "R-RVS-01; R-GAME-SUPPORTER",
+          "Replaced redundant " + std::string(name(needed_energy)) +
+              " recovery with Tate & Liza because recovered Earthen Vessel can search the Energy and Tate completes the Active-position axis.");
+    return true;
+  }
+
   bool use_legacy_star() {
     if (use_issue_2314_latias_energy_projection()) return true;
 
@@ -225,8 +304,14 @@
       return false;
     }
 
+    const int grass_before = hand_count(Card::Grass);
+    const int fire_before = hand_count(Card::Fire);
+    const int vessel_before = hand_count(Card::EarthenVessel);
     if (!held_payload_only_outlet_blocks_combined_legacy_star_route()) {
-      return use_legacy_star_issue1069_original();
+      const bool used = use_legacy_star_issue1069_original();
+      refine_issue_2315_legacy_star_tate_recovery(
+          used, grass_before, fire_before, vessel_before);
+      return used;
     }
 
     const int held_blenders = hand_count(Card::BrilliantBlender);
@@ -242,6 +327,8 @@
                        Card::MysteriousTreasure);
     state_.hand.insert(state_.hand.end(), static_cast<std::size_t>(held_burnets),
                        Card::ProfessorBurnet);
+    refine_issue_2315_legacy_star_tate_recovery(
+        used, grass_before, fire_before, vessel_before);
 
     // Legacy Star may recover any two cards after its seven-card discard. When a
     // payload-only outlet is the sole preflight suppressor and a public K1 Energy

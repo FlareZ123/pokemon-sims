@@ -1,0 +1,87 @@
+name: Temporary paired DDE payload sequencing audit v2
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-dde-paired-payload-audit-v2.yml'
+  workflow_dispatch:
+
+jobs:
+  paired-payload-audit-v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add temporary T3 payload diagnostic
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p2=Path('src/trace_engine_v2/part_002.inc'); t=p2.read_text()
+          old='  bool t2_eligible_held_vstar_missed_active{false};\n  bool t2_eligible_missed_active{false};\n};'
+          new='  bool t2_eligible_held_vstar_missed_active{false};\n  bool t2_eligible_missed_active{false};\n  bool t3_missing_payload_paired_audit{false};\n};'
+          if old not in t: raise SystemExit('TrialOutcome anchor not found')
+          p2.write_text(t.replace(old,new,1))
+          p14=Path('src/trace_engine_v2/part_014c.inc'); t=p14.read_text()
+          old='    const bool payload_is_ready = payload_ready();\n    const bool ready = state_.turn >= 2 && active_vstar && energy_ready &&\n        payload_is_ready;'
+          new='    const bool payload_is_ready = payload_ready();\n    if (state_.turn == 3) outcome_.t3_missing_payload_paired_audit = !payload_is_ready;\n    const bool ready = state_.turn >= 2 && active_vstar && energy_ready &&\n        payload_is_ready;'
+          if old not in t: raise SystemExit('record_ready anchor not found')
+          p14.write_text(t.replace(old,new,1))
+          PY
+
+      - name: Extract and fix paired harness
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re, textwrap
+          y=Path('.github/workflows/temp-dde-paired-payload-audit.yml').read_text()
+          m=re.search(r"cat > paired_payload_audit\.cpp <<'CPP'\n(.*?)\n          CPP", y, re.S)
+          if not m: raise SystemExit('embedded harness not found')
+          src=textwrap.dedent(m.group(1))
+          src=src.replace('pct(', 'pct_local(')
+          Path('paired_payload_audit.cpp').write_text(src)
+          PY
+          g++ -std=c++20 -O3 -I. paired_payload_audit.cpp -o paired_payload_audit
+
+      - name: Run paired 100k-per-scenario audit
+        run: ./paired_payload_audit
+
+      - name: Summarize paired transitions
+        shell: bash
+        run: |
+          python - <<'PY'
+          import csv
+          from pathlib import Path
+          rows=list(csv.DictReader(open('paired_payload.csv', newline='')))
+          def mean(k): return sum(float(r[k]) for r in rows)/len(rows)
+          lines=['# Paired DDE payload sequencing audit','',
+            '- Each baseline/DDE game resets the RNG to the same individual seed.',
+            '- The first two physical Grass slots are exact DDE relabels under the same initial shuffle permutation.',
+            '- T3 payload comparison uses only games unresolved after T2 in both variants.','',
+            '## Unlocked-six mean','',
+            f"T2 payload missing: {mean('base_t2_payload_missing_pct'):.3f}% baseline vs {mean('dde_t2_payload_missing_pct'):.3f}% DDE.",
+            f"T2 paired flips: improve {mean('paired_t2_improve_pct'):.3f}%, regress {mean('paired_t2_regress_pct'):.3f}%, net {mean('paired_t2_net_pct'):+.3f} pp.",
+            f"T2 ready: {mean('base_ready_t2_pct'):.3f}% baseline vs {mean('dde_ready_t2_pct'):.3f}% DDE.",
+            f"T3 payload among common T2 survivors: {mean('base_t3_payload_missing_common_survivor_pct'):.3f}% baseline vs {mean('dde_t3_payload_missing_common_survivor_pct'):.3f}% DDE.",
+            f"T3 paired common-survivor flips: improve {mean('paired_t3_improve_common_survivor_pct'):.3f}%, regress {mean('paired_t3_regress_common_survivor_pct'):.3f}%, net {mean('paired_t3_net_common_survivor_pct'):+.3f} pp.",'',
+            '## Scenario detail','',
+            '| Scenario | T2 payload base | T2 payload DDE | improve | regress | net | T2 ready base | T2 ready DDE | T3 common payload base | T3 common payload DDE | T3 net |',
+            '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|']
+          for r in rows:
+            lines.append(f"| {r['scenario']} | {float(r['base_t2_payload_missing_pct']):.3f}% | {float(r['dde_t2_payload_missing_pct']):.3f}% | {float(r['paired_t2_improve_pct']):.3f}% | {float(r['paired_t2_regress_pct']):.3f}% | {float(r['paired_t2_net_pct']):+.3f} | {float(r['base_ready_t2_pct']):.3f}% | {float(r['dde_ready_t2_pct']):.3f}% | {float(r['base_t3_payload_missing_common_survivor_pct']):.3f}% | {float(r['dde_t3_payload_missing_common_survivor_pct']):.3f}% | {float(r['paired_t3_net_common_survivor_pct']):+.3f} |")
+          Path('paired_payload_summary.md').write_text('\n'.join(lines)+'\n')
+          print(Path('paired_payload_summary.md').read_text())
+          PY
+
+      - name: Upload paired audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: temp-dde-paired-payload-audit-v2
+          path: |
+            paired_payload.csv
+            paired_payload_summary.md
+            transition_seeds.csv
+            transition_traces.txt

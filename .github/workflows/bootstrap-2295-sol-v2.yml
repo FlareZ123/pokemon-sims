@@ -1,0 +1,46 @@
+name: Bootstrap issue 2295 validated fix and evidence
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.head_ref == 'fix/2295-paid-retreat-blender-sol-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Apply reviewed source and regression registration
+        run: |
+          git fetch origin f35992cdb5cb3aa2a15bc199413471fb3b3af242
+          git checkout f35992cdb5cb3aa2a15bc199413471fb3b3af242 -- CMakeLists.txt src/trace_engine_v2/part_014c_latias_bench_override.inc
+          python scripts/bootstrap_issue_2295_refine.py
+      - name: Validate exact witnesses and executable contracts
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 29 --require-ready-by 4
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 86 --require-ready-by 4
+          ctest --test-dir build -R 'trace_issue_2295|regidrago_sim_self_test|regidrago_cli_mode_contract|regidrago_sim_matrix_smoke' --output-on-failure
+      - name: Regenerate canonical source-bound setup evidence
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+      - name: Regenerate paired source-bound setup evidence
+        run: |
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Validate complete Release suite against regenerated evidence
+        run: ctest --test-dir build --output-on-failure
+      - name: Commit source and generated evidence
+        run: |
+          git rm .github/workflows/bootstrap-2295-sol-v2.yml scripts/bootstrap_issue_2295_refine.py BOOTSTRAP_TRIGGER_2295.md
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A CMakeLists.txt src/trace_engine_v2/part_014c_latias_bench_override.inc README.md docs results
+          git commit -m 'Fix #2295 paid retreat Blender route with source-bound evidence'
+          git push origin HEAD:${{ github.head_ref }}

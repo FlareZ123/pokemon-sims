@@ -113,7 +113,7 @@
     }
     const auto ready_evolvable = [this](const Pokemon& pokemon) {
       return pokemon.card == Card::RegidragoV && pokemon.entered_turn < state_.turn &&
-             pays_apex_energy_cost(pokemon);
+             pokemon.double_dragon > 0 && pays_apex_energy_cost(pokemon);
     };
     const bool powered_line =
         (state_.active && ready_evolvable(*state_.active)) ||
@@ -125,10 +125,10 @@
 
   bool play_tate_draw() {
     if (issue_2368_preserve_direct_treasure_vstar_payload_completion()) {
-      // DDE can finish the Energy axis before the strict-JIT Item fixed point. A
-      // held Mysterious Treasure can then use its printed discard cost as the
-      // current-turn Dragon payload while searching Regidrago VSTAR. Do not shuffle
-      // that deterministic two-axis route away with Tate & Liza.
+      // An attached DDE can finish the Energy axis before the strict-JIT Item fixed
+      // point. A held Mysterious Treasure can then use its printed discard cost as
+      // the current-turn Dragon payload while searching Regidrago VSTAR. Do not
+      // shuffle that deterministic two-axis route away with Tate & Liza.
       // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
       // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
       // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148

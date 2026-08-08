@@ -1,0 +1,42 @@
+name: Issue 2368 DDE sequencing predicate audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/issue-2368-dde-sequencing-audit.yml'
+      - 'src/**'
+      - 'tests/**'
+
+jobs:
+  audit-dde-route-predicates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inventory DDE-sensitive production predicates
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo '=== raw attached Grass/Fire references ==='
+            grep -RInE --include='*.inc' --include='*.cpp' --include='*.hpp' '(\.grass|->grass|\.fire|->fire)' src/trace_engine_v2 src/regidrago_sim.cpp || true
+            echo
+            echo '=== energy deficit/readiness helpers ==='
+            grep -RInE --include='*.inc' --include='*.cpp' --include='*.hpp' '(grass_needed\(|fire_needed\(|need_energy\(|pays_apex_energy_cost\(|apex_energy_progress\()' src/trace_engine_v2 src/regidrago_sim.cpp || true
+            echo
+            echo '=== hard-coded Grass/Fire route language ==='
+            grep -RInE --include='*.inc' --include='*.cpp' --include='*.hpp' '(manual Grass|second Grass|final Grass|Grass attachment|Fire only|Grass only|GGF|\[GF\]|\[F\])' src/trace_engine_v2 || true
+          } | tee raw_energy_predicates.txt
+      - name: Reproduce paired DDE crash seed
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ./build/regidrago_sim --simulate-this --deck regidrago-dde-model --scenario strict-jit/go-first --seed 202608170408 > crash_seed_trace.txt || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue-2368-dde-predicate-audit
+          path: |
+            raw_energy_predicates.txt
+            crash_seed_trace.txt

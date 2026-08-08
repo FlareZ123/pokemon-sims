@@ -1,0 +1,93 @@
+name: Bootstrap issue 2204 surgical source port
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.head_ref == 'fix/2204-current-main-surgical-v3'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Insert current-main selector helper and reviewed test
+        run: |
+          git fetch origin fix/2204-treasure-latias-payload-reclaim-v2
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/trace_engine_v2/part_issue_1876_treasure_payload_cost_override.inc')
+          text = path.read_text(encoding='utf-8')
+          marker = '  std::optional<Card> issue_1876_treasure_payload_cost() const {\n'
+          helper = '''  std::optional<Card> issue_2204_treasure_latias_payload_cost() const {
+            const bool ready_benched_vstar =
+                std::any_of(state_.bench.begin(), state_.bench.end(),
+                            [this](const Pokemon& pokemon) {
+                              return pokemon.card == Card::RegidragoVstar &&
+                                     pays_apex_energy_cost(pokemon);
+                            });
+            const bool route_available =
+                strict_payload_timing() && prizes_known() && !item_locked() &&
+                need_active_vstar() && need_payload() && state_.active &&
+                is_basic(state_.active->card) && !state_.retreat_used &&
+                ready_benched_vstar && bench_space() > 0 &&
+                ability_available_for_pokemon(Card::LatiasEx) &&
+                hand_count(Card::LatiasEx) == 0 && !in_play(Card::LatiasEx) &&
+                hand_count(Card::MysteriousTreasure) > 0 &&
+                deck_count_after_search_started(Card::LatiasEx) > 0;
+            if (!route_available) return std::nullopt;
+
+            // Mysterious Treasure's mandatory discard is the current-turn Apex Dragon payload,
+            // while the same search finds Latias ex. Skyliner removes the Basic Active's Retreat
+            // Cost so the already powered Benched Regidrago VSTAR can be promoted immediately.
+            // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+            // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+            // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+            // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+            // Official Item, discard, search, Bench, Ability, Retreat, and promotion procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+            // K1, dynamic DCI, current-turn JIT, Active-position, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+            // Confirmed stale-claim bug: https://github.com/FlareZ123/pokemon-sims/issues/2204
+            for (const Card card : {Card::Appletun, Card::MegaDragonite,
+                                    Card::Dragapult, Card::GoodraVstar,
+                                    Card::DialgaGX}) {
+              if (hand_count(card) > 0) return card;
+            }
+            return std::nullopt;
+          }
+
+'''
+          if marker not in text:
+              raise SystemExit('issue-1876 selector marker missing')
+          text = text.replace(marker, helper + marker, 1)
+          route_marker = '''    if (const auto cost = issue_2232_treasure_tapu_crispin_two_energy_cost()) {
+              return cost;
+            }
+'''
+          route = route_marker + '''    if (const auto cost = issue_2204_treasure_latias_payload_cost()) {
+              return cost;
+            }
+'''
+          if route_marker not in text:
+              raise SystemExit('issue-2232 selector call marker missing')
+          text = text.replace(route_marker, route, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+          git show origin/fix/2204-treasure-latias-payload-reclaim-v2:tests/issue_2204_treasure_latias_payload_tests.cpp > tests/issue_2204_treasure_latias_payload_tests.cpp
+      - name: Build and validate focused #2204 route
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R 'issue_2204_treasure_latias_payload' --output-on-failure
+      - name: Commit source-only fix
+        run: |
+          git rm .github/workflows/bootstrap-issue-2204-source.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/trace_engine_v2/part_issue_1876_treasure_payload_cost_override.inc tests/issue_2204_treasure_latias_payload_tests.cpp
+          git commit -m 'Fix #2204 Treasure Latias payload route on current main'
+          git push origin HEAD:${{ github.head_ref }}

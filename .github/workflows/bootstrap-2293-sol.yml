@@ -1,0 +1,37 @@
+name: Bootstrap issue 2293 current-main fix
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.head_ref == 'fix/2293-prized-latias-gladion-sol'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Apply reviewed focused correction
+        run: |
+          git fetch origin fix/2293-current-main-reclaim-20260808-sol:refs/remotes/origin/fix/2293-current-main-reclaim-20260808-sol
+          git show origin/fix/2293-current-main-reclaim-20260808-sol:scripts/apply_issue_2293_reclaim.py > scripts/apply_issue_2293_reclaim.py
+          git show origin/fix/2293-current-main-reclaim-20260808-sol:scripts/repair_issue_2293_reclaim.py > scripts/repair_issue_2293_reclaim.py
+          python scripts/apply_issue_2293_reclaim.py
+          python scripts/repair_issue_2293_reclaim.py
+      - name: Validate exact witness
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 291 --require-ready-by 4
+      - name: Commit materialized fix
+        run: |
+          git rm .github/workflows/bootstrap-2293-sol.yml
+          rm -f scripts/apply_issue_2293_reclaim.py scripts/repair_issue_2293_reclaim.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add CMakeLists.txt src/trace_engine_v2/part_007.inc src/trace_engine_v2/part_014c_latias_bench_override.inc
+          git commit -m 'Fix #2293 prized Latias Gladion Skyliner route'
+          git push origin HEAD:${{ github.head_ref }}

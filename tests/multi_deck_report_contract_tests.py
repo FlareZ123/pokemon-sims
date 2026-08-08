@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import difflib
 import hashlib
 import importlib.util
 import json
@@ -97,8 +98,17 @@ def main() -> int:
             raise AssertionError(f"Reviewed trace is incomplete: {trace_path}")
 
     expected_report = generator.report_markdown(rows, manifest)
-    if REPORT_PATH.read_text(encoding="utf-8") != expected_report:
-        raise AssertionError("docs/MULTI_DECK_REPORT.md is stale.")
+    actual_report = REPORT_PATH.read_text(encoding="utf-8")
+    if actual_report != expected_report:
+        diff = "".join(
+            difflib.unified_diff(
+                actual_report.splitlines(keepends=True),
+                expected_report.splitlines(keepends=True),
+                fromfile="docs/MULTI_DECK_REPORT.md",
+                tofile="generated/MULTI_DECK_REPORT.md",
+            )
+        )
+        raise AssertionError(f"docs/MULTI_DECK_REPORT.md is stale.\n{diff}")
     return 0
 
 

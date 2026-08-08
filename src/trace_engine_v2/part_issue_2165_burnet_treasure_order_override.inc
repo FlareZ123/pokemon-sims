@@ -32,8 +32,54 @@
     return issue_1419_publicly_possible_count(Card::RegidragoVstar) > 0;
   }
 
+  bool issue_2265_observable_direct_route_should_hold_treasure() const {
+    const bool jit_profile = scenario_.dci == DciProfile::StrictJit ||
+        scenario_.dci == DciProfile::MatchupFlexJit;
+    const bool held_payload = std::any_of(
+        state_.hand.begin(), state_.hand.end(), is_payload);
+    const bool deck_payload = std::any_of(
+        state_.deck.begin(), state_.deck.end(), is_payload);
+    const bool evolution_ready_benched_regi = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV &&
+              pokemon.entered_turn < state_.turn && pokemon.double_dragon == 0 &&
+              pokemon.grass >= 2 && pokemon.fire == 0;
+        });
+
+    // At K1, this predicate proves the complete continuation directly from public
+    // state rather than asking a generic target selector to value the pre-attachment
+    // board. The held Fire is the scheduled manual attachment, the held VSTAR can
+    // evolve that prior-turn Benched Regidrago V, Arven can search the known Quick
+    // Ball, the surplus Grass pays Quick Ball only after GGF is complete, Latias ex
+    // supplies Skyliner, and the held Blender can put a known deck Dragon into
+    // discard during the same JIT turn. Mysterious Treasure advances no remaining
+    // axis and would only spend a card plus a Tapu Lele-GX Bench slot.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core attachment, evolution, Supporter, Item, search, Bench, Ability, and retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, dynamic DCI/JIT, resource preservation, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Refined confirmed bug and seed-122 witness: https://github.com/FlareZ123/pokemon-sims/issues/2265#issuecomment-5215563905
+    return jit_profile && !held_payload && deck_payload && prizes_known() &&
+        supporter_allowed() && !item_locked() && !state_.manual_energy_used &&
+        !state_.retreat_used && state_.active && is_basic(state_.active->card) &&
+        state_.active->card != Card::RegidragoV && evolution_ready_benched_regi &&
+        hand_count(Card::MysteriousTreasure) > 0 && hand_count(Card::Arven) > 0 &&
+        hand_count(Card::RegidragoVstar) > 0 && hand_count(Card::Fire) > 0 &&
+        hand_count(Card::Grass) > 0 && hand_count(Card::QuickBall) == 0 &&
+        hand_count(Card::BrilliantBlender) > 0 &&
+        deck_count_after_search_started(Card::QuickBall) > 0 &&
+        deck_count_after_search_started(Card::LatiasEx) > 0 && bench_space() > 0 &&
+        ability_available_for_pokemon(Card::LatiasEx) && !in_play(Card::LatiasEx) &&
+        hand_count(Card::LatiasEx) == 0;
+  }
+
   bool play_mysterious_treasure(const bool permit_payload) {
-    if (issue_2265_hold_treasure_for_direct_route()) {
+    if (issue_2265_observable_direct_route_should_hold_treasure() ||
+        issue_2265_hold_treasure_for_direct_route()) {
       // The scheduled Fire attachment, held VSTAR, K1-known Quick Ball and Latias,
       // held Arven, and held Brilliant Blender already prove a complete same-turn
       // route. Preserve Treasure and its discard cost so the direct Arven line can

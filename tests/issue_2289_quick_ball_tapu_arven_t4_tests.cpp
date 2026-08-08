@@ -83,7 +83,8 @@ sim::Engine make_engine(const sim::Scenario& scenario, std::mt19937_64& rng,
 void exact_composed_connector() {
   std::mt19937_64 rng{228901};
   sim::TraceLog trace{true, {}};
-  sim::Engine engine = make_engine(route_scenario(), rng, route_state(), &trace);
+  const sim::Scenario scenario = route_scenario();
+  sim::Engine engine = make_engine(scenario, rng, route_state(), &trace);
 
   // Quick Ball discards one other card and searches a Basic Pokemon. The Dragon
   // cost is the required current-turn strict-JIT payload. Wonder Tag obtains Arven;

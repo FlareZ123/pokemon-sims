@@ -1,0 +1,144 @@
+name: Temporary DDE shell setup-speed experiment
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-dde-shell-speed.yml'
+  workflow_dispatch:
+
+jobs:
+  compare-setup-curve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout temporary experiment head
+        uses: actions/checkout@v4
+        with:
+          path: variant
+
+      - name: Checkout exact PR base
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: baseline
+
+      - name: Apply temporary 2 Grass to 2 DDE swap
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('variant/src/trace_engine_v2/part_000.inc')
+          text = path.read_text()
+          old = '''constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{'''
+          new = '''constexpr std::array<std::pair<Card, int>, 37> kDeckRecipe{{'''
+          if old not in text:
+              raise SystemExit('deck recipe array declaration not found')
+          text = text.replace(old, new, 1)
+          old_line = '''    {Card::HisuianHeavyBall, 1},  {Card::Grass, 6},          {Card::Fire, 3},'''
+          new_line = '''    {Card::HisuianHeavyBall, 1},  {Card::DoubleDragonEnergy, 2}, {Card::Grass, 4},          {Card::Fire, 3},'''
+          if old_line not in text:
+              raise SystemExit('canonical Energy recipe line not found')
+          text = text.replace(old_line, new_line, 1)
+          path.write_text(text)
+          print('temporary shell recipe: 4 Grass / 3 Fire / 2 Double Dragon Energy')
+          PY
+
+      - name: Configure and build baseline
+        run: |
+          cmake -S baseline -B baseline/build -DCMAKE_BUILD_TYPE=Release
+          cmake --build baseline/build --parallel 2
+
+      - name: Configure and build DDE variant
+        run: |
+          cmake -S variant -B variant/build -DCMAKE_BUILD_TYPE=Release
+          cmake --build variant/build --parallel 2
+
+      - name: Run exact-seed 100k setup matrices
+        run: |
+          baseline/build/regidrago_sim --trials 100000 --seed 20260705 --out "$GITHUB_WORKSPACE/baseline.csv"
+          variant/build/regidrago_sim --trials 100000 --seed 20260705 --out "$GITHUB_WORKSPACE/dde_variant.csv"
+
+      - name: Compare setup curves
+        shell: bash
+        run: |
+          python - <<'PY'
+          import csv
+          from pathlib import Path
+
+          def read(path):
+              with open(path, newline='') as f:
+                  return {r['scenario']: r for r in csv.DictReader(f)}
+
+          base = read('baseline.csv')
+          var = read('dde_variant.csv')
+          scenarios = list(base)
+          if set(base) != set(var):
+              raise SystemExit('scenario sets differ')
+
+          cols = ['ready_by_t2_pct', 'ready_by_t3_pct', 'ready_by_t4_pct', 'ready_by_t5_pct', 'setup_failure_pct']
+          out_rows = []
+          for s in scenarios:
+              row = {'scenario': s}
+              for c in cols:
+                  b = float(base[s][c]); v = float(var[s][c])
+                  row[f'baseline_{c}'] = b
+                  row[f'variant_{c}'] = v
+                  row[f'delta_{c}_pp'] = v - b
+              out_rows.append(row)
+
+          fieldnames = ['scenario']
+          for c in cols:
+              fieldnames += [f'baseline_{c}', f'variant_{c}', f'delta_{c}_pp']
+          with open('comparison.csv', 'w', newline='') as f:
+              w = csv.DictWriter(f, fieldnames=fieldnames)
+              w.writeheader(); w.writerows(out_rows)
+
+          def mean(field, prefix):
+              return sum(float((base if prefix == 'baseline' else var)[s][field]) for s in scenarios) / len(scenarios)
+
+          lines = [
+              '# Temporary Regidrago shell: 2 Grass → 2 DDE',
+              '',
+              '- Baseline: canonical `regidrago-shell` from exact PR base SHA.',
+              '- Variant: same source with shell Energy changed from 6 Grass / 3 Fire to 4 Grass / 3 Fire / 2 DDE.',
+              '- 100,000 trials per scenario, seed `20260705`.',
+              '',
+              '## Mean setup curve across all registered scenarios',
+              '',
+              '| Horizon | Baseline | 2-DDE variant | Delta |',
+              '|---|---:|---:|---:|',
+          ]
+          for field, label in [('ready_by_t2_pct','Ready by T2'),('ready_by_t3_pct','Ready by T3'),('ready_by_t4_pct','Ready by T4'),('ready_by_t5_pct','Ready by T5')]:
+              b = mean(field, 'baseline'); v = mean(field, 'variant')
+              lines.append(f'| {label} | {b:.3f}% | {v:.3f}% | {v-b:+.3f} pp |')
+          bfail = mean('setup_failure_pct','baseline'); vfail = mean('setup_failure_pct','variant')
+          lines += [
+              f'| Setup failure | {bfail:.3f}% | {vfail:.3f}% | {vfail-bfail:+.3f} pp |',
+              '',
+              '## Per-scenario readiness deltas',
+              '',
+              '| Scenario | Δ T2 | Δ T3 | Δ T4 | Δ T5 | Δ failure |',
+              '|---|---:|---:|---:|---:|---:|',
+          ]
+          for row in out_rows:
+              lines.append('| {scenario} | {t2:+.3f} | {t3:+.3f} | {t4:+.3f} | {t5:+.3f} | {fail:+.3f} |'.format(
+                  scenario=row['scenario'],
+                  t2=row['delta_ready_by_t2_pct_pp'],
+                  t3=row['delta_ready_by_t3_pct_pp'],
+                  t4=row['delta_ready_by_t4_pct_pp'],
+                  t5=row['delta_ready_by_t5_pct_pp'],
+                  fail=row['delta_setup_failure_pct_pp']))
+          Path('summary.md').write_text('\n'.join(lines) + '\n')
+          print(Path('summary.md').read_text())
+          PY
+
+      - name: Upload experiment evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: temp-dde-shell-speed
+          path: |
+            baseline.csv
+            dde_variant.csv
+            comparison.csv
+            summary.md

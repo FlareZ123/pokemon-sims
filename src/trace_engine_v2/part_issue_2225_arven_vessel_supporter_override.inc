@@ -65,9 +65,20 @@
   bool issue_2265_common_arven_quick_ball_projection() const {
     const bool jit_profile = scenario_.dci == DciProfile::StrictJit ||
         scenario_.dci == DciProfile::MatchupFlexJit;
-    return jit_profile && prizes_known() && supporter_allowed() && !item_locked() &&
-        state_.turn <= scenario_.max_turn && !state_.retreat_used && state_.active &&
-        is_basic(state_.active->card) && state_.active->card != Card::RegidragoV &&
+    // A held Dragon already gives Quick Ball the cheaper direct JIT-payload route.
+    // In that state forcing Arven plus Blender spends extra resources and can make
+    // Blender correctly decline after Quick Ball itself satisfies the payload axis:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Existing held-payload Quick Ball route: https://github.com/FlareZ123/pokemon-sims/issues/2199
+    // Resource-preservation priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug refined by CI: https://github.com/FlareZ123/pokemon-sims/issues/2265
+    const bool held_payload =
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    return jit_profile && !held_payload && prizes_known() && supporter_allowed() &&
+        !item_locked() && state_.turn <= scenario_.max_turn && !state_.retreat_used &&
+        state_.active && is_basic(state_.active->card) &&
+        state_.active->card != Card::RegidragoV &&
         hand_count(Card::Arven) > 0 && hand_count(Card::QuickBall) == 0 &&
         hand_count(Card::BrilliantBlender) > 0 && hand_count(Card::Grass) > 0 &&
         deck_count_after_search_started(Card::QuickBall) > 0 &&

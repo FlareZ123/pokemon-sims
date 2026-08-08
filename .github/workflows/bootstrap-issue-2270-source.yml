@@ -1,0 +1,51 @@
+name: Bootstrap issue 2270 current selector split
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.head_ref == 'fix/2270-current-main-split-v2'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Preserve current selectors and install reviewed wrappers
+        run: |
+          git fetch origin fix/2270-wonder-tag-arven-latias-promotion
+          cp src/trace_engine_v2/part_006.inc src/trace_engine_v2/part_006_issue2270_original.inc
+          cat > src/trace_engine_v2/part_006.inc <<'EOF'
+          #define wonder_tag_arven_held_payload_route_available wonder_tag_arven_held_payload_route_available_issue2270_original
+          #include "part_006_issue2270_original.inc"
+          #undef wonder_tag_arven_held_payload_route_available
+          #include "part_issue_2270_wonder_tag_arven_latias_override.inc"
+          EOF
+          git show origin/fix/2270-wonder-tag-arven-latias-promotion:src/trace_engine_v2/part_issue_2270_wonder_tag_arven_latias_override.inc > src/trace_engine_v2/part_issue_2270_wonder_tag_arven_latias_override.inc
+          cp src/trace_engine_v2/part_issue_989_wonder_tag_complete_route_override.inc src/trace_engine_v2/part_issue_989_wonder_tag_complete_route_issue2270_original.inc
+          cat > src/trace_engine_v2/part_issue_989_wonder_tag_complete_route_override.inc <<'EOF'
+          #define needs_tapu_connector needs_tapu_connector_issue2270_original
+          #include "part_issue_989_wonder_tag_complete_route_issue2270_original.inc"
+          #undef needs_tapu_connector
+          #include "part_issue_2270_tapu_connector_override.inc"
+          EOF
+          git show origin/fix/2270-wonder-tag-arven-latias-promotion:src/trace_engine_v2/part_issue_2270_tapu_connector_override.inc > src/trace_engine_v2/part_issue_2270_tapu_connector_override.inc
+          git show origin/fix/2270-wonder-tag-arven-latias-promotion:tests/issue_2270_wonder_tag_arven_latias_tests.cpp > tests/issue_2270_wonder_tag_arven_latias_tests.cpp
+      - name: Build and validate focused #2270 route
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R 'issue_2270_wonder_tag_arven_latias' --output-on-failure
+      - name: Commit source-only fix
+        run: |
+          git rm .github/workflows/bootstrap-issue-2270-source.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/trace_engine_v2 tests/issue_2270_wonder_tag_arven_latias_tests.cpp
+          git commit -m 'Fix #2270 Wonder Tag Arven Latias route on current main'
+          git push origin HEAD:${{ github.head_ref }}

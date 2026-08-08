@@ -1,0 +1,259 @@
+name: Temporary paired DDE payload sequencing audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-dde-paired-payload-audit.yml'
+  workflow_dispatch:
+
+jobs:
+  paired-payload-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Checkout experiment
+        uses: actions/checkout@v4
+
+      - name: Add temporary T3 payload diagnostic
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p2 = Path('src/trace_engine_v2/part_002.inc')
+          text = p2.read_text()
+          old = '''  bool t2_eligible_held_vstar_missed_active{false};\n  bool t2_eligible_missed_active{false};\n};'''
+          new = '''  bool t2_eligible_held_vstar_missed_active{false};\n  bool t2_eligible_missed_active{false};\n  bool t3_missing_payload_paired_audit{false};\n};'''
+          if old not in text:
+              raise SystemExit('TrialOutcome anchor not found')
+          p2.write_text(text.replace(old, new, 1))
+
+          p14 = Path('src/trace_engine_v2/part_014c.inc')
+          text = p14.read_text()
+          old = '''    const bool payload_is_ready = payload_ready();\n    const bool ready = state_.turn >= 2 && active_vstar && energy_ready &&\n        payload_is_ready;'''
+          new = '''    const bool payload_is_ready = payload_ready();\n    if (state_.turn == 3) {\n      outcome_.t3_missing_payload_paired_audit = !payload_is_ready;\n    }\n    const bool ready = state_.turn >= 2 && active_vstar && energy_ready &&\n        payload_is_ready;'''
+          if old not in text:
+              raise SystemExit('record_ready anchor not found')
+          p14.write_text(text.replace(old, new, 1))
+          PY
+
+      - name: Build paired audit harness
+        shell: bash
+        run: |
+          cat > paired_payload_audit.cpp <<'CPP'
+          #define REGIDRAGO_SIM_NO_MAIN
+          #include "src/regidrago_sim.cpp"
+          #include <fstream>
+          #include <set>
+
+          namespace {
+          using namespace sim;
+
+          DeckRecipe make_dde_recipe() {
+            DeckRecipe recipe = baseline_recipe();
+            const auto it = std::find_if(recipe.begin(), recipe.end(), [](const auto& entry) {
+              return entry.first == Card::Grass;
+            });
+            if (it == recipe.end() || it->second != 6) {
+              throw std::logic_error("expected canonical six-Grass shell");
+            }
+            const auto index = static_cast<std::size_t>(std::distance(recipe.begin(), it));
+            recipe[index].second = 4;
+            // Insert DDE immediately before Grass so the expanded physical deck slots are
+            // [D,D,G,G,G,G,F,F,F] versus baseline [G,G,G,G,G,G,F,F,F]. With the same
+            // per-game RNG seed, the first two physical Grass slots are exactly relabeled.
+            recipe.insert(recipe.begin() + static_cast<std::ptrdiff_t>(index),
+                          {Card::DoubleDragonEnergy, 2});
+            std::string error;
+            if (!validate_recipe({"paired-dde-audit", recipe}, &error)) {
+              throw std::logic_error(error);
+            }
+            return recipe;
+          }
+
+          struct Counts {
+            std::uint64_t n{0};
+            std::uint64_t base_t2_payload_missing{0};
+            std::uint64_t dde_t2_payload_missing{0};
+            std::uint64_t base_missing_to_dde_ready{0};
+            std::uint64_t base_ready_to_dde_missing{0};
+            std::uint64_t both_t2_unresolved{0};
+            std::uint64_t base_t3_payload_missing_common_survivor{0};
+            std::uint64_t dde_t3_payload_missing_common_survivor{0};
+            std::uint64_t base_t3_missing_to_dde_ready_common_survivor{0};
+            std::uint64_t base_t3_ready_to_dde_missing_common_survivor{0};
+            std::uint64_t base_ready_t2{0};
+            std::uint64_t dde_ready_t2{0};
+            std::vector<std::uint64_t> improve_seeds;
+            std::vector<std::uint64_t> regress_seeds;
+          };
+
+          double pct(std::uint64_t x, std::uint64_t n) {
+            return n == 0 ? 0.0 : 100.0 * static_cast<double>(x) / static_cast<double>(n);
+          }
+
+          TrialOutcome run_one(const Scenario& scenario, const DeckRecipe& recipe,
+                               std::uint64_t seed, TraceLog* trace = nullptr) {
+            std::mt19937_64 rng(seed);
+            Engine engine(scenario, recipe, rng, trace);
+            return engine.run();
+          }
+
+          void dump_trace(std::ofstream& out, std::string_view label,
+                          const Scenario& scenario, const DeckRecipe& recipe,
+                          std::uint64_t seed) {
+            TraceLog trace{true, {}};
+            const TrialOutcome outcome = run_one(scenario, recipe, seed, &trace);
+            out << "===== " << label << " | " << scenario.label << " | seed " << seed
+                << " | ready=" << outcome.first_ready_turn
+                << " | t2_payload_missing=" << outcome.t2_missing_payload
+                << " | t3_payload_missing=" << outcome.t3_missing_payload_paired_audit
+                << " =====\n";
+            for (const auto& line : trace.lines) out << line << '\n';
+            out << '\n';
+          }
+          }  // namespace
+
+          int main() {
+            using namespace sim;
+            const DeckRecipe base = baseline_recipe();
+            const DeckRecipe dde = make_dde_recipe();
+            const std::vector<std::string> labels{
+              "strict-jit/go-first",
+              "matchup-flex-jit/go-first",
+              "no-discard-control/go-first",
+              "strict-jit/go-second",
+              "matchup-flex-jit/go-second",
+              "no-discard-control/go-second",
+            };
+            constexpr std::uint64_t trials = 100000;
+            constexpr std::uint64_t seed_base = 202608080000ULL;
+            constexpr std::uint64_t stride = 1000003ULL;
+
+            std::ofstream csv("paired_payload.csv");
+            csv << "scenario,trials,base_t2_payload_missing_pct,dde_t2_payload_missing_pct,"
+                   "paired_t2_improve_pct,paired_t2_regress_pct,paired_t2_net_pct,"
+                   "base_ready_t2_pct,dde_ready_t2_pct,common_t2_unresolved_pct,"
+                   "base_t3_payload_missing_common_survivor_pct,"
+                   "dde_t3_payload_missing_common_survivor_pct,"
+                   "paired_t3_improve_common_survivor_pct,"
+                   "paired_t3_regress_common_survivor_pct,paired_t3_net_common_survivor_pct\n";
+            std::ofstream seeds("transition_seeds.csv");
+            seeds << "scenario,direction,seed\n";
+            std::ofstream traces("transition_traces.txt");
+
+            for (std::size_t si = 0; si < labels.size(); ++si) {
+              const auto scenario_opt = scenario_by_label(labels[si]);
+              if (!scenario_opt) throw std::logic_error("scenario missing");
+              const Scenario scenario = *scenario_opt;
+              Counts c;
+              for (std::uint64_t i = 0; i < trials; ++i) {
+                const std::uint64_t seed = seed_base + stride * si + i;
+                const TrialOutcome b = run_one(scenario, base, seed);
+                const TrialOutcome d = run_one(scenario, dde, seed);
+                ++c.n;
+                c.base_t2_payload_missing += b.t2_missing_payload;
+                c.dde_t2_payload_missing += d.t2_missing_payload;
+                c.base_ready_t2 += b.ready_by_2;
+                c.dde_ready_t2 += d.ready_by_2;
+                if (b.t2_missing_payload && !d.t2_missing_payload) {
+                  ++c.base_missing_to_dde_ready;
+                  if (c.improve_seeds.size() < 5) c.improve_seeds.push_back(seed);
+                }
+                if (!b.t2_missing_payload && d.t2_missing_payload) {
+                  ++c.base_ready_to_dde_missing;
+                  if (c.regress_seeds.size() < 5) c.regress_seeds.push_back(seed);
+                }
+                if (!b.ready_by_2 && !d.ready_by_2) {
+                  ++c.both_t2_unresolved;
+                  c.base_t3_payload_missing_common_survivor += b.t3_missing_payload_paired_audit;
+                  c.dde_t3_payload_missing_common_survivor += d.t3_missing_payload_paired_audit;
+                  if (b.t3_missing_payload_paired_audit && !d.t3_missing_payload_paired_audit)
+                    ++c.base_t3_missing_to_dde_ready_common_survivor;
+                  if (!b.t3_missing_payload_paired_audit && d.t3_missing_payload_paired_audit)
+                    ++c.base_t3_ready_to_dde_missing_common_survivor;
+                }
+              }
+
+              const auto t2_improve = pct(c.base_missing_to_dde_ready, c.n);
+              const auto t2_regress = pct(c.base_ready_to_dde_missing, c.n);
+              const auto t3_improve = pct(c.base_t3_missing_to_dde_ready_common_survivor, c.both_t2_unresolved);
+              const auto t3_regress = pct(c.base_t3_ready_to_dde_missing_common_survivor, c.both_t2_unresolved);
+              csv << scenario.label << ',' << c.n << ','
+                  << pct(c.base_t2_payload_missing,c.n) << ','
+                  << pct(c.dde_t2_payload_missing,c.n) << ','
+                  << t2_improve << ',' << t2_regress << ',' << (t2_improve-t2_regress) << ','
+                  << pct(c.base_ready_t2,c.n) << ',' << pct(c.dde_ready_t2,c.n) << ','
+                  << pct(c.both_t2_unresolved,c.n) << ','
+                  << pct(c.base_t3_payload_missing_common_survivor,c.both_t2_unresolved) << ','
+                  << pct(c.dde_t3_payload_missing_common_survivor,c.both_t2_unresolved) << ','
+                  << t3_improve << ',' << t3_regress << ',' << (t3_improve-t3_regress) << '\n';
+
+              for (const auto seed : c.improve_seeds) {
+                seeds << scenario.label << ",base-missing_to_dde-not-missing," << seed << '\n';
+                dump_trace(traces, "BASE", scenario, base, seed);
+                dump_trace(traces, "DDE", scenario, dde, seed);
+              }
+              for (const auto seed : c.regress_seeds) {
+                seeds << scenario.label << ",base-not-missing_to_dde-missing," << seed << '\n';
+                dump_trace(traces, "BASE", scenario, base, seed);
+                dump_trace(traces, "DDE", scenario, dde, seed);
+              }
+            }
+            return 0;
+          }
+          CPP
+          g++ -std=c++20 -O3 -I. paired_payload_audit.cpp -o paired_payload_audit
+
+      - name: Run paired 100k-per-scenario audit
+        run: ./paired_payload_audit
+
+      - name: Summarize paired payload transitions
+        shell: bash
+        run: |
+          python - <<'PY'
+          import csv
+          from pathlib import Path
+          rows=list(csv.DictReader(open('paired_payload.csv', newline='')))
+          fields=[
+              'base_t2_payload_missing_pct','dde_t2_payload_missing_pct',
+              'paired_t2_improve_pct','paired_t2_regress_pct','paired_t2_net_pct',
+              'base_ready_t2_pct','dde_ready_t2_pct','common_t2_unresolved_pct',
+              'base_t3_payload_missing_common_survivor_pct',
+              'dde_t3_payload_missing_common_survivor_pct',
+              'paired_t3_improve_common_survivor_pct',
+              'paired_t3_regress_common_survivor_pct','paired_t3_net_common_survivor_pct'
+          ]
+          mean={f:sum(float(r[f]) for r in rows)/len(rows) for f in fields}
+          lines=[
+            '# Paired DDE payload sequencing audit','',
+            '- Each individual baseline/DDE game resets `mt19937_64` to the exact same seed.',
+            '- DDE is inserted immediately before the Grass entry, so expanded physical slots are `[D,D,G,G,G,G,F,F,F]` versus `[G,G,G,G,G,G,F,F,F]`: the first two Grass slots are exact relabels under the same shuffle permutation.',
+            '- T3 comparison is restricted to the common-risk set where both versions were unresolved after T2, removing the previous early-stop survivorship artifact.','',
+            '## Mean across unlocked six','',
+            f"- T2 payload missing: baseline {mean['base_t2_payload_missing_pct']:.3f}% vs DDE {mean['dde_t2_payload_missing_pct']:.3f}%.",
+            f"- Paired T2 transitions: baseline-missing -> DDE-not-missing {mean['paired_t2_improve_pct']:.3f}%; reverse {mean['paired_t2_regress_pct']:.3f}%; net {mean['paired_t2_net_pct']:+.3f} pp.",
+            f"- T2 ready: baseline {mean['base_ready_t2_pct']:.3f}% vs DDE {mean['dde_ready_t2_pct']:.3f}%.",
+            f"- Common unresolved after T2: {mean['common_t2_unresolved_pct']:.3f}%.",
+            f"- T3 payload missing inside common survivors: baseline {mean['base_t3_payload_missing_common_survivor_pct']:.3f}% vs DDE {mean['dde_t3_payload_missing_common_survivor_pct']:.3f}%.",
+            f"- Paired T3 common-survivor transitions: improve {mean['paired_t3_improve_common_survivor_pct']:.3f}%; regress {mean['paired_t3_regress_common_survivor_pct']:.3f}%; net {mean['paired_t3_net_common_survivor_pct']:+.3f} pp.",
+            '', '## Scenario detail','',
+            '| Scenario | T2 payload base | T2 payload DDE | paired improve | paired regress | net | T2 ready base | T2 ready DDE | T3 common-survivor payload base | T3 common-survivor payload DDE | T3 net |',
+            '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|'
+          ]
+          for r in rows:
+            lines.append(f"| {r['scenario']} | {float(r['base_t2_payload_missing_pct']):.3f}% | {float(r['dde_t2_payload_missing_pct']):.3f}% | {float(r['paired_t2_improve_pct']):.3f}% | {float(r['paired_t2_regress_pct']):.3f}% | {float(r['paired_t2_net_pct']):+.3f} | {float(r['base_ready_t2_pct']):.3f}% | {float(r['dde_ready_t2_pct']):.3f}% | {float(r['base_t3_payload_missing_common_survivor_pct']):.3f}% | {float(r['dde_t3_payload_missing_common_survivor_pct']):.3f}% | {float(r['paired_t3_net_common_survivor_pct']):+.3f} |")
+          Path('paired_payload_summary.md').write_text('\n'.join(lines)+'\n')
+          print(Path('paired_payload_summary.md').read_text())
+          PY
+
+      - name: Upload paired audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: temp-dde-paired-payload-audit
+          path: |
+            paired_payload.csv
+            paired_payload_summary.md
+            transition_seeds.csv
+            transition_traces.txt

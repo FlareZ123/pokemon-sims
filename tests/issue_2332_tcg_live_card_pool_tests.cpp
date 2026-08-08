@@ -6,6 +6,15 @@
 #include <stdexcept>
 #include <string>
 
+namespace sim {
+
+// Unified-test generator contract: every issue test contributes exactly one
+// EngineTestAccess block, even when the regression needs no private Engine state:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/tests/generate_unified_tests.py#L119-L128
+struct EngineTestAccess {};
+
+}  // namespace sim
+
 namespace {
 
 void require(const bool condition, const char* message) {

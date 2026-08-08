@@ -1,0 +1,39 @@
+name: Sol debug audit 2026-08-08
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.head_ref == 'audit/sol-debug-20260808-0145'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel 2
+      - name: Full tests
+        run: ctest --test-dir build --output-on-failure
+      - name: Simulate-this pass 1 shell strict
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 | tee audit-pass-1-shell-strict.txt
+      - name: Simulate-this pass 2 pineco strict
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 | tee audit-pass-2-pineco-strict.txt
+      - name: Simulate-this pass 3 shell combined lock
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-combined-lock/go-second --seed 42 | tee audit-pass-3-shell-combined-lock.txt
+      - name: Fresh paired 100k matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-all-decks-100k.csv
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sol-debug-audit-20260808
+          path: |
+            audit-pass-1-shell-strict.txt
+            audit-pass-2-pineco-strict.txt
+            audit-pass-3-shell-combined-lock.txt
+            audit-all-decks-100k.csv
+          if-no-files-found: error

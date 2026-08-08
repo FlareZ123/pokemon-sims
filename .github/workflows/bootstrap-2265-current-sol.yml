@@ -1,0 +1,44 @@
+name: Bootstrap issue 2265 current-main evidence
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.head_ref == 'fix/2265-current-main-evidence-sol'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Apply reviewed #2265 source and regressions
+        run: |
+          git fetch origin fix/2265-arven-quick-ball-reclaim-v3:refs/remotes/origin/fix/2265-arven-quick-ball-reclaim-v3
+          git diff d27398291db04876b6c1e71ee6a0de91330d68d1 8e97d7bd5734d5b2f993c4df2f8ec819ebe9058c -- src/trace_engine_v2/part_issue_2165_burnet_treasure_order_override.inc src/trace_engine_v2/part_issue_2225_arven_vessel_supporter_override.inc tests/issue_1146_quick_ball_surplus_energy_tests.cpp tests/issue_2265_arven_quick_ball_surplus_projection_tests.cpp | git apply -3
+      - name: Validate focused routes and exact seed 122
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R 'issue_2265|issue_1146' --output-on-failure
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 122 --require-ready-by 3
+      - name: Regenerate canonical source-bound setup evidence
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+      - name: Regenerate paired source-bound setup evidence
+        run: |
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Validate complete Release suite
+        run: ctest --test-dir build --output-on-failure
+      - name: Commit validated source and evidence
+        run: |
+          git rm .github/workflows/bootstrap-2265-current-sol.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A src/trace_engine_v2/part_issue_2165_burnet_treasure_order_override.inc src/trace_engine_v2/part_issue_2225_arven_vessel_supporter_override.inc tests/issue_1146_quick_ball_surplus_energy_tests.cpp tests/issue_2265_arven_quick_ball_surplus_projection_tests.cpp README.md docs results
+          git commit -m 'Fix #2265 Arven Quick Ball projection with current evidence'
+          git push origin HEAD:${{ github.head_ref }}

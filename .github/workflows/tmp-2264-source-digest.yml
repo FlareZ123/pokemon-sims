@@ -1,13 +1,26 @@
-name: Temporary #2264 source digest
+name: Temporary #2264 evidence refresh
 
 on:
   pull_request:
     branches: [main]
 
 jobs:
-  digest:
+  evidence:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Print simulator policy source digest
         run: python -c "from pathlib import Path; from scripts.baseline_provenance import simulator_policy_source_digest; print('SOURCE_DIGEST=' + simulator_policy_source_digest(Path('.')))"
+      - name: Regenerate documentation from committed evidence
+        run: |
+          python scripts/update_setup_docs.py
+          python scripts/update_multi_deck_docs.py
+      - name: Upload generated documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-2264-generated-docs
+          path: |
+            README.md
+            docs/REPORT.md
+            docs/TRACE_AUDIT.md
+            docs/MULTI_DECK_REPORT.md

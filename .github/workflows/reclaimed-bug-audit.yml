@@ -1,0 +1,29 @@
+name: Reclaimed bug trace audit
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  traces:
+    if: github.head_ref == 'audit/reclaimed-bugs-20260808-sol'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Release simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Issue 2265 refined seed 122 trace
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 122
+      - name: Issue 2291 seed 275 trace
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 275
+      - name: Issue 2292 seed 692 trace
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 692
+      - name: Issue 2293 seed 291 trace
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 291
+      - name: Issue 2294 seed 8 trace
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 8
+      - name: Issue 2295 seed 29 trace
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 29
+      - name: Issue 2295 seed 86 trace
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 86

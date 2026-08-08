@@ -14,15 +14,9 @@ Regidrago V / Celestial Roar source: https://api.pokemontcg.io/v2/cards/swsh12-1
 
 Core rules: https://www.pokemon.com/us/pokemon-tcg/rules
 
-Double Dragon Energy is an XY—Roaring Skies card. Pokémon Support currently states that XY cards are not playable in Pokémon TCG Live. The `regidrago-dde-model` therefore exists only as a paper-Expanded mechanics model. It is intentionally absent from `deck_registry()`, `--all-decks`, and canonical Pokémon TCG Live matrices.
+Double Dragon Energy is an XY—Roaring Skies card. Pokémon Support currently states that XY cards are unavailable for play in Pokémon TCG Live. The `regidrago-dde-model` therefore remains an internal paper-Expanded mechanics fixture. It is absent from `deck_registry()`, `--all-decks`, canonical Pokémon TCG Live matrices, and the production named-deck CLI lookup.
 
-The paper model replaces one Grass Energy and one Fire Energy in the canonical shell with two Double Dragon Energy. CLI access requires an explicit paper-only opt-in:
-
-```text
-regidrago_sim --paper-expanded-model --deck regidrago-dde-model ...
-```
-
-A plain `--deck regidrago-dde-model` request is rejected at the Pokémon TCG Live card-pool boundary. Registered shell and Pineco recipes continue through the Live validation path.
+The paper fixture replaces one Grass Energy and one Fire Energy in the canonical shell with two Double Dragon Energy. Focused tests may access it through the internal `deck_by_id()` mechanics lookup. Production CLI lookups route through `tcg_live_deck_by_id()` and reject `regidrago-dde-model`.
 
 ## Historical five `--simulate-this` paper audits
 
@@ -40,7 +34,7 @@ Focused mechanics regressions retain DDE + Grass, DDE + Fire, and two-DDE GGF pa
 
 ## Historical 100,000-trial paper model matrix
 
-Matrix seed: `20260807`. These numbers describe the explicit paper-Expanded DDE model and must not be reported as Pokémon TCG Live Expanded setup probabilities.
+Matrix seed: `20260807`. These numbers describe the internal paper-Expanded DDE fixture and must not be reported as Pokémon TCG Live Expanded setup probabilities.
 
 | Scenario | Ready by T2 | Ready by T3 |
 |---|---:|---:|
@@ -51,4 +45,4 @@ Matrix seed: `20260807`. These numbers describe the explicit paper-Expanded DDE 
 | `matchup-flex-jit/go-second` | 38.847% | 62.590% |
 | `no-discard-control/go-second` | 41.715% | 67.651% |
 
-Canonical registered-deck simulation CSVs remain Pokémon TCG Live scoped and exclude this model.
+Canonical registered-deck simulation CSVs remain Pokémon TCG Live scoped and exclude this fixture.

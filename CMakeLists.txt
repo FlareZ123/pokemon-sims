@@ -319,3 +319,12 @@ add_test(NAME trace_issue_1139_fss_banks_tate
 add_test(NAME issue_1333_tapu_live_print_contract
   COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/issue_1333_tapu_live_print_tests.py)
+
+# K1 Wonder Tag -> Arven -> FSS/Vessel is the deterministic strict-JIT T4 finish.
+# Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+# Crispin and ruling: https://api.pokemontcg.io/v2/cards/sv7-133 https://compendium.pokegym.net/category/5-trainers/crispin/
+# Arven / FSS / Vessel / Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/sv1-166 https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/sv4-163 https://api.pokemontcg.io/v2/cards/swsh12-136
+# Core rules: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+# Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2291
+add_test(NAME trace_issue_2291_strict_first_seed275
+  COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 275 --require-ready-by 4)

@@ -1,0 +1,48 @@
+
+Deck: regidrago-shell | Seed: 275 | first-ready turn: 4 | setup result: success
+Seed: 275 | first-ready turn: 4 | setup result: success
+===== SIMULATE THIS =====
+Deck: regidrago-shell
+Scenario: strict-jit/go-first | DCI: strict-JIT | Locks: none
+Mulligans: 0
+Opening player-known state: Active=Latias ex [-] | Bench=(none) | Hand=Mega Dragonite ex, Dragapult ex, Tate & Liza, Dragapult ex, Team Yell's Cheer, Chaotic Swell | Discard=(none)
+DEBUG ONLY: prizes=Grass Energy, Quick Ball, Powerglass, Tapu Lele-GX, Lusamine, Grass Energy. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Regidrago VSTAR
+T1 | TURN START | rules: R-GAME-FIRST-TURN | Going first: drew for the turn; no Supporter or attack is permitted.
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=(none) | Hand=Mega Dragonite ex, Dragapult ex, Tate & Liza, Dragapult ex, Team Yell's Cheer, Chaotic Swell, Regidrago VSTAR | Discard=(none)
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Latias ex [-] | Bench=(none) | Hand=Mega Dragonite ex, Dragapult ex, Tate & Liza, Dragapult ex, Team Yell's Cheer, Chaotic Swell, Regidrago VSTAR | Discard=(none)
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Grass Energy
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=(none) | Hand=Mega Dragonite ex, Dragapult ex, Tate & Liza, Dragapult ex, Team Yell's Cheer, Chaotic Swell, Regidrago VSTAR, Grass Energy | Discard=(none)
+T2 | DRAW | rules: R-GAME-DRAW | Tate & Liza: Fire Energy
+T2 | DRAW | rules: R-GAME-DRAW | Tate & Liza: Fire Energy
+T2 | DRAW | rules: R-GAME-DRAW | Tate & Liza: Team Yell's Cheer
+T2 | DRAW | rules: R-GAME-DRAW | Tate & Liza: Regidrago V
+T2 | DRAW | rules: R-GAME-DRAW | Tate & Liza: Mega Dragonite ex
+T2 | PLAY SUPPORTER | rules: R-TATE-01; R-GAME-SUPPORTER | Tate & Liza draw mode: shuffled remaining hand and drew 5.
+T2 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T2 | RETREAT | rules: R-LATIAS-01; R-RV-01; R-GAME-RETREAT | Latias ex gives the Basic Active no Retreat Cost; promoted an energized Benched Regidrago V for the live Celestial Roar route.
+T2 | ATTACK | rules: R-RV-01; R-GAME-ATTACK | Regidrago V used Celestial Roar; processed top 3: Klara, Dragapult ex, Mysterious Treasure; attached Energy: (none); remaining discarded: Klara, Dragapult ex, Mysterious Treasure.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [F] | Bench=Latias ex [-] | Hand=Fire Energy, Team Yell's Cheer, Mega Dragonite ex | Discard=Tate & Liza, Klara, Dragapult ex, Mysterious Treasure
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Crispin
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [F] | Bench=Latias ex [-] | Hand=Fire Energy, Team Yell's Cheer, Mega Dragonite ex, Crispin | Discard=Tate & Liza, Klara, Dragapult ex, Mysterious Treasure
+T3 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Crispin: deck inspected; Prize identities are now deducible for later decisions.
+T3 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T3 | ATTACK | rules: R-RV-01; R-GAME-ATTACK | Regidrago V used Celestial Roar; processed top 3: Regidrago VSTAR, Chaotic Swell, Dragapult ex; attached Energy: (none); remaining discarded: Regidrago VSTAR, Chaotic Swell, Dragapult ex.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [GF] | Bench=Latias ex [-] | Hand=Fire Energy, Team Yell's Cheer, Mega Dragonite ex, Fire Energy | Discard=Tate & Liza, Klara, Dragapult ex, Mysterious Treasure, Crispin, Regidrago VSTAR, Chaotic Swell, Dragapult ex
+T4 | DRAW | rules: R-GAME-DRAW | start-of-turn: Quick Ball
+T4 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [GF] | Bench=Latias ex [-] | Hand=Fire Energy, Team Yell's Cheer, Mega Dragonite ex, Fire Energy, Quick Ball | Discard=Tate & Liza, Klara, Dragapult ex, Mysterious Treasure, Crispin, Regidrago VSTAR, Chaotic Swell, Dragapult ex
+T4 | DISCARD | rules: R-QB-01; P-DCI-01; P-JIT-01; P-CONNECTOR-01 | Mega Dragonite ex (Quick Ball issue-2289 current-turn payload cost)
+T4 | PLAY ITEM | rules: R-QB-01; R-TAPU-01; P-JIT-01; P-CONNECTOR-01 | Discarded the current-turn Dragon payload and searched Tapu Lele-GX for the T4 Arven completion route.
+T4 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
+T4 | WONDER TAG | rules: R-TAPU-01; R-ARVEN-01; P-CONNECTOR-01 | Searched and revealed Arven for Forest Seal Stone plus Earthen Vessel.
+T4 | PLAY SUPPORTER | rules: R-ARVEN-01; R-GAME-SUPPORTER; P-CONNECTOR-01 | Arven searched Forest Seal Stone and Earthen Vessel for the proven T4 route.
+T4 | DISCARD | rules: R-EV-01; P-DCI-01; P-CONNECTOR-01 | Fire Energy (Earthen Vessel issue-2289 route-surplus Fire cost)
+T4 | EARTHEN VESSEL | rules: R-EV-01; R-GAME-ITEM; P-DCI-01; P-CONNECTOR-01 | Discarded route-surplus Fire Energy and searched Grass Energy for the unused manual attachment.
+T4 | ATTACH TOOL | rules: R-FSS-01; R-GAME-TOOL | Attached Forest Seal Stone to Regidrago V.
+T4 | STAR ALCHEMY | rules: R-FSS-02; R-VSTAR-01 | Searched any card: Regidrago VSTAR.
+T4 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T4 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T4 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=Latias ex [-]; Tapu Lele-GX [-] | Hand=Team Yell's Cheer, Fire Energy | Discard=Tate & Liza, Klara, Dragapult ex, Mysterious Treasure, Crispin, Regidrago VSTAR, Chaotic Swell, Dragapult ex, Quick Ball, Mega Dragonite ex, Arven, Earthen Vessel, Fire Energy
+T4 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

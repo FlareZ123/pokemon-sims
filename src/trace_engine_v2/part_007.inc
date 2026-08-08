@@ -214,7 +214,47 @@
         (energy_axis_complete || held_manual_completes_energy);
   }
 
+  bool issue_2291_wonder_tag_arven_fss_vessel_route() const {
+    if (scenario_.dci != DciProfile::StrictJit || !scenario_.going_first ||
+        state_.turn != 4 || !prizes_known() || !supporter_allowed() ||
+        item_locked() || state_.manual_energy_used || state_.vstar_power_used ||
+        !state_.active || state_.active->card != Card::RegidragoV ||
+        state_.active->entered_turn >= state_.turn ||
+        state_.active->grass != 1 || state_.active->fire != 1 ||
+        state_.active->tool != Tool::None ||
+        (deck_count_after_search_started(Card::Arven) == 0 && hand_count(Card::Arven) == 0) ||
+        deck_count_after_search_started(Card::ForestSealStone) == 0 ||
+        deck_count_after_search_started(Card::EarthenVessel) == 0 ||
+        deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
+        deck_count_after_search_started(Card::Grass) == 0 ||
+        deck_count_after_search_started(Card::Fire) != 0 ||
+        !in_play(Card::TapuLeleGX) ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    // K1 proves Crispin can find only Grass, so its conditional attachment cannot
+    // happen. Arven can instead search Forest Seal Stone and Earthen Vessel; Star
+    // Alchemy supplies Regidrago VSTAR, Vessel supplies Grass, and the held Dragon
+    // pays Vessel's discard cost as the same-turn strict-JIT payload.
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Crispin ruling: https://compendium.pokegym.net/category/5-trainers/crispin/
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regidrago V/VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Supporter, Tool, VSTAR Power, Item, discard, search, attachment and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, strict-JIT, DCI/AMR and earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2291
+    return true;
+  }
+
   Card choose_supporter_after_search_started() const {
+    if (issue_2291_wonder_tag_arven_fss_vessel_route()) {
+      // The complete K1 route is Arven -> FSS/Vessel: https://github.com/FlareZ123/pokemon-sims/issues/2291
+      return Card::Arven;
+    }
     if (issue_1797_wonder_tag_steven_route_available()) {
       return Card::StevensResolve;
     }

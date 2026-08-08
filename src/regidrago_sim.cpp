@@ -273,8 +273,11 @@
 #define in_play tapu_connector_copy_aware_in_play
 #define play_steven play_steven_issue1002_empty_deck_original
 #define use_fss use_fss_issue1356_original
+#define play_arven play_arven_issue2291_original
 #include "trace_engine_v2/part_empty_deck_search_override.inc"
+#undef play_arven
 #undef use_fss
+#include "trace_engine_v2/part_issue_2291_arven_vessel_fss_override.inc"
 #undef play_steven
 #include "trace_engine_v2/part_issue_1356_fss_energy_override.inc"
 #undef play_quick_ball

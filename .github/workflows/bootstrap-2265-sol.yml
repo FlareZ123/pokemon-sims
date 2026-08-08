@@ -16,8 +16,8 @@ jobs:
           fetch-depth: 0
       - name: Apply reviewed focused patch
         run: |
-          git fetch origin d27398291db04876b6c1e71ee6a0de91330d68d1 8e97d7bd5734d5b2f993c4df2f8ec819ebe9058c
-          git diff d27398291db04876b6c1e71ee6a0de91330d68d1 8e97d7bd5734d5b2f993c4df2f8ec819ebe9058c -- src/trace_engine_v2/part_012_items_and_arven.inc src/trace_engine_v2/part_014_arven_override.inc tests/arven_route_tests.cpp tests/discard_route_regression_tests.cpp | git apply -3
+          git fetch origin fix/2265-arven-quick-ball-reclaim-v3:refs/remotes/origin/fix/2265-arven-quick-ball-reclaim-v3
+          git diff origin/main...origin/fix/2265-arven-quick-ball-reclaim-v3 -- src/trace_engine_v2/part_012_items_and_arven.inc src/trace_engine_v2/part_014_arven_override.inc tests/arven_route_tests.cpp tests/discard_route_regression_tests.cpp | git apply -3
       - name: Validate focused regressions and exact witness
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release

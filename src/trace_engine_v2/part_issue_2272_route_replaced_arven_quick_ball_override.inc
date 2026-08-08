@@ -225,15 +225,20 @@
     if (!issue_2289_quick_ball_tapu_arven_route_available()) return false;
     const Card payload = *issue_2289_quick_ball_tapu_arven_payload_cost();
 
-    // Resolve the deterministic connector immediately. Quick Ball's mandatory cost
-    // establishes the strict-JIT payload, then the searched Tapu Lele-GX is played
-    // from hand so Wonder Tag can obtain the K1-known Arven before any competing
-    // Supporter is selected later in run_turn().
+    // Resolve the deterministic connector immediately. Quick Ball pays the current
+    // Dragon payload and finds Tapu Lele-GX. Wonder Tag finds Arven; Arven's printed
+    // single Supporter action then takes both Forest Seal Stone and Earthen Vessel.
+    // Vessel immediately spends the route-surplus held Fire to obtain the missing
+    // Grass, leaving generic Tool/VSTAR/evolution/attachment policy only the already
+    // proven deterministic finishing actions.
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
-    // Official Trainer, search, Bench, Ability, and shuffle procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // Earliest complete route and supporter contention: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Official Trainer, Supporter, Item, discard, search, Bench, Ability, Tool,
+    // VSTAR Power, evolution, and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Earliest complete route, supporter contention, K1, and DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Confirmed stale-claim bug: https://github.com/FlareZ123/pokemon-sims/issues/2289
     if (!remove_one(state_.hand, Card::QuickBall)) {
       throw std::logic_error("issue-2289 Quick Ball disappeared");
@@ -261,6 +266,36 @@
     shuffle(state_.deck);
     trace("WONDER TAG", "R-TAPU-01; R-ARVEN-01; P-CONNECTOR-01",
           "Searched and revealed Arven for Forest Seal Stone plus Earthen Vessel.");
+
+    if (!remove_one(state_.hand, Card::Arven)) {
+      throw std::logic_error("issue-2289 Arven disappeared before play");
+    }
+    state_.discard.push_back(Card::Arven);
+    state_.supporter_used = true;
+    record_deck_search_knowledge("Arven issue-2289 complete route");
+    if (!move_deck_to_hand(Card::ForestSealStone) ||
+        !move_deck_to_hand(Card::EarthenVessel)) {
+      throw std::logic_error("issue-2289 Arven targets disappeared");
+    }
+    shuffle(state_.deck);
+    trace("PLAY SUPPORTER", "R-ARVEN-01; R-GAME-SUPPORTER; P-CONNECTOR-01",
+          "Arven searched Forest Seal Stone and Earthen Vessel for the proven T4 route.");
+
+    if (!remove_one(state_.hand, Card::EarthenVessel)) {
+      throw std::logic_error("issue-2289 Earthen Vessel disappeared before play");
+    }
+    state_.discard.push_back(Card::EarthenVessel);
+    if (!discard_from_hand(Card::Fire, "Earthen Vessel issue-2289 route-surplus Fire cost",
+                           "R-EV-01; P-DCI-01; P-CONNECTOR-01")) {
+      throw std::logic_error("issue-2289 Earthen Vessel Fire cost disappeared");
+    }
+    record_deck_search_knowledge("Earthen Vessel issue-2289 Grass route");
+    if (!move_deck_to_hand(Card::Grass)) {
+      throw std::logic_error("issue-2289 Grass target disappeared");
+    }
+    shuffle(state_.deck);
+    trace("EARTHEN VESSEL", "R-EV-01; R-GAME-ITEM; P-DCI-01; P-CONNECTOR-01",
+          "Discarded route-surplus Fire Energy and searched Grass Energy for the unused manual attachment.");
     return true;
   }
 

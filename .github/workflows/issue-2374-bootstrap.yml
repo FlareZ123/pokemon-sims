@@ -1,0 +1,47 @@
+name: Issue 2374 cleanup bootstrap
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/issue-2374-bootstrap.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize-cleanup:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Remove unused URL constants and bootstrap
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('tests/issue_2238_double_dragon_energy_tests.cpp')
+          text = path.read_text()
+          block = '''constexpr const char* kDdeCard =
+    "https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/";
+constexpr const char* kApex =
+    "https://api.pokemontcg.io/v2/cards/swsh12-136";
+constexpr const char* kRules =
+    "https://www.pokemon.com/us/pokemon-tcg/rules";
+constexpr const char* kIssue =
+    "https://github.com/FlareZ123/pokemon-sims/issues/2238";
+
+'''
+          if text.count(block) != 1:
+              raise SystemExit('expected exactly one unused URL constant block')
+          path.write_text(text.replace(block, '', 1))
+          PY
+          rm .github/workflows/issue-2374-bootstrap.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tests/issue_2238_double_dragon_energy_tests.cpp .github/workflows/issue-2374-bootstrap.yml
+          git commit -m 'Remove unused DDE test URL constants'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}

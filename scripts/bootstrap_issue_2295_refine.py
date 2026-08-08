@@ -11,27 +11,36 @@ OLD = """    Pokemon* target = best_benched_vstar_for_promotion();
     if (target == nullptr || target->grass < 2 || target->fire < 1) return false;
 
     const Card payment = hand_count(Card::Grass) > 0 ? Card::Grass : Card::Fire;
+    if (hand_count(payment) == 0 || !remove_one(state_.hand, payment)) return false;
 """
 NEW = """    Pokemon* target = best_benched_vstar_for_promotion();
     if (target == nullptr || target->grass < 2 || target->fire < 1) return false;
 
-    // Project the post-retreat board before paying any real resource. The existing
-    // #1646 policy holds Blender when Professor Burnet is the cheaper live
-    // current-turn payload outlet after a GGF VSTAR becomes Active.
+    // Project only the established #1646 Burnet-priority predicate before paying
+    // any real resource. After this helper pays a manual attachment and retreats,
+    // target becomes the Active GGF Regidrago VSTAR and manual_energy_used is true.
+    // Every remaining input to #1646 is already observable in the current state,
+    // so this exact preflight prevents a paid route from mutating the board before
+    // Brilliant Blender is intentionally held for the cheaper live Burnet outlet.
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official attachment, retreat, Item, and Supporter procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Existing Burnet-over-Blender priority: https://github.com/FlareZ123/pokemon-sims/issues/1646
     // K1, strict-JIT, DCI/AMR, Supporter contention, and resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-    Engine projected = *this;
-    Pokemon* projected_target = projected.best_benched_vstar_for_promotion();
-    if (projected_target == nullptr) return false;
-    projected.state_.manual_energy_used = true;
-    std::swap(*projected.state_.active, *projected_target);
-    if (projected.issue_1646_hold_blender_for_burnet_finish_visible()) return false;
+    const bool projected_burnet_priority =
+        scenario_.locks == LockMode::None && state_.turn == 3 &&
+        supporter_allowed() && target->fire >= 1 && target->grass >= 2 &&
+        hand_count(Card::ProfessorBurnet) > 0 &&
+        count_of(state_.discard, Card::EarthenVessel) > 0 &&
+        count_of(state_.discard, Card::QuickBall) > 0 &&
+        count_of(state_.discarded_this_turn, Card::QuickBall) > 0;
+    if (projected_burnet_priority) return false;
 
     const Card payment = hand_count(Card::Grass) > 0 ? Card::Grass : Card::Fire;
+    if (hand_count(payment) == 0 || !remove_one(state_.hand, payment)) return false;
 """
 
 
@@ -40,6 +49,8 @@ def main() -> int:
     try:
         os.write(descriptor, str(os.getpid()).encode("ascii"))
         text = PATH.read_text(encoding="utf-8")
+        if text.count(NEW) == 1:
+            return 0
         if text.count(OLD) != 1:
             raise RuntimeError("#2295 refinement anchor mismatch")
         updated = text.replace(OLD, NEW, 1)

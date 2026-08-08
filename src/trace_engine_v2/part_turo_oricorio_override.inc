@@ -1,3 +1,21 @@
+  std::optional<Card> turo_oricorio_finishing_basic_energy() const {
+    if (!state_.active || pays_apex_energy_cost(*state_.active)) return std::nullopt;
+    for (const Card basic : {Card::Grass, Card::Fire}) {
+      if (!might_be_unseen(basic)) continue;
+      Pokemon projected = *state_.active;
+      if (attach_energy_card(projected, basic) && pays_apex_energy_cost(projected)) {
+        // Vital Dance searches Basic Energy only. Project the physical attachment
+        // semantically so DDE + either Basic is recognized as Apex Dragon's GGF:
+        // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+        // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2418
+        return basic;
+      }
+    }
+    return std::nullopt;
+  }
+
   bool turo_oricorio_energy_route_live() const {
     if (!supporter_allowed() || hand_count(Card::ProfessorTuro) == 0 ||
         state_.manual_energy_used || !state_.active ||
@@ -13,16 +31,14 @@
     // https://compendium.pokegym.net/category/7-gameplay/searching-deck-or-discard/
     if (state_.deck.empty()) return false;
 
-    // This route completes the Active attacker, so compute the deficit from that
-    // exact Pokémon rather than from the policy's separately preferred Regidrago:
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    const int active_grass_needed = std::max(0, 2 - state_.active->grass);
-    const int active_fire_needed = std::max(0, 1 - state_.active->fire);
-    if (active_grass_needed + active_fire_needed != 1) return false;
-
-    const Card needed_energy = active_grass_needed == 1 ? Card::Grass : Card::Fire;
-    const bool needed_energy_might_be_in_deck = might_be_unseen(needed_energy);
-    if (!needed_energy_might_be_in_deck) return false;
+    // Test the actual post-attachment Apex payment state. DDE provides two
+    // Energy of every type while attached to a Dragon, so raw Basic counters do
+    // not identify the final legal Vital Dance target:
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2418
+    const auto needed_energy = turo_oricorio_finishing_basic_energy();
+    if (!needed_energy) return false;
 
     // Crispin is the direct Energy Supporter and remains preferred whenever the
     // same exact Basic Energy is searchable. With one type available, the unused
@@ -130,7 +146,11 @@
         state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn &&
         hand_count(Card::RegidragoVstar) > 0 &&
-        state_.active->grass >= 2 && state_.active->fire >= 1;
+        // DDE can satisfy two typed units of Apex Dragon while legally attached:
+        // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        // https://api.pokemontcg.io/v2/cards/swsh12-136
+        // https://github.com/FlareZ123/pokemon-sims/issues/2418
+        pays_apex_energy_cost(*state_.active);
 
     // Under Item lock, Turo may solve the Active axis one turn before Burnet solves
     // the strict-JIT payload axis. Admit only a held, searchable Burnet line with a
@@ -152,8 +172,13 @@
       return false;
     }
 
-    const auto promoted = std::find_if(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
-      return pokemon.card == Card::RegidragoVstar && pokemon.grass >= 2 && pokemon.fire >= 1;
+    const auto promoted = std::find_if(state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+      // Promote any Regidrago VSTAR that semantically pays Apex Dragon, including
+      // DDE + Grass and DDE + Fire:
+      // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://github.com/FlareZ123/pokemon-sims/issues/2418
+      return pokemon.card == Card::RegidragoVstar && pays_apex_energy_cost(pokemon);
     });
     if (promoted == state_.bench.end()) return false;
 
@@ -170,6 +195,14 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     for (int energy = 0; energy < returned.grass; ++energy) discard_turo_attachment(Card::Grass);
     for (int energy = 0; energy < returned.fire; ++energy) discard_turo_attachment(Card::Fire);
+    // Turo discards every attached card. DDE is a physical Special Energy card,
+    // so each attached copy must enter both public discard records when returned:
+    // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2418
+    for (int energy = 0; energy < returned.double_dragon; ++energy) {
+      discard_turo_attachment(Card::DoubleDragonEnergy);
+    }
     if (returned.tool == Tool::ForestSealStone) discard_turo_attachment(Card::ForestSealStone);
     if (returned.tool == Tool::Powerglass) discard_turo_attachment(Card::Powerglass);
 
@@ -210,8 +243,8 @@
   bool play_turo_oricorio_energy_route() {
     if (!turo_oricorio_energy_route_live()) return false;
 
-    const int active_grass_needed = std::max(0, 2 - state_.active->grass);
-    const Card needed_energy = active_grass_needed == 1 ? Card::Grass : Card::Fire;
+    const auto needed_energy = turo_oricorio_finishing_basic_energy();
+    if (!needed_energy) return false;
     auto oricorio = std::find_if(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
       return pokemon.card == Card::Oricorio;
     });
@@ -253,7 +286,7 @@
       throw std::logic_error("Professor Turo returned Oricorio but its replay failed");
     }
     record_deck_search_knowledge("Vital Dance");
-    const bool found = move_deck_to_hand(needed_energy);
+    const bool found = move_deck_to_hand(*needed_energy);
     shuffle(state_.deck);
     trace("VITAL DANCE", "R-ORICORIO-01",
           found ? "Searched the exact Basic Energy required by the Active Regidrago VSTAR."
@@ -264,10 +297,10 @@
     // the generic attachment helper away from the Active attacker:
     // https://www.pokemon.com/us/pokemon-tcg/rules
     if (found) {
-      if (!remove_one(state_.hand, needed_energy)) {
+      if (!remove_one(state_.hand, *needed_energy)) {
         throw std::logic_error("Vital Dance Energy disappeared before manual attachment");
       }
-      if (needed_energy == Card::Grass) {
+      if (*needed_energy == Card::Grass) {
         ++state_.active->grass;
       } else {
         ++state_.active->fire;

@@ -204,9 +204,14 @@
         scenario_.dci == DciProfile::MatchupFlexJit && state_.turn == 4 &&
         state_.active && state_.active->card == Card::TapuLeleGX &&
         std::any_of(state_.bench.begin(), state_.bench.end(),
-                    [](const Pokemon& pokemon) {
+                    [this](const Pokemon& pokemon) {
+                      // Held Turo directly promotes any semantically powered VSTAR.
+                      // DDE + either Basic Energy already pays Apex Dragon's GGF:
+                      // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+                      // https://api.pokemontcg.io/v2/cards/swsh12-136
+                      // https://github.com/FlareZ123/pokemon-sims/issues/2418
                       return pokemon.card == Card::RegidragoVstar &&
-                             pokemon.grass >= 2 && pokemon.fire >= 1;
+                             pays_apex_energy_cost(pokemon);
                     }) &&
         hand_count(Card::ProfessorTuro) > 0 &&
         (hand_count(Card::BrilliantBlender) > 0 || payload_ready()) &&

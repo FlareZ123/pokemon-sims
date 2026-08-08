@@ -1,0 +1,20 @@
+name: sol current-main simulate-this audit
+
+on:
+  pull_request:
+
+jobs:
+  simulate-this-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --config Release --target regidrago_sim -j 2
+      - name: Pass 1 strict go-second seed 1
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+      - name: Pass 2 strict go-first seed 2
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4
+      - name: Pass 3 matchup-flex go-second seed 3
+        run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2

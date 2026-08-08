@@ -33,6 +33,22 @@
   }
 
   bool play_mysterious_treasure(const bool permit_payload) {
+    if (issue_2265_hold_treasure_for_direct_route()) {
+      // The scheduled Fire attachment, held VSTAR, K1-known Quick Ball and Latias,
+      // held Arven, and held Brilliant Blender already prove a complete same-turn
+      // route. Preserve Treasure and its discard cost so the direct Arven line can
+      // resolve after attachment instead of spending an extra connector and Bench
+      // slot on Tapu Lele-GX / Wonder Tag.
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+      // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+      // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+      // Core attachment, evolution, Supporter, Item, Bench, Ability, and retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+      // Earliest-route and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2265#issuecomment-5215563905
+      return false;
+    }
     if (!issue_2165_burnet_treasure_vstar_route_available()) {
       return play_mysterious_treasure_issue2165_original(permit_payload);
     }

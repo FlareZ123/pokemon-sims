@@ -1,0 +1,13 @@
+name: Temporary #2264 source digest
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print simulator policy source digest
+        run: python -c "from pathlib import Path; from scripts.baseline_provenance import simulator_policy_source_digest; print('SOURCE_DIGEST=' + simulator_policy_source_digest(Path('.')))"

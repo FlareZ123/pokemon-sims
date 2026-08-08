@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <utility>
 
+// Current-main reclaim validation: https://github.com/FlareZ123/pokemon-sims/issues/2313
 namespace sim {
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state) {

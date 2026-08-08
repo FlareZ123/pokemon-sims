@@ -7,7 +7,7 @@ from pathlib import Path
 
 PATH = Path("src/trace_engine_v2/part_014c_latias_bench_override.inc")
 LOCK = PATH.with_suffix(PATH.suffix + ".issue2295.lock")
-FUNCTION_MARKER = "bool maybe_pay_basic_retreat_for_held_blender_finish()"
+FUNCTION_MARKER = "bool complete_paid_one_cost_basic_retreat_with_held_blender()"
 PAYMENT_ANCHOR = "    const Card payment = hand_count(Card::Grass) > 0 ? Card::Grass : Card::Fire;"
 INSERTED_MARKER = "    const bool projected_burnet_priority ="
 INSERTION = """    // Project the established #1646 Burnet-priority condition before paying any
@@ -45,15 +45,16 @@ def main() -> int:
         if function_start < 0 or text.find(FUNCTION_MARKER, function_start + 1) >= 0:
             raise RuntimeError("#2295 helper function marker is missing or ambiguous")
 
-        payment_index = text.find(PAYMENT_ANCHOR, function_start)
+        function_end = text.find("\n  }\n", function_start)
+        if function_end < 0:
+            raise RuntimeError("#2295 helper function end is missing")
+        payment_index = text.find(PAYMENT_ANCHOR, function_start, function_end)
         if payment_index < 0:
-            raise RuntimeError("#2295 payment anchor missing after helper marker")
-        next_payment = text.find(PAYMENT_ANCHOR, payment_index + len(PAYMENT_ANCHOR))
-        if next_payment >= 0:
-            raise RuntimeError("#2295 payment anchor is ambiguous")
+            raise RuntimeError("#2295 payment anchor missing inside helper")
+        if text.find(PAYMENT_ANCHOR, payment_index + len(PAYMENT_ANCHOR), function_end) >= 0:
+            raise RuntimeError("#2295 payment anchor is ambiguous inside helper")
 
-        inserted_index = text.find(INSERTED_MARKER, function_start, payment_index)
-        if inserted_index >= 0:
+        if text.find(INSERTED_MARKER, function_start, payment_index) >= 0:
             return 0
 
         updated = text[:payment_index] + INSERTION + text[payment_index:]

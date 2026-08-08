@@ -24,7 +24,6 @@
   ],
   "simulator_policy_source_sha256": "00c55d686cf9a2df6b83247565ba65eebc84a3b242cf6e33de43550dc19f3389",
   "total_simulated_games": 2800000,
-  "trials_per_condition": 100000,
   "traces": [
     {
       "deadline": 3,
@@ -68,5 +67,6 @@
       "scenario": "strict-jit/go-second",
       "seed": 40
     }
-  ]
+  ],
+  "trials_per_condition": 100000
 }

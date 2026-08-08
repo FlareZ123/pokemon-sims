@@ -1,0 +1,39 @@
+
+Deck: regidrago-shell | Seed: 692 | first-ready turn: 4 | setup result: success
+Seed: 692 | first-ready turn: 4 | setup result: success
+===== SIMULATE THIS =====
+Deck: regidrago-shell
+Scenario: strict-jit/go-first | DCI: strict-JIT | Locks: none
+Mulligans: 0
+Opening player-known state: Active=Latias ex [-] | Bench=(none) | Hand=Quick Ball, Field Blower, Hisuian Goodra VSTAR, Mega Dragonite ex, Tapu Lele-GX, Erika's Invitation | Discard=(none)
+DEBUG ONLY: prizes=Grass Energy, Tate & Liza, Crispin, Regidrago VSTAR, Dialga-GX, Regidrago V. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Regidrago VSTAR
+T1 | TURN START | rules: R-GAME-FIRST-TURN | Going first: drew for the turn; no Supporter or attack is permitted.
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=(none) | Hand=Quick Ball, Field Blower, Hisuian Goodra VSTAR, Mega Dragonite ex, Tapu Lele-GX, Erika's Invitation, Regidrago VSTAR | Discard=(none)
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Latias ex [-] | Bench=(none) | Hand=Quick Ball, Field Blower, Hisuian Goodra VSTAR, Mega Dragonite ex, Tapu Lele-GX, Erika's Invitation, Regidrago VSTAR | Discard=(none)
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Chaotic Swell
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=(none) | Hand=Quick Ball, Field Blower, Hisuian Goodra VSTAR, Mega Dragonite ex, Tapu Lele-GX, Erika's Invitation, Regidrago VSTAR, Chaotic Swell | Discard=(none)
+T2 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
+T2 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Wonder Tag: deck inspected; Prize identities are now deducible for later decisions.
+T2 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Crispin.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Latias ex [-] | Bench=Tapu Lele-GX [-] | Hand=Quick Ball, Field Blower, Hisuian Goodra VSTAR, Mega Dragonite ex, Erika's Invitation, Regidrago VSTAR, Chaotic Swell, Crispin | Discard=(none)
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Regidrago V
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=Tapu Lele-GX [-] | Hand=Quick Ball, Field Blower, Hisuian Goodra VSTAR, Mega Dragonite ex, Erika's Invitation, Regidrago VSTAR, Chaotic Swell, Crispin, Regidrago V | Discard=(none)
+T3 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T3 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T3 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T3 | RETREAT | rules: R-LATIAS-01; R-RV-01; R-GAME-RETREAT | Latias ex gives the Basic Active no Retreat Cost; promoted an energized Benched Regidrago V for the live Celestial Roar route.
+T3 | ATTACK | rules: R-RV-01; R-GAME-ATTACK | Regidrago V used Celestial Roar; processed top 3: Arven, Gladion, Quick Ball; attached Energy: (none); remaining discarded: Arven, Gladion, Quick Ball.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [GF] | Bench=Tapu Lele-GX [-]; Latias ex [-] | Hand=Quick Ball, Field Blower, Hisuian Goodra VSTAR, Mega Dragonite ex, Erika's Invitation, Regidrago VSTAR, Chaotic Swell | Discard=Crispin, Arven, Gladion, Quick Ball
+T4 | DRAW | rules: R-GAME-DRAW | start-of-turn: Fire Energy
+T4 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [GF] | Bench=Tapu Lele-GX [-]; Latias ex [-] | Hand=Quick Ball, Field Blower, Hisuian Goodra VSTAR, Mega Dragonite ex, Erika's Invitation, Regidrago VSTAR, Chaotic Swell, Fire Energy | Discard=Crispin, Arven, Gladion, Quick Ball
+T4 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T4 | DISCARD | rules: R-QB-01 | Mega Dragonite ex (Quick Ball cost)
+T4 | PLAY ITEM | rules: R-QB-01; R-GAME-ITEM | Searched a Basic Pokémon: Tapu Lele-GX.
+T4 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
+T4 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Gladion.
+T4 | PLAY SUPPORTER | rules: R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01 | Looked at Prize cards and exchanged Gladion for Grass Energy.
+T4 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago VSTAR.
+T4 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Tapu Lele-GX [-]; Latias ex [-]; Tapu Lele-GX [-] | Hand=Field Blower, Hisuian Goodra VSTAR, Erika's Invitation, Chaotic Swell, Fire Energy | Discard=Crispin, Arven, Gladion, Quick Ball, Quick Ball, Mega Dragonite ex
+T4 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

@@ -3,6 +3,7 @@ name: Issue 2368 paired DDE sequencing bug hunt
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened]
     paths:
       - '.github/workflows/issue-2368-paired-bug-hunt.yml'
       - 'scripts/issue2368_paired_hunt.cpp'

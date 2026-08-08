@@ -21,19 +21,6 @@ The withdrawn Pineco Brilliant Blender proposal is not registered. Every registe
 
 Direct identities: Secret Box https://api.pokemontcg.io/v2/cards/sv6-163, Appletun https://api.pokemontcg.io/v2/cards/sv8-140, Pineco https://api.pokemontcg.io/v2/cards/sv4pt5-1, Forretress ex https://api.pokemontcg.io/v2/cards/sv4pt5-2, Dawn https://api.pokemontcg.io/v2/cards/me2-87, and Forest of Vitality https://api.pokemontcg.io/v2/cards/me1-117.
 
-## Card-pool scope
-
-Canonical CLI runs, `deck_registry()`, `--all-decks`, and published setup matrices use the Pokémon TCG Live Expanded card pool. Pokémon Support currently states that Sun & Moon and Sword & Shield cards are playable in TCG Live while XY and Black & White cards remain unavailable for play: https://support.pokemon.com/hc/en-us/articles/6489934466708-Pok%C3%A9mon-TCG-Live-Migration-FAQ-from-the-Pok%C3%A9mon-TCG-Online
-
-Double Dragon Energy is XY—Roaring Skies 97/108, so the existing `regidrago-dde-model` is retained only as a paper-Expanded mechanics model: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://github.com/FlareZ123/pokemon-sims/issues/2332
-
-A plain `--deck regidrago-dde-model` request is rejected. Paper-only DDE analysis requires the explicit opt-in below and remains excluded from canonical Live matrices:
-
-```bash
-./build/regidrago_sim --paper-expanded-model --deck regidrago-dde-model --simulate-this --scenario strict-jit/go-second --seed 22 --require-ready-by 2
-```
-
-See [`docs/DOUBLE_DRAGON_ENERGY_VALIDATION.md`](docs/DOUBLE_DRAGON_ENERGY_VALIDATION.md) for the separate paper-Expanded validation record.
 
 ## Klara recovery policy
 

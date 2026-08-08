@@ -319,3 +319,12 @@ add_test(NAME trace_issue_1139_fss_banks_tate
 add_test(NAME issue_1333_tapu_live_print_contract
   COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/issue_1333_tapu_live_print_tests.py)
+
+# At Serena's post-attachment decision point, held Arven -> Quick Ball -> Latias
+# plus held Brilliant Blender is the deterministic matchup-flex-JIT T4 finish.
+# Arven / Quick Ball / Latias ex: https://api.pokemontcg.io/v2/cards/sv1-166 https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sv8-76
+# Brilliant Blender / Serena: https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/swsh12-164
+# Core rules: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+# Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2294
+add_test(NAME trace_issue_2294_matchup_first_seed8
+  COMMAND regidrago_sim --simulate-this --scenario matchup-flex-jit/go-first --seed 8 --require-ready-by 4)

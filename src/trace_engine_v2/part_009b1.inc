@@ -356,6 +356,24 @@
     if (!cost && want_latias) {
       cost = quick_ball_latias_replaced_tate_cost();
     }
+    if (!cost && want_latias &&
+        issue_2343_burnet_quick_ball_latias_route_available() &&
+        hand_count(Card::StevensResolve) > 0) {
+      // Every ordinary and older Latias-specific DCI cost failed first. In the
+      // confirmed K1 finish, held Burnet replaces Steven's turn-ending Supporter
+      // role, Quick Ball spends Steven to search Latias ex, the GGF Energy axis is
+      // already complete or guaranteed by the held manual attachment, and Burnet
+      // supplies the same-turn strict-JIT Dragon payload before Skyliner retreat.
+      // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+      // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Core Item, Supporter, Bench, Ability, attachment, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+      // Dynamic DCI and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2343
+      cost = Card::StevensResolve;
+    }
 if (!cost && want_regi && issue_1605_arven_redundant_payload_route_) {
   // Arven already established K1 and selected this exact one-discard search
   // Item. Spend only the duplicated payload identity, after all ordinary DCI

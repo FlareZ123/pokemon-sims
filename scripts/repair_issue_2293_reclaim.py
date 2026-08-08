@@ -28,10 +28,17 @@ old = '''        state_.active->card != Card::Oricorio ||
         !need_active_vstar() || need_energy() || need_payload()) {
 '''
 new = '''        state_.active->card != Card::Oricorio ||
-        !ability_available_for_pokemon(Card::LatiasEx) ||
-        need_energy() || need_payload()) {
+        // Skyliner is a Rule Box Pokemon Ability, so these modeled lock modes block it:
+        // https://api.pokemontcg.io/v2/cards/sv8-76
+        // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-interpretation
+        scenario_.locks == LockMode::FullRuleBoxAbility ||
+        scenario_.locks == LockMode::FullCombined ||
+        // Strict-JIT readiness requires a Dragon payload to enter discard this turn:
+        // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+        !std::any_of(state_.discarded_this_turn.begin(), state_.discarded_this_turn.end(),
+                     is_payload)) {
 '''
 if text.count(old) != 1:
-    raise RuntimeError("#2293 Active-position guard anchor mismatch")
+    raise RuntimeError("#2293 target-local readiness guard anchor mismatch")
 text = text.replace(old, new, 1)
 atomic_write(path, text)

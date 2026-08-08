@@ -1,0 +1,49 @@
+name: Bootstrap issue 2270 surgical current-main port
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  port-reviewed-fix:
+    if: github.head_ref == 'fix/2270-current-main-sol'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Materialize reviewed hooks without legacy file replacement
+        run: |
+          git fetch origin fix/2270-wonder-tag-arven-latias-promotion
+          git show origin/fix/2270-wonder-tag-arven-latias-promotion:src/trace_engine_v2/part_issue_2270_wonder_tag_arven_latias_override.inc > src/trace_engine_v2/part_issue_2270_wonder_tag_arven_latias_override.inc
+          git show origin/fix/2270-wonder-tag-arven-latias-promotion:src/trace_engine_v2/part_issue_2270_tapu_connector_override.inc > src/trace_engine_v2/part_issue_2270_tapu_connector_override.inc
+          git show origin/fix/2270-wonder-tag-arven-latias-promotion:tests/issue_2270_wonder_tag_arven_latias_tests.cpp > tests/issue_2270_wonder_tag_arven_latias_tests.cpp
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/regidrago_sim.cpp')
+          text = path.read_text(encoding='utf-8')
+          first = '#define choose_discard choose_discard_issue1436_original\n#include "trace_engine_v2/part_006.inc"\n#undef recover_discard_to_hand\n'
+          first_replacement = '#define choose_discard choose_discard_issue1436_original\n#define wonder_tag_arven_held_payload_route_available wonder_tag_arven_held_payload_route_available_issue2270_original\n#include "trace_engine_v2/part_006.inc"\n#undef wonder_tag_arven_held_payload_route_available\n#include "trace_engine_v2/part_issue_2270_wonder_tag_arven_latias_override.inc"\n#undef recover_discard_to_hand\n'
+          if first not in text:
+              raise SystemExit('current part_006 include marker missing')
+          text = text.replace(first, first_replacement, 1)
+
+          second = '#include "trace_engine_v2/part_issue_989_wonder_tag_complete_route_override.inc"\n#define play_ultra_ball play_ultra_ball_empty_deck_original\n'
+          second_replacement = '#define needs_tapu_connector needs_tapu_connector_issue2270_original\n#include "trace_engine_v2/part_issue_989_wonder_tag_complete_route_override.inc"\n#undef needs_tapu_connector\n#include "trace_engine_v2/part_issue_2270_tapu_connector_override.inc"\n#define play_ultra_ball play_ultra_ball_empty_deck_original\n'
+          if second not in text:
+              raise SystemExit('current issue-989 include marker missing')
+          text = text.replace(second, second_replacement, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+      - name: Commit source-only current-main port
+        run: |
+          git rm .github/workflows/bootstrap-issue-2270-surgical-port.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/regidrago_sim.cpp src/trace_engine_v2/part_issue_2270_wonder_tag_arven_latias_override.inc src/trace_engine_v2/part_issue_2270_tapu_connector_override.inc tests/issue_2270_wonder_tag_arven_latias_tests.cpp
+          git commit -m 'Fix #2270 Wonder Tag Arven Latias route on current main'
+          git push origin HEAD:${{ github.head_ref }}

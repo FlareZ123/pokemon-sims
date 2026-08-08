@@ -6,6 +6,33 @@
     const auto ordinary = choose_discard(
         permit_payload, flex_fodder, allow_heavy_ball, excluded_from_cost,
         allow_redundant_payload);
+    const bool current_turn_payload_cost_live =
+        can_play_payload_this_turn() &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    const auto dde_completed_regi = [this](const Pokemon& pokemon) {
+      return (pokemon.card == Card::RegidragoV || pokemon.card == Card::RegidragoVstar) &&
+             pokemon.double_dragon > 0 && pays_apex_energy_cost(pokemon);
+    };
+    const bool dde_completed_energy_line =
+        (state_.active && dde_completed_regi(*state_.active)) ||
+        std::any_of(state_.bench.begin(), state_.bench.end(), dde_completed_regi);
+    if (!ordinary && dde_completed_energy_line && !need_energy() &&
+        !current_turn_payload_cost_live) {
+      const int excluded_crispin =
+          excluded_from_cost && *excluded_from_cost == Card::Crispin ? 1 : 0;
+      if (hand_count(Card::Crispin) > excluded_crispin) {
+        // DDE can finish Apex Dragon's Energy axis while a singleton Crispin is
+        // still protected by the pre-DDE dynamic-DCI table. Only in that concrete
+        // DDE-complete state, and only when no current-turn Dragon payload should
+        // pay the cost instead, Crispin is setup-inert Item fuel.
+        // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+        // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+        // Dynamic DCI / earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2368
+        return Card::Crispin;
+      }
+    }
     const bool duplicate_treasure_is_ordinary_cost =
         ordinary && *ordinary == Card::MysteriousTreasure;
     const bool preserve_second_treasure_for_vstar =

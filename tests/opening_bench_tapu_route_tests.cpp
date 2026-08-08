@@ -122,25 +122,24 @@ sim::TrialOutcome run_seed_one_conditioned_policy(const bool use_opening_bench_s
 
 void test_seed_one_downstream_policy_characterization() {
   // Matched seed 1 holds the shuffled 53-card remainder, six Prize cards, and all
-  // downstream choices constant. Holding Tapu reaches T3 through Wonder Tag. After
-  // #718 removes the invalid early Blender spend, the setup-Benched route has no live
-  // VSTAR-card connector and remains unready through the T4 fixture deadline. Issue
-  // #932 owns the distinct opening-selector correction:
+  // downstream choices constant. Current main reaches T3 in both conditioned
+  // continuations. This fixture characterizes the realized hidden continuation only;
+  // issue #932 rejected using it to rewrite the opening K0 selector because setup
+  // happens before Prize placement or any legal deck inspection:
   // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
   // https://api.pokemontcg.io/v2/cards/sm2-60
   // https://api.pokemontcg.io/v2/cards/sv7-133
   // https://api.pokemontcg.io/v2/cards/sm4-95
   // https://api.pokemontcg.io/v2/cards/swsh12-136
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-  // https://github.com/FlareZ123/pokemon-sims/issues/671
-  // https://github.com/FlareZ123/pokemon-sims/issues/885
-  // https://github.com/FlareZ123/pokemon-sims/issues/718
-  // https://github.com/FlareZ123/pokemon-sims/issues/932
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // https://github.com/FlareZ123/pokemon-sims/issues/932#issuecomment-5012447682
+  // https://github.com/FlareZ123/pokemon-sims/issues/2349
   const sim::TrialOutcome held_tapu = run_seed_one_conditioned_policy(false);
   const sim::TrialOutcome setup_benched_tapu = run_seed_one_conditioned_policy(true);
-  if (held_tapu.first_ready_turn != 3 || setup_benched_tapu.first_ready_turn != 0) {
+  if (held_tapu.first_ready_turn != 3 || setup_benched_tapu.first_ready_turn != 3) {
     throw std::runtime_error(
-        "Matched seed 1 should reach T3 with held Tapu and remain unready through T4 after setup placement.");
+        "Matched seed 1 should reach T3 with either held or setup-Benched Tapu Lele-GX on current main.");
   }
 }
 

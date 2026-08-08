@@ -38,7 +38,7 @@ std::size_t heavy_ball_hold_count(const sim::TraceLog& trace) {
       }));
 }
 
-void test_seed_69_emits_one_hold_for_the_unchanged_state() {
+void test_seed_69_stops_before_the_obsolete_later_heavy_ball_state() {
   const sim::Scenario scenario{"strict-jit/go-first", sim::DciProfile::StrictJit,
                                sim::LockMode::None, true, 5};
   const sim::DeckRecipe recipe = sim::baseline_recipe();
@@ -46,18 +46,23 @@ void test_seed_69_emits_one_hold_for_the_unchanged_state() {
   sim::TraceLog trace;
   trace.enabled = true;
   sim::Engine engine(scenario, recipe, rng, &trace);
-  engine.run();
+  const auto outcome = engine.run();
 
-  // K1 proves that Heavy Ball has no Basic Prize target, so retaining the Item is
-  // legal. Fixed-point re-evaluation must expose one decision for the unchanged state:
-  // https://api.pokemontcg.io/v2/cards/swsh10-146
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
-  // https://github.com/FlareZ123/pokemon-sims/issues/1007
-  expect(heavy_ball_hold_count(trace) == 1U,
-         "Seed 69 must emit exactly one unchanged-state Heavy Ball hold event.");
+  // Issue #2164 now completes seed 69 on T4 through Quick Ball -> Latias ex, so
+  // simulation terminates before the later turn that used to expose Heavy Ball.
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+  // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+  // Current-turn JIT / earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Earlier Heavy Ball trace contract: https://github.com/FlareZ123/pokemon-sims/issues/1007
+  // Confirmed route improvement: https://github.com/FlareZ123/pokemon-sims/issues/2164
+  expect(outcome.first_ready_turn == 4 && !outcome.setup_failed,
+         "Seed 69 must terminate on the corrected T4 finish.");
+  expect(heavy_ball_hold_count(trace) == 0U,
+         "Seed 69 must not manufacture a later Heavy Ball state after T4 readiness.");
   expect(std::count(engine.state().hand.begin(), engine.state().hand.end(),
-                    sim::Card::HisuianHeavyBall) == 1,
-         "The trace fix must preserve Heavy Ball as a held discard-cost resource.");
+                    sim::Card::HisuianHeavyBall) == 0,
+         "Heavy Ball must remain undrawn when seed 69 terminates on T4.");
 }
 
 void test_state_change_allows_a_new_hold_event() {
@@ -79,6 +84,11 @@ void test_state_change_allows_a_new_hold_event() {
                   sim::Card::MysteriousTreasure};
   sim::EngineTestAccess::set_known_prize_state(engine, std::move(state));
 
+  // The original issue-1007 exact-state invariant remains independently covered:
+  // K1 proves that Heavy Ball has no Basic Prize target, so preserving it is legal.
+  // https://api.pokemontcg.io/v2/cards/swsh10-146
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // https://github.com/FlareZ123/pokemon-sims/issues/1007
   expect(!sim::EngineTestAccess::play_heavy_ball(engine),
          "Known-no-Basic Heavy Ball must remain held.");
   expect(!sim::EngineTestAccess::play_heavy_ball(engine),
@@ -96,7 +106,7 @@ void test_state_change_allows_a_new_hold_event() {
 
 int main() {
   try {
-    test_seed_69_emits_one_hold_for_the_unchanged_state();
+    test_seed_69_stops_before_the_obsolete_later_heavy_ball_state();
     test_state_change_allows_a_new_hold_event();
     std::cout << "Issue 1007 Heavy Ball hold trace tests passed\n";
     return 0;

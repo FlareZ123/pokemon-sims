@@ -1,6 +1,26 @@
   return std::nullopt;
 }
 
+const NamedDeck* tcg_live_deck_by_id(const std::string_view id) {
+  // Pokémon Support currently says Sun & Moon and Sword & Shield cards are
+  // playable in Pokémon TCG Live, while XY and Black & White cards are not
+  // playable until future Live updates:
+  // https://support.pokemon.com/hc/en-us/articles/6489934466708-Pok%C3%A9mon-TCG-Live-Migration-FAQ-from-the-Pok%C3%A9mon-TCG-Online
+  // Double Dragon Energy is XY—Roaring Skies 97/108, so the paper Expanded
+  // mechanics model must stay outside the production Pokémon TCG Live CLI:
+  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+  // Confirmed scope bug: https://github.com/FlareZ123/pokemon-sims/issues/2332
+  if (id == "regidrago-dde-model") return nullptr;
+  return deck_by_id(id);
+}
+
+#ifndef REGIDRAGO_SIM_NO_MAIN
+// part_016.inc is the production CLI continuation. Route its named-deck lookups
+// through the Live card-pool boundary while keeping the paper model available to
+// focused mechanics tests that compile with REGIDRAGO_SIM_NO_MAIN.
+#define deck_by_id tcg_live_deck_by_id
+#endif
+
 Aggregate simulate(const Scenario& scenario, const DeckRecipe& recipe, const std::uint64_t trials, const std::uint64_t seed) {
   std::mt19937_64 rng(seed);
   Aggregate aggregate{};

@@ -60,8 +60,8 @@
       return false;
     }
 
-    const int missing_grass = std::max(0, 2 - state_.active->grass);
-    const int missing_fire = std::max(0, 1 - state_.active->fire);
+    // Raw Grass/Fire counters are intentionally omitted; semantic DDE-aware projection is authoritative: https://github.com/FlareZ123/pokemon-sims/issues/2370
+    // GCC unused-variable diagnostic contract: https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable
     const bool item_available_next_turn =
         scenario_.locks != LockMode::FullItem &&
         scenario_.locks != LockMode::FullCombined &&

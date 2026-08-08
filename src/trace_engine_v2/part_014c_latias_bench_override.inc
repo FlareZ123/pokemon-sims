@@ -129,6 +129,61 @@
     return true;
   }
 
+  bool complete_paid_one_cost_basic_retreat_with_held_blender() {
+    if (scenario_.dci != DciProfile::StrictJit || item_locked() ||
+        !prizes_known() || !need_active_vstar() || need_energy() ||
+        !need_payload() || state_.retreat_used || state_.manual_energy_used ||
+        !state_.active || hand_count(Card::BrilliantBlender) == 0 ||
+        !payload_might_be_in_deck() || !can_play_payload_this_turn()) {
+      return false;
+    }
+    if (state_.active->card != Card::Oricorio &&
+        state_.active->card != Card::TapuLeleGX) {
+      return false;
+    }
+
+    Pokemon* target = best_benched_vstar_for_promotion();
+    if (target == nullptr || target->grass < 2 || target->fire < 1) return false;
+
+    const Card payment = hand_count(Card::Grass) > 0 ? Card::Grass : Card::Fire;
+    if (hand_count(payment) == 0 || !remove_one(state_.hand, payment)) return false;
+
+    // Oricorio GRI 55 and Tapu Lele-GX each have a one-Colorless Retreat Cost.
+    // The spare manual attachment may therefore pay the mobility axis without
+    // altering the already-complete GGF VSTAR. Held Brilliant Blender is part of
+    // this same atomic route: after promotion it must resolve immediately, because
+    // strict-JIT requires a Dragon payload to enter discard during this very turn.
+    // Leaving Blender for a later generic Item pass strands seed 86 until T5.
+    // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official attachment, Retreat Cost, and Item procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, strict-JIT, DCI/AMR, and earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Preserved route boundaries: https://github.com/FlareZ123/pokemon-sims/issues/802 https://github.com/FlareZ123/pokemon-sims/issues/905 https://github.com/FlareZ123/pokemon-sims/issues/1022 https://github.com/FlareZ123/pokemon-sims/issues/1845
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2295
+    if (payment == Card::Grass) ++state_.active->grass;
+    else ++state_.active->fire;
+    state_.manual_energy_used = true;
+    trace("ATTACH", "R-GAME-ENERGY",
+          std::string(name(payment)) + " manually to " +
+              std::string(name(state_.active->card)) + " for its Retreat Cost.");
+
+    if (payment == Card::Grass) --state_.active->grass;
+    else --state_.active->fire;
+    state_.discard.push_back(payment);
+    std::swap(*state_.active, *target);
+    state_.retreat_used = true;
+    trace("RETREAT", "R-GAME-RETREAT",
+          "Paid the one-Energy Basic Active Retreat Cost and promoted the GGF "
+          "Regidrago VSTAR; resolving held Brilliant Blender now for strict-JIT.");
+
+    if (!play_brilliant_blender()) {
+      throw std::logic_error("Issue-2295 held Brilliant Blender completion disappeared");
+    }
+    return active_is_vstar() && !need_energy() && !need_payload();
+  }
+
   bool resolve_final_promotion_and_attachment() {
     // When the selected Benched VSTAR already pays GGF, Skyliner promotes it for
     // zero before the #802 paid Tapu fallback can spend a Basic Energy. An
@@ -144,6 +199,12 @@
         retreat_to_benched_vstar_with_latias()) {
       return true;
     }
+    // Skyliner remains preferred because it spends no Energy. When that free
+    // route is unavailable, #2295 proves the one-Energy Basic retreat plus held
+    // Blender is itself a complete strict-JIT readiness route.
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Confirmed ordering boundary: https://github.com/FlareZ123/pokemon-sims/issues/2295
+    if (complete_paid_one_cost_basic_retreat_with_held_blender()) return true;
     if (pay_tapu_retreat_to_ready_benched_vstar()) return true;
     attach_manual();
     return retreat_to_benched_vstar_with_latias();

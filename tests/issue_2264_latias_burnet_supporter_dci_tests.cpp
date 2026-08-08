@@ -76,6 +76,35 @@ void test_strict_treasure_admits_route_replaced_crispin() {
          "#2264 strict route was not integrated into the discard selector.");
 }
 
+void test_strict_treasure_admits_route_replaced_stevens_resolve() {
+  sim::Scenario scenario{"issue-2264/strict-steven", sim::DciProfile::StrictJit,
+                         sim::LockMode::None, false, 5};
+  sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{22642};
+  sim::Engine engine{scenario, recipe, rng};
+  sim::State state = latias_burnet_finish_state();
+  state.hand[1] = sim::Card::StevensResolve;
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // With GGF complete and Burnet proving the current-turn payload route, Steven's
+  // Resolve is route-replaced because its printed effect ends the turn. Spending it
+  // as Mysterious Treasure's one-card cost preserves the immediate Latias/Burnet
+  // completion while keeping the generic Supporter protection intact elsewhere.
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Core Item, Supporter, Bench, Ability, and retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Dynamic DCI and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug scope: https://github.com/FlareZ123/pokemon-sims/issues/2264
+  expect(sim::EngineTestAccess::route_cost(engine, sim::Card::MysteriousTreasure) ==
+             sim::Card::StevensResolve,
+         "#2264 strict route did not admit route-replaced Steven's Resolve.");
+  expect(sim::EngineTestAccess::choose_cost(engine, sim::Card::MysteriousTreasure) ==
+             sim::Card::StevensResolve,
+         "#2264 strict route did not integrate the Steven's Resolve cost.");
+}
+
 void test_matchup_flex_quick_ball_admits_route_replaced_crispin() {
   sim::Scenario scenario{"issue-2264/flex", sim::DciProfile::MatchupFlexJit,
                          sim::LockMode::None, false, 5};
@@ -131,6 +160,7 @@ void test_route_preserves_supporter_when_any_completion_gate_is_missing() {
 
 int main() {
   test_strict_treasure_admits_route_replaced_crispin();
+  test_strict_treasure_admits_route_replaced_stevens_resolve();
   test_matchup_flex_quick_ball_admits_route_replaced_crispin();
   test_route_preserves_supporter_when_any_completion_gate_is_missing();
   return 0;

@@ -159,8 +159,149 @@
     return true;
   }
 
+  std::optional<Card> issue_2289_quick_ball_tapu_arven_payload_cost() const {
+    // Strict JIT requires the Dragon payload to enter discard on the ready turn.
+    // On this proven route Quick Ball is the payload outlet, so the held Dragon has
+    // immediate DCI-1 value and should be spent before future-value Supporters.
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Dynamic DCI and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed stale-claim bug: https://github.com/FlareZ123/pokemon-sims/issues/2289
+    for (const Card candidate : {Card::MegaDragonite, Card::Dragapult,
+                                 Card::GoodraVstar, Card::DialgaGX,
+                                 Card::Appletun}) {
+      if (hand_count(candidate) > 0) return candidate;
+    }
+    return std::nullopt;
+  }
+
+  bool issue_2289_quick_ball_tapu_arven_route_available() const {
+    if (scenario_.dci != DciProfile::StrictJit || !scenario_.going_first ||
+        state_.turn != 4 || state_.turn > scenario_.max_turn ||
+        !prizes_known() || item_locked() || !supporter_allowed() ||
+        state_.manual_energy_used || state_.vstar_power_used ||
+        !state_.active || state_.active->card != Card::RegidragoV ||
+        state_.active->entered_turn >= state_.turn ||
+        state_.active->grass != 1 || state_.active->fire < 1 ||
+        state_.active->tool != Tool::None || bench_space() <= 0 ||
+        !need_vstar() || !need_energy() || !need_payload() ||
+        hand_count(Card::QuickBall) == 0 || hand_count(Card::Fire) == 0 ||
+        hand_count(Card::TapuLeleGX) > 0 || hand_count(Card::Arven) > 0 ||
+        hand_count(Card::ForestSealStone) > 0 ||
+        hand_count(Card::EarthenVessel) > 0 ||
+        hand_count(Card::RegidragoVstar) > 0 ||
+        !ability_available_for_pokemon(Card::TapuLeleGX) ||
+        deck_count_after_search_started(Card::TapuLeleGX) == 0 ||
+        deck_count_after_search_started(Card::Arven) == 0 ||
+        deck_count_after_search_started(Card::ForestSealStone) == 0 ||
+        deck_count_after_search_started(Card::EarthenVessel) == 0 ||
+        deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
+        deck_count_after_search_started(Card::Grass) == 0 ||
+        !issue_2289_quick_ball_tapu_arven_payload_cost().has_value()) {
+      return false;
+    }
+
+    // K1 proves every search target in the compressed route. The Active prior-turn
+    // Regidrago V already has Fire, so the held Fire is route-surplus once Arven
+    // searches Earthen Vessel: Vessel may spend that Fire to search the missing
+    // Grass, while Forest Seal Stone searches Regidrago VSTAR and the unused manual
+    // attachment completes GGF. Quick Ball simultaneously supplies the current-turn
+    // Dragon payload and Tapu Lele-GX supplies Arven without consuming another card.
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regidrago V / Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, discard, search, Bench, Ability, Supporter, Tool, VSTAR Power,
+    // Energy attachment, and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, earliest-route, dynamic DCI, and current-turn JIT specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed stale-claim bug: https://github.com/FlareZ123/pokemon-sims/issues/2289
+    return true;
+  }
+
+  bool play_issue_2289_quick_ball_tapu_arven_route() {
+    if (!issue_2289_quick_ball_tapu_arven_route_available()) return false;
+    const Card payload = *issue_2289_quick_ball_tapu_arven_payload_cost();
+
+    // Resolve the deterministic connector immediately. Quick Ball pays the current
+    // Dragon payload and finds Tapu Lele-GX. Wonder Tag finds Arven; Arven's printed
+    // single Supporter action then takes both Forest Seal Stone and Earthen Vessel.
+    // Vessel immediately spends the route-surplus held Fire to obtain the missing
+    // Grass, leaving generic Tool/VSTAR/evolution/attachment policy only the already
+    // proven deterministic finishing actions.
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Official Trainer, Supporter, Item, discard, search, Bench, Ability, Tool,
+    // VSTAR Power, evolution, and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Earliest complete route, supporter contention, K1, and DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed stale-claim bug: https://github.com/FlareZ123/pokemon-sims/issues/2289
+    if (!remove_one(state_.hand, Card::QuickBall)) {
+      throw std::logic_error("issue-2289 Quick Ball disappeared");
+    }
+    state_.discard.push_back(Card::QuickBall);
+    if (!discard_from_hand(payload,
+                           "Quick Ball issue-2289 current-turn payload cost",
+                           "R-QB-01; P-DCI-01; P-JIT-01; P-CONNECTOR-01")) {
+      throw std::logic_error("issue-2289 payload cost disappeared");
+    }
+    record_deck_search_knowledge("Quick Ball issue-2289 Tapu-Arven route");
+    if (!move_deck_to_hand(Card::TapuLeleGX)) {
+      throw std::logic_error("issue-2289 Tapu Lele-GX target disappeared");
+    }
+    shuffle(state_.deck);
+    trace("PLAY ITEM", "R-QB-01; R-TAPU-01; P-JIT-01; P-CONNECTOR-01",
+          "Discarded the current-turn Dragon payload and searched Tapu Lele-GX for the T4 Arven completion route.");
+    if (!bench_from_hand(Card::TapuLeleGX, false)) {
+      throw std::logic_error("issue-2289 Tapu Lele-GX Bench action failed");
+    }
+    record_deck_search_knowledge("Wonder Tag issue-2289 Arven route");
+    if (!move_deck_to_hand(Card::Arven)) {
+      throw std::logic_error("issue-2289 Arven target disappeared");
+    }
+    shuffle(state_.deck);
+    trace("WONDER TAG", "R-TAPU-01; R-ARVEN-01; P-CONNECTOR-01",
+          "Searched and revealed Arven for Forest Seal Stone plus Earthen Vessel.");
+
+    if (!remove_one(state_.hand, Card::Arven)) {
+      throw std::logic_error("issue-2289 Arven disappeared before play");
+    }
+    state_.discard.push_back(Card::Arven);
+    state_.supporter_used = true;
+    record_deck_search_knowledge("Arven issue-2289 complete route");
+    if (!move_deck_to_hand(Card::ForestSealStone) ||
+        !move_deck_to_hand(Card::EarthenVessel)) {
+      throw std::logic_error("issue-2289 Arven targets disappeared");
+    }
+    shuffle(state_.deck);
+    trace("PLAY SUPPORTER", "R-ARVEN-01; R-GAME-SUPPORTER; P-CONNECTOR-01",
+          "Arven searched Forest Seal Stone and Earthen Vessel for the proven T4 route.");
+
+    if (!remove_one(state_.hand, Card::EarthenVessel)) {
+      throw std::logic_error("issue-2289 Earthen Vessel disappeared before play");
+    }
+    state_.discard.push_back(Card::EarthenVessel);
+    if (!discard_from_hand(Card::Fire, "Earthen Vessel issue-2289 route-surplus Fire cost",
+                           "R-EV-01; P-DCI-01; P-CONNECTOR-01")) {
+      throw std::logic_error("issue-2289 Earthen Vessel Fire cost disappeared");
+    }
+    record_deck_search_knowledge("Earthen Vessel issue-2289 Grass route");
+    if (!move_deck_to_hand(Card::Grass)) {
+      throw std::logic_error("issue-2289 Grass target disappeared");
+    }
+    shuffle(state_.deck);
+    trace("EARTHEN VESSEL", "R-EV-01; R-GAME-ITEM; P-DCI-01; P-CONNECTOR-01",
+          "Discarded route-surplus Fire Energy and searched Grass Energy for the unused manual attachment.");
+    return true;
+  }
+
   bool play_quick_ball(const bool permit_payload) {
     if (play_issue_2199_quick_ball_latias_payload_route()) return true;
+    if (play_issue_2289_quick_ball_tapu_arven_route()) return true;
     if (play_issue_2272_route_replaced_arven_quick_ball()) return true;
     return play_quick_ball_issue2272_original(permit_payload);
   }

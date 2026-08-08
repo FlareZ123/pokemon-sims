@@ -1,0 +1,55 @@
+name: Bootstrap issue 2377 provenance refresh
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-source-bound-evidence:
+    if: github.head_ref == 'fix/2377-current-main-provenance-sol'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build exact pull-request source
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Regenerate source-bound canonical evidence
+        run: |
+          # Generator contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+
+      - name: Regenerate source-bound paired evidence
+        run: |
+          # Generator contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/generate_multi_deck_comparison.py
+          # Confirmed stale-evidence bug: https://github.com/FlareZ123/pokemon-sims/issues/2377
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+
+      - name: Verify provenance before materializing
+        run: |
+          # Provenance contract: https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/baseline_provenance.py
+          python scripts/check_baseline_provenance.py --repo-root .
+
+      - name: Commit materialized evidence refresh
+        run: |
+          git rm .github/workflows/bootstrap-issue-2377-provenance.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Fix #2377 source-bound setup evidence'
+          git push origin HEAD:${{ github.head_ref }}

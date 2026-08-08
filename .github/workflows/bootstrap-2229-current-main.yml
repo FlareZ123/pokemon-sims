@@ -1,0 +1,172 @@
+name: Bootstrap issue 2229 current-main reclaim
+
+on:
+  push:
+    branches:
+      - fix/2229-current-main-reclaim-sol2
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/2229-current-main-reclaim-sol2
+      - name: Apply focused issue 2229 fix and regression
+        shell: bash
+        run: |
+          python - <<'PY'
+          import fcntl
+          import os
+          import tempfile
+          from pathlib import Path
+
+          source = Path("src/trace_engine_v2/part_issue_1876_treasure_payload_cost_override.inc")
+          lock_path = Path(".issue-2229-bootstrap.lock")
+          with lock_path.open("w", encoding="utf-8") as lock:
+              fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+              text = source.read_text(encoding="utf-8")
+              old = '''  std::optional<Card> issue_2203_treasure_vstar_payload_cost() const {
+    const bool route_available =
+        strict_payload_timing() && prizes_known() && !item_locked() &&
+        state_.supporter_used && state_.active &&
+'''
+              new = '''  std::optional<Card> issue_2203_treasure_vstar_payload_cost() const {
+    const bool route_available =
+        strict_payload_timing() && prizes_known() && !item_locked() &&
+        state_.active &&
+'''
+              if text.count(old) != 1:
+                  raise SystemExit("issue-2229 route anchor did not match exactly once")
+              text = text.replace(old, new, 1)
+              old_comment = '''    // The prior-turn Regidrago V already has Apex Dragon's GGF cost after the
+    // Supporter action. Treasure can use its mandatory discard as the same-turn
+    // payload outlet, search Regidrago VSTAR, and evolve immediately.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+'''
+              new_comment = '''    // The prior-turn Regidrago V already has Apex Dragon's GGF cost. Treasure
+    // can use its mandatory discard as the same-turn payload outlet, search
+    // Regidrago VSTAR, and evolve immediately. This complete Item route does not
+    // depend on whether the Supporter action was used.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Mega Dragonite ex payload witness: https://api.pokemontcg.io/v2/cards/me2pt5-152
+'''
+              if text.count(old_comment) != 1:
+                  raise SystemExit("issue-2229 comment anchor did not match exactly once")
+              text = text.replace(old_comment, new_comment, 1)
+              old_bug = '    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2203\n'
+              new_bug = '    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/2203 https://github.com/FlareZ123/pokemon-sims/issues/2229\n'
+              if text.count(old_bug) != 1:
+                  raise SystemExit("issue-2229 bug-source anchor did not match exactly once")
+              text = text.replace(old_bug, new_bug, 1)
+              fd, temp_name = tempfile.mkstemp(prefix=source.name + ".", dir=source.parent)
+              try:
+                  with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as temp:
+                      temp.write(text)
+                      temp.flush()
+                      os.fsync(temp.fileno())
+                  os.replace(temp_name, source)
+              finally:
+                  if os.path.exists(temp_name):
+                      os.unlink(temp_name)
+
+          test = Path("tests/issue_2229_treasure_vstar_unused_supporter_tests.cpp")
+          test_text = r'''#define REGIDRAGO_SIM_NO_MAIN
+#include "../src/regidrago_sim.cpp"
+
+#include <algorithm>
+#include <iostream>
+#include <random>
+#include <stdexcept>
+#include <string>
+
+namespace sim {
+struct EngineTestAccess {};
+}  // namespace sim
+
+namespace {
+void expect(const bool condition, const char* message) {
+  if (!condition) throw std::runtime_error(message);
+}
+
+bool trace_contains(const sim::TraceLog& trace, const std::string& text) {
+  return std::any_of(trace.lines.begin(), trace.lines.end(),
+                     [&text](const std::string& line) {
+                       return line.find(text) != std::string::npos;
+                     });
+}
+
+void expect_seed_ready(const char* scenario_label) {
+  const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
+  const auto scenario = sim::scenario_by_label(scenario_label);
+  expect(deck != nullptr && scenario.has_value(),
+         "The registered issue-2229 fixture is unavailable.");
+
+  std::mt19937_64 rng(1518);
+  sim::TraceLog trace{true, {}};
+  sim::Engine engine(*scenario, deck->recipe, rng, &trace);
+  const sim::TrialOutcome outcome = engine.run();
+
+  // The prior-turn Regidrago V is already GGF and evolution-legal. Mysterious
+  // Treasure can spend Mega Dragonite ex as its printed cost, search the VSTAR,
+  // and evolve on the same turn. The Supporter action is unused and irrelevant
+  // because this complete route requires only the Item and evolution action.
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Official Item, discard, search, and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // K1, dynamic DCI/JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2229
+  expect(outcome.first_ready_turn == 4,
+         "Seed 1518 did not reach readiness on T4.");
+  expect(trace_contains(trace, "Mega Dragonite ex (Mysterious Treasure cost)"),
+         "Seed 1518 did not spend the held Dragon as Treasure's cost.");
+  expect(!trace_contains(trace, "Fire Energy (Mysterious Treasure cost)"),
+         "Seed 1518 still spent Fire Energy instead of the payload.");
+}
+
+void test_strict_and_matchup_flex_seed_1518() {
+  expect_seed_ready("strict-jit/go-first");
+  expect_seed_ready("matchup-flex-jit/go-first");
+}
+}  // namespace
+
+int main() {
+  try {
+    test_strict_and_matchup_flex_seed_1518();
+    std::cout << "Issue 2229 unused-Supporter Treasure VSTAR tests passed\n";
+    return 0;
+  } catch (const std::exception& error) {
+    std::cerr << error.what() << '\n';
+    return 1;
+  }
+}
+'''
+          lock_path = Path(".issue-2229-test.lock")
+          with lock_path.open("w", encoding="utf-8") as lock:
+              fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+              fd, temp_name = tempfile.mkstemp(prefix=test.name + ".", dir=test.parent)
+              try:
+                  with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as temp:
+                      temp.write(test_text)
+                      temp.flush()
+                      os.fsync(temp.fileno())
+                  os.replace(temp_name, test)
+              finally:
+                  if os.path.exists(temp_name):
+                      os.unlink(temp_name)
+
+          Path(".github/workflows/bootstrap-2229-current-main.yml").unlink()
+          for path in (Path(".issue-2229-bootstrap.lock"), Path(".issue-2229-test.lock")):
+              path.unlink(missing_ok=True)
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/trace_engine_v2/part_issue_1876_treasure_payload_cost_override.inc tests/issue_2229_treasure_vstar_unused_supporter_tests.cpp .github/workflows/bootstrap-2229-current-main.yml
+          git commit -m "Reclaim #2229 Treasure VSTAR payload route on current main"
+          git push origin HEAD:fix/2229-current-main-reclaim-sol2

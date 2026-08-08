@@ -104,8 +104,15 @@ void selector_preserves_required_boundaries() {
     Fixture strict{sim::DciProfile::StrictJit};
     sim::EngineTestAccess::set_state(strict.engine, complete_state());
     sim::EngineTestAccess::play_vessel(strict.engine);
-    expect(!spent_payload(strict.engine),
-           "The matchup-flex route escaped into strict JIT.");
+    // Strict JIT has the same current-turn payload requirement in this public
+    // GG state, so Vessel's mandatory Dragon discard is the strongest legal cost.
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Strict-JIT contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed strict regression: https://github.com/FlareZ123/pokemon-sims/issues/2231
+    expect(spent_payload(strict.engine),
+           "The confirmed strict-JIT GG Vessel route did not spend its payload.");
   }
   {
     Fixture k0;

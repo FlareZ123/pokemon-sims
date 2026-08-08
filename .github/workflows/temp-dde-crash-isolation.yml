@@ -1,0 +1,78 @@
+name: Temporary DDE sequencing crash isolation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-dde-crash-isolation.yml'
+  workflow_dispatch:
+
+jobs:
+  isolate-crash:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build crash isolator
+        shell: bash
+        run: |
+          cat > isolate.cpp <<'CPP'
+          #define REGIDRAGO_SIM_NO_MAIN
+          #include "src/regidrago_sim.cpp"
+          #include <fstream>
+          using namespace sim;
+
+          DeckRecipe dde_recipe() {
+            DeckRecipe r=baseline_recipe();
+            auto it=std::find_if(r.begin(),r.end(),[](const auto& e){return e.first==Card::Grass;});
+            if(it==r.end()||it->second!=6) throw std::logic_error("six Grass expected");
+            const auto idx=static_cast<std::size_t>(std::distance(r.begin(),it));
+            r[idx].second=4;
+            r.insert(r.begin()+static_cast<std::ptrdiff_t>(idx),{Card::DoubleDragonEnergy,2});
+            return r;
+          }
+
+          bool try_one(const Scenario& s,const DeckRecipe& r,std::uint64_t seed,
+                       const char* deck,std::ofstream& out) {
+            std::mt19937_64 rng(seed);
+            TraceLog trace{true,{}};
+            try {
+              Engine e(s,r,rng,&trace);
+              e.run();
+              return false;
+            } catch(const std::exception& ex) {
+              out << "CRASH deck="<<deck<<" scenario="<<s.label<<" seed="<<seed
+                  <<" what="<<ex.what()<<"\n";
+              for(const auto& line:trace.lines) out<<line<<'\n';
+              out<<"\n";
+              return true;
+            }
+          }
+
+          int main(){
+            const DeckRecipe b=baseline_recipe(), d=dde_recipe();
+            const std::vector<std::string> labels={"strict-jit/go-first","matchup-flex-jit/go-first","no-discard-control/go-first","strict-jit/go-second","matchup-flex-jit/go-second","no-discard-control/go-second"};
+            constexpr std::uint64_t base=202608080000ULL, stride=1000003ULL, n=100000ULL;
+            std::ofstream out("crash_isolation.txt");
+            for(std::size_t si=0;si<labels.size();++si){
+              auto so=scenario_by_label(labels[si]); if(!so) return 3;
+              for(std::uint64_t i=0;i<n;++i){
+                const auto seed=base+stride*si+i;
+                if(try_one(*so,b,seed,"baseline",out)) return 0;
+                if(try_one(*so,d,seed,"2dde",out)) return 0;
+              }
+            }
+            out<<"NO CRASH IN SCAN\n";
+            return 0;
+          }
+          CPP
+          g++ -std=c++20 -O3 -I. isolate.cpp -o isolate
+      - name: Scan paired seeds for first crash
+        run: ./isolate
+      - name: Show isolated crash
+        run: cat crash_isolation.txt
+      - name: Upload crash evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: temp-dde-crash-isolation
+          path: crash_isolation.txt

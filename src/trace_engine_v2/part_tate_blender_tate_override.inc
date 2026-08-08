@@ -104,7 +104,42 @@
     return play_tate_switch_tate_blender_original();
   }
 
+  bool issue_2368_preserve_direct_treasure_vstar_payload_completion() const {
+    if (!strict_payload_timing() || !supporter_allowed() || item_locked() ||
+        hand_count(Card::MysteriousTreasure) == 0 || !need_vstar() ||
+        !need_payload() || !can_play_payload_this_turn() || !deck_search_available() ||
+        !might_be_unseen(Card::RegidragoVstar)) {
+      return false;
+    }
+    const auto ready_evolvable = [this](const Pokemon& pokemon) {
+      return pokemon.card == Card::RegidragoV && pokemon.entered_turn < state_.turn &&
+             pays_apex_energy_cost(pokemon);
+    };
+    const bool powered_line =
+        (state_.active && ready_evolvable(*state_.active)) ||
+        std::any_of(state_.bench.begin(), state_.bench.end(), ready_evolvable);
+    if (!powered_line) return false;
+    const auto cost = choose_discard(true, true, true, Card::MysteriousTreasure);
+    return cost.has_value() && is_payload(*cost);
+  }
+
   bool play_tate_draw() {
+    if (issue_2368_preserve_direct_treasure_vstar_payload_completion()) {
+      // DDE can finish the Energy axis before the strict-JIT Item fixed point. A
+      // held Mysterious Treasure can then use its printed discard cost as the
+      // current-turn Dragon payload while searching Regidrago VSTAR. Do not shuffle
+      // that deterministic two-axis route away with Tate & Liza.
+      // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Official Item, discard-cost, search, evolution, Energy, and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Earliest-route / strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2368
+      trace("HOLD SUPPORTER", "R-MT-01; R-TATE-01; R-RVS-01; P-JIT-01; P-COMPRESS-01",
+            "Preserved Mysterious Treasure's immediate VSTAR plus Dragon-payload completion instead of using Tate & Liza draw mode.");
+      return false;
+    }
     if (tate_switch_then_next_turn_burnet_route()) {
       // Tate's switch mode resolves the Active-position axis now, while the held
       // Professor Burnet remains available on the following turn to establish the

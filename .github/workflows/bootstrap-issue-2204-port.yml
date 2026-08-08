@@ -1,0 +1,31 @@
+name: Bootstrap issue 2204 current-main port
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  port-reviewed-fix:
+    if: github.head_ref == 'fix/2204-current-main-sol'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Apply reviewed source and regression diff only
+        run: |
+          git fetch origin fix/2204-treasure-latias-payload-reclaim-v2
+          git diff origin/main...origin/fix/2204-treasure-latias-payload-reclaim-v2 -- src/trace_engine_v2/part_issue_1876_treasure_payload_cost_override.inc tests/issue_2204_treasure_latias_payload_tests.cpp > /tmp/issue-2204.patch
+          git apply --3way /tmp/issue-2204.patch
+      - name: Materialize clean current-main port
+        run: |
+          git rm .github/workflows/bootstrap-issue-2204-port.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/trace_engine_v2/part_issue_1876_treasure_payload_cost_override.inc tests/issue_2204_treasure_latias_payload_tests.cpp
+          git commit -m 'Fix #2204 Treasure Latias payload route on current main'
+          git push origin HEAD:${{ github.head_ref }}

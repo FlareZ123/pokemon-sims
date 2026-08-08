@@ -204,9 +204,10 @@
   bool post_attach_treasure_latias_route_available() {
     const Pokemon* target = target_regi();
     if (!strict_payload_timing() || item_locked() || target == nullptr ||
-        target->card != Card::RegidragoVstar || target->grass < 2 ||
-        target->fire < 1 || !need_active_vstar() || state_.retreat_used ||
-        !state_.active || !is_basic(state_.active->card) || bench_space() == 0 ||
+        target->card != Card::RegidragoVstar ||
+        !pays_apex_energy_cost(*target) || // DDE supplies 2 of every type to a Dragon, so DDE + one Basic pays Apex: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://api.pokemontcg.io/v2/cards/swsh12-136 ; https://github.com/FlareZ123/pokemon-sims/issues/2238 ; https://github.com/FlareZ123/pokemon-sims/issues/2442
+        !need_active_vstar() || state_.retreat_used || !state_.active ||
+        !is_basic(state_.active->card) || bench_space() == 0 ||
         !ability_available_for_pokemon(Card::LatiasEx) || in_play(Card::LatiasEx) ||
         hand_count(Card::LatiasEx) > 0 || !might_be_unseen(Card::LatiasEx) ||
         hand_count(Card::MysteriousTreasure) == 0 ||
@@ -224,6 +225,7 @@
     // Core Item, Bench, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1145
+    // DDE-ready extension: https://github.com/FlareZ123/pokemon-sims/issues/2442
     return choose_discard(true, true, true, Card::MysteriousTreasure).has_value();
   }
 
@@ -272,7 +274,8 @@ bool complete_issue_1564_quick_ball_latias_promotion() {
     return false;
   }
   Pokemon* target = best_benched_vstar_for_promotion();
-  if (target == nullptr || target->grass < 2 || target->fire < 1) {
+  if (target == nullptr ||
+      !pays_apex_energy_cost(*target)) { // DDE + Grass or DDE + Fire is semantically GGF-ready: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://api.pokemontcg.io/v2/cards/swsh12-136 ; https://github.com/FlareZ123/pokemon-sims/issues/2238 ; https://github.com/FlareZ123/pokemon-sims/issues/2442
     return false;
   }
 
@@ -289,6 +292,7 @@ bool complete_issue_1564_quick_ball_latias_promotion() {
   // Core Item, discard, search, Bench, Ability, retreat, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // No-control payload banking, DCI, and shortest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1564
+  // DDE-ready extension: https://github.com/FlareZ123/pokemon-sims/issues/2442
   remove_one(state_.hand, Card::QuickBall);
   state_.discard.push_back(Card::QuickBall);
   if (!discard_from_hand(Card::Grass,
@@ -317,7 +321,7 @@ bool complete_issue_1533_blender_treasure_latias_route() {
   const Pokemon* target = target_regi();
   if (!strict_payload_timing() || item_locked() || !prizes_known() ||
       target == nullptr || target->card != Card::RegidragoVstar ||
-      target->grass < 2 || target->fire < 1 ||
+      !pays_apex_energy_cost(*target) || // DDE + one Basic pays Apex on Regidrago VSTAR: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://api.pokemontcg.io/v2/cards/swsh12-136 ; https://github.com/FlareZ123/pokemon-sims/issues/2238 ; https://github.com/FlareZ123/pokemon-sims/issues/2442
       !need_active_vstar() || !need_payload() || state_.retreat_used ||
       !state_.active || state_.active->card != Card::TapuLeleGX ||
       bench_space() == 0 ||
@@ -346,6 +350,7 @@ bool complete_issue_1533_blender_treasure_latias_route() {
   // Core Item, discard, Bench, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // Dynamic DCI and earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1533
+  // DDE-ready extension: https://github.com/FlareZ123/pokemon-sims/issues/2442
   remove_one(state_.hand, Card::MysteriousTreasure);
   state_.discard.push_back(Card::MysteriousTreasure);
   if (!discard_from_hand(*cost, "Mysterious Treasure issue-1533 Latias route cost",

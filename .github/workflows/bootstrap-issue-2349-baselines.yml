@@ -1,0 +1,37 @@
+name: Refresh issue 2349 validation artifacts
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  refresh:
+    if: github.head_ref == 'fix/2349-opening-bench-tapu-characterization'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build current branch
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Regenerate source-bound setup artifacts
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Commit regenerated artifacts
+        run: |
+          git rm .github/workflows/bootstrap-issue-2349-baselines.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Refresh #2349 source-bound setup artifacts'
+          git push origin HEAD:${{ github.head_ref }}

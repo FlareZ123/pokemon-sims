@@ -17,6 +17,15 @@ def _simulator_source_paths(repo_root: Path) -> list[Path]:
     ]
 
 
+def _required_policy_paths(repo_root: Path) -> list[Path]:
+    """Collect and validate every required aggregate simulator input."""
+    paths = [repo_root / "CMakeLists.txt", *_simulator_source_paths(repo_root)]
+    missing = [path for path in paths if not path.is_file()]
+    if missing:
+        raise FileNotFoundError(", ".join(str(path) for path in missing))
+    return paths
+
+
 def simulator_policy_source_paths(repo_root: Path) -> tuple[Path, ...]:
     """Return every tracked input that can affect aggregate simulator output."""
     # Include the complete simulator source tree. In particular, part_016 owns the
@@ -28,15 +37,9 @@ def simulator_policy_source_paths(repo_root: Path) -> tuple[Path, ...]:
     # simulator behavior, so they must stay outside source-bound evidence:
     # https://github.com/FlareZ123/pokemon-sims/issues/1492
     # https://github.com/FlareZ123/pokemon-sims/issues/1300
-    source_paths = _simulator_source_paths(repo_root)
-
     # The executable target and compile configuration are also simulator inputs:
     # https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt#L1-L11
-    paths = [repo_root / "CMakeLists.txt", *source_paths]
-    missing = [path for path in paths if not path.is_file()]
-    if missing:
-        raise FileNotFoundError(", ".join(str(path) for path in missing))
-    return tuple(sorted(paths))
+    return tuple(sorted(_required_policy_paths(repo_root)))
 
 
 def simulator_policy_source_digest(repo_root: Path) -> str:

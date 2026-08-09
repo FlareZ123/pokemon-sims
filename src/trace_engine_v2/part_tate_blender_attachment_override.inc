@@ -133,7 +133,12 @@ bool issue_2158_paid_oricorio_retreat_burnet_available() const {
   projected.trace_ = nullptr;
 
   Pokemon* target = projected.best_benched_vstar_for_promotion();
-  if (target == nullptr || target->grass < 2 || target->fire < 1) return false;
+  // Double Dragon Energy provides two flexible Energy on Dragon Pokemon, so a
+  // DDE + Grass or DDE + Fire Regidrago VSTAR is already ready for Apex Dragon:
+  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/2430
+  if (target == nullptr || !projected.pays_apex_energy_cost(*target)) return false;
 
   const Card payment = projected.hand_count(Card::Grass) > 0
       ? Card::Grass
@@ -150,8 +155,12 @@ bool play_issue_2158_paid_oricorio_retreat_burnet() {
   if (!issue_2158_paid_oricorio_retreat_burnet_available()) return false;
 
   Pokemon* target = best_benched_vstar_for_promotion();
-  if (target == nullptr || target->grass < 2 || target->fire < 1) {
-    throw std::logic_error("Issue-2158 projected GGF promotion target disappeared");
+  // Keep execution aligned with the semantic DDE-aware readiness proof above:
+  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/2430
+  if (target == nullptr || !pays_apex_energy_cost(*target)) {
+    throw std::logic_error("Issue-2158 projected Apex-ready promotion target disappeared");
   }
   const Card payment = hand_count(Card::Grass) > 0 ? Card::Grass : Card::Fire;
   if (!remove_one(state_.hand, payment)) {

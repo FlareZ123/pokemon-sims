@@ -2,7 +2,10 @@ if(NOT DEFINED SIMULATOR)
   message(FATAL_ERROR "SIMULATOR is required")
 endif()
 
+set(SERENA_ROUTE_SCENARIO "strict-jit-turn2-item-lock/go-second")
 set(SERENA_ROUTE_SEED 71)
+set(CRISPIN_CONTROL_SCENARIO "strict-jit/go-second")
+set(CRISPIN_CONTROL_SEED 41)
 
 function(run_trace scenario seed output_var)
   execute_process(
@@ -52,7 +55,7 @@ endfunction()
 # Strict-JIT payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
 # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1086
 # Current-paper Item-lock timing: https://github.com/FlareZ123/pokemon-sims/issues/2247
-assert_serena_route("strict-jit-turn2-item-lock/go-second" scheduled_lock_trace)
+assert_serena_route("${SERENA_ROUTE_SCENARIO}" scheduled_lock_trace)
 
 # The former full-turn-one Item-lock CLI duplicate is intentionally absent. FullItem
 # remains available only to focused synthetic/historical C++ fixtures:
@@ -64,7 +67,7 @@ assert_serena_route("strict-jit-turn2-item-lock/go-second" scheduled_lock_trace)
 # Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
 # Regidrago VSTAR attack cost: https://api.pokemontcg.io/v2/cards/swsh12-136
 # Confirmed bug boundary: https://github.com/FlareZ123/pokemon-sims/issues/1086
-run_trace("strict-jit/go-second" 41 crispin_control)
+run_trace("${CRISPIN_CONTROL_SCENARIO}" ${CRISPIN_CONTROL_SEED} crispin_control)
 if(NOT crispin_control MATCHES "T1 \\| WONDER TAG \\|.*Crispin")
   message(FATAL_ERROR "Crispin-required control lost Wonder Tag into Crispin:\n${crispin_control}")
 endif()

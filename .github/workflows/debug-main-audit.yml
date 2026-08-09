@@ -1,0 +1,52 @@
+name: Current main debug audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+      - name: Static policy scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -RInE 'grass_needed\(\)[[:space:]]*\+[[:space:]]*fire_needed\(\)|grass[[:space:]]*>=[[:space:]]*2.*fire[[:space:]]*>=[[:space:]]*1' src/trace_engine_v2 > raw-energy-proxies.txt || true
+          grep -RInE 'TODO|FIXME|HACK' src tests > maintenance-markers.txt || true
+          printf 'raw semantic-energy proxy candidates: '; wc -l < raw-energy-proxies.txt
+          printf 'maintenance markers: '; wc -l < maintenance-markers.txt
+      - name: Simulate audit 1 strict JIT go second seed 1
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 | tee audit-trace-1.txt
+      - name: Simulate audit 2 strict JIT go first seed 2
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 | tee audit-trace-2.txt
+      - name: Simulate audit 3 strict JIT go second seed 761
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 761 | tee audit-trace-761.txt
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-t2-t3-matrix.csv
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Upload debug evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-debug-audit
+          path: |
+            audit-trace-*.txt
+            audit-t2-t3-matrix.csv
+            raw-energy-proxies.txt
+            maintenance-markers.txt
+            build/Testing
+          if-no-files-found: warn

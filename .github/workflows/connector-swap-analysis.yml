@@ -15,18 +15,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Compile connector confirmation
+      - name: Compile VSTAR connector confirmation
         run: >-
           g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow
-          tools/regidrago_connector_swap_confirm.cpp
-          -o connector_swap_confirm
+          tools/regidrago_vstar_connector_confirm.cpp
+          -o vstar_connector_confirm
 
-      - name: Run paired 50k all-scenario confirmation
-        run: ./connector_swap_confirm 50000 results/connector-swap-confirm
+      - name: Run paired 50k all-scenario VSTAR confirmation
+        run: ./vstar_connector_confirm 50000 results/vstar-connector-confirm
 
-      - name: Upload connector confirmation data
+      - name: Upload VSTAR connector confirmation data
         uses: actions/upload-artifact@v4
         with:
-          name: regidrago-connector-swap-confirm
-          path: results/connector-swap-confirm
+          name: regidrago-vstar-connector-confirm
+          path: results/vstar-connector-confirm
           retention-days: 7

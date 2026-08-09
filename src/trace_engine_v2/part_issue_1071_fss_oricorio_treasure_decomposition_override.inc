@@ -32,8 +32,7 @@
         break;
       }
     }
-    if (evolving_regi == nullptr || evolving_regi->grass != 0 ||
-        evolving_regi->fire != 0) {
+    if (evolving_regi == nullptr || pays_apex_energy_cost(*evolving_regi)) {
       return false;
     }
 
@@ -44,41 +43,35 @@
     bool current_turn_energy_completes = false;
     bool next_turn_energy_continues = false;
     for (const Card crispin_attachment : {Card::Grass, Card::Fire}) {
-      int after_crispin_grass = evolving_regi->grass;
-      int after_crispin_fire = evolving_regi->fire;
+      Pokemon after_crispin = *evolving_regi;
       int held_grass = hand_count(Card::Grass);
       int held_fire = hand_count(Card::Fire);
       const int remaining_grass = deck_grass - 1;
       const int remaining_fire = deck_fire - 1;
+      if (!attach_energy_card(after_crispin, crispin_attachment)) continue;
 
-      if (crispin_attachment == Card::Grass) {
-        ++after_crispin_grass;
-        ++held_fire;
-      } else {
-        ++after_crispin_fire;
-        ++held_grass;
-      }
+      // Crispin attaches one searched Basic and places the other searched type in
+      // hand. DDE makes those typed cards alternative completion choices rather
+      // than additive G/F components: https://github.com/FlareZ123/pokemon-sims/issues/2427
+      if (crispin_attachment == Card::Grass) ++held_fire;
+      else ++held_grass;
 
       for (const Card manual_attachment : {Card::Grass, Card::Fire}) {
-        int grass = after_crispin_grass;
-        int fire = after_crispin_fire;
-        if (manual_attachment == Card::Grass) {
-          if (held_grass == 0) continue;
-          ++grass;
-        } else {
-          if (held_fire == 0) continue;
-          ++fire;
+        if ((manual_attachment == Card::Grass && held_grass == 0) ||
+            (manual_attachment == Card::Fire && held_fire == 0)) {
+          continue;
         }
-
-        const int missing_grass = std::max(0, 2 - grass);
-        const int missing_fire = std::max(0, 1 - fire);
-        if (missing_grass == 0 && missing_fire == 0) {
+        Pokemon after_manual = after_crispin;
+        if (!attach_energy_card(after_manual, manual_attachment)) continue;
+        if (pays_apex_energy_cost(after_manual)) {
           current_turn_energy_completes = true;
           continue;
         }
         next_turn_energy_continues = next_turn_energy_continues ||
-            (missing_grass == 1 && missing_fire == 0 && remaining_grass > 0) ||
-            (missing_grass == 0 && missing_fire == 1 && remaining_fire > 0);
+            completing_basic_energy_for(after_manual, [&](const Card card) {
+              return card == Card::Grass ? remaining_grass > 0 :
+                     card == Card::Fire ? remaining_fire > 0 : false;
+            }).has_value();
       }
     }
     if (current_turn_energy_completes || !next_turn_energy_continues) return false;
@@ -130,13 +123,11 @@
         continue;
       }
 
-      const int missing_grass = std::max(0, 2 - pokemon.grass);
-      const int missing_fire = std::max(0, 1 - pokemon.fire);
-      const bool energy_complete_now = missing_grass == 0 && missing_fire == 0;
+      const bool energy_complete_now = pays_apex_energy_cost(pokemon);
       const bool unused_manual_completes = !state_.manual_energy_used &&
-          missing_grass + missing_fire == 1 &&
-          ((missing_grass == 1 && hand_count(Card::Grass) > 0) ||
-           (missing_fire == 1 && hand_count(Card::Fire) > 0));
+          completing_basic_energy_for(pokemon, [this](const Card card) {
+            return hand_count(card) > 0;
+          }).has_value();
       if (energy_complete_now || unused_manual_completes) {
         eligible_regi = true;
         break;
@@ -184,12 +175,11 @@
         continue;
       }
 
-      const int missing_grass = std::max(0, 2 - pokemon.grass);
-      const int missing_fire = std::max(0, 1 - pokemon.fire);
-      if (missing_grass + missing_fire != 1) continue;
-
-      const Card needed_energy = missing_grass == 1 ? Card::Grass : Card::Fire;
-      if (deck_count_after_search_started(needed_energy) == 0) continue;
+      const auto needed_energy = completing_basic_energy_for(
+          pokemon, [this](const Card card) {
+            return deck_count_after_search_started(card) > 0;
+          });
+      if (!needed_energy.has_value()) continue;
 
       // Star Alchemy must search Latias ex for the unresolved Active-position axis.
       // The held prior-turn V evolves, Earthen Vessel discards the held Dragon and
@@ -226,18 +216,22 @@
         state_.hand.begin(), state_.hand.end(), is_payload));
     if (redundant_payloads < 2) return false;
 
-    const int missing_grass = std::max(
-        0, 2 - state_.active->grass - hand_count(Card::Grass));
-    const int missing_fire = std::max(
-        0, 1 - state_.active->fire - hand_count(Card::Fire));
-    if (missing_grass + missing_fire == 0 ||
-        missing_grass + missing_fire > 2) {
-      return false;
+    const int held_grass = hand_count(Card::Grass);
+    const int held_fire = hand_count(Card::Fire);
+    const int deck_grass = deck_count_after_search_started(Card::Grass);
+    const int deck_fire = deck_count_after_search_started(Card::Fire);
+    int deck_attachments_needed = 4;
+    for (int used_grass = 0; used_grass <= std::min(3, held_grass); ++used_grass) {
+      for (int used_fire = 0; used_fire <= std::min(3, held_fire); ++used_fire) {
+        Pokemon projected = *state_.active;
+        for (int i = 0; i < used_grass; ++i) attach_energy_card(projected, Card::Grass);
+        for (int i = 0; i < used_fire; ++i) attach_energy_card(projected, Card::Fire);
+        deck_attachments_needed = std::min(
+            deck_attachments_needed,
+            minimum_basic_attachments_to_apex(projected, deck_grass, deck_fire));
+      }
     }
-    if (missing_grass > deck_count_after_search_started(Card::Grass) ||
-        missing_fire > deck_count_after_search_started(Card::Fire)) {
-      return false;
-    }
+    if (deck_attachments_needed == 0 || deck_attachments_needed > 2) return false;
 
     // Delegate the VSTAR axis to the held Mysterious Treasure, whose printed cost can
     // use one of two redundant held Dragon payloads. Star Alchemy is then free to find
@@ -273,24 +267,17 @@
     }
 
     for (const Card crispin_attachment : {Card::Grass, Card::Fire}) {
-      int grass = state_.active->grass;
-      int fire = state_.active->fire;
+      Pokemon projected = *state_.active;
       int held_grass = hand_count(Card::Grass);
       int held_fire = hand_count(Card::Fire);
+      if (!attach_energy_card(projected, crispin_attachment)) continue;
 
-      if (crispin_attachment == Card::Grass) {
-        ++grass;
-        ++held_fire;
-      } else {
-        ++fire;
-        ++held_grass;
-      }
+      if (crispin_attachment == Card::Grass) ++held_fire;
+      else ++held_grass;
 
-      const int remaining_grass = std::max(0, 2 - grass);
-      const int remaining_fire = std::max(0, 1 - fire);
-      const int remaining_attachments = remaining_grass + remaining_fire;
-      if (remaining_attachments <= 2 && held_grass >= remaining_grass &&
-          held_fire >= remaining_fire) {
+      const int remaining_attachments = minimum_basic_attachments_to_apex(
+          projected, held_grass, held_fire);
+      if (remaining_attachments <= 2) {
         // Crispin searches different Basic Energy types, attaches one, and puts the
         // other into hand. The current and next legal manual attachments then finish
         // GGF before the scheduled T2 Item lock, while the held Burnet remains free to

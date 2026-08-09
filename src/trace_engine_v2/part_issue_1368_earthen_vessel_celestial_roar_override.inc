@@ -16,6 +16,7 @@
         !state_.manual_energy_used && state_.active &&
         state_.active->card == Card::RegidragoV &&
         state_.active->grass == 0 && state_.active->fire == 0 &&
+        state_.active->double_dragon == 0 && // https://github.com/FlareZ123/pokemon-sims/issues/2368
         hand_count(Card::Grass) >= 2 && hand_count(Card::Fire) == 0 &&
         might_be_unseen(Card::Grass) && might_be_unseen(Card::Fire) &&
         std::none_of(state_.hand.begin(), state_.hand.end(), is_payload);
@@ -61,3 +62,18 @@
           "Searched up to 2 Basic Energy: " + join_cards(searched) + ".");
     return true;
   }
+
+// Rename only the four stale pre-DDE Vessel routes before their current
+// definitions. The issue-2437 layer restores these names immediately after the
+// legacy include, preserving every unrelated issue-1412 helper and action:
+// DDE semantic contract: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+// Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+// Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2437
+#define issue_1646_vessel_burnet_finish_visible \
+  issue_1646_vessel_burnet_finish_visible_issue2437_original
+#define play_issue_1646_vessel_burnet_finish \
+  play_issue_1646_vessel_burnet_finish_issue2437_original
+#define play_issue_1672_vessel_payload_finish \
+  play_issue_1672_vessel_payload_finish_issue2437_original
+#define play_issue_1868_vessel_payload_finish \
+  play_issue_1868_vessel_payload_finish_issue2437_original

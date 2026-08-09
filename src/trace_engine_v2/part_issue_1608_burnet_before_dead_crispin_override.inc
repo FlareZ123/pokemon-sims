@@ -10,14 +10,13 @@ bool issue_1697_held_next_turn_manual_energy_route() const {
   // Core Supporter, Tool, VSTAR Power, manual attachment, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // K1, earliest-completion, and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1697
+  const bool held_basic_completes = state_.active &&
+      completing_basic_energy_for(*state_.active, [this](const Card card) {
+        return hand_count(card) > 0;
+      }).has_value();
   return scenario_.dci == DciProfile::NoDiscardControl &&
       state_.turn < scenario_.max_turn && state_.manual_energy_used &&
-      state_.active &&
-      std::max(0, 2 - state_.active->grass) +
-              std::max(0, 1 - state_.active->fire) ==
-          1 &&
-      ((state_.active->grass < 2 && hand_count(Card::Grass) > 0) ||
-       (state_.active->fire < 1 && hand_count(Card::Fire) > 0)) &&
+      state_.active && held_basic_completes &&
       hand_count(Card::Crispin) > 0 &&
       deck_count_after_search_started(Card::Grass) > 0 &&
       deck_count_after_search_started(Card::Fire) > 0 &&
@@ -75,7 +74,9 @@ bool play_gladion_issue1737_original() {
       scenario_.dci == DciProfile::NoDiscardControl && prizes_known() &&
       supporter_allowed() && state_.manual_energy_used && !need_payload() &&
       state_.active && state_.active->card == Card::RegidragoV &&
-      grass_needed() + fire_needed() == 1 && hand_count(Card::Gladion) > 0 &&
+      completing_basic_energy_for(*state_.active, [this](const Card card) {
+        return deck_count_after_search_started(card) > 0;
+      }).has_value() && hand_count(Card::Gladion) > 0 &&
       hand_count(Card::Crispin) > 0 &&
       deck_count_after_search_started(Card::Grass) > 0 &&
       deck_count_after_search_started(Card::Fire) > 0 &&
@@ -107,10 +108,10 @@ bool play_gladion_issue1737_original() {
   }
 
   const bool complete_benched_regidrago_v = std::any_of(
-      state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
-        return pokemon.card == Card::RegidragoV && pokemon.grass >= 2 &&
-            pokemon.fire >= 1;
-      });
+      state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+        return pokemon.card == Card::RegidragoV &&
+            pays_apex_energy_cost(pokemon);
+      }); // https://github.com/FlareZ123/pokemon-sims/issues/2422
   const bool issue_1608_burnet_before_dead_crispin =
       scenario_.dci == DciProfile::NoDiscardControl &&
       scenario_.locks == LockMode::None && state_.turn == 3 &&

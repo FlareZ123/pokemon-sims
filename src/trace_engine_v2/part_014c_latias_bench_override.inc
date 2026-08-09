@@ -90,7 +90,12 @@
     }
 
     Pokemon* target = best_benched_vstar_for_promotion();
-    if (target == nullptr || target->grass < 2 || target->fire < 1) return false;
+    // DDE + either Basic Energy pays Apex Dragon's GGF cost and is a legal
+    // paid-retreat promotion target when the other readiness axes are complete:
+    // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/issues/2430
+    if (target == nullptr || !pays_apex_energy_cost(*target)) return false;
 
     const Card payment = hand_count(Card::Grass) > 0 ? Card::Grass : Card::Fire;
     if (hand_count(payment) == 0 || !remove_one(state_.hand, payment)) return false;
@@ -178,7 +183,12 @@
       return false;
     }
     Pokemon* target = best_benched_vstar_for_promotion();
-    if (target == nullptr || target->grass < 2 || target->fire < 1) return false;
+    // The banked FSS route may promote any semantically Apex-ready VSTAR,
+    // including DDE + Grass and DDE + Fire configurations:
+    // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/issues/2430
+    if (target == nullptr || !pays_apex_energy_cost(*target)) return false;
 
     const Card payment = state_.active->grass > 0 ? Card::Grass : Card::Fire;
     if (payment == Card::Grass) {
@@ -204,8 +214,9 @@
   bool post_attach_treasure_latias_route_available() {
     const Pokemon* target = target_regi();
     if (!strict_payload_timing() || item_locked() || target == nullptr ||
-        target->card != Card::RegidragoVstar || target->grass < 2 ||
-        target->fire < 1 || !need_active_vstar() || state_.retreat_used ||
+        target->card != Card::RegidragoVstar ||
+        !pays_apex_energy_cost(*target) || // https://github.com/FlareZ123/pokemon-sims/issues/2442
+        !need_active_vstar() || state_.retreat_used ||
         !state_.active || !is_basic(state_.active->card) || bench_space() == 0 ||
         !ability_available_for_pokemon(Card::LatiasEx) || in_play(Card::LatiasEx) ||
         hand_count(Card::LatiasEx) > 0 || !might_be_unseen(Card::LatiasEx) ||
@@ -272,8 +283,8 @@ bool complete_issue_1564_quick_ball_latias_promotion() {
     return false;
   }
   Pokemon* target = best_benched_vstar_for_promotion();
-  if (target == nullptr || target->grass < 2 || target->fire < 1) {
-    return false;
+  if (target == nullptr || !pays_apex_energy_cost(*target)) {
+    return false; // https://github.com/FlareZ123/pokemon-sims/issues/2442
   }
 
   // The payload is already banked under no-discard-control and the Benched
@@ -317,7 +328,7 @@ bool complete_issue_1533_blender_treasure_latias_route() {
   const Pokemon* target = target_regi();
   if (!strict_payload_timing() || item_locked() || !prizes_known() ||
       target == nullptr || target->card != Card::RegidragoVstar ||
-      target->grass < 2 || target->fire < 1 ||
+      !pays_apex_energy_cost(*target) || // https://github.com/FlareZ123/pokemon-sims/issues/2442
       !need_active_vstar() || !need_payload() || state_.retreat_used ||
       !state_.active || state_.active->card != Card::TapuLeleGX ||
       bench_space() == 0 ||
@@ -372,7 +383,7 @@ bool complete_issue_1533_blender_treasure_latias_route() {
     if (scenario_.dci != DciProfile::StrictJit || item_locked() ||
         !state_.active || state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
-        state_.active->grass < 2 || state_.active->fire < 1 ||
+        !pays_apex_energy_cost(*state_.active) || // https://github.com/FlareZ123/pokemon-sims/issues/2424
         hand_count(Card::RegidragoVstar) == 0 ||
         hand_count(Card::EarthenVessel) == 0 ||
         !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) ||
@@ -599,7 +610,7 @@ void run_turn() {
         !item_locked() && post_attach_target != nullptr &&
         post_attach_target->card == Card::RegidragoV &&
         post_attach_target->entered_turn < state_.turn &&
-        post_attach_target->grass >= 2 && post_attach_target->fire >= 1 &&
+        pays_apex_energy_cost(*post_attach_target) && // DDE-aware: https://github.com/FlareZ123/pokemon-sims/issues/2368
         hand_count(Card::RegidragoVstar) == 0 &&
         might_be_unseen(Card::RegidragoVstar) &&
         hand_count(Card::MysteriousTreasure) > 0 &&

@@ -16,7 +16,7 @@
            hand_count(Card::RegidragoVstar) > 0 && state_.active &&
            state_.active->card == Card::RegidragoV &&
            state_.active->entered_turn < state_.turn &&
-           state_.active->grass >= 2 && state_.active->fire >= 1;
+           pays_apex_energy_cost(*state_.active); // DDE semantics: https://github.com/FlareZ123/pokemon-sims/issues/2421
   }
 
   bool tate_switch_after_held_vstar_evolution_route() const {
@@ -33,8 +33,8 @@
     return std::any_of(state_.bench.begin(), state_.bench.end(),
                        [this](const Pokemon& pokemon) {
       return pokemon.card == Card::RegidragoV &&
-          pokemon.entered_turn < state_.turn && pokemon.grass >= 2 &&
-          pokemon.fire >= 1;
+          pokemon.entered_turn < state_.turn &&
+          pays_apex_energy_cost(pokemon); // DDE semantics: https://github.com/FlareZ123/pokemon-sims/issues/2421
     });
   }
 
@@ -60,9 +60,13 @@
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1197
     return std::any_of(state_.bench.begin(), state_.bench.end(),
                        [this](const Pokemon& pokemon) {
+      // Progress 2 means exactly one Energy unit is still needed. DDE-only
+      // is therefore included together with the pre-DDE GF/GG shapes.
+      // DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2421
       return pokemon.card == Card::RegidragoV &&
-          pokemon.entered_turn < state_.turn && pokemon.grass == 1 &&
-          pokemon.fire >= 1;
+          pokemon.entered_turn < state_.turn && apex_energy_progress(pokemon) == 2;
     });
   }
 
@@ -85,9 +89,12 @@
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1197
     return std::any_of(state_.bench.begin(), state_.bench.end(),
                        [this](const Pokemon& pokemon) {
+      // The same semantic one-attachment-short state applies after evolution.
+      // DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2421
       return pokemon.card == Card::RegidragoVstar &&
-          pokemon.entered_turn < state_.turn && pokemon.grass == 1 &&
-          pokemon.fire >= 1;
+          pokemon.entered_turn < state_.turn && apex_energy_progress(pokemon) == 2;
     });
   }
 

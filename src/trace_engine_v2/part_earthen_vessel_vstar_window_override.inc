@@ -11,7 +11,7 @@
 
     const Pokemon* setup_regi = target_regi();
     if (setup_regi == nullptr || setup_regi->card != Card::RegidragoVstar ||
-        setup_regi->grass != 1 || setup_regi->fire != 1) {
+        pays_apex_energy_cost(*setup_regi)) {
       return false;
     }
 
@@ -31,8 +31,12 @@
       return std::max(0, total_copies(card) - publicly_known);
     };
     const int grass_remaining = remaining_energy_count(Card::Grass);
-    const int basic_energy_remaining =
-        grass_remaining + remaining_energy_count(Card::Fire);
+    const int fire_remaining = remaining_energy_count(Card::Fire);
+    const int basic_energy_remaining = grass_remaining + fire_remaining;
+    const auto completing_basic = completing_basic_energy_for(
+        *setup_regi, [&remaining_energy_count](const Card card) {
+          return remaining_energy_count(card) > 0;
+        }); // https://github.com/FlareZ123/pokemon-sims/issues/2425
     // Preserve Vessel and the held Dragon together when T2 has established GF and
     // Latias can promote the Benched VSTAR. On T3, Vessel discards that Dragon during
     // the strict-JIT ready turn, searches the final Grass, and leaves the Supporter
@@ -46,7 +50,9 @@
     // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/1009
     // K0 hidden-inventory correction: https://github.com/FlareZ123/pokemon-sims/issues/1471
-    return grass_remaining >= 1 && basic_energy_remaining >= 2;
+    return completing_basic.has_value() &&
+        remaining_energy_count(*completing_basic) >= 1 &&
+        basic_energy_remaining >= 2;
   }
 
   bool play_earthen_vessel(const bool permit_payload) {

@@ -17,40 +17,19 @@ jobs:
         with:
           ref: fix/2421-tate-dde-routes
           fetch-depth: 0
-      - name: Execute reviewed materializer and remove bootstrap
-        shell: bash
+      - name: Apply source and regression fix
+        run: python3 tools/materialize_issue_2421.py
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build focused tests
+        run: cmake --build build --target regidrago_unified_tests -j2
+      - name: Run focused regression
+        run: ctest --test-dir build -R issue_2421_tate_dde_routes_tests --output-on-failure
+      - name: Commit final branch content
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import subprocess
-
-          lines = Path('.github/workflows/materialize-2421.yml').read_text(encoding='utf-8').splitlines(True)
-          blocks = []
-          i = 0
-          while i < len(lines):
-              if lines[i].rstrip('\n') == '        run: |':
-                  i += 1
-                  block = []
-                  while i < len(lines):
-                      line = lines[i]
-                      if line.startswith('          '):
-                          block.append(line[10:])
-                          i += 1
-                          continue
-                      if not line.strip():
-                          block.append(line)
-                          i += 1
-                          continue
-                      break
-                  blocks.append(''.join(block))
-                  continue
-              i += 1
-          if len(blocks) != 3:
-              raise SystemExit(f'expected 3 materializer run blocks, found {len(blocks)}')
-          for block in blocks:
-              subprocess.run(['/bin/bash', '-lc', block], check=True)
-          PY
-          rm .github/workflows/bootstrap-2421.yml
-          git add .github/workflows/bootstrap-2421.yml
-          git commit -m "Remove temporary #2421 bootstrap"
+          rm .github/workflows/bootstrap-2421.yml .github/workflows/materialize-2421.yml tools/materialize_issue_2421.py
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Fix #2421 DDE-aware Tate routes"
           git push origin HEAD:fix/2421-tate-dde-routes

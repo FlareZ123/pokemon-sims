@@ -1,0 +1,27 @@
+name: Audit paired matrix
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  paired-matrix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Generate paired two-deck T2, T3, and T4 matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out multi-deck-matrix.csv
+      - name: Upload paired matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-paired-matrix
+          path: multi-deck-matrix.csv
+          if-no-files-found: error

@@ -1,4 +1,6 @@
 #define play_mysterious_treasure play_mysterious_treasure_issue2271_original
+#include "part_issue_2202_treasure_tapu_crispin_override.inc"
+
   std::optional<Card> issue_2323_redundant_payload_cost() const {
     if (scenario_.dci != DciProfile::StrictJit || scenario_.going_first ||
         scenario_.locks != LockMode::None || state_.turn != 1 ||
@@ -47,6 +49,7 @@
   }
 
   bool play_mysterious_treasure(const bool permit_payload) {
+    if (play_issue_2202_treasure_tapu_crispin()) return true;
     if (play_mysterious_treasure_issue2323_original(permit_payload)) return true;
 
     const std::optional<Card> cost = issue_2323_redundant_payload_cost();

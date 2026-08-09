@@ -4,9 +4,10 @@ endif()
 
 set(ISSUE_1090_SCENARIO "strict-jit/go-second")
 set(ISSUE_1090_SEED 862)
+set(ISSUE_1090_READY_BY 3)
 
 execute_process(
-  COMMAND "${SIMULATOR}" --simulate-this --scenario "${ISSUE_1090_SCENARIO}" --seed "${ISSUE_1090_SEED}" --require-ready-by 3
+  COMMAND "${SIMULATOR}" --simulate-this --scenario "${ISSUE_1090_SCENARIO}" --seed "${ISSUE_1090_SEED}" --require-ready-by "${ISSUE_1090_READY_BY}"
   RESULT_VARIABLE status
   OUTPUT_VARIABLE trace
   ERROR_VARIABLE error)

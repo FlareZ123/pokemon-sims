@@ -19,6 +19,12 @@ function(run_trace scenario seed output_var)
   set(${output_var} "${output}" PARENT_SCOPE)
 endfunction()
 
+function(require_trace_match trace_output pattern error_message)
+  if(NOT "${trace_output}" MATCHES "${pattern}")
+    message(FATAL_ERROR "${error_message}:\n${trace_output}")
+  endif()
+endfunction()
+
 # Star Alchemy can search any card. In the scheduled T2 Item-lock route, Crispin plus
 # the current and next legal manual attachments deterministically completes GGF, and
 # the held Professor Burnet establishes the strict-JIT payload on T2. Oricorio plus
@@ -33,27 +39,35 @@ endfunction()
 # Future-card oracle prohibition: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
 # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1085
 run_trace("${ISSUE_1085_ITEM_LOCK_SCENARIO}" "${ISSUE_1085_SEED}" issue_1085_seed_25)
-if(NOT issue_1085_seed_25 MATCHES "T1 \\| STAR ALCHEMY \\|.*Crispin")
-  message(FATAL_ERROR "Seed ${ISSUE_1085_SEED} did not allocate Star Alchemy to Crispin:\n${issue_1085_seed_25}")
-endif()
-if(NOT issue_1085_seed_25 MATCHES "T1 \\| PLAY SUPPORTER \\|.*Crispin")
-  message(FATAL_ERROR "Seed ${ISSUE_1085_SEED} did not resolve the deterministic T1 Crispin line:\n${issue_1085_seed_25}")
-endif()
+require_trace_match(
+  "${issue_1085_seed_25}"
+  "T1 \\| STAR ALCHEMY \\|.*Crispin"
+  "Seed ${ISSUE_1085_SEED} did not allocate Star Alchemy to Crispin"
+)
+require_trace_match(
+  "${issue_1085_seed_25}"
+  "T1 \\| PLAY SUPPORTER \\|.*Crispin"
+  "Seed ${ISSUE_1085_SEED} did not resolve the deterministic T1 Crispin line"
+)
 if(issue_1085_seed_25 MATCHES "T1 \\| BENCH \\|.*Oricorio")
   message(FATAL_ERROR "Seed ${ISSUE_1085_SEED} still spent the Bench slot on Oricorio:\n${issue_1085_seed_25}")
 endif()
 if(issue_1085_seed_25 MATCHES "T1 \\| ATTACK \\|.*Celestial Roar")
   message(FATAL_ERROR "Seed ${ISSUE_1085_SEED} still depended on Celestial Roar variance:\n${issue_1085_seed_25}")
 endif()
-if(NOT issue_1085_seed_25 MATCHES "T2 \\| PLAY SUPPORTER \\|.*Professor Burnet")
-  message(FATAL_ERROR "Seed ${ISSUE_1085_SEED} lost the held T2 Burnet payload bridge:\n${issue_1085_seed_25}")
-endif()
+require_trace_match(
+  "${issue_1085_seed_25}"
+  "T2 \\| PLAY SUPPORTER \\|.*Professor Burnet"
+  "Seed ${ISSUE_1085_SEED} lost the held T2 Burnet payload bridge"
+)
 if(issue_1085_seed_25 MATCHES "LEGACY STAR")
   message(FATAL_ERROR "Seed ${ISSUE_1085_SEED} unnecessarily spent the game-wide VSTAR Power:\n${issue_1085_seed_25}")
 endif()
-if(NOT issue_1085_seed_25 MATCHES "T2 \\| READY \\|")
-  message(FATAL_ERROR "Seed ${ISSUE_1085_SEED} did not retain deterministic T2 readiness:\n${issue_1085_seed_25}")
-endif()
+require_trace_match(
+  "${issue_1085_seed_25}"
+  "T2 \\| READY \\|"
+  "Seed ${ISSUE_1085_SEED} did not retain deterministic T2 readiness"
+)
 
 # Going first blocks a T1 Supporter. The established issue-1071 decomposition must
 # therefore keep Star Alchemy on Oricorio for this paired seed:
@@ -62,9 +76,11 @@ endif()
 # Existing route: https://github.com/FlareZ123/pokemon-sims/issues/1071
 # Confirmed bug boundary: https://github.com/FlareZ123/pokemon-sims/issues/1085
 run_trace("${ISSUE_1085_GO_FIRST_CONTROL_SCENARIO}" "${ISSUE_1085_SEED}" issue_1085_going_first_control)
-if(NOT issue_1085_going_first_control MATCHES "T1 \\| STAR ALCHEMY \\|.*Oricorio")
-  message(FATAL_ERROR "Going-first control lost the established Oricorio route:\n${issue_1085_going_first_control}")
-endif()
+require_trace_match(
+  "${issue_1085_going_first_control}"
+  "T1 \\| STAR ALCHEMY \\|.*Oricorio"
+  "Going-first control lost the established Oricorio route"
+)
 if(issue_1085_going_first_control MATCHES "T1 \\| PLAY SUPPORTER \\|.*Crispin")
   message(FATAL_ERROR "Going-first control illegally played Crispin on T1:\n${issue_1085_going_first_control}")
 endif()

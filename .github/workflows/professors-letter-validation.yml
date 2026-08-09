@@ -1,0 +1,60 @@
+name: Professor Letter Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "tools/professors_letter_swap_matrix.cpp"
+      - "CMakeLists.txt"
+      - ".github/workflows/professors-letter-validation.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "tools/professors_letter_swap_matrix.cpp"
+      - "CMakeLists.txt"
+      - ".github/workflows/professors-letter-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and unified tests
+        run: cmake --build build --parallel 2
+      - name: Run Professor's Letter focused regression
+        run: ./build/regidrago_unified_tests issue_2509_professors_letter_tests
+      - name: Compile matched-seed comparison analyzer
+        shell: bash
+        run: |
+          # Professor's Letter is a paper-Expanded Item that searches up to two
+          # Basic Energy with no discard cost. The analyzer keeps it outside the
+          # registered deck registry and compares only an in-memory -2 Vessel
+          # +2 Letter derivative of regidrago-shell:
+          # https://api.pokemontcg.io/v2/cards/xy1-123
+          # https://api.pokemontcg.io/v2/cards/sv4-163
+          # https://www.pokemon.com/us/pokemon-tcg/rules
+          # https://github.com/FlareZ123/pokemon-sims/issues/2509
+          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
+            tools/professors_letter_swap_matrix.cpp -o professors-letter-swap-matrix
+      - name: Generate 100,000-trial Professor's Letter swap matrix
+        run: ./professors-letter-swap-matrix 100000 20260705 professors-letter-swap-matrix.csv
+      - name: Upload comparison matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: professors-letter-swap-matrix-${{ github.run_attempt }}
+          path: professors-letter-swap-matrix.csv
+          if-no-files-found: error

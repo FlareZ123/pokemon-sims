@@ -125,6 +125,12 @@ def generate_matrix_atomic(
         temporary_lock_path.unlink(missing_ok=True)
 
 
+def is_stale_managed_trace(path: Path, expected: set[str]) -> bool:
+    return (
+        path.name.startswith("shell_") or path.name.startswith("pineco_")
+    ) and path.name not in expected
+
+
 def generate_traces(executable: Path, trace_dir: Path) -> list[dict[str, object]]:
     trace_dir.mkdir(parents=True, exist_ok=True)
     manifest_entries: list[dict[str, object]] = []
@@ -155,9 +161,7 @@ def generate_traces(executable: Path, trace_dir: Path) -> list[dict[str, object]
             }
         )
     for path in trace_dir.glob("*.txt"):
-        if (
-            path.name.startswith("shell_") or path.name.startswith("pineco_")
-        ) and path.name not in expected:
+        if is_stale_managed_trace(path, expected):
             path.unlink()
     return manifest_entries
 

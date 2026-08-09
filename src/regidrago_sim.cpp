@@ -22,6 +22,7 @@
 // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
 // Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152
 // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+// Professor's Letter: https://api.pokemontcg.io/v2/cards/xy1-123 ; paper Expanded enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2509
 // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2238
 // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
 // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163

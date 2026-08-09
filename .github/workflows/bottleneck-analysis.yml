@@ -1,0 +1,36 @@
+name: Regidrago Bottleneck Analysis
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # Checkout is required before compiling repository code:
+      # https://docs.github.com/en/actions/tutorials/create-an-example-workflow
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Compile bottleneck analyzer
+        run: >-
+          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow
+          tools/regidrago_bottleneck_analysis.cpp
+          -o bottleneck_analysis
+
+      - name: Run paired 10k checkpoint sweep
+        run: ./bottleneck_analysis 10000 results/bottleneck-analysis
+
+      # Workflow artifacts preserve generated diagnostic CSVs after the job:
+      # https://docs.github.com/en/actions/concepts/workflows-and-actions/workflow-artifacts
+      - name: Upload checkpoint data
+        uses: actions/upload-artifact@v4
+        with:
+          name: regidrago-shell-bottleneck-checkpoints
+          path: results/bottleneck-analysis
+          retention-days: 7

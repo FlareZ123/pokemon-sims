@@ -59,10 +59,14 @@ def simulator_policy_source_paths(repo_root: Path) -> tuple[Path, ...]:
     return tuple(sorted(_required_policy_paths(repo_root)))
 
 
+def _relative_path_bytes(repo_root: Path, path: Path) -> bytes:
+    """Encode a source path relative to the repository root."""
+    return path.relative_to(repo_root).as_posix().encode("utf-8")
+
+
 def _update_digest(digest: _DigestWriter, repo_root: Path, path: Path) -> None:
     """Frame one source path and its bytes into the aggregate digest."""
-    relative_path = path.relative_to(repo_root).as_posix().encode("utf-8")
-    digest.update(relative_path)
+    digest.update(_relative_path_bytes(repo_root, path))
     digest.update(SOURCE_FRAME_SEPARATOR)
     digest.update(path.read_bytes())
     digest.update(SOURCE_FRAME_SEPARATOR)

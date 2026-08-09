@@ -6,8 +6,11 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    return (grass_needed() > 0 && might_be_unseen(Card::Grass)) ||
-           (fire_needed() > 0 && might_be_unseen(Card::Fire));
+    const bool needed_grass_is_available =
+        grass_needed() > 0 && might_be_unseen(Card::Grass);
+    const bool needed_fire_is_available =
+        fire_needed() > 0 && might_be_unseen(Card::Fire);
+    return needed_grass_is_available || needed_fire_is_available;
   }
 
   bool needs_oricorio_connector() const {

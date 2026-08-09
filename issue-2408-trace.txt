@@ -1,0 +1,24 @@
+
+Deck: regidrago-shell | Seed: 19 | first-ready turn: 2 | setup result: success
+Seed: 19 | first-ready turn: 2 | setup result: success
+===== SIMULATE THIS =====
+Deck: regidrago-shell
+Scenario: strict-jit/go-second | DCI: strict-JIT | Locks: none
+Mulligans: 1
+Opening player-known state: Active=Regidrago V [-] | Bench=(none) | Hand=Grass Energy, Dialga-GX, Gladion, Crispin, Professor Burnet, Grass Energy | Discard=(none)
+DEBUG ONLY: prizes=Mysterious Treasure, Latias ex, Arven, Channeler, Crispin, Regidrago V. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Serena
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [-] | Bench=(none) | Hand=Grass Energy, Dialga-GX, Gladion, Crispin, Professor Burnet, Grass Energy, Serena | Discard=(none)
+T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Crispin: deck inspected; Prize identities are now deducible for later decisions.
+T1 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
+T1 | HOLD ATTACK | rules: R-RV-01; R-GAME-ENERGY; R-SERENA-01; R-BURNET-01; R-GLADION-01; R-MT-01; R-QB-01; R-TAPU-01; P-KNOWLEDGE-01; P-JIT-01; P-COMPRESS-01 | Held Energy and a guaranteed payload route already cover the next legal ready window.
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago V [GG] | Bench=(none) | Hand=Dialga-GX, Gladion, Professor Burnet, Grass Energy, Serena, Fire Energy | Discard=Crispin
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Regidrago VSTAR
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago V [GG] | Bench=(none) | Hand=Dialga-GX, Gladion, Professor Burnet, Grass Energy, Serena, Fire Energy, Regidrago VSTAR | Discard=Crispin
+T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T2 | PLAY SUPPORTER | rules: R-BURNET-01; R-GAME-SUPPORTER; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex.
+T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=(none) | Hand=Dialga-GX, Gladion, Grass Energy, Serena | Discard=Crispin, Professor Burnet, Mega Dragonite ex, Dragapult ex
+T2 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

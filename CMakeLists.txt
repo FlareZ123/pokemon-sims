@@ -328,3 +328,10 @@ add_test(NAME issue_1333_tapu_live_print_contract
 # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2294
 add_test(NAME trace_issue_2294_matchup_first_seed8
   COMMAND regidrago_sim --simulate-this --scenario matchup-flex-jit/go-first --seed 8 --require-ready-by 4)
+
+# Exact source-bound trace for the confirmed K1 Burnet-over-Serena resource order.
+# Rules/card/spec URLs are adjacent to production and state regression logic:
+# https://github.com/FlareZ123/pokemon-sims/issues/2408
+add_test(NAME trace_issue_2408_burnet_before_serena
+  COMMAND regidrago_sim --simulate-this --deck regidrago-shell
+          --scenario strict-jit/go-second --seed 19 --require-ready-by 2)

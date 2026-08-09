@@ -1,0 +1,42 @@
+name: Cleanup main validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Trace Tapu connector path
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 | tee cleanup-trace-1.txt
+      - name: Trace Legacy Star provenance path
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 | tee cleanup-trace-2.txt
+      - name: Preserve issue 2622 witness
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 761 | tee cleanup-trace-761.txt
+      - name: Generate canonical T2 and T3 matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out cleanup-t2-t3-matrix.csv
+      - name: Upload cleanup validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cleanup-main-validation
+          path: |
+            cleanup-trace-*.txt
+            cleanup-t2-t3-matrix.csv
+            build/Testing
+          if-no-files-found: warn

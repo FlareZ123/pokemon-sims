@@ -1,0 +1,2 @@
+Behavior-neutral Phase 2 audit trigger from current main.
+Requires the permanent PR CI to run its independent --simulate-this traces, matrix generation, Release tests, and sanitizers.

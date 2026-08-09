@@ -1,4 +1,5 @@
 #include "core/tapu_connector_policy.inc"
+#include "core/payload_hand_policy.inc"
 // Preserve the legacy Crobat selector under a private name so the confirmed
 // Forest Seal Stone hand-compression policy can replace it after part_006.inc:
 // https://api.pokemontcg.io/v2/cards/swsh12-156

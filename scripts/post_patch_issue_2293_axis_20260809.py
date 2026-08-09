@@ -7,7 +7,10 @@ text = path.read_text(encoding="utf-8")
 old = """        !need_active_vstar() || !need_energy() || !need_payload() ||
         !ability_available_for_pokemon(Card::LatiasEx) ||
 """
-new = """        !need_active_vstar() ||
+new = """        !ability_available_for_pokemon(Card::LatiasEx) ||
+"""
+if old not in text:
+    old = """        !need_active_vstar() ||
         !ability_available_for_pokemon(Card::LatiasEx) ||
 """
 if text.count(old) != 1:

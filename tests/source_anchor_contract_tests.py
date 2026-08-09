@@ -36,15 +36,15 @@ CROBAT_SCOPE_RE = re.compile(
 CROBAT_FINAL_VALIDATION_RUNS = ("31164362259", "31164362295")
 
 
+def is_scannable_text_file(path: Path) -> bool:
+    return path.is_file() and path.suffix.lower() in TEXT_SUFFIXES
+
+
 def candidate_files() -> list[Path]:
     paths = [ROOT / name for name in ROOT_FILES]
     for root_name in SCAN_ROOTS:
         root = ROOT / root_name
-        paths.extend(
-            path
-            for path in root.rglob("*")
-            if path.is_file() and path.suffix.lower() in TEXT_SUFFIXES
-        )
+        paths.extend(path for path in root.rglob("*") if is_scannable_text_file(path))
     return sorted(set(paths))
 
 

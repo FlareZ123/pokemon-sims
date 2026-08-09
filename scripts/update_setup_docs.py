@@ -221,16 +221,34 @@ def load_setup_inputs(
     return manifest, rows, fieldnames
 
 
+def write_setup_documents(
+    repo_root: Path,
+    rows: list[dict[str, str]],
+    fieldnames: list[str],
+    manifest: dict[str, object],
+) -> None:
+    with exclusive_lock(repo_root / ".update-setup-docs.lock"):
+        atomic_write(
+            repo_root / "docs" / "REPORT.md",
+            report_markdown(rows, fieldnames, manifest),
+        )
+        atomic_write(
+            repo_root / "docs" / "TRACE_AUDIT.md",
+            trace_audit_markdown(repo_root, manifest),
+        )
+        readme_path = repo_root / "README.md"
+        atomic_write(
+            readme_path,
+            update_readme(readme_path.read_text(encoding="utf-8"), manifest),
+        )
+
+
 def main() -> int:
     args = parse_args()
     repo_root = args.repo_root.resolve()
     manifest, rows, fieldnames = load_setup_inputs(repo_root)
 
-    with exclusive_lock(repo_root / ".update-setup-docs.lock"):
-        atomic_write(repo_root / "docs" / "REPORT.md", report_markdown(rows, fieldnames, manifest))
-        atomic_write(repo_root / "docs" / "TRACE_AUDIT.md", trace_audit_markdown(repo_root, manifest))
-        readme_path = repo_root / "README.md"
-        atomic_write(readme_path, update_readme(readme_path.read_text(encoding="utf-8"), manifest))
+    write_setup_documents(repo_root, rows, fieldnames, manifest)
     return 0
 
 

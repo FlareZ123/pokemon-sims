@@ -24,6 +24,11 @@ def _is_simulator_source_input(path: Path) -> bool:
     return path.is_file() and path.suffix != SOURCE_LOCK_SUFFIX
 
 
+def _stable_paths(paths: PathSequence) -> PathSequence:
+    """Return provenance paths in deterministic filesystem-independent order."""
+    return tuple(sorted(paths))
+
+
 @dataclass(frozen=True)
 class _SimulatorSourceManifest:
     repo_root: Path
@@ -43,8 +48,7 @@ class _SimulatorSourceManifest:
 
     def paths(self) -> PathSequence:
         """Validate and return the stable aggregate simulator input sequence."""
-        validated_paths = _validated_paths(self.required_paths())
-        return tuple(sorted(validated_paths))
+        return _stable_paths(_validated_paths(self.required_paths()))
 
 
 def _simulator_source_paths(repo_root: Path) -> PathSequence:

@@ -1,0 +1,64 @@
+name: Issue 2621 regenerate and commit evidence
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/2621-refresh-published-evidence-v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+      - name: Regenerate canonical evidence
+        run: python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+      - name: Regenerate paired evidence
+        run: python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+      - name: Regenerate reports
+        run: |
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Validate regenerated evidence
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Verify source-bound artifact integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          baseline = json.loads(Path('results/baseline_manifest.json').read_text(encoding='utf-8'))
+          paired = json.loads(Path('results/multi_deck_manifest.json').read_text(encoding='utf-8'))
+          if baseline['simulator_policy_source_sha256'] != paired['simulator_policy_source_sha256']:
+              raise SystemExit('canonical and paired source digests differ')
+          actual = hashlib.sha256(Path('results/multi_deck_comparison.csv').read_bytes()).hexdigest()
+          if actual != paired['comparison_csv_sha256']:
+              raise SystemExit('paired CSV digest does not match manifest')
+          print('source digest:', baseline['simulator_policy_source_sha256'])
+          print('paired CSV digest:', actual)
+          PY
+      - name: Commit validated evidence atomically
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/issue-2621-regenerate-and-commit.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git status --short
+          git commit -m "Fix #2621 refresh published setup evidence"
+          git push origin HEAD:fix/2621-refresh-published-evidence-v3

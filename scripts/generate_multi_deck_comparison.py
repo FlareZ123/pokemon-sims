@@ -16,6 +16,7 @@ sys.path.insert(0, str(REPO_ROOT))
 from scripts.baseline_provenance import simulator_policy_source_digest
 
 DECKS = ("regidrago-shell", "regidrago-pineco")
+HASH_CHUNK_BYTES = 1024 * 1024
 # Full-turn-one Item-lock scenarios are intentionally absent from current-paper
 # Expanded aggregate reporting. Combined lock uses TurnTwoItem timing for Items:
 # https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf
@@ -86,7 +87,7 @@ def run(command: list[str], *, check: bool = True) -> subprocess.CompletedProces
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+        for chunk in iter(lambda: handle.read(HASH_CHUNK_BYTES), b""):
             digest.update(chunk)
     return digest.hexdigest()
 

@@ -7,8 +7,8 @@ import os
 import re
 import tempfile
 from contextlib import contextmanager
-from dataclasses import dataclass
 from pathlib import Path
+from typing import NamedTuple
 
 SCENARIO_LABELS = {
     "strict-jit/go-first": "Strict JIT, going first",
@@ -31,8 +31,7 @@ CsvRow = dict[str, str]
 ReportEntry = tuple[str, str, str, str]
 
 
-@dataclass(frozen=True)
-class SetupInputs:
+class SetupInputs(NamedTuple):
     manifest: dict[str, object]
     rows: list[CsvRow]
     fieldnames: list[str]

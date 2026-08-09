@@ -69,11 +69,6 @@
     return payloads_remaining >= 2;
   }
 
-  bool should_play_steven() const {
-    if (issue_2622_steven_latias_blender_package_available()) return true;
-    return should_play_steven_issue2622_original();
-  }
-
   bool play_issue_2622_steven_latias_blender_package() {
     if (!issue_2622_steven_latias_blender_package_available()) return false;
 

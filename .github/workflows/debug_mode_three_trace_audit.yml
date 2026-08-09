@@ -15,6 +15,12 @@ jobs:
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build --parallel 2
+      - name: Static route-specialization audit
+        run: |
+          echo '===== HARDCODED TURN OR ORDER GATES ====='
+          grep -R -n -E 'state_\.turn[[:space:]]*==|scenario_\.going_first|!scenario_\.going_first' src/trace_engine_v2 || true
+          echo '===== RAW APEX SHAPES ====='
+          grep -R -n -E 'grass[[:space:]]*>=[[:space:]]*2.*fire[[:space:]]*>=[[:space:]]*1|grass_needed\(\)[[:space:]]*\+[[:space:]]*fire_needed\(\)' src/trace_engine_v2 || true
       - name: Pass 1 strict-JIT go-first seed 3
         run: |
           echo '===== PASS 1 strict-jit/go-first seed 3 ====='

@@ -1,0 +1,35 @@
+name: Issue 2622 current-main reverify
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+      - name: Reverify seed 761
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 761 | tee issue-2622-trace.txt
+          grep -F "first-ready turn: 4" issue-2622-trace.txt
+          grep -F "T2 | PLAY SUPPORTER | rules: R-ARVEN-01; R-GAME-SUPPORTER" issue-2622-trace.txt
+          grep -F "Steven's Resolve" issue-2622-trace.txt
+      - name: Upload trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-2622-current-main-reverify
+          path: issue-2622-trace.txt
+          if-no-files-found: error

@@ -66,6 +66,13 @@ def percent_column(fieldnames: list[str], turn: int) -> str:
     raise KeyError(f"No percentage column found for T{turn}: {fieldnames}")
 
 
+def report_table(entries: list[tuple[str, str, str, str]]) -> str:
+    lines = ["| Scenario | T2 | T3 | T4 |", "|---|---:|---:|---:|"]
+    for label, t2, t3, t4 in entries:
+        lines.append(f"| {label} | {t2}% | {t3}% | {t4}% |")
+    return "\n".join(lines)
+
+
 def report_markdown(rows: list[dict[str, str]], fieldnames: list[str], manifest: dict[str, object]) -> str:
     scenario_column = "scenario" if "scenario" in fieldnames else fieldnames[0]
     t2_column = percent_column(fieldnames, 2)
@@ -86,12 +93,6 @@ def report_markdown(rows: list[dict[str, str]], fieldnames: list[str], manifest:
             )
         )
 
-    def table(entries: list[tuple[str, str, str, str]]) -> str:
-        lines = ["| Scenario | T2 | T3 | T4 |", "|---|---:|---:|---:|"]
-        for label, t2, t3, t4 in entries:
-            lines.append(f"| {label} | {t2}% | {t3}% | {t4}% |")
-        return "\n".join(lines)
-
     return f"""# Regidrago VSTAR Setup Report: Corrected Setup-Order Baseline
 
 ## Status
@@ -106,13 +107,13 @@ The simulator counts a ready state only when Regidrago VSTAR is Active, has at l
 
 Seed: `{manifest['matrix_seed']}`.
 
-{table(baseline)}
+{report_table(baseline)}
 
 ## Lock stress tests
 
 Turn-one full Item-lock rows are intentionally omitted and must not be reintroduced as current-paper Expanded matchup scenarios. The official turn procedure prevents the starting player from attacking on the first turn, and Forest of Giant Plants, the historical immediate-evolution enabler for turn-one Vileplume-style locks, is banned in Expanded. Use the turn-two Item-lock rows instead. Combined lock means Rule Box Ability suppression plus Item lock beginning on turn 2. Sources: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf https://www.pokemon.com/es/sol-luna-sombras-ardientes-anuncio-trimestral-sobre-lista-de-cartas-prohibidas-y-cambios-en-las-reglas/ https://github.com/FlareZ123/pokemon-sims/issues/2247
 
-{table(locks)}
+{report_table(locks)}
 
 ## Interpretation boundary
 

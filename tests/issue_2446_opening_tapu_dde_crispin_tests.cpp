@@ -141,10 +141,11 @@ void test_pre_regidrago_future_target_is_preserved() {
                 sim::Card::RegidragoVstar, sim::Card::ForestSealStone};
   sim::EngineTestAccess::set_state(fixture.engine, std::move(state), false, false);
 
-  // This K0 state matches the seed-293 pre-search graph. Arven is already held,
-  // so the future-target predicate cannot pass through its Arven-VSTAR branch;
-  // the assertion therefore exercises the legacy no-Regidrago Crispin projection
-  // that keeps Wonder Tag live for the deterministic Steven/FSS continuation.
+  // This K0 state mirrors the seed-293 pre-search decision boundary. Arven is
+  // already held, so the future-target predicate cannot pass through its
+  // Arven-VSTAR branch. The assertion therefore isolates the legacy no-Regidrago
+  // Crispin projection that keeps Wonder Tag live for the deterministic
+  // Steven/FSS continuation.
   // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145

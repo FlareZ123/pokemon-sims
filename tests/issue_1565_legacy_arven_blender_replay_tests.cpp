@@ -32,6 +32,8 @@ void test_seed_6_replays_arven_searched_blender_on_turn_three() {
   sim::TraceLog trace{true, {}};
   sim::Engine engine(*scenario, deck->recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
+  std::cerr << "PR2489 issue-1565 diagnostic trace\n";
+  for (const auto& line : trace.lines) std::cerr << line << '\n';
 
   // Legacy Star may recover Arven, Arven may search Brilliant Blender, and the
   // searched Item may be played later in that same turn before the ready check:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
@@ -22,13 +23,30 @@ def _is_simulator_source_input(path: Path) -> bool:
     return path.is_file() and path.suffix != SOURCE_LOCK_SUFFIX
 
 
+@dataclass(frozen=True)
+class _SimulatorSourceManifest:
+    repo_root: Path
+
+    def source_paths(self) -> tuple[Path, ...]:
+        """Collect tracked simulator source inputs, excluding writer lock files."""
+        return tuple(
+            path
+            for path in (self.repo_root / SIMULATOR_SOURCE_ROOT).rglob("*")
+            if _is_simulator_source_input(path)
+        )
+
+    def required_paths(self) -> tuple[Path, ...]:
+        """Collect every required aggregate simulator input."""
+        return (self.repo_root / SIMULATOR_BUILD_INPUT, *self.source_paths())
+
+    def paths(self) -> tuple[Path, ...]:
+        """Validate and return the stable aggregate simulator input sequence."""
+        return tuple(sorted(_validated_paths(self.required_paths())))
+
+
 def _simulator_source_paths(repo_root: Path) -> tuple[Path, ...]:
     """Collect tracked simulator source inputs, excluding writer lock files."""
-    return tuple(
-        path
-        for path in (repo_root / SIMULATOR_SOURCE_ROOT).rglob("*")
-        if _is_simulator_source_input(path)
-    )
+    return _SimulatorSourceManifest(repo_root).source_paths()
 
 
 def _missing_paths(paths: tuple[Path, ...]) -> tuple[Path, ...]:
@@ -46,8 +64,7 @@ def _validated_paths(paths: tuple[Path, ...]) -> tuple[Path, ...]:
 
 def _required_policy_paths(repo_root: Path) -> tuple[Path, ...]:
     """Collect and validate every required aggregate simulator input."""
-    paths = (repo_root / SIMULATOR_BUILD_INPUT, *_simulator_source_paths(repo_root))
-    return _validated_paths(paths)
+    return _validated_paths(_SimulatorSourceManifest(repo_root).required_paths())
 
 
 def simulator_policy_source_paths(repo_root: Path) -> tuple[Path, ...]:
@@ -63,7 +80,7 @@ def simulator_policy_source_paths(repo_root: Path) -> tuple[Path, ...]:
     # https://github.com/FlareZ123/pokemon-sims/issues/1300
     # The executable target and compile configuration are also simulator inputs:
     # https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt#L1-L11
-    return tuple(sorted(_required_policy_paths(repo_root)))
+    return _SimulatorSourceManifest(repo_root).paths()
 
 
 def _relative_path_bytes(repo_root: Path, path: Path) -> bytes:

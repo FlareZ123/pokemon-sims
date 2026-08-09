@@ -319,3 +319,13 @@ add_test(NAME trace_issue_1139_fss_banks_tate
 add_test(NAME issue_1333_tapu_live_print_contract
   COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/issue_1333_tapu_live_print_tests.py)
+
+# Paid one-cost Basic retreat plus held Blender is a complete strict-JIT T4 route.
+# Oricorio / Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-55 https://api.pokemontcg.io/v2/cards/sm2-60
+# Brilliant Blender / Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/swsh12-136
+# Retreat/attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+# Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2295
+add_test(NAME trace_issue_2295_strict_first_seed29
+  COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 29 --require-ready-by 4)
+add_test(NAME trace_issue_2295_strict_first_seed86
+  COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 86 --require-ready-by 4)

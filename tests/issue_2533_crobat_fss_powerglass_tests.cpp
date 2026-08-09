@@ -1,62 +1,4 @@
-from __future__ import annotations
-
-import fcntl
-import os
-import tempfile
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "src/trace_engine_v2/part_discard_recovery_provenance_override.inc"
-TEST = ROOT / "tests/issue_2533_crobat_fss_powerglass_tests.cpp"
-
-
-def atomic_write(path: Path, text: str) -> None:
-    lock_path = path.with_name(f"{path.name}.lock")
-    with lock_path.open("w", encoding="utf-8") as lock:
-        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
-        with tempfile.NamedTemporaryFile("w", encoding="utf-8", newline="\n", dir=path.parent, delete=False) as tmp:
-            tmp.write(text)
-            tmp.flush()
-            os.fsync(tmp.fileno())
-            tmp_name = tmp.name
-        os.replace(tmp_name, path)
-    lock_path.unlink(missing_ok=True)
-
-
-source = SOURCE.read_text(encoding="utf-8")
-old = '''    // Preserve a live Powerglass attachment that immediately advances the Active
-    // Regidrago's GGF axis. Both Tools compete for the same one-Tool slot:
-    // https://api.pokemontcg.io/v2/cards/sv6pt5-63
-    const bool live_powerglass = hand_count(Card::Powerglass) > 0 && state_.active &&
-        (state_.active->card == Card::RegidragoV ||
-         state_.active->card == Card::RegidragoVstar) &&
-        state_.active->tool == Tool::None &&
-        ((state_.active->grass < 2 && count_of(state_.discard, Card::Grass) > 0) ||
-         (state_.active->fire < 1 && count_of(state_.discard, Card::Fire) > 0));
-'''
-new = '''    // Preserve a live Powerglass attachment only when one recoverable Basic
-    // Energy actually advances the Active Regidrago's semantic Apex progress.
-    // DDE can already pay two flexible Energy units, so raw Grass/Fire counters
-    // cannot decide whether the extra Basic remains useful:
-    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
-    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2533
-    const bool live_powerglass = hand_count(Card::Powerglass) > 0 && state_.active &&
-        (state_.active->card == Card::RegidragoV ||
-         state_.active->card == Card::RegidragoVstar) &&
-        state_.active->tool == Tool::None &&
-        preferred_manual_energy_for(*state_.active, [this](const Card card) {
-          return (card == Card::Grass || card == Card::Fire) &&
-              count_of(state_.discard, card) > 0;
-        }).has_value();
-'''
-if source.count(old) != 1:
-    raise RuntimeError(f"#2533 source anchor count is {source.count(old)}")
-atomic_write(SOURCE, source.replace(old, new, 1))
-
-
-test = r'''#define REGIDRAGO_SIM_NO_MAIN
+#define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
 #include <iostream>
@@ -184,5 +126,3 @@ int main() {
     return 1;
   }
 }
-'''
-atomic_write(TEST, test)

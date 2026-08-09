@@ -1,0 +1,49 @@
+name: Materialize issue 2408 reclaim
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.head_ref == 'fix/2408-reclaim-20260809-1328'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply source and regressions
+        run: python scripts/apply_issue_2408_reclaim.py
+      - name: Validate source anchors
+        run: python tests/source_anchor_contract_tests.py
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel 2
+      - name: Validate focused regressions
+        run: ctest --test-dir build -R 'regidrago_(issue_2408|issue_1341|issue_2091_prize_k1_issue_1341)' --output-on-failure
+      - name: Validate exact seed 19 trace
+        shell: bash
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 19 --require-ready-by 2 | tee issue-2408-trace.txt
+          grep -q 'T2 | PLAY SUPPORTER.*Professor Burnet' issue-2408-trace.txt
+          ! grep -q 'T2 | PLAY SUPPORTER.*Serena' issue-2408-trace.txt
+          grep -q 'T2 | READY' issue-2408-trace.txt
+      - name: Materialize validated source
+        shell: bash
+        run: |
+          rm scripts/apply_issue_2408_reclaim.py
+          rm .github/workflows/materialize_issue_2408_reclaim.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix #2408 prefer K1 Burnet over Serena"
+          git push origin HEAD:${{ github.head_ref }}

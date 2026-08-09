@@ -1,0 +1,42 @@
+name: Refine issue 2295 deterministic route
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  refine:
+    if: github.head_ref == 'fix/2295-reclaim-20260809-1324'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/refine_issue_2295_no_projection.py
+      - run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build build --parallel 2
+      - name: Exact witnesses and counterexample matrix
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 29 --require-ready-by 4
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 86 --require-ready-by 4
+          ./build/regidrago_unified_tests issue_2509_professors_letter_tests
+      - name: Canonical matrix diagnostic
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-2295-matrix.csv
+      - name: Materialize
+        shell: bash
+        run: |
+          rm scripts/refine_issue_2295_no_projection.py
+          rm .github/workflows/refine_issue_2295_no_projection.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix #2295 narrow paid-retreat Blender route"
+          git push origin HEAD:${{ github.head_ref }}

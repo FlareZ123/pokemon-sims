@@ -1,0 +1,46 @@
+name: Harumi regenerate baselines 20260809
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/harumi-regenerate-baselines-20260809.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  regenerate-and-verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Regenerate canonical setup artifacts
+        run: python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --max-seed 5000 --trials 100000 --matrix-seed 20260705
+      - name: Regenerate setup report
+        run: python scripts/update_setup_docs.py --repo-root .
+      - name: Regenerate paired-deck artifacts
+        run: python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+      - name: Regenerate paired-deck report
+        run: python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Verify generated contracts
+        run: |
+          python tests/setup_report_contract_tests.py
+          python tests/multi_deck_report_contract_tests.py
+          python tests/update_setup_docs_tests.py
+      - name: Show changed generated files
+        run: git status --short results docs/REPORT.md docs/MULTI_DECK_REPORT.md
+      - name: Package generated artifacts
+        run: tar -czf regenerated-baselines.tgz results docs/REPORT.md docs/MULTI_DECK_REPORT.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: regenerated-baselines
+          path: regenerated-baselines.tgz
+          if-no-files-found: error
+          retention-days: 1

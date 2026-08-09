@@ -1,10 +1,5 @@
-  bool has_known_tapu_connector_copy() const {
-    return hand_count(Card::TapuLeleGX) > 0 ||
-           known_deck_contains(Card::TapuLeleGX);
-  }
-
   bool has_redundant_tapu_connector_copy(const Card card) const {
-    return card == Card::TapuLeleGX && has_known_tapu_connector_copy();
+    return card == Card::TapuLeleGX && has_known_hand_or_deck_copy(card);
   }
 
   bool tapu_connector_copy_aware_in_play(const Card card) const {

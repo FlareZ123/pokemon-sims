@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
@@ -25,110 +25,6 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Materialize PR 2489 boundary fixes
-        if: github.event_name == 'pull_request' && github.event.pull_request.number == 2489
-        shell: bash
-        run: |
-          set -euo pipefail
-          git checkout "${{ github.head_ref }}"
-          python - <<'PY'
-          import fcntl
-          import os
-          import tempfile
-          from pathlib import Path
-
-          def replace_exact(path, old, new):
-              p = Path(path)
-              with p.open('r+', encoding='utf-8') as handle:
-                  fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-                  text = handle.read()
-                  if old not in text:
-                      raise SystemExit(f"expected block missing in {path}")
-                  updated = text.replace(old, new, 1)
-                  fd, tmp = tempfile.mkstemp(prefix=p.name + '.', dir=p.parent, text=True)
-                  try:
-                      with os.fdopen(fd, 'w', encoding='utf-8') as out:
-                          out.write(updated)
-                          out.flush()
-                          os.fsync(out.fileno())
-                      os.replace(tmp, p)
-                  finally:
-                      if os.path.exists(tmp):
-                          os.unlink(tmp)
-                  fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
-
-          replace_exact(
-              'src/trace_engine_v2/part_013_legacy_star_override.inc',
-              '''    // DDE-only and the canonical GF/GG states are all one physical Basic
-    // attachment short when semantic Apex progress is two.
-    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
-    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Confirmed migration bug: https://github.com/FlareZ123/pokemon-sims/issues/2423
-    const bool exact_reported_axis = state_.turn == 2 && active_is_vstar() &&
-        apex_energy_progress(*state_.active) == 2 && completing_basic_in_deck;
-''',
-              '''    // Preserve #1844's canonical GF -> Grass boundary exactly. The DDE
-    // extension is the distinct DDE-only one-attachment state; canonical GG is
-    // owned by the separate missing-Fire route and must not enter this helper.
-    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
-    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Original delayed Vessel boundary: https://github.com/FlareZ123/pokemon-sims/issues/1844
-    // Confirmed migration bug: https://github.com/FlareZ123/pokemon-sims/issues/2423
-    const bool canonical_gf_axis = state_.active &&
-        state_.active->double_dragon == 0 && state_.active->grass == 1 &&
-        state_.active->fire >= 1 && count_of(state_.deck, Card::Grass) > 0;
-    const bool dde_only_axis = state_.active &&
-        state_.active->double_dragon > 0 && state_.active->grass == 0 &&
-        state_.active->fire == 0 && completing_basic_in_deck;
-    const bool exact_reported_axis = state_.turn == 2 && active_is_vstar() &&
-        (canonical_gf_axis || dde_only_axis);
-''')
-
-          replace_exact(
-              'src/trace_engine_v2/part_issue_2437_dde_vessel_override.inc',
-              '''    const auto missing_energy = state_.active
-        ? issue_2437_apex_completing_basic_from_known_deck(*state_.active)
-        : std::optional<Card>{};
-''',
-              '''    const bool dde_backed = state_.active && state_.active->double_dragon > 0;
-    const bool canonical_grass_orientation = state_.active && !dde_backed &&
-        state_.active->grass == 1 && state_.active->fire >= 1 &&
-        deck_count_after_search_started(Card::Grass) > 0;
-    const auto missing_energy = dde_backed
-        ? issue_2437_apex_completing_basic_from_known_deck(*state_.active)
-        : (canonical_grass_orientation
-               ? std::optional<Card>{Card::Grass}
-               : std::optional<Card>{});
-    // #1868/#2224 is specifically the canonical GF -> Grass route. The semantic
-    // alternative-Basic selector applies only when DDE is physically attached,
-    // so canonical GG -> Fire remains owned by #1898/#2231.
-    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
-    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Canonical route boundaries: https://github.com/FlareZ123/pokemon-sims/issues/1868 https://github.com/FlareZ123/pokemon-sims/issues/2224 https://github.com/FlareZ123/pokemon-sims/issues/2231
-    // DDE migration: https://github.com/FlareZ123/pokemon-sims/issues/2437
-''')
-          PY
-          cmake -S . -B build-pr2489 -G Ninja -DCMAKE_BUILD_TYPE=Release
-          cmake --build build-pr2489 --parallel 2 --target regidrago_unified_tests
-          ./build-pr2489/regidrago_unified_tests issue_1393_crispin_before_gladion_tests
-          ./build-pr2489/regidrago_unified_tests issue_1844_legacy_vessel_next_turn_tests
-          ./build-pr2489/regidrago_unified_tests issue_2224_strict_vessel_payload_finish_tests
-          ./build-pr2489/regidrago_unified_tests issue_1565_legacy_arven_blender_replay_tests || true
-          git show origin/main:.github/workflows/ci.yml > .github/workflows/ci.yml
-          git show origin/main:tests/issue_1565_legacy_arven_blender_replay_tests.cpp > tests/issue_1565_legacy_arven_blender_replay_tests.cpp
-          if [ -f .github/workflows/pr2489-semantic-boundary-repair.yml ]; then
-            git rm .github/workflows/pr2489-semantic-boundary-repair.yml
-          fi
-          git add .github/workflows/ci.yml tests/issue_1565_legacy_arven_blender_replay_tests.cpp
-          git add src/trace_engine_v2/part_013_legacy_star_override.inc
-          git add src/trace_engine_v2/part_issue_2437_dde_vessel_override.inc
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Repair DDE migration route boundaries"
-          git push origin HEAD:"${{ github.head_ref }}"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"

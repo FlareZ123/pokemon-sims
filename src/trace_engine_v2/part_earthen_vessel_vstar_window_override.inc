@@ -17,18 +17,17 @@
 
     const auto remaining_energy_count = [this](const Card card) {
       if (deck_seen_ || prizes_revealed_) return count_of(state_.deck, card);
-      const int publicly_known = hand_count(card) + count_of(state_.discard, card) +
-          attached_public_count(card);
-      // At K0, exact deck-versus-Prize placement is hidden. Use only the fixed-list
-      // count minus public zones, so identical public states cannot make different
+      // At K0, exact deck-versus-Prize placement is hidden. Reuse the centralized
+      // fixed-list/public-zone count so identical public states cannot make different
       // irreversible Vessel and Dragon-payload decisions. At K1, the branch above
       // uses the legally inspected remaining deck exactly:
       // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
       // Core deck-search and Prize procedure: https://www.pokemon.com/us/pokemon-tcg/rules
       // K0 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
       // Hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+      // Centralized helper: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/deck_knowledge.inc
       // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1471
-      return std::max(0, total_copies(card) - publicly_known);
+      return unresolved_fixed_list_copy_count(card);
     };
     const int grass_remaining = remaining_energy_count(Card::Grass);
     const int basic_energy_remaining =

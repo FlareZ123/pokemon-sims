@@ -1,3 +1,4 @@
+# Re-run against final main after refreshing source-bound provenance.
 name: Harumi cleanup validation 20260809
 
 on:

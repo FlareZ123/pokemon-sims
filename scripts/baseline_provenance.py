@@ -42,7 +42,8 @@ class _SimulatorSourceManifest:
 
     def paths(self) -> tuple[Path, ...]:
         """Validate and return the stable aggregate simulator input sequence."""
-        return tuple(sorted(_validated_paths(self.required_paths())))
+        validated_paths = _validated_paths(self.required_paths())
+        return tuple(sorted(validated_paths))
 
 
 def _simulator_source_paths(repo_root: Path) -> tuple[Path, ...]:

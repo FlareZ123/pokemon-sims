@@ -9,12 +9,13 @@
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1437
-    if (detail ==
+    static constexpr std::string_view kSecretBoxSearchDetail =
         "Used the Secret Box searched Crispin before lower-impact Prize or "
-        "future-route Supporters.") {
-      trace(action, "R-CRISPIN-01; P-AXIS-01",
-            "Used held Crispin before lower-impact Prize or future-route "
-            "Supporters.");
+        "future-route Supporters.";
+    static constexpr std::string_view kHeldCrispinDetail =
+        "Used held Crispin before lower-impact Prize or future-route Supporters.";
+    if (detail == kSecretBoxSearchDetail) {
+      trace(action, "R-CRISPIN-01; P-AXIS-01", kHeldCrispinDetail);
       return;
     }
     trace(action, rules, detail);

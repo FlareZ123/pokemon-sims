@@ -11,10 +11,7 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/746
     const bool has_tapu_in_hand = hand_count(Card::TapuLeleGX) > 0;
-    const bool has_known_tapu_in_deck =
-        deck_seen_ &&
-        std::find(state_.deck.begin(), state_.deck.end(), Card::TapuLeleGX) !=
-            state_.deck.end();
+    const bool has_known_tapu_in_deck = known_deck_contains(Card::TapuLeleGX);
     return !has_tapu_in_hand && !has_known_tapu_in_deck &&
            in_play(Card::TapuLeleGX);
   }

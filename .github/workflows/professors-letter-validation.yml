@@ -57,7 +57,7 @@ jobs:
         run: |
           g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
             tools/professors_letter_simulate_this.cpp -o professors-letter-simulate-this
-      - name: Run at least five Item-lock Professor's Letter simulate-this traces
+      - name: Run at least five actual Item-lock Professor's Letter simulate-this plays
         shell: bash
         run: |
           set -euo pipefail
@@ -68,11 +68,11 @@ jobs:
             strict-jit-turn2-item-lock/go-second
           do
             scenario_slug=${scenario//\//_}
-            for seed in $(seq 1 300); do
+            for seed in $(seq 1 1000); do
               candidate=$(mktemp)
               ./professors-letter-simulate-this \
                 --simulate-this --scenario "$scenario" --seed "$seed" > "$candidate"
-              if grep -q "Professor's Letter" "$candidate"; then
+              if grep -Fq "| Professor's Letter | rules:" "$candidate"; then
                 count=$((count + 1))
                 cp "$candidate" \
                   "professors-letter-traces/${count}-letter-${scenario_slug}-seed-${seed}.txt"

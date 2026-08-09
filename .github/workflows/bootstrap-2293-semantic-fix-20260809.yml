@@ -48,7 +48,9 @@ jobs:
           python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
           python scripts/update_multi_deck_docs.py --repo-root .
       - name: Run complete Release suite against refreshed evidence
-        run: ctest --test-dir build --parallel 4 --output-on-failure
+        run: |
+          rm scripts/apply_issue_2293_semantic_fix_20260809.py scripts/apply_issue_2293_semantic_gate_fix_20260809.py
+          ctest --test-dir build --parallel 4 --output-on-failure
       - name: Upload bootstrap evidence
         if: always()
         uses: actions/upload-artifact@v4

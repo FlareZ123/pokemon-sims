@@ -21,8 +21,8 @@
         !is_basic(state_.active->card) ||
         state_.active->card == Card::RegidragoV ||
         state_.active->card == Card::RegidragoVstar ||
-        !need_vstar() || !need_energy() || !need_active_vstar() ||
-        !need_payload() || bench_space() == 0 || in_play(Card::LatiasEx) ||
+        !need_vstar() || !need_energy() || !need_payload() ||
+        bench_space() == 0 || in_play(Card::LatiasEx) ||
         !ability_available_for_pokemon(Card::LatiasEx) ||
         held_arven_fss_blender_finish_available() ||
         !issue_2622_one_held_attachment_completes_apex()) {

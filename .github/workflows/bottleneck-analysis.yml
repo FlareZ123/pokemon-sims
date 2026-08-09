@@ -20,7 +20,7 @@ jobs:
       - name: Compile bottleneck analyzer
         run: >-
           g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow
-          tools/regidrago_bottleneck_analysis.cpp
+          tools/regidrago_bottleneck_analysis_v2.cpp
           -o bottleneck_analysis
 
       - name: Run paired 10k checkpoint sweep

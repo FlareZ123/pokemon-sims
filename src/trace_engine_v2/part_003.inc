@@ -187,8 +187,14 @@ class Engine {
     if (trace_ != nullptr) trace_->add(state_.turn, action, rules, detail);
   }
 
+  static bool uses_full_supporter_lock(const LockMode locks) {
+    return locks == LockMode::FullSupporter;
+  }
   bool first_turn_going_first() const { return state_.turn == 1 && scenario_.going_first; }
-  bool supporter_allowed() const { return scenario_.locks != LockMode::FullSupporter && !first_turn_going_first() && !state_.supporter_used && !state_.turn_ended; }
+  bool supporter_allowed() const {
+    return !uses_full_supporter_lock(scenario_.locks) && !first_turn_going_first() &&
+           !state_.supporter_used && !state_.turn_ended;
+  }
   static bool uses_turn_two_item_lock(const LockMode locks) {
     return locks == LockMode::TurnTwoItem || locks == LockMode::FullCombined;
   }

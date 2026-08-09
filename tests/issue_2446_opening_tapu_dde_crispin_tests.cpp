@@ -18,6 +18,9 @@ struct EngineTestAccess {
   static bool future_wonder_tag_target(Engine& engine) {
     return engine.future_turn_wonder_tag_route_has_live_target();
   }
+  static bool needs_tapu(Engine& engine) {
+    return engine.needs_tapu_connector();
+  }
 };
 }  // namespace sim
 
@@ -122,6 +125,31 @@ void test_basic_only_two_types_still_completes() {
          "Basic-only two-type Crispin route regressed.");
 }
 
+void test_pre_regidrago_tapu_trigger_is_preserved() {
+  Fixture fixture;
+  sim::State state;
+  state.turn = 1;
+  state.active = sim::Pokemon{sim::Card::Oricorio, 0};
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::Klara,
+                sim::Card::BrilliantBlender, sim::Card::MegaDragonite,
+                sim::Card::FieldBlower, sim::Card::Arven,
+                sim::Card::Grass};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state), false, false);
+
+  // This public K0 state matches the seed-293 pre-search graph. The established
+  // policy spends Tapu Lele-GX here so Wonder Tag can preserve the deterministic
+  // Steven/FSS continuation instead of depending on an unknown next draw.
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // K0/K1 and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Existing regression contract: https://github.com/FlareZ123/pokemon-sims/issues/1022
+  // Refined interaction scope: https://github.com/FlareZ123/pokemon-sims/issues/2446
+  expect(sim::EngineTestAccess::needs_tapu(fixture.engine),
+         "The DDE Crispin refinement must preserve the pre-Regidrago Tapu trigger.");
+}
+
 }  // namespace
 
 int main() {
@@ -130,6 +158,7 @@ int main() {
     test_dde_with_only_fire_searchable_banks_crispin();
     test_basic_only_one_type_cannot_complete();
     test_basic_only_two_types_still_completes();
+    test_pre_regidrago_tapu_trigger_is_preserved();
     std::cout << "Issue 2446 opening Tapu DDE Crispin tests passed\n";
     return 0;
   } catch (const std::exception& error) {

@@ -30,26 +30,15 @@ void expect(const bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);
 }
 
-sim::DeckRecipe pineco_recipe() {
-  return {
-      {sim::Card::SecretBox, 1},
-      {sim::Card::Pineco, 2},
-      {sim::Card::ForretressEx, 2},
-      {sim::Card::Dawn, 1},
-      {sim::Card::ForestOfVitality, 1},
-      {sim::Card::MysteriousTreasure, 1},
-      {sim::Card::Crispin, 1},
-      {sim::Card::RegidragoVstar, 1},
-      {sim::Card::GoodraVstar, 1},
-      {sim::Card::Grass, 3},
-      {sim::Card::Fire, 3},
-  };
-}
-
 struct Fixture {
   sim::Scenario scenario{"issue-2485", sim::DciProfile::StrictJit,
                          sim::LockMode::None, true, 5};
-  sim::DeckRecipe recipe{pineco_recipe()};
+  // Use the registered Pineco recipe so UDP/DCI copy accounting is identical to
+  // the permanent seed-40 CI audit rather than a synthetic partial fixture.
+  // Registered recipe: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
+  // Dynamic DCI contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2485
+  sim::DeckRecipe recipe{sim::pineco_recipe()};
   std::mt19937_64 rng{2485};
   sim::Engine engine{scenario, recipe, rng};
 };

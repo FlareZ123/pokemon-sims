@@ -13,12 +13,17 @@ class _DigestWriter(Protocol):
     def update(self, data: bytes, /) -> None: ...
 
 
+def _is_simulator_source_input(path: Path) -> bool:
+    """Return whether a path is a tracked simulator input for provenance."""
+    return path.is_file() and path.suffix != SOURCE_LOCK_SUFFIX
+
+
 def _simulator_source_paths(repo_root: Path) -> list[Path]:
     """Collect tracked simulator source inputs, excluding writer lock files."""
     return [
         path
         for path in (repo_root / SIMULATOR_SOURCE_ROOT).rglob("*")
-        if path.is_file() and path.suffix != SOURCE_LOCK_SUFFIX
+        if _is_simulator_source_input(path)
     ]
 
 

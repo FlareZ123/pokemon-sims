@@ -1,0 +1,36 @@
+name: Temporary DDE rollup compile diagnostic
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-dde-rollup-compile-diagnostic.yml'
+  workflow_dispatch:
+
+jobs:
+  compile-diagnostic:
+    if: github.head_ref == 'fix/dde-semantic-rollup-20260809' || github.ref_name == 'fix/dde-semantic-rollup-20260809'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/dde-semantic-rollup-20260809
+      - name: Configure Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Capture compiler diagnostics
+        shell: bash
+        run: |
+          set +e
+          cmake --build build --parallel 2 > compile.log 2>&1
+          code=$?
+          echo "$code" > compile.exit
+          tail -n 200 compile.log > compile-tail.log
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dde-rollup-compile-diagnostic
+          path: |
+            compile.exit
+            compile-tail.log
+            compile.log

@@ -1,0 +1,26 @@
+name: Audit issue 2295 on current main
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  audit:
+    if: github.head_ref == 'audit/2295-current-main-20260809-1757'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Replay exact issue 2295 witnesses
+        continue-on-error: true
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 29 --require-ready-by 4
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 86 --require-ready-by 4
+      - name: Replay exact witnesses without fail-fast for trace capture
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 29 || true
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 86 || true

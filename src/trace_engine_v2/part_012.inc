@@ -24,13 +24,16 @@ bool play_arven() {
     const bool needs_tool = has_regi_v() && !state_.vstar_power_used &&
                             ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
                              std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) { return p.card == Card::RegidragoV && p.tool == Tool::None; }));
+    const bool one_searchable_basic_completes = state_.active &&
+      state_.active->card == Card::RegidragoVstar &&
+      completing_basic_energy_for(*state_.active, [this](const Card card) {
+        return might_be_unseen(card);
+      }).has_value();
     const bool final_energy_vessel_dead_role_cost =
       scenario_.dci == DciProfile::NoDiscardControl &&
       !state_.manual_energy_used && state_.active &&
       state_.active->card == Card::RegidragoVstar && !need_payload() &&
-      grass_needed() + fire_needed() == 1 &&
-      ((grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
-       (fire_needed() == 1 && might_be_unseen(Card::Fire))) &&
+      one_searchable_basic_completes &&
       (hand_count(Card::QuickBall) > 0 ||
        hand_count(Card::StevensResolve) > 0 ||
        hand_count(Card::LatiasEx) > 0 ||

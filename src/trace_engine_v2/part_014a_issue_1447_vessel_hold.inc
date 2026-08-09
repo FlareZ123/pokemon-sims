@@ -37,6 +37,7 @@
         const bool before_crispin = !state_.supporter_used &&
             !state_.manual_energy_used && hand_count(Card::Crispin) > 0 &&
             state_.active->grass == 0 && state_.active->fire == 0 &&
+        state_.active->double_dragon == 0 && // https://github.com/FlareZ123/pokemon-sims/issues/2368
             deck_count_after_search_started(Card::Grass) >= 2 &&
             deck_count_after_search_started(Card::Fire) >= 1;
         const bool after_crispin_before_manual = state_.supporter_used &&

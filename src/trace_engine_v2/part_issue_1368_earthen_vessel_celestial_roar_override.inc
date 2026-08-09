@@ -16,6 +16,7 @@
         !state_.manual_energy_used && state_.active &&
         state_.active->card == Card::RegidragoV &&
         state_.active->grass == 0 && state_.active->fire == 0 &&
+        state_.active->double_dragon == 0 && // https://github.com/FlareZ123/pokemon-sims/issues/2368
         hand_count(Card::Grass) >= 2 && hand_count(Card::Fire) == 0 &&
         might_be_unseen(Card::Grass) && might_be_unseen(Card::Fire) &&
         std::none_of(state_.hand.begin(), state_.hand.end(), is_payload);

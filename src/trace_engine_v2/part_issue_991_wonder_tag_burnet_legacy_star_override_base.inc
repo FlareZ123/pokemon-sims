@@ -122,10 +122,13 @@
       return false;
     }
 
-    const bool held_manual_completes_energy =
-        grass_needed() + fire_needed() == 1 &&
-        ((grass_needed() == 1 && hand_count(Card::Grass) > 0) ||
-         (fire_needed() == 1 && hand_count(Card::Fire) > 0));
+    const Pokemon* held_energy_target = target_regi();
+    const bool held_manual_completes_energy = held_energy_target != nullptr &&
+        completing_basic_energy_for(*held_energy_target, [this](const Card card) {
+          return hand_count(card) > 0;
+        }).has_value();
+    // DDE-only plus either held Basic is one physical completion:
+    // https://github.com/FlareZ123/pokemon-sims/issues/2368
 
     // Held Professor Burnet directly supplies the same-turn payload, the held
     // Regidrago VSTAR completes evolution, and the held needed Energy completes GGF

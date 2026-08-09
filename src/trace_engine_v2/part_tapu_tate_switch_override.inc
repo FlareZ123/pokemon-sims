@@ -21,10 +21,14 @@
   }
 
   bool oricorio_preserves_burnet_with_current_hand() const {
-    const bool exactly_one_energy_missing = grass_needed() + fire_needed() == 1;
-    const bool needed_energy_might_be_in_deck =
-        (grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
-        (fire_needed() == 1 && might_be_unseen(Card::Fire));
+    const Pokemon* energy_target = target_regi();
+    const bool needed_energy_might_be_in_deck = energy_target != nullptr &&
+        completing_basic_energy_for(*energy_target, [this](const Card card) {
+          return might_be_unseen(card);
+        }).has_value();
+    const bool exactly_one_energy_missing = needed_energy_might_be_in_deck;
+    // DDE typed completion options are not additive deficits:
+    // https://github.com/FlareZ123/pokemon-sims/issues/2368
     const bool payload_in_hand =
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
     const bool live_hand_payload_outlet = payload_in_hand &&
@@ -113,10 +117,14 @@
     // Crispin advances the Energy axis only while a needed Basic Energy remains:
     // https://api.pokemontcg.io/v2/cards/sv7-133
 
-    const bool exactly_one_energy_missing = grass_needed() + fire_needed() == 1;
-    const bool needed_energy_might_be_in_deck =
-        (grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
-        (fire_needed() == 1 && might_be_unseen(Card::Fire));
+    const Pokemon* arven_energy_target = target_regi();
+    const bool needed_energy_might_be_in_deck = arven_energy_target != nullptr &&
+        completing_basic_energy_for(*arven_energy_target, [this](const Card card) {
+          return might_be_unseen(card);
+        }).has_value();
+    const bool exactly_one_energy_missing = needed_energy_might_be_in_deck;
+    // DDE-only is one physical Basic attachment short:
+    // https://github.com/FlareZ123/pokemon-sims/issues/2368
     const bool live_arven_vessel_energy = need_energy() && exactly_one_energy_missing &&
         !state_.manual_energy_used && !item_locked() && needed_energy_might_be_in_deck &&
         hand_count(Card::Arven) == 0 && might_be_unseen(Card::Arven) &&

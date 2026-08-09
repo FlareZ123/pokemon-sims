@@ -197,10 +197,15 @@
   bool play_issue_1700_known_prize_gladion_before_blender() {
     const bool prepared_regidrago = std::any_of(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
-          return pokemon.card == Card::RegidragoV &&
-              pokemon.entered_turn < state_.turn && pokemon.grass == 1 &&
-              pokemon.fire == 0;
-        });
+          if (pokemon.card != Card::RegidragoV ||
+              pokemon.entered_turn >= state_.turn || pokemon.grass != 1 ||
+              pokemon.fire != 0 || pays_apex_energy_cost(pokemon)) {
+            return false;
+          }
+          Pokemon with_prized_fire = pokemon;
+          return attach_energy_card(with_prized_fire, Card::Fire) &&
+              apex_energy_progress(with_prized_fire) > apex_energy_progress(pokemon);
+        }); // https://github.com/FlareZ123/pokemon-sims/issues/2428
     const auto prized_fire =
         std::find(state_.prizes.begin(), state_.prizes.end(), Card::Fire);
 

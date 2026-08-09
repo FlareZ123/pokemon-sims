@@ -321,9 +321,9 @@
 
   bool play_team_yell_latias_recovery() {
     const bool powered_benched_vstar = std::any_of(
-        state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
-          return pokemon.card == Card::RegidragoVstar && pokemon.grass >= 2 && pokemon.fire >= 1;
-        });
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoVstar && pays_apex_energy_cost(pokemon);
+        }); // DDE-aware: https://github.com/FlareZ123/pokemon-sims/issues/2368
     const bool active_can_evolve_from_hand = state_.active && state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn && hand_count(Card::RegidragoVstar) > 0;
     if (!supporter_allowed() || hand_count(Card::TeamYellsCheer) == 0 || !need_active_vstar() ||

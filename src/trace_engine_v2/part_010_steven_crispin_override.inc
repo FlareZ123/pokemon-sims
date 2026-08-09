@@ -200,7 +200,7 @@
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
           return pokemon.card == Card::RegidragoV &&
               pokemon.entered_turn <= state_.turn &&
-              pokemon.grass == 0 && pokemon.fire == 0;
+              pokemon.grass == 0 && pokemon.fire == 0 && pokemon.double_dragon == 0; // https://github.com/FlareZ123/pokemon-sims/issues/2368
         });
 
     // Going first prevents the turn-one Supporter play, while Wonder Tag can still
@@ -250,6 +250,15 @@
           pokemon.entered_turn >= state_.turn) {
         continue;
       }
+
+      if (pokemon.double_dragon > 0 && !pays_apex_energy_cost(pokemon) &&
+          completing_basic_energy_for(pokemon, [this](const Card card) {
+            return hand_count(card) > 0 ||
+                (card == Card::Grass &&
+                 deck_count_after_search_started(Card::Grass) > 0);
+          }).has_value()) {
+        return true;
+      } // https://github.com/FlareZ123/pokemon-sims/issues/2424
 
       int projected_grass = pokemon.grass;
       int projected_fire = pokemon.fire;
@@ -332,7 +341,7 @@
         !supporter_allowed() || !state_.active ||
         state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
-        state_.active->grass < 2 || state_.active->fire < 1 ||
+        !pays_apex_energy_cost(*state_.active) ||
         !need_vstar() || !need_payload() || hand_count(Card::RegidragoVstar) > 0 ||
         deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
         (hand_count(Card::EarthenVessel) == 0 &&
@@ -431,7 +440,7 @@
     if (!prizes_known() || state_.turn < 2 || state_.turn >= scenario_.max_turn ||
         scenario_.locks != LockMode::None || !supporter_allowed() || item_locked() ||
         !state_.active || state_.active->card != Card::RegidragoVstar ||
-        state_.active->grass < 2 || state_.active->fire < 1 ||
+        !pays_apex_energy_cost(*state_.active) ||
         !need_payload() || hand_count(Card::StevensResolve) == 0 ||
         hand_count(Card::MysteriousTreasure) == 0 ||
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {

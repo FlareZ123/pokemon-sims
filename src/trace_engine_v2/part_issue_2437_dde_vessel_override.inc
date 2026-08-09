@@ -39,6 +39,57 @@
         target, might_be_unseen(Card::Grass), might_be_unseen(Card::Fire));
   }
 
+  std::optional<Card> issue_2437_direct_vessel_cost() const {
+    const auto ordinary = choose_discard(false, true, true, Card::EarthenVessel);
+    if (ordinary.has_value()) return ordinary;
+
+    // In the no-lock goldfish state, Field Blower has no current setup target.
+    // Spending it lets Vessel take the single Basic that completes a DDE-backed
+    // Apex line while preserving Quick Ball/Tapu/Crispin for later axes:
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Earliest-route / dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed integration bug: https://github.com/FlareZ123/pokemon-sims/issues/2437
+    if (scenario_.locks == LockMode::None && state_.stadium == Stadium::None &&
+        hand_count(Card::FieldBlower) > 0) {
+      return Card::FieldBlower;
+    }
+    return std::nullopt;
+  }
+
+  bool play_issue_2437_direct_dde_vessel_energy_route() {
+    const Pokemon* target = target_regi();
+    const auto completing = target != nullptr
+        ? issue_2437_apex_completing_basic_from_known_deck(*target)
+        : std::optional<Card>{};
+    const auto cost = issue_2437_direct_vessel_cost();
+    if (item_locked() || !deck_search_available() || state_.manual_energy_used ||
+        target == nullptr || target->double_dragon <= 0 ||
+        pays_apex_energy_cost(*target) || !completing.has_value() ||
+        hand_count(Card::EarthenVessel) == 0 || !cost.has_value()) {
+      return false;
+    }
+
+    remove_one(state_.hand, Card::EarthenVessel);
+    state_.discard.push_back(Card::EarthenVessel);
+    if (!discard_from_hand(*cost, "Earthen Vessel issue-2437 direct cost",
+                           "R-EV-01; P-DCI-01; P-COMPRESS-01")) {
+      throw std::logic_error("Issue-2437 direct Vessel cost disappeared");
+    }
+    record_deck_search_knowledge("Earthen Vessel issue-2437 direct route");
+    if (!move_deck_to_hand(*completing)) {
+      throw std::logic_error("Issue-2437 direct Basic target disappeared");
+    }
+    shuffle(state_.deck);
+    trace("Earthen Vessel",
+          "R-EV-01; R-GAME-ITEM; P-KNOWLEDGE-01; P-DCI-01; P-COMPRESS-01",
+          "Spent a route-replaced cost and searched " +
+              std::string(name(*completing)) +
+              " as the one-attachment DDE Apex completion.");
+    return true;
+  }
+
   bool issue_1646_vessel_burnet_finish_visible() const {
     const Pokemon* active = state_.active ? &*state_.active : nullptr;
     if (active == nullptr || active->card != Card::RegidragoVstar) return false;

@@ -129,9 +129,11 @@
     const bool prior_turn_active_regi_can_evolve = state_.active &&
         state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn && projected_vstar_available;
-    const bool held_manual_energy_completes_next_turn =
-        (grass_needed() == 1 && fire_needed() == 0 && hand_count(Card::Grass) > 0) ||
-        (grass_needed() == 0 && fire_needed() == 1 && hand_count(Card::Fire) > 0);
+    const bool held_manual_energy_completes_next_turn = state_.active &&
+        completing_basic_energy_for(*state_.active, [&wanted, this](const Card card) {
+          return hand_count(card) > 0 ||
+              std::find(wanted.begin(), wanted.end(), card) != wanted.end();
+        }).has_value(); // https://github.com/FlareZ123/pokemon-sims/issues/2424
     const auto projected_deck_copy_remains = [&wanted, this](const Card card) {
       return deck_count_after_search_started(card) >
           static_cast<int>(std::count(wanted.begin(), wanted.end(), card));
@@ -172,6 +174,7 @@
         !projected_vstar_available || wanted.size() != 1U ||
         wanted.front() != Card::RegidragoVstar || !state_.active ||
         state_.active->card != Card::RegidragoV ||
+        state_.active->double_dragon > 0 ||
         state_.active->grass != 0 || state_.active->fire < 1 ||
         hand_count(Card::MysteriousTreasure) == 0 ||
         hand_count(Card::Crispin) > 0 || hand_count(Card::Grass) > 0 ||
@@ -343,6 +346,16 @@
 
     const bool projected_vstar_available = has_vstar() || hand_count(Card::RegidragoVstar) > 0 ||
         projected_vstar_direct || projected_vstar_uses_gladion;
+    const Pokemon* projected_regi = target_regi();
+    if (need_energy() && projected_regi != nullptr && projected_regi->double_dragon > 0) {
+      const auto direct_basic = completing_basic_energy_for(
+          *projected_regi, [this](const Card card) {
+            return deck_count_after_search_started(card) > 0;
+          });
+      if (direct_basic && hand_count(*direct_basic) == 0) {
+        add_wanted(*direct_basic);
+      }
+    } // DDE-only is one physical Basic attachment short: https://github.com/FlareZ123/pokemon-sims/issues/2424
     const bool held_treasure_crispin_grass_route =
         steven_held_treasure_crispin_grass_route_available(
             wanted, next_turn_item_locked, projected_vstar_available);
@@ -364,7 +377,6 @@
 
     const bool projected_crispin_available = hand_count(Card::Crispin) > 0 ||
         std::find(wanted.begin(), wanted.end(), Card::Crispin) != wanted.end();
-    const Pokemon* projected_regi = target_regi();
     const bool projected_legacy_star_payload_route = projected_vstar_available &&
         !state_.vstar_power_used && ability_available_for_pokemon(Card::RegidragoVstar) &&
         payload_might_be_in_deck();
@@ -374,9 +386,12 @@
     const bool basic_active_needs_promotion = state_.active && is_basic(state_.active->card) &&
                                               state_.active->card != Card::RegidragoV;
     const bool crispin_and_manual_complete_ggf = projected_regi != nullptr &&
-        projected_regi->grass >= 1 &&
-        deck_count_after_search_started(Card::Grass) > 0 &&
-        deck_count_after_search_started(Card::Fire) > 0;
+        ((projected_regi->grass >= 1 &&
+          deck_count_after_search_started(Card::Grass) > 0 &&
+          deck_count_after_search_started(Card::Fire) > 0) ||
+         completing_basic_energy_for(*projected_regi, [this](const Card card) {
+           return deck_count_after_search_started(card) > 0;
+         }).has_value()); // https://github.com/FlareZ123/pokemon-sims/issues/2424
     // Latias ex gives Basic Pokémon no Retreat Cost. Once Steven's first targets
     // establish VSTAR plus GGF behind a Basic Active, promotion outranks a redundant
     // Pokémon fallback: https://api.pokemontcg.io/v2/cards/sv8-76

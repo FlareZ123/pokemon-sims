@@ -157,6 +157,6 @@
     // Official evolution, attachment, Item, search, discard, and attack procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Strict-JIT and success horizon: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1798
-    return state_.active->grass >= 2 && state_.active->fire >= 1 &&
-        payload_ready();
+    return pays_apex_energy_cost(*state_.active) && payload_ready();
+    // DDE-aware completion: https://github.com/FlareZ123/pokemon-sims/issues/2368
   }

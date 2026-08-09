@@ -7,6 +7,7 @@ on:
       - "src/**"
       - "tests/**"
       - "tools/professors_letter_swap_matrix.cpp"
+      - "tools/professors_letter_simulate_this.cpp"
       - "CMakeLists.txt"
       - ".github/workflows/professors-letter-validation.yml"
   push:
@@ -15,6 +16,7 @@ on:
       - "src/**"
       - "tests/**"
       - "tools/professors_letter_swap_matrix.cpp"
+      - "tools/professors_letter_simulate_this.cpp"
       - "CMakeLists.txt"
       - ".github/workflows/professors-letter-validation.yml"
   workflow_dispatch:
@@ -50,6 +52,50 @@ jobs:
           # https://github.com/FlareZ123/pokemon-sims/issues/2509
           g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
             tools/professors_letter_swap_matrix.cpp -o professors-letter-swap-matrix
+      - name: Compile temporary single-trace Professor's Letter demo
+        shell: bash
+        run: |
+          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
+            tools/professors_letter_simulate_this.cpp -o professors-letter-simulate-this
+      - name: Run at least five Item-lock Professor's Letter simulate-this traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p professors-letter-traces
+          count=0
+          for scenario in \
+            strict-jit-turn2-item-lock/go-first \
+            strict-jit-turn2-item-lock/go-second
+          do
+            scenario_slug=${scenario//\//_}
+            for seed in $(seq 1 300); do
+              candidate=$(mktemp)
+              ./professors-letter-simulate-this \
+                --simulate-this --scenario "$scenario" --seed "$seed" > "$candidate"
+              if grep -q "Professor's Letter" "$candidate"; then
+                count=$((count + 1))
+                cp "$candidate" \
+                  "professors-letter-traces/${count}-letter-${scenario_slug}-seed-${seed}.txt"
+                ./build/regidrago_sim --simulate-this --deck regidrago-shell \
+                  --scenario "$scenario" --seed "$seed" > \
+                  "professors-letter-traces/${count}-vessel-${scenario_slug}-seed-${seed}.txt"
+                echo "TRACE ${count}: scenario=${scenario} seed=${seed}"
+                cat "$candidate"
+                if [ "$count" -ge 6 ]; then
+                  rm -f "$candidate"
+                  break 2
+                fi
+              fi
+              rm -f "$candidate"
+            done
+          done
+          test "$count" -ge 5
+      - name: Upload Professor's Letter trace diagnostic
+        uses: actions/upload-artifact@v4
+        with:
+          name: professors-letter-item-lock-traces-${{ github.run_attempt }}
+          path: professors-letter-traces
+          if-no-files-found: error
       - name: Generate 100,000-trial Professor's Letter swap matrix
         run: ./professors-letter-swap-matrix 100000 20260705 professors-letter-swap-matrix.csv
       - name: Upload comparison matrix

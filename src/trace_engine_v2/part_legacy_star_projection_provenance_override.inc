@@ -1,7 +1,11 @@
   std::optional<Card> legacy_star_projection_removed_marker_;
 
+  bool is_legacy_star_discard_projection(const std::vector<Card>& zone) const {
+    return &zone == &state_.discard;
+  }
+
   bool remove_one_legacy_star_projection(std::vector<Card>& zone, const Card card) {
-    const bool is_discard_recovery_projection = &zone == &state_.discard;
+    const bool is_discard_recovery_projection = is_legacy_star_discard_projection(zone);
     auto& discarded_this_turn = state_.discarded_this_turn;
     const int discard_copies = is_discard_recovery_projection ? count_of(state_.discard, card) : 0;
     const int current_turn_copies = is_discard_recovery_projection

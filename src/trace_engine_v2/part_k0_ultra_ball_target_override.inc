@@ -1,3 +1,9 @@
+  bool recipe_has_unseen_pokemon() const {
+    return std::any_of(recipe_.begin(), recipe_.end(), [this](const auto& entry) {
+      return is_pokemon(entry.first) && might_be_unseen(entry.first);
+    });
+  }
+
   bool ultra_ball_has_legal_target() const {
     // Ultra Ball searches for any Pokémon. Once K1 has inspected the physical deck,
     // target legality comes directly from state_.deck, including supported reduced
@@ -19,9 +25,7 @@
     // At K0, a target remains plausible only when the fixed list has a Pokémon copy
     // that public zones have not exhausted:
     // https://github.com/FlareZ123/pokemon-sims/issues/690
-    return std::any_of(recipe_.begin(), recipe_.end(), [this](const auto& entry) {
-      return is_pokemon(entry.first) && might_be_unseen(entry.first);
-    });
+    return recipe_has_unseen_pokemon();
   }
 
   bool play_ultra_ball(const bool permit_payload) {

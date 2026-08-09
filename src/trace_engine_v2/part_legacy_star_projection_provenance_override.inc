@@ -16,6 +16,14 @@
            all_legacy_star_discard_copies_are_current_turn(card);
   }
 
+  void mark_legacy_star_projection_recovery(const Card card) {
+    auto& discarded_this_turn = state_.discarded_this_turn;
+    const auto turn_it = std::find(
+        discarded_this_turn.begin(), discarded_this_turn.end(), card);
+    discarded_this_turn.erase(turn_it);
+    legacy_star_projection_removed_marker_ = card;
+  }
+
   bool remove_one_legacy_star_projection(std::vector<Card>& zone, const Card card) {
     const bool remove_current_turn_provenance =
         should_remove_legacy_star_projection_provenance(zone, card);
@@ -29,11 +37,7 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
     // https://github.com/FlareZ123/pokemon-sims/issues/936
     if (remove_current_turn_provenance) {
-      auto& discarded_this_turn = state_.discarded_this_turn;
-      const auto turn_it = std::find(
-          discarded_this_turn.begin(), discarded_this_turn.end(), card);
-      discarded_this_turn.erase(turn_it);
-      legacy_star_projection_removed_marker_ = card;
+      mark_legacy_star_projection_recovery(card);
     }
     return true;
   }

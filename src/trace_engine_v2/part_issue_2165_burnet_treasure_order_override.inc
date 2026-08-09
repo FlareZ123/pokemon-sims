@@ -119,4 +119,7 @@
     return true;
   }
 #undef play_mysterious_treasure
+#define play_mysterious_treasure play_mysterious_treasure_issue2269_original
 #include "part_issue_2323_early_treasure_regi_override.inc"
+#undef play_mysterious_treasure
+#include "part_issue_2269_oricorio_latias_blender_override.inc"

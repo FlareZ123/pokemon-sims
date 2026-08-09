@@ -27,10 +27,15 @@ def _simulator_source_paths(repo_root: Path) -> list[Path]:
     ]
 
 
+def _missing_paths(paths: list[Path]) -> list[Path]:
+    """Return required provenance inputs that are absent from disk."""
+    return [path for path in paths if not path.is_file()]
+
+
 def _required_policy_paths(repo_root: Path) -> list[Path]:
     """Collect and validate every required aggregate simulator input."""
     paths = [repo_root / "CMakeLists.txt", *_simulator_source_paths(repo_root)]
-    missing = [path for path in paths if not path.is_file()]
+    missing = _missing_paths(paths)
     if missing:
         raise FileNotFoundError(", ".join(str(path) for path in missing))
     return paths

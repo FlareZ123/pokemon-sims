@@ -64,6 +64,11 @@ if helper_name not in source:
     // Dynamic DCI and earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2295
     Engine projected = *this;
+    // A policy projection is an internal legality proof, so suppress its shared
+    // TraceLog pointer. Only the real route may emit attachment, retreat, or Item
+    // actions into the public simulator trace:
+    // Trace contract regression: https://github.com/FlareZ123/pokemon-sims/issues/2295
+    projected.trace_ = nullptr;
     if (!remove_one(projected.state_.hand, payment)) return false;
     if (payment == Card::Grass) {
       ++projected.state_.active->grass;
@@ -166,5 +171,9 @@ add_test(NAME trace_issue_2295_oricorio_paid_retreat
 add_test(NAME trace_issue_2295_tapu_paid_retreat
   COMMAND regidrago_sim --simulate-this --deck regidrago-shell
           --scenario strict-jit/go-first --seed 86 --require-ready-by 4)
+add_test(NAME trace_issue_2295_projection_is_invisible
+  COMMAND "${Python3_EXECUTABLE}"
+          "${CMAKE_CURRENT_SOURCE_DIR}/tests/issue_2295_trace_contract.py"
+          $<TARGET_FILE:regidrago_sim>)
 '''
     atomic_write_locked(CMAKE, cmake.rstrip() + tests + "\n")

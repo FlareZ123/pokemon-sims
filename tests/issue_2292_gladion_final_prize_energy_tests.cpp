@@ -7,6 +7,7 @@
 
 // Reclaimed regression for the exact confirmed route:
 // https://github.com/FlareZ123/pokemon-sims/issues/2292
+// Reclaimed for fresh current-main validation on 2026-08-09.
 namespace sim {
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state, const bool deck_seen = true) {

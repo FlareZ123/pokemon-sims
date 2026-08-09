@@ -43,29 +43,32 @@ jobs:
               (
                   '        state_.active->grass >= 2 && state_.active->fire >= 1 &&\n',
                   '        pays_apex_energy_cost(*state_.active) &&  // DDE/Apex semantics: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/issues/2368\n',
-                  2,
               ),
               (
                   '        state_.active->grass == 1 && state_.active->fire == 1 &&\n',
-                  '        basic_attachment_completes_apex(*state_.active, Card::Grass) &&  // DDE/Apex one-Basic completion: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/issues/2368\n',
-                  2,
+                  '        !pays_apex_energy_cost(*state_.active) && basic_attachment_completes_apex(*state_.active, Card::Grass) &&  // DDE/Apex one-Basic completion: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/issues/2368\n',
               ),
               (
                   '        state_.active->grass >= 2 && state_.active->fire == 0 &&\n',
-                  '        basic_attachment_completes_apex(*state_.active, Card::Fire) &&  // Crispin/DDE completion: https://api.pokemontcg.io/v2/cards/sv7-133 https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/issues/2368\n',
-                  1,
+                  '        !pays_apex_energy_cost(*state_.active) && basic_attachment_completes_apex(*state_.active, Card::Fire) &&  // Crispin/DDE completion: https://api.pokemontcg.io/v2/cards/sv7-133 https://compendium.pokegym.net/category/5-trainers/crispin/ https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/issues/2368\n',
               ),
               (
                   '        state_.active->grass == 1 && state_.active->fire == 0 &&\n',
                   '        minimum_basic_attachments_to_apex(*state_.active, 1, 1) == 2 &&  // Crispin + manual Basic distance: https://api.pokemontcg.io/v2/cards/sv7-133 https://compendium.pokegym.net/category/5-trainers/crispin/ https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/issues/2368\n',
-                  1,
               ),
           ]
-          for old, new, expected in replacements:
-              actual = text.count(old)
-              if actual != expected:
-                  raise SystemExit(f'expected {expected} occurrences of {old.strip()!r}, found {actual}')
-              text = text.replace(old, new)
+          replaced = 0
+          for old, new in replacements:
+              count = text.count(old)
+              if count:
+                  print(f'replacing {count} occurrence(s): {old.strip()}')
+                  text = text.replace(old, new)
+                  replaced += count
+          if replaced == 0:
+              raise SystemExit('no raw Treasure readiness proxy remained after merging current main')
+          for old, _ in replacements:
+              if old in text:
+                  raise SystemExit(f'raw Treasure readiness proxy survived: {old.strip()}')
 
           fd, temp_name = tempfile.mkstemp(prefix=f'.{path.name}.', dir=path.parent)
           try:

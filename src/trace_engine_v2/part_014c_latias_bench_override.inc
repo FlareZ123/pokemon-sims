@@ -149,23 +149,43 @@
 
     Pokemon* target = best_benched_vstar_for_promotion();
     if (target == nullptr || !pays_apex_energy_cost(*target)) return false;
+    const std::size_t target_index =
+        static_cast<std::size_t>(target - state_.bench.data());
 
     const Card payment = hand_count(Card::Grass) > 0 ? Card::Grass : Card::Fire;
-    if (hand_count(payment) == 0 || !remove_one(state_.hand, payment)) return false;
+    if (hand_count(payment) == 0) return false;
 
+    // Preflight the complete post-retreat Blender line on a copy before paying any
+    // real costs. Blender intentionally declines when a public held payload already
+    // has a cheaper live discard outlet, so the retreat route must stay untouched in
+    // those states instead of spending mobility first and discovering that policy later.
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Official attachment, retreat, and Item procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Resource-priority policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug and counterexample discovered in CI: https://github.com/FlareZ123/pokemon-sims/issues/2295
+    Engine projected = *this;
+    if (!remove_one(projected.state_.hand, payment)) return false;
+    if (payment == Card::Grass) ++projected.state_.active->grass;
+    else ++projected.state_.active->fire;
+    projected.state_.manual_energy_used = true;
+    if (payment == Card::Grass) --projected.state_.active->grass;
+    else --projected.state_.active->fire;
+    projected.state_.discard.push_back(payment);
+    std::swap(*projected.state_.active, projected.state_.bench[target_index]);
+    projected.state_.retreat_used = true;
+    if (!projected.play_brilliant_blender()) return false;
+
+    if (!remove_one(state_.hand, payment)) return false;
     // Oricorio GRI 55 and Tapu Lele-GX each have a one-Colorless Retreat Cost.
     // A held Basic Energy may pay that mobility axis while the semantically
-    // Apex-ready Benched Regidrago VSTAR keeps all of its attached Energy. After
-    // promotion, prefer an already-live Professor Burnet payload route so the
-    // one-copy ACE SPEC is preserved; otherwise Brilliant Blender completes the
-    // same-turn strict-JIT payload axis.
+    // Apex-ready Benched Regidrago VSTAR keeps all of its attached Energy, then the
+    // already-preflighted Blender route completes the current strict-JIT payload axis.
     // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
     // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
-    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Official attachment, retreat, Item, and Supporter procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1, strict-JIT, and resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Official attachment, retreat, and Item procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2295
     if (payment == Card::Grass) ++state_.active->grass;
     else ++state_.active->fire;
@@ -177,17 +197,14 @@
     if (payment == Card::Grass) --state_.active->grass;
     else --state_.active->fire;
     state_.discard.push_back(payment);
-    std::swap(*state_.active, *target);
+    std::swap(*state_.active, state_.bench[target_index]);
     state_.retreat_used = true;
     trace("RETREAT", "R-GAME-RETREAT",
           "Paid the one-Energy Basic Active Retreat Cost and promoted the "
           "Apex-ready Regidrago VSTAR.");
 
-    if (professor_burnet_has_live_ready_turn_route() && play_professor_burnet()) {
-      return active_is_vstar() && !need_energy() && !need_payload();
-    }
     if (!play_brilliant_blender()) {
-      throw std::logic_error("Issue-2295 held Brilliant Blender completion disappeared");
+      throw std::logic_error("Issue-2295 Blender preflight diverged during execution");
     }
     return active_is_vstar() && !need_energy() && !need_payload();
   }

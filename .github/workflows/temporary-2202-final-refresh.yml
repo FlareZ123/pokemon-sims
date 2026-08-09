@@ -1,0 +1,41 @@
+name: Temporary 2202 Final Refresh
+
+on:
+  push:
+    branches: [fix/2202-current-main-final]
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: ${{ !contains(github.event.head_commit.message, '[baseline-generated]') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/2202-current-main-final
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+      - name: Regenerate canonical shell evidence
+        run: python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results
+      - name: Regenerate paired deck evidence
+        run: python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results
+      - name: Refresh generated reports
+        run: |
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Commit generated evidence
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add results docs README.md
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "[baseline-generated] Refresh final #2202 source-bound evidence"
+          git push origin HEAD:fix/2202-current-main-final

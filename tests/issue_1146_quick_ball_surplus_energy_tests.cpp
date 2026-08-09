@@ -159,7 +159,7 @@ void test_lower_dci_cost_keeps_priority() {
          "Grass must remain held when lower-DCI fuel exists.");
 }
 
-void test_seed_122_reaches_turn_three() {
+void test_seed_122_keeps_turn_three_with_stronger_connector() {
   const auto scenario = sim::scenario_by_label("matchup-flex-jit/go-second");
   if (!scenario) throw std::runtime_error("Missing matchup-flex-jit/go-second scenario");
   const sim::DeckRecipe recipe = sim::baseline_recipe();
@@ -168,17 +168,24 @@ void test_seed_122_reaches_turn_three() {
   sim::Engine engine(*scenario, recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 
-  // Seed 122 must spend the observable surplus Grass on T3, then use Latias ex and
-  // Brilliant Blender to finish every remaining axis on the same turn:
-  // https://api.pokemontcg.io/v2/cards/swsh1-179
-  // https://api.pokemontcg.io/v2/cards/sv8-76
-  // https://api.pokemontcg.io/v2/cards/sv8-164
-  // https://github.com/FlareZ123/pokemon-sims/issues/1146
+  // #1146 still proves a final surplus Grass may pay Quick Ball. Seed 122 has a
+  // lower-resource #2265 T3 route: after Fire completes GGF and Regidrago evolves,
+  // Mysterious Treasure searches Latias ex with a lower-DCI route-replaced cost,
+  // while Brilliant Blender supplies the same-turn Dragon payload.
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Official rules: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // DCI/resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Original bug: https://github.com/FlareZ123/pokemon-sims/issues/1146
+  // Refined #2265 route: https://github.com/FlareZ123/pokemon-sims/issues/2265#issuecomment-5215563905
   expect(outcome.first_ready_turn == 3, "Seed 122 must become ready on turn three.");
-  expect(trace_contains(trace, "T3 | DISCARD | rules: R-QB-01 | Grass Energy"),
-         "Seed 122 must spend the final surplus Grass on Quick Ball.");
-  expect(trace_contains(trace, "T3 | PLAY ITEM | rules: R-QB-01"),
-         "Seed 122 must search Latias ex on turn three.");
+  expect(trace_contains(trace, "T3 | PLAY ITEM | rules: R-MT-01") &&
+             trace_contains(trace, "Latias ex"),
+         "Seed 122 must use the stronger Mysterious Treasure Latias connector on turn three.");
+  expect(!trace_contains(trace, "T3 | DISCARD | rules: R-QB-01 | Grass Energy"),
+         "Seed 122 must preserve Quick Ball and surplus Grass when Treasure is cheaper.");
   expect(trace_contains(trace, "T3 | PLAY ITEM | rules: R-BLENDER-01"),
          "Seed 122 must use Brilliant Blender on turn three.");
   expect(trace_contains(trace, "T3 | READY |"),
@@ -190,7 +197,7 @@ int main() {
   try {
     test_exact_route_and_controls();
     test_lower_dci_cost_keeps_priority();
-    test_seed_122_reaches_turn_three();
+    test_seed_122_keeps_turn_three_with_stronger_connector();
     std::cout << "Issue 1146 Quick Ball surplus Energy tests passed\n";
     return 0;
   } catch (const std::exception& error) {

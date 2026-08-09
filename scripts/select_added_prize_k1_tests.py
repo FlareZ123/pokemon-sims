@@ -17,8 +17,15 @@ def is_prize_k1_test(path: str) -> bool:
     return _PRIZE_K1_TEST.fullmatch(path) is not None
 
 
+def normalized_paths(paths: Iterable[str]) -> Iterable[str]:
+    for raw_path in paths:
+        path = raw_path.strip()
+        if path:
+            yield path
+
+
 def select_added_prize_k1_tests(paths: Iterable[str]) -> list[str]:
-    return [path for raw in paths if (path := raw.strip()) and is_prize_k1_test(path)]
+    return [path for path in normalized_paths(paths) if is_prize_k1_test(path)]
 
 
 def main() -> int:

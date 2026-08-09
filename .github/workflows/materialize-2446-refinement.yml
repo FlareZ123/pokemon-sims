@@ -1,0 +1,44 @@
+name: Materialize 2446 refinement
+
+on:
+  push:
+    branches:
+      - bug/2446-opening-tapu-dde-crispin
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bug/2446-opening-tapu-dde-crispin
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply refined source patch
+        run: python tools/materialize_issue_2446_refinement.py
+      - name: Build Release tests and simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Run focused and unified validation
+        run: |
+          ./build/regidrago_unified_tests
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 293 --require-ready-by 3 | tee issue-2446-seed-293.txt
+          grep -q "T1 | WONDER TAG.*Steven's Resolve" issue-2446-seed-293.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2
+      - name: Commit materialized refinement
+        run: |
+          rm .github/workflows/materialize-2446-refinement.yml
+          rm tools/materialize_issue_2446_refinement.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/trace_engine_v2/part_tapu_tate_switch_override.inc .github/workflows/materialize-2446-refinement.yml tools/materialize_issue_2446_refinement.py
+          git diff --cached --quiet && exit 1 || true
+          git commit -m "Fix #2446 preserve pre-Regidrago Wonder Tag route"
+          git push origin HEAD:bug/2446-opening-tapu-dde-crispin

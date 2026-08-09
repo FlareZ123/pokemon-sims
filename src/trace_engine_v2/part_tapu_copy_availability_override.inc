@@ -4,8 +4,6 @@
   }
 
   bool tapu_connector_copy_aware_in_play(const Card card) const {
-    if (card != Card::TapuLeleGX) return in_play(card);
-
     // Wonder Tag belongs to the individual Tapu Lele-GX played from hand onto the
     // Bench. Ignore species-level board presence only when another physical copy is
     // proven in hand or in an inspected deck. K0 uncertainty alone must not displace
@@ -15,8 +13,10 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/746
-    return !has_known_tapu_connector_copy() &&
-           in_play(Card::TapuLeleGX);
+    if (card == Card::TapuLeleGX && has_known_tapu_connector_copy()) {
+      return false;
+    }
+    return in_play(card);
   }
 
 // Preserve the legacy Crobat selector under a private name so the confirmed

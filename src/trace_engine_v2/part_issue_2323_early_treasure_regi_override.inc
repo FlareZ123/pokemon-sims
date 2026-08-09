@@ -211,18 +211,30 @@
     if (state_.turn != 2 || !scenario_.going_first ||
         scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
-        !supporter_allowed() || !prizes_known() || state_.manual_energy_used ||
-        !state_.active || state_.active->card != Card::LatiasEx ||
+        !supporter_allowed() || !prizes_known() || !state_.active ||
+        state_.active->card != Card::LatiasEx ||
         !ability_available_for_pokemon(Card::LatiasEx) || state_.retreat_used ||
-        !regi || regi->grass != 1 || regi->fire != 0 ||
-        hand_count(Card::Fire) == 0 || hand_count(Card::StevensResolve) == 0 ||
+        !regi || hand_count(Card::StevensResolve) == 0 ||
         hand_count(Card::RegidragoVstar) > 0 ||
         hand_count(Card::BrilliantBlender) > 0 ||
         !need_vstar() || !need_energy() || !need_payload() ||
         !payload_might_be_in_deck() ||
         deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
-        deck_count_after_search_started(Card::BrilliantBlender) == 0 ||
-        deck_count_after_search_started(Card::Grass) == 0) {
+        deck_count_after_search_started(Card::BrilliantBlender) == 0) {
+      return false;
+    }
+
+    const bool before_t2_attachment = !state_.manual_energy_used &&
+        regi->grass == 1 && regi->fire == 0 &&
+        hand_count(Card::Fire) > 0 &&
+        deck_count_after_search_started(Card::Grass) > 0;
+    const bool after_fire_attachment = state_.manual_energy_used &&
+        regi->grass == 1 && regi->fire >= 1 &&
+        deck_count_after_search_started(Card::Grass) > 0;
+    const bool after_grass_attachment = state_.manual_energy_used &&
+        regi->grass >= 2 && regi->fire == 0 && hand_count(Card::Fire) > 0;
+    if (!before_t2_attachment && !after_fire_attachment &&
+        !after_grass_attachment) {
       return false;
     }
 
@@ -250,7 +262,10 @@
   }
 
   bool play_issue_2658_banked_steven_t3_route() {
-    if (!issue_2658_banked_steven_t3_route_available()) return false;
+    if (!state_.manual_energy_used ||
+        !issue_2658_banked_steven_t3_route_available()) {
+      return false;
+    }
 
     remove_one(state_.hand, Card::StevensResolve);
     state_.discard.push_back(Card::StevensResolve);

@@ -4,13 +4,16 @@
     return &zone == &state_.discard;
   }
 
+  bool all_legacy_star_discard_copies_are_current_turn(const Card card) const {
+    const int current_turn_copies = count_of(state_.discarded_this_turn, card);
+    return current_turn_copies > 0 &&
+           count_of(state_.discard, card) == current_turn_copies;
+  }
+
   bool remove_one_legacy_star_projection(std::vector<Card>& zone, const Card card) {
-    const bool is_discard_recovery_projection = is_legacy_star_discard_projection(zone);
-    auto& discarded_this_turn = state_.discarded_this_turn;
-    const int discard_copies = is_discard_recovery_projection ? count_of(state_.discard, card) : 0;
-    const int current_turn_copies = is_discard_recovery_projection
-        ? count_of(discarded_this_turn, card)
-        : 0;
+    const bool remove_current_turn_provenance =
+        is_legacy_star_discard_projection(zone) &&
+        all_legacy_star_discard_copies_are_current_turn(card);
     if (!remove_one(zone, card)) return false;
 
     // Pokémon Communication preflight projects a Legacy Star recovery before it
@@ -20,8 +23,8 @@
     // https://api.pokemontcg.io/v2/cards/sm9-152
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
     // https://github.com/FlareZ123/pokemon-sims/issues/936
-    if (is_discard_recovery_projection && current_turn_copies > 0 &&
-        discard_copies == current_turn_copies) {
+    if (remove_current_turn_provenance) {
+      auto& discarded_this_turn = state_.discarded_this_turn;
       const auto turn_it = std::find(
           discarded_this_turn.begin(), discarded_this_turn.end(), card);
       discarded_this_turn.erase(turn_it);

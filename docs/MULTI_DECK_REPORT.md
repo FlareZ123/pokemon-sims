@@ -59,14 +59,14 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 | Strict JIT, turn-two Item lock, first | 4.656% ± 0.067 | 8.665% ± 0.089 | 14.898% ± 0.113 | 85.102% ± 0.113 |
 | Strict JIT, Rule Box Ability lock, first | 4.929% ± 0.068 | 18.553% ± 0.123 | 30.675% ± 0.146 | 69.325% ± 0.146 |
 | Strict JIT, turn-two Item + Rule Box Ability lock, first | 0.973% ± 0.031 | 2.399% ± 0.048 | 4.953% ± 0.069 | 95.047% ± 0.069 |
-| Strict JIT, going second | 47.828% ± 0.158 | 63.827% ± 0.152 | 74.467% ± 0.138 | 25.533% ± 0.138 |
+| Strict JIT, going second | 47.828% ñ 0.158 | 63.827% ± 0.152 | 74.467% ± 0.138 | 25.533% ± 0.138 |
 | Matchup-flex JIT, going second | 51.262% ± 0.158 | 67.163% ± 0.149 | 76.796% ± 0.133 | 23.204% ± 0.133 |
 | No discard control, going second | 59.434% ± 0.155 | 73.939% ± 0.139 | 82.494% ± 0.120 | 17.506% ± 0.120 |
 | Strict JIT, turn-two Item lock, second | 6.866% ± 0.080 | 12.754% ± 0.105 | 19.120% ± 0.124 | 80.880% ± 0.124 |
 | Strict JIT, Rule Box Ability lock, second | 12.477% ± 0.104 | 24.680% ± 0.136 | 34.374% ± 0.150 | 65.626% ± 0.150 |
 | Strict JIT, turn-two Item + Rule Box Ability lock, second | 1.903% ± 0.043 | 4.399% ± 0.065 | 6.943% ± 0.080 | 93.057% ± 0.080 |
 | Strict JIT, Supporter lock, first | 1.897% ± 0.043 | 7.358% ± 0.083 | 12.485% ± 0.105 | 87.515% ± 0.105 |
-| Strict JIT, Supporter lock, second | 6.546% ± 0.078 | 11.657% ± 0.101 | 16.859% ± 0.118 | 83.141% ± 0.118 |
+| Strict JIT, Supporter lock, second | 6.546% ñ 0.078 | 11.657% ± 0.101 | 16.859% ± 0.118 | 83.141% ± 0.118 |
 
 ### First-ready-turn distribution
 
@@ -158,6 +158,6 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 ## Provenance
 
-Simulator policy digest: `ece779cdcb23679589981da36900554c25a488378f900d562f94a73830c0ce8b`.
+Simulator policy digest: `c24de26b0a7dfb0255e2540e9c0c395d91b0311f6139055e6d293dbdf7e67ea4`.
 
 Comparison CSV SHA-256: `36c1308f3994b98b9fe53016271ee57d32e6b90f313e0ef304a1c00a67b5abf0`.

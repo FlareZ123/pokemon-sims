@@ -13,7 +13,10 @@ PAID_RETREAT_TRACE = (
 
 # The route may use one manual attachment, one retreat, then the held ACE SPEC Item.
 # A copied policy projection must stay invisible in the public trace so it cannot
-# manufacture a second apparent Brilliant Blender play:
+# manufacture a second apparent Brilliant Blender play. Production also preserves
+# the live RNG stream around that projection using the repository's established
+# copied-engine pattern:
+# Projection precedent: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_issue_1873_blender_crispin_supporter_override.inc
 # Official turn / retreat / Item procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
 # Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
 # Confirmed route bug: https://github.com/FlareZ123/pokemon-sims/issues/2295

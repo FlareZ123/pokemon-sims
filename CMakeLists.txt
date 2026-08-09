@@ -328,3 +328,13 @@ add_test(NAME issue_1333_tapu_live_print_contract
 # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2294
 add_test(NAME trace_issue_2294_matchup_first_seed8
   COMMAND regidrago_sim --simulate-this --scenario matchup-flex-jit/go-first --seed 8 --require-ready-by 4)
+
+# Exact source-bound witnesses for an ordinary one-Energy Basic retreat plus
+# held Brilliant Blender strict-JIT route. The production source carries direct
+# card/rule URLs: https://github.com/FlareZ123/pokemon-sims/issues/2295
+add_test(NAME trace_issue_2295_oricorio_paid_retreat
+  COMMAND regidrago_sim --simulate-this --deck regidrago-shell
+          --scenario strict-jit/go-first --seed 29 --require-ready-by 4)
+add_test(NAME trace_issue_2295_tapu_paid_retreat
+  COMMAND regidrago_sim --simulate-this --deck regidrago-shell
+          --scenario strict-jit/go-first --seed 86 --require-ready-by 4)

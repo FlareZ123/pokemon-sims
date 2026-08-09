@@ -13,8 +13,12 @@ from collections.abc import Iterable
 _PRIZE_K1_TEST = re.compile(r"^tests/issue_[0-9]+_prize_k1_.*\.cpp$")
 
 
+def is_prize_k1_test(path: str) -> bool:
+    return _PRIZE_K1_TEST.fullmatch(path) is not None
+
+
 def select_added_prize_k1_tests(paths: Iterable[str]) -> list[str]:
-    return [path for raw in paths if (path := raw.strip()) and _PRIZE_K1_TEST.fullmatch(path)]
+    return [path for raw in paths if (path := raw.strip()) and is_prize_k1_test(path)]
 
 
 def main() -> int:

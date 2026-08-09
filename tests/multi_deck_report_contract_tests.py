@@ -37,11 +37,15 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def read_csv_rows(path: Path) -> list[dict[str, str]]:
+    with path.open(newline="", encoding="utf-8") as handle:
+        return list(csv.DictReader(handle))
+
+
 def main() -> int:
     generator = load_generator()
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
-    with CSV_PATH.open(newline="", encoding="utf-8") as handle:
-        rows = list(csv.DictReader(handle))
+    rows = read_csv_rows(CSV_PATH)
     if not rows:
         raise AssertionError("The named-deck comparison CSV is empty.")
 
@@ -69,8 +73,7 @@ def main() -> int:
     if manifest["simulator_policy_source_sha256"] != simulator_policy_source_digest(REPO_ROOT):
         raise AssertionError("The named-deck comparison is stale for the current simulator.")
 
-    with SHELL_CSV_PATH.open(newline="", encoding="utf-8") as handle:
-        shell_rows = {row["scenario"]: row for row in csv.DictReader(handle)}
+    shell_rows = {row["scenario"]: row for row in read_csv_rows(SHELL_CSV_PATH)}
     comparison_shell = {
         row["scenario"]: row for row in rows if row["deck"] == "regidrago-shell"
     }

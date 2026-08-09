@@ -86,7 +86,10 @@
 #undef play_tate_draw
 #undef play_tate_switch
 #undef choose_discard
+#define choose_discard choose_discard_issue2323_original
 #include "trace_engine_v2/part_issue_1436_full_supporter_dci_override.inc"
+#undef choose_discard
+#include "trace_engine_v2/part_issue_2323_final_payload_guard.inc"
 // part_007.inc opens evolve_best_regi(), and part_008a.inc completes it before
 // this member-function override may be included:
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_007.inc#L169-L172

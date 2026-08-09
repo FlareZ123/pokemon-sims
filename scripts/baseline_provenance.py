@@ -8,6 +8,7 @@ from typing import Protocol
 SIMULATOR_BUILD_INPUT = Path("CMakeLists.txt")
 SIMULATOR_SOURCE_ROOT = Path("src")
 SOURCE_LOCK_SUFFIX = ".lock"
+SOURCE_FRAME_SEPARATOR = b"\0"
 
 
 class _DigestWriter(Protocol):
@@ -62,9 +63,9 @@ def _update_digest(digest: _DigestWriter, repo_root: Path, path: Path) -> None:
     """Frame one source path and its bytes into the aggregate digest."""
     relative_path = path.relative_to(repo_root).as_posix().encode("utf-8")
     digest.update(relative_path)
-    digest.update(b"\0")
+    digest.update(SOURCE_FRAME_SEPARATOR)
     digest.update(path.read_bytes())
-    digest.update(b"\0")
+    digest.update(SOURCE_FRAME_SEPARATOR)
 
 
 def simulator_policy_source_digest(repo_root: Path) -> str:

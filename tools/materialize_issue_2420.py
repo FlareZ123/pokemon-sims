@@ -4,8 +4,7 @@ import textwrap
 source = Path("src/trace_engine_v2/part_team_yell_vstar_override.inc")
 text = source.read_text(encoding="utf-8")
 marker = "  bool play_team_yell_vstar_recovery() {\n"
-helper = textwrap.dedent("""\
-  bool team_yell_prior_turn_regi_v_pays_apex(const Pokemon& pokemon) const {
+helper = """  bool team_yell_prior_turn_regi_v_pays_apex(const Pokemon& pokemon) const {
     // Double Dragon Energy provides two Energy of every type while attached to a Dragon Pokemon.
     // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
     // Apex Dragon costs Grass Grass Fire: https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -15,39 +14,31 @@ helper = textwrap.dedent("""\
            pays_apex_energy_cost(pokemon);
   }
 
-""")
+"""
 if helper not in text:
     if marker not in text:
         raise SystemExit("play_team_yell_vstar_recovery marker missing")
     text = text.replace(marker, helper + marker, 1)
 
-old_bench = textwrap.dedent("""\
-    const bool powered_benched_regi_can_evolve = std::any_of(
+old_bench = """    const bool powered_benched_regi_can_evolve = std::any_of(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
           return pokemon.card == Card::RegidragoV && pokemon.entered_turn < state_.turn &&
                  pokemon.grass >= 2 && pokemon.fire >= 1;
-        });
-""").rstrip("\n")
-new_bench = textwrap.dedent("""\
-    const bool powered_benched_regi_can_evolve = std::any_of(
+        });"""
+new_bench = """    const bool powered_benched_regi_can_evolve = std::any_of(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
           return team_yell_prior_turn_regi_v_pays_apex(pokemon); // https://github.com/FlareZ123/pokemon-sims/issues/2420
-        });
-""").rstrip("\n")
+        });"""
 if old_bench in text:
     text = text.replace(old_bench, new_bench, 1)
 elif new_bench not in text:
     raise SystemExit("powered benched predicate changed unexpectedly")
 
-old_active = textwrap.dedent("""\
-    const bool active_regi_can_be_ready_without_retreat = state_.active &&
+old_active = """    const bool active_regi_can_be_ready_without_retreat = state_.active &&
         state_.active->card == Card::RegidragoV && state_.active->entered_turn < state_.turn &&
-        state_.active->grass >= 2 && state_.active->fire >= 1;
-""").rstrip("\n")
-new_active = textwrap.dedent("""\
-    const bool active_regi_can_be_ready_without_retreat = state_.active &&
-        team_yell_prior_turn_regi_v_pays_apex(*state_.active); // https://github.com/FlareZ123/pokemon-sims/issues/2420
-""").rstrip("\n")
+        state_.active->grass >= 2 && state_.active->fire >= 1;"""
+new_active = """    const bool active_regi_can_be_ready_without_retreat = state_.active &&
+        team_yell_prior_turn_regi_v_pays_apex(*state_.active); // https://github.com/FlareZ123/pokemon-sims/issues/2420"""
 if old_active in text:
     text = text.replace(old_active, new_active, 1)
 elif new_active not in text:

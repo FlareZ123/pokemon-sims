@@ -20,18 +20,29 @@ jobs:
         with:
           ref: fix/dde-semantic-rollup-20260809
           fetch-depth: 0
-      - name: Decode and apply exact locally tested patch
+      - name: Reconstruct, verify, and apply exact locally tested patch
         shell: bash
         run: |
           set -euo pipefail
-          base64 -d .github/dde-semantic-rollup.patch.gz.b64 | gzip -dc > /tmp/dde-semantic-rollup.patch
+          cat .github/dde-rollup-part-00 .github/dde-rollup-part-01 \
+              .github/dde-rollup-part-02 .github/dde-rollup-part-03 \
+              .github/dde-rollup-part-04 .github/dde-rollup-part-05 \
+              > /tmp/dde-semantic-rollup.patch.gz.b64
+          test "$(wc -c < /tmp/dde-semantic-rollup.patch.gz.b64)" -eq 28608
+          base64 -d /tmp/dde-semantic-rollup.patch.gz.b64 > /tmp/dde-semantic-rollup.patch.gz
+          gzip -t /tmp/dde-semantic-rollup.patch.gz
+          gzip -dc /tmp/dde-semantic-rollup.patch.gz > /tmp/dde-semantic-rollup.patch
           git apply --3way --index --whitespace=nowarn /tmp/dde-semantic-rollup.patch
           git diff --cached --check
-          rm .github/dde-semantic-rollup.patch.gz.b64
-          rm .github/workflows/temp-apply-dde-semantic-rollup.yml
-          git add -u .github/dde-semantic-rollup.patch.gz.b64 .github/workflows/temp-apply-dde-semantic-rollup.yml
-          echo 'Applied files:'
+
+          git rm .github/dde-semantic-rollup.patch.gz.b64 \
+                 .github/dde-rollup-part-00 .github/dde-rollup-part-01 \
+                 .github/dde-rollup-part-02 .github/dde-rollup-part-03 \
+                 .github/dde-rollup-part-04 .github/dde-rollup-part-05 \
+                 .github/workflows/temp-apply-dde-semantic-rollup.yml
+          echo 'Applied semantic files and removed all staging transport:'
           git diff --cached --stat
+
       - name: Commit exact semantic rollup
         shell: bash
         run: |

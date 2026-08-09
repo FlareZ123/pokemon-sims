@@ -1,4 +1,4 @@
-  void reset_turn_state() {
+  void reset_per_turn_state() {
     state_.supporter_used = false;
     state_.manual_energy_used = false;
     state_.retreat_used = false;
@@ -10,7 +10,7 @@
 
   void begin_turn(const int turn) {
     state_.turn = turn;
-    reset_turn_state();
+    reset_per_turn_state();
 
     // Drawing a card is the first step at the beginning of every turn, including
     // the first player's opening turn:

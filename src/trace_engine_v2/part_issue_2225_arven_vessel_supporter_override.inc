@@ -71,9 +71,9 @@
 
     const Pokemon* target = best_benched_vstar_for_promotion();
     if (target == nullptr || pays_apex_energy_cost(*target)) return false;
+    const std::array<Card, 2> basic_energies{Card::Grass, Card::Fire};
     const bool held_basic_completes_apex = std::any_of(
-        std::array<Card, 2>{Card::Grass, Card::Fire}.begin(),
-        std::array<Card, 2>{Card::Grass, Card::Fire}.end(),
+        basic_energies.begin(), basic_energies.end(),
         [this, target](const Card energy) {
           if (hand_count(energy) == 0) return false;
           Pokemon projected = *target;

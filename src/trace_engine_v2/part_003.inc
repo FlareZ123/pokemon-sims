@@ -87,7 +87,6 @@ class Engine {
   static int count_of(const std::vector<Card>& zone, const Card card) {
     return static_cast<int>(std::count(zone.begin(), zone.end(), card));
   }
-
   int hand_count(const Card card) const { return count_of(state_.hand, card); }
   int deck_count_after_search_started(const Card card) const { return count_of(state_.deck, card); }
   int prize_count_after_reveal(const Card card) const { return count_of(state_.prizes, card); }
@@ -120,20 +119,26 @@ class Engine {
     return observed;
   }
 
+  static int attached_public_count_on_pokemon(const Pokemon& pokemon,
+                                              const Card card) {
+    switch (card) {
+      case Card::Grass: return pokemon.grass;
+      case Card::Fire: return pokemon.fire;
+      case Card::DoubleDragonEnergy: return pokemon.double_dragon;
+      case Card::ForestSealStone: return pokemon.tool == Tool::ForestSealStone ? 1 : 0;
+      case Card::WishfulBaton: return pokemon.tool == Tool::WishfulBaton ? 1 : 0;
+      case Card::Powerglass: return pokemon.tool == Tool::Powerglass ? 1 : 0;
+      default: return 0;
+    }
+  }
+
   int attached_public_count(const Card card) const {
-    const auto count_on_pokemon = [card](const Pokemon& pokemon) {
-      switch (card) {
-        case Card::Grass: return pokemon.grass;
-        case Card::Fire: return pokemon.fire;
-        case Card::DoubleDragonEnergy: return pokemon.double_dragon;
-        case Card::ForestSealStone: return pokemon.tool == Tool::ForestSealStone ? 1 : 0;
-        case Card::WishfulBaton: return pokemon.tool == Tool::WishfulBaton ? 1 : 0;
-        case Card::Powerglass: return pokemon.tool == Tool::Powerglass ? 1 : 0;
-        default: return 0;
-      }
-    };
-    int count = state_.active ? count_on_pokemon(*state_.active) : 0;
-    for (const Pokemon& pokemon : state_.bench) count += count_on_pokemon(pokemon);
+    int count = state_.active
+        ? attached_public_count_on_pokemon(*state_.active, card)
+        : 0;
+    for (const Pokemon& pokemon : state_.bench) {
+      count += attached_public_count_on_pokemon(pokemon, card);
+    }
     return count;
   }
 

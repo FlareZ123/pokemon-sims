@@ -9,18 +9,14 @@
     state_.discarded_this_turn.clear();
   }
 
-  void record_deck_out_loss() {
-    state_.turn_ended = true;
-    trace("GAME LOST", "R-GAME-DECK-OUT",
-          "No cards remained in deck for the required start-of-turn draw.");
-  }
-
   bool draw_start_of_turn_card() {
     // Drawing a card is the first step at the beginning of every turn, including
     // the first player's opening turn:
     // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Start_Your_Turn
     if (!deck_has_cards()) {
-      record_deck_out_loss();
+      state_.turn_ended = true;
+      trace("GAME LOST", "R-GAME-DECK-OUT",
+            "No cards remained in deck for the required start-of-turn draw.");
       return false;
     }
 

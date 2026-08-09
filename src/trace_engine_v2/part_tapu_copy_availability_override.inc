@@ -12,8 +12,7 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/746
-    if (has_redundant_tapu_connector_copy(card)) return false;
-    return in_play(card);
+    return !has_redundant_tapu_connector_copy(card) && in_play(card);
   }
 
 // Preserve the legacy Crobat selector under a private name so the confirmed

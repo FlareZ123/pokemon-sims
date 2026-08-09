@@ -19,17 +19,18 @@ DeckRecipe professors_letter_demo_recipe() {
     throw std::logic_error(
         "regidrago-shell no longer has exactly two Earthen Vessel");
   }
-  recipe.erase(vessel);
-  recipe.push_back({Card::ProfessorsLetter, 2});
+
+  // Preserve the recipe entry position so a same-seed comparison applies the
+  // exact same shuffle permutation to every unchanged card. The two physical
+  // Earthen Vessel slots alone become Professor's Letter slots.
+  // Professor's Letter: https://api.pokemontcg.io/v2/cards/xy1-123
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2509
+  vessel->first = Card::ProfessorsLetter;
 
   NamedDeck validation{"professors-letter-temporary-swap", recipe};
   std::string error;
   if (!validate_recipe(validation, &error)) throw std::logic_error(error);
-
-  // Temporary diagnostic only. This recipe is deliberately unregistered.
-  // Professor's Letter: https://api.pokemontcg.io/v2/cards/xy1-123
-  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-  // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2509
   return recipe;
 }
 

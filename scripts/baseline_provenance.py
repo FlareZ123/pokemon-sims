@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
@@ -96,12 +96,22 @@ def _update_digest(digest: _Digest, repo_root: Path, path: Path) -> None:
     digest.update(SOURCE_FRAME_SEPARATOR)
 
 
+@dataclass
+class _SourceDigestBuilder:
+    repo_root: Path
+    digest: _Digest = field(default_factory=hashlib.sha256)
+
+    def add_path(self, path: Path) -> None:
+        """Add one framed source input to the aggregate digest."""
+        _update_digest(self.digest, self.repo_root, path)
+
+
 def _build_source_digest(repo_root: Path) -> _Digest:
     """Build the aggregate digest from the stable simulator input sequence."""
-    digest = hashlib.sha256()
+    builder = _SourceDigestBuilder(repo_root)
     for path in simulator_policy_source_paths(repo_root):
-        _update_digest(digest, repo_root, path)
-    return digest
+        builder.add_path(path)
+    return builder.digest
 
 
 def simulator_policy_source_digest(repo_root: Path) -> str:

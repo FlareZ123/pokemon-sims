@@ -8,28 +8,25 @@ permissions:
   contents: read
 
 jobs:
-  screen:
+  confirm:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Expand full connector inventory
-        run: python3 tools/expand_connector_swap_screen.py
-
-      - name: Compile connector swap analyzer
+      - name: Compile connector confirmation
         run: >-
           g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow
-          tools/regidrago_connector_swap_screen_full.cpp
-          -o connector_swap_screen
+          tools/regidrago_connector_swap_confirm.cpp
+          -o connector_swap_confirm
 
-      - name: Run paired connector-only screen
-        run: ./connector_swap_screen 5000 results/connector-swap-screen
+      - name: Run paired 50k all-scenario confirmation
+        run: ./connector_swap_confirm 50000 results/connector-swap-confirm
 
-      - name: Upload connector swap data
+      - name: Upload connector confirmation data
         uses: actions/upload-artifact@v4
         with:
-          name: regidrago-connector-swap-screen
-          path: results/connector-swap-screen
+          name: regidrago-connector-swap-confirm
+          path: results/connector-swap-confirm
           retention-days: 7

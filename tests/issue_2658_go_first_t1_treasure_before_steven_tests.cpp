@@ -109,18 +109,23 @@ bool available_for(const char* label, sim::State state,
 void test_state_driven_boundaries() {
   // This is a K0 route projection. Public exhaustion may disqualify an axis, while
   // hidden Prize identities cannot be consulted before Treasure establishes K1.
+  // TurnTwoItem is legal on T1, so its future lock raises the AMR of spending the
+  // currently legal Treasure; Professor Burnet is the modeled JIT payload outlet
+  // that remains live after the Item lock starts.
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Current-turn Item-lock semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
   // Official first-player T1 Supporter restriction: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
   // K0/K1 and earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2658
+  // Confirmed bug/refinement: https://github.com/FlareZ123/pokemon-sims/issues/2658
   expect(available_for("strict-jit/go-first", route_state()),
          "issue-2658 rejected its state-driven pre-Steven route");
 
   expect(!available_for("strict-jit/go-second", route_state()),
          "issue-2658 displaced the legal T1 Steven route going second");
-  expect(!available_for("strict-jit-turn2-item-lock/go-first", route_state()),
-         "issue-2658 banked a T3 Blender route through scheduled Item lock");
+  expect(available_for("strict-jit-turn2-item-lock/go-first", route_state()),
+         "issue-2658 suppressed a legal T1 Treasure before scheduled Item lock");
   expect(!available_for("strict-jit/go-first", route_state(), true),
          "issue-2658 used the K0 fallback after deck knowledge was established");
 

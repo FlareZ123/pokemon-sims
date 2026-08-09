@@ -1,11 +1,19 @@
-  void reset_per_turn_state() {
+  void reset_turn_action_state() {
     state_.supporter_used = false;
     state_.manual_energy_used = false;
     state_.retreat_used = false;
     state_.stadium_used = false;
     state_.turn_ended = false;
     state_.dark_asset_used = false;  // Dark Asset is limited per turn: https://api.pokemontcg.io/v2/cards/swsh3-104
+  }
+
+  void reset_turn_provenance_state() {
     state_.discarded_this_turn.clear();
+  }
+
+  void reset_per_turn_state() {
+    reset_turn_action_state();
+    reset_turn_provenance_state();
   }
 
   bool draw_start_of_turn_card() {

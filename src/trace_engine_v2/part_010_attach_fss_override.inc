@@ -81,3 +81,5 @@
           "Attached Forest Seal Stone to " + std::string(name(target->card)) + ".");
     return true;
   }
+
+  // Validation-only branch marker for post-cleanup CI; production behavior is unchanged.

@@ -177,8 +177,13 @@
   }
 
   bool issue_2289_quick_ball_tapu_arven_route_available() const {
-    if (scenario_.dci != DciProfile::StrictJit || !scenario_.going_first ||
-        state_.turn != 4 || state_.turn > scenario_.max_turn ||
+    // Route admission follows observable state and current-turn JIT semantics.
+    // Strict JIT and matchup-flex JIT share the same same-turn payload contract;
+    // player order and a literal turn number do not change this connector's legality.
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/2634
+    if (!strict_payload_timing() || state_.turn > scenario_.max_turn ||
         !prizes_known() || item_locked() || !supporter_allowed() ||
         state_.manual_energy_used || state_.vstar_power_used ||
         !state_.active || state_.active->card != Card::RegidragoV ||
@@ -217,7 +222,7 @@
     // Official Item, discard, search, Bench, Ability, Supporter, Tool, VSTAR Power,
     // Energy attachment, and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, earliest-route, dynamic DCI, and current-turn JIT specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    // Confirmed stale-claim bug: https://github.com/FlareZ123/pokemon-sims/issues/2289
+    // Generalized bug: https://github.com/FlareZ123/pokemon-sims/issues/2634
     return true;
   }
 
@@ -239,7 +244,7 @@
     // Official Trainer, Supporter, Item, discard, search, Bench, Ability, Tool,
     // VSTAR Power, evolution, and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Earliest complete route, supporter contention, K1, and DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    // Confirmed stale-claim bug: https://github.com/FlareZ123/pokemon-sims/issues/2289
+    // Generalized bug: https://github.com/FlareZ123/pokemon-sims/issues/2634
     if (!remove_one(state_.hand, Card::QuickBall)) {
       throw std::logic_error("issue-2289 Quick Ball disappeared");
     }
@@ -255,7 +260,7 @@
     }
     shuffle(state_.deck);
     trace("PLAY ITEM", "R-QB-01; R-TAPU-01; P-JIT-01; P-CONNECTOR-01",
-          "Discarded the current-turn Dragon payload and searched Tapu Lele-GX for the T4 Arven completion route.");
+          "Discarded the current-turn Dragon payload and searched Tapu Lele-GX for the current-turn Arven completion route.");
     if (!bench_from_hand(Card::TapuLeleGX, false)) {
       throw std::logic_error("issue-2289 Tapu Lele-GX Bench action failed");
     }
@@ -279,7 +284,7 @@
     }
     shuffle(state_.deck);
     trace("PLAY SUPPORTER", "R-ARVEN-01; R-GAME-SUPPORTER; P-CONNECTOR-01",
-          "Arven searched Forest Seal Stone and Earthen Vessel for the proven T4 route.");
+          "Arven searched Forest Seal Stone and Earthen Vessel for the proven current-turn route.");
 
     if (!remove_one(state_.hand, Card::EarthenVessel)) {
       throw std::logic_error("issue-2289 Earthen Vessel disappeared before play");

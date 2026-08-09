@@ -1,0 +1,191 @@
+name: Materialize issue 2420
+
+on:
+  push:
+    branches:
+      - fix/2420-team-yell-dde-readiness
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/2420-team-yell-dde-readiness
+          fetch-depth: 0
+      - name: Apply focused source and regression fix
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          source = Path('src/trace_engine_v2/part_team_yell_vstar_override.inc')
+          text = source.read_text(encoding='utf-8')
+          marker = '  bool play_team_yell_vstar_recovery() {\n'
+          helper = '''  bool team_yell_prior_turn_regi_v_pays_apex(const Pokemon& pokemon) const {
+    // Team Yell's Cheer should classify a prior-turn Regidrago V by the actual
+    // Apex Dragon payment state. DDE supplies two Energy of every type while
+    // attached to a Dragon Pokemon, so DDE plus either Basic is already ready.
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // DDE semantic-readiness contract: https://github.com/FlareZ123/pokemon-sims/issues/2238
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2420
+    return pokemon.card == Card::RegidragoV &&
+        pokemon.entered_turn < state_.turn && pays_apex_energy_cost(pokemon);
+  }
+
+'''
+          if helper not in text:
+              if marker not in text:
+                  raise SystemExit('play_team_yell_vstar_recovery marker missing')
+              text = text.replace(marker, helper + marker, 1)
+
+          old_bench = '''    const bool powered_benched_regi_can_evolve = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV && pokemon.entered_turn < state_.turn &&
+                 pokemon.grass >= 2 && pokemon.fire >= 1;
+        });'''
+          new_bench = '''    const bool powered_benched_regi_can_evolve = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return team_yell_prior_turn_regi_v_pays_apex(pokemon); // DDE route: https://github.com/FlareZ123/pokemon-sims/issues/2420
+        });'''
+          if old_bench in text:
+              text = text.replace(old_bench, new_bench, 1)
+          elif new_bench not in text:
+              raise SystemExit('powered benched Regidrago predicate changed unexpectedly')
+
+          old_active = '''    const bool active_regi_can_be_ready_without_retreat = state_.active &&
+        state_.active->card == Card::RegidragoV && state_.active->entered_turn < state_.turn &&
+        state_.active->grass >= 2 && state_.active->fire >= 1;'''
+          new_active = '''    const bool active_regi_can_be_ready_without_retreat = state_.active &&
+        team_yell_prior_turn_regi_v_pays_apex(*state_.active); // DDE route: https://github.com/FlareZ123/pokemon-sims/issues/2420'''
+          if old_active in text:
+              text = text.replace(old_active, new_active, 1)
+          elif new_active not in text:
+              raise SystemExit('active Regidrago predicate changed unexpectedly')
+          source.write_text(text, encoding='utf-8')
+
+          test = Path('tests/issue_2420_team_yell_dde_readiness_tests.cpp')
+          test.write_text(r'''#define REGIDRAGO_SIM_NO_MAIN
+#include "../src/regidrago_sim.cpp"
+
+#include <iostream>
+#include <random>
+#include <stdexcept>
+
+namespace sim {
+struct EngineTestAccess {
+  static void set_turn(Engine& engine, const int turn) {
+    engine.state_.turn = turn;
+  }
+  static bool team_yell_powered(const Engine& engine, const Pokemon& pokemon) {
+    return engine.team_yell_prior_turn_regi_v_pays_apex(pokemon);
+  }
+};
+}  // namespace sim
+
+namespace {
+
+void expect(const bool condition, const char* message) {
+  if (!condition) throw std::runtime_error(message);
+}
+
+sim::Pokemon regi_v(const int entered_turn, const int grass, const int fire,
+                    const int dde) {
+  sim::Pokemon result{sim::Card::RegidragoV, entered_turn, grass, fire,
+                      sim::Tool::None};
+  result.double_dragon = dde;
+  return result;
+}
+
+struct Fixture {
+  sim::Scenario scenario{"issue-2420", sim::DciProfile::StrictJit,
+                         sim::LockMode::None, false, 4};
+  sim::DeckRecipe recipe{sim::double_dragon_modeling_recipe()};
+  std::mt19937_64 rng{2420};
+  sim::Engine engine{scenario, recipe, rng};
+  Fixture() { sim::EngineTestAccess::set_turn(engine, 3); }
+};
+
+void test_dde_plus_grass_is_powered() {
+  Fixture fixture;
+  const sim::Pokemon pokemon = regi_v(2, 1, 0, 1);
+  // One DDE plus one Basic Grass pays Apex Dragon's GGF cost.
+  // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2420
+  expect(sim::EngineTestAccess::team_yell_powered(fixture.engine, pokemon),
+         "Team Yell missed DDE plus Grass readiness.");
+}
+
+void test_dde_plus_fire_is_powered() {
+  Fixture fixture;
+  const sim::Pokemon pokemon = regi_v(2, 0, 1, 1);
+  // DDE is flexible, so Fire is also a legal one-Basic completion.
+  // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2420
+  expect(sim::EngineTestAccess::team_yell_powered(fixture.engine, pokemon),
+         "Team Yell missed DDE plus Fire readiness.");
+}
+
+void test_basic_ggf_control() {
+  Fixture fixture;
+  expect(sim::EngineTestAccess::team_yell_powered(
+             fixture.engine, regi_v(2, 2, 1, 0)),
+         "Team Yell regressed the original Basic GGF route.");
+}
+
+void test_dde_only_is_still_short() {
+  Fixture fixture;
+  expect(!sim::EngineTestAccess::team_yell_powered(
+             fixture.engine, regi_v(2, 0, 0, 1)),
+         "Team Yell treated DDE-only as Apex ready.");
+}
+
+void test_evolution_age_and_card_identity_remain_gated() {
+  Fixture fixture;
+  expect(!sim::EngineTestAccess::team_yell_powered(
+             fixture.engine, regi_v(3, 1, 0, 1)),
+         "Team Yell ignored the evolution-age gate.");
+  sim::Pokemon vstar{sim::Card::RegidragoVstar, 2, 1, 0, sim::Tool::None};
+  vstar.double_dragon = 1;
+  expect(!sim::EngineTestAccess::team_yell_powered(fixture.engine, vstar),
+         "Team Yell accepted a VSTAR where the route requires Regidrago V.");
+}
+
+}  // namespace
+
+int main() {
+  try {
+    test_dde_plus_grass_is_powered();
+    test_dde_plus_fire_is_powered();
+    test_basic_ggf_control();
+    test_dde_only_is_still_short();
+    test_evolution_age_and_card_identity_remain_gated();
+    std::cout << "Issue 2420 Team Yell DDE readiness tests passed\n";
+    return 0;
+  } catch (const std::exception& error) {
+    std::cerr << error.what() << '\n';
+    return 1;
+  }
+}
+''', encoding='utf-8')
+          PY
+      - name: Build and run focused regression
+        shell: bash
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target regidrago_unified_tests -j2
+          ctest --test-dir build -R issue_2420_team_yell_dde_readiness_tests --output-on-failure
+      - name: Commit materialized fix
+        shell: bash
+        run: |
+          rm .github/workflows/materialize-2420.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_team_yell_vstar_override.inc tests/issue_2420_team_yell_dde_readiness_tests.cpp .github/workflows/materialize-2420.yml
+          git commit -m "Fix #2420 Team Yell DDE readiness"
+          git push origin HEAD:fix/2420-team-yell-dde-readiness

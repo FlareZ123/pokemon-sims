@@ -166,12 +166,13 @@ def generate_traces(executable: Path, trace_dir: Path) -> list[dict[str, object]
     return manifest_entries
 
 
-def generate(executable: Path, output_dir: Path, trials: int, matrix_seed: int) -> None:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    matrix_path = output_dir / "multi_deck_comparison.csv"
-    generate_matrix_atomic(executable, matrix_path, trials, matrix_seed)
-    traces = generate_traces(executable, output_dir / "multi_deck_traces")
-    manifest = {
+def build_manifest(
+    matrix_path: Path,
+    traces: list[dict[str, object]],
+    trials: int,
+    matrix_seed: int,
+) -> dict[str, object]:
+    return {
         "decks": list(DECKS),
         "scenarios": list(SCENARIOS),
         "matrix_seed": matrix_seed,
@@ -182,6 +183,14 @@ def generate(executable: Path, output_dir: Path, trials: int, matrix_seed: int) 
         "comparison_csv_sha256": sha256(matrix_path),
         "traces": traces,
     }
+
+
+def generate(executable: Path, output_dir: Path, trials: int, matrix_seed: int) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    matrix_path = output_dir / "multi_deck_comparison.csv"
+    generate_matrix_atomic(executable, matrix_path, trials, matrix_seed)
+    traces = generate_traces(executable, output_dir / "multi_deck_traces")
+    manifest = build_manifest(matrix_path, traces, trials, matrix_seed)
     atomic_write_text(
         output_dir / "multi_deck_manifest.json",
         json.dumps(manifest, indent=2, sort_keys=True) + "\n",

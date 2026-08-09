@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import Protocol
 
 
-SIMULATOR_BUILD_INPUT = "CMakeLists.txt"
-SIMULATOR_SOURCE_ROOT = "src"
+SIMULATOR_BUILD_INPUT = Path("CMakeLists.txt")
+SIMULATOR_SOURCE_ROOT = Path("src")
 SOURCE_LOCK_SUFFIX = ".lock"
 
 

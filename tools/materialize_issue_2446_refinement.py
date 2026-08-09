@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import tempfile
 
+# A follow-up branch push ensures the newly added workflow observes this helper.
 PATH = Path("src/trace_engine_v2/part_tapu_tate_switch_override.inc")
 LOCK_PATH = PATH.with_suffix(PATH.suffix + ".lock")
 

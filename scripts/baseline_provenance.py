@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Protocol
 
 
+SIMULATOR_BUILD_INPUT = "CMakeLists.txt"
 SIMULATOR_SOURCE_ROOT = "src"
 SOURCE_LOCK_SUFFIX = ".lock"
 
@@ -34,7 +35,7 @@ def _missing_paths(paths: list[Path]) -> list[Path]:
 
 def _required_policy_paths(repo_root: Path) -> list[Path]:
     """Collect and validate every required aggregate simulator input."""
-    paths = [repo_root / "CMakeLists.txt", *_simulator_source_paths(repo_root)]
+    paths = [repo_root / SIMULATOR_BUILD_INPUT, *_simulator_source_paths(repo_root)]
     missing = _missing_paths(paths)
     if missing:
         raise FileNotFoundError(", ".join(str(path) for path in missing))

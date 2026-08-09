@@ -12,5 +12,5 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/746
-    return !has_redundant_tapu_connector_copy(card) && in_play(card);
+    return in_play(card) && !has_redundant_tapu_connector_copy(card);
   }

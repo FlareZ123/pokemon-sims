@@ -18,7 +18,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Apply axis-based source fix
-        run: python scripts/apply_issue_2293_axis_fix_20260809.py
+        run: |
+          python scripts/apply_issue_2293_axis_fix_20260809.py
+          python scripts/post_patch_issue_2293_axis_20260809.py
       - name: Build and validate exact regression
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -35,7 +37,7 @@ jobs:
           cmp results/multi_deck_comparison.csv /tmp/issue2293-multi.csv
       - name: Materialize source-only fix
         run: |
-          git rm scripts/apply_issue_2293_axis_fix_20260809.py .github/workflows/bootstrap-2293-axis-fix-20260809.yml
+          git rm scripts/apply_issue_2293_axis_fix_20260809.py scripts/post_patch_issue_2293_axis_20260809.py .github/workflows/bootstrap-2293-axis-fix-20260809.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A

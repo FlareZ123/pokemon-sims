@@ -140,3 +140,12 @@
   #include "part_issue_1816_pineco_steven_treasure_override.inc"
   #undef run_secret_box_turn
   #define run_secret_box_turn run_secret_box_turn_issue1816
+
+  // Compare the equal-turn Secret Box + Crispin + Mysterious Treasure route before
+  // the Pineco policy can spend Forretress ex and concede two Prizes for no speed gain:
+  // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+  // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2485
+  #include "part_issue_2485_secret_box_crispin_resource_override.inc"
+  #undef run_secret_box_turn
+  #define run_secret_box_turn run_secret_box_turn_issue2485

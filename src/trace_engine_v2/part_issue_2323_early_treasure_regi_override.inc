@@ -49,7 +49,7 @@
   }
 
   bool play_mysterious_treasure(const bool permit_payload) {
-    if (play_issue_2202_treasure_tapu_crispin(permit_payload)) return true;
+    if (play_issue_2202_treasure_tapu_crispin()) return true;
     if (play_mysterious_treasure_issue2323_original(permit_payload)) return true;
 
     const std::optional<Card> cost = issue_2323_redundant_payload_cost();

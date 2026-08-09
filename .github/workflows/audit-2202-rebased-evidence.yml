@@ -1,0 +1,45 @@
+name: Audit #2202 rebased evidence
+
+on:
+  pull_request:
+    branches: [fix/2202-rebased-20260809]
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+      - name: Verify exact #2202 witnesses
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 1052 --require-ready-by 3 | tee seed-1052.txt
+          grep -q "T3 | DISCARD.*Dialga-GX (Mysterious Treasure cost)" seed-1052.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 691 --require-ready-by 4 | tee seed-691.txt
+          grep -q "T4 | DISCARD.*Dragapult ex (Mysterious Treasure cost)" seed-691.txt
+      - name: Regenerate canonical evidence
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+      - name: Upload generated evidence and repository snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-2202-rebased-evidence
+          path: |
+            results/
+            src/
+            tests/
+            scripts/
+            docs/
+            .github/workflows/
+            CMakeLists.txt
+            README.md
+            seed-1052.txt
+            seed-691.txt
+          if-no-files-found: error

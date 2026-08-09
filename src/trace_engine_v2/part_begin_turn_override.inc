@@ -1,5 +1,4 @@
-  void begin_turn(const int turn) {
-    state_.turn = turn;
+  void reset_turn_state() {
     state_.supporter_used = false;
     state_.manual_energy_used = false;
     state_.retreat_used = false;
@@ -7,6 +6,11 @@
     state_.turn_ended = false;
     state_.dark_asset_used = false;  // Dark Asset is limited per turn: https://api.pokemontcg.io/v2/cards/swsh3-104
     state_.discarded_this_turn.clear();
+  }
+
+  void begin_turn(const int turn) {
+    state_.turn = turn;
+    reset_turn_state();
 
     // Drawing a card is the first step at the beginning of every turn, including
     // the first player's opening turn:

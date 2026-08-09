@@ -26,6 +26,9 @@ SCENARIO_LABELS = {
     "strict-jit-supporter-lock/go-second": "Strict JIT, Supporter lock, second",
 }
 
+CsvRow = dict[str, str]
+ReportEntry = tuple[str, str, str, str]
+
 
 @contextmanager
 def exclusive_lock(path: Path):
@@ -66,7 +69,7 @@ def percent_column(fieldnames: list[str], turn: int) -> str:
     raise KeyError(f"No percentage column found for T{turn}: {fieldnames}")
 
 
-def report_table(entries: list[tuple[str, str, str, str]]) -> str:
+def report_table(entries: list[ReportEntry]) -> str:
     lines = ["| Scenario | T2 | T3 | T4 |", "|---|---:|---:|---:|"]
     for label, t2, t3, t4 in entries:
         lines.append(f"| {label} | {t2}% | {t3}% | {t4}% |")
@@ -74,14 +77,14 @@ def report_table(entries: list[tuple[str, str, str, str]]) -> str:
 
 
 def partition_report_rows(
-    rows: list[dict[str, str]],
+    rows: list[CsvRow],
     scenario_column: str,
     t2_column: str,
     t3_column: str,
     t4_column: str,
-) -> tuple[list[tuple[str, str, str, str]], list[tuple[str, str, str, str]]]:
-    baseline: list[tuple[str, str, str, str]] = []
-    locks: list[tuple[str, str, str, str]] = []
+) -> tuple[list[ReportEntry], list[ReportEntry]]:
+    baseline: list[ReportEntry] = []
+    locks: list[ReportEntry] = []
     for row in rows:
         scenario = row[scenario_column]
         target = locks if "lock" in scenario else baseline
@@ -96,7 +99,7 @@ def partition_report_rows(
     return baseline, locks
 
 
-def report_markdown(rows: list[dict[str, str]], fieldnames: list[str], manifest: dict[str, object]) -> str:
+def report_markdown(rows: list[CsvRow], fieldnames: list[str], manifest: dict[str, object]) -> str:
     scenario_column = "scenario" if "scenario" in fieldnames else fieldnames[0]
     t2_column = percent_column(fieldnames, 2)
     t3_column = percent_column(fieldnames, 3)
@@ -208,7 +211,7 @@ def parse_args() -> argparse.Namespace:
 
 def load_setup_inputs(
     repo_root: Path,
-) -> tuple[dict[str, object], list[dict[str, str]], list[str]]:
+) -> tuple[dict[str, object], list[CsvRow], list[str]]:
     manifest_path = repo_root / "results" / "baseline_manifest.json"
     csv_path = repo_root / "results" / "simulation_results.csv"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -223,7 +226,7 @@ def load_setup_inputs(
 
 def write_setup_documents(
     repo_root: Path,
-    rows: list[dict[str, str]],
+    rows: list[CsvRow],
     fieldnames: list[str],
     manifest: dict[str, object],
 ) -> None:

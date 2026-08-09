@@ -6,7 +6,7 @@ set(ISSUE_1085_SEED 25)
 set(ISSUE_1085_ITEM_LOCK_SCENARIO "strict-jit-turn2-item-lock/go-second")
 set(ISSUE_1085_GO_FIRST_CONTROL_SCENARIO "strict-jit/go-first")
 
-function(run_trace scenario seed output_var)
+function(run_issue_1085_trace scenario seed output_var)
   execute_process(
     COMMAND "${SIMULATOR}" --simulate-this --scenario "${scenario}" --seed "${seed}"
     RESULT_VARIABLE status
@@ -44,7 +44,7 @@ endfunction()
 # Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
 # Future-card oracle prohibition: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
 # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1085
-run_trace("${ISSUE_1085_ITEM_LOCK_SCENARIO}" "${ISSUE_1085_SEED}" issue_1085_seed_25)
+run_issue_1085_trace("${ISSUE_1085_ITEM_LOCK_SCENARIO}" "${ISSUE_1085_SEED}" issue_1085_seed_25)
 require_trace_match(
   "${issue_1085_seed_25}"
   "T1 \\| STAR ALCHEMY \\|.*Crispin"
@@ -87,7 +87,7 @@ require_trace_match(
 # Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
 # Existing route: https://github.com/FlareZ123/pokemon-sims/issues/1071
 # Confirmed bug boundary: https://github.com/FlareZ123/pokemon-sims/issues/1085
-run_trace("${ISSUE_1085_GO_FIRST_CONTROL_SCENARIO}" "${ISSUE_1085_SEED}" issue_1085_going_first_control)
+run_issue_1085_trace("${ISSUE_1085_GO_FIRST_CONTROL_SCENARIO}" "${ISSUE_1085_SEED}" issue_1085_going_first_control)
 require_trace_match(
   "${issue_1085_going_first_control}"
   "T1 \\| STAR ALCHEMY \\|.*Oricorio"

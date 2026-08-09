@@ -1,7 +1,7 @@
 {
   "deck": "regidrago-shell",
   "matrix_seed": 20260705,
-  "simulator_policy_source_sha256": "ece779cdcb23679589981da36900554c25a488378f900d562f94a73830c0ce8b",
+  "simulator_policy_source_sha256": "a9e66a627c7ca7c20c49380beaf19257af5ebbc1187ad98465c830465f18392d",
   "traces": [
     {
       "deadline": 3,

@@ -178,8 +178,11 @@ sim::State banked_steven_state() {
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::LatiasEx, 0, 0, 0,
                               sim::Tool::None};
+  // Pokemon fields are card, entered_turn, grass, fire, tool, DDE:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulator_state.inc
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2658
   state.bench.push_back(
-      sim::Pokemon{sim::Card::RegidragoV, 1, 0, 1, sim::Tool::None});
+      sim::Pokemon{sim::Card::RegidragoV, 1, 1, 0, sim::Tool::None});
   state.hand = {sim::Card::StevensResolve, sim::Card::Fire,
                 sim::Card::Crispin, sim::Card::Klara};
   state.deck = {sim::Card::RegidragoVstar, sim::Card::BrilliantBlender,

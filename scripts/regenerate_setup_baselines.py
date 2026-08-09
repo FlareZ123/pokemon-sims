@@ -72,6 +72,20 @@ def simulate_trace_command(executable: Path, scenario: str, seed: int, deadline:
     ]
 
 
+def aggregate_matrix_command(
+    executable: Path, output_path: Path, trials: int, seed: int
+) -> list[str]:
+    return [
+        str(executable),
+        "--trials",
+        str(trials),
+        "--seed",
+        str(seed),
+        "--out",
+        str(output_path),
+    ]
+
+
 def find_trace_seed(executable: Path, scenario: str, deadline: int, max_seed: int) -> tuple[int, str]:
     for seed in range(1, max_seed + 1):
         completed = run(
@@ -101,17 +115,7 @@ def generate_matrix_atomic(executable: Path, matrix_path: Path, trials: int, mat
         # This is the repository's canonical fixed-seed aggregate command:
         # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
         # https://github.com/FlareZ123/pokemon-sims/issues/642
-        run(
-            [
-                str(executable),
-                "--trials",
-                str(trials),
-                "--seed",
-                str(matrix_seed),
-                "--out",
-                str(temporary_path),
-            ]
-        )
+        run(aggregate_matrix_command(executable, temporary_path, trials, matrix_seed))
         os.replace(temporary_path, matrix_path)
     finally:
         temporary_path.unlink(missing_ok=True)

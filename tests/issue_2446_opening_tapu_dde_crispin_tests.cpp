@@ -133,8 +133,8 @@ void test_pre_regidrago_future_target_is_preserved() {
                 sim::Card::Grass};
   // K0 hides identities from policy, but the physical deck still has to contain
   // unseen cards. Keep Crispin plus both Basic types physically available so this
-  // exact-state test exercises the legacy pre-Regidrago projection rather than an
-  // impossible empty-deck state.
+  // exact-state regression exercises the legacy pre-Regidrago projection rather
+  // than an impossible empty-deck state.
   // K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
   state.deck = {sim::Card::Crispin, sim::Card::Grass, sim::Card::Fire,
                 sim::Card::StevensResolve, sim::Card::RegidragoV,

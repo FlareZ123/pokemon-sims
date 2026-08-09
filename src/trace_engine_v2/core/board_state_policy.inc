@@ -21,6 +21,5 @@
     // A Basic Pokémon cannot evolve on the turn it was put into play:
     // https://www.pokemon.com/us/pokemon-tcg/rules
     // Regidrago VSTAR evolves from Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-136
-    return (state_.active && can_evolve(*state_.active)) ||
-        std::any_of(state_.bench.begin(), state_.bench.end(), can_evolve);
+    return board_has_pokemon_matching(can_evolve);
   }

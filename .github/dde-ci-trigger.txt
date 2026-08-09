@@ -1,1 +1,0 @@
-Temporary connector-authored CI trigger for issue #2368; deleted in the next commit.

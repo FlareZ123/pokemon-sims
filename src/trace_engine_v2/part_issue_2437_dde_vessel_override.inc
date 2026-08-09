@@ -230,9 +230,23 @@
   bool play_issue_1868_vessel_payload_finish() {
     const auto payload = std::find_if(
         state_.hand.begin(), state_.hand.end(), is_payload);
-    const auto missing_energy = state_.active
+    const bool dde_backed = state_.active && state_.active->double_dragon > 0;
+    const bool canonical_grass_orientation = state_.active && !dde_backed &&
+        state_.active->grass == 1 && state_.active->fire >= 1 &&
+        deck_count_after_search_started(Card::Grass) > 0;
+    const auto missing_energy = dde_backed
         ? issue_2437_apex_completing_basic_from_known_deck(*state_.active)
-        : std::optional<Card>{};
+        : (canonical_grass_orientation
+               ? std::optional<Card>{Card::Grass}
+               : std::optional<Card>{});
+    // #1868/#2224 is the canonical GF -> Grass route. DDE-backed states may use
+    // either Basic when semantic projection proves it completes Apex. Canonical
+    // GG -> Fire remains with its dedicated missing-Fire route.
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Canonical route boundaries: https://github.com/FlareZ123/pokemon-sims/issues/1868 https://github.com/FlareZ123/pokemon-sims/issues/2224 https://github.com/FlareZ123/pokemon-sims/issues/2231
+    // DDE migration: https://github.com/FlareZ123/pokemon-sims/issues/2437
     if ((scenario_.dci != DciProfile::StrictJit &&
          scenario_.dci != DciProfile::MatchupFlexJit) ||
         scenario_.locks != LockMode::None || !prizes_known() || item_locked() ||

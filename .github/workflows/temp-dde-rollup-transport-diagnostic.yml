@@ -1,0 +1,41 @@
+name: Temporary DDE rollup transport diagnostic
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-dde-rollup-transport-diagnostic.yml'
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    if: github.head_ref == 'fix/dde-semantic-rollup-20260809' || github.ref_name == 'fix/dde-semantic-rollup-20260809'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/dde-semantic-rollup-20260809
+          fetch-depth: 0
+      - name: Report transport integrity
+        shell: bash
+        run: |
+          set +e
+          echo 'CHUNK_LENGTHS'
+          for f in .github/dde-rollup-part-00 .github/dde-rollup-part-01 .github/dde-rollup-part-02 .github/dde-rollup-part-03 .github/dde-rollup-part-04 .github/dde-rollup-part-05; do
+            printf '%s ' "$f"; wc -c < "$f"
+          done
+          cat .github/dde-rollup-part-00 .github/dde-rollup-part-01 .github/dde-rollup-part-02 .github/dde-rollup-part-03 .github/dde-rollup-part-04 .github/dde-rollup-part-05 > /tmp/payload.b64
+          printf 'TOTAL '; wc -c < /tmp/payload.b64
+          base64 -d /tmp/payload.b64 > /tmp/payload.gz 2>/tmp/base64.err
+          echo "BASE64_EXIT=$?"
+          cat /tmp/base64.err
+          gzip -t /tmp/payload.gz 2>/tmp/gzip.err
+          echo "GZIP_EXIT=$?"
+          cat /tmp/gzip.err
+          if gzip -t /tmp/payload.gz 2>/dev/null; then
+            gzip -dc /tmp/payload.gz > /tmp/rollup.patch
+            printf 'PATCH_BYTES '; wc -c < /tmp/rollup.patch
+            git apply --check --whitespace=nowarn /tmp/rollup.patch 2>/tmp/apply.err
+            echo "APPLY_CHECK_EXIT=$?"
+            cat /tmp/apply.err
+          fi

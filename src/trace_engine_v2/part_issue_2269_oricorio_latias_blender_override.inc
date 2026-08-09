@@ -4,16 +4,20 @@
            deck_count_after_search_started(Card::LatiasEx) > 0;
   }
 
+  bool issue_2269_target_is_apex_ready(const Pokemon* target) const {
+    return target != nullptr && target->card == Card::RegidragoVstar &&
+           pays_apex_energy_cost(*target);
+  }
+
   std::optional<Card> issue_2269_treasure_latias_blender_cost() const {
     const Pokemon* target = target_regi();
     if (!strict_payload_timing() || item_locked() || !prizes_known() ||
-        target == nullptr || target->card != Card::RegidragoVstar ||
         // Apex readiness is semantic so DDE + one Basic is accepted exactly like
         // Basic GGF rather than recreating a raw Grass/Fire migration hole.
         // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
         // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
         // DDE semantic-energy contract: https://github.com/FlareZ123/pokemon-sims/issues/2238
-        !pays_apex_energy_cost(*target) || !need_active_vstar() ||
+        !issue_2269_target_is_apex_ready(target) || !need_active_vstar() ||
         !need_payload() || state_.retreat_used || !state_.active ||
         !is_basic(state_.active->card) ||
         // The established Tapu-active scheduler remains authoritative. This route

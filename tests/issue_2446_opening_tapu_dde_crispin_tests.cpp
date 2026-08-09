@@ -131,6 +131,14 @@ void test_pre_regidrago_future_target_is_preserved() {
                 sim::Card::BrilliantBlender, sim::Card::MegaDragonite,
                 sim::Card::FieldBlower, sim::Card::Arven,
                 sim::Card::Grass};
+  // K0 hides identities from policy, but the physical deck still has to contain
+  // unseen cards. Keep Crispin plus both Basic types physically available so this
+  // exact-state test exercises the legacy pre-Regidrago projection rather than an
+  // impossible empty-deck state.
+  // K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  state.deck = {sim::Card::Crispin, sim::Card::Grass, sim::Card::Fire,
+                sim::Card::StevensResolve, sim::Card::RegidragoV,
+                sim::Card::RegidragoVstar, sim::Card::ForestSealStone};
   sim::EngineTestAccess::set_state(fixture.engine, std::move(state), false, false);
 
   // This K0 state matches the seed-293 pre-search graph. Arven is already held,
@@ -142,7 +150,6 @@ void test_pre_regidrago_future_target_is_preserved() {
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
   // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
   // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-  // K0/K1 and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
   // Existing regression contract: https://github.com/FlareZ123/pokemon-sims/issues/1022
   // Refined interaction scope: https://github.com/FlareZ123/pokemon-sims/issues/2446
   expect(sim::EngineTestAccess::future_wonder_tag_target(fixture.engine),

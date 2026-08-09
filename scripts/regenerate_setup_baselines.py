@@ -57,21 +57,25 @@ def run(command: list[str], *, check: bool = True) -> subprocess.CompletedProces
     )
 
 
+def simulate_trace_command(executable: Path, scenario: str, seed: int, deadline: int) -> list[str]:
+    return [
+        str(executable),
+        "--simulate-this",
+        "--deck",
+        "regidrago-shell",
+        "--scenario",
+        scenario,
+        "--seed",
+        str(seed),
+        "--require-ready-by",
+        str(deadline),
+    ]
+
+
 def find_trace_seed(executable: Path, scenario: str, deadline: int, max_seed: int) -> tuple[int, str]:
     for seed in range(1, max_seed + 1):
         completed = run(
-            [
-                str(executable),
-                "--simulate-this",
-                "--deck",
-                "regidrago-shell",
-                "--scenario",
-                scenario,
-                "--seed",
-                str(seed),
-                "--require-ready-by",
-                str(deadline),
-            ],
+            simulate_trace_command(executable, scenario, seed, deadline),
             check=False,
         )
         if completed.returncode == 0:

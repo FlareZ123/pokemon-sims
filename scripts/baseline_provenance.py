@@ -20,23 +20,23 @@ def _is_simulator_source_input(path: Path) -> bool:
     return path.is_file() and path.suffix != SOURCE_LOCK_SUFFIX
 
 
-def _simulator_source_paths(repo_root: Path) -> list[Path]:
+def _simulator_source_paths(repo_root: Path) -> tuple[Path, ...]:
     """Collect tracked simulator source inputs, excluding writer lock files."""
-    return [
+    return tuple(
         path
         for path in (repo_root / SIMULATOR_SOURCE_ROOT).rglob("*")
         if _is_simulator_source_input(path)
-    ]
+    )
 
 
-def _missing_paths(paths: list[Path]) -> list[Path]:
+def _missing_paths(paths: tuple[Path, ...]) -> tuple[Path, ...]:
     """Return required provenance inputs that are absent from disk."""
-    return [path for path in paths if not path.is_file()]
+    return tuple(path for path in paths if not path.is_file())
 
 
-def _required_policy_paths(repo_root: Path) -> list[Path]:
+def _required_policy_paths(repo_root: Path) -> tuple[Path, ...]:
     """Collect and validate every required aggregate simulator input."""
-    paths = [repo_root / SIMULATOR_BUILD_INPUT, *_simulator_source_paths(repo_root)]
+    paths = (repo_root / SIMULATOR_BUILD_INPUT, *_simulator_source_paths(repo_root))
     missing = _missing_paths(paths)
     if missing:
         raise FileNotFoundError(", ".join(str(path) for path in missing))

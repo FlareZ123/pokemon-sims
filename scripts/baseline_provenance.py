@@ -10,6 +10,7 @@ SIMULATOR_BUILD_INPUT = Path("CMakeLists.txt")
 SIMULATOR_SOURCE_ROOT = Path("src")
 SOURCE_LOCK_SUFFIX = ".lock"
 SOURCE_FRAME_SEPARATOR = b"\0"
+PathSequence = tuple[Path, ...]
 
 
 class _Digest(Protocol):
@@ -27,7 +28,7 @@ def _is_simulator_source_input(path: Path) -> bool:
 class _SimulatorSourceManifest:
     repo_root: Path
 
-    def source_paths(self) -> tuple[Path, ...]:
+    def source_paths(self) -> PathSequence:
         """Collect tracked simulator source inputs, excluding writer lock files."""
         source_root = self.repo_root / SIMULATOR_SOURCE_ROOT
         return tuple(
@@ -36,27 +37,27 @@ class _SimulatorSourceManifest:
             if _is_simulator_source_input(path)
         )
 
-    def required_paths(self) -> tuple[Path, ...]:
+    def required_paths(self) -> PathSequence:
         """Collect every required aggregate simulator input."""
         return (self.repo_root / SIMULATOR_BUILD_INPUT, *self.source_paths())
 
-    def paths(self) -> tuple[Path, ...]:
+    def paths(self) -> PathSequence:
         """Validate and return the stable aggregate simulator input sequence."""
         validated_paths = _validated_paths(self.required_paths())
         return tuple(sorted(validated_paths))
 
 
-def _simulator_source_paths(repo_root: Path) -> tuple[Path, ...]:
+def _simulator_source_paths(repo_root: Path) -> PathSequence:
     """Collect tracked simulator source inputs, excluding writer lock files."""
     return _SimulatorSourceManifest(repo_root).source_paths()
 
 
-def _missing_paths(paths: tuple[Path, ...]) -> tuple[Path, ...]:
+def _missing_paths(paths: PathSequence) -> PathSequence:
     """Return required provenance inputs that are absent from disk."""
     return tuple(path for path in paths if not path.is_file())
 
 
-def _validated_paths(paths: tuple[Path, ...]) -> tuple[Path, ...]:
+def _validated_paths(paths: PathSequence) -> PathSequence:
     """Require every provenance input to exist and return it unchanged."""
     missing = _missing_paths(paths)
     if missing:
@@ -64,12 +65,12 @@ def _validated_paths(paths: tuple[Path, ...]) -> tuple[Path, ...]:
     return paths
 
 
-def _required_policy_paths(repo_root: Path) -> tuple[Path, ...]:
+def _required_policy_paths(repo_root: Path) -> PathSequence:
     """Collect and validate every required aggregate simulator input."""
     return _validated_paths(_SimulatorSourceManifest(repo_root).required_paths())
 
 
-def simulator_policy_source_paths(repo_root: Path) -> tuple[Path, ...]:
+def simulator_policy_source_paths(repo_root: Path) -> PathSequence:
     """Return every tracked input that can affect aggregate simulator output."""
     # Include the complete simulator source tree. In particular, part_016 owns the
     # aggregate scenario order, per-scenario seed derivation, simulate() invocation,
@@ -107,7 +108,7 @@ class _SourceDigestBuilder:
         """Add one framed source input to the aggregate digest."""
         _update_digest(self.digest, self.repo_root, path)
 
-    def add_paths(self, paths: tuple[Path, ...]) -> None:
+    def add_paths(self, paths: PathSequence) -> None:
         """Add a stable sequence of source inputs to the aggregate digest."""
         for path in paths:
             self.add_path(path)

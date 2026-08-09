@@ -1,3 +1,8 @@
+  bool tapu_connector_copy_known_in_hand_or_deck() const {
+    return hand_count(Card::TapuLeleGX) > 0 ||
+           known_deck_contains(Card::TapuLeleGX);
+  }
+
   bool tapu_connector_copy_aware_in_play(const Card card) const {
     if (card != Card::TapuLeleGX) return in_play(card);
 
@@ -10,9 +15,7 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/746
-    const bool has_tapu_in_hand = hand_count(Card::TapuLeleGX) > 0;
-    const bool has_known_tapu_in_deck = known_deck_contains(Card::TapuLeleGX);
-    return !has_tapu_in_hand && !has_known_tapu_in_deck &&
+    return !tapu_connector_copy_known_in_hand_or_deck() &&
            in_play(Card::TapuLeleGX);
   }
 

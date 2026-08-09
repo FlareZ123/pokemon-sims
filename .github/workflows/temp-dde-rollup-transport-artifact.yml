@@ -1,0 +1,47 @@
+name: Temporary DDE rollup transport artifact
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-dde-rollup-transport-artifact.yml'
+  workflow_dispatch:
+
+jobs:
+  diagnose-artifact:
+    if: github.head_ref == 'fix/dde-semantic-rollup-20260809' || github.ref_name == 'fix/dde-semantic-rollup-20260809'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/dde-semantic-rollup-20260809
+          fetch-depth: 0
+      - name: Write transport diagnostic
+        shell: bash
+        run: |
+          set +e
+          : > diagnostic.txt
+          echo CHUNK_LENGTHS >> diagnostic.txt
+          for f in .github/dde-rollup-part-00 .github/dde-rollup-part-01 .github/dde-rollup-part-02 .github/dde-rollup-part-03 .github/dde-rollup-part-04 .github/dde-rollup-part-05; do
+            printf '%s ' "$f" >> diagnostic.txt; wc -c < "$f" >> diagnostic.txt
+          done
+          cat .github/dde-rollup-part-00 .github/dde-rollup-part-01 .github/dde-rollup-part-02 .github/dde-rollup-part-03 .github/dde-rollup-part-04 .github/dde-rollup-part-05 > /tmp/payload.b64
+          printf 'TOTAL ' >> diagnostic.txt; wc -c < /tmp/payload.b64 >> diagnostic.txt
+          base64 -d /tmp/payload.b64 > /tmp/payload.gz 2>/tmp/base64.err
+          echo "BASE64_EXIT=$?" >> diagnostic.txt
+          sed -n '1,10p' /tmp/base64.err >> diagnostic.txt
+          gzip -t /tmp/payload.gz 2>/tmp/gzip.err
+          echo "GZIP_EXIT=$?" >> diagnostic.txt
+          sed -n '1,10p' /tmp/gzip.err >> diagnostic.txt
+          if gzip -t /tmp/payload.gz 2>/dev/null; then
+            gzip -dc /tmp/payload.gz > /tmp/rollup.patch
+            printf 'PATCH_BYTES ' >> diagnostic.txt; wc -c < /tmp/rollup.patch >> diagnostic.txt
+            git apply --check --whitespace=nowarn /tmp/rollup.patch 2>/tmp/apply.err
+            echo "APPLY_CHECK_EXIT=$?" >> diagnostic.txt
+            sed -n '1,30p' /tmp/apply.err >> diagnostic.txt
+          fi
+          cat diagnostic.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dde-rollup-transport-diagnostic
+          path: diagnostic.txt

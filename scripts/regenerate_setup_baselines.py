@@ -15,6 +15,7 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.baseline_provenance import simulator_policy_source_digest
 
+BASELINE_DECK = "regidrago-shell"
 TRACE_SPECS = (
     ("strict-jit/go-second", 3, "strict_jit_go_second"),
     ("strict-jit/go-first", 4, "strict_jit_go_first"),
@@ -62,7 +63,7 @@ def simulate_trace_command(executable: Path, scenario: str, seed: int, deadline:
         str(executable),
         "--simulate-this",
         "--deck",
-        "regidrago-shell",
+        BASELINE_DECK,
         "--scenario",
         scenario,
         "--seed",
@@ -128,7 +129,7 @@ def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, m
     trace_dir.mkdir(parents=True, exist_ok=True)
 
     manifest: dict[str, object] = {
-        "deck": "regidrago-shell",
+        "deck": BASELINE_DECK,
         "matrix_seed": matrix_seed,
         "trials": trials,
         # Bind the published matrix to every aggregate simulator input, including

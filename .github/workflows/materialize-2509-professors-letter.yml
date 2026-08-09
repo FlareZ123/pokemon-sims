@@ -47,6 +47,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # GITHUB_TOKEN cannot publish workflow-file changes. The materializer
+          # deliberately leaves those changes for the GitHub connector, while this
+          # job publishes only the already-compiled gameplay/test/analyzer source.
+          git restore -- .github/workflows/ci.yml .github/workflows/materialize-2509-professors-letter.yml
+          rm -f professors-letter-smoke.csv professors-letter-swap-matrix
           git config user.name "pokemon-sims materializer"
           git config user.email "actions@users.noreply.github.com"
           git add -A

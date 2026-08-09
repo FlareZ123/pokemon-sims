@@ -5,6 +5,7 @@
 #include <iostream>
 #include <random>
 #include <stdexcept>
+#include <tuple>
 #include <vector>
 
 namespace sim {
@@ -51,7 +52,7 @@ struct Fixture {
 
   Fixture()
       : scenario{"issue-2430/exact", sim::DciProfile::StrictJit,
-       sim::LockMode::None, false, 5},
+                 sim::LockMode::None, false, 5},
         recipe(sim::double_dragon_modeling_recipe()),
         rng(2430),
         trace{true, {}},
@@ -59,7 +60,7 @@ struct Fixture {
 };
 
 sim::Pokemon pokemon(const sim::Card card, const int grass = 0,
-           const int fire = 0, const int dde = 0) {
+                     const int fire = 0, const int dde = 0) {
   sim::Pokemon result{card, 1, grass, fire, sim::Tool::None};
   result.double_dragon = dde;
   return result;
@@ -95,16 +96,16 @@ void run_issue_2158_variant(const int grass, const int fire, const int dde) {
   // https://github.com/FlareZ123/pokemon-sims/issues/2158
   // https://github.com/FlareZ123/pokemon-sims/issues/2430
   require(sim::EngineTestAccess::issue_2158_available(fixture.engine),
-"Issue-2158 paid Oricorio route rejected an Apex-ready Benched VSTAR.");
+          "Issue-2158 paid Oricorio route rejected an Apex-ready Benched VSTAR.");
   require(sim::EngineTestAccess::play_issue_2158(fixture.engine),
-"Issue-2158 paid Oricorio retreat did not resolve.");
+          "Issue-2158 paid Oricorio retreat did not resolve.");
   const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
   require(after.active && after.active->card == sim::Card::RegidragoVstar &&
-    sim::EngineTestAccess::pays_apex_energy_cost(
-        fixture.engine, *after.active),
-"Issue-2158 did not promote the Apex-ready VSTAR.");
+              sim::EngineTestAccess::pays_apex_energy_cost(
+                  fixture.engine, *after.active),
+          "Issue-2158 did not promote the Apex-ready VSTAR.");
   require(std::count(after.hand.begin(), after.hand.end(), sim::Card::ProfessorBurnet) == 1,
-"Issue-2158 retreat consumed the held Burnet Supporter.");
+          "Issue-2158 retreat consumed the held Burnet Supporter.");
 }
 
 void run_tapu_variant(const int grass, const int fire, const int dde) {
@@ -125,12 +126,12 @@ void run_tapu_variant(const int grass, const int fire, const int dde) {
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/issues/2430
   require(sim::EngineTestAccess::pay_tapu(fixture.engine),
-"Paid Tapu retreat rejected an Apex-ready Benched VSTAR.");
+          "Paid Tapu retreat rejected an Apex-ready Benched VSTAR.");
   const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
   require(after.active && after.active->card == sim::Card::RegidragoVstar &&
-    sim::EngineTestAccess::pays_apex_energy_cost(
-        fixture.engine, *after.active),
-"Paid Tapu retreat did not promote the Apex-ready VSTAR.");
+              sim::EngineTestAccess::pays_apex_energy_cost(
+                  fixture.engine, *after.active),
+          "Paid Tapu retreat did not promote the Apex-ready VSTAR.");
 }
 
 void run_banked_oricorio_variant(const int grass, const int fire, const int dde) {
@@ -154,12 +155,12 @@ void run_banked_oricorio_variant(const int grass, const int fire, const int dde)
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/issues/2430
   require(sim::EngineTestAccess::pay_banked_oricorio(fixture.engine),
-"Banked Oricorio retreat rejected an Apex-ready Benched VSTAR.");
+          "Banked Oricorio retreat rejected an Apex-ready Benched VSTAR.");
   const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
   require(after.active && after.active->card == sim::Card::RegidragoVstar &&
-    sim::EngineTestAccess::pays_apex_energy_cost(
-        fixture.engine, *after.active),
-"Banked Oricorio retreat did not promote the Apex-ready VSTAR.");
+              sim::EngineTestAccess::pays_apex_energy_cost(
+                  fixture.engine, *after.active),
+          "Banked Oricorio retreat did not promote the Apex-ready VSTAR.");
 }
 
 }  // namespace
@@ -171,7 +172,7 @@ int main() {
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/issues/2430
   for (const auto [grass, fire, dde] : std::vector<std::tuple<int, int, int>>{
- {1, 0, 1}, {0, 1, 1}, {2, 1, 0}}) {
+           {1, 0, 1}, {0, 1, 1}, {2, 1, 0}}) {
     run_issue_2158_variant(grass, fire, dde);
     run_tapu_variant(grass, fire, dde);
     run_banked_oricorio_variant(grass, fire, dde);

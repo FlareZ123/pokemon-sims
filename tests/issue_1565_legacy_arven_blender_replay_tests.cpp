@@ -33,25 +33,29 @@ void test_seed_6_uses_cheaper_direct_vessel_finish_on_turn_three() {
   sim::Engine engine(*scenario, deck->recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 
-  // Current seed 6 reaches the same earliest T3 window through the already-held
-  // Earthen Vessel: its cost discards Mega Dragonite ex for strict-JIT payload,
-  // Vessel finds Grass, and the unused manual attachment completes Apex. This
-  // preserves Legacy Star, Arven, and Brilliant Blender for the equal-turn route.
+  // Powerglass has already attached the final Grass at the end of T2, so T3
+  // begins with an Apex-ready GGF attacker. The already-held Earthen Vessel then
+  // has a cheaper equal-turn role than Legacy Star -> Arven -> Brilliant Blender:
+  // its mandatory cost discards Mega Dragonite ex as the current-turn payload and
+  // its legal Basic-Energy search resolves without spending the VSTAR Power,
+  // Supporter action, or ACE SPEC.
+  // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
   // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
   // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
   // Regidrago VSTAR / Apex Dragon / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
   // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
-  // Core Item, discard-cost, Energy-attachment, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Core Item, discard-cost, end-of-turn Tool, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // Equal-turn resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Historical replay defect: https://github.com/FlareZ123/pokemon-sims/issues/1565
   expect(outcome.first_ready_turn == 3 && !outcome.setup_failed,
          "Seed 6 did not reach strict-JIT readiness on turn three.");
-  expect(trace_contains(trace, "T3 | DISCARD | rules: R-EV-01 | Mega Dragonite ex (Earthen Vessel cost)") &&
-             trace_contains(trace, "T3 | Earthen Vessel |") &&
-             trace_contains(trace, "T3 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago VSTAR") &&
+  expect(trace_contains(trace, "T2 | POWERGLASS | rules: R-POWERGLASS-01 | Attached Grass Energy from discard at end of turn.") &&
+             trace_contains(trace, "T3 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago VSTAR [GGF] + Powerglass") &&
+             trace_contains(trace, "T3 | DISCARD | rules: R-EV-01 | Mega Dragonite ex (Earthen Vessel cost)") &&
+             trace_contains(trace, "T3 | Earthen Vessel | rules: R-EV-01; R-GAME-ITEM | Searched up to 2 Basic Energy: Grass Energy, Grass Energy.") &&
              trace_contains(trace, "T3 | READY |"),
-         "Seed 6 did not execute the direct Vessel strict-JIT finish.");
+         "Seed 6 did not execute the direct Powerglass-Vessel strict-JIT finish.");
   expect(!trace_contains(trace, "T3 | LEGACY STAR |") &&
              !trace_contains(trace, "T3 | PLAY SUPPORTER | rules: R-ARVEN-01") &&
              !trace_contains(trace, "T3 | PLAY ITEM | rules: R-BLENDER-01"),
@@ -62,7 +66,7 @@ void test_seed_6_uses_cheaper_direct_vessel_finish_on_turn_three() {
 int main() {
   try {
     test_seed_6_uses_cheaper_direct_vessel_finish_on_turn_three();
-    std::cout << "Issue 1565 direct Vessel completion tests passed\n";
+    std::cout << "Issue 1565 direct Powerglass-Vessel completion tests passed\n";
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

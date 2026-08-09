@@ -34,13 +34,18 @@ def _missing_paths(paths: tuple[Path, ...]) -> tuple[Path, ...]:
     return tuple(path for path in paths if not path.is_file())
 
 
-def _required_policy_paths(repo_root: Path) -> tuple[Path, ...]:
-    """Collect and validate every required aggregate simulator input."""
-    paths = (repo_root / SIMULATOR_BUILD_INPUT, *_simulator_source_paths(repo_root))
+def _validated_paths(paths: tuple[Path, ...]) -> tuple[Path, ...]:
+    """Require every provenance input to exist and return it unchanged."""
     missing = _missing_paths(paths)
     if missing:
         raise FileNotFoundError(", ".join(str(path) for path in missing))
     return paths
+
+
+def _required_policy_paths(repo_root: Path) -> tuple[Path, ...]:
+    """Collect and validate every required aggregate simulator input."""
+    paths = (repo_root / SIMULATOR_BUILD_INPUT, *_simulator_source_paths(repo_root))
+    return _validated_paths(paths)
 
 
 def simulator_policy_source_paths(repo_root: Path) -> tuple[Path, ...]:

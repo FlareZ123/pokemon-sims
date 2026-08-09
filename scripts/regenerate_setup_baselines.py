@@ -16,6 +16,8 @@ sys.path.insert(0, str(REPO_ROOT))
 from scripts.baseline_provenance import simulator_policy_source_digest
 
 BASELINE_DECK = "regidrago-shell"
+MATRIX_FILENAME = "simulation_results.csv"
+MANIFEST_FILENAME = "baseline_manifest.json"
 TRACE_SPECS = (
     ("strict-jit/go-second", 3, "strict_jit_go_second"),
     ("strict-jit/go-first", 4, "strict_jit_go_first"),
@@ -167,9 +169,9 @@ def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, m
                 trace_path.name not in expected_trace_files):
             trace_path.unlink()
 
-    generate_matrix_atomic(executable, output_dir / "simulation_results.csv", trials, matrix_seed)
+    generate_matrix_atomic(executable, output_dir / MATRIX_FILENAME, trials, matrix_seed)
     atomic_write_text(
-        output_dir / "baseline_manifest.json",
+        output_dir / MANIFEST_FILENAME,
         json.dumps(manifest, indent=2, sort_keys=True) + "\n",
     )
 

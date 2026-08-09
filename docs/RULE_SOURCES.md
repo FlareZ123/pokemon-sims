@@ -23,6 +23,7 @@ The API records are card-text sources. They do not replace official tournament r
 |---|---|
 | Regidrago V — Celestial Roar | https://api.pokemontcg.io/v2/cards/swsh12-135 |
 | Regidrago VSTAR — Apex Dragon and Legacy Star | https://api.pokemontcg.io/v2/cards/swsh12-136 |
+| Double Dragon Energy `xy6-97` — Dragon-only attachment; provides every Energy type but only 2 Energy at a time while attached to a Dragon; Special Energy and therefore excluded from Basic-Energy-only effects | https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ |
 | Forest Seal Stone — Star Alchemy | https://api.pokemontcg.io/v2/cards/swsh12-156 |
 | Powerglass | https://api.pokemontcg.io/v2/cards/sv6pt5-63 |
 | Dawn | https://api.pokemontcg.io/v2/cards/me2-87 |

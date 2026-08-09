@@ -31,9 +31,10 @@
     return std::nullopt;
   }
 
-  bool play_mysterious_treasure(const bool permit_payload) {
+  bool play_issue_2202_treasure_tapu_crispin(const bool permit_payload) {
+    if (!permit_payload) return false;
     const auto cost = issue_2202_treasure_tapu_crispin_payload_cost();
-    if (!cost) return play_mysterious_treasure_issue2202_original(permit_payload);
+    if (!cost) return false;
 
     remove_one(state_.hand, Card::MysteriousTreasure);
     state_.discard.push_back(Card::MysteriousTreasure);

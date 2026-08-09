@@ -20,6 +20,7 @@ constexpr bool is_item(const Card card) {
     case Card::EvolutionIncense:
     case Card::PokemonCommunication:
     case Card::EarthenVessel:
+    case Card::ProfessorsLetter:  // https://api.pokemontcg.io/v2/cards/xy1-123 ; https://github.com/FlareZ123/pokemon-sims/issues/2509
     case Card::FieldBlower:
     case Card::HisuianHeavyBall:
       return true;

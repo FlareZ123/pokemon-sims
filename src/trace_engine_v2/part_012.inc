@@ -2,8 +2,9 @@
     }
     if (!held_routes_complete_next_turn) {
       for (const Card fallback : {Card::RegidragoVstar, Card::Crispin, payload_outlet,
-                                  Card::MysteriousTreasure, Card::EarthenVessel,
-                                  Card::ForestSealStone, Card::LatiasEx, Card::QuickBall}) {
+                                  Card::MysteriousTreasure, Card::ProfessorsLetter,
+                                  Card::EarthenVessel, Card::ForestSealStone,
+                                  Card::LatiasEx, Card::QuickBall}) {
         if (found.size() >= 3U) break;
         // Crispin needs different Basic Energy types; K1 must not fetch it after the inspected deck proves no needed Energy remains: https://api.pokemontcg.io/v2/cards/sv7-133
         if (fallback == Card::Crispin && !crispin_can_advance_energy_axis()) continue;
@@ -103,7 +104,24 @@ const bool can_pay_search_cost =
         add_item_candidate(Card::EvolutionIncense, true);
         add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);
       }
-      if (need_energy() && live_energy_target) add_item_candidate(Card::EarthenVessel, can_pay_search_cost);
+      if (need_energy() && live_energy_target) {
+        // Arven may search Professor's Letter without proving any additional
+        // discard cost. Preserve Earthen Vessel's higher compression value when
+        // the same current-turn route still needs a Dragon payload discard:
+        // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+        // Professor's Letter: https://api.pokemontcg.io/v2/cards/xy1-123
+        // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+        // https://github.com/FlareZ123/pokemon-sims/issues/2509
+        const bool vessel_compresses_payload =
+            need_payload() && can_play_payload_this_turn();
+        if (vessel_compresses_payload) {
+          add_item_candidate(Card::EarthenVessel, can_pay_search_cost);
+        }
+        add_item_candidate(Card::ProfessorsLetter, true);
+        if (!vessel_compresses_payload) {
+          add_item_candidate(Card::EarthenVessel, can_pay_search_cost);
+        }
+      }
       if (need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) && live_latias_target) {
         add_item_candidate(Card::QuickBall, can_pay_search_cost);
         add_item_candidate(Card::MysteriousTreasure, can_pay_search_cost);

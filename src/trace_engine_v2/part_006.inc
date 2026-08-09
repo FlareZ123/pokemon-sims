@@ -182,6 +182,17 @@ bool issue_1605_arven_crobat_route_available() const {
       return Card::BattleVipPass;
     }
 
+    // Professor's Letter has no discard cost and is live only while it can advance
+    // the Basic-Energy axis. Once that role is absent or legally blocked, it is
+    // lower-DCI discard fuel than live setup connectors:
+    // https://api.pokemontcg.io/v2/cards/xy1-123
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // https://github.com/FlareZ123/pokemon-sims/issues/2509
+    if (!professors_letter_has_live_energy_target() &&
+        has_discardable_copy(Card::ProfessorsLetter)) {
+      return Card::ProfessorsLetter;
+    }
+
     // Dipplin cannot be legally put into play without Applin, which is absent from this deck.
     if (hand_count(Card::Dipplin) > 0) return Card::Dipplin;
 

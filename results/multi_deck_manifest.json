@@ -1,7 +1,10 @@
 {
   "comparison_csv_sha256": "947d162b188d6374493751dffea5b4e7990f726a9b3b080ce6c2073129151680",
   "condition_count": 28,
-  "decks": ["regidrago-shell", "regidrago-pineco"],
+  "decks": [
+    "regidrago-shell",
+    "regidrago-pineco"
+  ],
   "matrix_seed": 20260705,
   "scenarios": [
     "strict-jit/go-first",
@@ -22,12 +25,48 @@
   "simulator_policy_source_sha256": "4ac417a555d4e998feb4308925e1874959417f40c69d1a2cf07e44797a8c3300",
   "total_simulated_games": 2800000,
   "traces": [
-    {"deadline": 3, "deck": "regidrago-shell", "file": "shell_strict_go_second_seed_1.txt", "scenario": "strict-jit/go-second", "seed": 1},
-    {"deadline": 2, "deck": "regidrago-shell", "file": "shell_flex_go_second_seed_3.txt", "scenario": "matchup-flex-jit/go-second", "seed": 3},
-    {"deadline": 4, "deck": "regidrago-shell", "file": "shell_no_control_go_first_seed_1.txt", "scenario": "no-discard-control/go-first", "seed": 1},
-    {"deadline": 2, "deck": "regidrago-pineco", "file": "pineco_steven_secret_box_seed_35.txt", "scenario": "strict-jit/go-second", "seed": 35},
-    {"deadline": 2, "deck": "regidrago-pineco", "file": "pineco_arven_active_recovery_seed_18.txt", "scenario": "strict-jit/go-second", "seed": 18},
-    {"deadline": 2, "deck": "regidrago-pineco", "file": "pineco_gladion_prize_recovery_seed_40.txt", "scenario": "strict-jit/go-second", "seed": 40}
+    {
+      "deadline": 3,
+      "deck": "regidrago-shell",
+      "file": "shell_strict_go_second_seed_1.txt",
+      "scenario": "strict-jit/go-second",
+      "seed": 1
+    },
+    {
+      "deadline": 2,
+      "deck": "regidrago-shell",
+      "file": "shell_flex_go_second_seed_3.txt",
+      "scenario": "matchup-flex-jit/go-second",
+      "seed": 3
+    },
+    {
+      "deadline": 4,
+      "deck": "regidrago-shell",
+      "file": "shell_no_control_go_first_seed_1.txt",
+      "scenario": "no-discard-control/go-first",
+      "seed": 1
+    },
+    {
+      "deadline": 2,
+      "deck": "regidrago-pineco",
+      "file": "pineco_steven_secret_box_seed_35.txt",
+      "scenario": "strict-jit/go-second",
+      "seed": 35
+    },
+    {
+      "deadline": 2,
+      "deck": "regidrago-pineco",
+      "file": "pineco_arven_active_recovery_seed_18.txt",
+      "scenario": "strict-jit/go-second",
+      "seed": 18
+    },
+    {
+      "deadline": 2,
+      "deck": "regidrago-pineco",
+      "file": "pineco_gladion_prize_recovery_seed_40.txt",
+      "scenario": "strict-jit/go-second",
+      "seed": 40
+    }
   ],
   "trials_per_condition": 100000
 }

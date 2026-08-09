@@ -10,10 +10,15 @@
            count_of(state_.discard, card) == current_turn_copies;
   }
 
+  bool should_remove_legacy_star_projection_provenance(
+      const std::vector<Card>& zone, const Card card) const {
+    return is_legacy_star_discard_projection(zone) &&
+           all_legacy_star_discard_copies_are_current_turn(card);
+  }
+
   bool remove_one_legacy_star_projection(std::vector<Card>& zone, const Card card) {
     const bool remove_current_turn_provenance =
-        is_legacy_star_discard_projection(zone) &&
-        all_legacy_star_discard_copies_are_current_turn(card);
+        should_remove_legacy_star_projection_provenance(zone, card);
     if (!remove_one(zone, card)) return false;
 
     // Pokémon Communication preflight projects a Legacy Star recovery before it

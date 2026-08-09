@@ -1,0 +1,36 @@
+name: DDE Reclaim Materializer
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.head_ref == 'fix/dde-semantic-rollup-reclaim-20260809'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Materialize validated DDE three-way merge
+        shell: bash
+        run: |
+          git config user.name "pokemon-sims CI"
+          git config user.email "actions@github.com"
+          git fetch origin fix/dde-semantic-rollup-20260809
+          git merge --no-commit --no-ff origin/fix/dde-semantic-rollup-20260809 || true
+          conflicts="$(git diff --name-only --diff-filter=U)"
+          test "$conflicts" = "src/trace_engine_v2/part_issue_2225_arven_vessel_supporter_override.inc"
+          cp .github/dde-reclaim/resolved-2225.inc src/trace_engine_v2/part_issue_2225_arven_vessel_supporter_override.inc
+          git add src/trace_engine_v2/part_issue_2225_arven_vessel_supporter_override.inc
+          git checkout HEAD -- CMakeLists.txt docs scripts results
+          python .github/dde-reclaim/postmerge.py
+          git add src tests
+          git rm -r .github/dde-reclaim .github/workflows/dde-reclaim.yml
+          test -z "$(git diff --name-only --diff-filter=U)"
+          git diff --check --cached
+          git commit -m "Fix #2368 DDE semantic rollup on current main"
+          git push origin HEAD:${{ github.head_ref }}

@@ -17,14 +17,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Compile bottleneck analyzer
+      - name: Compile broad bottleneck analyzer
         run: >-
           g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow
           tools/regidrago_bottleneck_analysis_v2.cpp
           -o bottleneck_analysis
 
-      - name: Run paired 10k checkpoint sweep
+      - name: Compile balanced-swap confirmer
+        run: >-
+          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow
+          tools/regidrago_bottleneck_confirm.cpp
+          -o bottleneck_confirm
+
+      - name: Run paired 10k checkpoint screen
         run: ./bottleneck_analysis 10000 results/bottleneck-analysis
+
+      - name: Run paired 50k all-scenario confirmation
+        run: ./bottleneck_confirm 50000 results/bottleneck-confirm
 
       # Workflow artifacts preserve generated diagnostic CSVs after the job:
       # https://docs.github.com/en/actions/concepts/workflows-and-actions/workflow-artifacts
@@ -32,5 +41,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: regidrago-shell-bottleneck-checkpoints
-          path: results/bottleneck-analysis
+          path: |
+            results/bottleneck-analysis
+            results/bottleneck-confirm
           retention-days: 7

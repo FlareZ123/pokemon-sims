@@ -1,0 +1,44 @@
+name: Apply issue 2408 current fix
+
+on:
+  push:
+    branches: [fix/2408-burnet-before-serena-current]
+    paths:
+      - scripts/apply_issue_2408_current.py
+      - .github/workflows/apply_issue_2408_current.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/2408-burnet-before-serena-current
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Apply source and regressions
+        run: python scripts/apply_issue_2408_current.py
+      - name: Validate source anchors
+        run: python tests/source_anchor_contract_tests.py
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build focused targets
+        run: cmake --build build --parallel 2
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Materialize branch
+        shell: bash
+        run: |
+          rm scripts/apply_issue_2408_current.py
+          rm .github/workflows/apply_issue_2408_current.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix #2408 prefer K1 Burnet over Serena"
+          git push origin HEAD:fix/2408-burnet-before-serena-current

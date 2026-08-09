@@ -14,9 +14,8 @@
     const bool copy_proven_in_deck = deck_seen_ &&
         std::find(state_.deck.begin(), state_.deck.end(), Card::TapuLeleGX) !=
             state_.deck.end();
-    return copy_proven_in_hand || copy_proven_in_deck
-        ? false
-        : in_play(Card::TapuLeleGX);
+    return !copy_proven_in_hand && !copy_proven_in_deck &&
+           in_play(Card::TapuLeleGX);
   }
 
 // Preserve the legacy Crobat selector under a private name so the confirmed

@@ -32,6 +32,10 @@ jobs:
           grep -q 'WONDER TAG.*Gladion' issue-2293-seed291.txt
           grep -q 'GLADION.*Latias ex' issue-2293-seed291.txt
           grep -q 'T4 | READY' issue-2293-seed291.txt
+      - name: Capture regression diagnostics
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1907 | tee diagnostic-seed1907.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 100 | tee diagnostic-seed100.txt
       - name: Run three independent simulate-this controls
         run: |
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-control-1.txt
@@ -52,6 +56,7 @@ jobs:
           name: issue-2293-semantic-bootstrap-${{ github.run_attempt }}
           path: |
             issue-2293-seed291.txt
+            diagnostic-seed*.txt
             trace-control-*.txt
             results/simulation_results.csv
             results/multi_deck_comparison.csv

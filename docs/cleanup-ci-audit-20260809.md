@@ -1,0 +1,1 @@
+Temporary behavior-neutral CI audit marker for the three direct-main cleanup commits completed during the 2026-08-09 review. This branch exists only to exercise pull-request CI against the current main composition and will be closed without merge after validation.

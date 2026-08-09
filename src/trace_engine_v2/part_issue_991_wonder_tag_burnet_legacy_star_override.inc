@@ -18,7 +18,11 @@
         state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn &&
         hand_count(Card::RegidragoVstar) > 0 &&
-        state_.active->grass >= 2 && state_.active->fire >= 1;
+        // Semantic Apex payment includes a legally attached DDE plus either Basic:
+        // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        // https://api.pokemontcg.io/v2/cards/swsh12-136
+        // https://github.com/FlareZ123/pokemon-sims/issues/2418
+        pays_apex_energy_cost(*state_.active);
 
     // Under Item lock, Turo may solve the Active axis one turn before Burnet solves
     // the strict-JIT payload axis. Preserve the existing delayed-Burnet contract:
@@ -36,8 +40,13 @@
       return false;
     }
 
-    return std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
-      return pokemon.card == Card::RegidragoVstar && pokemon.grass >= 2 && pokemon.fire >= 1;
+    return std::any_of(state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+      // The Turo shortcut owns the Active-position axis when the Benched VSTAR
+      // semantically pays Apex Dragon, including DDE + either Basic Energy:
+      // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://github.com/FlareZ123/pokemon-sims/issues/2418
+      return pokemon.card == Card::RegidragoVstar && pays_apex_energy_cost(pokemon);
     });
   }
 

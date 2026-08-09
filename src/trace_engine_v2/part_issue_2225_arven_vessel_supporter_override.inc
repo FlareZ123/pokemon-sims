@@ -70,12 +70,24 @@
     }
 
     const Pokemon* target = best_benched_vstar_for_promotion();
-    if (target == nullptr) return false;
-    const int missing_grass = std::max(0, 2 - target->grass);
-    const int missing_fire = std::max(0, 1 - target->fire);
-    if (missing_grass + missing_fire != 1) return false;
-    const Card needed_energy = missing_grass == 1 ? Card::Grass : Card::Fire;
+    if (target == nullptr || pays_apex_energy_cost(*target)) return false;
+    const std::array<Card, 2> basic_energies{Card::Grass, Card::Fire};
+    const bool held_basic_completes_apex = std::any_of(
+        basic_energies.begin(), basic_energies.end(),
+        [this, target](const Card energy) {
+          if (hand_count(energy) == 0) return false;
+          Pokemon projected = *target;
+          return attach_energy_card(projected, energy) &&
+              pays_apex_energy_cost(projected);
+        });
+    if (!held_basic_completes_apex) return false;
 
+    // DDE makes Grass and Fire alternative one-card completions, so test each
+    // held physical Basic through the actual attachment/payment semantics.
+    // DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Confirmed DDE migration bug: https://github.com/FlareZ123/pokemon-sims/issues/2421
     // Tate & Liza's switch mode resolves the only remaining board-position axis,
     // while the already held Basic Energy completes GGF with the unused manual
     // attachment and the current-turn Dragon payload is already established. Its
@@ -87,7 +99,7 @@
     // Official one-Supporter-per-turn, switch, and manual-attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Supporter contention and earliest-complete-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed recovery-and-switch bug: https://github.com/FlareZ123/pokemon-sims/issues/2315
-    return hand_count(needed_energy) > 0;
+    return true; // Completing held Basic was projected above: https://github.com/FlareZ123/pokemon-sims/issues/2421
   }
 
   void choose_supporter() {

@@ -11,7 +11,7 @@
         !supporter_allowed() || !state_.active ||
         state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
-        state_.active->grass < 2 || state_.active->fire < 1 ||
+        !pays_apex_energy_cost(*state_.active) ||
         hand_count(Card::StevensResolve) == 0 ||
         hand_count(Card::RegidragoVstar) > 0 ||
         hand_count(Card::ProfessorBurnet) > 0 ||
@@ -82,8 +82,12 @@
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
           return pokemon.card == Card::RegidragoV &&
               pokemon.entered_turn < state_.turn &&
-              pokemon.grass >= 1 && pokemon.fire >= 1;
-        });
+              (pays_apex_energy_cost(pokemon) ||
+               completing_basic_energy_for(pokemon, [this](const Card card) {
+                 return hand_count(card) > 0 ||
+                     deck_count_after_search_started(card) > 0;
+               }).has_value());
+        }); // https://github.com/FlareZ123/pokemon-sims/issues/2424
     if (!prepared_regidrago) return false;
 
     // Steven can reserve the missing VSTAR and final Grass, then ends T3. On T4 the
@@ -97,10 +101,15 @@
     // Core evolution, attachment, Supporter, and promotion procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1030
+    const Pokemon* target = target_regi();
+    const bool energy_ready_or_one_basic = target != nullptr &&
+        (pays_apex_energy_cost(*target) ||
+         completing_basic_energy_for(*target, [this](const Card card) {
+           return hand_count(card) > 0 || deck_count_after_search_started(card) > 0;
+         }).has_value());
     return hand_count(Card::RegidragoVstar) +
                 deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
-        hand_count(Card::Grass) +
-                deck_count_after_search_started(Card::Grass) > 0;
+        energy_ready_or_one_basic;
   }
 
   bool play_known_turo_t4_steven_route() {
@@ -120,12 +129,18 @@
       found.push_back(Card::RegidragoVstar);
     }
     const Pokemon* target = target_regi();
-    if (target != nullptr && target->grass < 2 && hand_count(Card::Grass) == 0) {
-      if (!move_deck_to_hand(Card::Grass)) {
-        throw std::logic_error("Known Turo route Grass target disappeared");
+    if (target != nullptr && !pays_apex_energy_cost(*target)) {
+      const auto completing_basic = completing_basic_energy_for(
+          *target, [this](const Card card) {
+            return hand_count(card) > 0 || deck_count_after_search_started(card) > 0;
+          });
+      if (completing_basic && hand_count(*completing_basic) == 0) {
+        if (!move_deck_to_hand(*completing_basic)) {
+          throw std::logic_error("Known Turo route completing Basic target disappeared");
+        }
+        found.push_back(*completing_basic);
       }
-      found.push_back(Card::Grass);
-    }
+    } // https://github.com/FlareZ123/pokemon-sims/issues/2424
     shuffle(state_.deck);
     state_.turn_ended = true;
 

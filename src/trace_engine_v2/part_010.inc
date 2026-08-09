@@ -89,18 +89,23 @@
       return false;
     }
 
-    const int active_grass_needed = std::max(0, 2 - state_.active->grass);
-    const int active_fire_needed = std::max(0, 1 - state_.active->fire);
-    // Powerglass resolves after the attack step. Preserve a one-discard payload
-    // outlet for the next turn only when its Active holder lacks exactly one Energy
-    // and that Energy is already in discard:
-    // https://api.pokemontcg.io/v2/cards/sv6pt5-63
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    // https://github.com/FlareZ123/pokemon-sims/issues/944
-    return active_grass_needed + active_fire_needed == 1 &&
-        ((active_grass_needed == 1 && count_of(state_.discard, Card::Grass) > 0) ||
-         (active_fire_needed == 1 && count_of(state_.discard, Card::Fire) > 0));
+    if (pays_apex_energy_cost(*state_.active)) return false;
+    for (const Card basic : {Card::Grass, Card::Fire}) {
+      if (count_of(state_.discard, basic) == 0) continue;
+      Pokemon projected = *state_.active;
+      if (attach_energy_card(projected, basic) && pays_apex_energy_cost(projected)) {
+        // Preserve the post-Powerglass payload outlet exactly when one recoverable
+        // Basic card completes Apex. DDE alone is one physical Basic short even
+        // though typed missing-Grass/Fire helpers expose both legal alternatives:
+        // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+        // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+        // Strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2433
+        return true;
+      }
+    }
+    return false;
   }
 
   bool play_earthen_vessel(const bool permit_payload) {
@@ -279,18 +284,31 @@ if (!cost) {
     // https://www.pokemon.com/us/pokemon-tcg/rules
     const auto crispin_completes_energy_axis_this_turn = [this]() {
       if (!crispin_can_advance_energy_axis()) return false;
-      const int grass = grass_needed();
-      const int fire = fire_needed();
-      const bool grass_available = deck_count_after_search_started(Card::Grass) > 0;
-      const bool fire_available = deck_count_after_search_started(Card::Fire) > 0;
-      if (grass == 1 && fire == 0) return grass_available && (fire_available || !state_.manual_energy_used);
-      if (grass == 0 && fire == 1) return fire_available && (grass_available || !state_.manual_energy_used);
-      return grass == 1 && fire == 1 && !state_.manual_energy_used && grass_available && fire_available;
+      const Pokemon* target = target_regi();
+      if (target == nullptr) return false;
+      const int grass_available = deck_count_after_search_started(Card::Grass);
+      const int fire_available = deck_count_after_search_started(Card::Fire);
+      const int physical_needed = minimum_basic_attachments_to_apex(
+          *target, grass_available, fire_available);
+      if (physical_needed < 0) return false;
+      const bool both_types = grass_available > 0 && fire_available > 0;
+      // With both types Crispin may attach one and put the other into hand; the
+      // ordinary manual attachment can add a second physical Basic if unused.
+      // With only one type Crispin attaches none, so only the manual attachment
+      // can finish. This keeps DDE-only at one physical card rather than adding
+      // its alternative Grass/Fire completions: https://github.com/FlareZ123/pokemon-sims/issues/2368
+      if (both_types) return physical_needed <= (state_.manual_energy_used ? 1 : 2);
+      return !state_.manual_energy_used && physical_needed <= 1;
     };
     const auto oricorio_preserves_burnet_payload_line = [this]() {
-      const bool exactly_one_energy_missing = grass_needed() + fire_needed() == 1;
-      const bool needed_energy_in_deck = (grass_needed() == 1 && deck_count_after_search_started(Card::Grass) > 0) ||
-                                         (fire_needed() == 1 && deck_count_after_search_started(Card::Fire) > 0);
+      const Pokemon* energy_target = target_regi();
+      const bool needed_energy_in_deck = energy_target != nullptr &&
+          completing_basic_energy_for(*energy_target, [this](const Card card) {
+            return deck_count_after_search_started(card) > 0;
+          }).has_value();
+      const bool exactly_one_energy_missing = needed_energy_in_deck;
+      // DDE typed options are alternative one-card completions:
+      // https://github.com/FlareZ123/pokemon-sims/issues/2368
       const bool oricorio_in_deck = bench_space() > 0 && !in_play(Card::Oricorio) &&
                                     hand_count(Card::Oricorio) == 0 && deck_count_after_search_started(Card::Oricorio) > 0;
       const bool no_payload_in_hand = std::none_of(state_.hand.begin(), state_.hand.end(), is_payload);

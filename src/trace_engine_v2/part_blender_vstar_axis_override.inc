@@ -141,28 +141,51 @@
   }
 
   bool issue_1646_hold_blender_for_burnet_finish_visible() const {
-    const bool grass_axis_completes = state_.active &&
-        ((!state_.manual_energy_used && state_.active->grass == 1 &&
-          hand_count(Card::Grass) > 0) ||
-         (state_.manual_energy_used && state_.active->grass >= 2));
+    const auto energy_axis_completes = [this]() {
+      if (!state_.active || state_.active->card != Card::RegidragoVstar) {
+        return false;
+      }
+      if (pays_apex_energy_cost(*state_.active)) return true;
+      if (state_.manual_energy_used) return false;
+
+      // Preserve the original pre-attachment hold: when one held Basic can be the
+      // legal manual attachment that finishes Apex, Burnet still owns the equal-turn
+      // payload route and Blender should remain unused. Project the physical card so
+      // DDE and Basic-only states share the same semantic payment test:
+      // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Official manual Energy attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2429
+      for (const Card basic : {Card::Grass, Card::Fire}) {
+        if (hand_count(basic) == 0) continue;
+        Pokemon projected = *state_.active;
+        if (attach_energy_card(projected, basic) &&
+            pays_apex_energy_cost(projected)) {
+          return true;
+        }
+      }
+      return false;
+    }();
 
     // Earthen Vessel has paid its printed cost with the route-dominated Quick
-    // Ball. Before the attachment, the final Grass is held. After the attachment,
-    // GGF is complete. In both states the Supporter slot and Professor Burnet are
-    // live, so Brilliant Blender would duplicate Burnet's current-turn payload:
+    // Ball. Before the final attachment, a held Basic may finish Apex. After the
+    // attachment, semantic Apex payment may be Basic-only or DDE-powered. In both
+    // states Burnet supplies the current-turn payload without consuming Blender:
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
-    // Regidrago VSTAR / Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Core Item, Supporter, attachment, search, discard, and shuffle procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // K1, dynamic DCI, strict JIT, and resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1646
+    // Original route contract: https://github.com/FlareZ123/pokemon-sims/issues/1646
+    // Confirmed DDE regression: https://github.com/FlareZ123/pokemon-sims/issues/2429
     return scenario_.dci == DciProfile::StrictJit &&
         scenario_.locks == LockMode::None && state_.turn == 3 &&
         prizes_known() && supporter_allowed() && state_.active &&
         state_.active->card == Card::RegidragoVstar &&
-        state_.active->fire >= 1 && grass_axis_completes && need_payload() &&
+        energy_axis_completes && need_payload() &&
         hand_count(Card::ProfessorBurnet) > 0 &&
         hand_count(Card::BrilliantBlender) > 0 &&
         count_of(state_.discard, Card::EarthenVessel) > 0 &&
@@ -174,10 +197,15 @@
   bool play_issue_1700_known_prize_gladion_before_blender() {
     const bool prepared_regidrago = std::any_of(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
-          return pokemon.card == Card::RegidragoV &&
-              pokemon.entered_turn < state_.turn && pokemon.grass == 1 &&
-              pokemon.fire == 0;
-        });
+          if (pokemon.card != Card::RegidragoV ||
+              pokemon.entered_turn >= state_.turn || pokemon.grass != 1 ||
+              pokemon.fire != 0 || pays_apex_energy_cost(pokemon)) {
+            return false;
+          }
+          Pokemon with_prized_fire = pokemon;
+          return attach_energy_card(with_prized_fire, Card::Fire) &&
+              apex_energy_progress(with_prized_fire) > apex_energy_progress(pokemon);
+        }); // https://github.com/FlareZ123/pokemon-sims/issues/2428
     const auto prized_fire =
         std::find(state_.prizes.begin(), state_.prizes.end(), Card::Fire);
 

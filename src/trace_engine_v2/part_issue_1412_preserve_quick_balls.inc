@@ -68,15 +68,13 @@
     const Pokemon* active = state_.active ? &*state_.active : nullptr;
     if (active == nullptr || active->card != Card::RegidragoVstar) return false;
 
-    const int missing_grass = std::max(0, 2 - active->grass);
-    const int missing_fire = std::max(0, 1 - active->fire);
-    const bool exactly_one_energy_missing =
-        missing_grass + missing_fire == 1;
     const bool missing_energy_in_deck =
-        (missing_grass == 1 &&
-         deck_count_after_search_started(Card::Grass) > 0) ||
-        (missing_fire == 1 &&
-         deck_count_after_search_started(Card::Fire) > 0);
+        completing_basic_energy_for(*active, [this](const Card card) {
+          return deck_count_after_search_started(card) > 0;
+        }).has_value();
+    const bool exactly_one_energy_missing = missing_energy_in_deck;
+    // DDE-only is one physical Basic attachment from Apex even though either
+    // Basic type can complete it: https://github.com/FlareZ123/pokemon-sims/issues/2368
 
     // Earthen Vessel's printed cost and search resolve the only missing GGF
     // component, Professor Burnet independently establishes a current-turn
@@ -304,5 +302,6 @@
     if (issue_1412_direct_fss_fire_route_visible()) return false;
     if (play_issue_1672_vessel_payload_finish()) return true;
     if (play_issue_1646_vessel_burnet_finish()) return true;
+    if (play_issue_2437_direct_dde_vessel_energy_route()) return true;
     return play_earthen_vessel_issue1412_original(permit_payload);
   }

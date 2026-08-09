@@ -25,13 +25,16 @@ bool play_arven() {
     const bool needs_tool = has_regi_v() && !state_.vstar_power_used &&
                             ((state_.active && state_.active->card == Card::RegidragoV && state_.active->tool == Tool::None) ||
                              std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& p) { return p.card == Card::RegidragoV && p.tool == Tool::None; }));
+    const bool one_searchable_basic_completes = state_.active &&
+      state_.active->card == Card::RegidragoVstar &&
+      completing_basic_energy_for(*state_.active, [this](const Card card) {
+        return might_be_unseen(card);
+      }).has_value();
     const bool final_energy_vessel_dead_role_cost =
       scenario_.dci == DciProfile::NoDiscardControl &&
       !state_.manual_energy_used && state_.active &&
       state_.active->card == Card::RegidragoVstar && !need_payload() &&
-      grass_needed() + fire_needed() == 1 &&
-      ((grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
-       (fire_needed() == 1 && might_be_unseen(Card::Fire))) &&
+      one_searchable_basic_completes &&
       (hand_count(Card::QuickBall) > 0 ||
        hand_count(Card::StevensResolve) > 0 ||
        hand_count(Card::LatiasEx) > 0 ||
@@ -466,9 +469,13 @@ if (known_target && exchange(*known_target)) {
 
     const bool prior_turn_ggf_regi = std::any_of(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          // Project readiness through the canonical Apex payment helper so a prior-turn
+          // Double Dragon Energy counts as its printed two flexible Energy units:
+          // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+          // https://api.pokemontcg.io/v2/cards/swsh12-136
+          // Confirmed DDE migration: https://github.com/FlareZ123/pokemon-sims/issues/2368
           return pokemon.card == Card::RegidragoV &&
-              pokemon.entered_turn < state_.turn && pokemon.grass >= 2 &&
-              pokemon.fire >= 1;
+              pokemon.entered_turn < state_.turn && pays_apex_energy_cost(pokemon);
         });
     if (!prior_turn_ggf_regi) return false;
 

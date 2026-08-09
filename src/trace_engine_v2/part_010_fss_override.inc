@@ -11,20 +11,23 @@
       return false;
     }
 
-    const bool held_manual_already_completes_energy =
-        (grass_needed() == 1 && fire_needed() == 0 && hand_count(Card::Grass) > 0) ||
-        (grass_needed() == 0 && fire_needed() == 1 && hand_count(Card::Fire) > 0);
+    // DDE makes Grass and Fire alternative one-card completions; do not add the
+    // typed helpers as independent deficits. https://github.com/FlareZ123/pokemon-sims/issues/2427
+    const Pokemon* regi = target_regi();
+    const bool held_manual_already_completes_energy = regi != nullptr &&
+        completing_basic_energy_for(*regi, [this](const Card card) {
+          return hand_count(card) > 0;
+        }).has_value();
     if (held_manual_already_completes_energy) return false;
 
     const bool grass_available = deck_count_after_search_started(Card::Grass) > 0;
     const bool fire_available = deck_count_after_search_started(Card::Fire) > 0;
-    const bool crispin_completes_energy =
-        (grass_needed() == 1 && fire_needed() == 0 && grass_available) ||
-        (grass_needed() == 0 && fire_needed() == 1 && fire_available) ||
-        (grass_needed() == 1 && fire_needed() == 1 && grass_available && fire_available);
+    const bool crispin_completes_energy = regi != nullptr &&
+        (minimum_basic_attachments_to_apex(
+             *regi, grass_available ? 1 : 0, fire_available ? 1 : 0) <=
+             (grass_available && fire_available ? 2 : 1));
     if (!crispin_completes_energy) return false;
 
-    const Pokemon* regi = target_regi();
     const bool vstar_can_exist = regi != nullptr &&
         (regi->card == Card::RegidragoVstar ||
          (regi->card == Card::RegidragoV && regi->entered_turn < state_.turn &&
@@ -59,8 +62,7 @@
     const bool powered_prior_turn_regi = std::any_of(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
           return pokemon.card == Card::RegidragoV &&
-              pokemon.entered_turn < state_.turn && pokemon.grass >= 2 &&
-              pokemon.fire >= 1;
+              pokemon.entered_turn < state_.turn && pays_apex_energy_cost(pokemon);
         });
     const bool held_payload =
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
@@ -157,8 +159,8 @@
         entry_connector_count(projected.state_) > current_entry_connector_count;
 
     return !spends_additional_entry_connector && projected.active_is_vstar() &&
-        projected.state_.active->grass >= 2 &&
-        projected.state_.active->fire >= 1 && projected.payload_ready();
+        projected.pays_apex_energy_cost(*projected.state_.active) &&
+        projected.payload_ready();
   }
 
   bool fss_should_bank_tate_for_next_turn_blender_route() const {
@@ -171,8 +173,7 @@
     const bool powered_prior_turn_benched_regi = std::any_of(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
           return pokemon.card == Card::RegidragoV &&
-              pokemon.entered_turn < state_.turn && pokemon.grass >= 2 &&
-              pokemon.fire >= 1;
+              pokemon.entered_turn < state_.turn && pays_apex_energy_cost(pokemon);
         });
     const bool latias_promotion_live_now = state_.active &&
         is_basic(state_.active->card) && !state_.retreat_used &&
@@ -262,7 +263,7 @@
                     [this](const Pokemon& pokemon) {
                       return pokemon.card == Card::RegidragoV &&
                           pokemon.entered_turn == state_.turn &&
-                          pokemon.grass == 0 && pokemon.fire == 0;
+                          total_energy_units(pokemon) == 0;
                     });
   }
 

@@ -84,6 +84,72 @@
     return true;
   }
 
+  bool play_earthen_vessel_semantic_payload_outlet(const bool permit_payload) {
+    const auto cost = choose_discard(
+        permit_payload, true, true, Card::EarthenVessel);
+    const bool payload_only_route = permit_payload && strict_payload_timing() &&
+        !item_locked() && deck_search_available() && state_.active &&
+        active_is_vstar() && pays_apex_energy_cost(*state_.active) &&
+        need_payload() && !need_energy() &&
+        hand_count(Card::EarthenVessel) > 0 &&
+        earthen_vessel_has_legal_target() && cost.has_value() &&
+        is_payload(*cost);
+    if (!payload_only_route) return play_earthen_vessel(permit_payload);
+
+    // Earthen Vessel still has a legal printed effect when the attack's Energy cost
+    // is already paid: its mandatory hand discard can establish the current-turn
+    // Dragon payload, then its up-to-two Basic-Energy search resolves normally.
+    // This is required by the late Steven continuation once DDE + a Basic already
+    // pays Apex; generic Energy-deficit policy must not veto the caller's chosen
+    // payload outlet solely because the Energy axis is complete.
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Item, discard-cost, deck-search, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Strict-JIT and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Original continuation: https://github.com/FlareZ123/pokemon-sims/issues/1017
+    // DDE migration: https://github.com/FlareZ123/pokemon-sims/issues/2424
+    // Umbrella migration audit: https://github.com/FlareZ123/pokemon-sims/issues/2368
+    if (!remove_one(state_.hand, Card::EarthenVessel)) {
+      throw std::logic_error("Semantic-ready Earthen Vessel disappeared");
+    }
+    state_.discard.push_back(Card::EarthenVessel);
+    if (!discard_from_hand(*cost, "Earthen Vessel semantic-ready payload cost",
+                           "R-EV-01; P-DCI-01; P-JIT-01; P-COMPRESS-01")) {
+      throw std::logic_error("Semantic-ready Earthen Vessel payload cost disappeared");
+    }
+    search_energy_to_hand(
+        2, "R-EV-01; R-GAME-ITEM; P-DCI-01; P-JIT-01; P-COMPRESS-01",
+        "Earthen Vessel semantic-ready payload route");
+    return true;
+  }
+
+  bool pays_apex_energy_cost_current_evolution_window(const Pokemon& pokemon) const {
+    const bool first_turn_vstar_continuation = state_.turn == 1 &&
+        scenario_.dci == DciProfile::StrictJit &&
+        pokemon.card == Card::RegidragoV &&
+        pokemon.entered_turn < state_.turn &&
+        hand_count(Card::RegidragoVstar) > 0 &&
+        hand_count(Card::EarthenVessel) > 0 &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
+        earthen_vessel_has_legal_target();
+    if (first_turn_vstar_continuation) {
+      // A Basic Regidrago can have enough attached Energy on the first turn while
+      // still being unable to evolve that turn. The late Steven/Vessel continuation
+      // is a current-turn VSTAR route, so semantic Energy payment must not admit it
+      // until the evolution window is legal. This preserves the T2 Vessel payload
+      // line instead of entering the continuation on T1 and failing its evolution.
+      // Official first-turn evolution restriction: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Original continuation: https://github.com/FlareZ123/pokemon-sims/issues/1017
+      // DDE migration: https://github.com/FlareZ123/pokemon-sims/issues/2424
+      return false;
+    }
+    return pays_apex_energy_cost(pokemon);
+  }
+
   bool secret_box_combo_enabled_issue1875() const {
     return issue_1871_treasure_serena_payload_route_available() ||
         issue_1895_held_crispin_quick_ball_route_available() ||
@@ -179,7 +245,11 @@
     run_secret_box_turn();
   }
 
+#undef play_earthen_vessel
+#undef pays_apex_energy_cost
 #undef secret_box_combo_enabled
 #undef run_secret_box_turn
+#define play_earthen_vessel play_earthen_vessel_semantic_payload_outlet
+#define pays_apex_energy_cost pays_apex_energy_cost_current_evolution_window
 #define secret_box_combo_enabled secret_box_combo_enabled_issue1875
 #define run_secret_box_turn run_secret_box_turn_issue1875

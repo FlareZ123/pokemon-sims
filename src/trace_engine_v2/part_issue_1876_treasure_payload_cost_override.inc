@@ -111,7 +111,7 @@
         state_.supporter_used && state_.active &&
         state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn &&
-        state_.active->grass >= 2 && state_.active->fire >= 1 &&
+        pays_apex_energy_cost(*state_.active) && // https://github.com/FlareZ123/pokemon-sims/issues/2368
         need_vstar() && need_payload() &&
         hand_count(Card::MysteriousTreasure) > 0 &&
         hand_count(Card::RegidragoVstar) == 0 &&

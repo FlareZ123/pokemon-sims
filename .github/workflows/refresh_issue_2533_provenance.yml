@@ -1,0 +1,46 @@
+name: Refresh issue 2533 provenance
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.head_ref == 'fix/2533-reclaim-20260809-1322'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel 2
+      - name: Regenerate and verify canonical matrices
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+          cmp t2-t3-matrix.csv results/simulation_results.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out multi-deck-matrix.csv
+          cmp multi-deck-matrix.csv results/multi_deck_comparison.csv
+      - name: Refresh source-bound provenance
+        run: python scripts/refresh_issue_2533_provenance.py
+      - name: Validate report contracts
+        run: ctest --test-dir build -R '(setup_report_contract|multi_deck_report_contract|regidrago_issue_2533_crobat_fss_powerglass_tests)' --output-on-failure
+      - name: Materialize provenance refresh
+        shell: bash
+        run: |
+          rm scripts/refresh_issue_2533_provenance.py
+          rm .github/workflows/refresh_issue_2533_provenance.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Refresh #2533 source-bound setup provenance"
+          git push origin HEAD:${{ github.head_ref }}

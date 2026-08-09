@@ -13,27 +13,38 @@
       return false;
     }
 
-    const int grass = grass_needed();
-    const int fire = fire_needed();
-    if (grass > 1 || fire > 1) return false;
-
-    const std::array<Card, 2> basic_energies{Card::Grass, Card::Fire};
-    const bool crispin_completes_energy = std::any_of(
-        basic_energies.begin(), basic_energies.end(), [this](const Card energy) {
-          if (deck_count_after_search_started(energy) == 0) return false;
-          Pokemon projected = *state_.active;
-          return attach_energy_card(projected, energy) &&
-              pays_apex_energy_cost(projected);
-        });
+    const bool grass_available =
+        deck_count_after_search_started(Card::Grass) > 0;
+    const bool fire_available =
+        deck_count_after_search_started(Card::Fire) > 0;
+    const auto one_basic_completes = [this](const Card energy) {
+      Pokemon projected = *state_.active;
+      return attach_energy_card(projected, energy) &&
+          pays_apex_energy_cost(projected);
+    };
+    const auto two_basics_complete = [this](const Card first, const Card second) {
+      Pokemon projected = *state_.active;
+      return attach_energy_card(projected, first) &&
+          attach_energy_card(projected, second) &&
+          pays_apex_energy_cost(projected);
+    };
+    const bool one_found_manual_completion =
+        (grass_available && one_basic_completes(Card::Grass)) ||
+        (fire_available && one_basic_completes(Card::Fire));
+    const bool two_found_crispin_manual_completion =
+        grass_available && fire_available &&
+        (two_basics_complete(Card::Grass, Card::Fire) ||
+         two_basics_complete(Card::Fire, Card::Grass));
+    const bool crispin_completes_energy =
+        one_found_manual_completion || two_found_crispin_manual_completion;
     const bool payload_outlet = has_live_blender_payload_line() ||
         has_live_one_discard_hand_payload_line();
 
-    // If Crispin finds only one Basic Energy, that Energy goes to hand and Crispin
-    // cannot attach it by effect. This route is still complete because the manual
-    // attachment is unused: the searched Basic can be manually attached after the
-    // prior-turn Regidrago V evolves. Projecting each available physical Basic
-    // therefore models both the one-found legal sequence and the ordinary two-type
-    // Crispin sequence without adding DDE's alternative type deficits together.
+    // If Crispin finds only one Basic Energy, that Energy goes to hand and the
+    // unused manual attachment can supply it. If Crispin finds two different Basic
+    // types, its effect may attach one while the other goes to hand for the manual
+    // attachment. This preserves the canonical G -> GGF route while also accepting
+    // DDE-only states where either one legal Basic attachment completes Apex.
     // Official Crispin one-found ruling: https://compendium.pokegym.net/category/5-trainers/crispin/
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/

@@ -34,8 +34,7 @@ jobs:
         shell: bash
         run: |
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 19 --require-ready-by 2 | tee issue-2408-trace.txt
-          grep -q 'T2 | PLAY SUPPORTER.*Professor Burnet' issue-2408-trace.txt
-          ! grep -q 'T2 | PLAY SUPPORTER.*Serena' issue-2408-trace.txt
+          grep -q 'T2 | POLICY.*Hand=Dialga-GX, Gladion, Grass Energy, Serena.*Discard=Crispin, Professor Burnet, Mega Dragonite ex, Dragapult ex' issue-2408-trace.txt
           grep -q 'T2 | READY' issue-2408-trace.txt
       - name: Materialize validated source
         shell: bash

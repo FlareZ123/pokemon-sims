@@ -1,0 +1,28 @@
+name: Issue 2658 Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  trace-validation:
+    if: github.head_ref == 'fix/2658-go-first-t1-treasure-before-steven'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Release simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target regidrago_sim regidrago_unified_tests --parallel 2
+      - name: Exact seed 3 must reach T3
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 3 --require-ready-by 3
+      - name: Independent strict go-second control
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 7
+      - name: Independent matchup-flex go-first control
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 11
+      - name: Run focused unified regression
+        run: ctest --test-dir build -R 'issue_2658' --output-on-failure

@@ -23,16 +23,20 @@
     return true;
   }
 
+  void trace_first_turn_going_first_restrictions() {
+    // The first player is restricted from playing a Supporter or attacking on that
+    // turn; the restriction does not remove the required draw:
+    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#First_Turn
+    trace("TURN START", "R-GAME-FIRST-TURN",
+          "Going first: drew for the turn; no Supporter or attack is permitted.");
+  }
+
   void begin_turn(const int turn) {
     state_.turn = turn;
     reset_per_turn_state();
     if (!draw_start_of_turn_card()) return;
 
-    // The first player is restricted from playing a Supporter or attacking on that
-    // turn; the restriction does not remove the required draw:
-    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#First_Turn
     if (first_turn_going_first()) {
-      trace("TURN START", "R-GAME-FIRST-TURN",
-            "Going first: drew for the turn; no Supporter or attack is permitted.");
+      trace_first_turn_going_first_restrictions();
     }
   }

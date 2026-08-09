@@ -9,6 +9,11 @@
            pays_apex_energy_cost(*target);
   }
 
+  bool issue_2269_should_hold_treasure_for_2265() const {
+    return issue_2265_observable_direct_route_should_hold_treasure() ||
+           issue_2265_hold_treasure_for_direct_route();
+  }
+
   std::optional<Card> issue_2269_treasure_latias_blender_cost() const {
     const Pokemon* target = target_regi();
     if (!strict_payload_timing() || item_locked() || !prizes_known() ||
@@ -105,10 +110,7 @@
     // Refined confirmed #2265 route: https://github.com/FlareZ123/pokemon-sims/issues/2265#issuecomment-5215563905
     // Confirmed #2269 fallback scope: https://github.com/FlareZ123/pokemon-sims/issues/2269
     // Repository earliest-complete-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    if (issue_2265_observable_direct_route_should_hold_treasure() ||
-        issue_2265_hold_treasure_for_direct_route()) {
-      return false;
-    }
+    if (issue_2269_should_hold_treasure_for_2265()) return false;
     if (play_mysterious_treasure_issue2269_original(permit_payload)) return true;
     return issue_2269_play_treasure_latias_blender_route();
   }

@@ -135,8 +135,42 @@
     return std::nullopt;
   }
 
+  std::optional<Card> issue_2229_treasure_vstar_unused_supporter_payload_cost() const {
+    const bool route_available =
+        strict_payload_timing() && prizes_known() && !item_locked() &&
+        !state_.supporter_used && state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        state_.active->grass >= 2 && state_.active->fire >= 1 &&
+        need_vstar() && need_payload() &&
+        hand_count(Card::MysteriousTreasure) > 0 &&
+        hand_count(Card::RegidragoVstar) == 0 &&
+        deck_count_after_search_started(Card::RegidragoVstar) > 0;
+    if (!route_available) return std::nullopt;
+
+    // A prior-turn Active Regidrago V already pays Apex Dragon's GGF cost.
+    // Mysterious Treasure can discard the held Dragon payload, search Regidrago
+    // VSTAR, and evolve immediately. The unused Supporter action is not a resource
+    // required by this complete Item-plus-evolution route.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Mega Dragonite ex payload witness: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Regidrago V / VSTAR and Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, discard, search, and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, dynamic DCI/JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2229
+    for (const Card card : {Card::Appletun, Card::MegaDragonite,
+                            Card::Dragapult, Card::GoodraVstar,
+                            Card::DialgaGX}) {
+      if (hand_count(card) > 0) return card;
+    }
+    return std::nullopt;
+  }
+
   std::optional<Card> issue_1876_treasure_payload_cost() const {
     if (const auto cost = issue_2203_treasure_vstar_payload_cost()) {
+      return cost;
+    }
+    if (const auto cost = issue_2229_treasure_vstar_unused_supporter_payload_cost()) {
       return cost;
     }
     if (const auto cost = issue_2226_treasure_gf_oricorio_payload_cost()) {

@@ -2,6 +2,11 @@ if(NOT DEFINED SIMULATOR)
   message(FATAL_ERROR "SIMULATOR is required")
 endif()
 
+set(ISSUE_1092_SCENARIO "strict-jit/go-first")
+set(ISSUE_1092_HOLD_SEED 71)
+set(ISSUE_1092_READY_CONTROL_SEED 61)
+set(ISSUE_1092_CONNECTOR_SEED 104)
+
 function(run_trace scenario seed output_var)
   execute_process(
     COMMAND "${SIMULATOR}" --simulate-this --scenario "${scenario}" --seed "${seed}"
@@ -14,11 +19,6 @@ function(run_trace scenario seed output_var)
   endif()
   set(${output_var} "${output}" PARENT_SCOPE)
 endfunction()
-
-set(ISSUE_1092_SCENARIO "strict-jit/go-first")
-set(ISSUE_1092_HOLD_SEED 71)
-set(ISSUE_1092_READY_CONTROL_SEED 61)
-set(ISSUE_1092_CONNECTOR_SEED 104)
 
 # Seed 71 must hold Quick Ball until the manual attachment completes GGF. On T3,
 # the public Dragon can pay Quick Ball while a legal Basic target remains. This direct

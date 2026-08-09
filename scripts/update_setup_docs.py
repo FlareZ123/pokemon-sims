@@ -73,14 +73,15 @@ def report_table(entries: list[tuple[str, str, str, str]]) -> str:
     return "\n".join(lines)
 
 
-def report_markdown(rows: list[dict[str, str]], fieldnames: list[str], manifest: dict[str, object]) -> str:
-    scenario_column = "scenario" if "scenario" in fieldnames else fieldnames[0]
-    t2_column = percent_column(fieldnames, 2)
-    t3_column = percent_column(fieldnames, 3)
-    t4_column = percent_column(fieldnames, 4)
-
-    baseline = []
-    locks = []
+def partition_report_rows(
+    rows: list[dict[str, str]],
+    scenario_column: str,
+    t2_column: str,
+    t3_column: str,
+    t4_column: str,
+) -> tuple[list[tuple[str, str, str, str]], list[tuple[str, str, str, str]]]:
+    baseline: list[tuple[str, str, str, str]] = []
+    locks: list[tuple[str, str, str, str]] = []
     for row in rows:
         scenario = row[scenario_column]
         target = locks if "lock" in scenario else baseline
@@ -92,6 +93,18 @@ def report_markdown(rows: list[dict[str, str]], fieldnames: list[str], manifest:
                 row[t4_column],
             )
         )
+    return baseline, locks
+
+
+def report_markdown(rows: list[dict[str, str]], fieldnames: list[str], manifest: dict[str, object]) -> str:
+    scenario_column = "scenario" if "scenario" in fieldnames else fieldnames[0]
+    t2_column = percent_column(fieldnames, 2)
+    t3_column = percent_column(fieldnames, 3)
+    t4_column = percent_column(fieldnames, 4)
+
+    baseline, locks = partition_report_rows(
+        rows, scenario_column, t2_column, t3_column, t4_column
+    )
 
     return f"""# Regidrago VSTAR Setup Report: Corrected Setup-Order Baseline
 

@@ -56,17 +56,39 @@
         held_latias_route;
     if (!active_axis_can_finish) return false;
 
-    const int missing_energy = grass_needed() + fire_needed();
-    if (missing_energy == 0) return true;
-    if (missing_energy != 1 || state_.manual_energy_used) return false;
+    const Pokemon* energy_target = target_regi();
+    if (energy_target == nullptr) return false;
+    if (pays_apex_energy_cost(*energy_target)) return true;
+    if (state_.manual_energy_used) return false;
 
-    const Card needed_energy = grass_needed() == 1 ? Card::Grass : Card::Fire;
-    const bool held_energy_route = hand_count(needed_energy) > 0;
-    const bool needed_energy_might_be_in_deck = might_be_unseen(needed_energy);
-    const bool held_oricorio_route = needed_energy_might_be_in_deck &&
+    const auto basic_completes_apex = [this, energy_target](const Card basic) {
+      Pokemon projected = *energy_target;
+      return attach_energy_card(projected, basic) &&
+          pays_apex_energy_cost(projected);
+    };
+    const bool grass_completes = basic_completes_apex(Card::Grass);
+    const bool fire_completes = basic_completes_apex(Card::Fire);
+    const bool held_energy_route =
+        (grass_completes && hand_count(Card::Grass) > 0) ||
+        (fire_completes && hand_count(Card::Fire) > 0);
+    const bool completing_basic_might_be_in_deck =
+        (grass_completes && might_be_unseen(Card::Grass)) ||
+        (fire_completes && might_be_unseen(Card::Fire));
+
+    // A physical Basic Energy is one manual attachment. DDE supplies two Energy
+    // of every type to a Dragon, so either Grass or Fire can be the one-card final
+    // Apex payment beside one attached DDE. Route legality therefore projects the
+    // actual attachment instead of adding grass_needed() and fire_needed(), whose
+    // DDE values intentionally expose both search alternatives:
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Manual Energy attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // DDE semantic contract: https://github.com/FlareZ123/pokemon-sims/issues/2238
+    // Confirmed Vessel/Burnet integration bug: https://github.com/FlareZ123/pokemon-sims/issues/2437
+    const bool held_oricorio_route = completing_basic_might_be_in_deck &&
         hand_count(Card::Oricorio) > 0 && !in_play(Card::Oricorio) &&
         bench_space() > 0 && ability_available_for_pokemon(Card::Oricorio);
-    const bool held_vessel_route = needed_energy_might_be_in_deck &&
+    const bool held_vessel_route = completing_basic_might_be_in_deck &&
         !item_locked() && hand_count(Card::EarthenVessel) > 0 &&
         choose_discard(false, true, true, Card::EarthenVessel).has_value();
     const bool energy_axis_without_new_bench =

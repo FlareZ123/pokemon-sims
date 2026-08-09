@@ -1,3 +1,4 @@
+#define play_mysterious_treasure play_mysterious_treasure_issue2271_original
   std::optional<Card> issue_2323_redundant_payload_cost() const {
     if (scenario_.dci != DciProfile::StrictJit || scenario_.going_first ||
         scenario_.locks != LockMode::None || state_.turn != 1 ||
@@ -86,3 +87,5 @@
               : "Spent one redundant held Dragon; K1 proved no Psychic or Dragon Pokemon remained in deck.");
     return true;
   }
+#undef play_mysterious_treasure
+#include "part_issue_2271_surplus_regidrago_v_route_override.inc"

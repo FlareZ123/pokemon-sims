@@ -1,0 +1,42 @@
+name: Temporary apply DDE semantic rollup
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-apply-dde-semantic-rollup.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply-tested-rollup:
+    if: github.head_ref == 'fix/dde-semantic-rollup-20260809' || github.ref_name == 'fix/dde-semantic-rollup-20260809'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/dde-semantic-rollup-20260809
+          fetch-depth: 0
+      - name: Decode and apply exact locally tested patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d .github/dde-semantic-rollup.patch.gz.b64 | gzip -dc > /tmp/dde-semantic-rollup.patch
+          git apply --3way --index --whitespace=nowarn /tmp/dde-semantic-rollup.patch
+          git diff --cached --check
+          rm .github/dde-semantic-rollup.patch.gz.b64
+          rm .github/workflows/temp-apply-dde-semantic-rollup.yml
+          git add -u .github/dde-semantic-rollup.patch.gz.b64 .github/workflows/temp-apply-dde-semantic-rollup.yml
+          echo 'Applied files:'
+          git diff --cached --stat
+      - name: Commit exact semantic rollup
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m 'Complete DDE semantic route migration'
+          git push origin HEAD:fix/dde-semantic-rollup-20260809

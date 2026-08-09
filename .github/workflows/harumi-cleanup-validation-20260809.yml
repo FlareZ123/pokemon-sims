@@ -1,4 +1,5 @@
 # Re-run against final main after refreshing source-bound provenance.
+# Re-run after refreshing the generated paired report provenance line.
 name: Harumi cleanup validation 20260809
 
 on:

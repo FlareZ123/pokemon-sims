@@ -206,9 +206,9 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> int:
-    args = parse_args()
-    repo_root = args.repo_root.resolve()
+def load_setup_inputs(
+    repo_root: Path,
+) -> tuple[dict[str, object], list[dict[str, str]], list[str]]:
     manifest_path = repo_root / "results" / "baseline_manifest.json"
     csv_path = repo_root / "results" / "simulation_results.csv"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -218,6 +218,13 @@ def main() -> int:
         fieldnames = list(reader.fieldnames or [])
     if not rows or not fieldnames:
         raise ValueError("simulation_results.csv is empty")
+    return manifest, rows, fieldnames
+
+
+def main() -> int:
+    args = parse_args()
+    repo_root = args.repo_root.resolve()
+    manifest, rows, fieldnames = load_setup_inputs(repo_root)
 
     with exclusive_lock(repo_root / ".update-setup-docs.lock"):
         atomic_write(repo_root / "docs" / "REPORT.md", report_markdown(rows, fieldnames, manifest))

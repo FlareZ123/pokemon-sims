@@ -1,0 +1,2 @@
+CI audit marker for the three direct-main turn lifecycle cleanup commits ending at 962da16060d5421f5c26a8de7dcdb1cd3a80e401.
+This file is intentionally inert and exists only to trigger PR-path CI against the cleaned main state.

@@ -1,0 +1,46 @@
+name: Audit #2202 current main
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  simulate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+      - name: Reproduce confirmed #2202 witnesses
+        shell: bash
+        run: |
+          set +e
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 1052 --require-ready-by 4 | tee issue-2202-strict-seed-1052.txt
+          strict_status=${PIPESTATUS[0]}
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 691 --require-ready-by 4 | tee issue-2202-flex-seed-691.txt
+          flex_status=${PIPESTATUS[0]}
+          echo "strict_status=${strict_status}" | tee issue-2202-status.txt
+          echo "flex_status=${flex_status}" | tee -a issue-2202-status.txt
+          exit 0
+      - name: Run three independent debug traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee debug-trace-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee debug-trace-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee debug-trace-3.txt
+      - name: Upload audit traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-2202-current-main
+          path: |
+            issue-2202-*.txt
+            debug-trace-*.txt
+          if-no-files-found: error

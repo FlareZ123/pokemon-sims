@@ -1,0 +1,56 @@
+name: Bootstrap issue 2421 materialization
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    if: github.head_ref == 'fix/2421-tate-dde-routes'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/2421-tate-dde-routes
+          fetch-depth: 0
+      - name: Execute reviewed materializer and remove bootstrap
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          lines = Path('.github/workflows/materialize-2421.yml').read_text(encoding='utf-8').splitlines(True)
+          blocks = []
+          i = 0
+          while i < len(lines):
+              if lines[i].rstrip('\n') == '        run: |':
+                  i += 1
+                  block = []
+                  while i < len(lines):
+                      line = lines[i]
+                      if line.startswith('          '):
+                          block.append(line[10:])
+                          i += 1
+                          continue
+                      if not line.strip():
+                          block.append(line)
+                          i += 1
+                          continue
+                      break
+                  blocks.append(''.join(block))
+                  continue
+              i += 1
+          if len(blocks) != 3:
+              raise SystemExit(f'expected 3 materializer run blocks, found {len(blocks)}')
+          for block in blocks:
+              subprocess.run(['/bin/bash', '-lc', block], check=True)
+          PY
+          rm .github/workflows/bootstrap-2421.yml
+          git add .github/workflows/bootstrap-2421.yml
+          git commit -m "Remove temporary #2421 bootstrap"
+          git push origin HEAD:fix/2421-tate-dde-routes

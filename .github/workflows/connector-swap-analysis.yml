@@ -15,10 +15,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Expand full connector inventory
+        run: python3 tools/expand_connector_swap_screen.py
+
       - name: Compile connector swap analyzer
         run: >-
           g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow
-          tools/regidrago_connector_swap_screen.cpp
+          tools/regidrago_connector_swap_screen_full.cpp
           -o connector_swap_screen
 
       - name: Run paired connector-only screen

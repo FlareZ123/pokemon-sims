@@ -1,23 +1,21 @@
 name: Apply issue 2408 current fix
 
 on:
-  push:
-    branches: [fix/2408-burnet-before-serena-current]
-    paths:
-      - scripts/apply_issue_2408_current.py
-      - .github/workflows/apply_issue_2408_current.yml
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
 
 jobs:
   apply:
+    if: github.head_ref == 'fix/2408-burnet-before-serena-current'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: fix/2408-burnet-before-serena-current
+          ref: ${{ github.head_ref }}
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
@@ -28,8 +26,18 @@ jobs:
         run: python tests/source_anchor_contract_tests.py
       - name: Configure Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-      - name: Build focused targets
+      - name: Build
         run: cmake --build build --parallel 2
+      - name: Validate exact resource-order regression
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 19 --require-ready-by 2
+      - name: Regenerate canonical source-bound setup evidence
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+      - name: Regenerate paired source-bound setup evidence
+        run: |
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure
       - name: Materialize branch
@@ -41,4 +49,4 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "Fix #2408 prefer K1 Burnet over Serena"
-          git push origin HEAD:fix/2408-burnet-before-serena-current
+          git push origin HEAD:${{ github.head_ref }}

@@ -23,7 +23,7 @@ jobs:
         run: |
           echo '===== PASS 2 strict-jit/go-second seed 7 ====='
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 7
-      - name: Pass 3 matchup-flex go-first seed 11
+      - name: Pass 3 matchup-flex-JIT go-first seed 11
         run: |
-          echo '===== PASS 3 matchup-flex/go-first seed 11 ====='
-          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex/go-first --seed 11
+          echo '===== PASS 3 matchup-flex-jit/go-first seed 11 ====='
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 11

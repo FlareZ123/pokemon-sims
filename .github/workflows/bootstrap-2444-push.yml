@@ -1,0 +1,32 @@
+name: Bootstrap issue 2444 fix
+
+on:
+  push:
+    branches:
+      - fix/2444-roseanne-dde-energy-recovery
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Materialize production and regression changes
+        run: python3 tools/materialize_issue_2444.py
+      - name: Build focused regression
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target regidrago_unified_tests -j2
+          ./build/regidrago_unified_tests issue_2444_roseanne_dde_energy_recovery_tests
+      - name: Commit clean fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_014b.inc tests/issue_2444_roseanne_dde_energy_recovery_tests.cpp
+          git rm .github/workflows/bootstrap-2444-push.yml tools/materialize_issue_2444.py .github/issue-2444-bootstrap-trigger
+          git commit -m "Fix #2444 Roseanne DDE energy-recovery projection"
+          git push

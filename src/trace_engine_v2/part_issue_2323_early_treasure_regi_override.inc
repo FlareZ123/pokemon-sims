@@ -91,4 +91,7 @@
     return true;
   }
 #undef play_mysterious_treasure
+#define play_mysterious_treasure play_mysterious_treasure_issue2269_original
 #include "part_issue_2271_surplus_regidrago_v_route_override.inc"
+#undef play_mysterious_treasure
+#include "part_issue_2269_oricorio_latias_blender_override.inc"

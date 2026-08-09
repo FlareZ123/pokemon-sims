@@ -87,7 +87,54 @@ bool issue_1737_prized_steven_route_available() const {
   return registered_pineco_recipe && secret_box_combo_enabled();
 }
 
+bool issue_2292_gladion_final_prize_energy_finish(const Card energy) const {
+  if (scenario_.dci != DciProfile::StrictJit || !prizes_known() ||
+      !supporter_allowed() || state_.manual_energy_used ||
+      hand_count(Card::Gladion) == 0 || hand_count(energy) > 0 ||
+      !state_.active || state_.active->card != Card::RegidragoVstar ||
+      prize_count_after_reveal(energy) == 0 ||
+      grass_needed() + fire_needed() != 1 || !payload_ready()) {
+    return false;
+  }
+
+  // Gladion may exchange itself for any known Prize. When the Active Regidrago
+  // VSTAR is exactly one manual attachment from GGF and this turn's strict-JIT
+  // Dragon is already in discard, that prized Basic Energy is the immediate
+  // winning-axis connector even if another copy of the same type remains in deck.
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Prize, Supporter, and manual Energy attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // K1, strict-JIT, and earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2292
+  return (energy == Card::Grass && grass_needed() == 1 && fire_needed() == 0) ||
+         (energy == Card::Fire && grass_needed() == 0 && fire_needed() == 1);
+}
+
+bool play_issue_2292_gladion_final_prize_energy_finish() {
+  const auto target = final_prized_energy_for_gladion();
+  if (!target || !issue_2292_gladion_final_prize_energy_finish(*target)) {
+    return false;
+  }
+
+  remove_one(state_.hand, Card::Gladion);
+  state_.supporter_used = true;
+  prizes_revealed_ = true;
+  const auto prize = std::find(state_.prizes.begin(), state_.prizes.end(), *target);
+  if (prize == state_.prizes.end()) {
+    throw std::logic_error("Known prized final Energy disappeared");
+  }
+  *prize = Card::Gladion;
+  state_.hand.push_back(*target);
+  shuffle(state_.prizes);
+  trace("PLAY SUPPORTER",
+        "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-JIT-01; P-COMPRESS-01",
+        "Exchanged Gladion for the known prized final Basic Energy so the unused manual attachment can complete GGF this turn.");
+  return true;
+}
+
 bool play_gladion() {
+  if (play_issue_2292_gladion_final_prize_energy_finish()) return true;
+
   if (!issue_1737_prized_steven_route_available()) {
     return play_gladion_issue1737_original();
   }

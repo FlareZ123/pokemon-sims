@@ -93,6 +93,11 @@ def trace_file_name(stem: str, seed: int) -> str:
     return f"{stem}_seed_{seed}.txt"
 
 
+def managed_trace_pattern() -> re.Pattern[str]:
+    generated_stems = "|".join(re.escape(stem) for _, _, stem in TRACE_SPECS)
+    return re.compile(rf"(?:{generated_stems})_seed_[0-9]+\.txt")
+
+
 def find_trace_seed(executable: Path, scenario: str, deadline: int, max_seed: int) -> tuple[int, str]:
     for seed in range(1, max_seed + 1):
         completed = run(
@@ -164,8 +169,7 @@ def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, m
             }
         )
 
-    generated_stems = "|".join(re.escape(stem) for _, _, stem in TRACE_SPECS)
-    generated_trace_name = re.compile(rf"(?:{generated_stems})_seed_[0-9]+\.txt")
+    generated_trace_name = managed_trace_pattern()
     for trace_path in trace_dir.iterdir():
         # Only canonical generator-owned trace names may be removed. This keeps
         # unrelated review notes while reconciling the directory to the new manifest:

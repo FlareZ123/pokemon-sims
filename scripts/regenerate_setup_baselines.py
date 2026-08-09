@@ -89,6 +89,10 @@ def aggregate_matrix_command(
     ]
 
 
+def trace_file_name(stem: str, seed: int) -> str:
+    return f"{stem}_seed_{seed}.txt"
+
+
 def find_trace_seed(executable: Path, scenario: str, deadline: int, max_seed: int) -> tuple[int, str]:
     for seed in range(1, max_seed + 1):
         completed = run(
@@ -145,7 +149,7 @@ def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, m
     expected_trace_files: set[str] = set()
     for scenario, deadline, stem in TRACE_SPECS:
         seed, trace = find_trace_seed(executable, scenario, deadline, max_seed)
-        file_name = f"{stem}_seed_{seed}.txt"
+        file_name = trace_file_name(stem, seed)
         expected_trace_files.add(file_name)
         atomic_write_text(trace_dir / file_name, trace)
         manifest["traces"].append(

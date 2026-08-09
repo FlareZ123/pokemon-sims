@@ -87,6 +87,27 @@ def markdown_anchors(path: Path) -> set[str]:
     return anchors
 
 
+def resolve_markdown_target(
+    source_path: Path, relative_target: PurePosixPath, errors: list[str]
+) -> Path | None:
+    target = ROOT.joinpath(*relative_target.parts).resolve()
+    try:
+        target.relative_to(ROOT.resolve())
+    except ValueError:
+        errors.append(
+            f"{source_path.relative_to(ROOT)}: target escapes repository: "
+            f"{relative_target}"
+        )
+        return None
+    if not target.is_file():
+        errors.append(
+            f"{source_path.relative_to(ROOT)}: missing Markdown target "
+            f"{relative_target}"
+        )
+        return None
+    return target
+
+
 def validate_internal_anchors(errors: list[str]) -> int:
     anchors_by_target: dict[Path, set[str]] = {}
     checked = 0
@@ -102,20 +123,8 @@ def validate_internal_anchors(errors: list[str]) -> int:
                 continue
             checked += 1
             relative_target = PurePosixPath(unquote(match.group("path")))
-            target = ROOT.joinpath(*relative_target.parts).resolve()
-            try:
-                target.relative_to(ROOT.resolve())
-            except ValueError:
-                errors.append(
-                    f"{source_path.relative_to(ROOT)}: target escapes repository: "
-                    f"{relative_target}"
-                )
-                continue
-            if not target.is_file():
-                errors.append(
-                    f"{source_path.relative_to(ROOT)}: missing Markdown target "
-                    f"{relative_target}"
-                )
+            target = resolve_markdown_target(source_path, relative_target, errors)
+            if target is None:
                 continue
             anchors = anchors_by_target.setdefault(target, markdown_anchors(target))
             if anchor not in anchors:

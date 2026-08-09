@@ -30,6 +30,10 @@ CsvRow = dict[str, str]
 ReportEntry = tuple[str, str, str, str]
 
 
+def scenario_label(scenario: str) -> str:
+    return SCENARIO_LABELS.get(scenario, scenario)
+
+
 @contextmanager
 def exclusive_lock(path: Path):
     descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
@@ -90,7 +94,7 @@ def partition_report_rows(
         target = locks if "lock" in scenario else baseline
         target.append(
             (
-                SCENARIO_LABELS.get(scenario, scenario),
+                scenario_label(scenario),
                 row[t2_column],
                 row[t3_column],
                 row[t4_column],
@@ -151,7 +155,7 @@ def trace_audit_markdown(repo_root: Path, manifest: dict[str, object]) -> str:
             f"[`{entry['file']}`](../results/traces/{entry['file']})"
         )
         rows.append(
-            f"| {SCENARIO_LABELS.get(entry['scenario'], entry['scenario'])} | {command} | T{ready_turn} | "
+            f"| {scenario_label(entry['scenario'])} | {command} | T{ready_turn} | "
             "Saved executable audit example reproduced from the manifest. |"
         )
 

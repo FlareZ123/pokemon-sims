@@ -1,0 +1,47 @@
+name: Finalize issue 2494 evidence
+
+on:
+  push:
+    branches: [fix/2494-legacy-star-held-vessel]
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/2494-legacy-star-held-vessel
+          fetch-depth: 0
+      - name: Configure and build exact PR source
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Validate issue 2494 and three CI play traces
+        run: |
+          ctest --test-dir build -R 'regidrago_issue_2494_legacy_star_held_vessel_tests' --output-on-failure
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex/go-second --seed 3 --require-ready-by 2
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 19 --require-ready-by 3
+      - name: Regenerate canonical source-bound evidence
+        run: |
+          python scripts/generate_setup_baselines.py --exe ./build/regidrago_sim --trials 100000 --seed 20260705 --out-dir results
+          python scripts/generate_setup_report.py --input results/simulation_results.csv --output docs/SETUP_BASELINES.md
+      - name: Regenerate paired source-bound evidence
+        run: |
+          python scripts/generate_setup_baselines.py --exe ./build/regidrago_sim --trials 100000 --seed 20260705 --out-dir results --paired-draws
+          python scripts/generate_paired_setup_report.py --input results/paired/simulation_results.csv --output docs/PAIRED_BASELINES.md
+      - name: Validate complete Release suite
+        run: ctest --test-dir build --output-on-failure
+      - name: Commit exact validated evidence
+        run: |
+          git rm .github/workflows/finalize-2494-evidence.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add results docs/SETUP_BASELINES.md docs/PAIRED_BASELINES.md
+          git commit -m 'Refresh #2494 setup evidence'
+          git push origin HEAD:fix/2494-legacy-star-held-vessel

@@ -229,7 +229,18 @@
       recovered.push_back(Card::ProfessorBurnet);
     }
 
-    if (legacy_star_delayed_vessel_route() && recovered.size() < 2U) {
+    // Legacy Star may select only cards that are physically in the discard pile.
+    // A held Earthen Vessel already satisfies this delayed route, so recovering a
+    // second copy would spend one of the two recovery choices without advancing it:
+    // Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2494
+    const bool delayed_vessel_needs_recovery =
+        legacy_star_delayed_vessel_route() &&
+        hand_count(Card::EarthenVessel) == 0 &&
+        count_of(state_.discard, Card::EarthenVessel) > 0;
+    if (delayed_vessel_needs_recovery && recovered.size() < 2U) {
       if (!recover_discard_to_hand(Card::EarthenVessel)) {
         throw std::logic_error("Legacy Star delayed Earthen Vessel target disappeared");
       }

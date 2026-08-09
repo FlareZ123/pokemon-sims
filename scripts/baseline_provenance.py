@@ -29,9 +29,10 @@ class _SimulatorSourceManifest:
 
     def source_paths(self) -> tuple[Path, ...]:
         """Collect tracked simulator source inputs, excluding writer lock files."""
+        source_root = self.repo_root / SIMULATOR_SOURCE_ROOT
         return tuple(
             path
-            for path in (self.repo_root / SIMULATOR_SOURCE_ROOT).rglob("*")
+            for path in source_root.rglob("*")
             if _is_simulator_source_input(path)
         )
 

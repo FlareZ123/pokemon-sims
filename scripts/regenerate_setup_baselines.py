@@ -15,6 +15,9 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.baseline_provenance import simulator_policy_source_digest
 
+BASELINE_DECK = "regidrago-shell"
+MATRIX_FILENAME = "simulation_results.csv"
+MANIFEST_FILENAME = "baseline_manifest.json"
 TRACE_SPECS = (
     ("strict-jit/go-second", 3, "strict_jit_go_second"),
     ("strict-jit/go-first", 4, "strict_jit_go_first"),
@@ -57,21 +60,43 @@ def run(command: list[str], *, check: bool = True) -> subprocess.CompletedProces
     )
 
 
+def simulate_trace_command(executable: Path, scenario: str, seed: int, deadline: int) -> list[str]:
+    return [
+        str(executable),
+        "--simulate-this",
+        "--deck",
+        BASELINE_DECK,
+        "--scenario",
+        scenario,
+        "--seed",
+        str(seed),
+        "--require-ready-by",
+        str(deadline),
+    ]
+
+
+def aggregate_matrix_command(
+    executable: Path, output_path: Path, trials: int, seed: int
+) -> list[str]:
+    return [
+        str(executable),
+        "--trials",
+        str(trials),
+        "--seed",
+        str(seed),
+        "--out",
+        str(output_path),
+    ]
+
+
+def trace_file_name(stem: str, seed: int) -> str:
+    return f"{stem}_seed_{seed}.txt"
+
+
 def find_trace_seed(executable: Path, scenario: str, deadline: int, max_seed: int) -> tuple[int, str]:
     for seed in range(1, max_seed + 1):
         completed = run(
-            [
-                str(executable),
-                "--simulate-this",
-                "--deck",
-                "regidrago-shell",
-                "--scenario",
-                scenario,
-                "--seed",
-                str(seed),
-                "--require-ready-by",
-                str(deadline),
-            ],
+            simulate_trace_command(executable, scenario, seed, deadline),
             check=False,
         )
         if completed.returncode == 0:
@@ -97,17 +122,7 @@ def generate_matrix_atomic(executable: Path, matrix_path: Path, trials: int, mat
         # This is the repository's canonical fixed-seed aggregate command:
         # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
         # https://github.com/FlareZ123/pokemon-sims/issues/642
-        run(
-            [
-                str(executable),
-                "--trials",
-                str(trials),
-                "--seed",
-                str(matrix_seed),
-                "--out",
-                str(temporary_path),
-            ]
-        )
+        run(aggregate_matrix_command(executable, temporary_path, trials, matrix_seed))
         os.replace(temporary_path, matrix_path)
     finally:
         temporary_path.unlink(missing_ok=True)
@@ -120,7 +135,7 @@ def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, m
     trace_dir.mkdir(parents=True, exist_ok=True)
 
     manifest: dict[str, object] = {
-        "deck": "regidrago-shell",
+        "deck": BASELINE_DECK,
         "matrix_seed": matrix_seed,
         "trials": trials,
         # Bind the published matrix to every aggregate simulator input, including
@@ -134,7 +149,7 @@ def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, m
     expected_trace_files: set[str] = set()
     for scenario, deadline, stem in TRACE_SPECS:
         seed, trace = find_trace_seed(executable, scenario, deadline, max_seed)
-        file_name = f"{stem}_seed_{seed}.txt"
+        file_name = trace_file_name(stem, seed)
         expected_trace_files.add(file_name)
         atomic_write_text(trace_dir / file_name, trace)
         manifest["traces"].append(
@@ -158,9 +173,9 @@ def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, m
                 trace_path.name not in expected_trace_files):
             trace_path.unlink()
 
-    generate_matrix_atomic(executable, output_dir / "simulation_results.csv", trials, matrix_seed)
+    generate_matrix_atomic(executable, output_dir / MATRIX_FILENAME, trials, matrix_seed)
     atomic_write_text(
-        output_dir / "baseline_manifest.json",
+        output_dir / MANIFEST_FILENAME,
         json.dumps(manifest, indent=2, sort_keys=True) + "\n",
     )
 

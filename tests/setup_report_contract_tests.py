@@ -153,7 +153,8 @@ def main() -> int:
     if recorded_source_digest != expected_source_digest:
         raise AssertionError(
             "Simulator inputs changed after the published setup baseline. Regenerate "
-            "results/simulation_results.csv and results/baseline_manifest.json before merging."
+            "results/simulation_results.csv and results/baseline_manifest.json before merging. "
+            f"recorded={recorded_source_digest}, expected={expected_source_digest}."
         )
 
     # The documented aggregate command and manifest define one trial count for every row:

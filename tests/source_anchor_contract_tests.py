@@ -7,6 +7,8 @@ from urllib.parse import unquote
 
 
 ROOT = Path(__file__).resolve().parents[1]
+README_PATH = ROOT / "README.md"
+CROBAT_REPORT_PATH = ROOT / "docs" / "CROBAT_MODEL_REPORT.md"
 SCAN_ROOTS = ("src", "tests", "scripts", "docs")
 ROOT_FILES = ("README.md", "CMakeLists.txt")
 TEXT_SUFFIXES = {
@@ -87,9 +89,58 @@ def markdown_anchors(path: Path) -> set[str]:
     return anchors
 
 
+def resolve_markdown_target(
+    source_path: Path, relative_target: PurePosixPath, errors: list[str]
+) -> Path | None:
+    target = ROOT.joinpath(*relative_target.parts).resolve()
+    try:
+        target.relative_to(ROOT.resolve())
+    except ValueError:
+        errors.append(
+            f"{source_path.relative_to(ROOT)}: target escapes repository: "
+            f"{relative_target}"
+        )
+        return None
+    if not target.is_file():
+        errors.append(
+            f"{source_path.relative_to(ROOT)}: missing Markdown target "
+            f"{relative_target}"
+        )
+        return None
+    return target
+
+
+def validate_internal_anchors(errors: list[str]) -> int:
+    anchors_by_target: dict[Path, set[str]] = {}
+    checked = 0
+
+    for source_path in candidate_files():
+        try:
+            source = source_path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        for match in INTERNAL_ANCHOR_RE.finditer(source):
+            anchor = unquote(match.group("anchor"))
+            if LINE_ANCHOR_RE.fullmatch(anchor):
+                continue
+            checked += 1
+            relative_target = PurePosixPath(unquote(match.group("path")))
+            target = resolve_markdown_target(source_path, relative_target, errors)
+            if target is None:
+                continue
+            anchors = anchors_by_target.setdefault(target, markdown_anchors(target))
+            if anchor not in anchors:
+                errors.append(
+                    f"{source_path.relative_to(ROOT)}: missing #{anchor} in "
+                    f"{relative_target}"
+                )
+
+    return checked
+
+
 def validate_crobat_readme_provenance(errors: list[str]) -> None:
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    report = (ROOT / "docs" / "CROBAT_MODEL_REPORT.md").read_text(encoding="utf-8")
+    readme = README_PATH.read_text(encoding="utf-8")
+    report = CROBAT_REPORT_PATH.read_text(encoding="utf-8")
     scope = CROBAT_SCOPE_RE.search(report)
     if scope is None:
         errors.append("docs/CROBAT_MODEL_REPORT.md: source-bound Crobat scope is missing")
@@ -127,42 +178,7 @@ def validate_crobat_readme_provenance(errors: list[str]) -> None:
 
 def main() -> int:
     errors: list[str] = []
-    anchors_by_target: dict[Path, set[str]] = {}
-    checked = 0
-
-    for source_path in candidate_files():
-        try:
-            source = source_path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
-            continue
-        for match in INTERNAL_ANCHOR_RE.finditer(source):
-            anchor = unquote(match.group("anchor"))
-            if LINE_ANCHOR_RE.fullmatch(anchor):
-                continue
-            checked += 1
-            relative_target = PurePosixPath(unquote(match.group("path")))
-            target = ROOT.joinpath(*relative_target.parts).resolve()
-            try:
-                target.relative_to(ROOT.resolve())
-            except ValueError:
-                errors.append(
-                    f"{source_path.relative_to(ROOT)}: target escapes repository: "
-                    f"{relative_target}"
-                )
-                continue
-            if not target.is_file():
-                errors.append(
-                    f"{source_path.relative_to(ROOT)}: missing Markdown target "
-                    f"{relative_target}"
-                )
-                continue
-            anchors = anchors_by_target.setdefault(target, markdown_anchors(target))
-            if anchor not in anchors:
-                errors.append(
-                    f"{source_path.relative_to(ROOT)}: missing #{anchor} in "
-                    f"{relative_target}"
-                )
-
+    checked = validate_internal_anchors(errors)
     validate_crobat_readme_provenance(errors)
 
     if checked == 0:

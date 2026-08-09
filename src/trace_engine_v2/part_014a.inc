@@ -129,7 +129,21 @@ if (play_issue_1552_t1_vessel_route()) return true;
       if (issue_1447_should_hold_vessel()) return false;
       if (issue_1447_should_play_vessel_for_ready_turn() &&
           play_earthen_vessel(true)) return true;
+      // Letter is the cheaper Energy-only connector because its printed effect has
+      // no discard cost. Keep Vessel first only when its mandatory discard can
+      // simultaneously establish the current-turn Dragon payload:
+      // Professor's Letter: https://api.pokemontcg.io/v2/cards/xy1-123
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // https://github.com/FlareZ123/pokemon-sims/issues/2509
+      const bool vessel_payload_compression_live =
+          permit_payload && need_payload() && can_play_payload_this_turn() &&
+          hand_count(Card::EarthenVessel) > 0 &&
+          std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+      if (!vessel_payload_compression_live && play_professors_letter()) return true;
       if (play_earthen_vessel(permit_payload)) return true;
+      if (play_professors_letter()) return true;
       if (play_quick_ball(permit_payload)) return true;
       if (play_mysterious_treasure(permit_payload)) return true;
     }

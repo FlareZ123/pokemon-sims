@@ -12,6 +12,7 @@
     case Card::EvolutionIncense: return "Evolution Incense";
     case Card::PokemonCommunication: return "Pokémon Communication";
     case Card::EarthenVessel: return "Earthen Vessel";
+    case Card::ProfessorsLetter: return "Professor's Letter";  // https://api.pokemontcg.io/v2/cards/xy1-123 ; https://github.com/FlareZ123/pokemon-sims/issues/2509
     case Card::Dawn: return "Dawn";
     case Card::Grant: return "Grant";
     case Card::Arven: return "Arven";

@@ -16,6 +16,7 @@ sys.path.insert(0, str(REPO_ROOT))
 from scripts.baseline_provenance import simulator_policy_source_digest
 
 DECKS = ("regidrago-shell", "regidrago-pineco")
+HASH_CHUNK_BYTES = 1024 * 1024
 # Full-turn-one Item-lock scenarios are intentionally absent from current-paper
 # Expanded aggregate reporting. Combined lock uses TurnTwoItem timing for Items:
 # https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf
@@ -86,7 +87,7 @@ def run(command: list[str], *, check: bool = True) -> subprocess.CompletedProces
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+        for chunk in iter(lambda: handle.read(HASH_CHUNK_BYTES), b""):
             digest.update(chunk)
     return digest.hexdigest()
 
@@ -124,6 +125,12 @@ def generate_matrix_atomic(
         temporary_lock_path.unlink(missing_ok=True)
 
 
+def is_stale_managed_trace(path: Path, expected: set[str]) -> bool:
+    return (
+        path.name.startswith("shell_") or path.name.startswith("pineco_")
+    ) and path.name not in expected
+
+
 def generate_traces(executable: Path, trace_dir: Path) -> list[dict[str, object]]:
     trace_dir.mkdir(parents=True, exist_ok=True)
     manifest_entries: list[dict[str, object]] = []
@@ -154,19 +161,18 @@ def generate_traces(executable: Path, trace_dir: Path) -> list[dict[str, object]
             }
         )
     for path in trace_dir.glob("*.txt"):
-        if (
-            path.name.startswith("shell_") or path.name.startswith("pineco_")
-        ) and path.name not in expected:
+        if is_stale_managed_trace(path, expected):
             path.unlink()
     return manifest_entries
 
 
-def generate(executable: Path, output_dir: Path, trials: int, matrix_seed: int) -> None:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    matrix_path = output_dir / "multi_deck_comparison.csv"
-    generate_matrix_atomic(executable, matrix_path, trials, matrix_seed)
-    traces = generate_traces(executable, output_dir / "multi_deck_traces")
-    manifest = {
+def build_manifest(
+    matrix_path: Path,
+    traces: list[dict[str, object]],
+    trials: int,
+    matrix_seed: int,
+) -> dict[str, object]:
+    return {
         "decks": list(DECKS),
         "scenarios": list(SCENARIOS),
         "matrix_seed": matrix_seed,
@@ -177,6 +183,14 @@ def generate(executable: Path, output_dir: Path, trials: int, matrix_seed: int) 
         "comparison_csv_sha256": sha256(matrix_path),
         "traces": traces,
     }
+
+
+def generate(executable: Path, output_dir: Path, trials: int, matrix_seed: int) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    matrix_path = output_dir / "multi_deck_comparison.csv"
+    generate_matrix_atomic(executable, matrix_path, trials, matrix_seed)
+    traces = generate_traces(executable, output_dir / "multi_deck_traces")
+    manifest = build_manifest(matrix_path, traces, trials, matrix_seed)
     atomic_write_text(
         output_dir / "multi_deck_manifest.json",
         json.dumps(manifest, indent=2, sort_keys=True) + "\n",

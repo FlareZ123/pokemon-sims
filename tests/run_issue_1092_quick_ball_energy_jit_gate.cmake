@@ -15,6 +15,11 @@ function(run_trace scenario seed output_var)
   set(${output_var} "${output}" PARENT_SCOPE)
 endfunction()
 
+set(ISSUE_1092_SCENARIO "strict-jit/go-first")
+set(ISSUE_1092_HOLD_SEED 71)
+set(ISSUE_1092_READY_CONTROL_SEED 61)
+set(ISSUE_1092_CONNECTOR_SEED 104)
+
 # Seed 71 must hold Quick Ball until the manual attachment completes GGF. On T3,
 # the public Dragon can pay Quick Ball while a legal Basic target remains. This direct
 # route reaches the same strict-JIT state while preserving Arven and Brilliant Blender:
@@ -26,24 +31,24 @@ endfunction()
 # Strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
 # Original energy gate: https://github.com/FlareZ123/pokemon-sims/issues/1092
 # Resource-preservation fix: https://github.com/FlareZ123/pokemon-sims/issues/1343
-run_trace("strict-jit/go-first" 71 issue_1092_seed_71)
+run_trace("${ISSUE_1092_SCENARIO}" "${ISSUE_1092_HOLD_SEED}" issue_1092_seed_71)
 if(issue_1092_seed_71 MATCHES "T2 \\| DISCARD \\|.*Quick Ball cost")
-  message(FATAL_ERROR "Seed 71 still spent a payload-only Quick Ball cost before GGF could finish:\n${issue_1092_seed_71}")
+  message(FATAL_ERROR "Seed ${ISSUE_1092_HOLD_SEED} still spent a payload-only Quick Ball cost before GGF could finish:\n${issue_1092_seed_71}")
 endif()
 if(issue_1092_seed_71 MATCHES "T2 \\| PLAY ITEM \\|.*Quick Ball")
-  message(FATAL_ERROR "Seed 71 still played a payload-only Quick Ball before the strict-JIT Energy window:\n${issue_1092_seed_71}")
+  message(FATAL_ERROR "Seed ${ISSUE_1092_HOLD_SEED} still played a payload-only Quick Ball before the strict-JIT Energy window:\n${issue_1092_seed_71}")
 endif()
 if(issue_1092_seed_71 MATCHES "LEGACY STAR")
-  message(FATAL_ERROR "Seed 71 still spent the game-wide VSTAR Power after preserving its held resources:\n${issue_1092_seed_71}")
+  message(FATAL_ERROR "Seed ${ISSUE_1092_HOLD_SEED} still spent the game-wide VSTAR Power after preserving its held resources:\n${issue_1092_seed_71}")
 endif()
 if(NOT issue_1092_seed_71 MATCHES "T3 \\| DISCARD \\|.*Quick Ball cost")
-  message(FATAL_ERROR "Seed 71 did not use the direct held-payload Quick Ball route:\n${issue_1092_seed_71}")
+  message(FATAL_ERROR "Seed ${ISSUE_1092_HOLD_SEED} did not use the direct held-payload Quick Ball route:\n${issue_1092_seed_71}")
 endif()
 if(issue_1092_seed_71 MATCHES "T3 \\| PLAY ITEM \\|.*Brilliant Blender")
-  message(FATAL_ERROR "Seed 71 spent Brilliant Blender despite the direct Quick Ball route:\n${issue_1092_seed_71}")
+  message(FATAL_ERROR "Seed ${ISSUE_1092_HOLD_SEED} spent Brilliant Blender despite the direct Quick Ball route:\n${issue_1092_seed_71}")
 endif()
 if(NOT issue_1092_seed_71 MATCHES "T3 \\| READY \\|")
-  message(FATAL_ERROR "Seed 71 lost its T3 readiness after the target-aware gate:\n${issue_1092_seed_71}")
+  message(FATAL_ERROR "Seed ${ISSUE_1092_HOLD_SEED} lost its T3 readiness after the target-aware gate:\n${issue_1092_seed_71}")
 endif()
 
 # Positive control: once the same-turn manual attachment has completed GGF, Quick
@@ -52,12 +57,12 @@ endif()
 # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
 # Strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
 # Refined bug boundary: https://github.com/FlareZ123/pokemon-sims/issues/1092
-run_trace("strict-jit/go-first" 61 issue_1092_seed_61_control)
+run_trace("${ISSUE_1092_SCENARIO}" "${ISSUE_1092_READY_CONTROL_SEED}" issue_1092_seed_61_control)
 if(NOT issue_1092_seed_61_control MATCHES "T2 \\| DISCARD \\|.*Quick Ball cost")
-  message(FATAL_ERROR "Seed 61 lost the legal same-turn Quick Ball payload outlet:\n${issue_1092_seed_61_control}")
+  message(FATAL_ERROR "Seed ${ISSUE_1092_READY_CONTROL_SEED} lost the legal same-turn Quick Ball payload outlet:\n${issue_1092_seed_61_control}")
 endif()
 if(NOT issue_1092_seed_61_control MATCHES "T2 \\| READY \\|")
-  message(FATAL_ERROR "Seed 61 lost same-turn strict-JIT readiness:\n${issue_1092_seed_61_control}")
+  message(FATAL_ERROR "Seed ${ISSUE_1092_READY_CONTROL_SEED} lost same-turn strict-JIT readiness:\n${issue_1092_seed_61_control}")
 endif()
 
 # Connector control: issue #1552 advances the same live Basic route to T2.
@@ -71,13 +76,13 @@ endif()
 # Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
 # Original gate: https://github.com/FlareZ123/pokemon-sims/issues/1092
 # Confirmed faster route: https://github.com/FlareZ123/pokemon-sims/issues/1552
-run_trace("strict-jit/go-first" 104 issue_1092_seed_104_connector)
+run_trace("${ISSUE_1092_SCENARIO}" "${ISSUE_1092_CONNECTOR_SEED}" issue_1092_seed_104_connector)
 if(NOT issue_1092_seed_104_connector MATCHES "T2 \\| PLAY ITEM \\|.*Tapu Lele-GX")
-  message(FATAL_ERROR "Seed 104 lost the live Quick Ball into Tapu Lele-GX connector:\n${issue_1092_seed_104_connector}")
+  message(FATAL_ERROR "Seed ${ISSUE_1092_CONNECTOR_SEED} lost the live Quick Ball into Tapu Lele-GX connector:\n${issue_1092_seed_104_connector}")
 endif()
 if(NOT issue_1092_seed_104_connector MATCHES "T2 \\| WONDER TAG \\|.*Crispin")
-  message(FATAL_ERROR "Seed 104 lost Wonder Tag into Crispin:\n${issue_1092_seed_104_connector}")
+  message(FATAL_ERROR "Seed ${ISSUE_1092_CONNECTOR_SEED} lost Wonder Tag into Crispin:\n${issue_1092_seed_104_connector}")
 endif()
 if(NOT issue_1092_seed_104_connector MATCHES "T2 \\| READY \\|")
-  message(FATAL_ERROR "Seed 104 lost its established T2 ready route:\n${issue_1092_seed_104_connector}")
+  message(FATAL_ERROR "Seed ${ISSUE_1092_CONNECTOR_SEED} lost its established T2 ready route:\n${issue_1092_seed_104_connector}")
 endif()

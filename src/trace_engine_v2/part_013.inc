@@ -381,6 +381,42 @@
     return true;
   }
 
+
+bool professors_letter_has_live_energy_target() const {
+  if (item_locked() || hand_count(Card::ProfessorsLetter) == 0 ||
+      !need_energy()) {
+    return false;
+  }
+  // Professor's Letter searches up to two Basic Energy cards with no discard
+  // cost. K0 uses only public copy accounting; a physical resolution establishes
+  // K1 before the exact Basic Energy targets are selected:
+  // https://api.pokemontcg.io/v2/cards/xy1-123
+  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy1/123/
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // https://github.com/FlareZ123/pokemon-sims/issues/2509
+  return (grass_needed() > 0 && might_be_unseen(Card::Grass)) ||
+         (fire_needed() > 0 && might_be_unseen(Card::Fire));
+}
+
+bool play_professors_letter() {
+  if (!professors_letter_has_live_energy_target()) return false;
+  if (!remove_one(state_.hand, Card::ProfessorsLetter)) {
+    throw std::logic_error("Professor's Letter disappeared before resolution");
+  }
+  state_.discard.push_back(Card::ProfessorsLetter);
+  // The printed effect has no hand discard cost. The shared Basic-Energy search
+  // helper performs the physical deck inspection, puts up to two legal Basic
+  // Energy cards into hand, shuffles, and records K1:
+  // https://api.pokemontcg.io/v2/cards/xy1-123
+  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy1/123/
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  // https://github.com/FlareZ123/pokemon-sims/issues/2509
+  search_energy_to_hand(
+      2, "R-GAME-ITEM; P-KNOWLEDGE-01", "Professor's Letter");
+  return true;
+}
+
   bool run_search_items_one_step(const bool permit_payload) {
     if (item_locked()) return false;
     if (play_battle_vip_pass()) return true;

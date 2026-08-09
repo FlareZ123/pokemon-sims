@@ -66,14 +66,22 @@ def percent_column(fieldnames: list[str], turn: int) -> str:
     raise KeyError(f"No percentage column found for T{turn}: {fieldnames}")
 
 
-def report_markdown(rows: list[dict[str, str]], fieldnames: list[str], manifest: dict[str, object]) -> str:
-    scenario_column = "scenario" if "scenario" in fieldnames else fieldnames[0]
-    t2_column = percent_column(fieldnames, 2)
-    t3_column = percent_column(fieldnames, 3)
-    t4_column = percent_column(fieldnames, 4)
+def report_table(entries: list[tuple[str, str, str, str]]) -> str:
+    lines = ["| Scenario | T2 | T3 | T4 |", "|---|---:|---:|---:|"]
+    for label, t2, t3, t4 in entries:
+        lines.append(f"| {label} | {t2}% | {t3}% | {t4}% |")
+    return "\n".join(lines)
 
-    baseline = []
-    locks = []
+
+def partition_report_rows(
+    rows: list[dict[str, str]],
+    scenario_column: str,
+    t2_column: str,
+    t3_column: str,
+    t4_column: str,
+) -> tuple[list[tuple[str, str, str, str]], list[tuple[str, str, str, str]]]:
+    baseline: list[tuple[str, str, str, str]] = []
+    locks: list[tuple[str, str, str, str]] = []
     for row in rows:
         scenario = row[scenario_column]
         target = locks if "lock" in scenario else baseline
@@ -85,12 +93,18 @@ def report_markdown(rows: list[dict[str, str]], fieldnames: list[str], manifest:
                 row[t4_column],
             )
         )
+    return baseline, locks
 
-    def table(entries: list[tuple[str, str, str, str]]) -> str:
-        lines = ["| Scenario | T2 | T3 | T4 |", "|---|---:|---:|---:|"]
-        for label, t2, t3, t4 in entries:
-            lines.append(f"| {label} | {t2}% | {t3}% | {t4}% |")
-        return "\n".join(lines)
+
+def report_markdown(rows: list[dict[str, str]], fieldnames: list[str], manifest: dict[str, object]) -> str:
+    scenario_column = "scenario" if "scenario" in fieldnames else fieldnames[0]
+    t2_column = percent_column(fieldnames, 2)
+    t3_column = percent_column(fieldnames, 3)
+    t4_column = percent_column(fieldnames, 4)
+
+    baseline, locks = partition_report_rows(
+        rows, scenario_column, t2_column, t3_column, t4_column
+    )
 
     return f"""# Regidrago VSTAR Setup Report: Corrected Setup-Order Baseline
 
@@ -106,13 +120,13 @@ The simulator counts a ready state only when Regidrago VSTAR is Active, has at l
 
 Seed: `{manifest['matrix_seed']}`.
 
-{table(baseline)}
+{report_table(baseline)}
 
 ## Lock stress tests
 
 Turn-one full Item-lock rows are intentionally omitted and must not be reintroduced as current-paper Expanded matchup scenarios. The official turn procedure prevents the starting player from attacking on the first turn, and Forest of Giant Plants, the historical immediate-evolution enabler for turn-one Vileplume-style locks, is banned in Expanded. Use the turn-two Item-lock rows instead. Combined lock means Rule Box Ability suppression plus Item lock beginning on turn 2. Sources: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf https://www.pokemon.com/es/sol-luna-sombras-ardientes-anuncio-trimestral-sobre-lista-de-cartas-prohibidas-y-cambios-en-las-reglas/ https://github.com/FlareZ123/pokemon-sims/issues/2247
 
-{table(locks)}
+{report_table(locks)}
 
 ## Interpretation boundary
 
@@ -192,9 +206,9 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> int:
-    args = parse_args()
-    repo_root = args.repo_root.resolve()
+def load_setup_inputs(
+    repo_root: Path,
+) -> tuple[dict[str, object], list[dict[str, str]], list[str]]:
     manifest_path = repo_root / "results" / "baseline_manifest.json"
     csv_path = repo_root / "results" / "simulation_results.csv"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -204,12 +218,37 @@ def main() -> int:
         fieldnames = list(reader.fieldnames or [])
     if not rows or not fieldnames:
         raise ValueError("simulation_results.csv is empty")
+    return manifest, rows, fieldnames
 
+
+def write_setup_documents(
+    repo_root: Path,
+    rows: list[dict[str, str]],
+    fieldnames: list[str],
+    manifest: dict[str, object],
+) -> None:
     with exclusive_lock(repo_root / ".update-setup-docs.lock"):
-        atomic_write(repo_root / "docs" / "REPORT.md", report_markdown(rows, fieldnames, manifest))
-        atomic_write(repo_root / "docs" / "TRACE_AUDIT.md", trace_audit_markdown(repo_root, manifest))
+        atomic_write(
+            repo_root / "docs" / "REPORT.md",
+            report_markdown(rows, fieldnames, manifest),
+        )
+        atomic_write(
+            repo_root / "docs" / "TRACE_AUDIT.md",
+            trace_audit_markdown(repo_root, manifest),
+        )
         readme_path = repo_root / "README.md"
-        atomic_write(readme_path, update_readme(readme_path.read_text(encoding="utf-8"), manifest))
+        atomic_write(
+            readme_path,
+            update_readme(readme_path.read_text(encoding="utf-8"), manifest),
+        )
+
+
+def main() -> int:
+    args = parse_args()
+    repo_root = args.repo_root.resolve()
+    manifest, rows, fieldnames = load_setup_inputs(repo_root)
+
+    write_setup_documents(repo_root, rows, fieldnames, manifest)
     return 0
 
 

@@ -7,6 +7,7 @@ import os
 import re
 import tempfile
 from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
 
 SCENARIO_LABELS = {
@@ -28,6 +29,13 @@ SCENARIO_LABELS = {
 
 CsvRow = dict[str, str]
 ReportEntry = tuple[str, str, str, str]
+
+
+@dataclass(frozen=True)
+class SetupInputs:
+    manifest: dict[str, object]
+    rows: list[CsvRow]
+    fieldnames: list[str]
 
 
 def scenario_label(scenario: str) -> str:
@@ -213,9 +221,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_setup_inputs(
-    repo_root: Path,
-) -> tuple[dict[str, object], list[CsvRow], list[str]]:
+def load_setup_inputs(repo_root: Path) -> SetupInputs:
     manifest_path = repo_root / "results" / "baseline_manifest.json"
     csv_path = repo_root / "results" / "simulation_results.csv"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -225,37 +231,32 @@ def load_setup_inputs(
         fieldnames = list(reader.fieldnames or [])
     if not rows or not fieldnames:
         raise ValueError("simulation_results.csv is empty")
-    return manifest, rows, fieldnames
+    return SetupInputs(manifest=manifest, rows=rows, fieldnames=fieldnames)
 
 
-def write_setup_documents(
-    repo_root: Path,
-    rows: list[CsvRow],
-    fieldnames: list[str],
-    manifest: dict[str, object],
-) -> None:
+def write_setup_documents(repo_root: Path, inputs: SetupInputs) -> None:
     with exclusive_lock(repo_root / ".update-setup-docs.lock"):
         atomic_write(
             repo_root / "docs" / "REPORT.md",
-            report_markdown(rows, fieldnames, manifest),
+            report_markdown(inputs.rows, inputs.fieldnames, inputs.manifest),
         )
         atomic_write(
             repo_root / "docs" / "TRACE_AUDIT.md",
-            trace_audit_markdown(repo_root, manifest),
+            trace_audit_markdown(repo_root, inputs.manifest),
         )
         readme_path = repo_root / "README.md"
         atomic_write(
             readme_path,
-            update_readme(readme_path.read_text(encoding="utf-8"), manifest),
+            update_readme(readme_path.read_text(encoding="utf-8"), inputs.manifest),
         )
 
 
 def main() -> int:
     args = parse_args()
     repo_root = args.repo_root.resolve()
-    manifest, rows, fieldnames = load_setup_inputs(repo_root)
+    inputs = load_setup_inputs(repo_root)
 
-    write_setup_documents(repo_root, rows, fieldnames, manifest)
+    write_setup_documents(repo_root, inputs)
     return 0
 
 

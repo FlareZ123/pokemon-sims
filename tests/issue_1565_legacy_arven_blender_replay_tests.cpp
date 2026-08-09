@@ -35,7 +35,7 @@ void test_seed_6_uses_cheaper_direct_vessel_finish_on_turn_three() {
 
   // Current seed 6 reaches the same earliest T3 window through the already-held
   // Earthen Vessel: its cost discards Mega Dragonite ex for strict-JIT payload,
-  // Vessel finds Fire, and the unused manual attachment completes Apex. This
+  // Vessel finds Grass, and the unused manual attachment completes Apex. This
   // preserves Legacy Star, Arven, and Brilliant Blender for the equal-turn route.
   // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
   // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
@@ -49,7 +49,7 @@ void test_seed_6_uses_cheaper_direct_vessel_finish_on_turn_three() {
          "Seed 6 did not reach strict-JIT readiness on turn three.");
   expect(trace_contains(trace, "T3 | DISCARD | rules: R-EV-01 | Mega Dragonite ex (Earthen Vessel cost)") &&
              trace_contains(trace, "T3 | Earthen Vessel |") &&
-             trace_contains(trace, "T3 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago VSTAR") &&
+             trace_contains(trace, "T3 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago VSTAR") &&
              trace_contains(trace, "T3 | READY |"),
          "Seed 6 did not execute the direct Vessel strict-JIT finish.");
   expect(!trace_contains(trace, "T3 | LEGACY STAR |") &&

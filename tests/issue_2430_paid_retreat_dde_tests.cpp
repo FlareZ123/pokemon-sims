@@ -171,7 +171,7 @@ int main() {
   // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/issues/2430
-  for (const auto [grass, fire, dde] : std::vector<std::tuple<int, int, int>>{
+  for (const auto& [grass, fire, dde] : std::vector<std::tuple<int, int, int>>{
            {1, 0, 1}, {0, 1, 1}, {2, 1, 0}}) {
     run_issue_2158_variant(grass, fire, dde);
     run_tapu_variant(grass, fire, dde);

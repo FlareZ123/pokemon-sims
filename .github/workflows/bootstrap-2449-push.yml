@@ -1,0 +1,38 @@
+name: Bootstrap issue 2449 fix
+
+on:
+  push:
+    branches:
+      - fix/2449-burnet-dde-ready-route
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Materialize production and regression changes
+        run: python3 tools/materialize_issue_2449.py
+      - name: Build focused targets
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target regidrago_unified_tests regidrago_sim -j2
+      - name: Run issue 2449 regression
+        run: ./build/regidrago_unified_tests issue_2449_burnet_dde_ready_tests
+      - name: Run three simulate-this audits
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2
+      - name: Commit materialized fix and remove bootstrap files
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_011_burnet_thinning_override.inc tests/issue_2449_burnet_dde_ready_tests.cpp
+          git rm .github/workflows/materialize-2449.yml .github/workflows/bootstrap-2449-push.yml tools/materialize_issue_2449.py
+          git commit -m "Fix #2449 Burnet DDE ready-turn projection"
+          git push

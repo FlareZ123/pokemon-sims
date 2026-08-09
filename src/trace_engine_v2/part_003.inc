@@ -199,12 +199,14 @@ class Engine {
     return scenario_.locks == LockMode::FullItem ||
            (uses_turn_two_item_lock(scenario_.locks) && state_.turn >= 2);
   }
+  static bool uses_path_style_ability_lock(const LockMode locks) {
+    return locks == LockMode::FullRuleBoxAbility || locks == LockMode::FullCombined;
+  }
   bool rule_box_abilities_locked() const {
-    const bool path_style_lock = scenario_.locks == LockMode::FullRuleBoxAbility ||
-                                 scenario_.locks == LockMode::FullCombined;
     // Path to the Peak suppresses Rule Box Pokémon Abilities only while that Stadium
     // remains in play: https://api.pokemontcg.io/v2/cards/swsh6-148
-    return path_style_lock && !state_.path_lock_removed;
+    return uses_path_style_ability_lock(scenario_.locks) &&
+           !state_.path_lock_removed;
   }
   bool ability_available_for_pokemon(const Card card) const {
     return !is_rule_box_pokemon(card) || !rule_box_abilities_locked();

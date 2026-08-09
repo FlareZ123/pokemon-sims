@@ -1,0 +1,25 @@
+name: Audit issue 2295 branch history
+
+on:
+  pull_request:
+    branches:
+      - fix/2295-reclaim-20260809-1324
+
+jobs:
+  history:
+    if: github.head_ref == 'audit/2295-history-20260809-1758'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Inspect every branch commit
+        run: |
+          git fetch origin main
+          BASE=$(git merge-base origin/main HEAD~1)
+          echo "MERGE_BASE=$BASE"
+          git log --reverse --date=iso-strict --format='%H | %ad | %s' "$BASE"..HEAD~1
+          echo "===== PER-COMMIT STATS ====="
+          for commit in $(git rev-list --reverse "$BASE"..HEAD~1); do
+            git show --stat --oneline --decorate=no "$commit"
+          done

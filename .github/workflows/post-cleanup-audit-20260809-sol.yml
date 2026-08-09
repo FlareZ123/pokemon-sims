@@ -21,8 +21,6 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator and tests
         run: cmake --build build --parallel 2
-      - name: Run complete Release suite
-        run: ctest --test-dir build --parallel 4 --output-on-failure
       - name: Simulate strict JIT going second
         run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-1.txt
       - name: Simulate strict JIT going first
@@ -31,6 +29,8 @@ jobs:
         run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-3.txt
       - name: Regenerate 100k setup matrix
         run: python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
       - name: Upload audit evidence
         if: always()
         uses: actions/upload-artifact@v4

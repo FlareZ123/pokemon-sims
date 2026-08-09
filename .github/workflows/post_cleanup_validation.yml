@@ -1,0 +1,29 @@
+name: Post-cleanup validation
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    if: github.head_ref == 'audit/post-cleanup-20260809-1817'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Release simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Run full Release tests
+        run: ctest --test-dir build --output-on-failure
+      - name: Representative simulator traces
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3
+      - name: Generate 100k T2/T3 setup matrix
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+          echo '===== T2/T3 MATRIX ====='
+          cat t2-t3-matrix.csv

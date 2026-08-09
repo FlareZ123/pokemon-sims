@@ -105,12 +105,16 @@ class _SourceDigestBuilder:
         """Add one framed source input to the aggregate digest."""
         _update_digest(self.digest, self.repo_root, path)
 
+    def add_paths(self, paths: tuple[Path, ...]) -> None:
+        """Add a stable sequence of source inputs to the aggregate digest."""
+        for path in paths:
+            self.add_path(path)
+
 
 def _build_source_digest(repo_root: Path) -> _Digest:
     """Build the aggregate digest from the stable simulator input sequence."""
     builder = _SourceDigestBuilder(repo_root)
-    for path in simulator_policy_source_paths(repo_root):
-        builder.add_path(path)
+    builder.add_paths(simulator_policy_source_paths(repo_root))
     return builder.digest
 
 

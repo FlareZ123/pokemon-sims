@@ -7,6 +7,8 @@ from urllib.parse import unquote
 
 
 ROOT = Path(__file__).resolve().parents[1]
+README_PATH = ROOT / "README.md"
+CROBAT_REPORT_PATH = ROOT / "docs" / "CROBAT_MODEL_REPORT.md"
 SCAN_ROOTS = ("src", "tests", "scripts", "docs")
 ROOT_FILES = ("README.md", "CMakeLists.txt")
 TEXT_SUFFIXES = {
@@ -137,8 +139,8 @@ def validate_internal_anchors(errors: list[str]) -> int:
 
 
 def validate_crobat_readme_provenance(errors: list[str]) -> None:
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    report = (ROOT / "docs" / "CROBAT_MODEL_REPORT.md").read_text(encoding="utf-8")
+    readme = README_PATH.read_text(encoding="utf-8")
+    report = CROBAT_REPORT_PATH.read_text(encoding="utf-8")
     scope = CROBAT_SCOPE_RE.search(report)
     if scope is None:
         errors.append("docs/CROBAT_MODEL_REPORT.md: source-bound Crobat scope is missing")

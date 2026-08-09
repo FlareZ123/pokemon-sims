@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 jobs:
-  regenerate:
+  finalize:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -17,31 +17,60 @@ jobs:
         with:
           ref: fix/2494-legacy-star-held-vessel
           fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Configure and build exact PR source
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build --parallel 2
-      - name: Validate issue 2494 and three CI play traces
+      - name: Validate issue 2494 and three reviewed CI traces
         run: |
           ctest --test-dir build -R 'regidrago_issue_2494_legacy_star_held_vessel_tests' --output-on-failure
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3
-          ./build/regidrago_sim --simulate-this --scenario matchup-flex/go-second --seed 3 --require-ready-by 2
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 19 --require-ready-by 3
-      - name: Regenerate canonical source-bound evidence
+      - name: Reproduce committed 100000-trial matrices
         run: |
-          python scripts/generate_setup_baselines.py --exe ./build/regidrago_sim --trials 100000 --seed 20260705 --out-dir results
-          python scripts/generate_setup_report.py --input results/simulation_results.csv --output docs/SETUP_BASELINES.md
-      - name: Regenerate paired source-bound evidence
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out issue-2494-shell.csv
+          cmp issue-2494-shell.csv results/simulation_results.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out issue-2494-multi.csv
+          cmp issue-2494-multi.csv results/multi_deck_comparison.csv
+      - name: Refresh source-bound provenance only
+        shell: python
         run: |
-          python scripts/generate_setup_baselines.py --exe ./build/regidrago_sim --trials 100000 --seed 20260705 --out-dir results --paired-draws
-          python scripts/generate_paired_setup_report.py --input results/paired/simulation_results.csv --output docs/PAIRED_BASELINES.md
+          import json
+          from pathlib import Path
+          from scripts.baseline_provenance import simulator_policy_source_digest
+
+          root = Path('.').resolve()
+          digest = simulator_policy_source_digest(root)
+          for relative in ('results/baseline_manifest.json', 'results/multi_deck_manifest.json'):
+              path = root / relative
+              data = json.loads(path.read_text())
+              data['simulator_policy_source_sha256'] = digest
+              path.write_text(json.dumps(data, indent=2) + '\n')
+
+          report = root / 'docs/MULTI_DECK_REPORT.md'
+          text = report.read_text()
+          import re
+          updated, count = re.subn(
+              r'(?m)(simulator_policy_source_sha256[^0-9a-f]*)([0-9a-f]{64})',
+              lambda match: match.group(1) + digest,
+              text,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit('MULTI_DECK_REPORT provenance line not found')
+          report.write_text(updated)
+          print(digest)
       - name: Validate complete Release suite
-        run: ctest --test-dir build --output-on-failure
-      - name: Commit exact validated evidence
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Commit exact validated provenance
         run: |
           git rm .github/workflows/finalize-2494-evidence.yml
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add results docs/SETUP_BASELINES.md docs/PAIRED_BASELINES.md
-          git commit -m 'Refresh #2494 setup evidence'
+          git add results/baseline_manifest.json results/multi_deck_manifest.json docs/MULTI_DECK_REPORT.md
+          git commit -m 'Refresh #2494 source-bound provenance'
           git push origin HEAD:fix/2494-legacy-star-held-vessel

@@ -2,6 +2,15 @@ if(NOT DEFINED SIMULATOR)
   message(FATAL_ERROR "SIMULATOR is required")
 endif()
 
+set(STRICT_SECOND_SCENARIO "strict-jit/go-second")
+set(MATCHUP_FLEX_FIRST_SCENARIO "matchup-flex-jit/go-first")
+set(NO_CONTROL_SECOND_SCENARIO "no-discard-control/go-second")
+set(STRICT_HOLD_SEED 19)
+set(MATCHUP_FLEX_K0_SEED 2026072802)
+set(STRICT_ACCELERATION_SEED 4)
+set(NO_CONTROL_HOLD_SEED 91)
+set(NO_CONTROL_PAYLOAD_SEED 19)
+
 function(run_trace scenario seed output_var)
   execute_process(
     COMMAND "${SIMULATOR}" --simulate-this --scenario "${scenario}" --seed "${seed}"
@@ -25,7 +34,7 @@ endfunction()
 # Manual attachment, evolution, and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
 # Strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
 # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1079
-run_trace("strict-jit/go-second" 19 strict_seed_19)
+run_trace("${STRICT_SECOND_SCENARIO}" ${STRICT_HOLD_SEED} strict_seed_19)
 if(NOT strict_seed_19 MATCHES "T1 \\| HOLD ATTACK \\|")
   message(FATAL_ERROR "Strict seed 19 did not hold Celestial Roar:\n${strict_seed_19}")
 endif()
@@ -53,7 +62,7 @@ endif()
 # Earliest-route and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
 # Reopened regression: https://github.com/FlareZ123/pokemon-sims/issues/1079
 # Known-route control: https://github.com/FlareZ123/pokemon-sims/issues/1174
-run_trace("matchup-flex-jit/go-first" 2026072802 matchup_flex_k0_regression)
+run_trace("${MATCHUP_FLEX_FIRST_SCENARIO}" ${MATCHUP_FLEX_K0_SEED} matchup_flex_k0_regression)
 if(NOT matchup_flex_k0_regression MATCHES "T2 \\| HOLD ATTACK \\|")
   message(FATAL_ERROR "Matchup-flex K0 regression seed did not hold Celestial Roar:\n${matchup_flex_k0_regression}")
 endif()
@@ -68,7 +77,7 @@ endif()
 # Celestial Roar must remain available as a live acceleration route:
 # https://api.pokemontcg.io/v2/cards/swsh12-135
 # https://github.com/FlareZ123/pokemon-sims/issues/1079
-run_trace("strict-jit/go-second" 4 strict_seed_4)
+run_trace("${STRICT_SECOND_SCENARIO}" ${STRICT_ACCELERATION_SEED} strict_seed_4)
 if(NOT strict_seed_4 MATCHES "T1 \\| ATTACK \\|.*Celestial Roar")
   message(FATAL_ERROR "Strict seed 4 incorrectly suppressed a live Celestial Roar route:\n${strict_seed_4}")
 endif()
@@ -83,7 +92,7 @@ endif()
 # Core attachment, evolution, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
 # No-control timing and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
 # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1623
-run_trace("no-discard-control/go-second" 91 no_control_seed_91)
+run_trace("${NO_CONTROL_SECOND_SCENARIO}" ${NO_CONTROL_HOLD_SEED} no_control_seed_91)
 # CMake quoted-argument escapes and MATCHES regex semantics: https://cmake.org/cmake/help/latest/manual/cmake-language.7.html#quoted-argument https://cmake.org/cmake/help/latest/command/if.html#matches
 if(NOT no_control_seed_91 MATCHES "T1 \\| HOLD ATTACK \\|")
   message(FATAL_ERROR "No-control seed 91 did not hold Celestial Roar:\n${no_control_seed_91}")
@@ -101,7 +110,7 @@ endif()
 # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
 # https://github.com/FlareZ123/pokemon-sims/issues/1079
 # https://github.com/FlareZ123/pokemon-sims/issues/1623
-run_trace("no-discard-control/go-second" 19 control_seed_19)
+run_trace("${NO_CONTROL_SECOND_SCENARIO}" ${NO_CONTROL_PAYLOAD_SEED} control_seed_19)
 if(NOT control_seed_19 MATCHES "T1 \\| ATTACK \\|.*Celestial Roar")
   message(FATAL_ERROR "No-discard-control seed 19 lost its permitted payload-banking attack:\n${control_seed_19}")
 endif()

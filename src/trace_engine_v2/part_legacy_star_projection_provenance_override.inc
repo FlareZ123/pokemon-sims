@@ -1,9 +1,9 @@
   std::optional<Card> legacy_star_projection_removed_marker_;
 
   bool remove_one_legacy_star_projection(std::vector<Card>& zone, const Card card) {
-    const bool projects_discard_recovery = &zone == &state_.discard;
-    const int discard_copies = projects_discard_recovery ? count_of(state_.discard, card) : 0;
-    const int current_turn_copies = projects_discard_recovery
+    const bool is_discard_recovery_projection = &zone == &state_.discard;
+    const int discard_copies = is_discard_recovery_projection ? count_of(state_.discard, card) : 0;
+    const int current_turn_copies = is_discard_recovery_projection
         ? count_of(state_.discarded_this_turn, card)
         : 0;
     if (!remove_one(zone, card)) return false;
@@ -15,7 +15,7 @@
     // https://api.pokemontcg.io/v2/cards/sm9-152
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
     // https://github.com/FlareZ123/pokemon-sims/issues/936
-    if (projects_discard_recovery && current_turn_copies > 0 &&
+    if (is_discard_recovery_projection && current_turn_copies > 0 &&
         discard_copies == current_turn_copies) {
       const auto turn_it = std::find(
           state_.discarded_this_turn.begin(), state_.discarded_this_turn.end(), card);

@@ -1,0 +1,4 @@
+Validation-only marker for direct-main cleanup commits:
+- a56b4fc52a271c42b18858ce716ed87951e9f328
+- 96049c6b58d95a01a9ae8bc2eb3158cb215a1909
+- 7d0e18d3c0d51521019c1f69e3156c88cb13f3cb

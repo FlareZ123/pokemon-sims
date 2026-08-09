@@ -6,6 +6,8 @@
 #include <stdexcept>
 #include <utility>
 
+// Repository DDE migration contract: https://github.com/FlareZ123/pokemon-sims/issues/2238
+// Focused confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2423
 namespace sim {
 struct EngineTestAccess {
   static void set_state(Engine& engine, State state, const bool known = true) {

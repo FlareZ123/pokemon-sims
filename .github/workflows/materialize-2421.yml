@@ -1,0 +1,326 @@
+name: Materialize issue 2421
+
+on:
+  push:
+    branches:
+      - fix/2421-tate-dde-routes
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/2421-tate-dde-routes
+          fetch-depth: 0
+      - name: Apply semantic DDE projections and regressions
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          core = Path('src/trace_engine_v2/part_004.inc')
+          text = core.read_text(encoding='utf-8')
+          marker = '''  template <typename Available>\n  std::optional<Card> preferred_manual_energy_for(\n'''
+          helper = '''  bool one_basic_attachment_completes_apex(const Pokemon& pokemon) const {
+    if (pays_apex_energy_cost(pokemon)) return false;
+    // A physical Basic attachment is one action even when DDE makes Grass and Fire
+    // alternative legal completions. Project each Basic independently instead of
+    // adding typed deficits.
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // DDE semantic-readiness contract: https://github.com/FlareZ123/pokemon-sims/issues/2238
+    for (const Card basic : {Card::Grass, Card::Fire}) {
+      Pokemon projected = pokemon;
+      if (attach_energy_card(projected, basic) && pays_apex_energy_cost(projected)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  std::optional<Card> finishing_basic_from_hand_for_apex(
+      const Pokemon& pokemon) const {
+    if (pays_apex_energy_cost(pokemon)) return std::nullopt;
+    for (const Card basic : {Card::Grass, Card::Fire}) {
+      if (hand_count(basic) == 0) continue;
+      Pokemon projected = pokemon;
+      if (attach_energy_card(projected, basic) && pays_apex_energy_cost(projected)) {
+        return basic;
+      }
+    }
+    return std::nullopt;
+  }
+
+'''
+          if helper not in text:
+              if marker not in text:
+                  raise SystemExit('part_004 insertion marker missing')
+              text = text.replace(marker, helper + marker, 1)
+          core.write_text(text, encoding='utf-8')
+
+          tate = Path('src/trace_engine_v2/part_issue_1070_tate_after_vstar_search_override.inc')
+          text = tate.read_text(encoding='utf-8')
+          replacements = [
+              ('''           state_.active->entered_turn < state_.turn &&\n           state_.active->grass >= 2 && state_.active->fire >= 1;''',
+               '''           state_.active->entered_turn < state_.turn &&\n           pays_apex_energy_cost(*state_.active); // DDE route: https://github.com/FlareZ123/pokemon-sims/issues/2421'''),
+              ('''      return pokemon.card == Card::RegidragoV &&\n          pokemon.entered_turn < state_.turn && pokemon.grass >= 2 &&\n          pokemon.fire >= 1;''',
+               '''      return pokemon.card == Card::RegidragoV &&\n          pokemon.entered_turn < state_.turn &&\n          pays_apex_energy_cost(pokemon); // DDE route: https://github.com/FlareZ123/pokemon-sims/issues/2421'''),
+              ('''      return pokemon.card == Card::RegidragoV &&\n          pokemon.entered_turn < state_.turn && pokemon.grass == 1 &&\n          pokemon.fire >= 1;''',
+               '''      return pokemon.card == Card::RegidragoV &&\n          pokemon.entered_turn < state_.turn &&\n          one_basic_attachment_completes_apex(pokemon); // DDE projection: https://github.com/FlareZ123/pokemon-sims/issues/2421'''),
+              ('''      return pokemon.card == Card::RegidragoVstar &&\n          pokemon.entered_turn < state_.turn && pokemon.grass == 1 &&\n          pokemon.fire >= 1;''',
+               '''      return pokemon.card == Card::RegidragoVstar &&\n          pokemon.entered_turn < state_.turn &&\n          one_basic_attachment_completes_apex(pokemon); // DDE projection: https://github.com/FlareZ123/pokemon-sims/issues/2421'''),
+          ]
+          for old, new in replacements:
+              if old in text:
+                  text = text.replace(old, new, 1)
+              elif new not in text:
+                  raise SystemExit('Tate evolution/switch predicate changed unexpectedly')
+          tate.write_text(text, encoding='utf-8')
+
+          attach = Path('src/trace_engine_v2/part_tate_blender_attachment_override.inc')
+          text = attach.read_text(encoding='utf-8')
+          old = '''    Pokemon* target = best_benched_vstar_for_promotion();
+    if (target != nullptr) {
+      Card energy = Card::Grass;
+      if (target->grass < 2 && hand_count(Card::Grass) > 0) {
+        energy = Card::Grass;
+      } else if (target->fire < 1 && hand_count(Card::Fire) > 0) {
+        energy = Card::Fire;
+      } else {
+        return attach_manual_tate_blender_original();
+      }
+
+      remove_one(state_.hand, energy);
+      if (energy == Card::Grass) {
+        ++target->grass;
+      } else {
+        ++target->fire;
+      }
+      state_.manual_energy_used = true;
+      trace("ATTACH", "R-GAME-ENERGY; R-TATE-01; R-RVS-01; P-DCI-01",
+            std::string(name(energy)) +
+                " manually to the Benched Regidrago VSTAR selected for Tate & Liza promotion.");
+      return true;
+    }'''
+          new = '''    Pokemon* target = best_benched_vstar_for_promotion();
+    if (target != nullptr) {
+      if (pays_apex_energy_cost(*target)) {
+        // Preserve the once-per-turn manual attachment when Tate's selected VSTAR
+        // already pays Apex through DDE plus a Basic Energy.
+        // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2421
+        return false;
+      }
+      const auto finishing_energy = finishing_basic_from_hand_for_apex(*target);
+      if (!finishing_energy.has_value()) {
+        return attach_manual_tate_blender_original();
+      }
+      const Card energy = *finishing_energy;
+      remove_one(state_.hand, energy);
+      if (energy == Card::Grass) {
+        ++target->grass;
+      } else {
+        ++target->fire;
+      }
+      state_.manual_energy_used = true;
+      trace("ATTACH", "R-GAME-ENERGY; R-TATE-01; R-RVS-01; P-DCI-01",
+            std::string(name(energy)) +
+                " manually to the Benched Regidrago VSTAR selected for Tate & Liza promotion.");
+      return true;
+    }'''
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif new not in text:
+              raise SystemExit('Tate attachment coordinator changed unexpectedly')
+          attach.write_text(text, encoding='utf-8')
+
+          supporter = Path('src/trace_engine_v2/part_issue_2225_arven_vessel_supporter_override.inc')
+          text = supporter.read_text(encoding='utf-8')
+          old = '''    const Pokemon* target = best_benched_vstar_for_promotion();
+    if (target == nullptr) return false;
+    const int missing_grass = std::max(0, 2 - target->grass);
+    const int missing_fire = std::max(0, 1 - target->fire);
+    if (missing_grass + missing_fire != 1) return false;
+    const Card needed_energy = missing_grass == 1 ? Card::Grass : Card::Fire;'''
+          new = '''    const Pokemon* target = best_benched_vstar_for_promotion();
+    if (target == nullptr) return false;
+    const auto finishing_energy = finishing_basic_from_hand_for_apex(*target);
+    if (!finishing_energy.has_value()) return false; // DDE projection: https://github.com/FlareZ123/pokemon-sims/issues/2421'''
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif new not in text:
+              raise SystemExit('issue-2315 Tate projection changed unexpectedly')
+          old_return = '''    return hand_count(needed_energy) > 0;'''
+          new_return = '''    return true; // Held finishing Basic was proven semantically above: https://github.com/FlareZ123/pokemon-sims/issues/2421'''
+          if old_return in text:
+              text = text.replace(old_return, new_return, 1)
+          elif new_return not in text:
+              raise SystemExit('issue-2315 return changed unexpectedly')
+          supporter.write_text(text, encoding='utf-8')
+
+          Path('tests/issue_2421_tate_dde_routes_tests.cpp').write_text(r'''#define REGIDRAGO_SIM_NO_MAIN
+#include "../src/regidrago_sim.cpp"
+
+#include <iostream>
+#include <optional>
+#include <random>
+#include <stdexcept>
+#include <utility>
+
+namespace sim {
+struct EngineTestAccess {
+  static void set_state(Engine& engine, State state, const bool known = true) {
+    engine.state_ = std::move(state);
+    engine.deck_seen_ = known;
+    engine.prizes_revealed_ = known;
+  }
+  static bool one_basic_completes(const Engine& engine, const Pokemon& pokemon) {
+    return engine.one_basic_attachment_completes_apex(pokemon);
+  }
+  static std::optional<Card> finishing_basic(const Engine& engine,
+                                              const Pokemon& pokemon) {
+    return engine.finishing_basic_from_hand_for_apex(pokemon);
+  }
+  static bool tate_draw_route(const Engine& engine) {
+    return engine.tate_draw_after_active_vstar_evolution_route();
+  }
+  static bool issue_2315_switch(const Engine& engine) {
+    return engine.issue_2315_tate_switch_finishes_ready_turn();
+  }
+  static bool attach_manual(Engine& engine) { return engine.attach_manual(); }
+  static bool manual_used(const Engine& engine) { return engine.state_.manual_energy_used; }
+};
+}  // namespace sim
+
+namespace {
+void expect(const bool condition, const char* message) {
+  if (!condition) throw std::runtime_error(message);
+}
+
+sim::Pokemon regi(const sim::Card card, const int entered_turn, const int grass,
+                  const int fire, const int dde) {
+  sim::Pokemon result{card, entered_turn, grass, fire, sim::Tool::None};
+  result.double_dragon = dde;
+  return result;
+}
+
+struct Fixture {
+  sim::Scenario scenario{"issue-2421", sim::DciProfile::StrictJit,
+                         sim::LockMode::None, false, 4};
+  sim::DeckRecipe recipe{sim::double_dragon_modeling_recipe()};
+  std::mt19937_64 rng{2421};
+  sim::Engine engine{scenario, recipe, rng};
+};
+
+void test_dde_only_is_one_basic_attachment_short() {
+  Fixture fixture;
+  const auto target = regi(sim::Card::RegidragoVstar, 1, 0, 0, 1);
+  // Grass and Fire are alternative one-card completions beside DDE.
+  // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2421
+  expect(sim::EngineTestAccess::one_basic_completes(fixture.engine, target),
+         "DDE-only was not recognized as one Basic attachment short.");
+
+  sim::State state;
+  state.hand = {sim::Card::Fire};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+  expect(sim::EngineTestAccess::finishing_basic(fixture.engine, target) ==
+             sim::Card::Fire,
+         "Held Fire was not recognized as the DDE finishing attachment.");
+}
+
+void test_ready_dde_target_needs_no_attachment() {
+  Fixture fixture;
+  const auto target = regi(sim::Card::RegidragoVstar, 1, 1, 0, 1);
+  expect(!sim::EngineTestAccess::one_basic_completes(fixture.engine, target),
+         "Already-ready DDE target was treated as one attachment short.");
+}
+
+void test_active_tate_draw_accepts_dde_ready_regidrago_v() {
+  sim::Scenario scenario{"issue-2421-lock", sim::DciProfile::StrictJit,
+                         sim::LockMode::TurnTwoItem, false, 4};
+  sim::DeckRecipe recipe{sim::double_dragon_modeling_recipe()};
+  std::mt19937_64 rng{24211};
+  sim::Engine engine{scenario, recipe, rng};
+  sim::State state;
+  state.turn = 2;
+  state.active = regi(sim::Card::RegidragoV, 1, 1, 0, 1);
+  state.hand = {sim::Card::TateLiza, sim::Card::RegidragoVstar};
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  expect(sim::EngineTestAccess::tate_draw_route(engine),
+         "Tate draw route missed prior-turn DDE plus Basic Regidrago V.");
+}
+
+void test_issue_2315_accepts_dde_only_plus_held_basic() {
+  Fixture fixture;
+  sim::State state;
+  state.turn = 3;
+  state.active = regi(sim::Card::DialgaGX, 1, 0, 0, 0);
+  state.bench = {regi(sim::Card::RegidragoVstar, 1, 0, 0, 1)};
+  state.hand = {sim::Card::TateLiza, sim::Card::Grass};
+  state.discard = {sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+  // Tate switches the DDE-only VSTAR Active and the unused attachment can supply
+  // the held Basic without treating Grass/Fire options as two separate deficits.
+  // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2421
+  expect(sim::EngineTestAccess::issue_2315_switch(fixture.engine),
+         "Post-payload Tate switch missed DDE-only plus held Basic completion.");
+}
+
+void test_tate_coordinator_preserves_attachment_when_target_ready() {
+  Fixture fixture;
+  sim::State state;
+  state.turn = 3;
+  state.active = regi(sim::Card::RegidragoV, 3, 0, 0, 0);
+  state.bench = {regi(sim::Card::RegidragoVstar, 1, 1, 0, 1)};
+  state.hand = {sim::Card::TateLiza, sim::Card::BrilliantBlender,
+                sim::Card::Grass};
+  state.deck = {sim::Card::MegaDragonite};
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+  const bool attached = sim::EngineTestAccess::attach_manual(fixture.engine);
+  expect(!attached, "Tate coordinator spent a redundant attachment on DDE-ready VSTAR.");
+  expect(!sim::EngineTestAccess::manual_used(fixture.engine),
+         "Tate coordinator marked the preserved manual attachment as used.");
+}
+
+}  // namespace
+
+int main() {
+  try {
+    test_dde_only_is_one_basic_attachment_short();
+    test_ready_dde_target_needs_no_attachment();
+    test_active_tate_draw_accepts_dde_ready_regidrago_v();
+    test_issue_2315_accepts_dde_only_plus_held_basic();
+    test_tate_coordinator_preserves_attachment_when_target_ready();
+    std::cout << "Issue 2421 Tate DDE route tests passed\n";
+    return 0;
+  } catch (const std::exception& error) {
+    std::cerr << error.what() << '\n';
+    return 1;
+  }
+}
+''', encoding='utf-8')
+          PY
+      - name: Build and run focused regression
+        shell: bash
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target regidrago_unified_tests -j2
+          ctest --test-dir build -R issue_2421_tate_dde_routes_tests --output-on-failure
+      - name: Commit materialized fix
+        shell: bash
+        run: |
+          rm .github/workflows/materialize-2421.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_004.inc src/trace_engine_v2/part_issue_1070_tate_after_vstar_search_override.inc src/trace_engine_v2/part_tate_blender_attachment_override.inc src/trace_engine_v2/part_issue_2225_arven_vessel_supporter_override.inc tests/issue_2421_tate_dde_routes_tests.cpp .github/workflows/materialize-2421.yml
+          git commit -m "Fix #2421 DDE-aware Tate routes"
+          git push origin HEAD:fix/2421-tate-dde-routes

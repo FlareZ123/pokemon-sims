@@ -11,7 +11,8 @@
     state_.turn_ended = false;
   }
 
-  void reset_per_turn_state() {
+  void reset_per_turn_state(const int turn) {
+    state_.turn = turn;
     reset_turn_action_state();
     state_.discarded_this_turn.clear();
   }
@@ -44,8 +45,7 @@
   }
 
   void begin_turn(const int turn) {
-    state_.turn = turn;
-    reset_per_turn_state();
+    reset_per_turn_state(turn);
     if (!draw_start_of_turn_card()) return;
     if (first_turn_going_first()) trace_first_turn_restrictions();
   }

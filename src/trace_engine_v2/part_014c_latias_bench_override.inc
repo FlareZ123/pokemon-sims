@@ -90,7 +90,12 @@
     }
 
     Pokemon* target = best_benched_vstar_for_promotion();
-    if (target == nullptr || target->grass < 2 || target->fire < 1) return false;
+    // DDE + either Basic Energy pays Apex Dragon's GGF cost and is a legal
+    // paid-retreat promotion target when the other readiness axes are complete:
+    // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/issues/2430
+    if (target == nullptr || !pays_apex_energy_cost(*target)) return false;
 
     const Card payment = hand_count(Card::Grass) > 0 ? Card::Grass : Card::Fire;
     if (hand_count(payment) == 0 || !remove_one(state_.hand, payment)) return false;
@@ -178,7 +183,12 @@
       return false;
     }
     Pokemon* target = best_benched_vstar_for_promotion();
-    if (target == nullptr || target->grass < 2 || target->fire < 1) return false;
+    // The banked FSS route may promote any semantically Apex-ready VSTAR,
+    // including DDE + Grass and DDE + Fire configurations:
+    // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/issues/2430
+    if (target == nullptr || !pays_apex_energy_cost(*target)) return false;
 
     const Card payment = state_.active->grass > 0 ? Card::Grass : Card::Fire;
     if (payment == Card::Grass) {

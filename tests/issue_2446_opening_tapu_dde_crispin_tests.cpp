@@ -27,8 +27,8 @@ void expect(const bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);
 }
 
-sim::Pokemon vstar(const int grass, const int fire, const int dde) {
-  sim::Pokemon result{sim::Card::RegidragoVstar, 1, grass, fire, sim::Tool::None};
+sim::Pokemon regidrago_v(const int grass, const int fire, const int dde) {
+  sim::Pokemon result{sim::Card::RegidragoV, 1, grass, fire, sim::Tool::None};
   result.double_dragon = dde;
   return result;
 }
@@ -45,26 +45,29 @@ sim::State opening_state() {
   sim::State state;
   state.turn = 1;
   state.manual_energy_used = true;
-  state.hand = {sim::Card::TapuLeleGX};
+  state.hand = {sim::Card::TapuLeleGX, sim::Card::RegidragoVstar};
   return state;
 }
 
 void test_dde_with_only_grass_searchable_banks_crispin() {
   Fixture fixture;
   sim::State state = opening_state();
-  state.active = vstar(0, 0, 1);
+  state.active = regidrago_v(0, 0, 1);
   state.deck = {sim::Card::Crispin, sim::Card::Grass};
   state.prizes = {sim::Card::Fire};
   sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
 
-  // The T1 manual attachment was already spent on DDE. Wonder Tag can still bank
-  // Crispin for T2; Crispin searches the sole available Grass into hand, then the
-  // fresh T2 manual attachment makes DDE + Grass pay Apex Dragon.
+  // This is a legal going-first T1 state: Regidrago V began in play and the T1
+  // manual attachment put DDE on it; the held VSTAR supplies the legal T2 evolution.
+  // If Crispin finds only the sole Grass, the official ruling puts it into hand.
+  // T2 then has a fresh manual attachment, so that Grass completes DDE + Grass.
+  // Crispin ruling, Stellar Crown FAQ: https://compendium.pokegym.net/category/5-trainers/crispin/
   // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
   // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
-  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2446
+  // Evolution and manual attachment rules: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/2446
   expect(sim::EngineTestAccess::future_wonder_tag_target(fixture.engine),
          "Wonder Tag rejected DDE plus sole searchable Grass Crispin line.");
 }
@@ -72,13 +75,14 @@ void test_dde_with_only_grass_searchable_banks_crispin() {
 void test_dde_with_only_fire_searchable_banks_crispin() {
   Fixture fixture;
   sim::State state = opening_state();
-  state.active = vstar(0, 0, 1);
+  state.active = regidrago_v(0, 0, 1);
   state.deck = {sim::Card::Crispin, sim::Card::Fire};
   state.prizes = {sim::Card::Grass};
   sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
 
-  // Either Basic type is a legal final unit beside DDE on a Dragon.
-  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // The sole Fire likewise goes to hand under the official one-card Crispin ruling,
+  // then the fresh T2 manual attachment makes DDE + Fire pay Apex Dragon.
+  // Crispin ruling, Stellar Crown FAQ: https://compendium.pokegym.net/category/5-trainers/crispin/
   // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   expect(sim::EngineTestAccess::future_wonder_tag_target(fixture.engine),
@@ -88,13 +92,14 @@ void test_dde_with_only_fire_searchable_banks_crispin() {
 void test_basic_only_one_type_cannot_complete() {
   Fixture fixture;
   sim::State state = opening_state();
-  state.active = vstar(1, 0, 0);
+  state.active = regidrago_v(1, 0, 0);
   state.deck = {sim::Card::Crispin, sim::Card::Grass};
   state.prizes = {sim::Card::Fire};
   sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
 
-  // One additional Grass cannot satisfy Apex Dragon's Fire requirement without DDE.
-  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // The sole Grass goes to hand and a T2 manual Grass still cannot satisfy Apex's
+  // Fire requirement without DDE.
+  // Crispin ruling, Stellar Crown FAQ: https://compendium.pokegym.net/category/5-trainers/crispin/
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   expect(!sim::EngineTestAccess::future_wonder_tag_target(fixture.engine),
          "Basic-only one-type Crispin line was incorrectly accepted.");
@@ -103,13 +108,14 @@ void test_basic_only_one_type_cannot_complete() {
 void test_basic_only_two_types_still_completes() {
   Fixture fixture;
   sim::State state = opening_state();
-  state.active = vstar(1, 0, 0);
+  state.active = regidrago_v(1, 0, 0);
   state.deck = {sim::Card::Crispin, sim::Card::Grass, sim::Card::Fire};
   sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
 
-  // On T2 Crispin can attach one searched type and put the other into hand for the
-  // fresh manual attachment, preserving the pre-DDE Basic-only completion route.
+  // On T2 Crispin can attach one of two searched Basic types and put the other into
+  // hand for the fresh manual attachment, preserving the Basic-only completion route.
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Crispin ruling, Stellar Crown FAQ: https://compendium.pokegym.net/category/5-trainers/crispin/
   // Manual Energy attachment rule: https://www.pokemon.com/us/pokemon-tcg/rules
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   expect(sim::EngineTestAccess::future_wonder_tag_target(fixture.engine),

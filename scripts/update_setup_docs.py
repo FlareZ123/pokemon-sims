@@ -33,12 +33,15 @@ ReportEntry = tuple[str, str, str, str]
 
 @dataclass(frozen=True)
 class SetupInputs:
+    """Validated source data needed to render setup-report documents."""
+
     manifest: dict[str, object]
     rows: list[CsvRow]
     fieldnames: list[str]
 
 
 def scenario_label(scenario: str) -> str:
+    """Return the human-readable label for a simulator scenario."""
     return SCENARIO_LABELS.get(scenario, scenario)
 
 

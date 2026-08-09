@@ -2,6 +2,10 @@ if(NOT DEFINED SIMULATOR)
   message(FATAL_ERROR "SIMULATOR is required")
 endif()
 
+set(ISSUE_1085_SEED 25)
+set(ISSUE_1085_ITEM_LOCK_SCENARIO "strict-jit-turn2-item-lock/go-second")
+set(ISSUE_1085_GO_FIRST_CONTROL_SCENARIO "strict-jit/go-first")
+
 function(run_trace scenario seed output_var)
   execute_process(
     COMMAND "${SIMULATOR}" --simulate-this --scenario "${scenario}" --seed "${seed}"
@@ -14,10 +18,6 @@ function(run_trace scenario seed output_var)
   endif()
   set(${output_var} "${output}" PARENT_SCOPE)
 endfunction()
-
-set(ISSUE_1085_SEED 25)
-set(ISSUE_1085_ITEM_LOCK_SCENARIO "strict-jit-turn2-item-lock/go-second")
-set(ISSUE_1085_GO_FIRST_CONTROL_SCENARIO "strict-jit/go-first")
 
 # Star Alchemy can search any card. In the scheduled T2 Item-lock route, Crispin plus
 # the current and next legal manual attachments deterministically completes GGF, and

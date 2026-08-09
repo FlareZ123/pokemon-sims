@@ -40,6 +40,8 @@ jobs:
           PY
       - run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - run: cmake --build build --parallel 2
+      - name: Diagnose issue 2269 Rule Box lock boundary
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit-rulebox-ability-lock/go-second --seed 1813
       - name: Focused regressions
         run: ctest --test-dir build --output-on-failure -R 'issue_2295|issue_802|issue_905|issue_1022|issue_1845|issue_2269'
       - name: Simulate seed 29

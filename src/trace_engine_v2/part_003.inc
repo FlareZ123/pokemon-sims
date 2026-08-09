@@ -157,6 +157,11 @@ class Engine {
     }
   }
 
+  int public_known_count(const Card card) const {
+    return hand_count(card) + count_of(state_.discard, card) + in_play_count(card) +
+           public_underlying_evolution_count(card) + attached_public_count(card);
+  }
+
   // P-HIDDEN-01: before a legal deck or Prize inspection, policy uses only public zones and
   // fixed-list copy counts. A deck search sees the remaining deck directly.
   // Attached Energy and Tools are public board information and cannot remain in
@@ -166,9 +171,7 @@ class Engine {
   // https://api.pokemontcg.io/v2/cards/swsh10-146
   bool might_be_unseen(const Card card) const {
     if (deck_seen_ || prizes_revealed_) return deck_count_after_search_started(card) > 0;
-    const int known = hand_count(card) + count_of(state_.discard, card) + in_play_count(card) +
-                      public_underlying_evolution_count(card) + attached_public_count(card);
-    return total_copies(card) > known;
+    return total_copies(card) > public_known_count(card);
   }
 
   static bool remove_one(std::vector<Card>& zone, const Card card) {

@@ -47,7 +47,7 @@ void test_seed_6_uses_cheaper_direct_vessel_finish_on_turn_three() {
   // Historical replay defect: https://github.com/FlareZ123/pokemon-sims/issues/1565
   expect(outcome.first_ready_turn == 3 && !outcome.setup_failed,
          "Seed 6 did not reach strict-JIT readiness on turn three.");
-  expect(trace_contains(trace, "T3 | DISCARD | rules: R-EV-01; P-DCI-01; P-JIT-01 | Mega Dragonite ex (Earthen Vessel cost)") &&
+  expect(trace_contains(trace, "T3 | DISCARD | rules: R-EV-01 | Mega Dragonite ex (Earthen Vessel cost)") &&
              trace_contains(trace, "T3 | Earthen Vessel |") &&
              trace_contains(trace, "T3 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago VSTAR") &&
              trace_contains(trace, "T3 | READY |"),

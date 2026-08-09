@@ -1,0 +1,57 @@
+name: Materialize Professor Letter Enhancement
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.head_ref == 'enhancement/2509-professors-letter'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout enhancement branch
+        uses: actions/checkout@v4
+        with:
+          ref: enhancement/2509-professors-letter
+          fetch-depth: 0
+
+      - name: Materialize source, focused tests, and comparison analyzer
+        run: python tools/materialize_issue_2509.py
+
+      - name: Configure focused Release build
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build simulator and unified tests
+        run: cmake --build build --parallel 2
+
+      - name: Run Professor's Letter focused regression
+        run: ./build/regidrago_unified_tests issue_2509_professors_letter_tests
+
+      - name: Compile and smoke-test matched-seed analyzer
+        shell: bash
+        run: |
+          # Professor's Letter: https://api.pokemontcg.io/v2/cards/xy1-123
+          # Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+          # Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2509
+          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
+            tools/professors_letter_swap_matrix.cpp -o professors-letter-swap-matrix
+          ./professors-letter-swap-matrix 250 20260705 professors-letter-smoke.csv
+          test "$(wc -l < professors-letter-smoke.csv)" -eq 29
+
+      - name: Commit materialized enhancement
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "pokemon-sims materializer"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Implement Professor's Letter paper Expanded model (#2509)"
+          git push origin HEAD:enhancement/2509-professors-letter

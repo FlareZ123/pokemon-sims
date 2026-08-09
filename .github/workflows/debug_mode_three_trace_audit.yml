@@ -1,0 +1,29 @@
+name: Debug mode three-trace audit
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  trace-audit:
+    if: github.head_ref == 'audit/debug-mode-20260809-1801'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Release simulator
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Pass 1 strict-JIT go-first seed 3
+        run: |
+          echo '===== PASS 1 strict-jit/go-first seed 3 ====='
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 3
+      - name: Pass 2 strict-JIT go-second seed 7
+        run: |
+          echo '===== PASS 2 strict-jit/go-second seed 7 ====='
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 7
+      - name: Pass 3 matchup-flex go-first seed 11
+        run: |
+          echo '===== PASS 3 matchup-flex/go-first seed 11 ====='
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex/go-first --seed 11

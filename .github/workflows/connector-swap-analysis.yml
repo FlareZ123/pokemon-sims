@@ -8,25 +8,25 @@ permissions:
   contents: read
 
 jobs:
-  confirm:
+  connector-mix:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Compile balanced connector packages
+      - name: Compile generic connector mix analyzer
         run: >-
           g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow
-          tools/regidrago_balanced_connector_packages.cpp
-          -o balanced_connector_packages
+          tools/regidrago_generic_connector_mix.cpp
+          -o generic_connector_mix
 
-      - name: Run paired 50k all-scenario package confirmation
-        run: ./balanced_connector_packages 50000 results/balanced-connector-packages
+      - name: Screen and confirm frozen seven-slot package
+        run: ./generic_connector_mix 500 10000 results/generic-connector-mix
 
-      - name: Upload balanced package data
+      - name: Upload generic connector mix data
         uses: actions/upload-artifact@v4
         with:
-          name: regidrago-balanced-connector-packages
-          path: results/balanced-connector-packages
+          name: regidrago-generic-connector-mix
+          path: results/generic-connector-mix
           retention-days: 7

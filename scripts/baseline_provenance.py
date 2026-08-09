@@ -2,10 +2,15 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
+from typing import Protocol
 
 
 SIMULATOR_SOURCE_ROOT = "src"
 SOURCE_LOCK_SUFFIX = ".lock"
+
+
+class _DigestWriter(Protocol):
+    def update(self, data: bytes, /) -> None: ...
 
 
 def _simulator_source_paths(repo_root: Path) -> list[Path]:
@@ -42,13 +47,18 @@ def simulator_policy_source_paths(repo_root: Path) -> tuple[Path, ...]:
     return tuple(sorted(_required_policy_paths(repo_root)))
 
 
+def _update_digest(digest: _DigestWriter, repo_root: Path, path: Path) -> None:
+    """Frame one source path and its bytes into the aggregate digest."""
+    relative_path = path.relative_to(repo_root).as_posix().encode("utf-8")
+    digest.update(relative_path)
+    digest.update(b"\0")
+    digest.update(path.read_bytes())
+    digest.update(b"\0")
+
+
 def simulator_policy_source_digest(repo_root: Path) -> str:
     """Hash aggregate simulator inputs in stable path order."""
     digest = hashlib.sha256()
     for path in simulator_policy_source_paths(repo_root):
-        relative_path = path.relative_to(repo_root).as_posix().encode("utf-8")
-        digest.update(relative_path)
-        digest.update(b"\0")
-        digest.update(path.read_bytes())
-        digest.update(b"\0")
+        _update_digest(digest, repo_root, path)
     return digest.hexdigest()

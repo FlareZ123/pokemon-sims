@@ -11,8 +11,10 @@ SOURCE_LOCK_SUFFIX = ".lock"
 SOURCE_FRAME_SEPARATOR = b"\0"
 
 
-class _DigestWriter(Protocol):
+class _Digest(Protocol):
     def update(self, data: bytes, /) -> None: ...
+
+    def hexdigest(self) -> str: ...
 
 
 def _is_simulator_source_input(path: Path) -> bool:
@@ -69,7 +71,7 @@ def _relative_path_bytes(repo_root: Path, path: Path) -> bytes:
     return path.relative_to(repo_root).as_posix().encode("utf-8")
 
 
-def _update_digest(digest: _DigestWriter, repo_root: Path, path: Path) -> None:
+def _update_digest(digest: _Digest, repo_root: Path, path: Path) -> None:
     """Frame one source path and its bytes into the aggregate digest."""
     digest.update(_relative_path_bytes(repo_root, path))
     digest.update(SOURCE_FRAME_SEPARATOR)
@@ -77,9 +79,14 @@ def _update_digest(digest: _DigestWriter, repo_root: Path, path: Path) -> None:
     digest.update(SOURCE_FRAME_SEPARATOR)
 
 
-def simulator_policy_source_digest(repo_root: Path) -> str:
-    """Hash aggregate simulator inputs in stable path order."""
+def _build_source_digest(repo_root: Path) -> _Digest:
+    """Build the aggregate digest from the stable simulator input sequence."""
     digest = hashlib.sha256()
     for path in simulator_policy_source_paths(repo_root):
         _update_digest(digest, repo_root, path)
-    return digest.hexdigest()
+    return digest
+
+
+def simulator_policy_source_digest(repo_root: Path) -> str:
+    """Hash aggregate simulator inputs in stable path order."""
+    return _build_source_digest(repo_root).hexdigest()

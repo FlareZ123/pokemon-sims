@@ -31,11 +31,14 @@
     return std::nullopt;
   }
 
-  bool play_issue_2202_treasure_tapu_crispin(const bool permit_payload) {
-    if (!permit_payload) return false;
+  bool play_issue_2202_treasure_tapu_crispin() {
     const auto cost = issue_2202_treasure_tapu_crispin_payload_cost();
     if (!cost) return false;
 
+    // This route proves that the Dragon discard is required for the current-turn
+    // strict-JIT axis, so it intentionally outranks the generic Treasure caller's
+    // conservative payload-cost permission after every route-specific gate above.
+    // JIT/DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     remove_one(state_.hand, Card::MysteriousTreasure);
     state_.discard.push_back(Card::MysteriousTreasure);
     if (!discard_from_hand(*cost, "Mysterious Treasure cost",

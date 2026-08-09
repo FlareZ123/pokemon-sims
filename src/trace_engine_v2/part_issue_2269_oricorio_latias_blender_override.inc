@@ -1,3 +1,9 @@
+  bool issue_2269_latias_search_available() const {
+    return ability_available_for_pokemon(Card::LatiasEx) &&
+           !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
+           deck_count_after_search_started(Card::LatiasEx) > 0;
+  }
+
   std::optional<Card> issue_2269_treasure_latias_blender_cost() const {
     const Pokemon* target = target_regi();
     if (!strict_payload_timing() || item_locked() || !prizes_known() ||
@@ -17,9 +23,7 @@
         // Existing Tapu scheduler scope: https://github.com/FlareZ123/pokemon-sims/issues/1533
         // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/2269
         state_.active->card == Card::TapuLeleGX || bench_space() == 0 ||
-        !ability_available_for_pokemon(Card::LatiasEx) ||
-        in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
-        deck_count_after_search_started(Card::LatiasEx) == 0 ||
+        !issue_2269_latias_search_available() ||
         hand_count(Card::MysteriousTreasure) == 0 ||
         hand_count(Card::BrilliantBlender) == 0 ||
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) ||

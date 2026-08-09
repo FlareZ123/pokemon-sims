@@ -47,3 +47,5 @@
     restore_legacy_star_projection_provenance();
     return plan;
   }
+
+  // Validation-only branch marker for post-cleanup CI; production behavior is unchanged.

@@ -1,4 +1,3 @@
-\
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
@@ -49,6 +48,11 @@ void run_tests() {
          "DDE-only incorrectly treated ready");
   expect(!sim::EngineTestAccess::team_yell_powered(fixture.engine, regi_v(3, 1, 0, 1)),
          "same-turn Regidrago incorrectly evolvable");
+
+  sim::Pokemon vstar{sim::Card::RegidragoVstar, 2, 1, 0, sim::Tool::None};
+  vstar.double_dragon = 1;
+  expect(!sim::EngineTestAccess::team_yell_powered(fixture.engine, vstar),
+         "Team Yell helper accepted VSTAR where this route requires Regidrago V");
 }
 }  // namespace
 

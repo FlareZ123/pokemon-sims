@@ -1,0 +1,47 @@
+name: Harumi post-cleanup audit 20260809
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/harumi-post-cleanup-audit-20260809.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  post-cleanup-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Static semantic-risk scan
+        shell: bash
+        run: |
+          echo '=== Raw Grass/Fire predicates ==='
+          grep -RInE '(grass[^;]{0,180}fire|fire[^;]{0,180}grass)' src/trace_engine_v2 || true
+          echo '=== Additive typed-deficit predicates ==='
+          grep -RInE 'grass_needed\(\)[[:space:]]*\+[[:space:]]*fire_needed\(\)|fire_needed\(\)[[:space:]]*\+[[:space:]]*grass_needed\(\)' src || true
+          echo '=== Exact seed predicates in production source ==='
+          grep -RInE 'seed[_[:alnum:]]*[[:space:]]*==[[:space:]]*[0-9]+|[0-9]+[[:space:]]*==[[:space:]]*seed[_[:alnum:]]*' src || true
+          echo '=== TODO/FIXME markers in production source ==='
+          grep -RInE 'TODO|FIXME|HACK' src || true
+      - name: Simulate strict JIT go-second seed 1
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+      - name: Simulate strict JIT go-first seed 2
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4
+      - name: Simulate matchup-flex go-second seed 3
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2
+      - name: Generate and print canonical T2/T3 matrix
+        shell: bash
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
+          cat t2-t3-matrix.csv
+      - name: Generate and print paired-deck matrix
+        shell: bash
+        run: |
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out multi-deck-matrix.csv
+          cat multi-deck-matrix.csv

@@ -26,21 +26,24 @@
     return true;
   }
 
-  std::optional<PokemonCommunicationPlan>
-  pokemon_communication_plan_legacy_star_projection(
-      const bool permit_payload, const bool communication_is_held,
-      const bool supporter_will_be_used) {
-    const auto plan = pokemon_communication_plan(
-        permit_payload, communication_is_held, supporter_will_be_used);
+  void restore_legacy_star_projection_provenance() {
     // Candidate scoring is speculative. Restore the projected provenance change
     // immediately after the plan observes it so the live Legacy Star state remains
     // unchanged until an actual recovery is selected:
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/sm9-152
     // https://github.com/FlareZ123/pokemon-sims/issues/936
-    if (legacy_star_projection_removed_marker_) {
-      state_.discarded_this_turn.push_back(*legacy_star_projection_removed_marker_);
-      legacy_star_projection_removed_marker_.reset();
-    }
+    if (!legacy_star_projection_removed_marker_) return;
+    state_.discarded_this_turn.push_back(*legacy_star_projection_removed_marker_);
+    legacy_star_projection_removed_marker_.reset();
+  }
+
+  std::optional<PokemonCommunicationPlan>
+  pokemon_communication_plan_legacy_star_projection(
+      const bool permit_payload, const bool communication_is_held,
+      const bool supporter_will_be_used) {
+    const auto plan = pokemon_communication_plan(
+        permit_payload, communication_is_held, supporter_will_be_used);
+    restore_legacy_star_projection_provenance();
     return plan;
   }

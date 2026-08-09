@@ -37,11 +37,13 @@ jobs:
           set -euo pipefail
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-1.txt
           grep -q "T2 | READY" trace-1.txt
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 293 --require-ready-by 3 | tee trace-293.txt
-          grep -q "T1 | WONDER TAG.*Steven's Resolve" trace-293.txt
-          grep -q "T2 | READY" trace-293.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 | tee trace-2.txt
+          grep -q "T3 | READY" trace-2.txt
           ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-3.txt
           grep -q "T2 | READY" trace-3.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 293 | tee trace-293.txt
+          grep -q "T1 | WONDER TAG.*Steven's Resolve" trace-293.txt
+          grep -q "T4 | READY" trace-293.txt
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee pineco-trace-35.txt
           grep -q "T2 | READY" pineco-trace-35.txt
       - name: Verify canonical shell matrix
@@ -86,7 +88,7 @@ jobs:
         run: ctest --test-dir build-sanitizers --parallel 2 --output-on-failure
       - name: Commit validated generated evidence
         run: |
-          rm -f paired-new.csv t2-t3-matrix.csv trace-1.txt trace-293.txt trace-3.txt pineco-trace-35.txt
+          rm -f paired-new.csv t2-t3-matrix.csv trace-1.txt trace-2.txt trace-293.txt trace-3.txt pineco-trace-35.txt
           git rm .github/workflows/validate-refresh-2446.yml tools/refresh_issue_2446_paired_baseline.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

@@ -1,0 +1,43 @@
+name: Bootstrap issue 2293 axis fix 20260809
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.head_ref == 'fix/2293-k1-latias-axis-20260809'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply axis-based source fix
+        run: python scripts/apply_issue_2293_axis_fix_20260809.py
+      - name: Build and validate exact regression
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R 'trace_issue_2293_strict_first_seed291' --output-on-failure
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 291 --require-ready-by 4 | tee issue-2293-seed291.txt
+      - name: Run complete Release tests
+        run: ctest --test-dir build --output-on-failure
+      - name: Guard setup probabilities
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out /tmp/issue2293-shell.csv
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out /tmp/issue2293-multi.csv
+          cmp results/simulation_results.csv /tmp/issue2293-shell.csv
+          cmp results/multi_deck_comparison.csv /tmp/issue2293-multi.csv
+      - name: Materialize source-only fix
+        run: |
+          git rm scripts/apply_issue_2293_axis_fix_20260809.py .github/workflows/bootstrap-2293-axis-fix-20260809.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Fix #2293 K1 Latias mobility axis'
+          git push origin HEAD:${{ github.head_ref }}

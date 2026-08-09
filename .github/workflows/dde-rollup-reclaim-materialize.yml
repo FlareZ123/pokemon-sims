@@ -1,0 +1,118 @@
+name: DDE rollup reclaim materializer
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/dde-rollup-reclaim-materialize.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/dde-semantic-rollup-reclaim-20260809
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Merge current main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge --no-edit origin/main
+      - name: Remove temporary workflow from materialized tree
+        run: rm .github/workflows/dde-rollup-reclaim-materialize.yml
+      - name: Replace raw GGF proxy with semantic Apex completion
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          import tempfile
+          from pathlib import Path
+
+          path = Path('src/trace_engine_v2/part_issue_1876_treasure_payload_cost_override.inc')
+          old = '''  const bool complete_public_route =
+              active_is_vstar() &&
+              state_.active->grass == 1 && state_.active->fire == 1 &&
+              hand_count(Card::Crispin) > 0 && crispin_can_advance_energy_axis() &&
+              legal_treasure_targets_exist(Card::MysteriousTreasure) &&
+              active_can_retreat_now();
+          '''
+          new = '''  // Crispin can effect-attach only when two differently typed Basic Energy
+          // are found; one searched Basic goes to hand. Evaluate the attachment by
+          // semantic Apex Dragon completion so Double Dragon Energy is counted as two
+          // Energy of every type while attached to this Dragon Pokémon:
+          // https://api.pokemontcg.io/v2/cards/sv7-133
+          // https://compendium.pokegym.net/category/5-trainers/crispin/
+          // https://api.pokemontcg.io/v2/cards/xy6-97
+          // https://api.pokemontcg.io/v2/cards/swsh12-136
+          // https://github.com/FlareZ123/pokemon-sims/issues/2368
+          const bool crispin_can_complete_apex_now =
+              state_.active.has_value() &&
+              deck_count_after_search_started(Card::GrassEnergy) > 0 &&
+              deck_count_after_search_started(Card::FireEnergy) > 0 &&
+              (basic_attachment_completes_apex(*state_.active, Card::GrassEnergy) ||
+               basic_attachment_completes_apex(*state_.active, Card::FireEnergy));
+          const bool complete_public_route =
+              active_is_vstar() && crispin_can_complete_apex_now &&
+              hand_count(Card::Crispin) > 0 && crispin_can_advance_energy_axis() &&
+              legal_treasure_targets_exist(Card::MysteriousTreasure) &&
+              active_can_retreat_now();
+          '''
+          text = path.read_text(encoding='utf-8')
+          if text.count(old) != 1:
+              raise SystemExit('expected raw GGF block exactly once')
+          updated = text.replace(old, new)
+          fd, temp_name = tempfile.mkstemp(prefix=f'.{path.name}.', dir=path.parent)
+          try:
+              with os.fdopen(fd, 'w', encoding='utf-8', newline='\n') as handle:
+                  handle.write(updated)
+                  handle.flush()
+                  os.fsync(handle.fileno())
+              os.replace(temp_name, path)
+          except BaseException:
+              try:
+                  os.unlink(temp_name)
+              except FileNotFoundError:
+                  pass
+              raise
+          PY
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run focused DDE regression suite
+        run: ctest --test-dir build --output-on-failure -R 'issue_2368|issue_241|issue_242|issue_243|issue_244'
+      - name: Simulate strict JIT go-second seed 1
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+      - name: Simulate strict JIT go-first seed 2
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4
+      - name: Simulate matchup-flex go-second seed 3
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2
+      - name: Regenerate canonical source-bound evidence
+        run: python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+      - name: Refresh canonical setup documents
+        run: python scripts/update_setup_docs.py --repo-root .
+      - name: Regenerate paired source-bound evidence
+        run: python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+      - name: Refresh paired setup report
+        run: python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Run complete Release test suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Commit materialized fix and evidence
+        run: |
+          git add -A
+          git status --short
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'No materialized changes to commit.'
+            exit 0
+          fi
+          git commit -m 'Fix #2368 complete semantic DDE rollup'
+          git push origin HEAD:fix/dde-semantic-rollup-reclaim-20260809

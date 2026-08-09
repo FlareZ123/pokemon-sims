@@ -97,7 +97,6 @@
         (state_.active->card != Card::RegidragoV &&
          state_.active->card != Card::RegidragoVstar) ||
         state_.active->entered_turn >= state_.turn ||
-        state_.active->grass + state_.active->fire < 1 ||
         !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) ||
         deck_count_after_search_started(Card::TapuLeleGX) == 0 ||
         deck_count_after_search_started(Card::Crispin) == 0 ||
@@ -105,10 +104,32 @@
         deck_count_after_search_started(Card::Fire) == 0) {
       return false;
     }
-    return state_.active->grass >= 1 &&
-        state_.active->grass + deck_count_after_search_started(Card::Grass) >= 2 &&
-        state_.active->fire + hand_count(Card::Fire) +
-                deck_count_after_search_started(Card::Fire) >= 1;
+
+    // Both different Basic Energy types are present in the inspected deck, so
+    // Crispin can legally attach either searched type and put the other into hand.
+    // Project that effect attachment first, then the other searched Basic as the
+    // manual attachment only when the manual attachment remains unused. DDE plus
+    // either Basic already pays Apex after Crispin's effect attachment:
+    // Crispin ruling: https://compendium.pokegym.net/category/5-trainers/crispin/
+    // Crispin: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/sv07/133
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Manual Energy attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/2431
+    for (const Card crispin_attachment : {Card::Grass, Card::Fire}) {
+      Pokemon after_crispin = *state_.active;
+      if (!attach_energy_card(after_crispin, crispin_attachment)) continue;
+      if (pays_apex_energy_cost(after_crispin)) return true;
+      if (state_.manual_energy_used) continue;
+      const Card hand_basic = crispin_attachment == Card::Grass
+          ? Card::Fire : Card::Grass;
+      Pokemon after_manual = after_crispin;
+      if (attach_energy_card(after_manual, hand_basic) &&
+          pays_apex_energy_cost(after_manual)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   bool play_mysterious_treasure(const bool permit_payload) {
@@ -166,9 +187,15 @@
           !projected.play_crispin()) return false;
       projected.attach_manual();
       projected.evolve_best_regi();
+      // The exact shadow resolves the real Crispin and manual-attachment sequence,
+      // then judges the resulting attacker by semantic Apex payment. DDE plus
+      // either Basic Energy is a complete GGF payment:
+      // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/2431
       return projected.active_is_vstar() &&
-          projected.state_.active->grass >= 2 &&
-          projected.state_.active->fire >= 1 && projected.payload_ready();
+          projected.pays_apex_energy_cost(*projected.state_.active) &&
+          projected.payload_ready();
     }();
     rng_ = live_rng;
     return available;

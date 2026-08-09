@@ -89,18 +89,23 @@
       return false;
     }
 
-    const int active_grass_needed = std::max(0, 2 - state_.active->grass);
-    const int active_fire_needed = std::max(0, 1 - state_.active->fire);
-    // Powerglass resolves after the attack step. Preserve a one-discard payload
-    // outlet for the next turn only when its Active holder lacks exactly one Energy
-    // and that Energy is already in discard:
-    // https://api.pokemontcg.io/v2/cards/sv6pt5-63
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    // https://github.com/FlareZ123/pokemon-sims/issues/944
-    return active_grass_needed + active_fire_needed == 1 &&
-        ((active_grass_needed == 1 && count_of(state_.discard, Card::Grass) > 0) ||
-         (active_fire_needed == 1 && count_of(state_.discard, Card::Fire) > 0));
+    if (pays_apex_energy_cost(*state_.active)) return false;
+    for (const Card basic : {Card::Grass, Card::Fire}) {
+      if (count_of(state_.discard, basic) == 0) continue;
+      Pokemon projected = *state_.active;
+      if (attach_energy_card(projected, basic) && pays_apex_energy_cost(projected)) {
+        // Preserve the post-Powerglass payload outlet exactly when one recoverable
+        // Basic card completes Apex. DDE alone is one physical Basic short even
+        // though typed missing-Grass/Fire helpers expose both legal alternatives:
+        // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+        // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+        // Strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2433
+        return true;
+      }
+    }
+    return false;
   }
 
   bool play_earthen_vessel(const bool permit_payload) {

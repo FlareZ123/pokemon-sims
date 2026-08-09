@@ -3,29 +3,36 @@
         item_locked() || scenario_.dci != DciProfile::NoDiscardControl ||
         state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::RegidragoVstar || need_payload() ||
-        grass_needed() + fire_needed() != 1 ||
         deck_count_after_search_started(Card::EarthenVessel) == 0) {
       return false;
     }
 
+    const auto completes_apex = [this](const Card basic) {
+      if (deck_count_after_search_started(basic) == 0) return false;
+      Pokemon projected = *state_.active;
+      return attach_energy_card(projected, basic) && pays_apex_energy_cost(projected);
+    };
     const bool needed_energy_searchable =
-        (grass_needed() == 1 && deck_count_after_search_started(Card::Grass) > 0) ||
-        (fire_needed() == 1 && deck_count_after_search_started(Card::Fire) > 0);
+        completes_apex(Card::Grass) || completes_apex(Card::Fire);
     const bool dead_role_held = hand_count(Card::QuickBall) > 0 ||
         hand_count(Card::StevensResolve) > 0 ||
         hand_count(Card::LatiasEx) > 0 || hand_count(Card::Gladion) > 0;
 
-    // Active Regidrago VSTAR, payload, and GF are already complete. Arven can
-    // search Earthen Vessel, one now-dead setup role can legally pay its printed
-    // discard cost, and the searched Basic Energy can use the unused manual
-    // attachment for the earliest observable ready state:
+    // Project the physical final Basic attachment against the actual attacker.
+    // With DDE attached, Grass and Fire are alternative one-card Apex finishes:
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Repository DDE contract: https://github.com/FlareZ123/pokemon-sims/issues/2238
+    // Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/2426
+    // Active Regidrago VSTAR and payload are already complete. Arven can search
+    // Earthen Vessel, one now-dead setup role can legally pay its printed discard
+    // cost, and the searched Basic can use the unused manual attachment:
     // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
     // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
-    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Manual attachment: https://www.pokemon.com/us/pokemon-tcg/rules
     // Dynamic DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1050
@@ -45,8 +52,14 @@
     }
 
     const auto powered_evolvable_regi = [this](const Pokemon& pokemon) {
+      // DDE + Grass or DDE + Fire already pays Apex Dragon on Regidrago V, and
+      // evolution preserves the attached Energy on the resulting VSTAR:
+      // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Evolution keeps attached cards: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/2426
       return pokemon.card == Card::RegidragoV && pokemon.entered_turn < state_.turn &&
-             pokemon.grass >= 2 && pokemon.fire >= 1 && pokemon.tool == Tool::None;
+             pays_apex_energy_cost(pokemon) && pokemon.tool == Tool::None;
     };
     const bool active_route = state_.active && powered_evolvable_regi(*state_.active);
     const bool benched_route = can_free_retreat_with_latias() &&
@@ -209,6 +222,7 @@ bool play_arven() {
     // Earliest-ready and connector priorities:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Regression: https://github.com/FlareZ123/pokemon-sims/issues/745
+    // DDE refinement: https://github.com/FlareZ123/pokemon-sims/issues/2426
     remove_one(state_.hand, Card::Arven);
     state_.discard.push_back(Card::Arven);
     state_.supporter_used = true;

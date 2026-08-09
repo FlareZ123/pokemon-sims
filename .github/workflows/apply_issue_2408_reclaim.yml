@@ -6,12 +6,16 @@ on:
     paths:
       - scripts/apply_issue_2408_reclaim.py
       - .github/workflows/apply_issue_2408_reclaim.yml
+  pull_request:
+    branches: [main]
+    types: [reopened, synchronize]
 
 permissions:
   contents: write
 
 jobs:
   apply:
+    if: github.head_ref == 'fix/2408-burnet-before-serena-k1' || github.ref == 'refs/heads/fix/2408-burnet-before-serena-k1'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:

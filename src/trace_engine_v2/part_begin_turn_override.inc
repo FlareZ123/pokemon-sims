@@ -18,7 +18,7 @@
     // The first player is restricted from playing a Supporter or attacking on that
     // turn; the restriction does not remove the required draw:
     // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#First_Turn
-    if (state_.deck.empty()) {
+    if (!deck_has_cards()) {
       state_.turn_ended = true;
       trace("GAME LOST", "R-GAME-DECK-OUT",
             "No cards remained in deck for the required start-of-turn draw.");

@@ -104,6 +104,11 @@ def identifier(value: str) -> str:
     return re.sub(r'\W+', '_', value)
 
 
+def discover_test_files(tests_root: Path) -> list[Path]:
+    ignored = {"release_assertion_tests.cpp"}
+    return sorted(path for path in tests_root.glob("*.cpp") if path.name not in ignored)
+
+
 def write_atomic_text(destination: Path, content: str) -> None:
     with tempfile.NamedTemporaryFile(
         mode="w", encoding="utf-8", newline="\n", dir=destination.parent, delete=False
@@ -117,8 +122,7 @@ def write_atomic_text(destination: Path, content: str) -> None:
 
 def generate(source_root: Path, output_cpp: Path, output_cmake: Path) -> None:
     tests_root = source_root / "tests"
-    ignored = {"release_assertion_tests.cpp"}
-    test_files = sorted(path for path in tests_root.glob("*.cpp") if path.name not in ignored)
+    test_files = discover_test_files(tests_root)
     source_headers = set(ANGLE_INCLUDE.findall(
         (source_root / "src" / "trace_engine_v2" / "part_000.inc").read_text(encoding="utf-8")
     ))

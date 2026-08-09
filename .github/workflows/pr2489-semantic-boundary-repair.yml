@@ -1,17 +1,18 @@
 name: PR 2489 semantic boundary repair
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/dde-semantic-rollup-20260809
-    paths:
-      - .github/workflows/pr2489-semantic-boundary-repair.yml
+      - main
+    types:
+      - synchronize
 
 permissions:
   contents: write
 
 jobs:
   repair:
+    if: github.event.pull_request.number == 2489
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

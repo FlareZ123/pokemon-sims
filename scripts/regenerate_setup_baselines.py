@@ -129,22 +129,25 @@ def generate_matrix_atomic(executable: Path, matrix_path: Path, trials: int, mat
         temporary_lock_path.unlink(missing_ok=True)
 
 
+def build_manifest(matrix_seed: int, trials: int) -> dict[str, object]:
+    # Bind the published matrix to every aggregate simulator input, including
+    # part_016's scenario loop and seed derivation:
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
+    # https://github.com/FlareZ123/pokemon-sims/issues/642
+    return {
+        "deck": BASELINE_DECK,
+        "matrix_seed": matrix_seed,
+        "trials": trials,
+        "simulator_policy_source_sha256": simulator_policy_source_digest(REPO_ROOT),
+        "traces": [],
+    }
+
+
 def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, matrix_seed: int) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     trace_dir = output_dir / "traces"
     trace_dir.mkdir(parents=True, exist_ok=True)
-
-    manifest: dict[str, object] = {
-        "deck": BASELINE_DECK,
-        "matrix_seed": matrix_seed,
-        "trials": trials,
-        # Bind the published matrix to every aggregate simulator input, including
-        # part_016's scenario loop and seed derivation:
-        # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
-        # https://github.com/FlareZ123/pokemon-sims/issues/642
-        "simulator_policy_source_sha256": simulator_policy_source_digest(REPO_ROOT),
-        "traces": [],
-    }
+    manifest = build_manifest(matrix_seed, trials)
 
     expected_trace_files: set[str] = set()
     for scenario, deadline, stem in TRACE_SPECS:

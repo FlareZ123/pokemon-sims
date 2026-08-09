@@ -185,7 +185,16 @@
     projected.state_.discard.push_back(payment);
     std::swap(*projected.state_.active, projected.state_.bench[target_index]);
     projected.state_.retreat_used = true;
-    if (!projected.play_brilliant_blender()) return false;
+    // Engine copies share the live RNG reference. Preserve the generator around
+    // the policy-only Blender projection so its deck shuffle cannot perturb the
+    // real simulation stream. This follows the established projection contract:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_issue_1873_blender_crispin_supporter_override.inc
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Confirmed route bug: https://github.com/FlareZ123/pokemon-sims/issues/2295
+    const std::mt19937_64 live_rng = rng_;
+    const bool projected_blender_available = projected.play_brilliant_blender();
+    rng_ = live_rng;
+    if (!projected_blender_available) return false;
 
     if (!remove_one(state_.hand, payment)) return false;
     // Oricorio GRI 55 and Tapu Lele-GX each have a one-Colorless Retreat Cost.

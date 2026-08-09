@@ -32,6 +32,10 @@ Battle VIP Pass `swsh8-225` is fully modeled as a first-turn-only Item. A legal 
 
 The validation matrix in [`docs/BATTLE_VIP_PASS_VALIDATION.md`](docs/BATTLE_VIP_PASS_VALIDATION.md) uses an unregistered temporary shell derivative with `-1 Quick Ball`, `-1 Mysterious Treasure`, and `+2 Battle VIP Pass`. The temporary recipe is excluded from `deck_registry()` and `--all-decks`.
 
+## Professor's Letter paper Expanded model
+
+Professor's Letter `xy1-123` is modeled as a paper-Expanded Item that searches up to two Basic Energy into hand and has no discard cost. It establishes K1 through the physical deck search and is held when the Energy axis is already complete. It is intentionally absent from both registered Pokémon TCG Live recipes. CI evaluates an unregistered temporary `regidrago-shell` derivative with exactly `-2 Earthen Vessel` and `+2 Professor's Letter`, using matched scenario seeds and checkpoint metrics for Regidrago, VSTAR, Active position, semantic Apex Energy, current-turn payload, and K1. Professor's Letter: https://api.pokemontcg.io/v2/cards/xy1-123 ; enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2509
+
 ## Run one readable hand
 
 ```bash

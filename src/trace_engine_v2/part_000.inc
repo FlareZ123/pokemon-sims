@@ -55,6 +55,7 @@ enum class Card : std::uint8_t {
   EvolutionIncense,
   PokemonCommunication,
   EarthenVessel,
+  ProfessorsLetter,  // Paper Expanded Item: https://api.pokemontcg.io/v2/cards/xy1-123 ; enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2509
   Dawn,
   Grant,
   Arven,

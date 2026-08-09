@@ -1,4 +1,4 @@
-  bool tapu_connector_copy_known_in_hand_or_deck() const {
+  bool has_known_tapu_connector_copy() const {
     return hand_count(Card::TapuLeleGX) > 0 ||
            known_deck_contains(Card::TapuLeleGX);
   }
@@ -15,7 +15,7 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/746
-    return !tapu_connector_copy_known_in_hand_or_deck() &&
+    return !has_known_tapu_connector_copy() &&
            in_play(Card::TapuLeleGX);
   }
 

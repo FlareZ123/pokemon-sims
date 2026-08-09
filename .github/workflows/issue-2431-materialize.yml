@@ -1,0 +1,169 @@
+name: Issue 2431 materialization
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.head_ref == 'fix/2431-dde-treasure-tapu-crispin'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Materialize semantic DDE route fix
+        run: |
+          python - <<'PY'
+          import fcntl
+          import os
+          from pathlib import Path
+          import tempfile
+
+          def atomic_locked_replace(path_text, replacements):
+              path = Path(path_text)
+              lock_path = path.with_name(path.name + '.issue2431.lock')
+              with lock_path.open('w', encoding='utf-8') as lock_file:
+                  fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+                  text = path.read_text(encoding='utf-8')
+                  for old, new in replacements:
+                      count = text.count(old)
+                      if count != 1:
+                          raise RuntimeError(f'{path}: expected one patch match, found {count}')
+                      text = text.replace(old, new, 1)
+                  fd, tmp_name = tempfile.mkstemp(dir=path.parent, prefix=path.name + '.', suffix='.tmp')
+                  try:
+                      with os.fdopen(fd, 'w', encoding='utf-8', newline='') as tmp:
+                          tmp.write(text)
+                          tmp.flush()
+                          os.fsync(tmp.fileno())
+                      os.replace(tmp_name, path)
+                  finally:
+                      if os.path.exists(tmp_name):
+                          os.unlink(tmp_name)
+                  fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+              lock_path.unlink()
+
+          route_projection = '''    const auto crispin_attachment_route_completes = [this](const Pokemon& pokemon) {
+      // The route has already proved that both different Basic Energy types remain
+      // in the inspected deck. Project Crispin's effect attachment first, then the
+      // other searched Basic as the manual attachment only when that attachment is
+      // still unused. DDE + either Basic completes Apex after the first step:
+      // Crispin ruling: https://compendium.pokegym.net/category/5-trainers/crispin/
+      // Crispin: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/sv07/133
+      // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Manual Energy attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/2431
+      for (const Card crispin_attachment : {Card::Grass, Card::Fire}) {
+        Pokemon after_crispin = pokemon;
+        if (!attach_energy_card(after_crispin, crispin_attachment)) continue;
+        if (pays_apex_energy_cost(after_crispin)) return true;
+        if (state_.manual_energy_used) continue;
+        const Card hand_basic = crispin_attachment == Card::Grass
+            ? Card::Fire : Card::Grass;
+        Pokemon after_manual = after_crispin;
+        if (attach_energy_card(after_manual, hand_basic) &&
+            pays_apex_energy_cost(after_manual)) {
+          return true;
+        }
+      }
+      return false;
+    };
+'''
+
+          old_1209_context = '''    return std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return (pokemon.card == Card::RegidragoV ||
+                  pokemon.card == Card::RegidragoVstar) &&
+              pokemon.entered_turn < state_.turn && pokemon.grass >= 1;
+        });
+'''
+          new_1209_context = route_projection + '''    return std::any_of(
+        state_.bench.begin(), state_.bench.end(),
+        [this, &crispin_attachment_route_completes](const Pokemon& pokemon) {
+          return (pokemon.card == Card::RegidragoV ||
+                  pokemon.card == Card::RegidragoVstar) &&
+              pokemon.entered_turn < state_.turn &&
+              crispin_attachment_route_completes(pokemon);
+        });
+'''
+          old_1209_finish = '''      return projected.active_is_vstar() &&
+          projected.state_.active->grass >= 2 &&
+          projected.state_.active->fire >= 1 &&
+          projected.payload_ready();
+'''
+          new_1209_finish = '''      // The exact shadow must accept every physical Energy state that pays Apex,
+      // including DDE + either Basic Energy:
+      // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/2431
+      return projected.active_is_vstar() &&
+          projected.pays_apex_energy_cost(*projected.state_.active) &&
+          projected.payload_ready();
+'''
+          atomic_locked_replace(
+              'src/trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc',
+              [(old_1209_context, new_1209_context), (old_1209_finish, new_1209_finish)])
+
+          old_1235_raw_gate = '''        state_.active->entered_turn >= state_.turn ||
+        state_.active->grass + state_.active->fire < 1 ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) ||
+'''
+          new_1235_raw_gate = '''        state_.active->entered_turn >= state_.turn ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) ||
+'''
+          old_1235_return = '''    return state_.active->grass >= 1 &&
+        state_.active->grass + deck_count_after_search_started(Card::Grass) >= 2 &&
+        state_.active->fire + hand_count(Card::Fire) +
+                deck_count_after_search_started(Card::Fire) >= 1;
+'''
+          new_1235_return = route_projection + '''    return crispin_attachment_route_completes(*state_.active);
+'''
+          old_1235_finish = '''      return projected.active_is_vstar() &&
+          projected.state_.active->grass >= 2 &&
+          projected.state_.active->fire >= 1 && projected.payload_ready();
+'''
+          new_1235_finish = '''      // The exact shadow must use semantic Apex payment after the real Crispin and
+      // manual-attachment sequence, including DDE + either Basic Energy:
+      // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/2431
+      return projected.active_is_vstar() &&
+          projected.pays_apex_energy_cost(*projected.state_.active) &&
+          projected.payload_ready();
+'''
+          atomic_locked_replace(
+              'src/trace_engine_v2/part_issue_1235_oricorio_treasure_tapu_override.inc',
+              [(old_1235_raw_gate, new_1235_raw_gate),
+               (old_1235_return, new_1235_return),
+               (old_1235_finish, new_1235_finish)])
+          PY
+
+      - name: Build focused regression
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R issue_2431 --output-on-failure
+
+      - name: Run three simulate-this audits
+        run: |
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2
+
+      - name: Commit materialized fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc
+          git add src/trace_engine_v2/part_issue_1235_oricorio_treasure_tapu_override.inc
+          git add tests/issue_2431_dde_treasure_tapu_crispin_tests.cpp
+          git rm .github/workflows/issue-2431-materialize.yml
+          git commit -m "Fix #2431 DDE-aware Treasure Tapu Crispin routes"
+          git push origin HEAD:${{ github.head_ref }}

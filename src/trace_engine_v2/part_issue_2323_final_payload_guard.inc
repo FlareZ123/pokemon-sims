@@ -1,3 +1,6 @@
+#undef issue_1605_arven_crobat_route_available
+#include "part_issue_2645_arven_crobat_state_override.inc"
+
   bool issue_2323_protect_final_t1_payload() const {
     if (scenario_.dci != DciProfile::StrictJit || scenario_.going_first ||
         scenario_.locks != LockMode::None || state_.turn != 1 ||

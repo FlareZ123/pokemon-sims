@@ -104,6 +104,17 @@ def identifier(value: str) -> str:
     return re.sub(r'\W+', '_', value)
 
 
+def write_atomic_text(destination: Path, content: str) -> None:
+    with tempfile.NamedTemporaryFile(
+        mode="w", encoding="utf-8", newline="\n", dir=destination.parent, delete=False
+    ) as temporary:
+        temporary.write(content)
+        temporary.flush()
+        os.fsync(temporary.fileno())
+        temporary_path = Path(temporary.name)
+    os.replace(temporary_path, destination)
+
+
 def generate(source_root: Path, output_cpp: Path, output_cmake: Path) -> None:
     tests_root = source_root / "tests"
     ignored = {"release_assertion_tests.cpp"}
@@ -204,15 +215,8 @@ def generate(source_root: Path, output_cpp: Path, output_cmake: Path) -> None:
         + "".join(f"  {case_name}\n" for case_name, _, _ in cases)
         + ")\n"
     )
-    for destination, content in ((output_cpp, "".join(generated)), (output_cmake, cmake_content)):
-        with tempfile.NamedTemporaryFile(
-            mode="w", encoding="utf-8", newline="\n", dir=destination.parent, delete=False
-        ) as temporary:
-            temporary.write(content)
-            temporary.flush()
-            os.fsync(temporary.fileno())
-            temporary_path = Path(temporary.name)
-        os.replace(temporary_path, destination)
+    write_atomic_text(output_cpp, "".join(generated))
+    write_atomic_text(output_cmake, cmake_content)
 
 
 def main() -> int:

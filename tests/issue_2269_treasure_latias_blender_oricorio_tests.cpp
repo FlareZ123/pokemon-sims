@@ -36,11 +36,11 @@ sim::TraceLog run_trace(const char* scenario_label, const std::uint64_t seed) {
   return trace;
 }
 
-void test_seed_761_uses_surplus_fire_for_oricorio_t4_finish() {
-  const sim::TraceLog trace = run_trace("strict-jit/go-second", 761);
+void test_seed_1813_uses_surplus_grass_for_oricorio_t4_finish() {
+  const sim::TraceLog trace = run_trace("strict-jit/go-second", 1813);
 
   // The selected Benched Regidrago VSTAR already pays Apex. Mysterious Treasure
-  // may spend setup-surplus Fire, search Basic Psychic Latias ex, and Bench it.
+  // may spend setup-surplus Grass, search Basic Psychic Latias ex, and Bench it.
   // Held Brilliant Blender then supplies the current-turn Dragon payload from the
   // K1-known deck, while Skyliner gives Basic Oricorio no Retreat Cost.
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
@@ -52,23 +52,25 @@ void test_seed_761_uses_surplus_fire_for_oricorio_t4_finish() {
   // Official Item, search, discard, Ability, and retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
   // K1, strict-JIT, DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/2269
+  // Seed 761 is reserved for the earlier deterministic T3 Steven package fixed by #2622:
+  // https://github.com/FlareZ123/pokemon-sims/issues/2622
   expect(trace_contains(trace, "T4 | DISCARD") &&
              trace_contains(trace,
-                            "Fire Energy (Mysterious Treasure issue-2269 Latias route cost)"),
-         "Seed 761 did not spend route-proven surplus Fire on T4.");
+                            "Grass Energy (Mysterious Treasure issue-2269 Latias route cost)"),
+         "Seed 1813 did not spend route-proven surplus Grass on T4.");
   expect(trace_contains(trace, "T4 | PLAY ITEM") &&
              trace_contains(trace, "R-BLENDER-01"),
-         "Seed 761 did not resolve Brilliant Blender on T4.");
+         "Seed 1813 did not resolve Brilliant Blender on T4.");
   expect(trace_contains(trace, "T4 | RETREAT") &&
              trace_contains(trace, "Latias ex gives the Basic Active no Retreat Cost"),
-         "Seed 761 did not use Skyliner for the T4 promotion.");
+         "Seed 1813 did not use Skyliner for the T4 promotion.");
   expect(trace_contains(trace, "T4 | READY"),
-         "Seed 761 did not reach strict-JIT readiness on T4.");
+         "Seed 1813 did not reach strict-JIT readiness on T4.");
 }
 
-void test_seed_761_route_stays_closed_under_rulebox_ability_lock() {
+void test_seed_1813_route_stays_closed_under_rulebox_ability_lock() {
   const sim::TraceLog trace =
-      run_trace("strict-jit-rulebox-ability-lock/go-second", 761);
+      run_trace("strict-jit-rulebox-ability-lock/go-second", 1813);
 
   // Rule Box Ability lock suppresses Latias ex's Skyliner.
   // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
@@ -81,9 +83,9 @@ void test_seed_761_route_stays_closed_under_rulebox_ability_lock() {
          "Issue-2269 Rule Box lock control incorrectly reached T4 readiness.");
 }
 
-void test_seed_761_route_stays_closed_under_turn_two_item_lock() {
+void test_seed_1813_route_stays_closed_under_turn_two_item_lock() {
   const sim::TraceLog trace =
-      run_trace("strict-jit-turn2-item-lock/go-second", 761);
+      run_trace("strict-jit-turn2-item-lock/go-second", 1813);
 
   // Scheduled Item lock forbids both Mysterious Treasure and Brilliant Blender.
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
@@ -100,9 +102,9 @@ void test_seed_761_route_stays_closed_under_turn_two_item_lock() {
 
 int main() {
   try {
-    test_seed_761_uses_surplus_fire_for_oricorio_t4_finish();
-    test_seed_761_route_stays_closed_under_rulebox_ability_lock();
-    test_seed_761_route_stays_closed_under_turn_two_item_lock();
+    test_seed_1813_uses_surplus_grass_for_oricorio_t4_finish();
+    test_seed_1813_route_stays_closed_under_rulebox_ability_lock();
+    test_seed_1813_route_stays_closed_under_turn_two_item_lock();
     std::cout << "Issue 2269 Treasure/Latias/Blender Oricorio tests passed\n";
     return 0;
   } catch (const std::exception& error) {

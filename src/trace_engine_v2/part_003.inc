@@ -187,6 +187,9 @@ class Engine {
 
   bool first_turn_going_first() const { return state_.turn == 1 && scenario_.going_first; }
   bool supporter_allowed() const { return scenario_.locks != LockMode::FullSupporter && !first_turn_going_first() && !state_.supporter_used && !state_.turn_ended; }
+  static bool uses_turn_two_item_lock(const LockMode locks) {
+    return locks == LockMode::TurnTwoItem || locks == LockMode::FullCombined;
+  }
   bool item_locked() const {
     // `FullItem` remains an explicitly synthetic/historical fixture mode. Aggregate
     // `FullCombined` instead uses the legal current-paper turn-two Item timing:
@@ -194,9 +197,7 @@ class Engine {
     // https://www.pokemon.com/es/sol-luna-sombras-ardientes-anuncio-trimestral-sobre-lista-de-cartas-prohibidas-y-cambios-en-las-reglas/
     // https://github.com/FlareZ123/pokemon-sims/issues/2247
     return scenario_.locks == LockMode::FullItem ||
-           ((scenario_.locks == LockMode::TurnTwoItem ||
-             scenario_.locks == LockMode::FullCombined) &&
-            state_.turn >= 2);
+           (uses_turn_two_item_lock(scenario_.locks) && state_.turn >= 2);
   }
   bool rule_box_abilities_locked() const {
     const bool path_style_lock = scenario_.locks == LockMode::FullRuleBoxAbility ||

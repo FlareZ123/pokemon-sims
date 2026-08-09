@@ -4,6 +4,19 @@ import hashlib
 from pathlib import Path
 
 
+SIMULATOR_SOURCE_ROOT = "src"
+SOURCE_LOCK_SUFFIX = ".lock"
+
+
+def _simulator_source_paths(repo_root: Path) -> list[Path]:
+    """Collect tracked simulator source inputs, excluding writer lock files."""
+    return [
+        path
+        for path in (repo_root / SIMULATOR_SOURCE_ROOT).rglob("*")
+        if path.is_file() and path.suffix != SOURCE_LOCK_SUFFIX
+    ]
+
+
 def simulator_policy_source_paths(repo_root: Path) -> tuple[Path, ...]:
     """Return every tracked input that can affect aggregate simulator output."""
     # Include the complete simulator source tree. In particular, part_016 owns the
@@ -15,11 +28,7 @@ def simulator_policy_source_paths(repo_root: Path) -> tuple[Path, ...]:
     # simulator behavior, so they must stay outside source-bound evidence:
     # https://github.com/FlareZ123/pokemon-sims/issues/1492
     # https://github.com/FlareZ123/pokemon-sims/issues/1300
-    source_paths = [
-        path
-        for path in (repo_root / "src").rglob("*")
-        if path.is_file() and path.suffix != ".lock"
-    ]
+    source_paths = _simulator_source_paths(repo_root)
 
     # The executable target and compile configuration are also simulator inputs:
     # https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt#L1-L11

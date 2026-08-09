@@ -9,13 +9,21 @@
           Pokemon projected = *state_.active;
           return attach_energy_card(projected, energy) && pays_apex_energy_cost(projected);
         });
-    // DDE-only and the canonical GF/GG states are all one physical Basic
-    // attachment short when semantic Apex progress is two.
+    // #1844 owns the canonical GF -> Grass delayed Vessel route. #2423 adds
+    // the distinct DDE-only one-attachment state, where either Basic may finish.
+    // Keep canonical GG with its existing missing-Fire route family.
     // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Confirmed migration bug: https://github.com/FlareZ123/pokemon-sims/issues/2423
+    // Original delayed Vessel boundary: https://github.com/FlareZ123/pokemon-sims/issues/1844
+    // DDE migration contract: https://github.com/FlareZ123/pokemon-sims/issues/2423
+    const bool canonical_gf_axis = state_.active &&
+        state_.active->double_dragon == 0 && state_.active->grass == 1 &&
+        state_.active->fire >= 1 && count_of(state_.deck, Card::Grass) > 0;
+    const bool dde_only_axis = state_.active &&
+        state_.active->double_dragon > 0 && state_.active->grass == 0 &&
+        state_.active->fire == 0 && completing_basic_in_deck;
     const bool exact_reported_axis = state_.turn == 2 && active_is_vstar() &&
-        apex_energy_progress(*state_.active) == 2 && completing_basic_in_deck;
+        (canonical_gf_axis || dde_only_axis);
 
     // Legacy Star may return Earthen Vessel now for a fully public next-turn
     // finish. The current turn's manual attachment is already spent, while the

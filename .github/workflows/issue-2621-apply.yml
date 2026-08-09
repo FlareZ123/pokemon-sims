@@ -1,0 +1,52 @@
+name: Issue 2621 apply validated evidence
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/2621-refresh-published-evidence-v2
+      # Download the exact source-bound artifact produced by successful run 31332065062:
+      # https://github.com/actions/download-artifact
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue-2621-regenerated-evidence-v2
+          path: .artifact
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 31332065062
+      - name: Apply generated evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .artifact/results/simulation_results.csv results/simulation_results.csv
+          cp .artifact/results/baseline_manifest.json results/baseline_manifest.json
+          cp .artifact/results/multi_deck_comparison.csv results/multi_deck_comparison.csv
+          cp .artifact/results/multi_deck_manifest.json results/multi_deck_manifest.json
+          cp -a .artifact/results/traces/. results/traces/
+          cp -a .artifact/results/multi_deck_traces/. results/multi_deck_traces/
+          cp .artifact/docs/REPORT.md docs/REPORT.md
+          cp .artifact/docs/MULTI_DECK_REPORT.md docs/MULTI_DECK_REPORT.md
+          rm -rf .artifact
+          rm .github/workflows/issue-2621-regenerate.yml
+          rm .github/workflows/issue-2621-apply.yml
+      - name: Commit validated evidence atomically
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git status --short
+          git commit -m "Fix #2621 refresh published setup evidence"
+          git push origin HEAD:fix/2621-refresh-published-evidence-v2

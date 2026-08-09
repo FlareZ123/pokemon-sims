@@ -98,6 +98,19 @@ def managed_trace_pattern() -> re.Pattern[str]:
     return re.compile(rf"(?:{generated_stems})_seed_[0-9]+\.txt")
 
 
+def reconcile_generated_traces(trace_dir: Path, expected_trace_files: set[str]) -> None:
+    generated_trace_name = managed_trace_pattern()
+    for trace_path in trace_dir.iterdir():
+        # Only canonical generator-owned trace names may be removed. This keeps
+        # unrelated review notes while reconciling the directory to the new manifest:
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
+        # https://github.com/FlareZ123/pokemon-sims/issues/916
+        if (trace_path.is_file() and generated_trace_name.fullmatch(trace_path.name) and
+                trace_path.name not in expected_trace_files):
+            trace_path.unlink()
+
+
 def find_trace_seed(executable: Path, scenario: str, deadline: int, max_seed: int) -> tuple[int, str]:
     for seed in range(1, max_seed + 1):
         completed = run(
@@ -169,17 +182,7 @@ def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, m
             }
         )
 
-    generated_trace_name = managed_trace_pattern()
-    for trace_path in trace_dir.iterdir():
-        # Only canonical generator-owned trace names may be removed. This keeps
-        # unrelated review notes while reconciling the directory to the new manifest:
-        # https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md
-        # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
-        # https://github.com/FlareZ123/pokemon-sims/issues/916
-        if (trace_path.is_file() and generated_trace_name.fullmatch(trace_path.name) and
-                trace_path.name not in expected_trace_files):
-            trace_path.unlink()
-
+    reconcile_generated_traces(trace_dir, expected_trace_files)
     generate_matrix_atomic(executable, output_dir / MATRIX_FILENAME, trials, matrix_seed)
     atomic_write_text(
         output_dir / MANIFEST_FILENAME,

@@ -8,8 +8,7 @@
       return false;
     }
 
-    const int held_payloads = static_cast<int>(std::count_if(
-        state_.hand.begin(), state_.hand.end(), is_payload));
+    const int held_payloads = payload_cards_in_hand_count();
     const int spent_payloads_this_turn = static_cast<int>(std::count_if(
         state_.discarded_this_turn.begin(), state_.discarded_this_turn.end(),
         is_payload));

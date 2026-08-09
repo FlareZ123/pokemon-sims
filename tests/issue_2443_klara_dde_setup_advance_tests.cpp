@@ -1,39 +1,4 @@
-from pathlib import Path
-
-source = Path('src/trace_engine_v2/part_klara_recovery_override.inc')
-text = source.read_text(encoding='utf-8')
-old = '''    return !state_.manual_energy_used && grass_needed() + fire_needed() == 1 &&
-           ((grass_needed() == 1 && count_of(energy, Card::Grass) > 0) ||
-            (fire_needed() == 1 && count_of(energy, Card::Fire) > 0));
-'''
-new = '''    if (state_.manual_energy_used) return false;
-    const Pokemon* target = target_regi();
-    if (target == nullptr || pays_apex_energy_cost(*target)) return false;
-
-    // Klara puts recovered Basic Energy into hand. Preserve the historical
-    // one-attachment completion boundary by projecting each actually recovered
-    // Basic and requiring that the unused manual attachment pays Apex Dragon.
-    // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
-    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
-    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Official attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2443
-    for (const Card basic : {Card::Grass, Card::Fire}) {
-      if (count_of(energy, basic) == 0) continue;
-      Pokemon projected = *target;
-      if (attach_energy_card(projected, basic) &&
-          pays_apex_energy_cost(projected)) {
-        return true;
-      }
-    }
-    return false;
-'''
-if text.count(old) != 1:
-    raise SystemExit(f'expected one Klara gate, found {text.count(old)}')
-source.write_text(text.replace(old, new), encoding='utf-8')
-
-test = Path('tests/issue_2443_klara_dde_setup_advance_tests.cpp')
-test.write_text(r'''#define REGIDRAGO_SIM_NO_MAIN
+#define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
 #include <iostream>
@@ -140,4 +105,3 @@ int main() {
     return 1;
   }
 }
-''', encoding='utf-8')

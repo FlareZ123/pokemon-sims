@@ -25,6 +25,12 @@ function(require_trace_match trace_output pattern error_message)
   endif()
 endfunction()
 
+function(reject_trace_match trace_output pattern error_message)
+  if("${trace_output}" MATCHES "${pattern}")
+    message(FATAL_ERROR "${error_message}:\n${trace_output}")
+  endif()
+endfunction()
+
 # Star Alchemy can search any card. In the scheduled T2 Item-lock route, Crispin plus
 # the current and next legal manual attachments deterministically completes GGF, and
 # the held Professor Burnet establishes the strict-JIT payload on T2. Oricorio plus
@@ -49,20 +55,26 @@ require_trace_match(
   "T1 \\| PLAY SUPPORTER \\|.*Crispin"
   "Seed ${ISSUE_1085_SEED} did not resolve the deterministic T1 Crispin line"
 )
-if(issue_1085_seed_25 MATCHES "T1 \\| BENCH \\|.*Oricorio")
-  message(FATAL_ERROR "Seed ${ISSUE_1085_SEED} still spent the Bench slot on Oricorio:\n${issue_1085_seed_25}")
-endif()
-if(issue_1085_seed_25 MATCHES "T1 \\| ATTACK \\|.*Celestial Roar")
-  message(FATAL_ERROR "Seed ${ISSUE_1085_SEED} still depended on Celestial Roar variance:\n${issue_1085_seed_25}")
-endif()
+reject_trace_match(
+  "${issue_1085_seed_25}"
+  "T1 \\| BENCH \\|.*Oricorio"
+  "Seed ${ISSUE_1085_SEED} still spent the Bench slot on Oricorio"
+)
+reject_trace_match(
+  "${issue_1085_seed_25}"
+  "T1 \\| ATTACK \\|.*Celestial Roar"
+  "Seed ${ISSUE_1085_SEED} still depended on Celestial Roar variance"
+)
 require_trace_match(
   "${issue_1085_seed_25}"
   "T2 \\| PLAY SUPPORTER \\|.*Professor Burnet"
   "Seed ${ISSUE_1085_SEED} lost the held T2 Burnet payload bridge"
 )
-if(issue_1085_seed_25 MATCHES "LEGACY STAR")
-  message(FATAL_ERROR "Seed ${ISSUE_1085_SEED} unnecessarily spent the game-wide VSTAR Power:\n${issue_1085_seed_25}")
-endif()
+reject_trace_match(
+  "${issue_1085_seed_25}"
+  "LEGACY STAR"
+  "Seed ${ISSUE_1085_SEED} unnecessarily spent the game-wide VSTAR Power"
+)
 require_trace_match(
   "${issue_1085_seed_25}"
   "T2 \\| READY \\|"
@@ -81,6 +93,8 @@ require_trace_match(
   "T1 \\| STAR ALCHEMY \\|.*Oricorio"
   "Going-first control lost the established Oricorio route"
 )
-if(issue_1085_going_first_control MATCHES "T1 \\| PLAY SUPPORTER \\|.*Crispin")
-  message(FATAL_ERROR "Going-first control illegally played Crispin on T1:\n${issue_1085_going_first_control}")
-endif()
+reject_trace_match(
+  "${issue_1085_going_first_control}"
+  "T1 \\| PLAY SUPPORTER \\|.*Crispin"
+  "Going-first control illegally played Crispin on T1"
+)

@@ -142,6 +142,21 @@ class Engine {
     return count;
   }
 
+  int public_underlying_evolution_count(const Card card) const {
+    // Evolved Pokémon remain public Evolution stacks. Count the modeled underlying
+    // Basic cards for fixed-list K0 copy accounting without changing strategic counts
+    // of unevolved Pokémon:
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Pineco / Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // Confirmed Pineco accounting bug: https://github.com/FlareZ123/pokemon-sims/issues/972
+    switch (card) {
+      case Card::RegidragoV: return in_play_count(Card::RegidragoVstar);
+      case Card::Pineco: return in_play_count(Card::ForretressEx);
+      default: return 0;
+    }
+  }
+
   // P-HIDDEN-01: before a legal deck or Prize inspection, policy uses only public zones and
   // fixed-list copy counts. A deck search sees the remaining deck directly.
   // Attached Energy and Tools are public board information and cannot remain in
@@ -151,24 +166,8 @@ class Engine {
   // https://api.pokemontcg.io/v2/cards/swsh10-146
   bool might_be_unseen(const Card card) const {
     if (deck_seen_ || prizes_revealed_) return deck_count_after_search_started(card) > 0;
-    // An evolved Regidrago VSTAR remains a public Evolution stack containing the
-    // Regidrago V it evolved from. Count that underlying Basic for fixed-list K0
-    // copy accounting without changing strategic counts of unevolved Pokémon:
-    // https://www.pokemon.com/us/pokemon-tcg/rules
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    const int evolved_regidrago_bases =
-        card == Card::RegidragoV ? in_play_count(Card::RegidragoVstar) : 0;
-    // Forretress ex is a Stage 1 that evolves from Pineco. Count the public
-    // underlying Pineco in the same fixed-list K0 accounting used for Regidrago's
-    // Evolution stack: https://api.pokemontcg.io/v2/cards/sv4pt5-1
-    // https://api.pokemontcg.io/v2/cards/sv4pt5-2
-    // https://www.pokemon.com/us/pokemon-tcg/rules
-    // https://github.com/FlareZ123/pokemon-sims/issues/972
-    const int evolved_pineco_bases =
-        card == Card::Pineco ? in_play_count(Card::ForretressEx) : 0;
     const int known = hand_count(card) + count_of(state_.discard, card) + in_play_count(card) +
-                      evolved_regidrago_bases + evolved_pineco_bases +
-                      attached_public_count(card);
+                      public_underlying_evolution_count(card) + attached_public_count(card);
     return total_copies(card) > known;
   }
 

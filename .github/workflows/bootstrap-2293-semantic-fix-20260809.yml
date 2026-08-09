@@ -1,0 +1,65 @@
+name: Bootstrap issue 2293 semantic fix 20260809
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.head_ref == 'fix/2293-semantic-k1-latias-20260809'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply semantic source fix
+        run: python scripts/apply_issue_2293_semantic_fix_20260809.py
+      - name: Validate source anchors
+        run: python tests/source_anchor_contract_tests.py
+      - name: Build Release and exact regression
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R 'trace_issue_(2293|1870|2164|1030)' --output-on-failure
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 291 --require-ready-by 4 | tee issue-2293-seed291.txt
+          grep -q 'WONDER TAG.*Gladion' issue-2293-seed291.txt
+          grep -q 'GLADION.*Latias ex' issue-2293-seed291.txt
+          grep -q 'T4 | READY' issue-2293-seed291.txt
+      - name: Run three independent simulate-this controls
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-control-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee trace-control-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-control-3.txt
+      - name: Regenerate source-bound setup evidence
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Run complete Release suite against refreshed evidence
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Upload bootstrap evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-2293-semantic-bootstrap-${{ github.run_attempt }}
+          path: |
+            issue-2293-seed291.txt
+            trace-control-*.txt
+            results/simulation_results.csv
+            results/multi_deck_comparison.csv
+            build/Testing
+          if-no-files-found: warn
+      - name: Materialize validated source and evidence
+        run: |
+          git rm scripts/apply_issue_2293_semantic_fix_20260809.py .github/workflows/bootstrap-2293-semantic-fix-20260809.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Fix #2293 semantic K1 Latias mobility route'
+          git push origin HEAD:${{ github.head_ref }}

@@ -104,9 +104,18 @@ DeckRecipe professors_letter_swap_recipe() {
 VariantAggregate simulate_checkpoints(
     const Scenario& scenario, const DeckRecipe& recipe,
     const std::uint64_t trials, const std::uint64_t seed) {
-  std::mt19937_64 rng(seed);
   VariantAggregate aggregate;
   for (std::uint64_t trial = 0; trial < trials; ++trial) {
+    // Reset the RNG for every game from a deterministic scenario/trial seed. The
+    // baseline and Letter variant therefore start each paired trial from the same
+    // random stream even when their different search/shuffle choices consume RNG
+    // differently inside earlier games. This is the common-random-number boundary
+    // for the temporary swap experiment:
+    // Professor's Letter: https://api.pokemontcg.io/v2/cards/xy1-123
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2509
+    const std::uint64_t trial_seed = seed + trial;
+    std::mt19937_64 rng(trial_seed);
     Engine engine(scenario, recipe, rng);
     const CheckpointTrial result = EngineTestAccess::run(engine);
     ++aggregate.trials;

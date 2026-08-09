@@ -1,0 +1,84 @@
+  std::optional<Card> issue_2269_treasure_latias_blender_cost() const {
+    const Pokemon* target = target_regi();
+    if (!strict_payload_timing() || item_locked() || !prizes_known() ||
+        target == nullptr || target->card != Card::RegidragoVstar ||
+        target->grass < 2 || target->fire < 1 || !need_active_vstar() ||
+        !need_payload() || state_.retreat_used || !state_.active ||
+        !is_basic(state_.active->card) ||
+        // The established Tapu-active scheduler remains authoritative. This
+        // reclaimed route covers the distinct Basic Oricorio/other-Basic case.
+        // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+        // Oricorio GRI 55: https://api.pokemontcg.io/v2/cards/sm2-55
+        // Existing Tapu scheduler scope: https://github.com/FlareZ123/pokemon-sims/issues/1533
+        // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/2269
+        state_.active->card == Card::TapuLeleGX || bench_space() == 0 ||
+        !ability_available_for_pokemon(Card::LatiasEx) ||
+        in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
+        deck_count_after_search_started(Card::LatiasEx) == 0 ||
+        hand_count(Card::MysteriousTreasure) == 0 ||
+        hand_count(Card::BrilliantBlender) == 0 ||
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) ||
+        std::none_of(state_.deck.begin(), state_.deck.end(), is_payload)) {
+      return std::nullopt;
+    }
+
+    // GGF is already complete. The held Blender independently supplies the strict
+    // current-turn Dragon payload from the K1-known deck, so ordinary setup-surplus
+    // cards may pay Treasure. Existing DCI and surplus-Energy selectors retain
+    // precedence before the explicit Grass/Fire fallbacks.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, discard, search, Ability, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, dynamic DCI/JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed stale-claim regression: https://github.com/FlareZ123/pokemon-sims/issues/2269
+    auto cost = choose_discard(false, true, true, Card::MysteriousTreasure);
+    if (!cost) cost = quick_ball_final_surplus_energy_cost();
+    if (!cost && hand_count(Card::Grass) > 0) cost = Card::Grass;
+    if (!cost && hand_count(Card::Fire) > 0) cost = Card::Fire;
+    return cost;
+  }
+
+  bool issue_2269_play_treasure_latias_blender_route() {
+    const auto cost = issue_2269_treasure_latias_blender_cost();
+    if (!cost) return false;
+
+    // Treasure finds Latias ex after paying the route-proven surplus cost. Blender
+    // then establishes the same-turn Dragon payload and Skyliner gives the Basic
+    // Active no Retreat Cost into the already-powered Benched Regidrago VSTAR.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, search, discard, Ability, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/2269
+    remove_one(state_.hand, Card::MysteriousTreasure);
+    state_.discard.push_back(Card::MysteriousTreasure);
+    if (!discard_from_hand(*cost,
+                           "Mysterious Treasure issue-2269 Latias route cost",
+                           "R-MT-01; P-DCI-01; P-COMPRESS-01")) {
+      throw std::logic_error("Issue-2269 Treasure cost disappeared");
+    }
+    record_deck_search_knowledge("Mysterious Treasure issue-2269 Latias route");
+    if (!move_deck_to_hand(Card::LatiasEx)) {
+      throw std::logic_error("Issue-2269 Latias ex target disappeared");
+    }
+    shuffle(state_.deck);
+    trace("PLAY ITEM", "R-MT-01; R-GAME-ITEM; P-DCI-01",
+          "Spent the route-proven surplus cost and searched Latias ex for the Basic-Active promotion route.");
+    if (!bench_from_hand(Card::LatiasEx, false)) {
+      throw std::logic_error("Issue-2269 Latias ex Bench action failed");
+    }
+    if (!play_brilliant_blender()) {
+      throw std::logic_error("Issue-2269 Brilliant Blender payload disappeared");
+    }
+    if (!retreat_to_benched_vstar_with_latias()) {
+      throw std::logic_error("Issue-2269 Skyliner promotion disappeared");
+    }
+    return true;
+  }
+
+  bool play_mysterious_treasure(const bool permit_payload) {
+    if (issue_2269_play_treasure_latias_blender_route()) return true;
+    return play_mysterious_treasure_issue2269_original(permit_payload);
+  }

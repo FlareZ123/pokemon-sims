@@ -89,11 +89,55 @@
           "Secret Box discarded three other cards and searched Mysterious "
           "Treasure plus Crispin for the resource-preserving direct T2 route.");
 
+    if (!play_crispin()) return false;
+    attach_manual();
+    if (need_energy() || hand_count(Card::MysteriousTreasure) == 0 || item_locked()) {
+      return false;
+    }
+
+    // After Crispin has consumed the turn's Supporter action and GGF is complete,
+    // the remaining Treasure cost may use the ordinary DCI selector. The exact
+    // seed-40 line also treats a held Gladion or Steven's Resolve as route-complete
+    // Supporter fodder because neither can be played this turn and all setup axes
+    // except the already-known VSTAR search are complete. This is a narrow dynamic
+    // DCI state, not a generic permission to discard singleton Supporters.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // One Supporter per turn: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2485
+    std::optional<Card> treasure_cost = choose_discard(
+        false, true, true, Card::MysteriousTreasure);
+    if (!treasure_cost && state_.supporter_used) {
+      for (const Card supporter : {Card::Gladion, Card::StevensResolve}) {
+        if (hand_count(supporter) > 0) {
+          treasure_cost = supporter;
+          break;
+        }
+      }
+    }
+    if (!treasure_cost) return false;
+
+    remove_one(state_.hand, Card::MysteriousTreasure);
+    if (!discard_from_hand(*treasure_cost,
+                           "Mysterious Treasure issue-2485 direct-route cost",
+                           "R-MT-01; P-DCI-01")) {
+      throw std::logic_error("Issue 2485 Treasure cost disappeared");
+    }
+    state_.discard.push_back(Card::MysteriousTreasure);
+    record_deck_search_knowledge("Mysterious Treasure issue-2485 direct route");
+    if (!move_deck_to_hand(Card::RegidragoVstar)) return false;
+    shuffle(state_.deck);
+    trace("PLAY ITEM", "R-MT-01; R-GAME-ITEM; P-DCI-01",
+          "Mysterious Treasure discarded " + std::string(name(*treasure_cost)) +
+          " and searched Regidrago VSTAR for the direct T2 route.");
+
     // Crispin supplies one legal effect attachment and one Basic Energy to hand;
-    // the unused manual attachment supplies the third GGF unit. Treasure then pays
-    // its own independent discard cost, searches the unprized VSTAR, and the prior-
-    // turn Regidrago V evolves. The Secret Box cost itself must already have put a
-    // Dragon into discard this turn, satisfying strict-JIT without Exploding Energy.
+    // the unused manual attachment supplies the third GGF unit. The Secret Box cost
+    // already put a Dragon into discard this turn, satisfying strict-JIT without
+    // Exploding Energy, and the searched VSTAR can evolve the prior-turn Regidrago V.
     // Crispin ruling: https://compendium.pokegym.net/category/5-trainers/crispin/
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
@@ -101,9 +145,6 @@
     // Official attachment, Item, Supporter, discard, search, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2485
-    if (!play_crispin()) return false;
-    attach_manual();
-    if (need_energy() || !play_mysterious_treasure(true)) return false;
     evolve_best_regi();
     return active_is_vstar() && !need_energy() && !need_payload();
   }
@@ -112,7 +153,7 @@
     if (!issue_2485_direct_crispin_preflight()) return false;
 
     // Prove the entire paid route on a copy first. This reuses the production DCI,
-    // Crispin, manual-attachment, Treasure, evolution, and strict-JIT resolvers, so
+    // Crispin, manual-attachment, Treasure cost, evolution, and strict-JIT state, so
     // the live game is untouched unless every legal step reaches the same T2 ready
     // state while preserving Forretress ex.
     // No-future-oracle policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle

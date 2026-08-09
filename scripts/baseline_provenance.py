@@ -115,8 +115,9 @@ class _SourceDigestBuilder:
 
 def _build_source_digest(repo_root: Path) -> _Digest:
     """Build the aggregate digest from the stable simulator input sequence."""
+    source_paths = simulator_policy_source_paths(repo_root)
     builder = _SourceDigestBuilder(repo_root)
-    builder.add_paths(simulator_policy_source_paths(repo_root))
+    builder.add_paths(source_paths)
     return builder.digest
 
 

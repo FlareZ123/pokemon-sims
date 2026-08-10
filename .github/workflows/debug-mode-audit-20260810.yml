@@ -60,11 +60,21 @@ jobs:
           git grep -nEI 'TODO|FIXME|HACK|BUG' -- '*.cpp' '*.hpp' '*.inc' '*.py' '*.cmake' '*.md' > static-markers.txt || true
           git grep -nE 'DciProfile::StrictJit|DciProfile::MatchupFlexJit|state_\.turn ==|seed ==|seed_|witness' -- 'src/**' > route-specific-markers.txt || true
           git grep -nE 'grass_needed\(\) \+ fire_needed\(\)|active->grass[^\n]*(==|>=)|active->fire[^\n]*(==|>=)' -- 'src/**' > raw-energy-markers.txt || true
+          echo "=== static markers ==="
+          cat static-markers.txt
+          echo "=== route/profile markers ==="
+          cat route-specific-markers.txt
+          echo "=== raw energy markers ==="
+          cat raw-energy-markers.txt
 
       - name: Generate T2 and T3 matrices
         run: |
           ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-t2-t3-matrix.csv
           ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit-multi-deck-matrix.csv
+          echo "=== canonical T2/T3 matrix ==="
+          cat audit-t2-t3-matrix.csv
+          echo "=== paired T2/T3/T4 matrix ==="
+          cat audit-multi-deck-matrix.csv
 
       - name: Run complete Release suite
         run: ctest --test-dir build --parallel 4 --output-on-failure

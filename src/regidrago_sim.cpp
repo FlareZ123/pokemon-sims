@@ -3,17 +3,8 @@
 // Direct rules/card-text registry. Method-level mappings and validation notes:
 // docs/RULE_SOURCES.md and docs/RULES_TRACEABILITY.md.
 //
-// Composition map for this translation-unit root:
-// 1. core_engine_body composes the core state, turn, and trace methods.
-// 2. opening_engine_overrides owns the ordered opening-through-VSTAR composition
-//    spine: opening/Tate, discard/search, Steven/Blender, legacy Supporters,
-//    Supporter selection, and VSTAR-power aliases.
-// 3. part_014a closes the search-item member opened by the VSTAR stage.
-// 4. post_014a_overrides composes Burnet, FSS, Vessel, and later wrappers.
-// 5. turn_reporting_body composes turn execution and reporting.
-// 6. part_016 closes the translation-unit implementation.
-// The named engine_body wrapper preserves this order and the macro lifetime needed
-// by continuation stages that close members opened by an earlier legacy part.
+// The named engine_body wrapper owns the ordered implementation composition and
+// preserves the legacy macro/member continuation boundaries in one place.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
 // Composition spine: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_body.inc
 // Core procedure rules: https://www.pokemon.com/us/pokemon-tcg/rules
@@ -58,9 +49,6 @@
 // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
 // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
 //
-// engine_body owns the exact former root include order:
-// opening_engine_overrides -> part_014a -> post_014a_overrides ->
-// turn_reporting_body -> part_016, after core_engine_body.
 // Search-item closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc
 // Burnet/search continuation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
 // Late alias handoff: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/turn_reporting_body.inc

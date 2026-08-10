@@ -74,6 +74,12 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-pineco-35.txt
           grep -q 'T2 | READY' trace-pineco-35.txt
           grep -q 'Dragapult ex (Mysterious Treasure cost)' trace-pineco-35.txt
+      - name: Run Regidrago shell setup-cut screen
+        shell: bash
+        run: |
+          set -euo pipefail
+          g++ -std=c++20 -O2 experiments/regidrago_shell_safe_cut_experiment.cpp -o regidrago-shell-safe-cut-experiment
+          ./regidrago-shell-safe-cut-experiment | tee regidrago-shell-safe-cut-matrix.csv
       - name: Verify source-bound provenance
         run: |
           python - <<'PY'
@@ -107,6 +113,7 @@ jobs:
           path: |
             trace-*.txt
             t2-t3-matrix.csv
+            regidrago-shell-safe-cut-matrix.csv
             build/Testing
           if-no-files-found: warn
 

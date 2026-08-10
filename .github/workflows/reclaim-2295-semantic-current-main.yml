@@ -1,0 +1,97 @@
+name: Reclaim issue 2295 semantic retreat on current main
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/reclaim-2295-semantic-current-main.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize-and-validate:
+    if: github.head_ref == 'fix/2295-reclaim-20260810-1258'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Verify reviewed source boundary still matches current main
+        shell: bash
+        run: |
+          git fetch origin main fix/2295-reclaim-20260809-1759
+          git diff --quiet 851de4f696735483f1320554e90d40970a91f91b origin/main -- src/trace_engine_v2/part_014c_latias_bench_override.inc
+
+      - name: Materialize reviewed systemic route and regressions
+        shell: bash
+        run: |
+          git checkout origin/fix/2295-reclaim-20260809-1759 -- src/trace_engine_v2/part_014c_latias_bench_override.inc tests/issue_2295_semantic_retreat_gate_tests.cpp tests/issue_2295_trace_contract.py scripts/materialize_issue_2295_semantic_gate.py
+          git diff 851de4f696735483f1320554e90d40970a91f91b origin/fix/2295-reclaim-20260809-1759 -- CMakeLists.txt | git apply -3
+          python scripts/materialize_issue_2295_semantic_gate.py
+          python - <<'PY'
+          import fcntl
+          import os
+          import tempfile
+          from pathlib import Path
+
+          path = Path('tests/issue_2295_semantic_retreat_gate_tests.cpp')
+          old = 'if (!remove_one(projected.state_.hand, Card::Grass)) return false;'
+          new = 'if (!projected.remove_one(projected.state_.hand, Card::Grass)) return false;'
+          with path.open('r', encoding='utf-8') as source_file:
+              fcntl.flock(source_file.fileno(), fcntl.LOCK_EX)
+              source = source_file.read()
+              if source.count(old) != 1:
+                  raise RuntimeError('expected exactly one unqualified remove_one regression-test call')
+              updated = source.replace(old, new)
+              fd, temporary_name = tempfile.mkstemp(dir=path.parent, prefix=path.name + '.', suffix='.tmp')
+              try:
+                  with os.fdopen(fd, 'w', encoding='utf-8', newline='') as temporary_file:
+                      temporary_file.write(updated)
+                      temporary_file.flush()
+                      os.fsync(temporary_file.fileno())
+                  os.replace(temporary_name, path)
+              finally:
+                  if os.path.exists(temporary_name):
+                      os.unlink(temporary_name)
+          PY
+          rm scripts/materialize_issue_2295_semantic_gate.py .github/workflows/reclaim-2295-semantic-current-main.yml
+          git diff --check
+
+      - name: Build and run focused and full Release validation
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R '2295' --output-on-failure
+          ctest --test-dir build --output-on-failure
+
+      - name: Validate exact issue witnesses
+        shell: bash
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 29 --require-ready-by 4 | tee issue-2295-seed29.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 86 --require-ready-by 4 | tee issue-2295-seed86.txt
+          grep -q 'T4 | READY' issue-2295-seed29.txt
+          grep -q 'T4 | READY' issue-2295-seed86.txt
+
+      - name: Run three independent simulate-this audits
+        shell: bash
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee simulate-this-audit-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee simulate-this-audit-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee simulate-this-audit-3.txt
+          grep -q 'READY' simulate-this-audit-1.txt
+          grep -q 'READY' simulate-this-audit-2.txt
+          grep -q 'READY' simulate-this-audit-3.txt
+
+      - name: Commit validated source and regressions
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src tests CMakeLists.txt
+          git commit -m 'Fix #2295 semantic one-cost Basic paid retreat'
+          git push origin HEAD:${{ github.head_ref }}

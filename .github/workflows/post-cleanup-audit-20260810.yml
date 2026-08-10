@@ -1,0 +1,85 @@
+name: Post Cleanup Audit 20260810
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: post-cleanup-audit-20260810-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Simulate-this pass 1
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Ready-state contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+          # Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 2 | tee control-pass-1.txt
+          grep -q "first-ready turn: 2" control-pass-1.txt
+
+      - name: Simulate-this pass 2
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Powerglass timing/card text: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+          # Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 3 | tee control-pass-2.txt
+          grep -q "first-ready turn: 3" control-pass-2.txt
+
+      - name: Simulate-this pass 3
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Pineco ALS policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+          # Pineco / Forretress ex / Secret Box: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://api.pokemontcg.io/v2/cards/sv6-163
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee control-pass-3.txt
+          grep -q "first-ready turn: 2" control-pass-3.txt
+
+      - name: Generate all-deck T2 and T3 matrix once
+        run: |
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out final-multi-deck-matrix.csv
+          python - <<'PY'
+          import csv
+          from pathlib import Path
+          source = Path('final-multi-deck-matrix.csv')
+          rows = list(csv.DictReader(source.open(newline='', encoding='utf-8')))
+          fields = ['deck', 'scenario', 'trials', 'ready_by_t2_pct', 'ready_by_t2_se_pp', 'ready_by_t3_pct', 'ready_by_t3_se_pp']
+          with Path('final-t2-t3-matrix.csv').open('w', newline='', encoding='utf-8') as handle:
+              writer = csv.DictWriter(handle, fieldnames=fields)
+              writer.writeheader()
+              writer.writerows({field: row[field] for field in fields} for row in rows)
+          PY
+          cat final-t2-t3-matrix.csv
+
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: post-cleanup-audit-20260810-${{ github.run_attempt }}
+          path: |
+            control-pass-*.txt
+            final-multi-deck-matrix.csv
+            final-t2-t3-matrix.csv
+            build/Testing
+          if-no-files-found: error

@@ -2,6 +2,23 @@
 //
 // Direct rules/card-text registry. Method-level mappings and validation notes:
 // docs/RULE_SOURCES.md and docs/RULES_TRACEABILITY.md.
+//
+// Composition map for this translation-unit root:
+// 1. part_000..005 establish core state, turn, and trace methods.
+// 2. opening_engine_overrides composes the early-turn wrappers.
+// 3. tate_legacy_body keeps the historical Tate & Liza body isolated.
+// 4. tate_discard_overrides owns the current Tate discard policy chain.
+// 5. steven_blender_overrides composes Steven and Brilliant Blender policy.
+// 6. legacy_supporter_body owns the part_011 legacy supporter aliases.
+// 7. supporter_selector_body owns the part_012 supporter-selector aliases.
+// 8. vstar_power_body owns the part_013 VSTAR-power aliases.
+// 9. part_014a closes the search-item member opened by part_013.
+// 10. post_014a_overrides composes Burnet, FSS, Vessel, and later wrappers.
+// 11. part_014c and part_015 complete turn execution and reporting.
+// 12. part_016 closes the translation-unit implementation.
+// Composition wrappers intentionally preserve macro lifetime where a later stage
+// consumes an alias; see each composition file for the matching continuation URL.
+// C++ textual include semantics: https://eel.is/c++draft/cpp.include
 // Core procedure rules: https://www.pokemon.com/us/pokemon-tcg/rules
 // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
 // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136

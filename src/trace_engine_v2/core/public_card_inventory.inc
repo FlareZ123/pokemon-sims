@@ -10,7 +10,10 @@
     return loose_public_copy_count(card) + attached_public_count(card);
   }
 
+  int unresolved_copy_count(const Card card, const int known_copies) const {
+    return std::max(0, total_copies(card) - known_copies);
+  }
+
   int unresolved_fixed_list_copy_count(const Card card) const {
-    const int unresolved = total_copies(card) - publicly_known_copy_count(card);
-    return std::max(0, unresolved);
+    return unresolved_copy_count(card, publicly_known_copy_count(card));
   }

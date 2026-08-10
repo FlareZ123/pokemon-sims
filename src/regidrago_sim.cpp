@@ -60,23 +60,7 @@
 #include "trace_engine_v2/part_005.inc"
 #undef might_be_unseen
 #include "trace_engine_v2/composition/opening_engine_overrides.inc"
-#define attach_manual attach_manual_tate_blender_original
-#include "trace_engine_v2/part_007.inc"
-#undef attach_manual
-#define play_tate_switch play_tate_switch_tate_blender_original
-#define play_tate_draw play_tate_draw_tate_blender_original
-#include "trace_engine_v2/part_008a.inc"
-#undef play_tate_draw
-#undef play_tate_switch
-#undef choose_discard
-#define choose_discard choose_discard_issue2323_original
-#include "trace_engine_v2/part_issue_1436_full_supporter_dci_override.inc"
-#undef choose_discard
-#include "trace_engine_v2/part_issue_2323_final_payload_guard.inc"
-// part_007.inc opens evolve_best_regi(), and part_008a.inc completes it before
-// this member-function override may be included:
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_007.inc#L169-L172
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_008a.inc#L1-L18
+#include "trace_engine_v2/composition/tate_legacy_body.inc"
 #include "trace_engine_v2/composition/tate_discard_overrides.inc"
 // base_search_overrides.inc is composed by tate_discard_overrides.inc.
 #include "trace_engine_v2/composition/steven_blender_overrides.inc"
@@ -121,4 +105,4 @@
 #include "trace_engine_v2/part_015.inc"
 // C++ preprocessing include grammar: https://eel.is/c++draft/cpp.include
 // Confirmed portability bug: https://github.com/FlareZ123/pokemon-sims/issues/1482
-#include "trace_engine_v2/part_016.inc"
+#include "trace_engine_v2/part_016.inc"}

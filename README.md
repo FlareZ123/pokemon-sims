@@ -119,10 +119,10 @@ The current-main validation includes the full Release and sanitizer suites, thre
 A ready state requires:
 
 1. Active Regidrago VSTAR.
-2. At least two Grass Energy and one Fire Energy attached.
+2. Semantic payment of Apex Dragon's `[Grass][Grass][Fire]` Energy cost, including legal Double Dragon Energy payment when attached to a Dragon Pokémon. Sources: https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/xy6-97 https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_004.inc https://github.com/FlareZ123/pokemon-sims/issues/2697
 3. A modeled Dragon payload in discard. Appletun is eligible only in a recipe that contains it.
 4. Strict and matchup-flex JIT require the payload to enter discard during the ready turn.
 
 Readiness through T4 is setup success. T5 remains a diagnostic recovery turn and is counted inside setup failure.
 
-See `docs/MODEL_ASSUMPTIONS.md`, `docs/POLICY_DECISIONS.md`, `docs/RULES_TRACEABILITY.md`, `docs/RULE_SOURCES.md`, `docs/TRACE_AUDIT.md`, `docs/REPORT.md`, and `docs/MULTI_DECK_REPORT.md`.
+See `docs/MODEL_ASSUMPTIONS.md`, `docs/POLICY_DECISIONS.md`, `docs/RULES_TRACEABILITY.md`, `docs/RULE_SOURCES.md`, `docs/TRACE_AUDIT.md`, `docs/REPORT.md`, and [`docs/MULTI_DECK_REPORT.md`](docs/MULTI_DECK_REPORT.md).

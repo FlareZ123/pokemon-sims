@@ -1,0 +1,60 @@
+name: Turn 2026-08-10 audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+
+      - name: Full Release tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Static policy scan
+        run: |
+          mkdir -p audit
+          grep -RInE 'DciProfile::StrictJit|scenario_\.going_first|state_\.turn[[:space:]]*==|grass[[:space:]]*>=[[:space:]]*2|fire[[:space:]]*>=[[:space:]]*1|grass_needed\(\)[[:space:]]*\+[[:space:]]*fire_needed\(\)|max\(0,[[:space:]]*2[[:space:]]*-[^)]*grass' src tests > audit/static-patterns.txt || true
+          find src tests -type f \( -name '*.inc' -o -name '*.cpp' -o -name '*.hpp' -o -name '*.h' \) -print | sort > audit/source-files.txt
+          find src -type f -name '*.inc' -print | sort > audit/inc-files.txt
+          wc -l audit/static-patterns.txt audit/source-files.txt audit/inc-files.txt | tee audit/counts.txt
+
+      - name: Simulate-this pass 1
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 | tee audit/trace-1.txt
+
+      - name: Simulate-this pass 2
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 | tee audit/trace-2.txt
+
+      - name: Simulate-this pass 3
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 7 | tee audit/trace-3.txt
+
+      - name: Simulate-this pass 4
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 11 | tee audit/trace-4.txt
+
+      - name: Simulate-this pass 5
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 13 | tee audit/trace-5.txt
+
+      - name: Simulate-this pass 6
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario matchup-flex-jit/go-first --seed 17 | tee audit/trace-6.txt
+
+      - name: Archive source snapshot and audit outputs
+        run: |
+          zip -qr audit/source-snapshot.zip src tests docs README.md CMakeLists.txt EN_advanced_manual-2025-transcription-structured.md
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: turn-20260810-audit
+          path: audit/
+          if-no-files-found: error

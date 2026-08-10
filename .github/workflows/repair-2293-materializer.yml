@@ -21,9 +21,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Repair embedded direct-source URL separators
+      - name: Merge current main and repair embedded direct-source URL separators
         shell: bash
         run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git merge --no-edit origin/main
           python - <<'PY'
           import re
           from pathlib import Path

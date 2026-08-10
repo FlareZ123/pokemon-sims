@@ -1,0 +1,2 @@
+Validation-only pull request for main@18f9c46e14bd6ba6b41fb3bbf631a7e695bc0b4b.
+Exercises pull-request CI after merging the supporter composition .inc stack.

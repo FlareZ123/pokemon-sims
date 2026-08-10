@@ -25,10 +25,15 @@
 #undef use_fss
 
 // Preserve the Celestial Roar alias bridge immediately before the final override
-// family, matching the prior wrapper's exact preprocessing lifetime and order.
+// families, matching the prior wrapper's exact preprocessing lifetime and order.
 #undef use_celestial_roar
 #define use_celestial_roar use_celestial_roar_issue1369_original
 #include "../part_celestial_roar_override.inc"
 #undef use_celestial_roar
 
-#include "final_engine_overrides.inc"
+// Keep the final policy fragments directly on this named post-search spine so the
+// engine no longer crosses another wrapper whose only job is forwarding includes.
+#include "legacy_star_overrides.inc"
+#include "supporter_overrides.inc"
+#include "search_item_overrides.inc"
+#include "secret_box_trace_overrides.inc"

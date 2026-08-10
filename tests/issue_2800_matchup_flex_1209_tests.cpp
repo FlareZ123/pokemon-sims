@@ -56,35 +56,38 @@ sim::State t2_state() {
   return state;
 }
 
-sim::Engine make_engine(const sim::DciProfile dci, std::mt19937_64& rng,
-                        sim::State state) {
-  static const sim::DeckRecipe recipe = sim::baseline_recipe();
-  sim::Engine engine(scenario(dci), recipe, rng, nullptr);
-  sim::EngineTestAccess::set_state(engine, std::move(state));
-  return engine;
-}
-
 void test_t1_same_turn_jit_profile_parity() {
   // Both JIT profiles require payload discard on the readiness turn, while
   // NoDiscardControl has different discard timing and must not inherit this route:
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Engine currently retains Scenario by reference, so each Scenario below must
+  // outlive its Engine until #2815 lands: https://github.com/FlareZ123/pokemon-sims/issues/2815
+  // C++ temporary lifetime: https://eel.is/c++draft/class.temporary
   // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
   // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
   // Regression: https://github.com/FlareZ123/pokemon-sims/issues/2800
+  static const sim::DeckRecipe recipe = sim::baseline_recipe();
+
+  const sim::Scenario strict_scenario = scenario(sim::DciProfile::StrictJit);
   std::mt19937_64 strict_rng{280001};
-  sim::Engine strict = make_engine(sim::DciProfile::StrictJit, strict_rng, t1_state());
+  sim::Engine strict(strict_scenario, recipe, strict_rng, nullptr);
+  sim::EngineTestAccess::set_state(strict, t1_state());
   expect(sim::EngineTestAccess::t1_route_available(strict),
          "StrictJit must retain the proven #1209 T1 route.");
 
+  const sim::Scenario flex_scenario = scenario(sim::DciProfile::MatchupFlexJit);
   std::mt19937_64 flex_rng{280002};
-  sim::Engine flex = make_engine(sim::DciProfile::MatchupFlexJit, flex_rng, t1_state());
+  sim::Engine flex(flex_scenario, recipe, flex_rng, nullptr);
+  sim::EngineTestAccess::set_state(flex, t1_state());
   expect(sim::EngineTestAccess::t1_route_available(flex),
          "MatchupFlexJit must admit the same observable #1209 T1 route.");
 
+  const sim::Scenario control_scenario = scenario(sim::DciProfile::NoDiscardControl);
   std::mt19937_64 control_rng{280003};
-  sim::Engine control = make_engine(sim::DciProfile::NoDiscardControl, control_rng, t1_state());
+  sim::Engine control(control_scenario, recipe, control_rng, nullptr);
+  sim::EngineTestAccess::set_state(control, t1_state());
   expect(!sim::EngineTestAccess::t1_route_available(control),
          "NoDiscardControl must remain outside the same-turn JIT route.");
 }
@@ -93,23 +96,34 @@ void test_t2_same_turn_jit_profile_parity() {
   // The K1 T2 Treasure -> Tapu -> Crispin connector has identical legality under
   // StrictJit and MatchupFlexJit because both require the Dragon payload this turn:
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Engine currently retains Scenario by reference, so each Scenario below must
+  // outlive its Engine until #2815 lands: https://github.com/FlareZ123/pokemon-sims/issues/2815
+  // C++ temporary lifetime: https://eel.is/c++draft/class.temporary
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
   // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Regression: https://github.com/FlareZ123/pokemon-sims/issues/2800
+  static const sim::DeckRecipe recipe = sim::baseline_recipe();
+
+  const sim::Scenario strict_scenario = scenario(sim::DciProfile::StrictJit);
   std::mt19937_64 strict_rng{280004};
-  sim::Engine strict = make_engine(sim::DciProfile::StrictJit, strict_rng, t2_state());
+  sim::Engine strict(strict_scenario, recipe, strict_rng, nullptr);
+  sim::EngineTestAccess::set_state(strict, t2_state());
   expect(sim::EngineTestAccess::t2_route_available(strict),
          "StrictJit must retain the proven #1209 T2 route.");
 
+  const sim::Scenario flex_scenario = scenario(sim::DciProfile::MatchupFlexJit);
   std::mt19937_64 flex_rng{280005};
-  sim::Engine flex = make_engine(sim::DciProfile::MatchupFlexJit, flex_rng, t2_state());
+  sim::Engine flex(flex_scenario, recipe, flex_rng, nullptr);
+  sim::EngineTestAccess::set_state(flex, t2_state());
   expect(sim::EngineTestAccess::t2_route_available(flex),
          "MatchupFlexJit must admit the same K1 #1209 T2 route.");
 
+  const sim::Scenario control_scenario = scenario(sim::DciProfile::NoDiscardControl);
   std::mt19937_64 control_rng{280006};
-  sim::Engine control = make_engine(sim::DciProfile::NoDiscardControl, control_rng, t2_state());
+  sim::Engine control(control_scenario, recipe, control_rng, nullptr);
+  sim::EngineTestAccess::set_state(control, t2_state());
   expect(!sim::EngineTestAccess::t2_route_available(control),
          "NoDiscardControl must remain outside the same-turn JIT T2 route.");
 }

@@ -1,10 +1,10 @@
-  inline static constexpr Card kPayloadHandPreference[] = {
+  inline static constexpr std::array<Card, 5> kPayloadHandPreference{{
       Card::Appletun,
       Card::MegaDragonite,
       Card::Dragapult,
       Card::GoodraVstar,
       Card::DialgaGX,
-  };
+  }};
 
   int payload_cards_in_hand_count() const {
     return static_cast<int>(

@@ -126,10 +126,7 @@
 #define use_celestial_roar use_celestial_roar_issue1369_original
 #include "trace_engine_v2/part_celestial_roar_override.inc"
 #undef use_celestial_roar
-#include "trace_engine_v2/composition/legacy_star_overrides.inc"
-#include "trace_engine_v2/composition/supporter_overrides.inc"
-#include "trace_engine_v2/composition/search_item_overrides.inc"
-#include "trace_engine_v2/composition/secret_box_trace_overrides.inc"
+#include "trace_engine_v2/composition/final_engine_overrides.inc"
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #include "trace_engine_v2/part_014c.inc"

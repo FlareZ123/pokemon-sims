@@ -77,62 +77,10 @@
 // this member-function override may be included:
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_007.inc#L169-L172
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_008a.inc#L1-L18
-#include "trace_engine_v2/part_discard_recovery_provenance_override.inc"
-#include "trace_engine_v2/part_tate_blender_attachment_override.inc"
-#include "trace_engine_v2/part_tate_blender_tate_override.inc"
+#include "trace_engine_v2/composition/tate_discard_overrides.inc"
 #include "trace_engine_v2/composition/base_search_overrides.inc"
-#define play_evolution_incense play_evolution_incense_original
-#define play_earthen_vessel play_earthen_vessel_empty_deck_original
-#define play_brilliant_blender play_brilliant_blender_legacy_original
-#define fss_target_after_search_started fss_target_after_search_started_original
-#define attach_fss attach_fss_original
-#define should_play_steven should_play_steven_original
-#include "trace_engine_v2/part_010.inc"
-#undef should_play_steven
-#undef attach_fss
-#undef fss_target_after_search_started
-#include "trace_engine_v2/part_010_late_steven_override.inc"
-#define should_play_steven should_play_steven_issue1030_original
-#include "trace_engine_v2/part_010_steven_crispin_override.inc"
-#undef should_play_steven
-#undef play_brilliant_blender
-// The thinning policy remains the implementation wrapped by the later empty-deck
-// guard, while the legacy part_010 implementation stays dormant:
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010_blender_thinning_override.inc#L1-L77
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_empty_deck_search_override.inc#L78-L85
-#define play_brilliant_blender play_brilliant_blender_empty_deck_original
-#include "trace_engine_v2/part_010_blender_thinning_override.inc"
-#undef play_brilliant_blender
-#undef play_earthen_vessel
-#undef play_evolution_incense
-#undef play_ultra_ball
-#define bench_tapu_if_useful bench_tapu_if_useful_empty_deck_original
-#define wonder_tag_crispin_is_redundant_with_held_complete_route \
-  wonder_tag_crispin_is_redundant_with_held_complete_route_issue980_original
-#define needs_tapu_connector needs_tapu_connector_issue989_original
-#define in_play tapu_connector_copy_aware_in_play
-#include "trace_engine_v2/part_tapu_tate_switch_override.inc"
-#undef in_play
-#undef needs_tapu_connector
-#undef wonder_tag_crispin_is_redundant_with_held_complete_route
-#undef bench_tapu_if_useful
-#include "trace_engine_v2/part_issue_989_wonder_tag_complete_route_override.inc"
-#define play_ultra_ball play_ultra_ball_empty_deck_original
-#define play_evolution_incense play_evolution_incense_empty_deck_original
-#define in_play tapu_connector_copy_aware_in_play
-#include "trace_engine_v2/part_search_item_overrides.inc"
-#undef in_play
-#undef play_evolution_incense
-#undef play_ultra_ball
-#include "trace_engine_v2/part_pokemon_communication.inc"
-#define fss_target_after_search_started fss_target_after_search_started_issue1071_original
-#include "trace_engine_v2/part_010_fss_override.inc"
-#undef fss_target_after_search_started
-#define fss_target_after_search_started fss_target_after_search_started_issue1735_original
-#include "trace_engine_v2/part_issue_1071_fss_oricorio_treasure_decomposition_override.inc"
-#undef fss_target_after_search_started
-#include "trace_engine_v2/part_issue_1735_fss_blender_priority_override.inc"
-#include "trace_engine_v2/part_010_attach_fss_override.inc"
+#include "trace_engine_v2/composition/steven_blender_overrides.inc"
+#include "trace_engine_v2/composition/tapu_search_overrides.inc"
 #define use_fss use_fss_latias_original
 #define play_crispin play_crispin_empty_deck_original
 #define play_professor_burnet play_professor_burnet_legacy_original
@@ -178,25 +126,10 @@
 #define use_celestial_roar use_celestial_roar_issue1369_original
 #include "trace_engine_v2/part_celestial_roar_override.inc"
 #undef use_celestial_roar
-#include "trace_engine_v2/part_legacy_star_projection_provenance_override.inc"
-#define remove_one remove_one_legacy_star_projection
-#define pokemon_communication_plan pokemon_communication_plan_legacy_star_projection
-#define use_legacy_star use_legacy_star_issue1016_original
-#include "trace_engine_v2/part_013_legacy_star_override.inc"
-#undef use_legacy_star
-#undef pokemon_communication_plan
-#undef remove_one
-#define use_legacy_star use_legacy_star_issue1069_original
-#include "trace_engine_v2/part_issue_1016_legacy_star_quick_ball_override.inc"
-#undef use_legacy_star
-#include "trace_engine_v2/part_issue_1069_legacy_star_combined_energy_payload_override.inc"
+#include "trace_engine_v2/composition/legacy_star_overrides.inc"
 #include "trace_engine_v2/composition/supporter_overrides.inc"
 #include "trace_engine_v2/composition/search_item_overrides.inc"
-#include "trace_engine_v2/part_issue_1437_crispin_trace_override.inc"
-#define trace trace_issue_1437_crispin_provenance
-#include "trace_engine_v2/part_issue_1118_secret_box.inc"
-#undef trace
-#include "trace_engine_v2/part_issue_1369_celestial_roar_secret_box_override.inc"
+#include "trace_engine_v2/composition/secret_box_trace_overrides.inc"
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #include "trace_engine_v2/part_014c.inc"

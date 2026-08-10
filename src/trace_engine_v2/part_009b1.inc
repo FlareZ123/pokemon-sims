@@ -219,9 +219,10 @@
     // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official first-turn, Item, Ability, search, Bench, attachment, evolution, and Supporter procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1, strict-JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1797
-    return scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
+    // K1, same-turn JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2714
+    // Confirmed route bug: https://github.com/FlareZ123/pokemon-sims/issues/1797
+    return strict_payload_timing() && scenario_.going_first &&
         scenario_.locks == LockMode::None && state_.turn == 1 &&
         scenario_.max_turn >= 3 && prizes_known() && !item_locked() &&
         !state_.manual_energy_used && !state_.supporter_used && state_.active &&

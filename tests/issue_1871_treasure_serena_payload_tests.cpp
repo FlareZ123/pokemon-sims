@@ -38,8 +38,13 @@ bool trace_contains(const sim::TraceLog& trace, const std::string& text) {
                      });
 }
 
+sim::Scenario jit_first(const sim::DciProfile profile,
+                        const sim::LockMode lock = sim::LockMode::None) {
+  return sim::Scenario{"issue-1871", profile, lock, true, 5};
+}
+
 sim::Scenario strict_first(const sim::LockMode lock = sim::LockMode::None) {
-  return sim::Scenario{"issue-1871", sim::DciProfile::StrictJit, lock, true, 5};
+  return jit_first(sim::DciProfile::StrictJit, lock);
 }
 
 sim::State base_state() {
@@ -91,6 +96,25 @@ void test_exact_route_and_k1_boundaries() {
          "K0 admitted the deterministic payload search route.");
 }
 
+void test_jit_profile_parity() {
+  std::mt19937_64 rng(2741);
+  const sim::Scenario strict_scenario = jit_first(sim::DciProfile::StrictJit);
+  const sim::Scenario flexible_scenario = jit_first(sim::DciProfile::MatchupFlexJit);
+  const sim::Scenario control_scenario = jit_first(sim::DciProfile::NoDiscardControl);
+  sim::Engine strict = make_engine(strict_scenario, rng, base_state());
+  sim::Engine flexible = make_engine(flexible_scenario, rng, base_state());
+  sim::Engine control = make_engine(control_scenario, rng, base_state());
+  // Both JIT profiles require the Dragon payload on the ready turn: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Mysterious Treasure, Serena, and Apex Dragon: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh12-164 https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Confirmed profile-overfitting bug: https://github.com/FlareZ123/pokemon-sims/issues/2741
+  expect(sim::EngineTestAccess::route_available(strict),
+         "Strict JIT lost the issue-1871 route.");
+  expect(sim::EngineTestAccess::route_available(flexible),
+         "Matchup-flex JIT did not admit the same legal issue-1871 route.");
+  expect(!sim::EngineTestAccess::route_available(control),
+         "No-discard-control entered the same-turn JIT Treasure-Serena route.");
+}
+
 void test_lock_and_resource_boundaries() {
   std::mt19937_64 rng(292);
   const sim::Scenario no_lock = strict_first();
@@ -119,29 +143,35 @@ void test_lock_and_resource_boundaries() {
          "The route was admitted without a searchable Dragon payload.");
 }
 
-void test_registered_seed_292_reaches_t3() {
-  const auto scenario = sim::scenario_by_label("strict-jit/go-first");
+void test_registered_seed_292_reaches_t3_for_both_jit_profiles() {
   const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
-  expect(scenario.has_value() && deck != nullptr,
-         "The registered issue-1871 fixture is unavailable.");
-  std::mt19937_64 rng(292);
-  sim::TraceLog trace{true, {}, {}};
-  sim::Engine engine(*scenario, deck->recipe, rng, &trace);
-  const sim::TrialOutcome outcome = engine.run();
-  expect(outcome.first_ready_turn == 3,
-         "Registered seed 292 did not improve to T3.");
-  expect(trace_contains(trace, "Mysterious Treasure") &&
-             trace_contains(trace, "Serena") &&
-             trace_contains(trace, "T3 | READY"),
-         "Registered seed 292 did not execute the complete T3 route.");
+  expect(deck != nullptr, "The registered issue-1871 deck is unavailable.");
+
+  for (const char* label : {"strict-jit/go-first", "matchup-flex-jit/go-first"}) {
+    const auto scenario = sim::scenario_by_label(label);
+    expect(scenario.has_value(), "A registered issue-1871 scenario is unavailable.");
+    std::mt19937_64 rng(292);
+    sim::TraceLog trace{true, {}, {}};
+    sim::Engine engine(*scenario, deck->recipe, rng, &trace);
+    const sim::TrialOutcome outcome = engine.run();
+    // Earliest-route policy requires the same legal deterministic finish in either JIT profile: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed profile-overfitting bug: https://github.com/FlareZ123/pokemon-sims/issues/2741
+    expect(outcome.first_ready_turn == 3,
+           "Registered seed 292 did not reach T3 in both JIT profiles.");
+    expect(trace_contains(trace, "Mysterious Treasure") &&
+               trace_contains(trace, "Serena") &&
+               trace_contains(trace, "T3 | READY"),
+           "Registered seed 292 did not execute the complete T3 route.");
+  }
 }
 }  // namespace
 
 int main() {
   try {
     test_exact_route_and_k1_boundaries();
+    test_jit_profile_parity();
     test_lock_and_resource_boundaries();
-    test_registered_seed_292_reaches_t3();
+    test_registered_seed_292_reaches_t3_for_both_jit_profiles();
     std::cout << "Issue 1871 Treasure-Serena payload tests passed\n";
     return 0;
   } catch (const std::exception& error) {

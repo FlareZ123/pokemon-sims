@@ -1,6 +1,7 @@
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
+#include <algorithm>
 #include <iostream>
 #include <random>
 #include <stdexcept>
@@ -16,6 +17,13 @@ void expect(const bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);
 }
 
+bool trace_has(const sim::TraceLog& trace, const std::string& needle) {
+  return std::any_of(trace.lines.begin(), trace.lines.end(),
+                     [&](const std::string& line) {
+                       return line.find(needle) != std::string::npos;
+                     });
+}
+
 void test_seed_939_stronger_current_route_survives() {
   const auto scenario = sim::scenario_by_label("strict-jit/go-second");
   const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
@@ -27,11 +35,16 @@ void test_seed_939_stronger_current_route_survives() {
   sim::Engine engine(*scenario, deck->recipe, rng, &trace);
   const sim::TrialOutcome outcome = engine.run();
 
-  if (outcome.first_ready_turn != 4 || outcome.setup_failed) {
+  const bool preserved_route =
+      outcome.first_ready_turn == 4 && !outcome.setup_failed &&
+      trace_has(trace, "T4 | PLAY SUPPORTER | rules: R-GLADION-01") &&
+      trace_has(trace, "Mega Dragonite ex (Earthen Vessel cost)") &&
+      trace_has(trace, "T4 | READY");
+  if (!preserved_route) {
     for (const std::string& line : trace.lines) std::cerr << line << '\n';
   }
 
-  // The #2891 Star Alchemy route may be generalized only when it remains the
+  // The #2891 Star Alchemy route may be generalized only while it preserves the
   // earliest complete observable route. Seed 939 already has the proven K1
   // Gladion -> Earthen Vessel route whose Vessel cost discards the held Dragon
   // and whose manual Grass attachment completes strict-JIT GGF on T4:
@@ -43,7 +56,7 @@ void test_seed_939_stronger_current_route_survives() {
   // K1 and earliest-complete-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Established stronger route: https://github.com/FlareZ123/pokemon-sims/issues/2224
   // #2891 explicitly requires preserving stronger immediate routes: https://github.com/FlareZ123/pokemon-sims/issues/2891
-  expect(outcome.first_ready_turn == 4 && !outcome.setup_failed,
+  expect(preserved_route,
          "#2891 preempted the established #2224 T4 held-Vessel finish.");
 }
 

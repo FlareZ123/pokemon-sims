@@ -79,6 +79,7 @@ void current_jit_route_is_state_generic() {
   // Official procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
   // Current-turn JIT and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2634
+  // Validation PR: https://github.com/FlareZ123/pokemon-sims/pull/2872
   struct Case {
     sim::DciProfile dci;
     bool going_first;
@@ -116,6 +117,7 @@ void generalized_route_executes_in_matchup_flex_go_second() {
   // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
   // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2634
+  // Validation PR: https://github.com/FlareZ123/pokemon-sims/pull/2872
   expect(sim::EngineTestAccess::play_quick_ball(engine),
          "issue-2634 generalized matchup-flex connector did not execute");
   const sim::State& after = sim::EngineTestAccess::state(engine);
@@ -137,6 +139,7 @@ void real_legality_gates_still_block() {
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
   // https://github.com/FlareZ123/pokemon-sims/issues/2634
+  // https://github.com/FlareZ123/pokemon-sims/pull/2872
   {
     std::mt19937_64 rng{263406};
     const sim::Scenario scenario =

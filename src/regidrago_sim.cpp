@@ -66,7 +66,6 @@
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_005.inc#L1-L5
 #include "trace_engine_v2/part_004.inc"
 #include "trace_engine_v2/part_005.inc"
-#include "trace_engine_v2/part_garbodor_ability_lock_override.inc"
 #undef might_be_unseen
 #include "trace_engine_v2/composition/opening_engine_overrides.inc"
 #include "trace_engine_v2/composition/tate_legacy_body.inc"
@@ -113,7 +112,29 @@
 #include "trace_engine_v2/part_014c.inc"
 #undef ability_available_for_pokemon
 #include "trace_engine_v2/part_015.inc"
-#include "trace_engine_v2/scenario_registry_garbodor_override.inc"
+
+std::vector<Scenario> all_scenarios_with_garbodor() {
+  std::vector<Scenario> result = all_scenarios();
+  // Garbodor BKP 57 suppresses Pokemon Abilities while it has a Tool. Boost Shake
+  // establishes the Evolution on the opponent's first turn, which creates distinct
+  // Regidrago T1 timing by seat:
+  // https://api.pokemontcg.io/v2/cards/xy9-57
+  // https://api.pokemontcg.io/v2/cards/swsh7-142
+  // https://github.com/FlareZ123/pokemon-sims/issues/2808
+  result.push_back({"garbodor-shake-ability-lock/go-first",
+                    DciProfile::StrictJit, LockMode::None, true, 5});
+  result.push_back({"garbodor-shake-ability-lock/go-second",
+                    DciProfile::StrictJit, LockMode::None, false, 5});
+  return result;
+}
+
+std::optional<Scenario> scenario_by_label_with_garbodor(const std::string& label) {
+  for (const Scenario& scenario : all_scenarios_with_garbodor()) {
+    if (scenario.label == label) return scenario;
+  }
+  return std::nullopt;
+}
+
 // Production CLI scenario discovery receives the two Garbodor pressure rows while
 // historical internal registry helpers remain available under their original names:
 // https://github.com/FlareZ123/pokemon-sims/issues/2808

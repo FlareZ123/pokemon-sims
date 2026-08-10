@@ -1,5 +1,8 @@
   bool issue_1209_t1_treasure_tapu_crispin_route_available() const {
-    if (scenario_.dci != DciProfile::StrictJit || state_.turn != 1 ||
+    // Strict JIT and MatchupFlex JIT share the same ready-turn payload timing:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2800
+    if (!strict_payload_timing() || state_.turn != 1 ||
         !scenario_.going_first || scenario_.locks != LockMode::None ||
         state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::LatiasEx ||
@@ -80,8 +83,11 @@
     // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2094
+    // Strict JIT and MatchupFlex JIT share the same ready-turn payload timing:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2800
 
-    if (scenario_.dci != DciProfile::StrictJit || state_.turn != 2 ||
+    if (!strict_payload_timing() || state_.turn != 2 ||
         scenario_.locks != LockMode::None || !prizes_known() ||
         !supporter_allowed() || state_.supporter_used ||
         hand_count(Card::Arven) == 0 ||

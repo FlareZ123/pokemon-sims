@@ -1,6 +1,1 @@
-#ifndef SIM_TRACE_TURN_LIFECYCLE_INCLUDED
-#define SIM_TRACE_TURN_LIFECYCLE_INCLUDED
-
 #include "core/turn_lifecycle.inc"
-
-#endif  // SIM_TRACE_TURN_LIFECYCLE_INCLUDED

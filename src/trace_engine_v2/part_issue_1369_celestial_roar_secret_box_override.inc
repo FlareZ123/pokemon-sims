@@ -15,17 +15,10 @@
     // Registered recipes: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc#L71-L150
     // Synthetic fixture copy accounting: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L78-L93
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1369
-    const auto recipe_copies = [this](const Card card) {
-      int copies = 0;
-      for (const auto& [candidate, count] : recipe_) {
-        if (candidate == card) copies += count;
-      }
-      return copies;
-    };
     const bool registered_pineco_recipe =
-        recipe_copies(Card::SecretBox) == 1 &&
-        recipe_copies(Card::Pineco) == 2 &&
-        recipe_copies(Card::ForretressEx) == 2;
+        registered_recipe_count(Card::SecretBox) == 1 &&
+        registered_recipe_count(Card::Pineco) == 2 &&
+        registered_recipe_count(Card::ForretressEx) == 2;
 
     // Regidrago V already has the Energy required to attack, while Secret Box
     // and the held Fire/Grass schedule can complete the next-turn route:

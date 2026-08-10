@@ -102,8 +102,8 @@ void test_payable_ultra_ball_preserves_burnet() {
          "Professor Burnet must remain held for the Ultra Ball route.");
 }
 
-void test_serena_uses_held_payload_instead_of_burnet() {
-  const sim::Scenario scenario{"issue-1341-serena-outlet",
+void test_burnet_preserves_serena_and_held_payload_without_item_outlet() {
+  const sim::Scenario scenario{"issue-2408-burnet-over-serena",
                                sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
   std::mt19937_64 rng{1343};
@@ -120,23 +120,31 @@ void test_serena_uses_held_payload_instead_of_burnet() {
                 sim::Card::Fire, sim::Card::Grass};
   sim::EngineTestAccess::set_state(engine, std::move(state));
 
-  // Serena can use its mandatory discard on the held Dragon and complete strict JIT.
-  // Burnet must remain out of the discard pile while Serena uses the Supporter slot:
-  // https://api.pokemontcg.io/v2/cards/swsh12-164
-  // https://api.pokemontcg.io/v2/cards/me2pt5-152
-  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-  // https://api.pokemontcg.io/v2/cards/swsh12-136
-  // https://github.com/FlareZ123/pokemon-sims/issues/888
-  // https://github.com/FlareZ123/pokemon-sims/issues/1341
+  // Both Supporters establish the sole strict-JIT payload axis this turn. At K1,
+  // Burnet can discard a known deck-resident Dragon while preserving Serena and
+  // the held Mega Dragonite as discrete later-game resources. Issue #2408 refines
+  // the older #1341 Serena subcase only when no live Item payload outlet exists:
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+  // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Official Supporter/search/discard procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Original Item-outlet boundary: https://github.com/FlareZ123/pokemon-sims/issues/1341
+  // Confirmed refinement: https://github.com/FlareZ123/pokemon-sims/issues/2408
+  // Validation PR: https://github.com/FlareZ123/pokemon-sims/pull/2871
   sim::EngineTestAccess::choose_supporter(engine);
   const sim::State& result = sim::EngineTestAccess::state(engine);
-  expect(result.supporter_used, "Serena must use the Supporter play.");
-  expect(contains(result.discard, sim::Card::Serena),
-         "Serena must be the Supporter placed in discard.");
-  expect(contains(result.discard, sim::Card::MegaDragonite),
-         "Serena must discard the held Dragon payload.");
-  expect(!contains(result.discard, sim::Card::ProfessorBurnet),
-         "Professor Burnet must not be consumed before Serena.");
+  expect(result.supporter_used, "Professor Burnet must use the Supporter play.");
+  expect(contains(result.discard, sim::Card::ProfessorBurnet),
+         "Professor Burnet must be the Supporter placed in discard.");
+  expect(contains(result.hand, sim::Card::Serena),
+         "The K1 Burnet route must preserve Serena.");
+  expect(contains(result.hand, sim::Card::MegaDragonite),
+         "The K1 Burnet route must preserve the held Dragon payload.");
+  expect(contains(result.discard, sim::Card::Dragapult) ||
+             contains(result.discard, sim::Card::DialgaGX),
+         "Professor Burnet must establish a deck-resident Dragon payload.");
 }
 
 void test_no_held_payload_preserves_burnet_route() {
@@ -246,7 +254,7 @@ int main() {
   try {
     test_held_payload_item_preserves_burnet();
     test_payable_ultra_ball_preserves_burnet();
-    test_serena_uses_held_payload_instead_of_burnet();
+    test_burnet_preserves_serena_and_held_payload_without_item_outlet();
     test_no_held_payload_preserves_burnet_route();
     test_item_lock_preserves_burnet_route();
     test_known_dead_quick_ball_does_not_suppress_burnet();

@@ -35,7 +35,7 @@ bool trace_contains(const sim::TraceLog& trace, const std::string& text) {
                      });
 }
 
-void test_seed_19_preserves_t2_through_held_serena_route() {
+void test_seed_19_preserves_t2_through_k1_burnet_route() {
   const auto scenario = sim::scenario_by_label("strict-jit/go-second");
   if (!scenario) throw std::runtime_error("Missing strict-JIT going-second scenario");
 
@@ -46,24 +46,26 @@ void test_seed_19_preserves_t2_through_held_serena_route() {
   const auto outcome = engine.run();
 
   // Issue #1059's crafted projection below still verifies the known prized-Treasure
-  // selector. In the full seed, issue #1079 reveals a strictly better public route:
-  // held Fire completes GGF on T2, held Serena discards Dialga-GX during that same
-  // strict-JIT turn, and preserving Celestial Roar leaves the naturally drawn VSTAR
-  // available. The full witness must retain T2 readiness without spending Gladion:
-  // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
-  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // selector. The registered seed now follows the later #2408 resource refinement:
+  // K1 proves a deck-resident Dragon for Professor Burnet, so Burnet establishes
+  // the same T2 strict-JIT payload while preserving Serena and held Dialga-GX.
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
   // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Manual attachment, Supporter, attack, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-  // Earliest current-turn route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Earliest current-turn and resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Original selector bug: https://github.com/FlareZ123/pokemon-sims/issues/1059
-  // Superseding full-seed route: https://github.com/FlareZ123/pokemon-sims/issues/1079
+  // Celestial Roar hold refinement: https://github.com/FlareZ123/pokemon-sims/issues/1079
+  // Superseding Burnet-vs-Serena refinement: https://github.com/FlareZ123/pokemon-sims/issues/2408
   expect(outcome.first_ready_turn == 2,
          "Seed 19 did not preserve T2 readiness");
   expect(trace_contains(trace, "T1 | HOLD ATTACK"),
          "Seed 19 did not preserve the unresolved VSTAR axis");
-  expect(trace_contains(trace, "Dialga-GX (Serena chosen discard)"),
-         "Serena did not discard the held strict-JIT payload");
+  expect(trace_contains(trace, "Professor Burnet"),
+         "Seed 19 did not use the K1 Burnet payload route");
+  expect(!trace_contains(trace, "Dialga-GX (Serena chosen discard)"),
+         "Seed 19 regressed to the superseded Serena-plus-Dialga payload route");
   expect(!trace_contains(trace, "Exchanged Gladion for Mysterious Treasure"),
          "The superseded prized-Treasure route still spent Gladion");
   expect(!trace_contains(trace, "Exchanged Gladion for Arven"),
@@ -128,7 +130,7 @@ void test_projection_boundaries() {
 }  // namespace
 
 int main() {
-  test_seed_19_preserves_t2_through_held_serena_route();
+  test_seed_19_preserves_t2_through_k1_burnet_route();
   test_projection_boundaries();
   return 0;
 }

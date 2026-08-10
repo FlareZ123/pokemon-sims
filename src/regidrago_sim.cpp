@@ -5,17 +5,16 @@
 //
 // Composition map for this translation-unit root:
 // 1. core_engine_body composes the core state, turn, and trace methods.
-// 2. opening_engine_overrides composes the early-turn wrappers.
-// 3. tate_legacy_body keeps the historical Tate & Liza body isolated.
-// 4. tate_discard_overrides owns the current Tate discard policy chain.
-// 5. steven_blender_overrides composes Steven and Brilliant Blender policy.
-// 6. legacy_supporter_body owns the part_011 legacy supporter aliases.
-// 7. supporter_selector_body owns the part_012 supporter-selector aliases.
-// 8. vstar_power_body owns the part_013 VSTAR-power aliases.
-// 9. part_014a closes the search-item member opened by part_013.
-// 10. post_014a_overrides composes Burnet, FSS, Vessel, and later wrappers.
-// 11. turn_reporting_body composes turn execution and reporting.
-// 12. part_016 closes the translation-unit implementation.
+// 2. opening_engine_overrides composes the early-turn wrappers and legacy Tate body.
+// 3. tate_discard_overrides owns the current Tate discard policy chain.
+// 4. steven_blender_overrides composes Steven and Brilliant Blender policy.
+// 5. legacy_supporter_body owns the part_011 legacy supporter aliases.
+// 6. supporter_selector_body owns the part_012 supporter-selector aliases.
+// 7. vstar_power_body owns the part_013 VSTAR-power aliases.
+// 8. part_014a closes the search-item member opened by part_013.
+// 9. post_014a_overrides composes Burnet, FSS, Vessel, and later wrappers.
+// 10. turn_reporting_body composes turn execution and reporting.
+// 11. part_016 closes the translation-unit implementation.
 // Composition wrappers intentionally preserve macro lifetime where a later stage
 // consumes an alias; see each composition file for the matching continuation URL.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
@@ -62,7 +61,6 @@
 // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
 #include "trace_engine_v2/composition/core_engine_body.inc"
 #include "trace_engine_v2/composition/opening_engine_overrides.inc"
-#include "trace_engine_v2/composition/tate_legacy_body.inc"
 #include "trace_engine_v2/composition/tate_discard_overrides.inc"
 // base_search_overrides.inc is composed by tate_discard_overrides.inc.
 #include "trace_engine_v2/composition/steven_blender_overrides.inc"

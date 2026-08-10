@@ -1,0 +1,58 @@
+name: Cleanup Final Matrix 20260810
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cleanup-final-matrix-20260810-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  matrix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Test the audit branch itself rather than GitHub's synthetic merge ref.
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Configure and build Release
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Generate all-deck T2 and T3 matrix once
+        run: |
+          # Run the registered aggregate population once for both decks to avoid
+          # the duplicate standalone shell experiment tracked by #2724:
+          # https://github.com/FlareZ123/pokemon-sims/issues/2724
+          # Aggregate matrix contract:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out cleanup-final-matrix.csv
+          python - <<'PY'
+          import csv
+          from pathlib import Path
+
+          source = Path('cleanup-final-matrix.csv')
+          rows = list(csv.DictReader(source.open(newline='', encoding='utf-8')))
+          fields = ['deck', 'scenario', 'trials', 'ready_by_t2_pct', 'ready_by_t2_se_pp', 'ready_by_t3_pct', 'ready_by_t3_se_pp']
+          with Path('cleanup-final-t2-t3.csv').open('w', newline='', encoding='utf-8') as handle:
+              writer = csv.DictWriter(handle, fieldnames=fields)
+              writer.writeheader()
+              writer.writerows({field: row[field] for field in fields} for row in rows)
+          PY
+          cat cleanup-final-t2-t3.csv
+
+      - name: Upload matrix evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: cleanup-final-matrix-${{ github.run_attempt }}
+          path: |
+            cleanup-final-matrix.csv
+            cleanup-final-t2-t3.csv
+          if-no-files-found: error

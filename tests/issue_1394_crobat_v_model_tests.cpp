@@ -29,13 +29,19 @@ struct EngineTestAccess {
 namespace {
 
 struct Fixture {
-  sim::Scenario scenario{"issue-1394-crobat", sim::DciProfile::StrictJit,
-                         sim::LockMode::None, false, 5};
-  sim::DeckRecipe recipe{sim::make_crobat_modeling_deck(
-      "crobat1-erika", {sim::Card::ErikasInvitation}).recipe};
-  std::mt19937_64 rng{1394};
-  sim::TraceLog trace{true, {}};
-  sim::Engine engine{scenario, recipe, rng, &trace};
+  explicit Fixture(const sim::LockMode locks = sim::LockMode::None)
+      : scenario{"issue-1394-crobat", sim::DciProfile::StrictJit, locks, false, 5},
+        recipe{sim::make_crobat_modeling_deck(
+            "crobat1-erika", {sim::Card::ErikasInvitation}).recipe},
+        rng{1394},
+        trace{true, {}},
+        engine{scenario, recipe, rng, &trace} {}
+
+  sim::Scenario scenario;
+  sim::DeckRecipe recipe;
+  std::mt19937_64 rng;
+  sim::TraceLog trace;
+  sim::Engine engine;
 };
 
 void test_identity_registry_and_modeling_boundary() {
@@ -113,8 +119,12 @@ void test_setup_and_rule_box_lock_do_not_trigger_dark_asset() {
     throw std::runtime_error("An opening Crobat V incorrectly used Dark Asset.");
   }
 
-  Fixture locked;
-  locked.scenario.locks = sim::LockMode::FullRuleBoxAbility;
+  // Engine owns its Scenario state after #2815, so configure the lock before
+  // construction rather than mutating a separate caller-side Scenario later:
+  // https://github.com/FlareZ123/pokemon-sims/issues/2815
+  // Path to the Peak suppresses Rule Box Pokémon Abilities:
+  // https://api.pokemontcg.io/v2/cards/swsh6-148
+  Fixture locked{sim::LockMode::FullRuleBoxAbility};
   sim::State locked_state;
   locked_state.turn = 2;
   locked_state.active = sim::Pokemon{sim::Card::RegidragoV, 1};

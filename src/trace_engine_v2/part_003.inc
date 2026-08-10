@@ -62,7 +62,11 @@ class Engine {
   const State& state() const { return state_; }
 
  private:
-  const Scenario& scenario_;
+  // Engine outlives many synthetic constructor expressions, so keep Scenario by
+  // value instead of retaining a caller reference that may name a temporary.
+  // C++ temporary lifetime: https://eel.is/c++draft/class.temporary
+  // Confirmed lifetime bug: https://github.com/FlareZ123/pokemon-sims/issues/2815
+  Scenario scenario_;
   std::shared_ptr<const DeckRecipe> owned_recipe_;
   const DeckRecipe& recipe_;
   std::mt19937_64& rng_;

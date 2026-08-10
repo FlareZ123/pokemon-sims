@@ -1,8 +1,8 @@
 #pragma once
 
-// Centralize the Tapu connector and late search-item wrapper stack. The aliases
-// remain intentionally ordered because each wrapper composes with the preceding
-// implementation.
+// Centralize the Tapu connector, late search-item wrappers, and Forest Seal Stone
+// target stack. Wrapper order remains behavior-significant because each layer
+// composes with the implementation exposed by the preceding layer.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
 
 #ifdef bench_tapu_if_useful
@@ -31,8 +31,23 @@
 #undef play_ultra_ball
 
 #include "../part_pokemon_communication.inc"
-#include "fss_target_overrides.inc"
 
+#if defined(fss_target_after_search_started)
+#error "Tapu/FSS composition requires its FSS wrapper alias to be undefined on entry"
+#endif
+
+#define fss_target_after_search_started fss_target_after_search_started_issue1071_original
+#include "../part_010_fss_override.inc"
+#undef fss_target_after_search_started
+#define fss_target_after_search_started fss_target_after_search_started_issue1735_original
+#include "../part_issue_1071_fss_oricorio_treasure_decomposition_override.inc"
+#undef fss_target_after_search_started
+#include "../part_issue_1735_fss_blender_priority_override.inc"
+#include "../part_010_attach_fss_override.inc"
+
+#if defined(fss_target_after_search_started)
+#error "Tapu/FSS composition leaked its FSS wrapper alias"
+#endif
 #ifdef bench_tapu_if_useful
 #error "Tapu search composition leaked bench_tapu_if_useful"
 #endif

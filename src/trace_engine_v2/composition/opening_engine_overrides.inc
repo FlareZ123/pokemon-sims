@@ -1,7 +1,16 @@
+#pragma once
+
 // Ordered composition for the early Engine override layer. This file deliberately
 // preserves macro state across the split so later legacy parts see the same aliases
 // they saw when these directives lived in src/regidrago_sim.cpp.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
+
+#if defined(bench_from_hand) || defined(bench_oricorio_if_useful) || \
+    defined(needs_oricorio_connector) || defined(needs_tapu_connector) || \
+    defined(bench_tapu_if_useful) || defined(recover_discard_to_hand) || \
+    defined(choose_discard)
+#error "Opening Engine composition requires its local aliases to be undefined on entry"
+#endif
 
 #include "../part_empty_deck_unseen_override.inc"
 #undef begin_turn
@@ -21,3 +30,11 @@
 #undef needs_oricorio_connector
 #undef bench_oricorio_if_useful
 #undef bench_from_hand
+
+// choose_discard intentionally remains exported through part_007.inc and
+// part_008a.inc; src/regidrago_sim.cpp releases it at that legacy boundary.
+#if defined(bench_from_hand) || defined(bench_oricorio_if_useful) || \
+    defined(needs_oricorio_connector) || defined(needs_tapu_connector) || \
+    defined(bench_tapu_if_useful) || defined(recover_discard_to_hand)
+#error "Opening Engine composition leaked a local alias"
+#endif

@@ -1,0 +1,126 @@
+name: Issue 2883 final materialization v2
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: regen/2883-final-20260810-v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Wait for exact-source CI evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.sha }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          run_id=''
+          for attempt in $(seq 1 90); do
+            run_id=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow CI --branch "$HEAD_BRANCH" --event pull_request --limit 20 --json databaseId,headSha,status --jq ".[] | select(.headSha == \"$SOURCE_SHA\") | .databaseId" | head -n 1)
+            if [ -n "$run_id" ]; then
+              status=$(gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --json status --jq .status)
+              if [ "$status" = 'completed' ]; then
+                break
+              fi
+            fi
+            sleep 10
+          done
+          if [ -z "$run_id" ]; then
+            echo 'Unable to locate exact-source CI run.' >&2
+            exit 1
+          fi
+          status=$(gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --json status --jq .status)
+          if [ "$status" != 'completed' ]; then
+            echo "Exact-source CI run $run_id did not complete in the polling window." >&2
+            exit 1
+          fi
+          echo "CI_RUN_ID=$run_id" >> "$GITHUB_ENV"
+      - name: Reuse the single paired 100k aggregate from CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/issue-2883-release
+          mkdir -p /tmp/issue-2883-release
+          gh run download "$CI_RUN_ID" --repo "$GITHUB_REPOSITORY" --name release-validation-1 --dir /tmp/issue-2883-release
+          test -f /tmp/issue-2883-release/multi-deck-matrix.csv
+          test -f /tmp/issue-2883-release/t2-t3-matrix.csv
+          test -x /tmp/issue-2883-release/build/regidrago_sim || chmod +x /tmp/issue-2883-release/build/regidrago_sim
+          cp /tmp/issue-2883-release/multi-deck-matrix.csv results/multi_deck_comparison.csv
+          cp /tmp/issue-2883-release/t2-t3-matrix.csv results/simulation_results.csv
+      - name: Refresh manifests and reviewed traces
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from scripts import generate_multi_deck_comparison as multi
+          from scripts import regenerate_setup_baselines as base
+
+          root = Path.cwd()
+          results = root / 'results'
+          executable = Path('/tmp/issue-2883-release/build/regidrago_sim')
+          matrix_seed = 20260705
+          trials = 100000
+
+          trace_dir = results / 'traces'
+          trace_dir.mkdir(parents=True, exist_ok=True)
+          baseline_manifest = base.build_manifest(matrix_seed, trials)
+          expected_trace_files = set()
+          for scenario, deadline, stem in base.TRACE_SPECS:
+              seed, trace = base.find_trace_seed(executable, scenario, deadline, 5000)
+              file_name = base.trace_file_name(stem, seed)
+              expected_trace_files.add(file_name)
+              base.atomic_write_text(trace_dir / file_name, trace)
+              baseline_manifest['traces'].append({
+                  'scenario': scenario,
+                  'deadline': deadline,
+                  'seed': seed,
+                  'file': file_name,
+              })
+          base.reconcile_generated_traces(trace_dir, expected_trace_files)
+          base.atomic_write_text(
+              results / base.MANIFEST_FILENAME,
+              json.dumps(baseline_manifest, indent=2, sort_keys=True) + '\n',
+          )
+
+          multi_traces = multi.generate_traces(executable, results / 'multi_deck_traces')
+          multi_manifest = multi.build_manifest(
+              results / 'multi_deck_comparison.csv', multi_traces, trials, matrix_seed
+          )
+          multi.atomic_write_text(
+              results / 'multi_deck_manifest.json',
+              json.dumps(multi_manifest, indent=2, sort_keys=True) + '\n',
+          )
+          PY
+      - name: Regenerate reports and validate provenance
+        run: |
+          set -euo pipefail
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+          python tests/setup_report_contract_tests.py
+          python tests/multi_deck_report_contract_tests.py
+          python tests/update_setup_docs_tests.py
+          git diff --check
+      - name: Commit generated evidence and self-remove
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/issue_2883_final_materialize_v2.yml
+          git add -A results docs/REPORT.md docs/TRACE_AUDIT.md docs/MULTI_DECK_REPORT.md README.md
+          git diff --cached --check
+          git commit -m 'Refresh #2883 source-bound setup evidence'
+          git push origin HEAD:regen/2883-final-20260810-v2

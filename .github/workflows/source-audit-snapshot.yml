@@ -1,0 +1,28 @@
+name: Source Audit Snapshot
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-audit-snapshot
+          path: |
+            .github
+            docs
+            results
+            scripts
+            src
+            tests
+            CMakeLists.txt
+            README.md
+            EN_advanced_manual-2025-transcription-structured.md
+          if-no-files-found: error

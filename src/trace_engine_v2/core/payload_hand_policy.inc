@@ -6,9 +6,12 @@
       Card::DialgaGX,
   }};
 
+  static int payload_card_count(const std::vector<Card>& zone) {
+    return static_cast<int>(std::count_if(zone.begin(), zone.end(), is_payload));
+  }
+
   int payload_cards_in_hand_count() const {
-    return static_cast<int>(
-        std::count_if(state_.hand.begin(), state_.hand.end(), is_payload));
+    return payload_card_count(state_.hand);
   }
 
   std::optional<Card> first_payload_card_in_hand() const {

@@ -38,6 +38,8 @@ jobs:
           path.write_text(fixed, encoding='utf-8', newline='\n')
           print(f'Repaired {count} embedded card-source URL separators')
           PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add .github/workflows/issue-2408-reclaim-materialize.yml
           git commit -m 'Fix #2408 materializer source URL separators'
           git push origin HEAD:fix/2408-reclaim-20260809-1752

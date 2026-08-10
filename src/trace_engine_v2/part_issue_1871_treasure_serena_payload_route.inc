@@ -17,10 +17,11 @@
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official Item, Supporter, attachment, search, and discard procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, dynamic DCI/JIT, Supporter contention, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1871
-    return scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
-        state_.turn == 3 && prizes_known() && !item_locked() &&
-        supporter_allowed() && !state_.manual_energy_used && active_is_vstar() &&
+    // Confirmed route bug: https://github.com/FlareZ123/pokemon-sims/issues/1871
+    // Confirmed profile-overfitting bug: https://github.com/FlareZ123/pokemon-sims/issues/2741
+    return strict_payload_timing() && scenario_.going_first && state_.turn == 3 &&
+        prizes_known() && !item_locked() && supporter_allowed() &&
+        !state_.manual_energy_used && active_is_vstar() &&
         state_.active->grass == 1 && state_.active->fire == 1 && need_payload() &&
         hand_count(Card::MysteriousTreasure) > 0 &&
         hand_count(Card::Serena) > 0 && hand_count(Card::Grass) >= 2 &&
@@ -37,7 +38,7 @@
 
     // Complete GGF first. Mysterious Treasure then spends the second Grass, searches
     // the known Dragon payload, and Serena discards that Dragon before drawing to
-    // five. The payload therefore enters discard on the exact strict-JIT ready turn.
+    // five. The payload therefore enters discard on the exact current-turn JIT ready turn.
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
     // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
@@ -47,7 +48,7 @@
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official Item, Supporter, attachment, search, and discard procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, DCI/JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1871
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1871 https://github.com/FlareZ123/pokemon-sims/issues/2741
     // Use the exact Grass attachment instead of the generic attachment dispatcher.
     // The dispatcher may replay an unrelated held Brilliant Blender after GGF is
     // completed, which can consume the selected deck payload before Treasure.
@@ -74,7 +75,7 @@
     }
     shuffle(state_.deck);
     trace("PLAY ITEM", "R-MT-01; R-GAME-ITEM; P-JIT-01",
-          "Mysterious Treasure spent surplus Grass and searched the known strict-JIT Dragon payload.");
+          "Mysterious Treasure spent surplus Grass and searched the known current-turn JIT Dragon payload.");
 
     remove_one(state_.hand, Card::Serena);
     state_.discard.push_back(Card::Serena);

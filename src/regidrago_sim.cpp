@@ -4,7 +4,7 @@
 // docs/RULE_SOURCES.md and docs/RULES_TRACEABILITY.md.
 //
 // Composition map for this translation-unit root:
-// 1. part_000..005 establish core state, turn, and trace methods.
+// 1. core_engine_body composes the core state, turn, and trace methods.
 // 2. opening_engine_overrides composes the early-turn wrappers.
 // 3. tate_legacy_body keeps the historical Tate & Liza body isolated.
 // 4. tate_discard_overrides owns the current Tate discard policy chain.
@@ -14,7 +14,7 @@
 // 8. vstar_power_body owns the part_013 VSTAR-power aliases.
 // 9. part_014a closes the search-item member opened by part_013.
 // 10. post_014a_overrides composes Burnet, FSS, Vessel, and later wrappers.
-// 11. part_014c and part_015 complete turn execution and reporting.
+// 11. turn_reporting_body composes turn execution and reporting.
 // 12. part_016 closes the translation-unit implementation.
 // Composition wrappers intentionally preserve macro lifetime where a later stage
 // consumes an alias; see each composition file for the matching continuation URL.
@@ -60,22 +60,7 @@
 // Roseanne's Backup: https://api.pokemontcg.io/v2/cards/swsh9-148
 // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
 // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
-#include "trace_engine_v2/part_000.inc"
-#include "trace_engine_v2/part_001.inc"
-#include "trace_engine_v2/part_002.inc"
-#define begin_turn begin_turn_original
-#define might_be_unseen might_be_unseen_empty_deck_original
-#include "trace_engine_v2/part_003.inc"
-// part_003.inc opens begin_turn(), and part_004.inc completes it. part_004.inc
-// later opens state_line(), which part_005.inc completes before a new Engine
-// member may be defined:
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L151-L154
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_004.inc#L1-L22
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_004.inc#L210-L218
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_005.inc#L1-L5
-#include "trace_engine_v2/part_004.inc"
-#include "trace_engine_v2/part_005.inc"
-#undef might_be_unseen
+#include "trace_engine_v2/composition/core_engine_body.inc"
 #include "trace_engine_v2/composition/opening_engine_overrides.inc"
 #include "trace_engine_v2/composition/tate_legacy_body.inc"
 #include "trace_engine_v2/composition/tate_discard_overrides.inc"
@@ -100,10 +85,7 @@
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_011_burnet_thinning_override.inc
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_empty_deck_search_override.inc#L102-L107
 #include "trace_engine_v2/composition/post_014a_overrides.inc"
-#define play_field_blower play_field_blower_original
-#define run_turn run_turn_original
-#include "trace_engine_v2/part_014c.inc"
-#include "trace_engine_v2/part_015.inc"
+#include "trace_engine_v2/composition/turn_reporting_body.inc"
 // C++ preprocessing include grammar: https://eel.is/c++draft/cpp.include
 // Confirmed portability bug: https://github.com/FlareZ123/pokemon-sims/issues/1482
 #include "trace_engine_v2/part_016.inc"

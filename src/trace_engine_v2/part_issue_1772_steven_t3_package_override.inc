@@ -2,8 +2,10 @@
     const auto found = std::find_if(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
           return pokemon.card == Card::RegidragoV &&
-              pokemon.entered_turn < state_.turn && pokemon.grass == 0 &&
-              pokemon.fire >= 1;
+              pokemon.entered_turn < state_.turn &&
+              ((pokemon.grass == 0 && pokemon.fire >= 1) ||
+               (pokemon.double_dragon > 0 && !pays_apex_energy_cost(pokemon)));
+              // https://github.com/FlareZ123/pokemon-sims/issues/2424
         });
     return found == state_.bench.end() ? nullptr : &*found;
   }
@@ -19,6 +21,10 @@
     // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
     // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2066
+    const Pokemon* prepared_regi = issue_1772_prepared_fire_regidrago();
+    const bool dde_one_basic_finish = prepared_regi != nullptr &&
+        prepared_regi->double_dragon > 0 && !pays_apex_energy_cost(*prepared_regi) &&
+        basic_attachment_completes_apex(*prepared_regi, Card::Grass);
     if (!prizes_known() || !strict_payload_timing() || !supporter_allowed() ||
         item_locked() || state_.turn != 2 || state_.turn + 1 > scenario_.max_turn ||
         !state_.active || !is_basic(state_.active->card) ||
@@ -26,7 +32,8 @@
         bench_space() == 0 || issue_1772_prepared_fire_regidrago() == nullptr ||
         !need_energy() || !need_payload() || state_.manual_energy_used ||
         hand_count(Card::StevensResolve) == 0 || hand_count(Card::Gladion) == 0 ||
-        hand_count(Card::Crispin) == 0 || hand_count(Card::EarthenVessel) == 0 ||
+        (!dde_one_basic_finish && hand_count(Card::Crispin) == 0) ||
+        hand_count(Card::EarthenVessel) == 0 ||
         hand_count(Card::RegidragoVstar) == 0 || hand_count(Card::Grass) > 0 ||
         hand_count(Card::LatiasEx) > 0 || in_play(Card::LatiasEx) || payload_held ||
         !ability_available_for_pokemon(Card::LatiasEx)) {
@@ -47,6 +54,10 @@
     // Official search, Supporter, Item, attachment, evolution, Ability, and retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, dynamic DCI, supporter contention, JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1772
+    if (dde_one_basic_finish) {
+      return deck_count_after_search_started(Card::Grass) > 0 &&
+          deck_count_after_search_started(Card::LatiasEx) > 0 && payload_in_known_deck;
+    }
     return deck_count_after_search_started(Card::Grass) >= 2 &&
         deck_count_after_search_started(Card::Fire) > 0 &&
         deck_count_after_search_started(Card::LatiasEx) > 0 && payload_in_known_deck;
@@ -94,6 +105,7 @@
         is_basic(state_.active->card) && state_.active->card != Card::RegidragoV &&
         !state_.retreat_used && bench_space() > 0 &&
         issue_1772_prepared_fire_regidrago() != nullptr &&
+        issue_1772_prepared_fire_regidrago()->double_dragon == 0 &&
         hand_count(Card::Gladion) > 0 && hand_count(Card::Crispin) > 0 &&
         hand_count(Card::EarthenVessel) > 0 &&
         hand_count(Card::RegidragoVstar) > 0 && hand_count(Card::Grass) > 0 &&

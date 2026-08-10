@@ -21,12 +21,15 @@
         hand_count(Card::RegidragoVstar) == 0 ||
         setup_regi == nullptr || setup_regi->card != Card::RegidragoV ||
         setup_regi->entered_turn >= state_.turn ||
-        grass_needed() + fire_needed() != 1 ||
         !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
       return false;
     }
 
-    const Card missing_energy = grass_needed() == 1 ? Card::Grass : Card::Fire;
+    const auto missing_energy = completing_basic_energy_for(
+        *setup_regi, [this](const Card card) {
+          return deck_count_after_search_started(card) > 0;
+        });
+    if (!missing_energy.has_value()) return false;
     // Star Alchemy is the only unrestricted connector in this public K1 state.
     // Earthen Vessel can discard the held Dragon payload, search the one missing
     // Basic Energy, and leave Star Alchemy free to find Latias ex. Skyliner then
@@ -38,8 +41,7 @@
     // Core Item, Ability, evolution, attachment, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // K1, DCI/JIT, one-shot connector, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1672
-    return deck_count_after_search_started(Card::LatiasEx) > 0 &&
-        deck_count_after_search_started(missing_energy) > 0;
+    return deck_count_after_search_started(Card::LatiasEx) > 0;
   }
 
   bool issue_1356_fss_treasure_energy_split_available() const {
@@ -63,14 +65,14 @@
       return false;
     }
 
-    const bool star_takes_fire =
-        state_.active->grass >= 2 && state_.active->fire == 0 &&
-        hand_count(Card::Grass) > 0 &&
-        deck_count_after_search_started(Card::Fire) > 0;
-    const bool star_takes_grass =
-        state_.active->grass == 1 && state_.active->fire >= 1 &&
-        hand_count(Card::Fire) > 0 &&
-        deck_count_after_search_started(Card::Grass) > 0;
+    // The searched Basic is chosen by semantic Apex completion; DDE makes Grass
+    // and Fire alternative legal targets. https://github.com/FlareZ123/pokemon-sims/issues/2427
+    const auto star_target = completing_basic_energy_for(
+        *state_.active, [this](const Card card) {
+          return deck_count_after_search_started(card) > 0;
+        });
+    const bool held_surplus_basic = hand_count(Card::Grass) > 0 ||
+        hand_count(Card::Fire) > 0;
 
     // Mysterious Treasure can pay the surplus off-type Energy and search the
     // missing Regidrago VSTAR. Star Alchemy is the costless connector for the
@@ -82,7 +84,7 @@
     // Official Item, VSTAR Power, search, evolution, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Dynamic DCI and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1356
-    return star_takes_fire || star_takes_grass;
+    return star_target.has_value() && held_surplus_basic;
   }
 
   bool use_fss() {
@@ -160,16 +162,22 @@
       return use_fss_issue1356_original();
     }
 
-    const Card target = state_.active->grass >= 2 ? Card::Fire : Card::Grass;
+    const auto target = completing_basic_energy_for(
+        *state_.active, [this](const Card card) {
+          return deck_count_after_search_started(card) > 0;
+        });
+    if (!target.has_value()) {
+      throw std::logic_error("issue-1356 semantic Star Alchemy Energy target disappeared");
+    }
     state_.vstar_power_used = true;
     outcome_.used_fss = true;
     record_deck_search_knowledge("Star Alchemy");
-    if (!move_deck_to_hand(target)) {
+    if (!move_deck_to_hand(*target)) {
       throw std::logic_error("projected issue-1356 Basic Energy target disappeared");
     }
     shuffle(state_.deck);
     trace("STAR ALCHEMY", "R-FSS-02; R-VSTAR-01; P-COMPRESS-01",
           "Searched the missing next-turn Basic Energy while Mysterious Treasure retained the Regidrago VSTAR axis: " +
-              std::string(name(target)) + ".");
+              std::string(name(*target)) + ".");
     return true;
   }

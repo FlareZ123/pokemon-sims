@@ -16,6 +16,25 @@
         });
   }
 
+  // DDE makes the two Basic types alternative final attachments; reserve the
+  // actual semantic completion before choosing a Treasure cost.
+  // https://github.com/FlareZ123/pokemon-sims/issues/2427
+  std::optional<Card> issue_1356_held_completion_basic() const {
+    if (!state_.active) return std::nullopt;
+    return completing_basic_energy_for(*state_.active, [this](const Card card) {
+      return hand_count(card) > 0;
+    });
+  }
+
+  std::optional<Card> issue_1356_surplus_basic_after_completion(
+      const Card completion) const {
+    for (const Card basic : {Card::Grass, Card::Fire}) {
+      const int reserved = basic == completion ? 1 : 0;
+      if (hand_count(basic) > reserved) return basic;
+    }
+    return std::nullopt;
+  }
+
   bool issue_1356_treasure_vstar_energy_split_available() const {
     // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
     // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
@@ -37,12 +56,10 @@
       return false;
     }
 
-    const bool fire_is_next_attachment =
-        state_.active->grass >= 2 && state_.active->fire == 0 &&
-        hand_count(Card::Fire) > 0 && hand_count(Card::Grass) > 0;
-    const bool grass_is_next_attachment =
-        state_.active->grass == 1 && state_.active->fire >= 1 &&
-        hand_count(Card::Grass) > 0 && hand_count(Card::Fire) > 0;
+    const auto completion = issue_1356_held_completion_basic();
+    const auto surplus = completion.has_value()
+        ? issue_1356_surplus_basic_after_completion(*completion)
+        : std::nullopt;
 
     // Star Alchemy has supplied the missing next-turn Energy. The opposite held
     // Energy is now a legal dynamic-DCI cost for Mysterious Treasure, which
@@ -54,7 +71,7 @@
     // Official Item, search, evolution, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Dynamic DCI and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1356
-    return fire_is_next_attachment || grass_is_next_attachment;
+    return completion.has_value() && surplus.has_value();
   }
 
   bool issue_1356_complete_next_turn_route_holds_quick_ball() const {
@@ -77,20 +94,17 @@
       return false;
     }
 
-    const bool fire_is_held_next_attachment =
-        state_.active->grass >= 2 && state_.active->fire == 0 &&
-        hand_count(Card::Fire) > 0;
-    const bool grass_is_held_next_attachment =
-        state_.active->grass == 1 && state_.active->fire >= 1 &&
-        hand_count(Card::Grass) > 0;
+    const auto completion = issue_1356_held_completion_basic();
+    const auto surplus = completion.has_value()
+        ? issue_1356_surplus_basic_after_completion(*completion)
+        : std::nullopt;
     const bool vstar_axis_complete = active_is_vstar() ||
         hand_count(Card::RegidragoVstar) > 0;
     const bool payable_treasure_bridge =
         hand_count(Card::MysteriousTreasure) >= 2 &&
         hand_count(Card::RegidragoVstar) == 0 &&
         deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
-        ((fire_is_held_next_attachment && hand_count(Card::Grass) > 0) ||
-         (grass_is_held_next_attachment && hand_count(Card::Fire) > 0));
+        surplus.has_value();
 
     // Quick Ball into Oricorio spends an Item, a second discard, a support
     // Pokémon, and a Bench slot after the Energy, VSTAR, and payload axes already
@@ -102,8 +116,8 @@
     // Official Item, Bench, Ability, evolution, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Resource-preservation priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1335 https://github.com/FlareZ123/pokemon-sims/issues/1356
-    return (vstar_axis_complete || payable_treasure_bridge) &&
-        (fire_is_held_next_attachment || grass_is_held_next_attachment);
+    return completion.has_value() &&
+        (vstar_axis_complete || payable_treasure_bridge);
   }
 
   bool play_quick_ball(const bool permit_payload) {
@@ -129,10 +143,16 @@
       return play_mysterious_treasure_issue1356_original(permit_payload);
     }
 
-    const Card surplus_energy = state_.active->fire == 0 ? Card::Grass : Card::Fire;
+    const auto completion = issue_1356_held_completion_basic();
+    const auto surplus_energy = completion.has_value()
+        ? issue_1356_surplus_basic_after_completion(*completion)
+        : std::nullopt;
+    if (!completion.has_value() || !surplus_energy.has_value()) {
+      throw std::logic_error("issue-1356 semantic completion/surplus Energy disappeared");
+    }
     remove_one(state_.hand, Card::MysteriousTreasure);
     state_.discard.push_back(Card::MysteriousTreasure);
-    if (!discard_from_hand(surplus_energy, "Mysterious Treasure split-route cost",
+    if (!discard_from_hand(*surplus_energy, "Mysterious Treasure split-route cost",
                            "R-MT-01; P-DCI-01; P-COMPRESS-01")) {
       throw std::logic_error("projected issue-1356 surplus Energy cost disappeared");
     }
@@ -152,11 +172,10 @@
         state_.manual_energy_used && need_payload() &&
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
         count_of(state_.discard, Card::MysteriousTreasure) > 0 &&
-        issue_1549_mysterious_treasure_target_available() &&
-        ((grass_needed() == 1 && fire_needed() == 0 &&
-          hand_count(Card::Grass) > 0) ||
-         (fire_needed() == 1 && grass_needed() == 0 &&
-          hand_count(Card::Fire) > 0));
+        issue_1549_mysterious_treasure_target_available() && state_.active &&
+        completing_basic_energy_for(*state_.active, [this](const Card card) {
+          return hand_count(card) > 0;
+        }).has_value();
   }
 
   bool use_legacy_star_issue_1417() {

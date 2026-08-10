@@ -17,14 +17,31 @@
     if (hand_count(Card::Powerglass) == 0 || !state_.active || state_.active->tool != Tool::None ||
         (state_.active->card != Card::RegidragoV && state_.active->card != Card::RegidragoVstar)) return false;
 
-    // Powerglass attaches Energy to its own Active holder, not to the policy's
-    // separately selected Regidrago line: https://api.pokemontcg.io/v2/cards/sv6pt5-63
-    const int active_grass_needed = std::max(0, 2 - state_.active->grass);
-    const int active_fire_needed = std::max(0, 1 - state_.active->fire);
-    if (active_grass_needed == 0 && active_fire_needed == 0) return false;
-    const bool needed_grass_in_discard = active_grass_needed > 0 && count_of(state_.discard, Card::Grass) > 0;
-    const bool needed_fire_in_discard = active_fire_needed > 0 && count_of(state_.discard, Card::Fire) > 0;
-    if (!needed_grass_in_discard && !needed_fire_in_discard) return false;
+    // Powerglass belongs only on an incomplete Active holder. First prefer a
+    // recoverable Basic that semantically completes Apex, which correctly treats
+    // DDE plus either Basic as GGF. With no DDE, preserve the older incremental
+    // Basic-only behavior when a still-needed typed Basic is recoverable:
+    // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Tool/attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2433
+    if (pays_apex_energy_cost(*state_.active)) return false;
+    bool recoverable_basic_advances = false;
+    for (const Card basic : {Card::Grass, Card::Fire}) {
+      if (count_of(state_.discard, basic) == 0) continue;
+      Pokemon projected = *state_.active;
+      if (attach_energy_card(projected, basic) && pays_apex_energy_cost(projected)) {
+        recoverable_basic_advances = true;
+        break;
+      }
+    }
+    if (!recoverable_basic_advances && state_.active->double_dragon == 0) {
+      recoverable_basic_advances =
+          (state_.active->grass < 2 && count_of(state_.discard, Card::Grass) > 0) ||
+          (state_.active->fire < 1 && count_of(state_.discard, Card::Fire) > 0);
+    }
+    if (!recoverable_basic_advances) return false;
 
     remove_one(state_.hand, Card::Powerglass);
     state_.active->tool = Tool::Powerglass;
@@ -38,16 +55,33 @@
     // only while its holder is Active: https://api.pokemontcg.io/v2/cards/sv6pt5-63
     if (!state_.active || state_.active->tool != Tool::Powerglass) return false;
 
-    // The effect can attach only to the attached Active Pokémon. Determine the
-    // Energy type from that holder's own GGF deficit: https://api.pokemontcg.io/v2/cards/sv6pt5-63
-    const int active_grass_needed = std::max(0, 2 - state_.active->grass);
-    const int active_fire_needed = std::max(0, 1 - state_.active->fire);
-    if (active_grass_needed == 0 && active_fire_needed == 0) return false;
-
+    // Re-evaluate the holder at end of turn. A DDE attached after Powerglass can
+    // make a previously incomplete attacker ready, in which case the Tool must not
+    // attach a redundant Basic. Prefer a Basic whose projected attachment completes
+    // Apex; without DDE, preserve the existing incremental typed recovery behavior:
+    // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // End-of-turn/attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2433
+    if (pays_apex_energy_cost(*state_.active)) return false;
+    std::optional<Card> semantic_energy;
+    for (const Card basic : {Card::Grass, Card::Fire}) {
+      if (count_of(state_.discard, basic) == 0) continue;
+      Pokemon projected = *state_.active;
+      if (attach_energy_card(projected, basic) && pays_apex_energy_cost(projected)) {
+        semantic_energy = basic;
+        break;
+      }
+    }
     Card energy = Card::Grass;
-    if (active_grass_needed > 0 && count_of(state_.discard, Card::Grass) > 0) {
+    if (semantic_energy) {
+      energy = *semantic_energy;
+    } else if (state_.active->double_dragon == 0 && state_.active->grass < 2 &&
+               count_of(state_.discard, Card::Grass) > 0) {
       energy = Card::Grass;
-    } else if (active_fire_needed > 0 && count_of(state_.discard, Card::Fire) > 0) {
+    } else if (state_.active->double_dragon == 0 && state_.active->fire < 1 &&
+               count_of(state_.discard, Card::Fire) > 0) {
       energy = Card::Fire;
     } else {
       return false;

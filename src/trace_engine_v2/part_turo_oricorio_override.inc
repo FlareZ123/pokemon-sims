@@ -387,8 +387,15 @@
     // Confirmed hidden-placement bug: https://github.com/FlareZ123/pokemon-sims/issues/1522
     if (projected.outcome_.used_legacy_star) return false;
 
-    return projected.active_is_vstar() && projected.state_.active->grass >= 2 &&
-        projected.state_.active->fire >= 1 && projected.payload_ready();
+    // Double Dragon Energy provides every Energy type and 2 Energy at a time to a
+    // Dragon Pokémon, so the shadow's ready-state proof must use semantic Apex payment:
+    // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // DDE-aware readiness specification: https://github.com/FlareZ123/pokemon-sims/issues/2238
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2419
+    return projected.active_is_vstar() &&
+        projected.pays_apex_energy_cost(*projected.state_.active) &&
+        projected.payload_ready();
   }
 
   void choose_supporter() {

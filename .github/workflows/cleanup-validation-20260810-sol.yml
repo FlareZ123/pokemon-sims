@@ -1,0 +1,41 @@
+name: Cleanup Validation 20260810 Sol
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run core policy fixtures
+        run: ctest --test-dir build --output-on-failure -R 'regidrago_policy_tests|regidrago_tier2_tests|regidrago_release_assertion_tests'
+      - name: Simulate-this pass 1
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-1.txt # Earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      - name: Simulate-this pass 2
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee trace-2.txt # JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+      - name: Simulate-this pass 3
+        run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-3.txt # JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+      - name: Generate one paired T2/T3 matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out t2-t3-all-decks.csv
+      - name: Upload cleanup evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cleanup-validation-evidence
+          path: |
+            trace-1.txt
+            trace-2.txt
+            trace-3.txt
+            t2-t3-all-decks.csv
+            build/regidrago_sim
+          if-no-files-found: warn

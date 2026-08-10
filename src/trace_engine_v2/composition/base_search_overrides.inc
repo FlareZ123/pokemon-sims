@@ -1,6 +1,13 @@
+#pragma once
+
 // Ordered composition for the first search-item wrapper layer. The aliases are
 // intentionally left in the same state that the following legacy parts expect.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
+
+#if defined(play_mysterious_treasure) || defined(play_heavy_ball) || \
+    defined(play_quick_ball) || defined(play_ultra_ball) || defined(in_play)
+#error "Base search composition requires its wrapper aliases to be undefined on entry"
+#endif
 
 #define play_mysterious_treasure play_mysterious_treasure_empty_deck_original
 #define play_heavy_ball play_heavy_ball_prize_payload_original
@@ -21,3 +28,10 @@
 #undef play_quick_ball
 #define play_ultra_ball play_ultra_ball_original
 #include "../part_009b2.inc"
+
+// play_ultra_ball intentionally remains exported until the root translation unit
+// finishes the legacy Item wrapper layer and releases it before late overrides.
+#if defined(play_mysterious_treasure) || defined(play_heavy_ball) || \
+    defined(play_quick_ball) || defined(in_play)
+#error "Base search composition leaked a local wrapper alias"
+#endif

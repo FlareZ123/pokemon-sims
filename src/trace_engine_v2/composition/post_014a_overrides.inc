@@ -38,4 +38,22 @@
 #include "arven_overrides.inc" // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
 #include "supporter_selector_overrides.inc" // Supporter rule: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 #include "search_item_overrides.inc"
-#include "secret_box_trace_overrides.inc"
+
+// Keep the Crispin provenance shim adjacent to the Secret Box implementation it
+// wraps, followed by the Celestial Roar bridge that consumes that implementation.
+// Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+// Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+// Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+#if defined(trace)
+#error "Secret Box trace composition requires trace to be undefined on entry"
+#endif
+
+#include "../part_issue_1437_crispin_trace_override.inc"
+#define trace trace_issue_1437_crispin_provenance
+#include "../part_issue_1118_secret_box.inc"
+#undef trace
+#include "../part_issue_1369_celestial_roar_secret_box_override.inc"
+
+#if defined(trace)
+#error "Secret Box trace composition leaked trace"
+#endif

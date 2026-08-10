@@ -16,11 +16,34 @@ struct EngineTestAccess {
   static bool paid_blender_route(Engine& engine) {
     return engine.complete_paid_one_cost_basic_retreat_with_held_blender();
   }
+  static bool needs_active_vstar(Engine& engine) { return engine.need_active_vstar(); }
+  static bool needs_energy(Engine& engine) { return engine.need_energy(); }
+  static bool needs_payload(Engine& engine) { return engine.need_payload(); }
+  static bool payload_in_deck(Engine& engine) { return engine.payload_might_be_in_deck(); }
+  static bool payload_now(Engine& engine) { return engine.can_play_payload_this_turn(); }
+  static bool projected_blender_after_retreat(Engine& engine) {
+    Pokemon* target = engine.best_benched_vstar_for_promotion();
+    if (target == nullptr || !engine.pays_apex_energy_cost(*target)) return false;
+    const std::size_t target_index =
+        static_cast<std::size_t>(target - engine.state_.bench.data());
+    Engine projected = engine;
+    projected.trace_ = nullptr;
+    if (!remove_one(projected.state_.hand, Card::Grass)) return false;
+    ++projected.state_.active->grass;
+    projected.state_.manual_energy_used = true;
+    --projected.state_.active->grass;
+    projected.state_.discard.push_back(Card::Grass);
+    std::swap(*projected.state_.active, projected.state_.bench[target_index]);
+    projected.state_.retreat_used = true;
+    const std::mt19937_64 live_rng = engine.rng_;
+    const bool available = projected.play_brilliant_blender();
+    engine.rng_ = live_rng;
+    return available;
+  }
 };
 }  // namespace sim
 
 namespace {
-
 void expect(const bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);
 }
@@ -63,6 +86,16 @@ void test_one_cost_basic_is_accepted_semantically() {
   expect(sim::is_basic(sim::Card::MawileGX), "Mawile-GX must be modeled as Basic.");
   expect(sim::retreat_cost(sim::Card::MawileGX) == 1,
          "Mawile-GX must retain its printed one-Energy Retreat Cost.");
+  expect(sim::EngineTestAccess::needs_active_vstar(engine),
+         "Diagnostic: fixture does not need Active VSTAR.");
+  expect(!sim::EngineTestAccess::needs_energy(engine),
+         "Diagnostic: fixture unexpectedly needs Energy.");
+  expect(sim::EngineTestAccess::needs_payload(engine),
+         "Diagnostic: fixture does not need payload.");
+  expect(sim::EngineTestAccess::payload_in_deck(engine),
+         "Diagnostic: fixture does not expose a K1 deck payload.");
+  expect(sim::EngineTestAccess::projected_blender_after_retreat(engine),
+         "Diagnostic: exact post-retreat state rejects Brilliant Blender.");
   expect(sim::EngineTestAccess::paid_blender_route(engine),
          "A legal one-cost Basic Active was rejected by the semantic route.");
 }
@@ -85,7 +118,6 @@ void test_higher_cost_basic_is_rejected() {
   expect(!engine.state().manual_energy_used && !engine.state().retreat_used,
          "The rejected higher-cost Basic route spent a once-per-turn action.");
 }
-
 }  // namespace
 
 int main() {

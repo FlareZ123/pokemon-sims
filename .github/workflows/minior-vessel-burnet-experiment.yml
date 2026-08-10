@@ -1,0 +1,28 @@
+name: Minior Vessel Burnet Experiment
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build experiment
+        run: >-
+          g++ -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic -Wconversion -Wshadow
+          experiments/minior_vessel_burnet_full_matrix.cpp
+          -o minior-vessel-burnet-matrix
+      - name: Run full paired matrix
+        run: ./minior-vessel-burnet-matrix | tee minior-vessel-burnet-full-matrix.csv
+      - name: Upload matrix
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: minior-vessel-burnet-full-matrix-${{ github.event.pull_request.number }}-${{ github.run_attempt }}
+          path: minior-vessel-burnet-full-matrix.csv
+          if-no-files-found: error

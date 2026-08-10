@@ -1,15 +1,14 @@
 name: Stage issue 2714 patch
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches: [bug/2714-jit-profile-route]
 
 permissions:
   contents: write
 
 jobs:
   patch:
-    if: github.head_ref == 'bug/2714-jit-profile-route'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -103,11 +102,12 @@ void exact_seed_reaches_turn_three() {
           if tests.count(call_anchor) != 1:
               raise SystemExit(f'test call anchor count: {tests.count(call_anchor)}')
           test_path.write_text(tests.replace(call_anchor, call_replacement), encoding='utf-8')
-      - name: Commit staged fix
+      - name: Commit staged fix and remove helper workflow
         shell: bash
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add src/trace_engine_v2/part_009b1.inc tests/issue_1797_quick_ball_tapu_steven_tests.cpp
+          git rm .github/workflows/issue-2714-patch.yml
           git commit -m "Fix #2714 semantic JIT Quick Ball route"
           git push origin HEAD:bug/2714-jit-profile-route

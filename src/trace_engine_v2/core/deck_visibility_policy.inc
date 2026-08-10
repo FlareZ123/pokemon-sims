@@ -1,3 +1,5 @@
+#pragma once
+
 #include "deck_knowledge.inc"
 
   bool might_be_unseen(const Card card) const {

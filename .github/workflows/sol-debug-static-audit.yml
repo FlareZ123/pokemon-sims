@@ -1,0 +1,43 @@
+name: Sol debug static audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  static-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inventory systemic selector gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo '=== source inventory ==='
+            find src -type f \( -name '*.cpp' -o -name '*.inc' \) | sort
+            echo
+            echo '=== exact DCI profile gates ==='
+            grep -RInE --include='*.cpp' --include='*.inc' 'scenario_\.dci[[:space:]]*(==|!=)[[:space:]]*DciProfile::' src || true
+            echo
+            echo '=== exact lock-mode gates ==='
+            grep -RInE --include='*.cpp' --include='*.inc' 'scenario_\.locks[[:space:]]*(==|!=)[[:space:]]*LockMode::' src || true
+            echo
+            echo '=== literal turn gates ==='
+            grep -RInE --include='*.cpp' --include='*.inc' 'state_\.turn[[:space:]]*(==|!=|<=|>=|<|>)[[:space:]]*[0-9]+' src || true
+            echo
+            echo '=== raw Apex typed-energy arithmetic ==='
+            grep -RInE --include='*.cpp' --include='*.inc' 'grass_needed\(\)[[:space:]]*\+[[:space:]]*fire_needed\(\)|active->(grass|fire)[[:space:]]*(==|!=|<=|>=|<|>)' src || true
+            echo
+            echo '=== issue-number implementation identifiers ==='
+            grep -RInE --include='*.cpp' --include='*.inc' '\b(issue|fix)_[0-9]+' src || true
+          } | tee static-audit.txt
+      - name: Upload static audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: sol-static-audit
+          path: static-audit.txt

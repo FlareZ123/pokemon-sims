@@ -44,5 +44,7 @@
 #error "Opening bench-alias composition leaked a local alias"
 #endif
 
-// choose_discard intentionally remains exported through part_007.inc and
-// part_008a.inc; tate_legacy_body.inc releases it at that legacy boundary.
+// The opening layer owns the exported choose_discard alias through the adjacent
+// legacy Tate body, which consumes and releases it at the historical boundary.
+// Composition source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/tate_legacy_body.inc
+#include "tate_legacy_body.inc"

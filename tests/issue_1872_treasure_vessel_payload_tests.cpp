@@ -94,6 +94,13 @@ void test_exact_route_both_turn_orders_and_jit_profiles() {
              "The deterministic route replayed Brilliant Blender.");
     }
   }
+
+  // No-discard-control is a separate profile and must not inherit same-turn JIT routes: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Confirmed profile-overfitting bug boundary: https://github.com/FlareZ123/pokemon-sims/issues/2742
+  sim::Engine no_control = make_engine(
+      jit(sim::DciProfile::NoDiscardControl, true), rng, base_state());
+  expect(!sim::EngineTestAccess::route_available(no_control),
+         "No-discard-control admitted the JIT-only Treasure-Vessel route.");
 }
 
 void test_k1_lock_and_resource_boundaries() {

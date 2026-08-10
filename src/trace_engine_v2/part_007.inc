@@ -278,21 +278,6 @@
       return false;
     }
 
-    const bool current_turn_payload = std::any_of(
-        state_.discarded_this_turn.begin(), state_.discarded_this_turn.end(), is_payload);
-    const bool blender_payload = hand_count(Card::BrilliantBlender) > 0 &&
-        payload_might_be_in_deck() && can_play_payload_this_turn();
-
-    const bool treasure_has_target = std::any_of(
-        state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic);
-    const bool quick_ball_has_target = std::any_of(
-        state_.deck.begin(), state_.deck.end(), is_basic);
-    const bool held_payload = std::any_of(
-        state_.hand.begin(), state_.hand.end(), is_payload);
-    const bool direct_item_payload = held_payload &&
-        ((hand_count(Card::MysteriousTreasure) > 0 && treasure_has_target) ||
-         (hand_count(Card::QuickBall) > 0 && quick_ball_has_target));
-
     // Quick Ball can create a payload without a Supporter only when K1 proves a
     // Basic Dragon payload in deck and a distinct Mysterious Treasure survives the
     // first mandatory discard. Simulate the first cost, remove the planned Dialga

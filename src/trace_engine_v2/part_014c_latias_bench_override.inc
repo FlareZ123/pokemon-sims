@@ -549,6 +549,12 @@ bool complete_issue_1597_banked_steven_turn() {
     if (!retreat_to_benched_vstar_with_latias()) {
       throw std::logic_error("late Skyliner promotion disappeared");
     }
+    // This helper performs the same completed held-Latias mobility transition as
+    // the established late-promotion path, so retain its semantic trace contract:
+    // https://github.com/FlareZ123/pokemon-sims/issues/1675
+    // https://github.com/FlareZ123/pokemon-sims/issues/2293
+    trace("POLICY", "P-AXIS-01",
+          "Completed the deadline Latias ex promotion route.");
     return true;
   }
 

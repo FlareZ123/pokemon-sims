@@ -44,6 +44,9 @@ jobs:
       - name: Simulate-this Pineco control
         run: ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee audit/trace-pineco.txt
 
+      - name: Final paired T2 T3 matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out audit/final-matrix.csv
+
       - name: Archive source snapshot and audit outputs
         run: zip -qr audit/source-snapshot.zip src tests docs README.md CMakeLists.txt EN_advanced_manual-2025-transcription-structured.md
 

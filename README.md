@@ -125,4 +125,4 @@ A ready state requires:
 
 Readiness through T4 is setup success. T5 remains a diagnostic recovery turn and is counted inside setup failure.
 
-See `docs/MODEL_ASSUMPTIONS.md`, `docs/POLICY_DECISIONS.md`, `docs/RULES_TRACEABILITY.md`, `docs/RULE_SOURCES.md`, `docs/TRACE_AUDIT.md`, `docs/REPORT.md`, and [`docs/MULTI_DECK_REPORT.md`](docs/MULTI_DECK_REPORT.md).
+See `docs/MODEL_ASSUMPTIONS.md`, `docs/POLICY_DECISIONS.md`, `docs/RULES_TRACEABILITY.md`, `docs/RULE_SOURCES.md`, `docs/TRACE_AUDIT.md`, `docs/REPORT.md`, and `docs/MULTI_DECK_REPORT.md`.

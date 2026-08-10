@@ -53,7 +53,7 @@
     // Wonder Tag establishes K1 before Steven resolves. In the exact seed-408
     // state, the held VSTAR, Vessel, Crispin, and Forest Seal Stone already cover
     // evolution and GGF. The scarce remaining axes are Regidrago V, Skyliner, and
-    // the current-turn strict-JIT payload outlet, so Steven's three targets must be
+    // the current-turn JIT payload outlet, so Steven's three targets must be
     // Regidrago V, Latias ex, and Brilliant Blender:
     // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
@@ -64,10 +64,11 @@
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
     // Official Supporter, search, attachment, evolution, Ability, and Retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // K1, strict-JIT, lock, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // K1, same-turn JIT, lock, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2153
+    // Cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2773
     return prizes_known() && state_.turn == 1 && !scenario_.going_first &&
-        scenario_.dci == DciProfile::StrictJit &&
+        strict_payload_timing() &&
         scenario_.locks == LockMode::None && scenario_.max_turn >= 3 &&
         supporter_allowed() && state_.active &&
         state_.active->card == Card::Oricorio && tapu_benched &&
@@ -113,7 +114,7 @@
     // Steven legally takes the exact three K1-visible connectors and ends T1.
     // T2 benches Regidrago V and Latias ex, uses Star Alchemy plus Earthen Vessel
     // and Crispin for GG with Fire held, then T3 evolves, attaches Fire, retreats
-    // Oricorio for free through Skyliner, and uses Blender for strict-JIT:
+    // Oricorio for free through Skyliner, and uses Blender for same-turn JIT:
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
@@ -122,7 +123,8 @@
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/2153
+    // Confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/2153
+    // Cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2773
     trace("PLAY SUPPORTER",
           "R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
           "Searched the deterministic T3 Latias route: Regidrago V, Latias ex, Brilliant Blender. Turn ended.");

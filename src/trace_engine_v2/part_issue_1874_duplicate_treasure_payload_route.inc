@@ -49,14 +49,15 @@
     // The held Fire and unused manual attachment complete GGF. Earthen Vessel is
     // therefore route-replaced and can pay the first Treasure. That Treasure
     // searches a Dragon, and the duplicate Treasure discards it during the same
-    // strict-JIT turn before searching a second legal target.
+    // current-turn JIT window before searching a second legal target.
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official Item, cost, search, discard, attachment, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, dynamic DCI/JIT, connector contention, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1874
-    return scenario_.dci == DciProfile::StrictJit && state_.turn == 3 &&
+    // Original route bug: https://github.com/FlareZ123/pokemon-sims/issues/1874
+    // Profile-gate bug: https://github.com/FlareZ123/pokemon-sims/issues/2759
+    return strict_payload_timing() && state_.turn == 3 &&
         prizes_known() && !item_locked() && !state_.manual_energy_used &&
         deck_search_available() && active_is_vstar() && state_.active &&
         state_.active->grass == 2 && state_.active->fire == 0 &&
@@ -80,7 +81,7 @@
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Official once-per-turn Energy attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Route-replacement DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1874
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1874 https://github.com/FlareZ123/pokemon-sims/issues/2759
     if (!remove_one(state_.hand, Card::Fire)) {
       throw std::logic_error("Issue-1874 held Fire disappeared");
     }

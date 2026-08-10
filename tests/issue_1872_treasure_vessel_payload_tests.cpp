@@ -38,10 +38,9 @@ bool trace_contains(const sim::TraceLog& trace, const std::string& text) {
                      });
 }
 
-sim::Scenario flex(const bool going_first,
-                   const sim::LockMode lock = sim::LockMode::None) {
-  return sim::Scenario{"issue-1872", sim::DciProfile::MatchupFlexJit, lock,
-                       going_first, 5};
+sim::Scenario scenario(const sim::DciProfile profile, const bool going_first,
+                       const sim::LockMode lock = sim::LockMode::None) {
+  return sim::Scenario{"issue-1872", profile, lock, going_first, 5};
 }
 
 sim::State base_state() {
@@ -55,50 +54,69 @@ sim::State base_state() {
   return state;
 }
 
-sim::Engine make_engine(const sim::Scenario& scenario, std::mt19937_64& rng,
-                        sim::State state, const bool deck_seen = true,
+sim::Engine make_engine(const sim::Scenario& current_scenario,
+                        std::mt19937_64& rng, sim::State state,
+                        const bool deck_seen = true,
                         const bool prizes_revealed = false) {
   static const sim::DeckRecipe recipe = sim::baseline_recipe();
-  sim::Engine engine(scenario, recipe, rng);
+  sim::Engine engine(current_scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, std::move(state), deck_seen,
                                    prizes_revealed);
   return engine;
 }
 
-void test_exact_route_both_turn_orders() {
+void test_exact_route_all_jit_profiles_and_turn_orders() {
+  // Strict JIT and matchup-flex JIT share the same ready-turn payload timing.
+  // Repository JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Confirmed profile-overfitting bug: https://github.com/FlareZ123/pokemon-sims/issues/2742
   std::mt19937_64 rng(1872);
-  const sim::Scenario first = flex(true);
-  const sim::Scenario second = flex(false);
-  for (const sim::Scenario* scenario : {&first, &second}) {
-    sim::Engine engine = make_engine(*scenario, rng, base_state());
-    expect(sim::EngineTestAccess::route_available(engine),
-           "The exact issue-1872 route was unavailable.");
-    expect(sim::EngineTestAccess::complete_route(engine),
-           "The exact issue-1872 route did not complete.");
-    expect(engine.state().active->grass == 2 && engine.state().active->fire == 1,
-           "The issue-1872 route did not complete GGF.");
-    expect(std::find(engine.state().discarded_this_turn.begin(),
-                     engine.state().discarded_this_turn.end(),
-                     sim::Card::MegaDragonite) !=
-               engine.state().discarded_this_turn.end(),
-           "Earthen Vessel did not discard the searched Dragon this turn.");
-    expect(std::find(engine.state().hand.begin(), engine.state().hand.end(),
-                     sim::Card::BrilliantBlender) != engine.state().hand.end(),
-           "The deterministic route replayed Brilliant Blender.");
+  for (const sim::DciProfile profile : {sim::DciProfile::StrictJit,
+                                        sim::DciProfile::MatchupFlexJit}) {
+    for (const bool going_first : {true, false}) {
+      sim::Engine engine =
+          make_engine(scenario(profile, going_first), rng, base_state());
+      expect(sim::EngineTestAccess::route_available(engine),
+             "The exact issue-1872 JIT route was unavailable.");
+      expect(sim::EngineTestAccess::complete_route(engine),
+             "The exact issue-1872 JIT route did not complete.");
+      expect(engine.state().active->grass == 2 &&
+                 engine.state().active->fire == 1,
+             "The issue-1872 route did not complete GGF.");
+      expect(std::find(engine.state().discarded_this_turn.begin(),
+                       engine.state().discarded_this_turn.end(),
+                       sim::Card::MegaDragonite) !=
+                 engine.state().discarded_this_turn.end(),
+             "Earthen Vessel did not discard the searched Dragon this turn.");
+      expect(std::find(engine.state().hand.begin(), engine.state().hand.end(),
+                       sim::Card::BrilliantBlender) != engine.state().hand.end(),
+             "The deterministic route replayed Brilliant Blender.");
+    }
   }
+
+  sim::Engine no_control =
+      make_engine(scenario(sim::DciProfile::NoDiscardControl, true), rng,
+                  base_state());
+  expect(!sim::EngineTestAccess::route_available(no_control),
+         "No-discard-control admitted the JIT-only Treasure-Vessel route.");
 }
 
 void test_k1_lock_and_resource_boundaries() {
   std::mt19937_64 rng(453);
-  const sim::Scenario no_lock = flex(true);
-  const sim::Scenario item_lock = flex(true, sim::LockMode::FullItem);
+  const sim::Scenario no_lock =
+      scenario(sim::DciProfile::MatchupFlexJit, true);
+  const sim::Scenario item_lock =
+      scenario(sim::DciProfile::MatchupFlexJit, true, sim::LockMode::FullItem);
 
   // A legal full-Prize inspection establishes K1 for exact composition checks,
-  // while K0 and Item lock must reject this deterministic two-Item route:
+  // while K0 and Item lock must reject this deterministic two-Item route.
   // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
   // Official Prize, Item, search, discard, and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
   // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1872
+  // Original route bug: https://github.com/FlareZ123/pokemon-sims/issues/1872
+  // Confirmed profile-overfitting bug: https://github.com/FlareZ123/pokemon-sims/issues/2742
   sim::Engine prize_k1 = make_engine(no_lock, rng, base_state(), false, true);
   expect(sim::EngineTestAccess::route_available(prize_k1),
          "Full Prize inspection K1 did not admit the route.");
@@ -124,21 +142,26 @@ void test_k1_lock_and_resource_boundaries() {
          "The route was admitted without searchable Grass Energy.");
 }
 
-void test_registered_seed_453_reaches_t4() {
-  // Registered seed 453 is the public full-engine witness from the confirmed issue:
-  // https://github.com/FlareZ123/pokemon-sims/issues/1872
+void test_registered_seed_453_reaches_t4_for_both_jit_profiles() {
+  // Seed 453 must use the same legal Treasure -> Dragon -> Vessel payload route
+  // under both same-turn JIT profiles.
+  // Repository JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Official Item and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Confirmed profile-overfitting bug: https://github.com/FlareZ123/pokemon-sims/issues/2742
   const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
   expect(deck != nullptr, "The registered issue-1872 deck is unavailable.");
-  for (const char* label : {"matchup-flex-jit/go-first",
+  for (const char* label : {"strict-jit/go-first", "strict-jit/go-second",
+                            "matchup-flex-jit/go-first",
                             "matchup-flex-jit/go-second"}) {
-    const auto scenario = sim::scenario_by_label(label);
-    expect(scenario.has_value(), "A registered issue-1872 scenario is unavailable.");
+    const auto registered_scenario = sim::scenario_by_label(label);
+    expect(registered_scenario.has_value(),
+           "A registered issue-1872 scenario is unavailable.");
     std::mt19937_64 rng(453);
     sim::TraceLog trace{true, {}, {}};
-    sim::Engine engine(*scenario, deck->recipe, rng, &trace);
+    sim::Engine engine(*registered_scenario, deck->recipe, rng, &trace);
     const sim::TrialOutcome outcome = engine.run();
     expect(outcome.first_ready_turn == 4,
-           "Registered seed 453 did not improve to T4.");
+           "Registered seed 453 did not reach T4 for a same-turn JIT profile.");
     expect(trace_contains(trace, "Chaotic Swell") &&
                trace_contains(trace, "Earthen Vessel") &&
                trace_contains(trace, "T4 | READY"),
@@ -149,9 +172,9 @@ void test_registered_seed_453_reaches_t4() {
 
 int main() {
   try {
-    test_exact_route_both_turn_orders();
+    test_exact_route_all_jit_profiles_and_turn_orders();
     test_k1_lock_and_resource_boundaries();
-    test_registered_seed_453_reaches_t4();
+    test_registered_seed_453_reaches_t4_for_both_jit_profiles();
     std::cout << "Issue 1872 Treasure-Vessel payload tests passed\n";
     return 0;
   } catch (const std::exception& error) {

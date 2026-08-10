@@ -6,13 +6,16 @@ on:
       - regen/2725-clean-main-20260810
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   regenerate:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: regen/2725-clean-main-20260810
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -34,23 +37,18 @@ jobs:
           python scripts/update_setup_docs.py --repo-root .
           python scripts/update_multi_deck_docs.py --repo-root .
           git diff --check
-          git diff --name-status | tee regenerated-files.txt
+          git diff --name-status
       - name: Validate generated contracts
         run: |
           python tests/setup_report_contract_tests.py
           python tests/multi_deck_report_contract_tests.py
           python tests/update_setup_docs_tests.py
-      - name: Upload mechanically regenerated tree
-        uses: actions/upload-artifact@v4
-        with:
-          name: issue-2725-regenerated
-          path: |
-            results
-            docs/REPORT.md
-            docs/TRACE_AUDIT.md
-            docs/MULTI_DECK_REPORT.md
-            README.md
-            regenerated-files.txt
-            trace-final-1.txt
-            trace-final-2.txt
-            trace-final-3.txt
+      - name: Materialize generated evidence and remove workflow
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/issue_2725_regeneration.yml
+          git add -A results docs/REPORT.md docs/TRACE_AUDIT.md docs/MULTI_DECK_REPORT.md README.md
+          git diff --cached --check
+          git commit -m "Refresh #2725 source-bound setup evidence"
+          git push origin HEAD:regen/2725-clean-main-20260810

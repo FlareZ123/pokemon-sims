@@ -109,15 +109,22 @@
       return false;
     }
 
-    // Preserve a live Powerglass attachment that immediately advances the Active
-    // Regidrago's GGF axis. Both Tools compete for the same one-Tool slot:
-    // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    // Preserve a live Powerglass attachment only when one recoverable Basic
+    // Energy actually advances the Active Regidrago's semantic Apex progress.
+    // DDE can already pay two flexible Energy units, so raw Grass/Fire counters
+    // cannot decide whether the extra Basic remains useful:
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2533
     const bool live_powerglass = hand_count(Card::Powerglass) > 0 && state_.active &&
         (state_.active->card == Card::RegidragoV ||
          state_.active->card == Card::RegidragoVstar) &&
         state_.active->tool == Tool::None &&
-        ((state_.active->grass < 2 && count_of(state_.discard, Card::Grass) > 0) ||
-         (state_.active->fire < 1 && count_of(state_.discard, Card::Fire) > 0));
+        preferred_manual_energy_for(*state_.active, [this](const Card card) {
+          return (card == Card::Grass || card == Card::Fire) &&
+              count_of(state_.discard, card) > 0;
+        }).has_value();
     if (live_powerglass) return false;
 
     const auto open_regidrago = [](const Pokemon& pokemon) {

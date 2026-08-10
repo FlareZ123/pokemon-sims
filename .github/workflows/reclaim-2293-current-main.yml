@@ -22,21 +22,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Verify reviewed production targets stayed unchanged
+      - name: Fetch exact reviewed repair branch
         shell: bash
         run: |
-          git fetch origin main fix/2293-semantic-k1-latias-20260809
+          git fetch --force origin main
+          git fetch --force origin +refs/heads/fix/2293-semantic-k1-latias-20260809:refs/remotes/origin/fix/2293-semantic-k1-latias-20260809
           git diff --quiet 271544936d00ae89a7f613ce9e8de0155aab3c9d origin/main -- src/trace_engine_v2/part_007.inc src/trace_engine_v2/part_014c_latias_bench_override.inc
       - name: Apply reviewed semantic route to current main
         shell: bash
         run: |
           git show origin/fix/2293-semantic-k1-latias-20260809:scripts/apply_issue_2293_semantic_fix_20260809.py > /tmp/apply_2293.py
           git show origin/fix/2293-semantic-k1-latias-20260809:scripts/apply_issue_2293_semantic_gate_fix_20260809.py > /tmp/gate_2293.py
-          cp /tmp/apply_2293.py scripts/apply_issue_2293_semantic_fix_20260809.py
-          cp /tmp/gate_2293.py scripts/apply_issue_2293_semantic_gate_fix_20260809.py
-          python scripts/apply_issue_2293_semantic_fix_20260809.py
-          python scripts/apply_issue_2293_semantic_gate_fix_20260809.py
-          rm scripts/apply_issue_2293_semantic_fix_20260809.py scripts/apply_issue_2293_semantic_gate_fix_20260809.py
+          python /tmp/apply_2293.py
+          python /tmp/gate_2293.py
           rm .github/workflows/reclaim-2293-current-main.yml
           git diff --check
       - name: Build and validate exact K1 route

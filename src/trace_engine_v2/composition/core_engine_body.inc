@@ -9,12 +9,6 @@
 #include "../part_000.inc"
 #include "../part_001.inc"
 #include "../part_002.inc"
-// The Garbodor scenario wrapper is defined before Engine opens. Its historical
-// registry dependency is forward-declared and composed later under a private name:
-// https://api.pokemontcg.io/v2/cards/xy9-57
-// https://api.pokemontcg.io/v2/cards/swsh7-142
-// https://github.com/FlareZ123/pokemon-sims/issues/2808
-#include "../scenario_registry_garbodor_override.inc"
 
 #define begin_turn begin_turn_original
 #define might_be_unseen might_be_unseen_empty_deck_original

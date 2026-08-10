@@ -9,10 +9,22 @@
 #include "../part_000.inc"
 #include "../part_001.inc"
 #include "../part_002.inc"
+// The Garbodor scenario wrapper is defined before Engine opens. Its historical
+// registry dependency is forward-declared and composed later under a private name:
+// https://api.pokemontcg.io/v2/cards/xy9-57
+// https://api.pokemontcg.io/v2/cards/swsh7-142
+// https://github.com/FlareZ123/pokemon-sims/issues/2808
+#include "../scenario_registry_garbodor_override.inc"
 
 #define begin_turn begin_turn_original
 #define might_be_unseen might_be_unseen_empty_deck_original
 #include "../part_003.inc"
+// Route every later Pokemon-Ability legality check through the Garbotoxin-aware
+// wrapper. part_003 contains the base predicate definition, so defining the alias
+// only after that include preserves the original implementation for delegation:
+// https://api.pokemontcg.io/v2/cards/xy9-57
+// https://github.com/FlareZ123/pokemon-sims/issues/2808
+#define ability_available_for_pokemon ability_available_for_pokemon_garbodor
 
 // part_003.inc opens begin_turn(), part_004.inc completes it and later opens
 // state_line(), and part_005.inc closes state_line() before the first override
@@ -23,6 +35,7 @@
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_005.inc#L1-L5
 #include "../part_004.inc"
 #include "../part_005.inc"
+#include "../part_garbodor_ability_lock_override.inc"
 
 #undef might_be_unseen
 // begin_turn intentionally remains aliased until opening_engine_overrides.inc

@@ -18,19 +18,15 @@ T1 | PLAY SUPPORTER | rules: R-GLADION-01; R-SECRET-BOX-01 | Gladion recovered t
 T1 | HOLD ATTACK | rules: R-RV-01; R-SECRET-BOX-01; P-KNOWLEDGE-01; P-DCI-01; P-COMPRESS-01 | Every possible next draw preserves a payable Secret Box, Dawn, Forest of Vitality, Forretress ex, Mysterious Treasure, VSTAR, GGF, and strict-JIT payload route.
 T1 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | End Pineco policy: Active=Regidrago V [G] | Bench=Tapu Lele-GX [-] | Hand=Fire Energy, Hisuian Goodra VSTAR, Grass Energy, Gladion, Steven's Resolve, Secret Box | Discard=(none)
 T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Wishful Baton
-T2 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | Start Pineco policy: Active=Regidrago V [G] | Bench=Tapu Lele-GX [-] | Hand=Fire Energy, Hisuian Goodra VSTAR, Grass Energy, Gladion, Steven's Resolve, Secret Box, Wishful Baton | Discard=(none)
-T2 | DISCARD | rules: R-SECRET-BOX-01; P-DCI-01 | Wishful Baton (Secret Box cost)
-T2 | DISCARD | rules: R-SECRET-BOX-01; P-DCI-01 | Hisuian Goodra VSTAR (Secret Box cost)
-T2 | DISCARD | rules: R-SECRET-BOX-01; P-DCI-01 | Steven's Resolve (Secret Box cost)
-T2 | PLAY ITEM | rules: R-SECRET-BOX-01; R-GAME-ITEM | Secret Box discarded three other cards and searched: Mysterious Treasure, Dawn, Forest of Vitality.
-T2 | PLAY STADIUM | rules: R-FOREST-VITALITY-01; R-GAME-EVOLUTION | Played Forest of Vitality. Grass Pokémon may evolve during their entry turn after the first turn.
-T2 | PLAY SUPPORTER | rules: R-DAWN-01; R-GAME-SUPPORTER; R-FORRETRESS-01 | Dawn searched and revealed: Pineco, Forretress ex, Dragapult ex.
-T2 | BENCH | rules: R-GAME-BENCH | Pineco from hand.
-T2 | EVOLVE | rules: R-FORRETRESS-01; R-GAME-EVOLUTION; R-FOREST-VITALITY-01 | Forest of Vitality allowed the newly played Pineco to evolve into Forretress ex.
-T2 | USE ABILITY | rules: R-FORRETRESS-01; R-GAME-ABILITY; R-GAME-KO | Exploding Energy attached 1 Basic Grass Energy, shuffled the deck, and Knocked Out Forretress ex. Its Pokémon ex rule would award the opponent 2 Prize cards in a complete two-player game.
+T2 | POLICY | rules: P-AXIS-01; P-COMPRESS-01; R-SECRET-BOX-01 | The direct Secret Box, Crispin, and Mysterious Treasure route reaches T2 without spending the two-Prize Forretress ex line: Active=Regidrago V [G] | Bench=Tapu Lele-GX [-] | Hand=Fire Energy, Hisuian Goodra VSTAR, Grass Energy, Gladion, Steven's Resolve, Secret Box, Wishful Baton | Discard=(none)
+T2 | DISCARD | rules: R-SECRET-BOX-01; P-DCI-01 | Wishful Baton (Secret Box issue-2485 direct-route cost)
+T2 | DISCARD | rules: R-SECRET-BOX-01; P-DCI-01 | Hisuian Goodra VSTAR (Secret Box issue-2485 direct-route cost)
+T2 | DISCARD | rules: R-SECRET-BOX-01; P-DCI-01 | Steven's Resolve (Secret Box issue-2485 direct-route cost)
+T2 | PLAY ITEM | rules: R-SECRET-BOX-01; R-MT-01; R-CRISPIN-01; P-DCI-01 | Secret Box discarded three other cards and searched Mysterious Treasure plus Crispin for the resource-preserving direct T2 route.
+T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
 T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
-T2 | DISCARD | rules: R-MT-01; R-SECRET-BOX-01; P-DCI-01 | Gladion (Mysterious Treasure completion cost)
-T2 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM; R-SECRET-BOX-01 | Mysterious Treasure used the proven dead or payload cost and searched Regidrago VSTAR after GGF became complete.
+T2 | DISCARD | rules: R-MT-01; P-DCI-01 | Gladion (Mysterious Treasure issue-2485 direct-route cost)
+T2 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM; P-DCI-01 | Mysterious Treasure discarded Gladion and searched Regidrago VSTAR for the direct T2 route.
 T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
-T2 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | Direct Regidrago route completed before future-route banking: Active=Regidrago VSTAR [GGF] | Bench=Tapu Lele-GX [-] | Hand=Grass Energy, Dragapult ex | Discard=Wishful Baton, Hisuian Goodra VSTAR, Steven's Resolve, Secret Box, Dawn, Forretress ex, Pineco, Mysterious Treasure, Gladion
+T2 | POLICY | rules: P-AXIS-01; P-COMPRESS-01; R-SECRET-BOX-01; R-CRISPIN-01; R-MT-01 | Completed the resource-preserving direct T2 route; Pineco and Forretress ex remain unspent: Active=Regidrago VSTAR [GGF] | Bench=Tapu Lele-GX [-] | Hand=Grass Energy, Fire Energy | Discard=Wishful Baton, Hisuian Goodra VSTAR, Steven's Resolve, Secret Box, Crispin, Gladion, Mysterious Treasure
 T2 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

@@ -4,8 +4,8 @@
       const std::vector<Card>& zone, const Card card) const {
     if (&zone != &state_.discard) return false;
     const int current_turn_copies = count_of(state_.discarded_this_turn, card);
-    return current_turn_copies > 0 &&
-           count_of(state_.discard, card) == current_turn_copies;
+    const int discard_copies = count_of(state_.discard, card);
+    return current_turn_copies > 0 && discard_copies == current_turn_copies;
   }
 
   void mark_legacy_star_projection_recovery(const Card card) {

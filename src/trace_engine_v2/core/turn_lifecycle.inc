@@ -11,6 +11,14 @@
   void reset_turn_transients() {
     state_.turn_ended = false;
     state_.discarded_this_turn.clear();
+    // In the Garbodor pressure scenario path_lock_removed is reused only as the
+    // current-turn "opponent Tool removed" flag. The maximum-pressure opponent
+    // reattaches a Tool before each following Regidrago turn, so Field Blower's
+    // unlock never persists across turns:
+    // https://api.pokemontcg.io/v2/cards/xy9-57
+    // https://api.pokemontcg.io/v2/cards/sm2-125
+    // https://github.com/FlareZ123/pokemon-sims/issues/2808
+    if (garbodor_shake_scenario()) state_.path_lock_removed = false;
   }
 
   void reset_turn_state() {

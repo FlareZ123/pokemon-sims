@@ -9,7 +9,7 @@
     defined(play_earthen_vessel) || defined(play_mysterious_treasure) || \
     defined(play_quick_ball) || defined(bench_tapu_if_useful) || \
     defined(in_play) || defined(play_steven) || defined(use_fss) || \
-    defined(should_play_steven)
+    defined(should_play_steven) || defined(play_arven)
 #error "Empty-deck search composition requires wrapper aliases to be undefined on entry"
 #endif
 
@@ -24,7 +24,11 @@
 #define in_play tapu_connector_copy_aware_in_play
 #define play_steven play_steven_issue1002_empty_deck_original
 #define use_fss use_fss_issue1356_original
+#define play_arven play_arven_garbodor_original
 #include "../part_empty_deck_search_override.inc"
+
+#undef play_arven
+#include "../part_arven_garbodor_field_blower_override.inc"
 
 #undef use_fss
 #undef play_steven
@@ -62,6 +66,6 @@
     defined(play_earthen_vessel) || defined(play_mysterious_treasure) || \
     defined(play_quick_ball) || defined(bench_tapu_if_useful) || \
     defined(in_play) || defined(play_steven) || defined(use_fss) || \
-    defined(should_play_steven)
+    defined(should_play_steven) || defined(play_arven)
 #error "Empty-deck search composition leaked a wrapper alias"
 #endif

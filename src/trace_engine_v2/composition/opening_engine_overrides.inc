@@ -17,7 +17,17 @@
 // Composition source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_legacy_body.inc
 #include "opening_legacy_body.inc"
 
-// The tail wrapper preserves the historical Tate/discard -> Steven/Blender ->
-// Supporter -> VSTAR order and the aliases that intentionally survive to part_014a.
-// Composition source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_override_tail.inc
-#include "opening_override_tail.inc"
+// Continue through the Tate/discard, Steven/Blender, legacy Supporter, Supporter
+// selector, and VSTAR stages in historical order. Each composed boundary owns its
+// local aliases; use_fss and use_celestial_roar intentionally remain live for the
+// post-part_014a continuation.
+// Tate/discard: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/tate_discard_overrides.inc
+// Steven/Blender: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/steven_blender_overrides.inc
+// Legacy Supporters: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/legacy_supporter_body.inc
+// Supporter selector: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/supporter_selector_body.inc
+// VSTAR powers: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/vstar_power_body.inc
+#include "tate_discard_overrides.inc"
+#include "steven_blender_overrides.inc"
+#include "legacy_supporter_body.inc"
+#include "supporter_selector_body.inc"
+#include "vstar_power_body.inc"

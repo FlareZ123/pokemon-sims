@@ -79,4 +79,11 @@
 #endif
 
 // part_007.inc opens evolve_best_regi(), and part_008a.inc completes it before
-// the later Tate/discard member overrides are included by the root translation unit.
+// the later Tate/discard member overrides continue in this composition spine.
+// Keep these stages in their historical root order so exported wrapper aliases
+// retain the same lifetime across the textual include boundary.
+// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
+// Tate/discard continuation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/tate_discard_overrides.inc
+// Steven/Blender continuation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/steven_blender_overrides.inc
+#include "tate_discard_overrides.inc"
+#include "steven_blender_overrides.inc"

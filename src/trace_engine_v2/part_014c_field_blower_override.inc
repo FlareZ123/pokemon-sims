@@ -60,7 +60,7 @@
         prior_turn_active_regi && unresolved_setup &&
         hand_count(Card::RegidragoVstar) > 0;
 
-    return wonder_tag_route || in_play_legacy_star_route || held_skyliner_route ||
+    return wonder_tag_route || in_play_skyliner_route || held_skyliner_route ||
            in_play_legacy_star_route || future_legacy_star_route;
   }
 

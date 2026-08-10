@@ -20,7 +20,10 @@
         hand_count(Card::ForestSealStone) > 0 ||
         hand_count(Card::Arven) > 0 || hand_count(Card::SecretBox) > 0;
 
-    if (scenario_.dci != DciProfile::StrictJit || !scenario_.going_first ||
+    // Both registered JIT profiles require a Dragon payload on the ready turn:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2764
+    if (!strict_payload_timing() || !scenario_.going_first ||
         scenario_.locks != LockMode::None || state_.turn != 3 ||
         state_.turn + 1 > scenario_.max_turn || state_.turn_ended ||
         !prizes_known() || !supporter_allowed() || state_.manual_energy_used ||
@@ -42,13 +45,14 @@
     // Fire is surplus by type, yet required as the third total attachment before
     // Steven ends T3. Steven banks Regidrago VSTAR and Grass; on T4 the prior-turn
     // Active evolves, Grass reaches GGFF, and Brilliant Blender discards a permitted
-    // Dragon from the deck during the strict-JIT ready turn:
+    // Dragon from the deck during the same-turn-JIT ready turn:
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official Supporter, attachment, evolution, Item, search, and attack procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1, strict-JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1798
+    // K1, same-turn JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Original confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/1798
+    // Cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2764
     return true;
   }
 
@@ -86,18 +90,21 @@
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Official deck-search and end-turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1798
+    // Original confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/1798
     trace("PLAY SUPPORTER", "R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
           "Searched Regidrago VSTAR and Grass Energy for the committed T4 Brilliant Blender finish. Turn ended.");
     return true;
   }
 
   bool issue_1798_blender_finish_available() const {
-    return issue_1798_blender_turn_ == state_.turn &&
-        scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
-        scenario_.locks == LockMode::None && !state_.turn_ended &&
-        prizes_known() && !state_.manual_energy_used && !item_locked() &&
-        state_.active && state_.active->card == Card::RegidragoV &&
+    // The committed finish is legal under either same-ready-turn JIT profile:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2764
+    return issue_1798_blender_turn_ == state_.turn && strict_payload_timing() &&
+        scenario_.going_first && scenario_.locks == LockMode::None &&
+        !state_.turn_ended && prizes_known() && !state_.manual_energy_used &&
+        !item_locked() && state_.active &&
+        state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn &&
         state_.active->grass == 1 && state_.active->fire == 2 &&
         hand_count(Card::RegidragoVstar) > 0 &&
@@ -150,13 +157,12 @@
 
     // Brilliant Blender searches the deck, so the held Dragon is intentionally
     // preserved. A K1-proven deck Dragon enters discard on T4 after the Active has
-    // evolved and reached GGFF, satisfying Apex Dragon's GGF cost and strict JIT:
+    // evolved and reached GGFF, satisfying Apex Dragon's GGF cost and same-turn JIT:
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official evolution, attachment, Item, search, discard, and attack procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // Strict-JIT and success horizon: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1798
-    return pays_apex_energy_cost(*state_.active) && payload_ready();
-    // DDE-aware completion: https://github.com/FlareZ123/pokemon-sims/issues/2368
+    // Same-turn JIT and success horizon: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+    // Cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2764
+    return pays_apex_energy_cost(*state_.active) && payload_ready();  // DDE/Apex energy semantics: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/issues/2368
   }

@@ -134,6 +134,108 @@
     return true;
   }
 
+  bool complete_paid_one_cost_basic_retreat_with_held_blender() {
+    if (scenario_.dci != DciProfile::StrictJit || item_locked() ||
+        !prizes_known() || !need_active_vstar() || need_energy() ||
+        !need_payload() || state_.retreat_used || state_.manual_energy_used ||
+        !state_.active || hand_count(Card::BrilliantBlender) == 0 ||
+        !payload_might_be_in_deck() || !can_play_payload_this_turn()) {
+      return false;
+    }
+    if (state_.active->card != Card::Oricorio &&
+        state_.active->card != Card::TapuLeleGX) {
+      return false;
+    }
+
+    Pokemon* target = best_benched_vstar_for_promotion();
+    if (target == nullptr || !pays_apex_energy_cost(*target)) return false;
+    const std::size_t target_index =
+        static_cast<std::size_t>(target - state_.bench.data());
+
+    const Card payment = hand_count(Card::Grass) > 0 ? Card::Grass : Card::Fire;
+    if (hand_count(payment) == 0) return false;
+
+    // Preflight the full route on an isolated copy before spending a real Energy or
+    // Retreat action. Brilliant Blender can establish the strict-JIT payload after
+    // promotion only when its own current policy gates remain legal in that exact
+    // post-retreat state. This keeps the mobility decision systemic rather than
+    // guessing from a single visible-card condition:
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Official attachment, retreat, and Item procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Dynamic DCI and earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2295
+    Engine projected = *this;
+    // A policy projection is an internal legality proof, so suppress its shared
+    // TraceLog pointer. Only the real route may emit attachment, retreat, or Item
+    // actions into the public simulator trace:
+    // Trace contract regression: https://github.com/FlareZ123/pokemon-sims/issues/2295
+    projected.trace_ = nullptr;
+    if (!remove_one(projected.state_.hand, payment)) return false;
+    if (payment == Card::Grass) {
+      ++projected.state_.active->grass;
+    } else {
+      ++projected.state_.active->fire;
+    }
+    projected.state_.manual_energy_used = true;
+    if (payment == Card::Grass) {
+      --projected.state_.active->grass;
+    } else {
+      --projected.state_.active->fire;
+    }
+    projected.state_.discard.push_back(payment);
+    std::swap(*projected.state_.active, projected.state_.bench[target_index]);
+    projected.state_.retreat_used = true;
+    // Engine copies share the live RNG reference. Preserve the generator around
+    // the policy-only Blender projection so its deck shuffle cannot perturb the
+    // real simulation stream. This follows the established projection contract:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_issue_1873_blender_crispin_supporter_override.inc
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Confirmed route bug: https://github.com/FlareZ123/pokemon-sims/issues/2295
+    const std::mt19937_64 live_rng = rng_;
+    const bool projected_blender_available = projected.play_brilliant_blender();
+    rng_ = live_rng;
+    if (!projected_blender_available) return false;
+
+    if (!remove_one(state_.hand, payment)) return false;
+    // Oricorio GRI 55 and Tapu Lele-GX each have a one-Colorless Retreat Cost.
+    // Either modeled Basic Energy can pay that cost while the Apex-ready Benched
+    // Regidrago VSTAR keeps GGF. The preflight above proves Brilliant Blender can
+    // then establish a legal current-turn Dragon payload before readiness is checked:
+    // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official attachment, retreat, and Item procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2295
+    if (payment == Card::Grass) {
+      ++state_.active->grass;
+    } else {
+      ++state_.active->fire;
+    }
+    state_.manual_energy_used = true;
+    trace("ATTACH", "R-GAME-ENERGY",
+          std::string(name(payment)) + " manually to " +
+              std::string(name(state_.active->card)) + " for its Retreat Cost.");
+
+    if (payment == Card::Grass) {
+      --state_.active->grass;
+    } else {
+      --state_.active->fire;
+    }
+    state_.discard.push_back(payment);
+    std::swap(*state_.active, state_.bench[target_index]);
+    state_.retreat_used = true;
+    trace("RETREAT", "R-GAME-RETREAT",
+          "Paid the one-Energy Basic Active Retreat Cost and promoted the "
+          "Apex-ready Regidrago VSTAR.");
+
+    if (!play_brilliant_blender()) {
+      throw std::logic_error("Issue-2295 Blender preflight diverged during execution");
+    }
+    return active_is_vstar() && !need_energy() && !need_payload();
+  }
+
   bool resolve_final_promotion_and_attachment() {
     // When the selected Benched VSTAR already pays GGF, Skyliner promotes it for
     // zero before the #802 paid Tapu fallback can spend a Basic Energy. An
@@ -149,6 +251,13 @@
         retreat_to_benched_vstar_with_latias()) {
       return true;
     }
+    // Preserve zero-Energy Skyliner first. When that route is unavailable, only
+    // spend a paid Basic retreat when the complete same-turn Blender continuation
+    // has already succeeded on an isolated policy projection:
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Confirmed ordering boundary: https://github.com/FlareZ123/pokemon-sims/issues/2295
+    if (complete_paid_one_cost_basic_retreat_with_held_blender()) return true;
     if (pay_tapu_retreat_to_ready_benched_vstar()) return true;
     attach_manual();
     return retreat_to_benched_vstar_with_latias();

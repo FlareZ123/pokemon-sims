@@ -328,3 +328,23 @@ add_test(NAME issue_1333_tapu_live_print_contract
 # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2294
 add_test(NAME trace_issue_2294_matchup_first_seed8
   COMMAND regidrago_sim --simulate-this --scenario matchup-flex-jit/go-first --seed 8 --require-ready-by 4)
+
+# Exact source-bound witnesses for an ordinary one-Energy Basic retreat followed
+# by the held Brilliant Blender strict-JIT payload route:
+# Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
+# Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+# Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+# Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+# Core procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+# Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2295
+add_test(NAME trace_issue_2295_oricorio_paid_retreat
+  COMMAND regidrago_sim --simulate-this --deck regidrago-shell
+          --scenario strict-jit/go-first --seed 29 --require-ready-by 4)
+add_test(NAME trace_issue_2295_tapu_paid_retreat
+  COMMAND regidrago_sim --simulate-this --deck regidrago-shell
+          --scenario strict-jit/go-first --seed 86 --require-ready-by 4)
+add_test(NAME trace_issue_2295_projection_is_invisible
+  COMMAND "${Python3_EXECUTABLE}"
+          "${CMAKE_CURRENT_SOURCE_DIR}/tests/issue_2295_trace_contract.py"
+          $<TARGET_FILE:regidrago_sim>)
+

@@ -1,8 +1,12 @@
   bool issue_1393_held_crispin_completion_available() const {
     // A resolved full Prize inspection establishes K1 without a deck search: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-    if (scenario_.dci != DciProfile::StrictJit ||
-        scenario_.locks != LockMode::None || state_.turn != 2 ||
-        !prizes_known() || !supporter_allowed() ||
+    // StrictJit and MatchupFlexJit share ready-turn payload timing, so use the
+    // repository's semantic timing predicate rather than one profile identity:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed profile-overfitting bug: https://github.com/FlareZ123/pokemon-sims/issues/2768
+    // Validation PR: https://github.com/FlareZ123/pokemon-sims/pull/2873
+    if (!strict_payload_timing() || scenario_.locks != LockMode::None ||
+        state_.turn != 2 || !prizes_known() || !supporter_allowed() ||
         state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
@@ -42,7 +46,8 @@
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Core Supporter, Item, attachment, evolution, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // K1, current-turn completion, resource preservation, and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1918
+    // K1, current-turn completion, resource preservation, and same-turn-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1918 https://github.com/FlareZ123/pokemon-sims/issues/2768
+    // Validation PR: https://github.com/FlareZ123/pokemon-sims/pull/2873
     return crispin_completes_energy && payload_outlet;
   }

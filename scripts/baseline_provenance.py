@@ -122,4 +122,6 @@ def _build_source_digest(repo_root: Path) -> _Digest:
 
 def simulator_policy_source_digest(repo_root: Path) -> str:
     """Hash aggregate simulator inputs in stable path order."""
-    return _build_source_digest(repo_root).hexdigest()
+    digest = _build_source_digest(repo_root).hexdigest()
+    print(f"SOURCE_DIGEST={digest}")
+    return digest

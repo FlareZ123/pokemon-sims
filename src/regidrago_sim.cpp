@@ -65,14 +65,7 @@
 // base_search_overrides.inc is composed by tate_discard_overrides.inc.
 #include "trace_engine_v2/composition/steven_blender_overrides.inc"
 // tapu_search_overrides.inc is composed by steven_blender_overrides.inc.
-#define use_fss use_fss_latias_original
-#define play_crispin play_crispin_empty_deck_original
-#define play_professor_burnet play_professor_burnet_legacy_original
-#define play_steven play_steven_empty_deck_original
-#include "trace_engine_v2/part_011.inc"
-#undef play_steven
-#undef play_professor_burnet
-#undef play_crispin
+#include "trace_engine_v2/composition/legacy_supporter_body.inc"
 #define play_arven play_arven_original
 #define play_gladion play_gladion_original
 #define play_serena play_serena_issue1683_original

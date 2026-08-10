@@ -17,7 +17,9 @@
 // Base search policy first, then the compatibility aliases that adapt legacy
 // fragments to the current composition boundary. Their order is intentional.
 #include "empty_deck_search_overrides.inc"
-#include "search_item_legacy_bridges.inc"
+#include "../part_k0_ultra_ball_target_override.inc"
+#include "../part_oricorio_needed_energy_override.inc"
+#include "../part_blender_vstar_axis_override.inc"
 
 // Item-specific route families stay grouped by the card action they override.
 #include "earthen_vessel_overrides.inc" // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163

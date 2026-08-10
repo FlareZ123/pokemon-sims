@@ -39,6 +39,8 @@
 // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
 // Chaotic Swell: https://api.pokemontcg.io/v2/cards/sm12-187
 // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
+// Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
+// Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142
 // Team Yell's Cheer: https://api.pokemontcg.io/v2/cards/swsh9-149
 // Roseanne's Backup: https://api.pokemontcg.io/v2/cards/swsh9-148
 // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
@@ -49,6 +51,12 @@
 #define begin_turn begin_turn_original
 #define might_be_unseen might_be_unseen_empty_deck_original
 #include "trace_engine_v2/part_003.inc"
+// Route later Pokemon-Ability legality checks through the Garbotoxin-aware wrapper.
+// part_003 contains the base predicate definition; subsequent composition layers
+// receive this alias while the Engine body is assembled:
+// https://api.pokemontcg.io/v2/cards/xy9-57
+// https://github.com/FlareZ123/pokemon-sims/issues/2808
+#define ability_available_for_pokemon ability_available_for_pokemon_garbodor
 // part_003.inc opens begin_turn(), and part_004.inc completes it. part_004.inc
 // later opens state_line(), which part_005.inc completes before a new Engine
 // member may be defined:
@@ -102,7 +110,38 @@
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #include "trace_engine_v2/part_014c.inc"
+#undef ability_available_for_pokemon
 #include "trace_engine_v2/part_015.inc"
+
+std::vector<Scenario> all_scenarios_with_garbodor() {
+  std::vector<Scenario> result = all_scenarios();
+  // Garbodor BKP 57 suppresses Pokemon Abilities while it has a Tool. Boost Shake
+  // establishes the Evolution on the opponent's first turn, which creates distinct
+  // Regidrago T1 timing by seat:
+  // https://api.pokemontcg.io/v2/cards/xy9-57
+  // https://api.pokemontcg.io/v2/cards/swsh7-142
+  // https://github.com/FlareZ123/pokemon-sims/issues/2808
+  result.push_back({"garbodor-shake-ability-lock/go-first",
+                    DciProfile::StrictJit, LockMode::None, true, 5});
+  result.push_back({"garbodor-shake-ability-lock/go-second",
+                    DciProfile::StrictJit, LockMode::None, false, 5});
+  return result;
+}
+
+std::optional<Scenario> scenario_by_label_with_garbodor(const std::string& label) {
+  for (const Scenario& scenario : all_scenarios_with_garbodor()) {
+    if (scenario.label == label) return scenario;
+  }
+  return std::nullopt;
+}
+
+// Production CLI scenario discovery receives the two Garbodor pressure rows while
+// historical internal registry helpers remain available under their original names:
+// https://github.com/FlareZ123/pokemon-sims/issues/2808
+#define all_scenarios all_scenarios_with_garbodor
+#define scenario_by_label scenario_by_label_with_garbodor
 // C++ preprocessing include grammar: https://eel.is/c++draft/cpp.include
 // Confirmed portability bug: https://github.com/FlareZ123/pokemon-sims/issues/1482
 #include "trace_engine_v2/part_016.inc"
+#undef scenario_by_label
+#undef all_scenarios

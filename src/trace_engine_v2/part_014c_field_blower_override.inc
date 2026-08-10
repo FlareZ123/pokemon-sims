@@ -41,16 +41,13 @@
         is_basic(state_.active->card) && state_.active->card != Card::RegidragoV &&
         prior_turn_benched_regi;
 
-    // Legacy Star is a Rule Box Pokémon Ability. Remove Path when an unused VSTAR
+    // Legacy Star is a Rule Box Pokemon Ability. Remove Path when an unused VSTAR
     // Power is already in play, or when a prior-turn Regidrago V has the held VSTAR
-    // needed to evolve this turn while setup remains unresolved. The exact Legacy
-    // Star selector still decides whether its recovery or discard-seven route is
-    // worth using after Path leaves play:
+    // needed to evolve this turn while setup remains unresolved:
     // https://api.pokemontcg.io/v2/cards/swsh12-135
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/swsh6-148
     // https://www.pokemon.com/us/pokemon-tcg/rules
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     const bool unresolved_setup = setup_axis_missing();
     const bool in_play_legacy_star_route = !state_.vstar_power_used && has_vstar() &&
         unresolved_setup;
@@ -64,23 +61,91 @@
            in_play_legacy_star_route || future_legacy_star_route;
   }
 
-  bool play_field_blower() {
-    if (item_locked() || hand_count(Card::FieldBlower) == 0 ||
-        !rule_box_abilities_locked() || !path_removal_unlocks_live_rule_box_route()) {
-      return false;
-    }
+  bool garbodor_removal_unlocks_live_pokemon_route() {
+    if (!garbodor_abilities_locked()) return false;
 
-    // Field Blower may discard the Stadium in play. Spend it only when removing
-    // the modeled Path to the Peak unlocks a currently live setup route, so a
-    // discrete-value Stadium answer is preserved after setup is already complete:
+    // Field Blower can discard Garbodor's attached Tool. Project the exact
+    // current-turn unlocked state, then restore it before deciding whether the
+    // discrete-value Item is worth spending:
+    // https://api.pokemontcg.io/v2/cards/sm2-125
+    // https://api.pokemontcg.io/v2/cards/xy9-57
+    // https://github.com/FlareZ123/pokemon-sims/issues/2808
+    const int unlocked_turn_before = garbodor_unlocked_turn_;
+    garbodor_unlocked_turn_ = state_.turn;
+
+    const bool wonder_tag_route = hand_count(Card::TapuLeleGX) > 0 &&
+        !in_play(Card::TapuLeleGX) && bench_space() > 0 && needs_tapu_connector();
+    const bool in_play_skyliner_route = need_active_vstar() &&
+        can_free_retreat_with_latias();
+    const bool held_vital_dance_route = hand_count(Card::Oricorio) > 0 &&
+        !in_play(Card::Oricorio) && bench_space() > 0 && !state_.deck.empty() &&
+        needs_oricorio_connector();
+    // Dark Asset checks hand size after Crobat V is played from hand. A six-card
+    // hand becomes five when Crobat moves to the Bench, so Dark Asset can still
+    // draw one card and remains a live unlock at <= 6 cards:
+    // https://api.pokemontcg.io/v2/cards/swsh3-104
+    // https://github.com/FlareZ123/pokemon-sims/issues/2808
+    const bool held_dark_asset_route = hand_count(Card::CrobatV) > 0 &&
+        !in_play(Card::CrobatV) && bench_space() > 0 && !state_.dark_asset_used &&
+        state_.hand.size() <= 6U && setup_axis_missing();
+
+    const bool prior_turn_benched_regi = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV &&
+                 pokemon.entered_turn < state_.turn;
+        });
+    const bool held_skyliner_route = hand_count(Card::LatiasEx) > 0 &&
+        hand_count(Card::RegidragoVstar) > 0 && !in_play(Card::LatiasEx) &&
+        bench_space() > 0 && !state_.retreat_used && state_.active &&
+        is_basic(state_.active->card) && state_.active->card != Card::RegidragoV &&
+        prior_turn_benched_regi;
+
+    const bool unresolved_setup = setup_axis_missing();
+    const bool in_play_legacy_star_route = !state_.vstar_power_used && has_vstar() &&
+        unresolved_setup;
+    const bool prior_turn_active_regi = active_is_regi_v() && state_.active &&
+        state_.active->entered_turn < state_.turn;
+    const bool future_legacy_star_route = !state_.vstar_power_used &&
+        prior_turn_active_regi && unresolved_setup &&
+        hand_count(Card::RegidragoVstar) > 0;
+
+    garbodor_unlocked_turn_ = unlocked_turn_before;
+    return wonder_tag_route || in_play_skyliner_route || held_skyliner_route ||
+           held_vital_dance_route || held_dark_asset_route ||
+           in_play_legacy_star_route || future_legacy_star_route;
+  }
+
+  bool play_field_blower() {
+    if (item_locked() || hand_count(Card::FieldBlower) == 0) return false;
+
+    const bool path_locked = rule_box_abilities_locked();
+    const bool garbodor_locked = garbodor_abilities_locked();
+    const bool path_live = path_locked && path_removal_unlocks_live_rule_box_route();
+    const bool garbodor_live =
+        garbodor_locked && garbodor_removal_unlocks_live_pokemon_route();
+    if (!path_live && !garbodor_live) return false;
+
+    // Field Blower discards up to two Pokemon Tools and Stadiums in play. Preserve
+    // it unless the removal immediately opens a modeled setup route. The dedicated
+    // Garbodor marker lasts only for state_.turn; the next turn automatically
+    // models the maximum-pressure opponent reattaching another Tool:
     // https://api.pokemontcg.io/v2/cards/sm2-125
     // https://api.pokemontcg.io/v2/cards/swsh6-148
+    // https://api.pokemontcg.io/v2/cards/xy9-57
     // https://github.com/FlareZ123/pokemon-sims/issues/791
+    // https://github.com/FlareZ123/pokemon-sims/issues/2808
     remove_one(state_.hand, Card::FieldBlower);
     state_.discard.push_back(Card::FieldBlower);
-    state_.path_lock_removed = true;
-    trace("PLAY ITEM", "R-GAME-ITEM",
-          "Field Blower discarded the modeled Path to the Peak; Rule Box Pokémon Abilities are available again.");
+    if (path_live) state_.path_lock_removed = true;
+    if (garbodor_live) garbodor_unlocked_turn_ = state_.turn;
+
+    if (garbodor_live) {
+      trace("PLAY ITEM", "R-GAME-ITEM",
+            "Field Blower discarded Garbodor's attached Pokemon Tool; Pokemon Abilities are available for the remainder of this turn.");
+    } else {
+      trace("PLAY ITEM", "R-GAME-ITEM",
+            "Field Blower discarded the modeled Path to the Peak; Rule Box Pokemon Abilities are available again.");
+    }
     return true;
   }
 
@@ -108,10 +173,6 @@
       trace("POLICY", "P-AXIS-01", "End: " + state_line());
       return;
     }
-    // Run the public-K1 Quick Ball payload route before any weaker Supporter action
-    // can consume the held Crispin or generic DCI can preserve the held Dragon:
-    // https://github.com/FlareZ123/pokemon-sims/issues/1895
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     if (issue_1895_held_crispin_quick_ball_route_available()) {
       trace("POLICY", "P-AXIS-01", "Start: " + state_line());
       if (!complete_issue_1895_held_crispin_quick_ball_route()) {
@@ -120,10 +181,6 @@
       trace("POLICY", "P-AXIS-01", "End: " + state_line());
       return;
     }
-    // Search the current-turn Dragon before generic Earthen Vessel ordering spends
-    // the only safe Treasure cost and loses the deterministic T4 payload channel.
-    // https://github.com/FlareZ123/pokemon-sims/issues/1872
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     if (issue_1872_treasure_vessel_payload_route_available()) {
       trace("POLICY", "P-AXIS-01", "Start: " + state_line());
       if (!complete_issue_1872_treasure_vessel_payload_route()) {
@@ -132,10 +189,6 @@
       trace("POLICY", "P-AXIS-01", "End: " + state_line());
       return;
     }
-    // Preserve the duplicate Treasures before generic Earthen Vessel ordering can
-    // spend one copy and destroy the deterministic current-turn payload bridge.
-    // https://github.com/FlareZ123/pokemon-sims/issues/1874
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     if (issue_1874_duplicate_treasure_payload_route_available()) {
       trace("POLICY", "P-AXIS-01", "Start: " + state_line());
       if (!complete_issue_1874_duplicate_treasure_payload_route()) {
@@ -144,10 +197,6 @@
       trace("POLICY", "P-AXIS-01", "End: " + state_line());
       return;
     }
-    // GGF is complete in this route. Preserve Earthen Vessel as Treasure's safe
-    // cost, then use Quick Ball to put the searched Dragon into discard this turn.
-    // https://github.com/FlareZ123/pokemon-sims/issues/1877
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     if (issue_1877_treasure_quick_ball_payload_bridge_available()) {
       trace("POLICY", "P-AXIS-01", "Start: " + state_line());
       if (!complete_issue_1877_treasure_quick_ball_payload_bridge()) {
@@ -156,10 +205,6 @@
       trace("POLICY", "P-AXIS-01", "End: " + state_line());
       return;
     }
-    // Run the confirmed complete route before generic action ordering can spend
-    // its Dragon payload on Earthen Vessel and strand the Quick Ball continuation.
-    // https://github.com/FlareZ123/pokemon-sims/issues/1878
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     if (issue_1878_vessel_quick_ball_tapu_crispin_route_available()) {
       trace("POLICY", "P-AXIS-01", "Start: " + state_line());
       if (!complete_issue_1878_vessel_quick_ball_tapu_crispin_route()) {

@@ -25,13 +25,13 @@
     // Drawing a card is the first step at the beginning of every turn, including
     // the first player's opening turn:
     // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Start_Your_Turn
-    if (!deck_has_cards()) {
-      record_deck_out_loss();
-      return false;
+    if (deck_has_cards()) {
+      draw_card("start-of-turn");
+      return true;
     }
 
-    draw_card("start-of-turn");
-    return true;
+    record_deck_out_loss();
+    return false;
   }
 
   void trace_first_turn_restrictions() {

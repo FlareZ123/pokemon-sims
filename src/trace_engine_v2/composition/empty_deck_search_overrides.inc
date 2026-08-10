@@ -4,6 +4,14 @@
 // Macro aliases deliberately expose the preceding implementation to later wrappers,
 // so preserve both include order and each matching undef boundary.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
+#if defined(bench_oricorio_if_useful) || defined(ultra_ball_has_legal_target) || \
+    defined(play_ultra_ball) || defined(play_brilliant_blender) || \
+    defined(play_earthen_vessel) || defined(play_mysterious_treasure) || \
+    defined(play_quick_ball) || defined(bench_tapu_if_useful) || \
+    defined(in_play) || defined(play_steven) || defined(use_fss) || \
+    defined(should_play_steven)
+#error "Empty-deck search composition requires wrapper aliases to be undefined on entry"
+#endif
 
 #define bench_oricorio_if_useful bench_oricorio_if_useful_target_original
 #define ultra_ball_has_legal_target ultra_ball_has_legal_target_k0_target_original
@@ -48,3 +56,12 @@
 #undef play_ultra_ball
 #undef ultra_ball_has_legal_target
 #undef bench_oricorio_if_useful
+
+#if defined(bench_oricorio_if_useful) || defined(ultra_ball_has_legal_target) || \
+    defined(play_ultra_ball) || defined(play_brilliant_blender) || \
+    defined(play_earthen_vessel) || defined(play_mysterious_treasure) || \
+    defined(play_quick_ball) || defined(bench_tapu_if_useful) || \
+    defined(in_play) || defined(play_steven) || defined(use_fss) || \
+    defined(should_play_steven)
+#error "Empty-deck search composition leaked a wrapper alias"
+#endif

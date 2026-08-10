@@ -1,0 +1,43 @@
+name: Repair issue 2408 materializer URLs
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/repair-2408-materializer.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/2408-reclaim-20260809-1752
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Repair embedded direct-source URL separators
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+
+          path = Path('.github/workflows/issue-2408-reclaim-materialize.yml')
+          text = path.read_text(encoding='utf-8')
+          fixed, count = re.subn(
+              r'(https://api\.pokemontcg\.io/v2/cards/[A-Za-z0-9.-]+)\\n',
+              r'\1 \\n',
+              text,
+          )
+          if count == 0:
+              raise SystemExit('No malformed embedded card-source URL suffixes found')
+          path.write_text(fixed, encoding='utf-8', newline='\n')
+          print(f'Repaired {count} embedded card-source URL separators')
+          PY
+          git add .github/workflows/issue-2408-reclaim-materialize.yml
+          git commit -m 'Fix #2408 materializer source URL separators'
+          git push origin HEAD:fix/2408-reclaim-20260809-1752

@@ -12,9 +12,10 @@
 // 4. post_014a_overrides composes Burnet, FSS, Vessel, and later wrappers.
 // 5. turn_reporting_body composes turn execution and reporting.
 // 6. part_016 closes the translation-unit implementation.
-// Composition wrappers intentionally preserve macro lifetime where a later stage
-// consumes an alias; see each composition file for the matching continuation URL.
+// The named engine_body wrapper preserves this order and the macro lifetime needed
+// by continuation stages that close members opened by an earlier legacy part.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
+// Composition spine: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_body.inc
 // Core procedure rules: https://www.pokemon.com/us/pokemon-tcg/rules
 // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
 // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -56,49 +57,12 @@
 // Roseanne's Backup: https://api.pokemontcg.io/v2/cards/swsh9-148
 // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
 // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
-#include "trace_engine_v2/composition/core_engine_body.inc"
-#include "trace_engine_v2/composition/opening_engine_overrides.inc"
-// opening_engine_overrides.inc now composes the former root-level Tate/discard,
-// Steven/Blender, legacy Supporter, Supporter selector, and VSTAR stages in their
-// historical textual order. part_014a must remain the next boundary because the
-// VSTAR stage leaves run_search_items_one_step() open for this continuation.
-// Composition spine: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_engine_overrides.inc
-// C++ textual include semantics: https://eel.is/c++draft/cpp.include
-#include "trace_engine_v2/part_014a.inc"
-// part_012.inc opens Serena's draw-mode body, part_013.inc closes it and later
-// opens run_search_items_one_step(), and part_014a.inc completes that method.
-// Define the active Burnet policy only after this first complete member boundary:
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_012.inc#L212-L228
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_013.inc#L1-L20
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_013.inc#L205-L224
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc#L1-L20
-// Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-// Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
-// The active thinning policy is the implementation wrapped by the later empty-deck
-// guard, while the legacy part_011 implementation stays dormant:
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_011_burnet_thinning_override.inc
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_empty_deck_search_override.inc#L102-L107
-#include "trace_engine_v2/composition/post_014a_overrides.inc"
-// Late turn composition boundary:
-// part_014c.inc owns the pre-override run_turn body and opens the alias handoff.
-// part_015.inc continues late policy/reporting members under the same aliases.
-// part_016.inc consumes the aliases after this wrapper returns to the root.
-// The wrapper preserves that historical textual order and macro lifetime.
 //
-// Continuation source for the alias handoff:
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc#L278-L286
-// Wrapper source for the alias definitions and ordered includes:
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/turn_reporting_body.inc#L9-L12
-// C++ textual include semantics: https://eel.is/c++draft/cpp.include
-//
-// Keep this include immediately after post_014a_overrides.inc so Engine stays open.
-// Keep part_016.inc after it so the replacement implementation sees the aliases.
-#include "trace_engine_v2/composition/turn_reporting_body.inc"
-// The wrapper keeps play_field_blower and run_turn aliased through part_015.inc.
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/turn_reporting_body.inc#L9-L12
-// C++ preprocessing include grammar: https://eel.is/c++draft/cpp.include
-// Confirmed portability bug: https://github.com/FlareZ123/pokemon-sims/issues/1482
-#include "trace_engine_v2/part_016.inc"
-// Composition invariant: turn_reporting_body owns the run_turn alias handoff.
-// part_016 consumes the replacement aliases after the late Engine body is composed.
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/turn_reporting_body.inc
+// engine_body owns the exact former root include order:
+// opening_engine_overrides -> part_014a -> post_014a_overrides ->
+// turn_reporting_body -> part_016, after core_engine_body.
+// Search-item closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc
+// Burnet/search continuation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
+// Late alias handoff: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/turn_reporting_body.inc
+// Translation-unit closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
+#include "trace_engine_v2/composition/engine_body.inc"

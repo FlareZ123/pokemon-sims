@@ -5,16 +5,13 @@
 //
 // Composition map for this translation-unit root:
 // 1. core_engine_body composes the core state, turn, and trace methods.
-// 2. opening_engine_overrides composes the part_006-part_008a opening/Tate body.
-// 3. tate_discard_overrides owns the current Tate discard policy chain.
-// 4. steven_blender_overrides composes Steven and Brilliant Blender policy.
-// 5. legacy_supporter_body owns the part_011 legacy supporter aliases.
-// 6. supporter_selector_body owns the part_012 supporter-selector aliases.
-// 7. vstar_power_body owns the part_013 VSTAR-power aliases.
-// 8. part_014a closes the search-item member opened by part_013.
-// 9. post_014a_overrides composes Burnet, FSS, Vessel, and later wrappers.
-// 10. turn_reporting_body composes turn execution and reporting.
-// 11. part_016 closes the translation-unit implementation.
+// 2. opening_engine_overrides owns the ordered opening-through-VSTAR composition
+//    spine: opening/Tate, discard/search, Steven/Blender, legacy Supporters,
+//    Supporter selection, and VSTAR-power aliases.
+// 3. part_014a closes the search-item member opened by the VSTAR stage.
+// 4. post_014a_overrides composes Burnet, FSS, Vessel, and later wrappers.
+// 5. turn_reporting_body composes turn execution and reporting.
+// 6. part_016 closes the translation-unit implementation.
 // Composition wrappers intentionally preserve macro lifetime where a later stage
 // consumes an alias; see each composition file for the matching continuation URL.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
@@ -61,13 +58,12 @@
 // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
 #include "trace_engine_v2/composition/core_engine_body.inc"
 #include "trace_engine_v2/composition/opening_engine_overrides.inc"
-#include "trace_engine_v2/composition/tate_discard_overrides.inc"
-// base_search_overrides.inc is composed by tate_discard_overrides.inc.
-#include "trace_engine_v2/composition/steven_blender_overrides.inc"
-// tapu_search_overrides.inc is composed by steven_blender_overrides.inc.
-#include "trace_engine_v2/composition/legacy_supporter_body.inc"
-#include "trace_engine_v2/composition/supporter_selector_body.inc"
-#include "trace_engine_v2/composition/vstar_power_body.inc"
+// opening_engine_overrides.inc now composes the former root-level Tate/discard,
+// Steven/Blender, legacy Supporter, Supporter selector, and VSTAR stages in their
+// historical textual order. part_014a must remain the next boundary because the
+// VSTAR stage leaves run_search_items_one_step() open for this continuation.
+// Composition spine: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_engine_overrides.inc
+// C++ textual include semantics: https://eel.is/c++draft/cpp.include
 #include "trace_engine_v2/part_014a.inc"
 // part_012.inc opens Serena's draw-mode body, part_013.inc closes it and later
 // opens run_search_items_one_step(), and part_014a.inc completes that method.

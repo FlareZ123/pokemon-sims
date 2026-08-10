@@ -1,0 +1,57 @@
+name: Reclaim issue 2295 on current main
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/reclaim-2295-current-main.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  replay:
+    if: github.head_ref == 'fix/2295-reclaim-20260810-0346'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Verify production file stayed unchanged
+        shell: bash
+        run: |
+          git fetch origin main fix/2295-reclaim-20260809-1759
+          git diff --quiet 851de4f696735483f1320554e90d40970a91f91b origin/main -- src/trace_engine_v2/part_014c_latias_bench_override.inc
+      - name: Replay reviewed semantic retreat route
+        shell: bash
+        run: |
+          git checkout origin/fix/2295-reclaim-20260809-1759 -- src/trace_engine_v2/part_014c_latias_bench_override.inc tests/issue_2295_semantic_retreat_gate_tests.cpp tests/issue_2295_trace_contract.py
+          git diff 851de4f696735483f1320554e90d40970a91f91b origin/fix/2295-reclaim-20260809-1759 -- CMakeLists.txt | git apply -3
+          rm .github/workflows/reclaim-2295-current-main.yml
+          git diff --check
+      - name: Build and validate exact paid-retreat witnesses
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R '2295' --output-on-failure
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 29 --require-ready-by 4 | tee issue-2295-seed29.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 86 --require-ready-by 4 | tee issue-2295-seed86.txt
+          grep -q 'T4 | READY' issue-2295-seed29.txt
+          grep -q 'T4 | READY' issue-2295-seed86.txt
+      - name: Run three independent simulate-this controls
+        shell: bash
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-control-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee trace-control-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-control-3.txt
+      - name: Commit validated source and regressions
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src tests CMakeLists.txt
+          git commit -m 'Fix #2295 semantic one-cost Basic paid retreat'
+          git push origin HEAD:${{ github.head_ref }}

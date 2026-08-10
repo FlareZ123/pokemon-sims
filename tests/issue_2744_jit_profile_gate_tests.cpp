@@ -35,19 +35,24 @@ sim::State route_state() {
   return state;
 }
 
-sim::Engine make_engine(const sim::DciProfile profile, std::mt19937_64& rng) {
-  static const sim::DeckRecipe recipe = sim::baseline_recipe();
-  sim::Scenario scenario{"issue-2744", profile, sim::LockMode::None, true, 5};
-  sim::Engine engine(scenario, recipe, rng);
-  sim::EngineTestAccess::set_state(engine, route_state());
-  return engine;
-}
-
 void test_route_uses_shared_jit_timing_semantics() {
   std::mt19937_64 rng(2744);
-  sim::Engine strict = make_engine(sim::DciProfile::StrictJit, rng);
-  sim::Engine flex = make_engine(sim::DciProfile::MatchupFlexJit, rng);
-  sim::Engine control = make_engine(sim::DciProfile::NoDiscardControl, rng);
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  const sim::Scenario strict_scenario{
+      "issue-2744-strict", sim::DciProfile::StrictJit,
+      sim::LockMode::None, true, 5};
+  const sim::Scenario flex_scenario{
+      "issue-2744-flex", sim::DciProfile::MatchupFlexJit,
+      sim::LockMode::None, true, 5};
+  const sim::Scenario control_scenario{
+      "issue-2744-control", sim::DciProfile::NoDiscardControl,
+      sim::LockMode::None, true, 5};
+  sim::Engine strict(strict_scenario, recipe, rng);
+  sim::Engine flex(flex_scenario, recipe, rng);
+  sim::Engine control(control_scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(strict, route_state());
+  sim::EngineTestAccess::set_state(flex, route_state());
+  sim::EngineTestAccess::set_state(control, route_state());
 
   // Strict JIT and matchup-flex JIT share same-ready-turn payload timing. The
   // no-discard-control profile may bank payloads earlier and stays outside this JIT route.
@@ -56,6 +61,7 @@ void test_route_uses_shared_jit_timing_semantics() {
   // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Engine lifetime contract: https://github.com/FlareZ123/pokemon-sims/issues/869
   // Regression: https://github.com/FlareZ123/pokemon-sims/issues/2744
   expect(sim::EngineTestAccess::route_available(strict),
          "Strict JIT lost the issue-1875 Tapu-Crispin route.");

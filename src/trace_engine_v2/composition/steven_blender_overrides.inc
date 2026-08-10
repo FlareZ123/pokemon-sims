@@ -42,14 +42,11 @@
 #undef play_evolution_incense
 #undef play_ultra_ball
 
-#ifdef play_evolution_incense
-#error "Steven/Blender composition leaked play_evolution_incense"
-#endif
-#ifdef play_earthen_vessel
-#error "Steven/Blender composition leaked play_earthen_vessel"
-#endif
-#ifdef play_brilliant_blender
-#error "Steven/Blender composition leaked play_brilliant_blender"
+#if defined(play_evolution_incense) || defined(play_earthen_vessel) || \
+    defined(play_brilliant_blender) || defined(play_ultra_ball) || \
+    defined(fss_target_after_search_started) || defined(attach_fss) || \
+    defined(should_play_steven)
+#error "Steven/Blender composition leaked a local wrapper alias"
 #endif
 
 // Continue into the Tapu and late search-item wrapper family at the same macro

@@ -1,0 +1,6 @@
+Validation-only PR for main cleanup commits:
+- d615176bb39649fd0375fcc5007e9f0d193d2f90
+- 236c87c47c53770395512964fde5c946d2bbaae0
+- 0b885285f92af6c42a9b521d1793bed375f7a77e
+
+Do not merge this marker. It exists only to trigger PR CI against the exact cleanup tip.

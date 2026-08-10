@@ -7,6 +7,12 @@ on:
     paths:
       - "tools/professors_letter_one_one_analysis.cpp"
       - ".github/workflows/professors-letter-one-one-experiment.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "tools/professors_letter_one_one_analysis.cpp"
+      - ".github/workflows/professors-letter-one-one-experiment.yml"
   workflow_dispatch:
 
 permissions:

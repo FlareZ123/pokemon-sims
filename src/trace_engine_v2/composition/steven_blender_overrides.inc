@@ -52,3 +52,8 @@
 #ifdef play_brilliant_blender
 #error "Steven/Blender composition leaked play_brilliant_blender"
 #endif
+
+// Continue into the Tapu and late search-item wrapper family at the same macro
+// boundary previously represented by the next root include.
+// Composition contract: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/tapu_search_overrides.inc
+#include "tapu_search_overrides.inc"

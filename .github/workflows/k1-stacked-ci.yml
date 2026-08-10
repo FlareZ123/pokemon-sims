@@ -74,6 +74,12 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-pineco-35.txt
           grep -q 'T2 | READY' trace-pineco-35.txt
           grep -q 'Dragapult ex (Mysterious Treasure cost)' trace-pineco-35.txt
+      - name: Run Regidrago shell Oricorio vs Minior slot experiment
+        shell: bash
+        run: |
+          set -euo pipefail
+          g++ -std=c++20 -O2 tests/minior_oricorio_shell_experiment.cpp -o minior-oricorio-shell-experiment
+          ./minior-oricorio-shell-experiment | tee minior-oricorio-shell-matrix.csv
       - name: Verify source-bound provenance
         run: |
           python - <<'PY'
@@ -107,6 +113,7 @@ jobs:
           path: |
             trace-*.txt
             t2-t3-matrix.csv
+            minior-oricorio-shell-matrix.csv
             build/Testing
           if-no-files-found: warn
 

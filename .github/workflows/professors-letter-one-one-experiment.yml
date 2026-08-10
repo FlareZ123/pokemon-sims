@@ -1,0 +1,58 @@
+name: Professor Letter 1-1 Experiment
+
+on:
+  push:
+    branches:
+      - experiment/professors-letter-1-1-split
+    paths:
+      - "tools/professors_letter_one_one_analysis.cpp"
+      - ".github/workflows/professors-letter-one-one-experiment.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile three-way full-game analyzer
+        run: |
+          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
+            tools/professors_letter_one_one_analysis.cpp \
+            -o professors-letter-one-one-analysis
+      - name: Run 100,000 paired full games per scenario
+        run: |
+          ./professors-letter-one-one-analysis \
+            100000 20260705 professors-letter-one-one.csv
+      - name: Validate experiment output
+        run: |
+          python - <<'PY'
+          import csv
+          with open('professors-letter-one-one.csv', newline='') as f:
+              rows = list(csv.DictReader(f))
+          if len(rows) != 14:
+              raise SystemExit(f'expected 14 scenarios, got {len(rows)}')
+          locked = sum(int(row['split_locked_plays']) for row in rows)
+          if locked:
+              raise SystemExit(f'illegal Professor Letter plays under Item lock: {locked}')
+          trials = sum(int(row['trials']) for row in rows)
+          if trials != 1_400_000:
+              raise SystemExit(f'expected 1,400,000 scenario-games, got {trials}')
+          print(f'validated {trials:,} paired scenario-games; locked Letter plays={locked}')
+          PY
+      - name: Record source head
+        run: git rev-parse HEAD > professors-letter-one-one-head.txt
+      - name: Upload experiment evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: professors-letter-one-one-${{ github.run_attempt }}
+          path: |
+            professors-letter-one-one.csv
+            professors-letter-one-one-head.txt
+          if-no-files-found: error

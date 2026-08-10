@@ -7,12 +7,10 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#include <string_view>
 
 namespace {
 
 constexpr std::uint64_t kTrials = 100000;
-constexpr std::uint64_t kSensitivityTrials = 25000;
 constexpr std::uint64_t kSeed = 20260810;
 constexpr std::uint64_t kStride = 104729ULL;
 
@@ -26,22 +24,23 @@ constexpr std::array<Candidate, 2> kCandidates{{
     {"Professor Burnet 1->0", sim::Card::ProfessorBurnet},
 }};
 
-// Minior PAR 99 is a Basic Pokemon, is not a Rule Box Pokemon, and has Retreat Cost 1.
-// Far-Flying Meteor and Gravitational Tackle are deliberately outside this setup-cost test:
+// Minior PAR 99 is a Basic Fighting Pokemon, is not a Rule Box Pokemon, is not
+// Psychic or Dragon for Mysterious Treasure, and has printed Retreat Cost 2:
 // https://www.pokemon.com/uk/pokemon-tcg/pokemon-cards/sv-series/sv04/99/
 //
-// The production simulator does not yet have a Minior enum entry. Mawile-GX is the closest
-// inert setup proxy because it is a Basic Pokemon with Retreat Cost 1, is not a Mysterious
-// Treasure target, and has no setup action invoked by this shell experiment:
+// The production simulator does not yet have a Minior enum entry. Pineco is an
+// exact setup-profile proxy for the properties used by this shell experiment:
+// Basic Pokemon, non-Rule-Box, non-Mysterious-Treasure target, Retreat Cost 2.
+// The baseline Regidrago shell contains no Forretress ex, so the Pineco-specific
+// evolution/Exploding Energy route cannot activate in these temporary recipes:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
-// Its Rule Box identity is a known proxy mismatch, so the Rule Box and combined-lock rows
-// receive a separate sensitivity pass with Pineco (correct non-Rule-Box/non-Treasure identity,
-// but conservative Retreat Cost 2) and Oricorio (correct non-Rule-Box/Retreat-1 identity,
-// but optimistic Psychic Mysterious Treasure searchability).
-sim::DeckRecipe recipe_with_proxy(const Candidate& candidate, const sim::Card proxy) {
+// Minior's Far-Flying Meteor and Gravitational Tackle remain deliberately outside
+// this setup-cost matrix; their matchup value is analyzed separately.
+sim::DeckRecipe recipe_with_minior_proxy(const Candidate& candidate) {
   sim::DeckRecipe recipe = sim::baseline_recipe();
   sim::adjust_modeling_recipe(recipe, candidate.cut, -1);
-  sim::adjust_modeling_recipe(recipe, proxy, 1);
+  sim::adjust_modeling_recipe(recipe, sim::Card::Pineco, 1);
   std::string error;
   if (!sim::validate_recipe({std::string("minior-") + candidate.label, recipe}, &error)) {
     throw std::logic_error(error);
@@ -60,7 +59,7 @@ double mean_mulligans(const sim::Aggregate& aggregate) {
 
 void print_header() {
   std::cout
-      << "phase,proxy,candidate,scenario,trials,"
+      << "candidate,scenario,trials,"
          "baseline_t2_pct,candidate_t2_pct,delta_t2_pp,"
          "baseline_t3_pct,candidate_t3_pct,delta_t3_pp,"
          "baseline_t4_pct,candidate_t4_pct,delta_t4_pp,"
@@ -86,15 +85,13 @@ void print_triplet(const std::uint64_t baseline,
   std::cout << b << ',' << c << ',' << (c - b);
 }
 
-void print_row(const char* phase,
-               const char* proxy_label,
-               const Candidate& cut,
+void print_row(const Candidate& cut,
                const sim::Scenario& scenario,
                const std::uint64_t trials,
                const sim::Aggregate& baseline,
                const sim::Aggregate& candidate) {
-  std::cout << phase << ',' << proxy_label << ",\"" << cut.label << "\","
-            << scenario.label << ',' << trials << ',' << std::fixed << std::setprecision(6);
+  std::cout << '\"' << cut.label << "\"," << scenario.label << ',' << trials << ','
+            << std::fixed << std::setprecision(6);
   print_triplet(baseline.by2, candidate.by2, trials); std::cout << ',';
   print_triplet(baseline.by3, candidate.by3, trials); std::cout << ',';
   print_triplet(baseline.by4, candidate.by4, trials); std::cout << ',';
@@ -115,11 +112,6 @@ void print_row(const char* phase,
   std::cout << '\n';
 }
 
-bool is_rulebox_sensitive(const std::string_view label) {
-  return label.find("rulebox-ability-lock") != std::string_view::npos ||
-         label.find("combined-lock") != std::string_view::npos;
-}
-
 }  // namespace
 
 int main() {
@@ -132,34 +124,9 @@ int main() {
     const std::uint64_t common_seed = kSeed + kStride * i;
     const sim::Aggregate baseline = sim::simulate(scenario, baseline_recipe, kTrials, common_seed);
     for (const Candidate& cut : kCandidates) {
-      const sim::DeckRecipe recipe = recipe_with_proxy(cut, sim::Card::MawileGX);
+      const sim::DeckRecipe recipe = recipe_with_minior_proxy(cut);
       const sim::Aggregate result = sim::simulate(scenario, recipe, kTrials, common_seed);
-      print_row("primary", "MawileGX-retreat1-nonMT", cut, scenario, kTrials, baseline, result);
-    }
-  }
-
-  // Bracket the only meaningful Mawile-GX proxy mismatch: Rule Box identity.
-  // Pineco preserves Minior's non-Rule-Box and non-Mysterious-Treasure identity but
-  // has Retreat Cost 2. Oricorio preserves non-Rule-Box and Retreat Cost 1 but is
-  // Psychic, so Mysterious Treasure can search it. Actual Minior should not inherit
-  // either mismatch; disagreement between these rows quantifies proxy sensitivity.
-  for (std::size_t i = 0; i < scenarios.size(); ++i) {
-    const sim::Scenario& scenario = scenarios[i];
-    if (!is_rulebox_sensitive(scenario.label)) continue;
-    const std::uint64_t common_seed = kSeed + 1000003ULL + kStride * i;
-    const sim::Aggregate baseline = sim::simulate(
-        scenario, baseline_recipe, kSensitivityTrials, common_seed);
-    for (const Candidate& cut : kCandidates) {
-      for (const auto& proxy : std::array<std::pair<const char*, sim::Card>, 2>{{
-               {"Pineco-nonRuleBox-nonMT-retreat2", sim::Card::Pineco},
-               {"Oricorio-nonRuleBox-retreat1-MT", sim::Card::Oricorio},
-           }}) {
-        const sim::DeckRecipe recipe = recipe_with_proxy(cut, proxy.second);
-        const sim::Aggregate result = sim::simulate(
-            scenario, recipe, kSensitivityTrials, common_seed);
-        print_row("proxy-sensitivity", proxy.first, cut, scenario,
-                  kSensitivityTrials, baseline, result);
-      }
+      print_row(cut, scenario, kTrials, baseline, result);
     }
   }
 

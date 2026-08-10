@@ -33,6 +33,16 @@ jobs:
         run: |
           python scripts/.tmp_apply_2293.py
           python scripts/.tmp_gate_2293.py
+          python - <<'PY'
+          from pathlib import Path
+
+          for source in (
+              Path('src/trace_engine_v2/part_007.inc'),
+              Path('src/trace_engine_v2/part_014c_latias_bench_override.inc'),
+          ):
+              lines = source.read_text().splitlines()
+              source.write_text('\n'.join(line.rstrip() for line in lines) + '\n')
+          PY
           rm scripts/.tmp_apply_2293.py scripts/.tmp_gate_2293.py
           rm .github/workflows/reclaim-2293-current-main-20260810.yml
           git diff --check

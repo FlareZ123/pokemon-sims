@@ -97,6 +97,14 @@ class Engine {
   bool prizes_known() const { return deck_seen_ || prizes_revealed_; }
   bool known_prize(const Card card) const { return prizes_known() && prize_count_after_reveal(card) > 0; }
 
+  int registered_recipe_count(const Card card) const {
+    int copies = 0;
+    for (const auto& [candidate, count] : recipe_) {
+      if (candidate == card) copies += count;
+    }
+    return copies;
+  }
+
   // Call only while resolving a legal search effect. The deck is physically seen,
   // so later policy can deduce the Prize multiset from the fixed deck list and zones.
   void record_deck_search_knowledge(std::string_view source) {

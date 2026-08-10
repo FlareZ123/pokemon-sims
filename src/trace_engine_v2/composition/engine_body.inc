@@ -9,7 +9,7 @@
 // Opening through VSTAR: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_engine_overrides.inc
 // Search-item closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc
 // Post-search overrides: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
-// Turn and reporting body: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/turn_reporting_body.inc
+// Late turn stages: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
 // Translation-unit closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
 
 // Core Engine state, turn, and trace body. This keeps the legacy macro lifetime
@@ -38,7 +38,13 @@
 #include "opening_engine_overrides.inc"
 #include "../part_014a.inc"
 #include "post_014a_overrides.inc"
-#include "turn_reporting_body.inc"
+
+// Late turn-execution and reporting stages. Keep these aliases live through
+// part_016 exactly as the former wrapper did.
+#define play_field_blower play_field_blower_original
+#define run_turn run_turn_original
+#include "../part_014c.inc"
+#include "../part_015.inc"
 
 // play_field_blower and run_turn intentionally remain aliased for part_016.inc.
 #include "../part_016.inc"

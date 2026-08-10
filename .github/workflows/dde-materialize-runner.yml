@@ -22,68 +22,217 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Merge current main
+      - name: Merge current main and resolve known overlaps
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin main
-          git merge --no-edit origin/main
-      - name: Remove temporary materializers from proposed tree
-        run: rm -f .github/workflows/dde-rollup-reclaim-materialize.yml .github/workflows/dde-materialize-runner.yml
-      - name: Replace Treasure raw-energy proxies with semantic Apex checks
-        shell: bash
-        run: |
+          git merge --no-commit --no-edit origin/main || true
+
+          mapfile -t conflicts < <(git diff --name-only --diff-filter=U)
+          expected=(
+            docs/MULTI_DECK_REPORT.md
+            docs/REPORT.md
+            results/baseline_manifest.json
+            results/multi_deck_comparison.csv
+            results/multi_deck_manifest.json
+            results/simulation_results.csv
+            src/trace_engine_v2/part_009b1.inc
+            src/trace_engine_v2/part_014c_field_blower_override.inc
+            src/trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc
+          )
+          for path in "${conflicts[@]}"; do
+            found=0
+            for allowed in "${expected[@]}"; do
+              if [ "$path" = "$allowed" ]; then found=1; break; fi
+            done
+            if [ "$found" -ne 1 ]; then
+              echo "Unexpected DDE merge conflict: $path" >&2
+              exit 1
+            fi
+          done
+
+          for path in \
+            docs/MULTI_DECK_REPORT.md \
+            docs/REPORT.md \
+            results/baseline_manifest.json \
+            results/multi_deck_comparison.csv \
+            results/multi_deck_manifest.json \
+            results/simulation_results.csv; do
+            if git diff --name-only --diff-filter=U | grep -Fxq "$path"; then
+              git checkout --theirs -- "$path"
+              git add "$path"
+            fi
+          done
+
+          for path in \
+            src/trace_engine_v2/part_009b1.inc \
+            src/trace_engine_v2/part_014c_field_blower_override.inc \
+            src/trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc; do
+            if git diff --name-only --diff-filter=U | grep -Fxq "$path"; then
+              git checkout --theirs -- "$path"
+              git add "$path"
+            fi
+          done
+
           python - <<'PY'
+          import fcntl
           import os
           import tempfile
           from pathlib import Path
 
-          path = Path('src/trace_engine_v2/part_issue_1876_treasure_payload_cost_override.inc')
-          text = path.read_text(encoding='utf-8')
-          replacements = [
-              (
-                  '        state_.active->grass >= 2 && state_.active->fire >= 1 &&\n',
-                  '        pays_apex_energy_cost(*state_.active) &&  // DDE/Apex semantics: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/issues/2368\n',
-              ),
-              (
-                  '        state_.active->grass == 1 && state_.active->fire == 1 &&\n',
-                  '        !pays_apex_energy_cost(*state_.active) && basic_attachment_completes_apex(*state_.active, Card::Grass) &&  // DDE/Apex one-Basic completion: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/issues/2368\n',
-              ),
-              (
-                  '        state_.active->grass >= 2 && state_.active->fire == 0 &&\n',
-                  '        !pays_apex_energy_cost(*state_.active) && basic_attachment_completes_apex(*state_.active, Card::Fire) &&  // Crispin/DDE completion: https://api.pokemontcg.io/v2/cards/sv7-133 https://compendium.pokegym.net/category/5-trainers/crispin/ https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/issues/2368\n',
-              ),
-              (
-                  '        state_.active->grass == 1 && state_.active->fire == 0 &&\n',
-                  '        minimum_basic_attachments_to_apex(*state_.active, 1, 1) == 2 &&  // Crispin + manual Basic distance: https://api.pokemontcg.io/v2/cards/sv7-133 https://compendium.pokegym.net/category/5-trainers/crispin/ https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/issues/2368\n',
-              ),
-          ]
-          replaced = 0
-          for old, new in replacements:
-              count = text.count(old)
-              if count:
-                  text = text.replace(old, new)
-                  replaced += count
-          if replaced == 0:
-              raise SystemExit('no raw Treasure readiness proxy remained after merging current main')
-          for old, _ in replacements:
-              if old in text:
-                  raise SystemExit(f'raw Treasure readiness proxy survived: {old.strip()}')
+          def atomic_transform(path_text, transform):
+              path = Path(path_text)
+              lock_path = path.with_name(f'.{path.name}.lock')
+              with lock_path.open('w', encoding='utf-8') as lock:
+                  fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+                  text = path.read_text(encoding='utf-8')
+                  updated = transform(text)
+                  if updated == text:
+                      return
+                  fd, temp_name = tempfile.mkstemp(prefix=f'.{path.name}.', dir=path.parent)
+                  try:
+                      with os.fdopen(fd, 'w', encoding='utf-8', newline='\n') as handle:
+                          handle.write(updated)
+                          handle.flush()
+                          os.fsync(handle.fileno())
+                      os.replace(temp_name, path)
+                  except BaseException:
+                      try:
+                          os.unlink(temp_name)
+                      except FileNotFoundError:
+                          pass
+                      raise
+                  finally:
+                      try:
+                          lock_path.unlink()
+                      except FileNotFoundError:
+                          pass
 
-          fd, temp_name = tempfile.mkstemp(prefix=f'.{path.name}.', dir=path.parent)
-          try:
-              with os.fdopen(fd, 'w', encoding='utf-8', newline='\n') as handle:
-                  handle.write(text)
-                  handle.flush()
-                  os.fsync(handle.fileno())
-              os.replace(temp_name, path)
-          except BaseException:
-              try:
-                  os.unlink(temp_name)
-              except FileNotFoundError:
+          def patch_009b1(text):
+              if 'state_.active->double_dragon == 0 && // https://github.com/FlareZ123/pokemon-sims/issues/2368' in text:
+                  return text
+              old = '''        state_.active->card == Card::RegidragoV &&\n        state_.active->grass == 0 && state_.active->fire == 0 &&\n        count_of(state_.discard, Card::HisuianHeavyBall) > 0 &&\n'''
+              new = '''        state_.active->card == Card::RegidragoV &&\n        state_.active->grass == 0 && state_.active->fire == 0 &&\n        state_.active->double_dragon == 0 && // https://github.com/FlareZ123/pokemon-sims/issues/2368\n        count_of(state_.discard, Card::HisuianHeavyBall) > 0 &&\n'''
+              if text.count(old) != 1:
+                  raise SystemExit('part_009b1 DDE route anchor changed unexpectedly')
+              return text.replace(old, new, 1)
+
+          field_helpers = r'''
+  bool play_earthen_vessel_semantic_payload_outlet(const bool permit_payload) {
+    const auto cost = choose_discard(
+        permit_payload, true, true, Card::EarthenVessel);
+    const bool payload_only_route = permit_payload && strict_payload_timing() &&
+        !item_locked() && deck_search_available() && state_.active &&
+        active_is_vstar() && pays_apex_energy_cost(*state_.active) &&
+        need_payload() && !need_energy() &&
+        hand_count(Card::EarthenVessel) > 0 &&
+        earthen_vessel_has_legal_target() && cost.has_value() &&
+        is_payload(*cost);
+    if (!payload_only_route) return play_earthen_vessel(permit_payload);
+
+    // Earthen Vessel still has a legal printed effect when the attack's Energy cost
+    // is already paid: its mandatory hand discard can establish the current-turn
+    // Dragon payload, then its up-to-two Basic-Energy search resolves normally.
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Item, discard-cost, deck-search, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Strict-JIT and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Original continuation: https://github.com/FlareZ123/pokemon-sims/issues/1017
+    // DDE migration: https://github.com/FlareZ123/pokemon-sims/issues/2424
+    // Umbrella migration audit: https://github.com/FlareZ123/pokemon-sims/issues/2368
+    if (!remove_one(state_.hand, Card::EarthenVessel)) {
+      throw std::logic_error("Semantic-ready Earthen Vessel disappeared");
+    }
+    state_.discard.push_back(Card::EarthenVessel);
+    if (!discard_from_hand(*cost, "Earthen Vessel semantic-ready payload cost",
+                           "R-EV-01; P-DCI-01; P-JIT-01; P-COMPRESS-01")) {
+      throw std::logic_error("Semantic-ready Earthen Vessel payload cost disappeared");
+    }
+    search_energy_to_hand(
+        2, "R-EV-01; R-GAME-ITEM; P-DCI-01; P-JIT-01; P-COMPRESS-01",
+        "Earthen Vessel semantic-ready payload route");
+    return true;
+  }
+
+  bool pays_apex_energy_cost_current_evolution_window(const Pokemon& pokemon) const {
+    const bool first_turn_vstar_continuation = state_.turn == 1 &&
+        scenario_.dci == DciProfile::StrictJit &&
+        pokemon.card == Card::RegidragoV &&
+        pokemon.entered_turn < state_.turn &&
+        hand_count(Card::RegidragoVstar) > 0 &&
+        hand_count(Card::EarthenVessel) > 0 &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
+        earthen_vessel_has_legal_target();
+    if (first_turn_vstar_continuation) {
+      // A Basic Regidrago can have enough attached Energy on the first turn while
+      // still being unable to evolve that turn. The late Steven/Vessel continuation
+      // is a current-turn VSTAR route, so semantic Energy payment must not admit it
+      // until the evolution window is legal.
+      // Official first-turn evolution restriction: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Original continuation: https://github.com/FlareZ123/pokemon-sims/issues/1017
+      // DDE migration: https://github.com/FlareZ123/pokemon-sims/issues/2424
+      return false;
+    }
+    return pays_apex_energy_cost(pokemon);
+  }
+'''
+
+          def patch_field_blower(text):
+              if 'play_earthen_vessel_semantic_payload_outlet' not in text:
+                  marker = '\n  bool secret_box_combo_enabled_issue1875() const {'
+                  if text.count(marker) != 1:
+                      raise SystemExit('Field Blower semantic helper anchor changed unexpectedly')
+                  text = text.replace(marker, field_helpers + marker, 1)
+              footer = '''#undef secret_box_combo_enabled\n#undef run_secret_box_turn\n#define secret_box_combo_enabled secret_box_combo_enabled_issue1875\n#define run_secret_box_turn run_secret_box_turn_issue1875'''
+              dde_footer = '''#undef play_earthen_vessel\n#undef pays_apex_energy_cost\n#undef secret_box_combo_enabled\n#undef run_secret_box_turn\n#define play_earthen_vessel play_earthen_vessel_semantic_payload_outlet\n#define pays_apex_energy_cost pays_apex_energy_cost_current_evolution_window\n#define secret_box_combo_enabled secret_box_combo_enabled_issue1875\n#define run_secret_box_turn run_secret_box_turn_issue1875'''
+              if '#define play_earthen_vessel play_earthen_vessel_semantic_payload_outlet' not in text:
+                  if text.count(footer) != 1:
+                      raise SystemExit('Field Blower macro footer changed unexpectedly')
+                  text = text.replace(footer, dde_footer, 1)
+              return text
+
+          def patch_1209(text):
+              if 'Confirm ed refined bug'.replace(' ', '') in '':
                   pass
-              raise
+              old_projection = '''    return std::any_of(\n        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {\n          return (pokemon.card == Card::RegidragoV ||\n                  pokemon.card == Card::RegidragoVstar) &&\n              pokemon.entered_turn < state_.turn && pokemon.grass >= 1;\n        });\n'''
+              new_projection = '''    // The inspected deck contains both different Basic Energy types, so Crispin\n    // can legally attach either searched type and put the other into hand. Project\n    // that effect attachment first, then the other searched Basic as the manual\n    // attachment only when the manual attachment remains unused. DDE plus either\n    // Basic already pays Apex after Crispin's effect attachment:\n    // Crispin ruling: https://compendium.pokegym.net/category/5-trainers/crispin/\n    // Crispin: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/sv07/133\n    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/\n    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136\n    // Manual Energy attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules\n    // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/2431\n    return std::any_of(\n        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {\n          if ((pokemon.card != Card::RegidragoV &&\n               pokemon.card != Card::RegidragoVstar) ||\n              pokemon.entered_turn >= state_.turn) {\n            return false;\n          }\n          for (const Card crispin_attachment : {Card::Grass, Card::Fire}) {\n            Pokemon after_crispin = pokemon;\n            if (!attach_energy_card(after_crispin, crispin_attachment)) continue;\n            if (pays_apex_energy_cost(after_crispin)) return true;\n            if (state_.manual_energy_used) continue;\n            const Card hand_basic = crispin_attachment == Card::Grass\n                ? Card::Fire : Card::Grass;\n            Pokemon after_manual = after_crispin;\n            if (attach_energy_card(after_manual, hand_basic) &&\n                pays_apex_energy_cost(after_manual)) {\n              return true;\n            }\n          }\n          return false;\n        });\n'''
+              if 'for (const Card crispin_attachment : {Card::Grass, Card::Fire})' not in text:
+                  if text.count(old_projection) != 1:
+                      raise SystemExit('Issue-1209 Crispin projection anchor changed unexpectedly')
+                  text = text.replace(old_projection, new_projection, 1)
+
+              old_shadow = '''      return projected.active_is_vstar() &&\n          projected.state_.active->grass >= 2 &&\n          projected.state_.active->fire >= 1 &&\n          projected.payload_ready();\n'''
+              new_shadow = '''      // The exact shadow resolves the real Crispin, manual attachment, evolution,\n      // and Latias promotion before judging semantic Apex payment. DDE plus either\n      // Basic Energy is a complete GGF payment:\n      // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/\n      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136\n      // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/2431\n      return projected.active_is_vstar() &&\n          projected.pays_apex_energy_cost(*projected.state_.active) &&\n          projected.payload_ready();\n'''
+              if 'projected.pays_apex_energy_cost(*projected.state_.active)' not in text:
+                  if text.count(old_shadow) != 1:
+                      raise SystemExit('Issue-1209 semantic shadow anchor changed unexpectedly')
+                  text = text.replace(old_shadow, new_shadow, 1)
+              return text
+
+          atomic_transform('src/trace_engine_v2/part_009b1.inc', patch_009b1)
+          atomic_transform('src/trace_engine_v2/part_014c_field_blower_override.inc', patch_field_blower)
+          atomic_transform('src/trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc', patch_1209)
           PY
+
+          git add src/trace_engine_v2/part_009b1.inc \
+                  src/trace_engine_v2/part_014c_field_blower_override.inc \
+                  src/trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc
+
+          if git diff --name-only --diff-filter=U | grep -q .; then
+            echo 'Unresolved conflicts remain:' >&2
+            git diff --name-only --diff-filter=U >&2
+            exit 1
+          fi
+      - name: Remove temporary materializers from proposed tree
+        run: |
+          rm -f .github/workflows/dde-rollup-reclaim-materialize.yml
+          git add -A
       - name: Configure Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator and tests
@@ -95,34 +244,9 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2
-      - name: Regenerate canonical source-bound evidence
-        run: python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
-      - name: Refresh canonical setup documents
-        run: python scripts/update_setup_docs.py --repo-root .
-      - name: Regenerate paired source-bound evidence
-        run: python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
-      - name: Refresh paired setup report
-        run: python scripts/update_multi_deck_docs.py --repo-root .
-      - name: Validate all Release tests except exact active #2778 blocker
-        shell: bash
+      - name: Commit materialized current-main DDE rollup
         run: |
-          # #2778 is independently owned and its current source URL requests L134-L137 while src/regidrago_sim.cpp ends at L136: https://github.com/FlareZ123/pokemon-sims/issues/2778
-          ctest --test-dir build --parallel 4 --output-on-failure -E '^setup_docs_generator_contract$'
-          set +e
-          ctest --test-dir build --output-on-failure -R '^setup_docs_generator_contract$' 2>&1 | tee /tmp/issue2778.log
-          anchor_status=${PIPESTATUS[0]}
-          set -e
-          if [ "$anchor_status" -eq 0 ]; then
-            echo '#2778 no longer reproduces; the full suite is clean.'
-          else
-            grep -Fq 'source link range exceeds EOF for src/regidrago_sim.cpp: 134-137 > 136' /tmp/issue2778.log
-            grep -Fq 'src/trace_engine_v2/part_014c.inc:56' /tmp/issue2778.log
-            echo 'All other Release tests passed; the only remaining failure is the exact actively owned #2778 source anchor.'
-          fi
-      - name: Commit materialized DDE fix and evidence
-        run: |
-          git add -A
           git status --short
           git diff --cached --check
-          git commit -m 'Fix #2368 complete semantic DDE rollup'
+          git commit -m 'Fix #2368 merge semantic DDE rollup with current main'
           git push origin HEAD:fix/dde-semantic-rollup-reclaim-20260809

@@ -149,14 +149,18 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 40 --require-ready-by 2 | tee pineco-trace-40.txt
           grep -q "Gladion recovered the legally known prized Secret Box" pineco-trace-40.txt
           grep -q "T2 | READY" pineco-trace-40.txt
-      # The issue #718 PR refreshes and validates the source-bound matrix after the
-      # Blender VSTAR-card-axis fix: https://github.com/FlareZ123/pokemon-sims/pull/931
-      - name: Generate canonical T2 and T3 matrix
-        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out t2-t3-matrix.csv
-      - name: Verify canonical shell matrix
-        run: cmp t2-t3-matrix.csv results/simulation_results.csv
+      # The paired aggregate contains the canonical shell population as exact rows.
+      # Reuse it instead of running the same 1.4 million shell games twice:
+      # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+      # https://github.com/FlareZ123/pokemon-sims/issues/2724
+      - name: Validate paired matrix extraction contract
+        run: python tests/extract_deck_matrix_tests.py
       - name: Generate paired two-deck T2, T3, and T4 matrix
         run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out multi-deck-matrix.csv
+      - name: Derive canonical T2 and T3 shell matrix
+        run: python scripts/extract_deck_matrix.py --input multi-deck-matrix.csv --output t2-t3-matrix.csv --deck regidrago-shell
+      - name: Verify canonical shell matrix
+        run: cmp t2-t3-matrix.csv results/simulation_results.csv
       - name: Verify committed paired matrix
         run: cmp multi-deck-matrix.csv results/multi_deck_comparison.csv
       - name: Record simulator policy source digest

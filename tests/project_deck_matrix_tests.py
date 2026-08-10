@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import sys
 import tempfile
 from pathlib import Path
 
-from scripts.project_deck_matrix import project_deck_matrix
-
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.project_deck_matrix import project_deck_matrix
+
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "ci.yml"
 
 

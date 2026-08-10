@@ -52,7 +52,7 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 ## Regidrago-Pineco with Secret Box
 
 | Scenario | T2 ± SE | T3 ± SE | T4 ± SE | Failure ± SE |
-|---|---:|---:|---:|---:|
+|---|---:|---:|---:|---:|---:|
 | Strict JIT, going first | 19.762% ± 0.126 | 49.001% ± 0.158 | 66.554% ± 0.149 | 33.446% ± 0.149 |
 | Matchup-flex JIT, going first | 21.284% ± 0.129 | 50.380% ± 0.158 | 68.485% ± 0.147 | 31.515% ± 0.147 |
 | No discard control, going first | 25.216% ± 0.137 | 60.418% ± 0.155 | 75.805% ± 0.135 | 24.195% ± 0.135 |
@@ -158,6 +158,6 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 ## Provenance
 
-Simulator policy digest: `5fa1cad73eb7214dbccb781a866a5ead457ae33a8849f7e0294255846e783018`.
+Simulator policy digest: `1e0c14fb999e0aeb8db0495e2ce1e885d37b8e3d895f659f8cb586c8451632fb`.
 
 Comparison CSV SHA-256: `b13dd92587f0bd019eb739117b4136fb7b16927e1e525f4c1ea5eac0e47df1ef`.

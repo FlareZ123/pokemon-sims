@@ -1,0 +1,52 @@
+name: Repair issue 2293 materializer URLs
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/repair-2293-materializer.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.head_ref == 'fix/2293-semantic-k1-latias-20260809'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Repair embedded direct-source URL separators
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+
+          paths = [
+              Path('scripts/apply_issue_2293_semantic_fix_20260809.py'),
+              Path('scripts/apply_issue_2293_semantic_gate_fix_20260809.py'),
+          ]
+          total = 0
+          for path in paths:
+              text = path.read_text(encoding='utf-8')
+              fixed, count = re.subn(
+                  r'(https://api\.pokemontcg\.io/v2/cards/[A-Za-z0-9.-]+)\\n',
+                  r'\1 \\n',
+                  text,
+              )
+              if count:
+                  path.write_text(fixed, encoding='utf-8', newline='\n')
+              total += count
+          if total == 0:
+              raise SystemExit('No malformed embedded card-source URL suffixes found')
+          print(f'Repaired {total} embedded card-source URL separators')
+          PY
+          git add scripts/apply_issue_2293_semantic_fix_20260809.py scripts/apply_issue_2293_semantic_gate_fix_20260809.py
+          git commit -m 'Fix #2293 materializer source URL separators'
+          git push origin HEAD:${{ github.head_ref }}

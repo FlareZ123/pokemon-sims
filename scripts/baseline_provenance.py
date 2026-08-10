@@ -107,14 +107,13 @@ class _SourceDigestBuilder:
         for path in paths:
             self.add_path(path)
 
-
-def _build_source_digest(repo_root: Path) -> _Digest:
-    """Build the aggregate digest from the stable simulator input sequence."""
-    builder = _SourceDigestBuilder(repo_root)
-    builder.add_paths(simulator_policy_source_paths(repo_root))
-    return builder.digest
+    def hexdigest(self) -> str:
+        """Return the completed aggregate source digest."""
+        return self.digest.hexdigest()
 
 
 def simulator_policy_source_digest(repo_root: Path) -> str:
     """Hash aggregate simulator inputs in stable path order."""
-    return _build_source_digest(repo_root).hexdigest()
+    builder = _SourceDigestBuilder(repo_root)
+    builder.add_paths(simulator_policy_source_paths(repo_root))
+    return builder.hexdigest()

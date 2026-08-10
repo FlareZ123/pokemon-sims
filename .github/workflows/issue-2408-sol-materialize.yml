@@ -1,0 +1,52 @@
+name: Issue 2408 Sol source materializer
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/issue-2408-sol-materialize.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bug/2408-burnet-before-serena-sol
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Rebase source context onto current main
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git merge --no-edit origin/main
+      - name: Materialize source fix
+        shell: python
+        run: |
+          from pathlib import Path
+
+          source = Path('src/trace_engine_v2/part_014b.inc')
+          text = source.read_text(encoding='utf-8')
+          marker = '    // Exact Serena text: discard up to 3 cards, but "You must discard at least 1 card."\n'
+          block = '''    // K1 can prove Burnet has a deck-resident Dragon payload. When the payload\n    // is the sole missing strict-JIT axis, Burnet reaches the same ready turn while\n    // preserving Serena and the held Dragon. A live Item outlet stays higher because\n    // it preserves the entire Supporter action.\n    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26\n    // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164\n    // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100\n    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136\n    // Official Supporter, search, and discard procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf\n    // K1 and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities\n    // Strict-JIT payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment\n    // DCI resource model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation\n    // Existing Item-outlet boundary: https://github.com/FlareZ123/pokemon-sims/issues/1341\n    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2408\n    const bool burnet_preserves_serena_and_held_payload =\n        scenario_.dci == DciProfile::StrictJit && prizes_known() &&\n        need_payload() && !need_regi() && !need_vstar() && !need_energy() &&\n        !need_active_vstar() && hand_count(Card::ProfessorBurnet) > 0 &&\n        hand_count(Card::Serena) > 0 &&\n        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&\n        professor_burnet_has_live_ready_turn_route() &&\n        !has_live_blender_payload_line() &&\n        !has_live_one_discard_hand_payload_line() &&\n        !has_live_ultra_ball_hand_payload_line();\n    if (burnet_preserves_serena_and_held_payload && play_professor_burnet()) return;\n\n'''
+          if 'burnet_preserves_serena_and_held_payload' in text:
+              raise SystemExit('Issue-2408 source fix already exists')
+          if text.count(marker) != 1:
+              raise SystemExit('Serena selector anchor changed')
+          source.write_text(text.replace(marker, block + marker, 1),
+                            encoding='utf-8', newline='\n')
+      - name: Commit source and remove one-shot materializer
+        shell: bash
+        run: |
+          git add src/trace_engine_v2/part_014b.inc
+          git rm .github/workflows/issue-2408-sol-materialize.yml
+          git commit -m 'Fix #2408 prefer K1 Burnet over Serena'
+          git push origin HEAD:bug/2408-burnet-before-serena-sol

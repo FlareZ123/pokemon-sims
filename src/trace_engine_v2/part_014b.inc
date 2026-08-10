@@ -350,6 +350,32 @@
         !need_energy() && need_payload() && has_live_blender_payload_line();
     if ((tate_switch_only_active_axis || tate_switch_then_blender_payload) && play_tate_switch()) return;
 
+    // K1 can prove Burnet has a deck-resident Dragon payload. When the payload
+    // is the sole missing strict-JIT axis, Burnet reaches the same ready turn while
+    // preserving Serena and the held Dragon. A live Item outlet stays higher because
+    // it preserves the entire Supporter action.
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+    // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Supporter, search, and discard procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Strict-JIT payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // DCI resource model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Existing Item-outlet boundary: https://github.com/FlareZ123/pokemon-sims/issues/1341
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2408
+    const bool burnet_preserves_serena_and_held_payload =
+        scenario_.dci == DciProfile::StrictJit && prizes_known() &&
+        need_payload() && !need_regi() && !need_vstar() && !need_energy() &&
+        !need_active_vstar() && hand_count(Card::ProfessorBurnet) > 0 &&
+        hand_count(Card::Serena) > 0 &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
+        professor_burnet_has_live_ready_turn_route() &&
+        !has_live_blender_payload_line() &&
+        !has_live_one_discard_hand_payload_line() &&
+        !has_live_ultra_ball_hand_payload_line();
+    if (burnet_preserves_serena_and_held_payload && play_professor_burnet()) return;
+
     // Exact Serena text: discard up to 3 cards, but "You must discard at least 1 card."
     // A zero-discard draw is illegal: https://api.pokemontcg.io/v2/cards/swsh12-164
     // This route requires an in-hand payload as that mandatory discard, then resolves

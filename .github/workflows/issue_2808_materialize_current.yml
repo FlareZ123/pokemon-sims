@@ -26,7 +26,21 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git fetch origin main
-          git merge --no-edit origin/main
+          if git merge --no-edit origin/main; then
+            :
+          else
+            # Current main removed this folded wrapper. The Garbodor hooks already
+            # live in composition/engine_body.inc, so accept the deletion:
+            # https://github.com/FlareZ123/pokemon-sims/issues/2808
+            git rm -f src/trace_engine_v2/composition/turn_reporting_body.inc 2>/dev/null || true
+            unresolved=$(git diff --name-only --diff-filter=U)
+            if [ -n "$unresolved" ]; then
+              echo 'Unexpected unresolved paths after current-main merge:' >&2
+              echo "$unresolved" >&2
+              exit 1
+            fi
+            git commit --no-edit
+          fi
 
           python - <<'PY'
           from pathlib import Path

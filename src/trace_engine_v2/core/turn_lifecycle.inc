@@ -54,5 +54,7 @@
     reset_per_turn_state(turn);
     if (!draw_start_of_turn_card()) return;
 
-    if (first_turn_going_first()) trace_first_turn_restrictions();
+    if (first_turn_going_first()) {
+      trace_first_turn_restrictions();
+    }
   }

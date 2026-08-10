@@ -8,5 +8,6 @@
   }
 
   int unresolved_fixed_list_copy_count(const Card card) const {
-    return std::max(0, total_copies(card) - publicly_known_copy_count(card));
+    const int unresolved = total_copies(card) - publicly_known_copy_count(card);
+    return std::max(0, unresolved);
   }

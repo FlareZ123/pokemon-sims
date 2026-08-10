@@ -1,0 +1,272 @@
+name: DDE reclaimed push recovery
+
+on:
+  push:
+    branches:
+      - fix/dde-semantic-rollup-reclaim-20260809
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/dde-semantic-rollup-reclaim-20260809
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Merge current main and resolve audited overlaps
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge --no-commit --no-edit origin/main || true
+
+          mapfile -t conflicts < <(git diff --name-only --diff-filter=U)
+          expected=(
+            docs/MULTI_DECK_REPORT.md
+            docs/REPORT.md
+            results/baseline_manifest.json
+            results/multi_deck_comparison.csv
+            results/multi_deck_manifest.json
+            results/simulation_results.csv
+            src/trace_engine_v2/part_009b1.inc
+            src/trace_engine_v2/part_014c_field_blower_override.inc
+            src/trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc
+            src/trace_engine_v2/composition/engine_body.inc
+            src/trace_engine_v2/composition/steven_blender_overrides.inc
+            src/trace_engine_v2/composition/tapu_search_overrides.inc
+          )
+          for path in "${conflicts[@]}"; do
+            found=0
+            for allowed in "${expected[@]}"; do
+              if [ "$path" = "$allowed" ]; then found=1; break; fi
+            done
+            if [ "$found" -ne 1 ]; then
+              echo "Unexpected DDE merge conflict: $path" >&2
+              exit 1
+            fi
+          done
+
+          for path in \
+            docs/MULTI_DECK_REPORT.md \
+            docs/REPORT.md \
+            results/baseline_manifest.json \
+            results/multi_deck_comparison.csv \
+            results/multi_deck_manifest.json \
+            results/simulation_results.csv; do
+            if git diff --name-only --diff-filter=U | grep -Fxq "$path"; then
+              git checkout --theirs -- "$path"
+              git add "$path"
+            fi
+          done
+
+          for path in \
+            src/trace_engine_v2/composition/engine_body.inc \
+            src/trace_engine_v2/composition/steven_blender_overrides.inc; do
+            if git diff --name-only --diff-filter=U | grep -Fxq "$path"; then
+              git checkout --theirs -- "$path"
+              git add "$path"
+            fi
+          done
+          if git diff --name-only --diff-filter=U | grep -Fxq src/trace_engine_v2/composition/tapu_search_overrides.inc; then
+            git rm -f src/trace_engine_v2/composition/tapu_search_overrides.inc
+          fi
+
+          for path in \
+            src/trace_engine_v2/part_009b1.inc \
+            src/trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc; do
+            if git diff --name-only --diff-filter=U | grep -Fxq "$path"; then
+              git checkout --ours -- "$path"
+              git add "$path"
+            fi
+          done
+
+          if git diff --name-only --diff-filter=U | grep -Fxq src/trace_engine_v2/part_014c_field_blower_override.inc; then
+            git checkout --theirs -- src/trace_engine_v2/part_014c_field_blower_override.inc
+            git add src/trace_engine_v2/part_014c_field_blower_override.inc
+          fi
+
+          python - <<'PY'
+          import fcntl
+          import os
+          import tempfile
+          from pathlib import Path
+
+          def atomic_transform(path_text, transform):
+              path = Path(path_text)
+              lock_path = path.with_name(f'.{path.name}.lock')
+              with lock_path.open('w', encoding='utf-8') as lock:
+                  fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+                  text = path.read_text(encoding='utf-8')
+                  updated = transform(text)
+                  if updated == text:
+                      return
+                  fd, temp_name = tempfile.mkstemp(prefix=f'.{path.name}.', dir=path.parent)
+                  try:
+                      with os.fdopen(fd, 'w', encoding='utf-8', newline='\n') as handle:
+                          handle.write(updated)
+                          handle.flush()
+                          os.fsync(handle.fileno())
+                      os.replace(temp_name, path)
+                  except BaseException:
+                      try:
+                          os.unlink(temp_name)
+                      except FileNotFoundError:
+                          pass
+                      raise
+                  finally:
+                      try:
+                          lock_path.unlink()
+                      except FileNotFoundError:
+                          pass
+
+          def patch_009b1(text):
+              old = '''    // K1, strict-JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities\n    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1797\n    return scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&\n'''
+              new = '''    // K1, same-turn JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities\n    // Cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2714\n    // Confirmed route bug: https://github.com/FlareZ123/pokemon-sims/issues/1797\n    return strict_payload_timing() && scenario_.going_first &&\n'''
+              if text.count(old) != 1:
+                  raise SystemExit('part_009b1 #2714 anchor changed unexpectedly')
+              updated = text.replace(old, new, 1)
+              required = 'state_.active->double_dragon == 0 && // https://github.com/FlareZ123/pokemon-sims/issues/2368'
+              if required not in updated:
+                  raise SystemExit('part_009b1 lost the DDE exclusion for the two-Basic route')
+              return updated
+
+          def patch_1209(text):
+              old = '''    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2094\n\n    if (scenario_.dci != DciProfile::StrictJit || state_.turn != 2 ||\n'''
+              new = '''    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2094\n    // Strict JIT and MatchupFlex JIT share the same ready-turn payload timing:\n    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment\n    // Cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2800\n\n    if (!strict_payload_timing() || state_.turn != 2 ||\n'''
+              if text.count(old) != 1:
+                  raise SystemExit('part_issue_1209 #2800 anchor changed unexpectedly')
+              updated = text.replace(old, new, 1)
+              for required in (
+                  'for (const Card crispin_attachment : {Card::Grass, Card::Fire})',
+                  'projected.pays_apex_energy_cost(*projected.state_.active)',
+              ):
+                  if required not in updated:
+                      raise SystemExit(f'part_issue_1209 lost DDE semantic contract: {required}')
+              return updated
+
+          field_helpers = r'''
+  bool play_earthen_vessel_semantic_payload_outlet(const bool permit_payload) {
+    const auto cost = choose_discard(
+        permit_payload, true, true, Card::EarthenVessel);
+    const bool payload_only_route = permit_payload && strict_payload_timing() &&
+        !item_locked() && deck_search_available() && state_.active &&
+        active_is_vstar() && pays_apex_energy_cost(*state_.active) &&
+        need_payload() && !need_energy() &&
+        hand_count(Card::EarthenVessel) > 0 &&
+        earthen_vessel_has_legal_target() && cost.has_value() &&
+        is_payload(*cost);
+    if (!payload_only_route) return play_earthen_vessel(permit_payload);
+
+    // Earthen Vessel still has a legal printed effect when the attack's Energy cost
+    // is already paid: its mandatory hand discard can establish the current-turn
+    // Dragon payload, then its up-to-two Basic-Energy search resolves normally.
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Item, discard-cost, deck-search, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Strict-JIT and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Original continuation: https://github.com/FlareZ123/pokemon-sims/issues/1017
+    // DDE migration: https://github.com/FlareZ123/pokemon-sims/issues/2424
+    // Umbrella migration audit: https://github.com/FlareZ123/pokemon-sims/issues/2368
+    if (!remove_one(state_.hand, Card::EarthenVessel)) {
+      throw std::logic_error("Semantic-ready Earthen Vessel disappeared");
+    }
+    state_.discard.push_back(Card::EarthenVessel);
+    if (!discard_from_hand(*cost, "Earthen Vessel semantic-ready payload cost",
+                           "R-EV-01; P-DCI-01; P-JIT-01; P-COMPRESS-01")) {
+      throw std::logic_error("Semantic-ready Earthen Vessel payload cost disappeared");
+    }
+    search_energy_to_hand(
+        2, "R-EV-01; R-GAME-ITEM; P-DCI-01; P-JIT-01; P-COMPRESS-01",
+        "Earthen Vessel semantic-ready payload route");
+    return true;
+  }
+
+  bool pays_apex_energy_cost_current_evolution_window(const Pokemon& pokemon) const {
+    const bool first_turn_vstar_continuation = state_.turn == 1 &&
+        scenario_.dci == DciProfile::StrictJit &&
+        pokemon.card == Card::RegidragoV &&
+        pokemon.entered_turn < state_.turn &&
+        hand_count(Card::RegidragoVstar) > 0 &&
+        hand_count(Card::EarthenVessel) > 0 &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
+        earthen_vessel_has_legal_target();
+    if (first_turn_vstar_continuation) {
+      // A Basic Regidrago can have enough attached Energy on the first turn while
+      // still being unable to evolve that turn. The late Steven/Vessel continuation
+      // is a current-turn VSTAR route, so semantic Energy payment must not admit it
+      // until the evolution window is legal.
+      // Official first-turn evolution restriction: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Original continuation: https://github.com/FlareZ123/pokemon-sims/issues/1017
+      // DDE migration: https://github.com/FlareZ123/pokemon-sims/issues/2424
+      return false;
+    }
+    return pays_apex_energy_cost(pokemon);
+  }
+'''
+
+          def patch_field_blower(text):
+              if 'play_earthen_vessel_semantic_payload_outlet' not in text:
+                  marker = '\n  bool secret_box_combo_enabled_issue1875() const {'
+                  if text.count(marker) != 1:
+                      raise SystemExit('Field Blower semantic helper anchor changed unexpectedly')
+                  text = text.replace(marker, field_helpers + marker, 1)
+              footer = '''#undef secret_box_combo_enabled\n#undef run_secret_box_turn\n#define secret_box_combo_enabled secret_box_combo_enabled_issue1875\n#define run_secret_box_turn run_secret_box_turn_issue1875'''
+              dde_footer = '''#undef play_earthen_vessel\n#undef pays_apex_energy_cost\n#undef secret_box_combo_enabled\n#undef run_secret_box_turn\n#define play_earthen_vessel play_earthen_vessel_semantic_payload_outlet\n#define pays_apex_energy_cost pays_apex_energy_cost_current_evolution_window\n#define secret_box_combo_enabled secret_box_combo_enabled_issue1875\n#define run_secret_box_turn run_secret_box_turn_issue1875'''
+              if '#define play_earthen_vessel play_earthen_vessel_semantic_payload_outlet' not in text:
+                  if text.count(footer) != 1:
+                      raise SystemExit('Field Blower macro footer changed unexpectedly')
+                  text = text.replace(footer, dde_footer, 1)
+              return text
+
+          atomic_transform('src/trace_engine_v2/part_009b1.inc', patch_009b1)
+          atomic_transform('src/trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc', patch_1209)
+          atomic_transform('src/trace_engine_v2/part_014c_field_blower_override.inc', patch_field_blower)
+          PY
+
+          git add src/trace_engine_v2/part_009b1.inc \
+                  src/trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc \
+                  src/trace_engine_v2/part_014c_field_blower_override.inc
+
+          if git diff --name-only --diff-filter=U | grep -q .; then
+            echo 'Unresolved conflicts remain:' >&2
+            git diff --name-only --diff-filter=U >&2
+            exit 1
+          fi
+      - name: Remove temporary recovery files from proposed tree
+        run: |
+          rm -f .github/workflows/dde-materialize-runner.yml
+          rm -f .github/workflows/dde-rollup-reclaim-materialize.yml
+          rm -f .github/workflows/dde-reclaim-push-recovery.yml
+          rm -f docs/dde-reclaim-trigger-20260809.md
+          rm -f docs/dde-reclaim-trigger-20260810.md
+          git add -A
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run focused DDE regression suite
+        run: ctest --test-dir build --output-on-failure -R 'issue_2368|issue_241|issue_242|issue_243|issue_244|issue_2714|issue_2800|issue_2807'
+      - name: Run three reviewed simulate-this traces
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2
+      - name: Commit materialized current-main DDE rollup
+        run: |
+          git status --short
+          git diff --cached --check
+          git commit -m 'Fix #2368 merge semantic DDE rollup onto current main'
+          git push origin HEAD:fix/dde-semantic-rollup-reclaim-20260809

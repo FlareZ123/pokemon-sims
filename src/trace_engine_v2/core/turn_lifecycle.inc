@@ -8,11 +8,15 @@
     state_.dark_asset_used = false;  // Dark Asset is limited per turn: https://api.pokemontcg.io/v2/cards/swsh3-104
   }
 
+  void reset_turn_transients() {
+    state_.turn_ended = false;
+    state_.discarded_this_turn.clear();
+  }
+
   void reset_per_turn_state(const int turn) {
     state_.turn = turn;
     reset_turn_action_usage();
-    state_.turn_ended = false;
-    state_.discarded_this_turn.clear();
+    reset_turn_transients();
   }
 
   bool draw_start_of_turn_card() {

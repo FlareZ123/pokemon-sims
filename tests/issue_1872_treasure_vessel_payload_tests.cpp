@@ -74,7 +74,8 @@ void test_exact_route_both_turn_orders_and_jit_profiles() {
   for (const sim::DciProfile profile : {sim::DciProfile::StrictJit,
                                         sim::DciProfile::MatchupFlexJit}) {
     for (const bool going_first : {true, false}) {
-      sim::Engine engine = make_engine(jit(profile, going_first), rng, base_state());
+      const sim::Scenario scenario = jit(profile, going_first);
+      sim::Engine engine = make_engine(scenario, rng, base_state());
       // Both JIT profiles require the Dragon payload on the ready turn: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
       // Mysterious Treasure, Earthen Vessel, and Apex Dragon: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sv4-163 https://api.pokemontcg.io/v2/cards/swsh12-136
       // Confirmed profile-overfitting bug: https://github.com/FlareZ123/pokemon-sims/issues/2742
@@ -97,8 +98,9 @@ void test_exact_route_both_turn_orders_and_jit_profiles() {
 
   // No-discard-control has different payload timing from the same-turn JIT profiles: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
   // Confirmed profile-overfitting bug boundary: https://github.com/FlareZ123/pokemon-sims/issues/2742
-  sim::Engine no_control = make_engine(
-      jit(sim::DciProfile::NoDiscardControl, true), rng, base_state());
+  const sim::Scenario no_control_scenario =
+      jit(sim::DciProfile::NoDiscardControl, true);
+  sim::Engine no_control = make_engine(no_control_scenario, rng, base_state());
   expect(!sim::EngineTestAccess::route_available(no_control),
          "No-discard-control admitted the JIT-only Treasure-Vessel route.");
 }

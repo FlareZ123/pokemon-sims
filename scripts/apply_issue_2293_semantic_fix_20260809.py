@@ -143,7 +143,7 @@ if helper not in text:
     text = text.replace(selector_anchor, helper + selector_anchor, 1)
 
 priority_anchor = """    if (crispin_finishes_current_turn_prized_energy_route) return Card::Crispin;\n\n    // Wonder Tag is resolving after legal deck inspection. A known prized\n"""
-priority_insert = """    if (crispin_finishes_current_turn_prized_energy_route) return Card::Crispin;\n\n    if (k1_prized_latias_gladion_promotion_route()) {\n      // Gladion recovers the K1-known prized Latias ex that uniquely completes\n      // the unresolved Active-position axis: https://api.pokemontcg.io/v2/cards/sm4-95\n      // https://api.pokemontcg.io/v2/cards/sv8-76\n      // https://github.com/FlareZ123/pokemon-sims/issues/2293\n      return Card::Gladion;\n    }\n\n    // Wonder Tag is resolving after legal deck inspection. A known prized\n"""
+priority_insert = """    if (crispin_finishes_current_turn_prized_energy_route) return Card::Crispin;\n\n    if (k1_prized_latias_gladion_promotion_route()) {\n      // Gladion recovers the K1-known prized Latias ex that uniquely completes\n      // the unresolved Active-position axis: https://api.pokemontcg.io/v2/cards/sm4-95 \n      // https://api.pokemontcg.io/v2/cards/sv8-76 \n      // https://github.com/FlareZ123/pokemon-sims/issues/2293\n      return Card::Gladion;\n    }\n\n    // Wonder Tag is resolving after legal deck inspection. A known prized\n"""
 if priority_insert not in text:
     if text.count(priority_anchor) != 1:
         raise RuntimeError("#2293 Wonder Tag priority anchor mismatch")

@@ -52,7 +52,7 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 ## Regidrago-Pineco with Secret Box
 
 | Scenario | T2 ± SE | T3 ± SE | T4 ± SE | Failure ± SE |
-|---|---:|---:|---:|---:|---:|
+|---|---:|---:|---:|---:|
 | Strict JIT, going first | 19.762% ± 0.126 | 49.001% ± 0.158 | 66.554% ± 0.149 | 33.446% ± 0.149 |
 | Matchup-flex JIT, going first | 21.284% ± 0.129 | 50.380% ± 0.158 | 68.485% ± 0.147 | 31.515% ± 0.147 |
 | No discard control, going first | 25.216% ± 0.137 | 60.418% ± 0.155 | 75.805% ± 0.135 | 24.195% ± 0.135 |

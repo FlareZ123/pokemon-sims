@@ -64,6 +64,7 @@ void test_paid_dde_grass_does_not_reserve_powerglass() {
   // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
   // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
   // Crobat V / Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+  // Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2533
   expect(sim::EngineTestAccess::fss_crobat_compression_available(fixture.engine),
          "DDE + Grass incorrectly reserved the Tool slot for redundant Powerglass.");

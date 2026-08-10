@@ -12,44 +12,10 @@
 #include "../core/payload_hand_policy.inc"
 #include "../core/tapu_legacy_aliases.inc"
 
-// part_006 owns the opening Bench/connector aliases and exports choose_discard for
-// the Tate continuation below. Keep the boundary directly before part_007/008a.
-// Composition source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_legacy_bench_body.inc
-#include "opening_legacy_bench_body.inc"
-
-// Keep the legacy Tate attachment/draw body in this same opening boundary. The
-// exported choose_discard alias from part_006.inc is consumed by part_007.inc and
-// part_008a.inc before the later discard-policy overrides replace it.
-// Historical split sources:
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_007.inc
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_008a.inc
-#if defined(attach_manual) || defined(play_tate_switch) || defined(play_tate_draw)
-#error "Tate legacy composition requires local aliases to be undefined on entry"
-#endif
-#if !defined(choose_discard)
-#error "Tate legacy composition requires the opening choose_discard alias"
-#endif
-
-#define attach_manual attach_manual_tate_blender_original
-#include "../part_007.inc"
-#undef attach_manual
-
-#define play_tate_switch play_tate_switch_tate_blender_original
-#define play_tate_draw play_tate_draw_tate_blender_original
-#include "../part_008a.inc"
-#undef play_tate_draw
-#undef play_tate_switch
-
-#undef choose_discard
-#define choose_discard choose_discard_issue2323_original
-#include "../part_issue_1436_full_supporter_dci_override.inc"
-#undef choose_discard
-#include "../part_issue_2323_final_payload_guard.inc"
-
-#if defined(attach_manual) || defined(play_tate_switch) || \
-    defined(play_tate_draw) || defined(choose_discard)
-#error "Tate legacy composition leaked a local alias"
-#endif
+// Keep the coupled part_006/007/008a alias lifetime in one named boundary before
+// the later Tate/discard override chain takes ownership.
+// Composition source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_legacy_body.inc
+#include "opening_legacy_body.inc"
 
 // part_007.inc opens evolve_best_regi(), and part_008a.inc completes it before
 // the later Tate/discard member overrides continue in this composition spine.

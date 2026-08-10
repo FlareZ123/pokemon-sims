@@ -225,47 +225,9 @@
 #include "trace_engine_v2/part_issue_1016_legacy_star_quick_ball_override.inc"
 #undef use_legacy_star
 #include "trace_engine_v2/part_issue_1069_legacy_star_combined_energy_payload_override.inc"
-#define play_gladion play_gladion_prize_payload_original
-#include "trace_engine_v2/part_012_gladion_override.inc"
-#undef play_gladion
-#define play_gladion play_gladion_issue1030_original
-#include "trace_engine_v2/part_prize_payload_outlet_override.inc"
-#undef play_gladion
-#define play_gladion play_gladion_issue1191_original
-#include "trace_engine_v2/part_issue_1030_gladion_turo_override.inc"
-#undef play_gladion
-#define play_gladion play_gladion_issue1595_original
-#include "trace_engine_v2/part_issue_1191_gladion_steven_override.inc"
-#undef play_gladion
-#define play_gladion play_gladion_issue1608_original
-#include "trace_engine_v2/part_issue_1595_gladion_grass_turo_blender_override.inc"
-#undef play_gladion
-#include "trace_engine_v2/part_issue_1608_burnet_before_dead_crispin_override.inc"
-#define play_arven play_arven_powerglass_original
-#include "trace_engine_v2/part_012_override.inc"
-#undef play_arven
-#define play_arven play_arven_fss_blender_contention_original
-#include "trace_engine_v2/part_012_powerglass_override.inc"
-#undef play_arven
-#define play_arven play_arven_empty_deck_original
-#include "trace_engine_v2/part_012_arven_fss_blender_contention_override.inc"
-#undef play_arven
-#define choose_supporter choose_supporter_original
-#include "trace_engine_v2/part_014b.inc"
-#undef choose_supporter
-#define choose_supporter choose_supporter_turo_original
-#include "trace_engine_v2/part_team_yell_vstar_override.inc"
-#undef choose_supporter
-#include "trace_engine_v2/part_roseanne_multimode_override.inc"
-#define choose_supporter choose_supporter_klara_original
-#include "trace_engine_v2/part_turo_oricorio_override.inc"
-#undef choose_supporter
-#define choose_supporter choose_supporter_issue1070_original
-#include "trace_engine_v2/part_klara_recovery_override.inc"
-#undef choose_supporter
-#define choose_supporter choose_supporter_issue1209_original
-#include "trace_engine_v2/part_issue_1070_tate_after_vstar_search_override.inc"
-#undef choose_supporter
+#include "trace_engine_v2/composition/gladion_overrides.inc"
+#include "trace_engine_v2/composition/arven_overrides.inc"
+#include "trace_engine_v2/composition/supporter_selection_overrides.inc"
 #define bench_oricorio_if_useful bench_oricorio_if_useful_target_original
 #define ultra_ball_has_legal_target ultra_ball_has_legal_target_k0_target_original
 #define play_ultra_ball play_ultra_ball_k0_target_original

@@ -191,6 +191,7 @@ class Engine {
     return locks == LockMode::FullSupporter;
   }
   bool first_turn_going_first() const { return state_.turn == 1 && scenario_.going_first; }
+  bool first_turn_going_second() const { return state_.turn == 1 && !scenario_.going_first; }
   bool supporter_allowed() const {
     return !uses_full_supporter_lock(scenario_.locks) && !first_turn_going_first() &&
            !state_.supporter_used && !state_.turn_ended;

@@ -1,0 +1,42 @@
+name: Issue 2759 materializer
+on:
+  pull_request:
+    paths: ['.github/workflows/issue-2759-materialize.yml']
+permissions:
+  contents: write
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: fix/2759-reclaim-current-main, fetch-depth: 0}
+      - name: Merge current main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge --no-edit origin/main
+      - name: Apply shared JIT gate atomically
+        run: |
+          python - <<'PY'
+          import os, tempfile
+          from pathlib import Path
+          p=Path('src/trace_engine_v2/part_issue_1874_duplicate_treasure_payload_route.inc')
+          s=p.read_text(encoding='utf-8')
+          old='''    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1874\n    return scenario_.dci == DciProfile::StrictJit && state_.turn == 3 &&\n'''
+          new='''    // Original route bug: https://github.com/FlareZ123/pokemon-sims/issues/1874\n    // Shared current-turn JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment\n    // Confirmed profile-gate bug: https://github.com/FlareZ123/pokemon-sims/issues/2759\n    return strict_payload_timing() && state_.turn == 3 &&\n'''
+          if s.count(old)!=1: raise SystemExit(f'expected one issue-1874 gate, found {s.count(old)}')
+          s=s.replace(old,new)
+          fd,t=tempfile.mkstemp(prefix=f'.{p.name}.',dir=p.parent)
+          try:
+            with os.fdopen(fd,'w',encoding='utf-8',newline='\n') as f: f.write(s); f.flush(); os.fsync(f.fileno())
+            os.replace(t,p)
+          finally:
+            if os.path.exists(t): os.unlink(t)
+          PY
+      - name: Commit materialized fix
+        run: |
+          rm .github/workflows/issue-2759-materialize.yml
+          git add src/trace_engine_v2/part_issue_1874_duplicate_treasure_payload_route.inc tests/issue_2759_jit_profile_gate_tests.cpp .github/workflows/issue-2759-materialize.yml
+          git commit -m "Fix #2759: share issue-1874 JIT timing gate"
+          git push origin HEAD:fix/2759-reclaim-current-main

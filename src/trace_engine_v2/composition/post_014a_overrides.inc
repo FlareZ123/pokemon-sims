@@ -33,7 +33,7 @@
 
 // Keep the final policy fragments directly on this named post-search spine so the
 // engine no longer crosses another wrapper whose only job is forwarding includes.
-#include "legacy_star_overrides.inc"
+#include "legacy_star_projection_chain.inc" // Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
 #include "supporter_overrides.inc"
 #include "search_item_overrides.inc"
 #include "secret_box_trace_overrides.inc"

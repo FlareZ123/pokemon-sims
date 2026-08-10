@@ -1,0 +1,52 @@
+name: Cleanup validation 2026-08-10
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/cleanup-validation-20260810.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+
+      - name: Release tests excluding approval-pending provenance contracts
+        run: ctest --test-dir build --output-on-failure -E 'setup_report_contract|multi_deck_report_contract|card_audit_contract'
+
+      - name: Simulate-this pass 1
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-1.txt
+
+      - name: Simulate-this pass 2
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-2.txt
+
+      - name: Simulate-this pass 3
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-first --seed 6 --require-ready-by 4 | tee trace-3.txt
+
+      - name: Pineco route control
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-pineco.txt
+
+      - name: Final paired T2 T3 matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out final-matrix.csv
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cleanup-validation-20260810
+          path: |
+            trace-1.txt
+            trace-2.txt
+            trace-3.txt
+            trace-pineco.txt
+            final-matrix.csv
+          if-no-files-found: error

@@ -78,7 +78,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          g++ -std=c++20 -O2 tests/minior_oricorio_shell_experiment.cpp -o minior-oricorio-shell-experiment
+          g++ -std=c++20 -O2 experiments/minior_oricorio_shell_experiment.cpp -o minior-oricorio-shell-experiment
           ./minior-oricorio-shell-experiment | tee minior-oricorio-shell-matrix.csv
       - name: Verify source-bound provenance
         run: |

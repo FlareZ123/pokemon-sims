@@ -1,11 +1,12 @@
-// The historical registry is defined later in part_014c.inc. Forward-declare the
-// composition-local name so the Garbodor wrapper can live at namespace scope before
-// Engine opens, while the legacy split files keep their source layout unchanged:
+// The historical registry is defined later in part_014c.inc. This wrapper is
+// composed at a verified namespace boundary after Engine closes, so a forward
+// declaration is sufficient while preserving the public historical registry for
+// the existing test corpus:
 // https://github.com/FlareZ123/pokemon-sims/issues/2808
-std::vector<Scenario> all_scenarios_without_garbodor();
+std::vector<Scenario> all_scenarios();
 
 std::vector<Scenario> all_scenarios_with_garbodor() {
-  std::vector<Scenario> result = all_scenarios_without_garbodor();
+  std::vector<Scenario> result = all_scenarios();
   // Garbodor BKP 57 suppresses Pokemon Abilities while it has a Tool. Boost Shake
   // establishes Garbodor during the opponent's first turn, producing different
   // Regidrago T1 timing by seat. Append these rows so existing scenario indexes and

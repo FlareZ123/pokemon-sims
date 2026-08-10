@@ -1,0 +1,54 @@
+name: Reclaim issue 2658 on current main
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/reclaim-2658-current-main.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  replay:
+    if: github.head_ref == 'fix/2658-reclaim-20260810-0332'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Verify production file stayed unchanged since reviewed base
+        shell: bash
+        run: |
+          git fetch origin main fix/2658-go-first-t1-treasure-before-steven
+          git diff --quiet f3c5649cc74759631073aa8f70e8f7d51e016591 origin/main -- src/trace_engine_v2/part_issue_2323_early_treasure_regi_override.inc
+      - name: Replay reviewed semantic fix and regression
+        shell: bash
+        run: |
+          git checkout origin/fix/2658-go-first-t1-treasure-before-steven -- src/trace_engine_v2/part_issue_2323_early_treasure_regi_override.inc tests/issue_2658_go_first_t1_treasure_before_steven_tests.cpp
+          rm .github/workflows/reclaim-2658-current-main.yml
+          git diff --check
+      - name: Build and validate focused route
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R 'issue_2658' --output-on-failure
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 3 --require-ready-by 3 | tee issue-2658-seed3.txt
+          grep -q 'T3 | READY' issue-2658-seed3.txt
+      - name: Run three independent simulate-this controls
+        shell: bash
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-control-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee trace-control-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-control-3.txt
+      - name: Commit validated replay
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Fix #2658 use T1 Treasure before Steven'
+          git push origin HEAD:${{ github.head_ref }}

@@ -18,9 +18,13 @@
     // Official Item, Supporter, attachment, search, and discard procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, dynamic DCI/JIT, Supporter contention, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1871
-    return scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
-        state_.turn == 3 && prizes_known() && !item_locked() &&
-        supporter_allowed() && !state_.manual_energy_used && active_is_vstar() &&
+    const bool same_turn_jit =
+        scenario_.dci == DciProfile::StrictJit ||
+        scenario_.dci == DciProfile::MatchupFlexJit;  // Same ready-turn payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed profile-overfitting bug: https://github.com/FlareZ123/pokemon-sims/issues/2741
+    return same_turn_jit && scenario_.going_first && state_.turn == 3 &&
+        prizes_known() && !item_locked() && supporter_allowed() &&
+        !state_.manual_energy_used && active_is_vstar() &&
         state_.active->grass == 1 && state_.active->fire == 1 && need_payload() &&
         hand_count(Card::MysteriousTreasure) > 0 &&
         hand_count(Card::Serena) > 0 && hand_count(Card::Grass) >= 2 &&

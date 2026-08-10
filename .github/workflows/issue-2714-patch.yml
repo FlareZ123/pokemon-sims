@@ -1,0 +1,113 @@
+name: Stage issue 2714 patch
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'bug/2714-jit-profile-route'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bug/2714-jit-profile-route
+      - name: Apply confirmed semantic JIT fix and tests
+        shell: python
+        run: |
+          from pathlib import Path
+
+          source_path = Path('src/trace_engine_v2/part_009b1.inc')
+          source = source_path.read_text(encoding='utf-8')
+          old = '''    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1797
+    return scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
+'''
+          new = '''    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1797
+    const bool ready_turn_payload_jit =
+        scenario_.dci == DciProfile::StrictJit ||
+        scenario_.dci == DciProfile::MatchupFlexJit;  // Same ready-turn payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment ; confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2714
+    return ready_turn_payload_jit && scenario_.going_first &&
+'''
+          if source.count(old) != 1:
+              raise SystemExit(f'production anchor count: {source.count(old)}')
+          source_path.write_text(source.replace(old, new), encoding='utf-8')
+
+          test_path = Path('tests/issue_1797_quick_ball_tapu_steven_tests.cpp')
+          tests = test_path.read_text(encoding='utf-8')
+          old_factory = '''sim::Scenario scenario(
+    const sim::LockMode locks = sim::LockMode::None,
+    const int max_turn = 5) {
+  return sim::Scenario{"issue-1797-quick-ball-tapu-steven",
+                       sim::DciProfile::StrictJit, locks, true, max_turn};
+}
+'''
+          new_factory = '''sim::Scenario scenario(
+    const sim::LockMode locks = sim::LockMode::None,
+    const int max_turn = 5,
+    const sim::DciProfile dci = sim::DciProfile::StrictJit) {
+  return sim::Scenario{"issue-1797-quick-ball-tapu-steven",
+                       dci, locks, true, max_turn};
+}
+'''
+          if tests.count(old_factory) != 1:
+              raise SystemExit(f'fixture anchor count: {tests.count(old_factory)}')
+          tests = tests.replace(old_factory, new_factory)
+
+          anchor = '''void exact_seed_reaches_turn_three() {
+'''
+          additions = '''void matchup_flex_jit_accepts_same_known_route() {
+  Fixture fixture{scenario(sim::LockMode::None, 5,
+                           sim::DciProfile::MatchupFlexJit)};
+  sim::EngineTestAccess::set_state(fixture.engine, t1_state());
+
+  // Strict JIT and matchup-flex JIT both require the permitted Dragon payload to
+  // enter discard on the ready turn, while the K1 T1 connector state is identical:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/sm2-60
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2714
+  expect(sim::EngineTestAccess::quick_ball_route(fixture.engine),
+         "The known Quick Ball-Tapu-Steven route rejected matchup-flex JIT");
+}
+
+void no_discard_control_rejects_jit_specific_route() {
+  Fixture fixture{scenario(sim::LockMode::None, 5,
+                           sim::DciProfile::NoDiscardControl)};
+  sim::EngineTestAccess::set_state(fixture.engine, t1_state());
+
+  // This connector is justified by the shared ready-turn-payload JIT contract;
+  // no-discard-control is a separate policy profile and remains outside this gate:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2714
+  expect(!sim::EngineTestAccess::quick_ball_route(fixture.engine),
+         "The JIT-specific Quick Ball-Tapu-Steven route admitted no-discard-control");
+}
+
+void exact_seed_reaches_turn_three() {
+'''
+          if tests.count(anchor) != 1:
+              raise SystemExit(f'test insertion anchor count: {tests.count(anchor)}')
+          tests = tests.replace(anchor, additions)
+
+          call_anchor = '''    expired_horizon_rejects_route();
+    exact_seed_reaches_turn_three();
+'''
+          call_replacement = '''    expired_horizon_rejects_route();
+    matchup_flex_jit_accepts_same_known_route();
+    no_discard_control_rejects_jit_specific_route();
+    exact_seed_reaches_turn_three();
+'''
+          if tests.count(call_anchor) != 1:
+              raise SystemExit(f'test call anchor count: {tests.count(call_anchor)}')
+          test_path.write_text(tests.replace(call_anchor, call_replacement), encoding='utf-8')
+      - name: Commit staged fix
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_009b1.inc tests/issue_1797_quick_ball_tapu_steven_tests.cpp
+          git commit -m "Fix #2714 semantic JIT Quick Ball route"
+          git push origin HEAD:bug/2714-jit-profile-route

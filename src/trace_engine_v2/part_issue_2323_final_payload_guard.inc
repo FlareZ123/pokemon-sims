@@ -9,9 +9,8 @@
     }
 
     const int held_payloads = payload_cards_in_hand_count();
-    const int spent_payloads_this_turn = static_cast<int>(std::count_if(
-        state_.discarded_this_turn.begin(), state_.discarded_this_turn.end(),
-        is_payload));
+    const int spent_payloads_this_turn =
+        payload_card_count(state_.discarded_this_turn);
     const bool timer_started_this_turn =
         (state_.active && state_.active->card == Card::RegidragoV &&
          state_.active->entered_turn == state_.turn) ||

@@ -80,7 +80,7 @@
 #include "trace_engine_v2/composition/tate_discard_overrides.inc"
 // base_search_overrides.inc is composed by tate_discard_overrides.inc.
 #include "trace_engine_v2/composition/steven_blender_overrides.inc"
-#include "trace_engine_v2/composition/tapu_search_overrides.inc"
+// tapu_search_overrides.inc is composed by steven_blender_overrides.inc.
 #define use_fss use_fss_latias_original
 #define play_crispin play_crispin_empty_deck_original
 #define play_professor_burnet play_professor_burnet_legacy_original

@@ -1,0 +1,54 @@
+name: Systemic static audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan whole repository for systemic gameplay-gate signatures
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          roots = [Path('src'), Path('tests'), Path('scripts')]
+          suffixes = {'.cpp', '.cc', '.cxx', '.h', '.hh', '.hpp', '.inc', '.py'}
+          patterns = {
+              'literal_dci_profile': re.compile(r'DciProfile::(?:StrictJit|MatchupFlexJit|NoDiscardControl)'),
+              'turn_or_seat_identity': re.compile(r'(?:going_first|goingSecond|going_second|\bturn\b\s*(?:==|!=|<=|>=)\s*\d+)'),
+              'seed_in_production': re.compile(r'\bseed\b', re.I),
+              'raw_basic_energy_math': re.compile(r'(?:grass|fire)[A-Za-z0-9_]*(?:\s*)(?:==|!=|<=|>=|<|>|\+|-)'),
+              'scenario_identity': re.compile(r'scenario_[A-Za-z0-9_]*|scenario\.(?:name|id|profile|going_first|going_second)'),
+              'semantic_helpers': re.compile(r'(?:pays_apex_energy_cost|preferred_manual_energy_for|strict_payload_timing|apex_[A-Za-z0-9_]*energy)'),
+              'issue_specific_logic': re.compile(r'issue[_ -]?\d+', re.I),
+          }
+
+          files = []
+          for root in roots:
+              if not root.exists():
+                  continue
+              files.extend(p for p in root.rglob('*') if p.is_file() and p.suffix.lower() in suffixes)
+          files = sorted(set(files))
+          print(f'FILES_SCANNED={len(files)}')
+
+          for label, pattern in patterns.items():
+              hits = []
+              for path in files:
+                  text = path.read_text(encoding='utf-8', errors='replace')
+                  for lineno, line in enumerate(text.splitlines(), 1):
+                      if pattern.search(line):
+                          hits.append((str(path), lineno, line.strip()))
+              print(f'\n=== {label}: {len(hits)} hits ===')
+              for path, lineno, line in hits[:1200]:
+                  print(f'{path}:{lineno}: {line}')
+              if len(hits) > 1200:
+                  print(f'... {len(hits)-1200} additional hits omitted')
+          PY

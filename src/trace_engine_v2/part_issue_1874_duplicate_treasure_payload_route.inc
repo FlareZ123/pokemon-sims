@@ -55,8 +55,10 @@
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official Item, cost, search, discard, attachment, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, dynamic DCI/JIT, connector contention, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1874
-    return scenario_.dci == DciProfile::StrictJit && state_.turn == 3 &&
+    // Original route bug: https://github.com/FlareZ123/pokemon-sims/issues/1874
+    // Shared current-turn JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed profile-gate bug: https://github.com/FlareZ123/pokemon-sims/issues/2759
+    return strict_payload_timing() && state_.turn == 3 &&
         prizes_known() && !item_locked() && !state_.manual_energy_used &&
         deck_search_available() && active_is_vstar() && state_.active &&
         state_.active->grass == 2 && state_.active->fire == 0 &&

@@ -122,4 +122,7 @@
     }
   }
 #undef choose_supporter
+#define choose_supporter choose_supporter_issue2408_original
 #include "part_issue_2225_arven_vessel_supporter_override.inc"
+#undef choose_supporter
+#include "part_issue_2408_burnet_resource_override.inc"

@@ -1,5 +1,6 @@
 #pragma once
 
+// CI validation marker for the behavior-preserving composition cleanup.
 // Keep the late Mysterious Treasure and Quick Ball wrapper chain together.
 // Each alias names the preceding implementation for the next wrapper, so the
 // ordering and matching undef boundaries must remain exact.

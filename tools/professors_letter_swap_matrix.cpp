@@ -1,6 +1,7 @@
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <fstream>
@@ -87,18 +88,52 @@ DeckRecipe professors_letter_swap_recipe() {
     throw std::logic_error(
         "regidrago-shell no longer has exactly two Earthen Vessel");
   }
-  recipe.erase(vessel);
-  recipe.push_back({Card::ProfessorsLetter, 2});
+
+  // Preserve the exact two physical recipe slots. Erasing Vessel and appending
+  // Letter changes the pre-shuffle vector order, so a shared RNG seed no longer
+  // pairs the other 58 physical cards. Replace the identity in place instead.
+  // Professor's Letter: https://api.pokemontcg.io/v2/cards/xy1-123
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Confirmed comparison bug: https://github.com/FlareZ123/pokemon-sims/issues/2599
+  vessel->first = Card::ProfessorsLetter;
 
   NamedDeck validation{"professors-letter-temporary-swap", recipe};
   std::string error;
   if (!validate_recipe(validation, &error)) throw std::logic_error(error);
-
-  // This is intentionally an unregistered paper-Expanded derivative:
-  // Professor's Letter: https://api.pokemontcg.io/v2/cards/xy1-123
-  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-  // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2509
   return recipe;
+}
+
+std::vector<Card> expanded_recipe(const DeckRecipe& recipe) {
+  std::vector<Card> cards;
+  for (const auto& [card, copies] : recipe) {
+    for (int copy = 0; copy < copies; ++copy) cards.push_back(card);
+  }
+  return cards;
+}
+
+void verify_slot_preserved_pairing(
+    const DeckRecipe& baseline, const DeckRecipe& letter) {
+  const auto baseline_cards = expanded_recipe(baseline);
+  const auto letter_cards = expanded_recipe(letter);
+  if (baseline_cards.size() != 60U || letter_cards.size() != 60U ||
+      baseline_cards.size() != letter_cards.size()) {
+    throw std::logic_error("Professor's Letter comparison recipes are not 60 cards");
+  }
+
+  std::size_t differences = 0;
+  for (std::size_t index = 0; index < baseline_cards.size(); ++index) {
+    if (baseline_cards[index] == letter_cards[index]) continue;
+    ++differences;
+    if (baseline_cards[index] != Card::EarthenVessel ||
+        letter_cards[index] != Card::ProfessorsLetter) {
+      throw std::logic_error(
+          "Professor's Letter pairing changed a non-Vessel physical slot");
+    }
+  }
+  if (differences != 2U) {
+    throw std::logic_error(
+        "Professor's Letter pairing did not replace exactly two Vessel slots");
+  }
 }
 
 VariantAggregate simulate_checkpoints(
@@ -106,16 +141,12 @@ VariantAggregate simulate_checkpoints(
     const std::uint64_t trials, const std::uint64_t seed) {
   VariantAggregate aggregate;
   for (std::uint64_t trial = 0; trial < trials; ++trial) {
-    // Reset the RNG for every game from a deterministic scenario/trial seed. The
-    // baseline and Letter variant therefore start each paired trial from the same
-    // random stream even when their different search/shuffle choices consume RNG
-    // differently inside earlier games. This is the common-random-number boundary
-    // for the temporary swap experiment:
-    // Professor's Letter: https://api.pokemontcg.io/v2/cards/xy1-123
-    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-    // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2509
-    const std::uint64_t trial_seed = seed + trial;
-    std::mt19937_64 rng(trial_seed);
+    // Each paired game gets a fresh deterministic RNG. Because the temporary
+    // recipe preserves physical slots, both variants begin from the same shuffle
+    // permutation until a replaced Vessel/Letter identity affects later actions.
+    // Core shuffle/search procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Pairing fix: https://github.com/FlareZ123/pokemon-sims/issues/2599
+    std::mt19937_64 rng(seed + trial);
     Engine engine(scenario, recipe, rng);
     const CheckpointTrial result = EngineTestAccess::run(engine);
     ++aggregate.trials;
@@ -161,42 +192,48 @@ void write_row(std::ostream& out, const std::string& variant,
 }  // namespace sim
 
 int main(int argc, char** argv) {
-  if (argc != 4) {
-    std::cerr << "usage: professors_letter_swap_matrix TRIALS SEED OUTPUT\n";
-    return 2;
+  try {
+    if (argc != 4) {
+      std::cerr << "usage: professors_letter_swap_matrix TRIALS SEED OUTPUT\n";
+      return 2;
+    }
+    const std::uint64_t trials = std::stoull(argv[1]);
+    const std::uint64_t seed = std::stoull(argv[2]);
+    if (trials == 0) throw std::runtime_error("TRIALS must be positive");
+
+    const sim::DeckRecipe baseline = sim::baseline_recipe();
+    const sim::DeckRecipe letter = sim::professors_letter_swap_recipe();
+    sim::verify_slot_preserved_pairing(baseline, letter);
+
+    std::ofstream out(argv[3], std::ios::binary | std::ios::trunc);
+    if (!out) throw std::runtime_error("could not open output");
+    out << "variant,scenario,trials,ready_by_t2_pct,ready_by_t3_pct,"
+           "ready_by_t4_pct,"
+           "t2_regi_pct,t2_vstar_pct,t2_active_vstar_pct,t2_energy_pct,"
+           "t2_payload_pct,t2_k1_pct,"
+           "t3_regi_pct,t3_vstar_pct,t3_active_vstar_pct,t3_energy_pct,"
+           "t3_payload_pct,t3_k1_pct,"
+           "t4_regi_pct,t4_vstar_pct,t4_active_vstar_pct,t4_energy_pct,"
+           "t4_payload_pct,t4_k1_pct\n";
+
+    const std::vector<sim::Scenario> scenarios = sim::all_scenarios();
+    for (std::size_t index = 0; index < scenarios.size(); ++index) {
+      const std::size_t seed_slot =
+          index + (index >= 4 ? 1U : 0U) + (index >= 10 ? 1U : 0U);
+      const std::uint64_t common_seed = seed + 104729ULL * seed_slot;
+      const sim::VariantAggregate baseline_result =
+          sim::simulate_checkpoints(
+              scenarios[index], baseline, trials, common_seed);
+      const sim::VariantAggregate letter_result =
+          sim::simulate_checkpoints(
+              scenarios[index], letter, trials, common_seed);
+      sim::write_row(
+          out, "regidrago-shell", scenarios[index], baseline_result);
+      sim::write_row(out, "letter-swap", scenarios[index], letter_result);
+    }
+    return 0;
+  } catch (const std::exception& error) {
+    std::cerr << error.what() << '\n';
+    return 1;
   }
-  const std::uint64_t trials = std::stoull(argv[1]);
-  const std::uint64_t seed = std::stoull(argv[2]);
-  if (trials == 0) throw std::runtime_error("TRIALS must be positive");
-
-  const sim::DeckRecipe baseline = sim::baseline_recipe();
-  const sim::DeckRecipe letter = sim::professors_letter_swap_recipe();
-  std::ofstream out(argv[3], std::ios::binary | std::ios::trunc);
-  if (!out) throw std::runtime_error("could not open output");
-
-  out << "variant,scenario,trials,ready_by_t2_pct,ready_by_t3_pct,"
-         "ready_by_t4_pct,"
-         "t2_regi_pct,t2_vstar_pct,t2_active_vstar_pct,t2_energy_pct,"
-         "t2_payload_pct,t2_k1_pct,"
-         "t3_regi_pct,t3_vstar_pct,t3_active_vstar_pct,t3_energy_pct,"
-         "t3_payload_pct,t3_k1_pct,"
-         "t4_regi_pct,t4_vstar_pct,t4_active_vstar_pct,t4_energy_pct,"
-         "t4_payload_pct,t4_k1_pct\n";
-
-  const std::vector<sim::Scenario> scenarios = sim::all_scenarios();
-  for (std::size_t index = 0; index < scenarios.size(); ++index) {
-    const std::size_t seed_slot =
-        index + (index >= 4 ? 1U : 0U) + (index >= 10 ? 1U : 0U);
-    const std::uint64_t common_seed = seed + 104729ULL * seed_slot;
-    const sim::VariantAggregate baseline_result =
-        sim::simulate_checkpoints(
-            scenarios[index], baseline, trials, common_seed);
-    const sim::VariantAggregate letter_result =
-        sim::simulate_checkpoints(
-            scenarios[index], letter, trials, common_seed);
-    sim::write_row(
-        out, "regidrago-shell", scenarios[index], baseline_result);
-    sim::write_row(out, "letter-swap", scenarios[index], letter_result);
-  }
-  return 0;
 }

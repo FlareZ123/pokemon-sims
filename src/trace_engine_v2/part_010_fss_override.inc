@@ -218,6 +218,9 @@
     // state-semantic: Star Alchemy searches one Grass, Crispin searches a second
     // Grass plus Fire and attaches one, and the unused manual attachment supplies
     // the other current-turn Grass. Quick Ball replaces Tate & Liza with Latias ex.
+    // This override is only an arbitration against the historical duplicate-Crispin
+    // search. If no second Crispin is searchable, the ordinary selector may retain
+    // Star Alchemy or choose another stronger route instead of spending it on Grass.
     // On the projected next turn the established Regidrago V can evolve, the held
     // Fire attachment completes GGF, and Professor Burnet supplies the JIT payload.
     // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
@@ -241,8 +244,9 @@
         !ability_available_for_pokemon(Card::LatiasEx) ||
         in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
         std::count(state_.deck.begin(), state_.deck.end(), Card::LatiasEx) == 0 ||
-        hand_count(Card::Crispin) == 0 || hand_count(Card::QuickBall) == 0 ||
-        hand_count(Card::TateLiza) == 0 ||
+        hand_count(Card::Crispin) == 0 ||
+        deck_count_after_search_started(Card::Crispin) == 0 ||
+        hand_count(Card::QuickBall) == 0 || hand_count(Card::TateLiza) == 0 ||
         hand_count(Card::ProfessorBurnet) == 0 ||
         hand_count(Card::RegidragoVstar) == 0 ||
         std::count(state_.deck.begin(), state_.deck.end(), Card::Grass) < 2 ||

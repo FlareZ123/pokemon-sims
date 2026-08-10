@@ -41,7 +41,7 @@ sim::State route_state(const int turn, const int entered_turn) {
                 sim::Card::TateLiza, sim::Card::ProfessorBurnet,
                 sim::Card::RegidragoVstar};
   state.deck = {sim::Card::Grass, sim::Card::Grass, sim::Card::Fire,
-                sim::Card::LatiasEx, sim::Card::MegaDragonite,
+                sim::Card::Crispin, sim::Card::LatiasEx, sim::Card::MegaDragonite,
                 sim::Card::Dragapult};
   return state;
 }
@@ -225,6 +225,14 @@ void test_required_route_resources() {
   };
   expect_missing_hand_card(sim::Card::Crispin, 289115,
                            "The route requires held Crispin.");
+
+  sim::State no_duplicate_crispin_state = route_state(2, 2);
+  remove_card(no_duplicate_crispin_state.deck, sim::Card::Crispin);
+  std::mt19937_64 duplicate_crispin_rng{2891151};
+  sim::Engine no_duplicate_crispin = make_engine(
+      strict_t3, duplicate_crispin_rng, std::move(no_duplicate_crispin_state));
+  expect(!sim::EngineTestAccess::fss_grass_route(no_duplicate_crispin),
+         "The Grass override must not replace an ordinary Star Alchemy hold when no duplicate Crispin is searchable.");
   expect_missing_hand_card(sim::Card::QuickBall, 289116,
                            "The route requires held Quick Ball.");
   expect_missing_hand_card(sim::Card::TateLiza, 289117,

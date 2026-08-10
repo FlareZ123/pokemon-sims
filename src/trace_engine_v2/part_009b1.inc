@@ -32,7 +32,13 @@
   }
 
   std::optional<Card> quick_ball_crispin_replaced_energy_cost() const {
-    if (scenario_.dci != DciProfile::StrictJit || state_.turn != 1 ||
+    // StrictJit and MatchupFlexJit share the same ready-turn payload timing, so
+    // this replacement-cost route must use the shared semantic predicate rather
+    // than one profile identity.
+    // JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Original route bug: https://github.com/FlareZ123/pokemon-sims/issues/1093
+    // Profile-gate bug: https://github.com/FlareZ123/pokemon-sims/issues/2757
+    if (!strict_payload_timing() || state_.turn != 1 ||
         scenario_.locks != LockMode::None || !supporter_allowed() ||
         state_.manual_energy_used || state_.supporter_used ||
         hand_count(Card::Crispin) == 0 || hand_count(Card::Grass) < 2 ||
@@ -62,7 +68,7 @@
     // turn-one manual attachment and held Crispin immediately searches Grass plus
     // Fire, attaches the replacement Grass, and leaves Fire for turn two. Held Arven
     // then finds Forest Seal Stone, whose Star Alchemy can find Regidrago VSTAR;
-    // Brilliant Blender supplies the turn-two strict-JIT payload, and Latias ex
+    // Brilliant Blender supplies the turn-two current-turn JIT payload, and Latias ex
     // supplies the legal zero-Retreat promotion. This fallback runs only after
     // ordinary lower-DCI costs fail and only for the exact missing-Regidrago-V route:
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
@@ -74,7 +80,7 @@
     // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
     // Official Item, Supporter, Energy, evolution, and Retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Dynamic DCI and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1093
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1093 https://github.com/FlareZ123/pokemon-sims/issues/2757
     return Card::Grass;
   }
 

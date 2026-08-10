@@ -4,14 +4,9 @@
 // wrapper stack. Macro entry/exit guards make this composition boundary explicit.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
 
-#ifdef play_evolution_incense
-#error "Steven/Blender composition requires play_evolution_incense to be undefined on entry"
-#endif
-#ifdef play_earthen_vessel
-#error "Steven/Blender composition requires play_earthen_vessel to be undefined on entry"
-#endif
-#ifdef play_brilliant_blender
-#error "Steven/Blender composition requires play_brilliant_blender to be undefined on entry"
+#if defined(play_evolution_incense) || defined(play_earthen_vessel) || \
+    defined(play_brilliant_blender)
+#error "Steven/Blender composition requires search aliases to be undefined on entry"
 #endif
 
 #define play_evolution_incense play_evolution_incense_original

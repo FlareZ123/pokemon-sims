@@ -125,14 +125,7 @@
 #undef play_evolution_incense
 #undef play_ultra_ball
 #include "trace_engine_v2/part_pokemon_communication.inc"
-#define fss_target_after_search_started fss_target_after_search_started_issue1071_original
-#include "trace_engine_v2/part_010_fss_override.inc"
-#undef fss_target_after_search_started
-#define fss_target_after_search_started fss_target_after_search_started_issue1735_original
-#include "trace_engine_v2/part_issue_1071_fss_oricorio_treasure_decomposition_override.inc"
-#undef fss_target_after_search_started
-#include "trace_engine_v2/part_issue_1735_fss_blender_priority_override.inc"
-#include "trace_engine_v2/part_010_attach_fss_override.inc"
+#include "trace_engine_v2/composition/fss_target_overrides.inc"
 #define use_fss use_fss_latias_original
 #define play_crispin play_crispin_empty_deck_original
 #define play_professor_burnet play_professor_burnet_legacy_original
@@ -178,25 +171,10 @@
 #define use_celestial_roar use_celestial_roar_issue1369_original
 #include "trace_engine_v2/part_celestial_roar_override.inc"
 #undef use_celestial_roar
-#include "trace_engine_v2/part_legacy_star_projection_provenance_override.inc"
-#define remove_one remove_one_legacy_star_projection
-#define pokemon_communication_plan pokemon_communication_plan_legacy_star_projection
-#define use_legacy_star use_legacy_star_issue1016_original
-#include "trace_engine_v2/part_013_legacy_star_override.inc"
-#undef use_legacy_star
-#undef pokemon_communication_plan
-#undef remove_one
-#define use_legacy_star use_legacy_star_issue1069_original
-#include "trace_engine_v2/part_issue_1016_legacy_star_quick_ball_override.inc"
-#undef use_legacy_star
-#include "trace_engine_v2/part_issue_1069_legacy_star_combined_energy_payload_override.inc"
+#include "trace_engine_v2/composition/legacy_star_overrides.inc"
 #include "trace_engine_v2/composition/supporter_overrides.inc"
 #include "trace_engine_v2/composition/search_item_overrides.inc"
-#include "trace_engine_v2/part_issue_1437_crispin_trace_override.inc"
-#define trace trace_issue_1437_crispin_provenance
-#include "trace_engine_v2/part_issue_1118_secret_box.inc"
-#undef trace
-#include "trace_engine_v2/part_issue_1369_celestial_roar_secret_box_override.inc"
+#include "trace_engine_v2/composition/secret_box_trace_overrides.inc"
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #include "trace_engine_v2/part_014c.inc"

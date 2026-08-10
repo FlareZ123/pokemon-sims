@@ -9,6 +9,16 @@
           return false;
         }
 
+        // Once Crispin or another legal attachment already makes the Active
+        // Regidrago VSTAR pay Apex, holding Vessel would delay a legal same-turn
+        // Dragon-payload discard. DDE + Grass and DDE + Fire are both complete:
+        // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+        // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+        // Strict-JIT and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2437
+        if (pays_apex_energy_cost(*state_.active)) return false;
+
         // Preserve Earthen Vessel only when the public K1 shell route proves that
         // Crispin plus the unused T2 manual attachment creates GF, then a held or
         // newly drawn Dragon can pay Vessel's T3 cost while its searched Grass
@@ -42,26 +52,27 @@
       };
 
       const auto issue_1447_should_play_vessel_for_ready_turn = [this] {
-        // On T3, the held Vessel itself is the legal same-turn payload outlet. Admit
-        // its Dragon cost before the generic early Item pass disables payload costs;
-        // the searched Grass remains in hand for the unused manual attachment. The
-        // Secret Box recipe keeps its dedicated Pineco route ordering:
+        const auto completing_basic = state_.active
+            ? issue_2437_apex_completing_basic_from_known_deck(*state_.active)
+            : std::optional<Card>{};
+        // On T3, the held Vessel itself is the legal same-turn payload outlet. Its
+        // searched Basic must be the one-card semantic Apex completion, including
+        // DDE-only states where Grass and Fire are alternative legal targets:
         // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-        // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
-        // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
-        // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
-        // Core Item, discard, attachment, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+        // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+        // Core Item, discard, search, attachment, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
         // Strict-JIT definition: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
         // Pineco direct route: https://github.com/FlareZ123/pokemon-sims/issues/1420
-        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1447
+        // Original route: https://github.com/FlareZ123/pokemon-sims/issues/1447
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2437
         return !secret_box_combo_enabled() &&
             scenario_.dci == DciProfile::StrictJit &&
             scenario_.locks == LockMode::None && state_.turn == 3 &&
             deck_seen_ && state_.active &&
             state_.active->card == Card::RegidragoVstar &&
-            state_.active->grass == 1 && state_.active->fire == 1 &&
             !state_.manual_energy_used && need_energy() && need_payload() &&
             hand_count(Card::EarthenVessel) > 0 &&
-            deck_count_after_search_started(Card::Grass) > 0 &&
+            completing_basic.has_value() &&
             std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
       };

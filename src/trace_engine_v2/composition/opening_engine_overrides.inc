@@ -8,7 +8,9 @@
 #include "../part_empty_deck_unseen_override.inc"
 #undef begin_turn
 #include "../part_begin_turn_override.inc"
-#include "../part_tapu_copy_availability_override.inc"
+#include "../core/tapu_connector_policy.inc"
+#include "../core/payload_hand_policy.inc"
+#include "../core/tapu_legacy_aliases.inc"
 
 // Keep the part_006 Bench, connector, recovery, and discard aliases behind this
 // local composition boundary. choose_discard intentionally stays exported into

@@ -133,7 +133,6 @@
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #include "trace_engine_v2/part_014c.inc"
-#undef run_turn
 #include "trace_engine_v2/part_014c_latias_bench_override.inc"
 #include "trace_engine_v2/part_015.inc"
 // C++ preprocessing include grammar: https://eel.is/c++draft/cpp.include

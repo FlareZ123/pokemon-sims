@@ -1,0 +1,90 @@
+name: Sol Core Cleanup Materializer
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/cleanup-sol-core-centralization.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Configure Git
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - name: Centralize inspection knowledge
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('src/trace_engine_v2/part_003.inc')
+          text = path.read_text(encoding='utf-8')
+          old = '''  int prize_count_after_reveal(const Card card) const { return count_of(state_.prizes, card); }\n  bool prizes_known() const { return deck_seen_ || prizes_revealed_; }\n  bool known_prize(const Card card) const { return prizes_known() && prize_count_after_reveal(card) > 0; }\n'''
+          new = '''  int prize_count_after_reveal(const Card card) const { return count_of(state_.prizes, card); }\n  bool inspection_knowledge_available() const { return deck_seen_ || prizes_revealed_; }\n  bool prizes_known() const { return inspection_knowledge_available(); }\n  bool known_prize(const Card card) const { return prizes_known() && prize_count_after_reveal(card) > 0; }\n'''
+          if text.count(old) != 1:
+              raise SystemExit('inspection knowledge anchor changed')
+          text = text.replace(old, new, 1)
+          old_unseen = '    if (deck_seen_ || prizes_revealed_) return deck_count_after_search_started(card) > 0;\n'
+          new_unseen = '    if (inspection_knowledge_available()) return deck_count_after_search_started(card) > 0;\n'
+          if text.count(old_unseen) != 1:
+              raise SystemExit('unseen inspection anchor changed')
+          path.write_text(text.replace(old_unseen, new_unseen, 1), encoding='utf-8', newline='\n')
+      - name: Commit inspection helper
+        shell: bash
+        run: |
+          git add src/trace_engine_v2/part_003.inc
+          git commit -m 'Cleanup: centralize inspection knowledge state'
+      - name: Centralize open-turn predicate
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('src/trace_engine_v2/part_003.inc')
+          text = path.read_text(encoding='utf-8')
+          old = '''  bool first_turn_going_first() const { return state_.turn == 1 && scenario_.going_first; }\n  bool first_turn_going_second() const { return state_.turn == 1 && !scenario_.going_first; }\n  bool supporter_allowed() const {\n    return !uses_full_supporter_lock(scenario_.locks) && !first_turn_going_first() &&\n           !state_.supporter_used && !state_.turn_ended;\n  }\n'''
+          new = '''  bool first_turn_going_first() const { return state_.turn == 1 && scenario_.going_first; }\n  bool first_turn_going_second() const { return state_.turn == 1 && !scenario_.going_first; }\n  bool turn_open() const { return !state_.turn_ended; }\n  bool supporter_allowed() const {\n    return !uses_full_supporter_lock(scenario_.locks) && !first_turn_going_first() &&\n           !state_.supporter_used && turn_open();\n  }\n'''
+          if text.count(old) != 1:
+              raise SystemExit('turn-open anchor changed')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8', newline='\n')
+      - name: Commit turn helper
+        shell: bash
+        run: |
+          git add src/trace_engine_v2/part_003.inc
+          git commit -m 'Cleanup: centralize open-turn state'
+      - name: Centralize public-zone card count
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('src/trace_engine_v2/part_003.inc')
+          text = path.read_text(encoding='utf-8')
+          old = '''  int public_known_count(const Card card) const {\n    return hand_count(card) + count_of(state_.discard, card) + in_play_count(card) +\n           public_underlying_evolution_count(card) + attached_public_count(card);\n  }\n'''
+          new = '''  int public_zone_count(const Card card) const {\n    return hand_count(card) + count_of(state_.discard, card) + in_play_count(card);\n  }\n\n  int public_known_count(const Card card) const {\n    return public_zone_count(card) + public_underlying_evolution_count(card) +\n           attached_public_count(card);\n  }\n'''
+          if text.count(old) != 1:
+              raise SystemExit('public-zone count anchor changed')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8', newline='\n')
+      - name: Commit public-zone helper
+        shell: bash
+        run: |
+          git add src/trace_engine_v2/part_003.inc
+          git commit -m 'Cleanup: centralize public-zone card counting'
+      - name: Validate three cleanup commits
+        shell: bash
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build --output-on-failure
+      - name: Publish direct-main cleanup series
+        shell: bash
+        run: |
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main

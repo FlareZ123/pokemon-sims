@@ -1,0 +1,50 @@
+name: DDE rollup reclaim materializer
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/dde-rollup-reclaim-materialize.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/dde-semantic-rollup-reclaim-20260809
+          fetch-depth: 0
+      - name: Merge current main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge --no-edit origin/main
+      - name: Remove temporary workflow from materialized tree
+        run: rm .github/workflows/dde-rollup-reclaim-materialize.yml
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run focused DDE regression suite
+        run: ctest --test-dir build --output-on-failure -R 'issue_2368|issue_241|issue_242|issue_243|issue_244'
+      - name: Simulate strict JIT go-second seed 1
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+      - name: Simulate strict JIT go-first seed 2
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4
+      - name: Simulate matchup-flex go-second seed 3
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2
+      - name: Commit materialized current-main rollup
+        run: |
+          git add -A
+          git status --short
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'No materialized changes to commit.'
+            exit 0
+          fi
+          git commit -m 'Fix #2368 rebase semantic DDE rollup onto current main'
+          git push origin HEAD:fix/dde-semantic-rollup-reclaim-20260809

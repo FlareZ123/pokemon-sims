@@ -1,15 +1,8 @@
   bool issue_1816_public_preflight() const {
-    const auto recipe_copies = [this](const Card card) {
-      int copies = 0;
-      for (const auto& [candidate, count] : recipe_) {
-        if (candidate == card) copies += count;
-      }
-      return copies;
-    };
     const bool registered_pineco_recipe =
-        recipe_copies(Card::SecretBox) == 1 &&
-        recipe_copies(Card::Pineco) == 2 &&
-        recipe_copies(Card::ForretressEx) == 2;
+        registered_recipe_count(Card::SecretBox) == 1 &&
+        registered_recipe_count(Card::Pineco) == 2 &&
+        registered_recipe_count(Card::ForretressEx) == 2;
 
     // Both registered JIT profiles require the Dragon payload on the ready turn:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment

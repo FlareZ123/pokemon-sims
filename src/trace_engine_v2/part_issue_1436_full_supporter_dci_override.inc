@@ -114,9 +114,10 @@
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Core first-turn, Item, Supporter, Ability, Bench, evolution, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Dynamic DCI and K0 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
+    // Strict JIT and MatchupFlex JIT share the same-ready-turn payload rule: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1476
-    return scenario_.dci == DciProfile::StrictJit &&
+    // Confirmed cross-profile bug: https://github.com/FlareZ123/pokemon-sims/issues/2801
+    return strict_payload_timing() &&
         scenario_.locks == LockMode::None && state_.turn == 1 &&
         scenario_.going_first && scenario_.max_turn >= 2 && !item_locked() &&
         state_.active && state_.active->card == Card::RegidragoV &&

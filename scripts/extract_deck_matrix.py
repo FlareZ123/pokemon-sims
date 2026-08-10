@@ -39,7 +39,8 @@ def parsed_row(line: str) -> list[str]:
 
 
 def extract_deck_rows(source: Path, destination: Path, deck: str) -> None:
-    lines = source.read_text(encoding="utf-8").splitlines(keepends=True)
+    with source.open("r", encoding="utf-8", newline="") as handle:
+        lines = handle.readlines()
     if not lines:
         raise ValueError(f"empty matrix: {source}")
 

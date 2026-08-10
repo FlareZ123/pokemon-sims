@@ -1,9 +1,11 @@
+  int garbodor_unlocked_turn_{0};
+
   bool garbodor_shake_scenario() const {
     return scenario_.label.rfind("garbodor-shake-ability-lock/", 0) == 0;
   }
 
   bool garbodor_abilities_locked() const {
-    if (!garbodor_shake_scenario() || state_.path_lock_removed) return false;
+    if (!garbodor_shake_scenario() || garbodor_unlocked_turn_ == state_.turn) return false;
 
     // Boost Shake can evolve on the opponent's first turn and then ends that turn.
     // When Regidrago goes first, its T1 precedes that opponent turn, so Garbotoxin

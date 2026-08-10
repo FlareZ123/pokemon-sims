@@ -1,0 +1,41 @@
+name: Cleanup Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Validate moved late-search wrapper families
+        run: >-
+          ctest --test-dir build --output-on-failure
+          -R 'regidrago_issue_(1209|1235|1356|1476|1516|1595|2272)'
+      - name: Run three independent perfect-play traces
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee trace-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-3.txt
+      - name: Generate paired all-deck 100k T2/T3 matrix once
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out final-paired-matrix.csv
+      - name: Upload cleanup validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cleanup-validation-${{ github.run_attempt }}
+          path: |
+            trace-*.txt
+            final-paired-matrix.csv
+            build/regidrago_sim
+          if-no-files-found: error

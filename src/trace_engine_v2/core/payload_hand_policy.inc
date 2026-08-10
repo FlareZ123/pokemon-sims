@@ -9,8 +9,14 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // https://api.pokemontcg.io/v2/cards/swsh12-136
-    for (const Card card : {Card::Appletun, Card::MegaDragonite, Card::Dragapult,
-                            Card::GoodraVstar, Card::DialgaGX}) {
+    static constexpr Card kPayloadPreference[] = {
+        Card::Appletun,
+        Card::MegaDragonite,
+        Card::Dragapult,
+        Card::GoodraVstar,
+        Card::DialgaGX,
+    };
+    for (const Card card : kPayloadPreference) {
       if (hand_count(card) > 0) return card;
     }
     return std::nullopt;

@@ -1,0 +1,64 @@
+name: Bootstrap issue 2634 current-main replay
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/bootstrap-2634-current-main.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  replay:
+    if: github.head_ref == 'bugfix/2634-state-generic-quick-ball-tapu-arven'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Replay onto current main without stale generated evidence
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git restore --source origin/main --staged --worktree results/baseline_manifest.json results/simulation_results.csv
+          if ! git diff --cached --quiet; then
+            git commit -m 'Fix #2634 reset stale evidence before current-main replay'
+          fi
+          git merge --no-edit origin/main
+      - name: Build and focused regression
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R 'issue_2634' --output-on-failure
+      - name: Run three independent simulate-this controls
+        shell: bash
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee issue-2634-trace-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee issue-2634-trace-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee issue-2634-trace-3.txt
+      - name: Regenerate source-bound setup evidence
+        shell: bash
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Run complete Release suite
+        shell: bash
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Materialize validated branch
+        shell: bash
+        run: |
+          git rm .github/workflows/bootstrap-2634-current-main.yml
+          git add -A
+          git commit -m 'Fix #2634 replay validated state-generic Tapu-Arven route'
+          git push origin HEAD:${{ github.head_ref }}

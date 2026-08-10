@@ -28,13 +28,14 @@ void expect(const bool condition, const char* message) {
 }
 
 sim::State prelock_state(const int payload_copies = 2,
-                         const bool include_energy = true) {
+                         const bool include_energy = true,
+                         const sim::Card payload = sim::Card::MegaDragonite) {
   sim::State state;
   state.turn = 1;
   state.active = sim::Pokemon{sim::Card::TapuLeleGX, 0};
   state.hand = {sim::Card::EarthenVessel};
   for (int copy = 0; copy < payload_copies; ++copy) {
-    state.hand.push_back(sim::Card::MegaDragonite);
+    state.hand.push_back(payload);
   }
   if (include_energy) {
     state.deck = {sim::Card::Grass, sim::Card::Fire, sim::Card::RegidragoV,
@@ -84,6 +85,32 @@ void test_exact_public_route_spends_one_duplicate_and_establishes_k1() {
   expect(std::count(state.hand.begin(), state.hand.end(), sim::Card::Grass) == 1 &&
              std::count(state.hand.begin(), state.hand.end(), sim::Card::Fire) == 1,
          "The route did not take both live Basic Energy targets.");
+}
+
+void test_equivalent_duplicate_dragapult_uses_same_prelock_route() {
+  sim::Scenario scenario{"issue-2901-dragapult", sim::DciProfile::StrictJit,
+                         sim::LockMode::TurnTwoItem, false, 5};
+  std::mt19937_64 rng{2901};
+  sim::Engine engine = make_engine(scenario, rng);
+  sim::EngineTestAccess::set_state(
+      engine, prelock_state(2, true, sim::Card::Dragapult));
+
+  // Earthen Vessel's discard cost is card-agnostic. Two physical copies of the
+  // same modeled Dragon payload let one copy pay the use-or-lose T1 Vessel while
+  // the other remains protected for strict-JIT, regardless of payload identity:
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Advanced Item/discard/search procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Scheduled lock and DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  // Confirmed systemic bug: https://github.com/FlareZ123/pokemon-sims/issues/2901
+  expect(sim::EngineTestAccess::run_search_step(engine),
+         "The pre-lock Vessel route remained Mega-Dragonite-specific.");
+  const auto& state = sim::EngineTestAccess::state(engine);
+  expect(std::count(state.hand.begin(), state.hand.end(), sim::Card::Dragapult) == 1 &&
+             std::count(state.discard.begin(), state.discard.end(),
+                        sim::Card::Dragapult) == 1,
+         "The generic route did not spend exactly one redundant Dragapult copy.");
 }
 
 void test_singleton_payload_is_protected() {
@@ -187,6 +214,7 @@ void test_registered_seed_57721_uses_vessel_before_lock() {
 
 int main() {
   test_exact_public_route_spends_one_duplicate_and_establishes_k1();
+  test_equivalent_duplicate_dragapult_uses_same_prelock_route();
   test_singleton_payload_is_protected();
   test_known_empty_energy_targets_hold_vessel();
   test_unscheduled_or_already_live_lock_does_not_use_override();

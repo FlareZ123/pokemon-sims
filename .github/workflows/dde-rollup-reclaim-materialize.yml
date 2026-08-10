@@ -1,5 +1,6 @@
 name: DDE rollup reclaim materializer
 
+# Reclaimed 2026-08-10T03:48:13-04:00; rerun against current main after static-audit retarget cleanup.
 on:
   pull_request:
     paths:

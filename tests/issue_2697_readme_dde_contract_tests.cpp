@@ -34,11 +34,11 @@ int main() {
   assert(!energy_source.empty());
 
   // README must describe semantic Apex payment, including DDE's legal two-unit contribution:
-  // https://api.pokemontcg.io/v2/cards/xy6-97
+  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/issues/2238
   // https://github.com/FlareZ123/pokemon-sims/issues/2697
-  assert(readme.find("Pays Apex Dragon's [G][G][R] attack cost with legally attached Energy; Double Dragon Energy may supply two of those Energy units while attached to Regidrago VSTAR.") != std::string::npos);
+  assert(readme.find("Pays Apex Dragon's `[G][G][R]` attack cost with legally attached Energy; Double Dragon Energy may supply two of those Energy units while attached to Regidrago VSTAR.") != std::string::npos);
   assert(readme.find("At least two Grass Energy and one Fire Energy attached.") == std::string::npos);
 
   // Keep the documentation contract anchored to the production semantic predicate:

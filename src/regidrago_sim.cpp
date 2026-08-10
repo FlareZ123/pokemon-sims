@@ -101,7 +101,7 @@
 #include "trace_engine_v2/part_013.inc"
 #undef use_legacy_star
 #include "trace_engine_v2/part_014a.inc"
-#include "trace_engine_v2/part_issue_1683_serena_dead_quick_ball_override.inc"
+#include "trace_engine_v2/composition/serena_route_overrides.inc"
 // part_012.inc opens Serena's draw-mode body, part_013.inc closes it and later
 // opens run_search_items_one_step(), and part_014a.inc completes that method.
 // Define the active Burnet policy only after this first complete member boundary:
@@ -115,17 +115,8 @@
 // guard, while the legacy part_011 implementation stays dormant:
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_011_burnet_thinning_override.inc
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_empty_deck_search_override.inc#L102-L107
-#define play_professor_burnet play_professor_burnet_empty_deck_original
-#include "trace_engine_v2/part_011_burnet_thinning_override.inc"
-#undef play_professor_burnet
-#undef use_fss
-#define use_fss use_fss_empty_deck_original
-#include "trace_engine_v2/part_011_fss_latias_override.inc"
-#undef use_fss
-#undef use_celestial_roar
-#define use_celestial_roar use_celestial_roar_issue1369_original
-#include "trace_engine_v2/part_celestial_roar_override.inc"
-#undef use_celestial_roar
+#include "trace_engine_v2/composition/burnet_fss_overrides.inc"
+#include "trace_engine_v2/composition/celestial_roar_overrides.inc"
 #include "trace_engine_v2/composition/final_engine_overrides.inc"
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original

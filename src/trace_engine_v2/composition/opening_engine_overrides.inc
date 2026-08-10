@@ -25,7 +25,7 @@
 // Steven/Blender: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/steven_blender_overrides.inc
 // Legacy Supporter cards: https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 https://api.pokemontcg.io/v2/cards/sm7-145
 // Supporter selector cards: https://api.pokemontcg.io/v2/cards/sv1-166 https://api.pokemontcg.io/v2/cards/sm4-95 https://api.pokemontcg.io/v2/cards/swsh12-164
-// VSTAR powers: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/vstar_power_body.inc
+// Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
 #include "tate_discard_overrides.inc"
 #include "steven_blender_overrides.inc"
 
@@ -59,4 +59,13 @@
 #undef play_gladion
 #undef play_arven
 
-#include "vstar_power_body.inc"
+// Preserve Celestial Roar for its later post-part_014a wrapper chain while
+// keeping the part_013 VSTAR-power aliases in this parent composition stage.
+// C++ textual include semantics: https://eel.is/c++draft/cpp.include
+// Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+#define use_celestial_roar use_celestial_roar_original
+#define use_legacy_star use_legacy_star_original
+#include "../part_013.inc"
+#undef use_legacy_star
+// use_celestial_roar intentionally remains defined for the later composition.
+// Continuation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc

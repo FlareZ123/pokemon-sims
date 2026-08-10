@@ -85,7 +85,23 @@
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_011_burnet_thinning_override.inc
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_empty_deck_search_override.inc#L102-L107
 #include "trace_engine_v2/composition/post_014a_overrides.inc"
+// Late turn composition boundary:
+// part_014c.inc owns the pre-override run_turn body and opens the alias handoff.
+// part_015.inc continues late policy/reporting members under the same aliases.
+// part_016.inc consumes the aliases after this wrapper returns to the root.
+// The wrapper preserves that historical textual order and macro lifetime.
+//
+// Continuation source for the alias handoff:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc#L278-L286
+// Wrapper source for the alias definitions and ordered includes:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/turn_reporting_body.inc#L9-L12
+// C++ textual include semantics: https://eel.is/c++draft/cpp.include
+//
+// Keep this include immediately after post_014a_overrides.inc so Engine stays open.
+// Keep part_016.inc after it so the replacement implementation sees the aliases.
 #include "trace_engine_v2/composition/turn_reporting_body.inc"
+// The wrapper keeps play_field_blower and run_turn aliased through part_015.inc.
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/turn_reporting_body.inc#L9-L12
 // C++ preprocessing include grammar: https://eel.is/c++draft/cpp.include
 // Confirmed portability bug: https://github.com/FlareZ123/pokemon-sims/issues/1482
 #include "trace_engine_v2/part_016.inc"

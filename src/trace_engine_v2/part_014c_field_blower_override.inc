@@ -83,9 +83,14 @@
     const bool held_vital_dance_route = hand_count(Card::Oricorio) > 0 &&
         !in_play(Card::Oricorio) && bench_space() > 0 && !state_.deck.empty() &&
         needs_oricorio_connector();
+    // Dark Asset checks hand size after Crobat V is played from hand. A six-card
+    // pre-play hand becomes five when Crobat moves to the Bench, so the Ability can
+    // still draw one card and is a live unlock route at <= 6, not only < 6:
+    // https://api.pokemontcg.io/v2/cards/swsh3-104
+    // https://github.com/FlareZ123/pokemon-sims/issues/2808
     const bool held_dark_asset_route = hand_count(Card::CrobatV) > 0 &&
         !in_play(Card::CrobatV) && bench_space() > 0 && !state_.dark_asset_used &&
-        state_.hand.size() < 6U && setup_axis_missing();
+        state_.hand.size() <= 6U && setup_axis_missing();
 
     const bool prior_turn_benched_regi = std::any_of(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {

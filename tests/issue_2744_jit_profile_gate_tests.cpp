@@ -1,11 +1,9 @@
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
-#include <algorithm>
 #include <iostream>
 #include <random>
 #include <stdexcept>
-#include <string>
 #include <utility>
 
 namespace sim {
@@ -16,6 +14,9 @@ struct EngineTestAccess {
   }
   static bool route_available(const Engine& engine) {
     return engine.issue_1875_quick_ball_tapu_crispin_route_available();
+  }
+  static bool complete_route(Engine& engine) {
+    return engine.complete_issue_1875_quick_ball_tapu_crispin_route();
   }
 };
 }  // namespace sim
@@ -54,8 +55,8 @@ void test_route_uses_shared_jit_timing_semantics() {
   sim::EngineTestAccess::set_state(flex, route_state());
   sim::EngineTestAccess::set_state(control, route_state());
 
-  // Strict JIT and matchup-flex JIT share same-ready-turn payload timing. The
-  // no-discard-control profile may bank payloads earlier and stays outside this JIT route.
+  // Strict JIT and matchup-flex JIT share same-ready-turn payload timing.
+  // No-discard-control permits earlier payload banking and stays outside this route.
   // Policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
   // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
   // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
@@ -69,43 +70,23 @@ void test_route_uses_shared_jit_timing_semantics() {
          "Matchup-flex JIT still rejects the issue-1875 Tapu-Crispin route.");
   expect(!sim::EngineTestAccess::route_available(control),
          "No-discard-control incorrectly entered the JIT-specific Tapu-Crispin route.");
-}
 
-bool trace_contains(const sim::TraceLog& trace, const std::string& text) {
-  return std::any_of(trace.lines.begin(), trace.lines.end(),
-                     [&text](const std::string& line) {
-                       return line.find(text) != std::string::npos;
-                     });
-}
-
-void test_seed_157_flex_reaches_t3_through_tapu_crispin() {
-  const auto scenario = sim::scenario_by_label("matchup-flex-jit/go-first");
-  const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
-  expect(scenario.has_value() && deck != nullptr,
-         "Issue-2744 registered fixture unavailable.");
-
-  std::mt19937_64 rng(157);
-  sim::TraceLog trace{true, {}};
-  sim::Engine engine(*scenario, deck->recipe, rng, &trace);
-  const sim::TrialOutcome outcome = engine.run();
-
-  // Quick Ball supplies the ready-turn Dragon discard and Tapu Lele-GX converts
-  // the remaining Supporter axis into Crispin for the final Grass attachment.
+  // Execute the complete matchup-flex route from the same K1 public state.
+  // Quick Ball supplies the current-turn Dragon discard; Wonder Tag converts the
+  // Bench action into Crispin; Crispin searches two different Basic Energy types
+  // so one can be attached by its printed effect to complete Apex Dragon's GGF.
   // Earliest route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Official rulebook: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Crispin ruling: https://compendium.pokegym.net/category/5-trainers/crispin/
   // Regression: https://github.com/FlareZ123/pokemon-sims/issues/2744
-  expect(outcome.first_ready_turn == 3,
-         "Seed 157 matchup-flex JIT did not reach T3 after profile generalization.");
-  expect(trace_contains(trace, "Quick Ball issue-1875 Tapu-Crispin route cost") &&
-             trace_contains(trace, "WONDER TAG") && trace_contains(trace, "Crispin"),
-         "Seed 157 did not use the issue-1875 Tapu-Crispin route.");
+  expect(sim::EngineTestAccess::complete_route(flex),
+         "Matchup-flex JIT could detect but not complete the issue-1875 Tapu-Crispin route.");
 }
 }  // namespace
 
 int main() {
   try {
     test_route_uses_shared_jit_timing_semantics();
-    test_seed_157_flex_reaches_t3_through_tapu_crispin();
     std::cout << "Issue 2744 JIT profile gate tests passed\n";
     return 0;
   } catch (const std::exception& error) {

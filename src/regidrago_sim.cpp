@@ -99,3 +99,6 @@
 // C++ preprocessing include grammar: https://eel.is/c++draft/cpp.include
 // Confirmed portability bug: https://github.com/FlareZ123/pokemon-sims/issues/1482
 #include "trace_engine_v2/part_016.inc"
+// Composition invariant: turn_reporting_body owns the run_turn alias handoff.
+// part_016 consumes the replacement aliases after the late Engine body is composed.
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/turn_reporting_body.inc

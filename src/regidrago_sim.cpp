@@ -78,7 +78,7 @@
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_007.inc#L169-L172
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_008a.inc#L1-L18
 #include "trace_engine_v2/composition/tate_discard_overrides.inc"
-#include "trace_engine_v2/composition/base_search_overrides.inc"
+// base_search_overrides.inc is composed by tate_discard_overrides.inc.
 #include "trace_engine_v2/composition/steven_blender_overrides.inc"
 #include "trace_engine_v2/composition/tapu_search_overrides.inc"
 #define use_fss use_fss_latias_original

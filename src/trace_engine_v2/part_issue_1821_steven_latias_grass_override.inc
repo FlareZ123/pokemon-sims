@@ -5,7 +5,7 @@
         });
 
     // Wonder Tag has established K1. The held VSTAR, Earthen Vessel, and Dragon
-    // already cover the evolution and strict-JIT payload axes. Steven must spend
+    // already cover the evolution and same-turn JIT payload axes. Steven must spend
     // its three unrestricted targets on Regidrago V, Latias ex, and Grass Energy.
     // The held Grass first pays Oricorio's printed one-Energy Retreat Cost so the
     // already Benched Tapu Lele-GX becomes Active before Steven ends the turn:
@@ -18,15 +18,16 @@
     // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official attachment, retreat, Supporter, search, evolution, Ability, and Item procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1, strict-JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // K1, same-turn JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1821
+    // Cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2770
     // Full Prize inspection and a resolved deck search establish the same K1
     // knowledge for this deterministic Steven target package:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
     // https://github.com/FlareZ123/pokemon-sims/issues/1928
     return prizes_known() && state_.turn == 1 &&
-        !scenario_.going_first && scenario_.dci == DciProfile::StrictJit &&
+        !scenario_.going_first && strict_payload_timing() &&
         scenario_.locks == LockMode::None && scenario_.max_turn >= 3 &&
         supporter_allowed() && !item_locked() && !state_.manual_energy_used &&
         !state_.retreat_used && state_.active &&
@@ -154,7 +155,7 @@
     state_.discard.push_back(Card::Grass);
     std::swap(*state_.active, *tapu);
     state_.retreat_used = true;
-    trace("RETREAT", "R-GAME-RETREAT; R-STEVEN-01; P-COMPRESS-01",
+    trace("RETREAT", "R-LATIAS-01; R-GAME-RETREAT; P-COMPRESS-01",
           "Paid Oricorio's one-Energy Retreat Cost and promoted Tapu Lele-GX before Steven's Resolve.");
 
     if (!remove_one(state_.hand, Card::StevensResolve)) {

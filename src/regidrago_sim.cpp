@@ -67,10 +67,7 @@
 // tapu_search_overrides.inc is composed by steven_blender_overrides.inc.
 #include "trace_engine_v2/composition/legacy_supporter_body.inc"
 #include "trace_engine_v2/composition/supporter_selector_body.inc"
-#define use_celestial_roar use_celestial_roar_original
-#define use_legacy_star use_legacy_star_original
-#include "trace_engine_v2/part_013.inc"
-#undef use_legacy_star
+#include "trace_engine_v2/composition/vstar_power_body.inc"
 #include "trace_engine_v2/part_014a.inc"
 // part_012.inc opens Serena's draw-mode body, part_013.inc closes it and later
 // opens run_search_items_one_step(), and part_014a.inc completes that method.

@@ -1,0 +1,84 @@
+name: Reclaim issue 2757 minimal current-main fix
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/reclaim-2757-minimal-current-main.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize-and-validate:
+    if: github.head_ref == 'fix/2757-reclaim-20260810-1308'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Apply only the semantic JIT profile gate
+        shell: bash
+        run: |
+          git fetch origin fix/2757-reclaim-current-main
+          git checkout origin/fix/2757-reclaim-current-main -- tests/issue_2757_jit_profile_gate_tests.cpp
+          python - <<'PY'
+          import fcntl
+          import os
+          import tempfile
+          from pathlib import Path
+
+          path = Path('src/trace_engine_v2/part_009b1.inc')
+          lock_path = Path('src/trace_engine_v2/.issue_2757.lock')
+          with lock_path.open('w', encoding='utf-8') as lock_file:
+              fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+              source = path.read_text(encoding='utf-8')
+              old = '''  std::optional<Card> quick_ball_crispin_replaced_energy_cost() const {\n    if (scenario_.dci != DciProfile::StrictJit || state_.turn != 1 ||\n'''
+              new = '''  std::optional<Card> quick_ball_crispin_replaced_energy_cost() const {\n    // StrictJit and MatchupFlexJit share the same ready-turn payload timing.\n    // JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment\n    // Confirmed profile-gate bug: https://github.com/FlareZ123/pokemon-sims/issues/2757\n    if (!strict_payload_timing() || state_.turn != 1 ||\n'''
+              if source.count(old) != 1:
+                  raise RuntimeError(f'expected one #2757 profile gate, found {source.count(old)}')
+              updated = source.replace(old, new, 1)
+              updated = updated.replace(
+                  'Brilliant Blender supplies the turn-two strict-JIT payload, and Latias ex',
+                  'Brilliant Blender supplies the turn-two current-turn JIT payload, and Latias ex',
+                  1,
+              )
+              fd, temporary_name = tempfile.mkstemp(dir=path.parent, prefix=path.name + '.', suffix='.tmp')
+              try:
+                  with os.fdopen(fd, 'w', encoding='utf-8', newline='') as temporary_file:
+                      temporary_file.write(updated)
+                      temporary_file.flush()
+                      os.fsync(temporary_file.fileno())
+                  os.replace(temporary_name, path)
+              finally:
+                  if os.path.exists(temporary_name):
+                      os.unlink(temporary_name)
+          lock_path.unlink(missing_ok=True)
+          PY
+          rm .github/workflows/reclaim-2757-minimal-current-main.yml
+          git diff --check
+
+      - name: Build current main and run full Release regression suite
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build --output-on-failure
+
+      - name: Compile and run isolated #2757 profile regression
+        shell: bash
+        run: |
+          c++ -std=c++20 -O2 -pthread tests/issue_2757_jit_profile_gate_tests.cpp -o /tmp/issue_2757_jit_profile_gate_tests
+          /tmp/issue_2757_jit_profile_gate_tests
+
+      - name: Commit validated minimal fix
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/trace_engine_v2/part_009b1.inc tests/issue_2757_jit_profile_gate_tests.cpp
+          git commit -m 'Fix #2757 use shared JIT profile gate'
+          git push origin HEAD:${{ github.head_ref }}

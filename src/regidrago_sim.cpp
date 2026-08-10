@@ -225,15 +225,8 @@
 #include "trace_engine_v2/part_issue_1016_legacy_star_quick_ball_override.inc"
 #undef use_legacy_star
 #include "trace_engine_v2/part_issue_1069_legacy_star_combined_energy_payload_override.inc"
-#include "trace_engine_v2/composition/gladion_overrides.inc"
-#include "trace_engine_v2/composition/arven_overrides.inc"
-#include "trace_engine_v2/composition/supporter_selection_overrides.inc"
-#include "trace_engine_v2/composition/empty_deck_search_overrides.inc"
-#include "trace_engine_v2/part_k0_ultra_ball_target_override.inc"
-#include "trace_engine_v2/part_oricorio_needed_energy_override.inc"
-#include "trace_engine_v2/part_blender_vstar_axis_override.inc"
-#include "trace_engine_v2/composition/earthen_vessel_overrides.inc"
-#include "trace_engine_v2/composition/search_route_overrides.inc"
+#include "trace_engine_v2/composition/supporter_overrides.inc"
+#include "trace_engine_v2/composition/search_item_overrides.inc"
 #include "trace_engine_v2/part_issue_1437_crispin_trace_override.inc"
 #define trace trace_issue_1437_crispin_provenance
 #include "trace_engine_v2/part_issue_1118_secret_box.inc"

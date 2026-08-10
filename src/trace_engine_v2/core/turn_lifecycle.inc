@@ -1,3 +1,5 @@
+#pragma once
+
   void reset_per_turn_state(const int turn) {
     state_.turn = turn;
     state_.supporter_used = false;

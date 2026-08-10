@@ -228,81 +228,12 @@
 #include "trace_engine_v2/composition/gladion_overrides.inc"
 #include "trace_engine_v2/composition/arven_overrides.inc"
 #include "trace_engine_v2/composition/supporter_selection_overrides.inc"
-#define bench_oricorio_if_useful bench_oricorio_if_useful_target_original
-#define ultra_ball_has_legal_target ultra_ball_has_legal_target_k0_target_original
-#define play_ultra_ball play_ultra_ball_k0_target_original
-#define play_brilliant_blender play_brilliant_blender_vstar_axis_original
-#define play_earthen_vessel play_earthen_vessel_vstar_window_original
-#define play_mysterious_treasure play_mysterious_treasure_issue1167_original
-#define play_quick_ball play_quick_ball_issue1209_original
-#define bench_tapu_if_useful bench_tapu_if_useful_issue989_empty_deck_original
-#define in_play tapu_connector_copy_aware_in_play
-#define play_steven play_steven_issue1002_empty_deck_original
-#define use_fss use_fss_issue1356_original
-#include "trace_engine_v2/part_empty_deck_search_override.inc"
-#undef use_fss
-#undef play_steven
-#include "trace_engine_v2/part_issue_1356_fss_energy_override.inc"
-#undef play_quick_ball
-#undef play_mysterious_treasure
-#undef in_play
-#undef bench_tapu_if_useful
-#define play_steven play_steven_issue1030_original
-#include "trace_engine_v2/part_issue_1002_steven_target_override.inc"
-#undef play_steven
-#define should_play_steven should_play_steven_issue1067_original
-#include "trace_engine_v2/part_issue_1030_steven_turo_override.inc"
-#undef should_play_steven
-#include "trace_engine_v2/part_issue_1067_arven_before_late_steven_override.inc"
-#define bench_tapu_if_useful bench_tapu_if_useful_issue_991_original
-#include "trace_engine_v2/part_issue_989_empty_deck_tapu_override.inc"
-#undef bench_tapu_if_useful
-#include "trace_engine_v2/part_issue_991_wonder_tag_burnet_legacy_star_override.inc"
-#undef play_earthen_vessel
-#undef play_brilliant_blender
-#undef play_ultra_ball
-#undef ultra_ball_has_legal_target
+#include "trace_engine_v2/composition/empty_deck_search_overrides.inc"
 #include "trace_engine_v2/part_k0_ultra_ball_target_override.inc"
-#undef bench_oricorio_if_useful
 #include "trace_engine_v2/part_oricorio_needed_energy_override.inc"
 #include "trace_engine_v2/part_blender_vstar_axis_override.inc"
-#define play_earthen_vessel play_earthen_vessel_issue1368_original
-#include "trace_engine_v2/part_earthen_vessel_vstar_window_override.inc"
-#undef play_earthen_vessel
-#define play_earthen_vessel play_earthen_vessel_issue1412_original
-#include "trace_engine_v2/part_issue_1368_earthen_vessel_celestial_roar_override.inc"
-#undef play_earthen_vessel
-#include "trace_engine_v2/part_issue_1412_preserve_quick_balls.inc"
-#define play_mysterious_treasure play_mysterious_treasure_issue1209_original
-#include "trace_engine_v2/part_issue_1167_treasure_vessel_override.inc"
-#undef play_mysterious_treasure
-#define play_quick_ball play_quick_ball_issue1235_original
-#define play_mysterious_treasure play_mysterious_treasure_issue1235_original
-#define choose_supporter choose_supporter_issue1235_original
-#include "trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc"
-#undef choose_supporter
-#undef play_mysterious_treasure
-#undef play_quick_ball
-#define play_quick_ball play_quick_ball_issue1356_original
-#define play_mysterious_treasure play_mysterious_treasure_issue1356_original
-#include "trace_engine_v2/part_issue_1235_oricorio_treasure_tapu_override.inc"
-#undef play_mysterious_treasure
-#undef play_quick_ball
-#define play_quick_ball play_quick_ball_issue1476_original
-#define play_mysterious_treasure play_mysterious_treasure_issue1476_original
-#include "trace_engine_v2/part_issue_1356_fss_treasure_energy_override.inc"
-#undef play_mysterious_treasure
-#undef play_quick_ball
-#define play_quick_ball play_quick_ball_issue1516_original
-#include "trace_engine_v2/part_issue_1476_redundant_burnet_route_override.inc"
-#undef play_quick_ball
-#define play_quick_ball play_quick_ball_issue1595_original
-#include "trace_engine_v2/part_issue_1516_quick_ball_tapu_crispin_override.inc"
-#undef play_quick_ball
-#define play_quick_ball play_quick_ball_issue2272_original
-#include "trace_engine_v2/part_issue_1595_preserve_turo_over_quick_ball_override.inc"
-#undef play_quick_ball
-#include "trace_engine_v2/part_issue_2272_route_replaced_arven_quick_ball_override.inc"
+#include "trace_engine_v2/composition/earthen_vessel_overrides.inc"
+#include "trace_engine_v2/composition/search_route_overrides.inc"
 #include "trace_engine_v2/part_issue_1437_crispin_trace_override.inc"
 #define trace trace_issue_1437_crispin_provenance
 #include "trace_engine_v2/part_issue_1118_secret_box.inc"

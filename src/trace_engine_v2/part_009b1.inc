@@ -79,15 +79,22 @@
   }
 
   bool quick_ball_seed23_latias_route_ready() const {
-    // A legal full-Prize inspection establishes the same exact K1 composition as a
-    // deck search for this route while preserving every physical target and timing gate:
-    // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
-    // Official Prize, Item, Ability, evolution, retreat, Supporter, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1981
-    if (!prizes_known() || scenario_.dci != DciProfile::StrictJit ||
-        scenario_.locks != LockMode::None || state_.turn != 3 ||
-        scenario_.max_turn < 4 || !state_.vstar_power_used ||
+    // Historical name retained for regression compatibility. The route itself is
+    // state-generic: Quick Ball may replace Tate & Liza with Latias ex when the
+    // observable K1 state projects a complete Regidrago VSTAR line on the next turn.
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Advanced evolution / turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // K1, JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2704
+    const bool jit_profile = scenario_.dci == DciProfile::StrictJit ||
+                             scenario_.dci == DciProfile::MatchupFlexJit;
+    const int projected_ready_turn = state_.turn + 1;
+    if (!prizes_known() || !jit_profile || scenario_.locks != LockMode::None ||
+        scenario_.max_turn < projected_ready_turn || !state_.vstar_power_used ||
         !state_.supporter_used || !state_.manual_energy_used ||
         state_.retreat_used || item_locked() || !state_.active ||
         !is_basic(state_.active->card) || bench_space() == 0 ||
@@ -108,9 +115,15 @@
       return false;
     }
     const bool energy_route_finishes = std::any_of(
-        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+        state_.bench.begin(), state_.bench.end(),
+        [this, projected_ready_turn](const Pokemon& pokemon) {
+          // Any Regidrago V already in play before the projected ready turn may
+          // evolve on that next turn; literal seed turn numbers are not legality.
+          // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+          // Advanced evolution procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+          // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2704
           if (pokemon.card != Card::RegidragoV ||
-              pokemon.entered_turn != state_.turn) {
+              pokemon.entered_turn >= projected_ready_turn) {
             return false;
           }
           const bool fire_finishes = pokemon.grass >= 2 && pokemon.fire == 0 &&
@@ -120,20 +133,18 @@
           return fire_finishes || grass_finishes;
         });
 
-    // Latias ex immediately replaces Tate & Liza's remaining switch role. The held
-    // Basic Energy, VSTAR, and Professor Burnet then complete Energy, evolution, and
-    // the next-turn Dragon payload on T4. The generic Active-position and Energy
-    // predicates project held connectors, so this exact K1 route uses only public
-    // physical state and the configured T4 horizon:
+    // Latias ex replaces Tate & Liza's remaining switch role. The held Basic
+    // Energy, VSTAR, and Professor Burnet then complete Energy, evolution, and the
+    // next-turn JIT payload on the projected ready turn. These gates use public K1
+    // state and physical action availability rather than one historical seed label:
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
     // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
-    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // K1, route priority, and DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1403
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // K1, JIT, route priority, and DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2704
     return energy_route_finishes;
   }
 

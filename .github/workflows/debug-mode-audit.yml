@@ -1,0 +1,47 @@
+name: Debug Mode Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  traces:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure and build
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Reproduce profile candidate and three independent reviewed traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Historical strict route and cross-profile candidate. StrictJit and MatchupFlexJit share same-ready-turn payload timing:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          # https://github.com/FlareZ123/pokemon-sims/issues/1478
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 290 | tee candidate-strict-290.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-first --seed 290 | tee candidate-flex-290.txt
+
+          # Three independent source-bound perfect-play audit cases from the permanent CI contract:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee reviewed-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee reviewed-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee reviewed-3.txt
+      - name: Upload debug traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-mode-traces-${{ github.run_attempt }}
+          path: |
+            candidate-*.txt
+            reviewed-*.txt
+            build/regidrago_sim
+          if-no-files-found: error

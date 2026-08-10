@@ -5,7 +5,7 @@
 //
 // Composition map for this translation-unit root:
 // 1. core_engine_body composes the core state, turn, and trace methods.
-// 2. opening_engine_overrides composes the early-turn wrappers and legacy Tate body.
+// 2. opening_engine_overrides composes the part_006-part_008a opening/Tate body.
 // 3. tate_discard_overrides owns the current Tate discard policy chain.
 // 4. steven_blender_overrides composes Steven and Brilliant Blender policy.
 // 5. legacy_supporter_body owns the part_011 legacy supporter aliases.

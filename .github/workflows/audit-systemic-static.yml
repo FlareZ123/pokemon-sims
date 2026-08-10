@@ -1,0 +1,70 @@
+name: Systemic static audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Inventory compiled and test source
+        shell: bash
+        run: |
+          find src tests scripts -type f | sort
+      - name: Scan scenario and turn identity gates
+        shell: bash
+        run: |
+          grep -RInE 'state_\.turn[[:space:]]*[!=<>]=?[[:space:]]*[0-9]+|scenario_\.dci[[:space:]]*[!=]=|scenario_\.locks[[:space:]]*[!=]=' src/trace_engine_v2 || true
+      - name: Scan seed-shaped and issue-shaped helpers
+        shell: bash
+        run: |
+          grep -RInE 'seed[ _-]?[0-9]+|issue_[0-9]+' src/trace_engine_v2 || true
+      - name: Scan raw Apex energy proxies
+        shell: bash
+        run: |
+          grep -RInE 'grass_needed\(\).*fire_needed|grass[[:space:]]*>?=[[:space:]]*2|fire[[:space:]]*>?=[[:space:]]*1' src/trace_engine_v2 || true
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel 2
+      - name: Simulate-this pass 1
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee audit-trace-1.txt
+      - name: Simulate-this pass 2
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee audit-trace-2.txt
+      - name: Simulate-this pass 3
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee audit-trace-3.txt
+      - name: Generate one canonical T2 T3 matrix
+        shell: bash
+        run: |
+          ./build/regidrago_sim --trials 100000 --seed 20260705 --out audit-t2-t3.csv
+          python - <<'PY'
+          import csv
+          with open('audit-t2-t3.csv', newline='', encoding='utf-8') as handle:
+              rows = list(csv.DictReader(handle))
+          print('scenario,ready_by_t2_pct,ready_by_t3_pct')
+          for row in rows:
+              print(f"{row['scenario']},{row['ready_by_t2_pct']},{row['ready_by_t3_pct']}")
+          PY
+      - name: Verify canonical matrix is unchanged
+        run: cmp audit-t2-t3.csv results/simulation_results.csv
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: systemic-static-audit
+          path: |
+            audit-trace-*.txt
+            audit-t2-t3.csv
+            build/Testing
+          if-no-files-found: warn

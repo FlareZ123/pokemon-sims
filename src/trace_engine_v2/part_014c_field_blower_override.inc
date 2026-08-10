@@ -64,23 +64,89 @@
            in_play_legacy_star_route || future_legacy_star_route;
   }
 
-  bool play_field_blower() {
-    if (item_locked() || hand_count(Card::FieldBlower) == 0 ||
-        !rule_box_abilities_locked() || !path_removal_unlocks_live_rule_box_route()) {
-      return false;
-    }
+  bool garbodor_removal_unlocks_live_pokemon_route() {
+    if (!garbodor_abilities_locked()) return false;
 
-    // Field Blower may discard the Stadium in play. Spend it only when removing
-    // the modeled Path to the Peak unlocks a currently live setup route, so a
-    // discrete-value Stadium answer is preserved after setup is already complete:
+    // Field Blower removes Garbodor's attached Tool, ending Garbotoxin for the
+    // remainder of this modeled player turn. Project that exact unlocked state and
+    // require a real setup connector before spending the discrete-value Item:
+    // https://api.pokemontcg.io/v2/cards/sm2-125
+    // https://api.pokemontcg.io/v2/cards/xy9-57
+    // https://github.com/FlareZ123/pokemon-sims/issues/2808
+    const bool lock_removed_before = state_.path_lock_removed;
+    state_.path_lock_removed = true;
+
+    const bool wonder_tag_route = hand_count(Card::TapuLeleGX) > 0 &&
+        !in_play(Card::TapuLeleGX) && bench_space() > 0 && needs_tapu_connector();
+    const bool in_play_skyliner_route = need_active_vstar() &&
+        can_free_retreat_with_latias();
+    const bool held_vital_dance_route = hand_count(Card::Oricorio) > 0 &&
+        !in_play(Card::Oricorio) && bench_space() > 0 && !state_.deck.empty() &&
+        needs_oricorio_connector();
+    // Dark Asset checks hand size after Crobat V is played from hand. A six-card
+    // pre-play hand becomes five when Crobat moves to the Bench, so the Ability can
+    // still draw one card and is a live unlock route at <= 6, not only < 6:
+    // https://api.pokemontcg.io/v2/cards/swsh3-104
+    // https://github.com/FlareZ123/pokemon-sims/issues/2808
+    const bool held_dark_asset_route = hand_count(Card::CrobatV) > 0 &&
+        !in_play(Card::CrobatV) && bench_space() > 0 && !state_.dark_asset_used &&
+        state_.hand.size() <= 6U && setup_axis_missing();
+
+    const bool prior_turn_benched_regi = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV &&
+                 pokemon.entered_turn < state_.turn;
+        });
+    const bool held_skyliner_route = hand_count(Card::LatiasEx) > 0 &&
+        hand_count(Card::RegidragoVstar) > 0 && !in_play(Card::LatiasEx) &&
+        bench_space() > 0 && !state_.retreat_used && state_.active &&
+        is_basic(state_.active->card) && state_.active->card != Card::RegidragoV &&
+        prior_turn_benched_regi;
+
+    const bool unresolved_setup = setup_axis_missing();
+    const bool in_play_legacy_star_route = !state_.vstar_power_used && has_vstar() &&
+        unresolved_setup;
+    const bool prior_turn_active_regi = active_is_regi_v() && state_.active &&
+        state_.active->entered_turn < state_.turn;
+    const bool future_legacy_star_route = !state_.vstar_power_used &&
+        prior_turn_active_regi && unresolved_setup &&
+        hand_count(Card::RegidragoVstar) > 0;
+
+    state_.path_lock_removed = lock_removed_before;
+    return wonder_tag_route || in_play_skyliner_route || held_skyliner_route ||
+           held_vital_dance_route || held_dark_asset_route ||
+           in_play_legacy_star_route || future_legacy_star_route;
+  }
+
+  bool play_field_blower() {
+    if (item_locked() || hand_count(Card::FieldBlower) == 0) return false;
+
+    const bool path_locked = rule_box_abilities_locked();
+    const bool garbodor_locked = garbodor_abilities_locked();
+    const bool live_unlock =
+        (path_locked && path_removal_unlocks_live_rule_box_route()) ||
+        (garbodor_locked && garbodor_removal_unlocks_live_pokemon_route());
+    if (!live_unlock) return false;
+
+    // Field Blower may discard a Stadium or an attached Pokemon Tool. Preserve the
+    // Item unless that removal immediately unlocks a modeled setup route. In the
+    // Garbodor scenario the opponent reattaches another Tool before the next player
+    // turn, so this flag is reset by the turn lifecycle rather than persisting:
     // https://api.pokemontcg.io/v2/cards/sm2-125
     // https://api.pokemontcg.io/v2/cards/swsh6-148
+    // https://api.pokemontcg.io/v2/cards/xy9-57
     // https://github.com/FlareZ123/pokemon-sims/issues/791
+    // https://github.com/FlareZ123/pokemon-sims/issues/2808
     remove_one(state_.hand, Card::FieldBlower);
     state_.discard.push_back(Card::FieldBlower);
     state_.path_lock_removed = true;
-    trace("PLAY ITEM", "R-GAME-ITEM",
-          "Field Blower discarded the modeled Path to the Peak; Rule Box Pokémon Abilities are available again.");
+    if (garbodor_locked) {
+      trace("PLAY ITEM", "R-GAME-ITEM",
+            "Field Blower discarded Garbodor's attached Pokemon Tool; Pokemon Abilities are available for the remainder of this turn.");
+    } else {
+      trace("PLAY ITEM", "R-GAME-ITEM",
+            "Field Blower discarded the modeled Path to the Peak; Rule Box Pokemon Abilities are available again.");
+    }
     return true;
   }
 

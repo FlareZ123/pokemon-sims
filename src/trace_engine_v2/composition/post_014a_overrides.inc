@@ -36,6 +36,6 @@
 #include "legacy_star_projection_chain.inc" // Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
 #include "gladion_overrides.inc" // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
 #include "arven_overrides.inc" // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
-#include "supporter_selector_overrides.inc" // Supporter rule: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#b-03-supporters
+#include "supporter_selector_overrides.inc" // Supporter rule: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 #include "search_item_overrides.inc"
 #include "secret_box_trace_overrides.inc"

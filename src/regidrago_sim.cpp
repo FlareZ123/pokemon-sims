@@ -39,6 +39,8 @@
 // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
 // Chaotic Swell: https://api.pokemontcg.io/v2/cards/sm12-187
 // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
+// Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57 ; scenario enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2808
+// Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142 ; scenario enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2808
 // Team Yell's Cheer: https://api.pokemontcg.io/v2/cards/swsh9-149
 // Roseanne's Backup: https://api.pokemontcg.io/v2/cards/swsh9-148
 // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
@@ -48,6 +50,7 @@
 #include "trace_engine_v2/part_002.inc"
 #define begin_turn begin_turn_original
 #define might_be_unseen might_be_unseen_empty_deck_original
+#define ability_available_for_pokemon ability_available_for_pokemon_pre_garbodor
 #include "trace_engine_v2/part_003.inc"
 // part_003.inc opens begin_turn(), and part_004.inc completes it. part_004.inc
 // later opens state_line(), which part_005.inc completes before a new Engine
@@ -58,6 +61,8 @@
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_005.inc#L1-L5
 #include "trace_engine_v2/part_004.inc"
 #include "trace_engine_v2/part_005.inc"
+#undef ability_available_for_pokemon
+#include "trace_engine_v2/part_garbodor_shake_ability_lock.inc"
 #undef might_be_unseen
 #include "trace_engine_v2/composition/opening_engine_overrides.inc"
 #define attach_manual attach_manual_tate_blender_original
@@ -118,10 +123,15 @@
 #include "trace_engine_v2/composition/burnet_fss_overrides.inc"
 #include "trace_engine_v2/composition/celestial_roar_overrides.inc"
 #include "trace_engine_v2/composition/final_engine_overrides.inc"
+#define all_scenarios all_scenarios_pre_garbodor_shake
+#define scenario_by_label scenario_by_label_pre_garbodor_shake
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #include "trace_engine_v2/part_014c.inc"
 #include "trace_engine_v2/part_015.inc"
+#undef scenario_by_label
+#undef all_scenarios
+#include "trace_engine_v2/part_garbodor_shake_scenarios.inc"
 // C++ preprocessing include grammar: https://eel.is/c++draft/cpp.include
 // Confirmed portability bug: https://github.com/FlareZ123/pokemon-sims/issues/1482
 #include "trace_engine_v2/part_016.inc"

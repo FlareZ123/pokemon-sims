@@ -2,11 +2,11 @@
 #include "../src/regidrago_sim.cpp"
 
 #include <algorithm>
+#include <array>
 #include <iostream>
 #include <random>
 #include <stdexcept>
 #include <tuple>
-#include <vector>
 
 namespace sim {
 
@@ -163,6 +163,12 @@ void run_banked_oricorio_variant(const int grass, const int fire, const int dde)
           "Banked Oricorio retreat did not promote the Apex-ready VSTAR.");
 }
 
+constexpr std::array<std::tuple<int, int, int>, 3> kApexEnergyCases{{
+    {1, 0, 1},
+    {0, 1, 1},
+    {2, 1, 0},
+}};
+
 }  // namespace
 
 int main() {
@@ -171,8 +177,7 @@ int main() {
   // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/issues/2430
-  for (const auto& [grass, fire, dde] : std::vector<std::tuple<int, int, int>>{
-           {1, 0, 1}, {0, 1, 1}, {2, 1, 0}}) {
+  for (const auto& [grass, fire, dde] : kApexEnergyCases) {
     run_issue_2158_variant(grass, fire, dde);
     run_tapu_variant(grass, fire, dde);
     run_banked_oricorio_variant(grass, fire, dde);

@@ -155,7 +155,7 @@
     state_.discard.push_back(Card::Grass);
     std::swap(*state_.active, *tapu);
     state_.retreat_used = true;
-    trace("RETREAT", "R-LATIAS-01; R-GAME-RETREAT; P-COMPRESS-01",
+    trace("RETREAT", "R-GAME-RETREAT; R-STEVEN-01; P-COMPRESS-01",
           "Paid Oricorio's one-Energy Retreat Cost and promoted Tapu Lele-GX before Steven's Resolve.");
 
     if (!remove_one(state_.hand, Card::StevensResolve)) {

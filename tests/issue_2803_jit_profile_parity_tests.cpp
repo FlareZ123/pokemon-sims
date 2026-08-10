@@ -4,6 +4,7 @@
 #include <iostream>
 #include <random>
 #include <stdexcept>
+#include <string_view>
 #include <utility>
 
 namespace sim {
@@ -24,6 +25,13 @@ struct EngineTestAccess {
 namespace {
 void expect(const bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);
+}
+
+bool trace_contains(const sim::TraceLog& trace, const std::string_view needle) {
+  for (const std::string& line : trace.lines) {
+    if (line.find(needle) != std::string::npos) return true;
+  }
+  return false;
 }
 
 sim::Scenario scenario(const sim::DciProfile profile) {
@@ -62,9 +70,19 @@ sim::State t2_state() {
 void test_t1_and_t2_use_shared_jit_timing() {
   std::mt19937_64 rng{2803};
   const sim::DeckRecipe recipe = sim::baseline_recipe();
-  sim::Engine strict(scenario(sim::DciProfile::StrictJit), recipe, rng);
-  sim::Engine flex(scenario(sim::DciProfile::MatchupFlexJit), recipe, rng);
-  sim::Engine control(scenario(sim::DciProfile::NoDiscardControl), recipe, rng);
+
+  // Engine stores Scenario by const reference, so fixtures must keep each Scenario
+  // alive for the Engine lifetime. Passing scenario(...) directly would leave a
+  // dangling reference after the constructor full-expression:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+  // C++ temporary lifetime: https://eel.is/c++draft/class.temporary
+  // Follow-up systemic bug: https://github.com/FlareZ123/pokemon-sims/issues/2815
+  const sim::Scenario strict_scenario = scenario(sim::DciProfile::StrictJit);
+  const sim::Scenario flex_scenario = scenario(sim::DciProfile::MatchupFlexJit);
+  const sim::Scenario control_scenario = scenario(sim::DciProfile::NoDiscardControl);
+  sim::Engine strict(strict_scenario, recipe, rng);
+  sim::Engine flex(flex_scenario, recipe, rng);
+  sim::Engine control(control_scenario, recipe, rng);
 
   sim::EngineTestAccess::set_state(strict, t1_state());
   sim::EngineTestAccess::set_state(flex, t1_state());
@@ -98,11 +116,43 @@ void test_t1_and_t2_use_shared_jit_timing() {
   expect(!sim::EngineTestAccess::t2_completion(control),
          "No-discard-control incorrectly entered the JIT-specific T2 completion.");
 }
+
+void test_matchup_flex_seed_211_uses_oricorio_t2_route() {
+  std::mt19937_64 rng{211};
+  sim::TraceLog trace{true};
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  const sim::Scenario flex_scenario = scenario(sim::DciProfile::MatchupFlexJit);
+  sim::Engine engine(flex_scenario, recipe, rng, &trace);
+  const sim::TrialOutcome outcome = engine.run();
+
+  // Seed 211 is the fixed reproduction from the confirmed issue. Matchup-flex JIT
+  // must use the same legal Oricorio -> Treasure -> Tapu -> Crispin T2 route as
+  // strict JIT, because both profiles require the Dragon payload on the ready turn.
+  // Policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Core procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Confirmed reproduction: https://github.com/FlareZ123/pokemon-sims/issues/2803
+  expect(outcome.first_ready_turn == 2,
+         "Matchup-flex seed 211 must reach readiness on T2.");
+  expect(trace_contains(trace, "Oricorio"),
+         "Matchup-flex seed 211 must route through Oricorio.");
+  expect(trace_contains(trace, "Tapu Lele-GX"),
+         "Matchup-flex seed 211 must preserve the Tapu Lele-GX connector.");
+  expect(trace_contains(trace, "Crispin"),
+         "Matchup-flex seed 211 must preserve the Crispin T2 finish.");
+}
 }  // namespace
 
 int main() {
   try {
     test_t1_and_t2_use_shared_jit_timing();
+    test_matchup_flex_seed_211_uses_oricorio_t2_route();
     std::cout << "Issue 2803 JIT profile parity tests passed\n";
     return 0;
   } catch (const std::exception& error) {

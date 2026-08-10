@@ -14,11 +14,15 @@
 #error "Late search composition requires search wrapper aliases to be undefined on entry"
 #endif
 
+// Base search policy first, then the compatibility aliases that adapt legacy
+// fragments to the current composition boundary. Their order is intentional.
 #include "empty_deck_search_overrides.inc"
 #include "search_item_legacy_bridges.inc"
-#include "earthen_vessel_overrides.inc"
-#include "treasure_route_overrides.inc"
-#include "quick_ball_route_overrides.inc"
+
+// Item-specific route families stay grouped by the card action they override.
+#include "earthen_vessel_overrides.inc" // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+#include "treasure_route_overrides.inc" // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+#include "quick_ball_route_overrides.inc" // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
 
 #if defined(bench_oricorio_if_useful) || defined(ultra_ball_has_legal_target) || \
     defined(play_ultra_ball) || defined(play_brilliant_blender) || \

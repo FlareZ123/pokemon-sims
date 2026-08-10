@@ -5,13 +5,13 @@ on:
     branches: [fix/2808-garbodor-shake-current-main]
 
 permissions:
-  actions: read
   contents: write
 
 jobs:
   materialize:
     if: github.actor != 'github-actions[bot]'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -20,27 +20,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Merge latest main and prepare final source state
+
+      - name: Merge exact current main and prepare final source
         run: |
           set -euo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git fetch origin main
-          if git merge --no-edit origin/main; then
-            :
-          else
-            # Current main removed this folded wrapper. The Garbodor hooks already
-            # live in composition/engine_body.inc, so accept the deletion:
-            # https://github.com/FlareZ123/pokemon-sims/issues/2808
-            git rm -f src/trace_engine_v2/composition/turn_reporting_body.inc 2>/dev/null || true
-            unresolved=$(git diff --name-only --diff-filter=U)
-            if [ -n "$unresolved" ]; then
-              echo 'Unexpected unresolved paths after current-main merge:' >&2
-              echo "$unresolved" >&2
-              exit 1
-            fi
-            git commit --no-edit
-          fi
+          start_main=$(git rev-parse origin/main)
+          echo "MATERIALIZE_MAIN=$start_main" >> "$GITHUB_ENV"
+          git merge --no-edit origin/main
 
           python - <<'PY'
           from pathlib import Path
@@ -55,28 +44,29 @@ jobs:
               source = source.replace(anchor, replacement, 1)
               path.write_text(source, encoding='utf-8')
           PY
+
+          # Remove the temporary workflow before provenance is generated so the
+          # committed evidence is derived from the intended final repository tree.
           git rm .github/workflows/issue_2808_materialize_current.yml
-      - name: Reuse completed paired 100k aggregate
-        env:
-          GH_TOKEN: ${{ github.token }}
+
+      - name: Build exact merged simulator
         run: |
           set -euo pipefail
-          rm -rf /tmp/issue-2808-release /tmp/issue-2808-release.zip
-          mkdir -p /tmp/issue-2808-release
-          curl --fail --location --retry 3 \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/9077678152/zip" \
-            -o /tmp/issue-2808-release.zip
-          unzip -q /tmp/issue-2808-release.zip -d /tmp/issue-2808-release
-          test -f /tmp/issue-2808-release/multi-deck-matrix.csv
-          test -f /tmp/issue-2808-release/t2-t3-matrix.csv
-          test -x /tmp/issue-2808-release/build/regidrago_sim || chmod +x /tmp/issue-2808-release/build/regidrago_sim
-          cp /tmp/issue-2808-release/multi-deck-matrix.csv results/multi_deck_comparison.csv
-          cp /tmp/issue-2808-release/t2-t3-matrix.csv results/simulation_results.csv
-      - name: Refresh manifests and reviewed traces
+          cmake -S . -B build-issue-2808 -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-issue-2808 --parallel 2
+
+      - name: Generate one paired 100k aggregate
         run: |
+          set -euo pipefail
+          ./build-issue-2808/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out results/multi_deck_comparison.csv
+          python scripts/extract_deck_matrix.py \
+            --input results/multi_deck_comparison.csv \
+            --output results/simulation_results.csv \
+            --deck regidrago-shell
+
+      - name: Refresh source-bound manifests and reviewed traces
+        run: |
+          set -euo pipefail
           python - <<'PY'
           import json
           from pathlib import Path
@@ -85,7 +75,7 @@ jobs:
           from scripts import regenerate_setup_baselines as base
 
           results = Path('results')
-          executable = Path('/tmp/issue-2808-release/build/regidrago_sim')
+          executable = Path('build-issue-2808/regidrago_sim')
           matrix_seed = 20260705
           trials = 100000
 
@@ -119,6 +109,7 @@ jobs:
               json.dumps(multi_manifest, indent=2, sort_keys=True) + '\n',
           )
           PY
+
       - name: Regenerate reports and validate final tree
         run: |
           set -euo pipefail
@@ -128,11 +119,27 @@ jobs:
           python tests/setup_report_contract_tests.py
           python tests/multi_deck_report_contract_tests.py
           python tests/update_setup_docs_tests.py
+          ctest --test-dir build-issue-2808 --parallel 4 --output-on-failure
           git diff --check
-      - name: Commit generated evidence
+
+      - name: Refuse stale-main materialization
         run: |
           set -euo pipefail
+          git fetch origin main
+          current_main=$(git rev-parse origin/main)
+          if [ "$current_main" != "$MATERIALIZE_MAIN" ]; then
+            echo "main moved during materialization: $MATERIALIZE_MAIN -> $current_main" >&2
+            exit 1
+          fi
+
+      - name: Commit exact evidence
+        run: |
+          set -euo pipefail
+          # This marker is deliberately outside src/include provenance. The next
+          # user-authored commit deletes it to trigger the normal PR workflows on
+          # the exact generated evidence tree.
+          printf '%s\n' "$MATERIALIZE_MAIN" > results/.issue_2808_materialized
           git add -A tests/card_audit_contract_tests.py results docs/REPORT.md docs/TRACE_AUDIT.md docs/MULTI_DECK_REPORT.md README.md .github/workflows/issue_2808_materialize_current.yml
           git diff --cached --check
-          git commit -m 'Refresh #2808 current-main setup evidence'
+          git commit -m 'Refresh #2808 exact current-main setup evidence'
           git push origin HEAD:fix/2808-garbodor-shake-current-main

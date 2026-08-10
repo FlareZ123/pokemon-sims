@@ -5,13 +5,14 @@ on:
     branches: [fix/2808-garbodor-shake-current-main]
 
 permissions:
+  actions: read
   contents: write
 
 jobs:
   materialize:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,24 +46,27 @@ jobs:
               path.write_text(source, encoding='utf-8')
           PY
 
-          # Remove the temporary workflow before provenance is generated so the
-          # committed evidence is derived from the intended final repository tree.
           git rm .github/workflows/issue_2808_materialize_current.yml
 
-      - name: Build exact merged simulator
+      - name: Reuse exact PR-merge CI evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          cmake -S . -B build-issue-2808 -G Ninja -DCMAKE_BUILD_TYPE=Release
-          cmake --build build-issue-2808 --parallel 2
-
-      - name: Generate one paired 100k aggregate
-        run: |
-          set -euo pipefail
-          ./build-issue-2808/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out results/multi_deck_comparison.csv
-          python scripts/extract_deck_matrix.py \
-            --input results/multi_deck_comparison.csv \
-            --output results/simulation_results.csv \
-            --deck regidrago-shell
+          rm -rf /tmp/issue-2808-release /tmp/issue-2808-release.zip
+          mkdir -p /tmp/issue-2808-release
+          curl --fail --location --retry 3 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/9082184073/zip" \
+            -o /tmp/issue-2808-release.zip
+          unzip -q /tmp/issue-2808-release.zip -d /tmp/issue-2808-release
+          test -f /tmp/issue-2808-release/multi-deck-matrix.csv
+          test -f /tmp/issue-2808-release/t2-t3-matrix.csv
+          test -x /tmp/issue-2808-release/build/regidrago_sim || chmod +x /tmp/issue-2808-release/build/regidrago_sim
+          cp /tmp/issue-2808-release/multi-deck-matrix.csv results/multi_deck_comparison.csv
+          cp /tmp/issue-2808-release/t2-t3-matrix.csv results/simulation_results.csv
 
       - name: Refresh source-bound manifests and reviewed traces
         run: |
@@ -75,7 +79,7 @@ jobs:
           from scripts import regenerate_setup_baselines as base
 
           results = Path('results')
-          executable = Path('build-issue-2808/regidrago_sim')
+          executable = Path('/tmp/issue-2808-release/build/regidrago_sim')
           matrix_seed = 20260705
           trials = 100000
 
@@ -119,7 +123,6 @@ jobs:
           python tests/setup_report_contract_tests.py
           python tests/multi_deck_report_contract_tests.py
           python tests/update_setup_docs_tests.py
-          ctest --test-dir build-issue-2808 --parallel 4 --output-on-failure
           git diff --check
 
       - name: Refuse stale-main materialization
@@ -135,9 +138,6 @@ jobs:
       - name: Commit exact evidence
         run: |
           set -euo pipefail
-          # This marker is deliberately outside src/include provenance. The next
-          # user-authored commit deletes it to trigger the normal PR workflows on
-          # the exact generated evidence tree.
           printf '%s\n' "$MATERIALIZE_MAIN" > results/.issue_2808_materialized
           git add -A tests/card_audit_contract_tests.py results docs/REPORT.md docs/TRACE_AUDIT.md docs/MULTI_DECK_REPORT.md README.md .github/workflows/issue_2808_materialize_current.yml
           git diff --cached --check

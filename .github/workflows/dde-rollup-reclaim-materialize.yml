@@ -48,3 +48,5 @@ jobs:
           fi
           git commit -m 'Fix #2368 rebase semantic DDE rollup onto current main'
           git push origin HEAD:fix/dde-semantic-rollup-reclaim-20260809
+
+# Second synchronization commit intentionally triggers the PR workflow after the workflow file exists on the head branch.

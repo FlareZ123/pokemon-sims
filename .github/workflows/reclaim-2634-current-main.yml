@@ -1,0 +1,52 @@
+name: Reclaim issue 2634 on current main
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/reclaim-2634-current-main.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  replay:
+    if: github.head_ref == 'fix/2634-reclaim-20260810-0342'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Verify production file stayed unchanged
+        shell: bash
+        run: |
+          git fetch origin main bugfix/2634-state-generic-quick-ball-tapu-arven
+          git diff --quiet 3e37b15f9a7abcccdee3779b8862488b6a2922b4 origin/main -- src/trace_engine_v2/part_issue_2272_route_replaced_arven_quick_ball_override.inc
+      - name: Replay reviewed state-generic connector
+        shell: bash
+        run: |
+          git checkout origin/bugfix/2634-state-generic-quick-ball-tapu-arven -- src/trace_engine_v2/part_issue_2272_route_replaced_arven_quick_ball_override.inc tests/issue_2634_quick_ball_tapu_arven_state_generic_tests.cpp
+          rm .github/workflows/reclaim-2634-current-main.yml
+          git diff --check
+      - name: Build and validate focused route
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R 'issue_2634' --output-on-failure
+      - name: Run three independent simulate-this controls
+        shell: bash
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-control-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee trace-control-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-control-3.txt
+      - name: Commit validated source and regression
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src tests
+          git commit -m 'Fix #2634 state-generic Quick Ball Tapu-Arven route'
+          git push origin HEAD:${{ github.head_ref }}

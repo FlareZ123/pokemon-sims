@@ -1,17 +1,16 @@
 name: DDE materialize runner
 
 on:
-  push:
+  pull_request:
     branches:
       - main
-    paths:
-      - '.github/workflows/dde-materialize-runner.yml'
 
 permissions:
   contents: write
 
 jobs:
   materialize:
+    if: github.head_ref == 'fix/dde-semantic-rollup-reclaim-20260809' && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -22,7 +21,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Merge current main and resolve known overlaps
+      - name: Merge current main and resolve audited overlaps
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
@@ -41,6 +40,9 @@ jobs:
             src/trace_engine_v2/part_009b1.inc
             src/trace_engine_v2/part_014c_field_blower_override.inc
             src/trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc
+            src/trace_engine_v2/composition/engine_body.inc
+            src/trace_engine_v2/composition/steven_blender_overrides.inc
+            src/trace_engine_v2/composition/tapu_search_overrides.inc
           )
           for path in "${conflicts[@]}"; do
             found=0
@@ -67,14 +69,30 @@ jobs:
           done
 
           for path in \
-            src/trace_engine_v2/part_009b1.inc \
-            src/trace_engine_v2/part_014c_field_blower_override.inc \
-            src/trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc; do
+            src/trace_engine_v2/composition/engine_body.inc \
+            src/trace_engine_v2/composition/steven_blender_overrides.inc; do
             if git diff --name-only --diff-filter=U | grep -Fxq "$path"; then
               git checkout --theirs -- "$path"
               git add "$path"
             fi
           done
+          if git diff --name-only --diff-filter=U | grep -Fxq src/trace_engine_v2/composition/tapu_search_overrides.inc; then
+            git rm -f src/trace_engine_v2/composition/tapu_search_overrides.inc
+          fi
+
+          for path in \
+            src/trace_engine_v2/part_009b1.inc \
+            src/trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc; do
+            if git diff --name-only --diff-filter=U | grep -Fxq "$path"; then
+              git checkout --ours -- "$path"
+              git add "$path"
+            fi
+          done
+
+          if git diff --name-only --diff-filter=U | grep -Fxq src/trace_engine_v2/part_014c_field_blower_override.inc; then
+            git checkout --theirs -- src/trace_engine_v2/part_014c_field_blower_override.inc
+            git add src/trace_engine_v2/part_014c_field_blower_override.inc
+          fi
 
           python - <<'PY'
           import fcntl
@@ -111,13 +129,29 @@ jobs:
                           pass
 
           def patch_009b1(text):
-              if 'state_.active->double_dragon == 0 && // https://github.com/FlareZ123/pokemon-sims/issues/2368' in text:
-                  return text
-              old = '''        state_.active->card == Card::RegidragoV &&\n        state_.active->grass == 0 && state_.active->fire == 0 &&\n        count_of(state_.discard, Card::HisuianHeavyBall) > 0 &&\n'''
-              new = '''        state_.active->card == Card::RegidragoV &&\n        state_.active->grass == 0 && state_.active->fire == 0 &&\n        state_.active->double_dragon == 0 && // https://github.com/FlareZ123/pokemon-sims/issues/2368\n        count_of(state_.discard, Card::HisuianHeavyBall) > 0 &&\n'''
+              old = '''    // K1, strict-JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities\n    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1797\n    return scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&\n'''
+              new = '''    // K1, same-turn JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities\n    // Cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2714\n    // Confirmed route bug: https://github.com/FlareZ123/pokemon-sims/issues/1797\n    return strict_payload_timing() && scenario_.going_first &&\n'''
               if text.count(old) != 1:
-                  raise SystemExit('part_009b1 DDE route anchor changed unexpectedly')
-              return text.replace(old, new, 1)
+                  raise SystemExit('part_009b1 #2714 anchor changed unexpectedly')
+              updated = text.replace(old, new, 1)
+              required = 'state_.active->double_dragon == 0 && // https://github.com/FlareZ123/pokemon-sims/issues/2368'
+              if required not in updated:
+                  raise SystemExit('part_009b1 lost the DDE exclusion for the two-Basic route')
+              return updated
+
+          def patch_1209(text):
+              old = '''    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2094\n\n    if (scenario_.dci != DciProfile::StrictJit || state_.turn != 2 ||\n'''
+              new = '''    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2094\n    // Strict JIT and MatchupFlex JIT share the same ready-turn payload timing:\n    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment\n    // Cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2800\n\n    if (!strict_payload_timing() || state_.turn != 2 ||\n'''
+              if text.count(old) != 1:
+                  raise SystemExit('part_issue_1209 #2800 anchor changed unexpectedly')
+              updated = text.replace(old, new, 1)
+              for required in (
+                  'for (const Card crispin_attachment : {Card::Grass, Card::Fire})',
+                  'projected.pays_apex_energy_cost(*projected.state_.active)',
+              ):
+                  if required not in updated:
+                      raise SystemExit(f'part_issue_1209 lost DDE semantic contract: {required}')
+              return updated
 
           field_helpers = r'''
   bool play_earthen_vessel_semantic_payload_outlet(const bool permit_payload) {
@@ -197,48 +231,33 @@ jobs:
                   text = text.replace(footer, dde_footer, 1)
               return text
 
-          def patch_1209(text):
-              if 'Confirm ed refined bug'.replace(' ', '') in '':
-                  pass
-              old_projection = '''    return std::any_of(\n        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {\n          return (pokemon.card == Card::RegidragoV ||\n                  pokemon.card == Card::RegidragoVstar) &&\n              pokemon.entered_turn < state_.turn && pokemon.grass >= 1;\n        });\n'''
-              new_projection = '''    // The inspected deck contains both different Basic Energy types, so Crispin\n    // can legally attach either searched type and put the other into hand. Project\n    // that effect attachment first, then the other searched Basic as the manual\n    // attachment only when the manual attachment remains unused. DDE plus either\n    // Basic already pays Apex after Crispin's effect attachment:\n    // Crispin ruling: https://compendium.pokegym.net/category/5-trainers/crispin/\n    // Crispin: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/sv07/133\n    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/\n    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136\n    // Manual Energy attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules\n    // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/2431\n    return std::any_of(\n        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {\n          if ((pokemon.card != Card::RegidragoV &&\n               pokemon.card != Card::RegidragoVstar) ||\n              pokemon.entered_turn >= state_.turn) {\n            return false;\n          }\n          for (const Card crispin_attachment : {Card::Grass, Card::Fire}) {\n            Pokemon after_crispin = pokemon;\n            if (!attach_energy_card(after_crispin, crispin_attachment)) continue;\n            if (pays_apex_energy_cost(after_crispin)) return true;\n            if (state_.manual_energy_used) continue;\n            const Card hand_basic = crispin_attachment == Card::Grass\n                ? Card::Fire : Card::Grass;\n            Pokemon after_manual = after_crispin;\n            if (attach_energy_card(after_manual, hand_basic) &&\n                pays_apex_energy_cost(after_manual)) {\n              return true;\n            }\n          }\n          return false;\n        });\n'''
-              if 'for (const Card crispin_attachment : {Card::Grass, Card::Fire})' not in text:
-                  if text.count(old_projection) != 1:
-                      raise SystemExit('Issue-1209 Crispin projection anchor changed unexpectedly')
-                  text = text.replace(old_projection, new_projection, 1)
-
-              old_shadow = '''      return projected.active_is_vstar() &&\n          projected.state_.active->grass >= 2 &&\n          projected.state_.active->fire >= 1 &&\n          projected.payload_ready();\n'''
-              new_shadow = '''      // The exact shadow resolves the real Crispin, manual attachment, evolution,\n      // and Latias promotion before judging semantic Apex payment. DDE plus either\n      // Basic Energy is a complete GGF payment:\n      // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/\n      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136\n      // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/2431\n      return projected.active_is_vstar() &&\n          projected.pays_apex_energy_cost(*projected.state_.active) &&\n          projected.payload_ready();\n'''
-              if 'projected.pays_apex_energy_cost(*projected.state_.active)' not in text:
-                  if text.count(old_shadow) != 1:
-                      raise SystemExit('Issue-1209 semantic shadow anchor changed unexpectedly')
-                  text = text.replace(old_shadow, new_shadow, 1)
-              return text
-
           atomic_transform('src/trace_engine_v2/part_009b1.inc', patch_009b1)
-          atomic_transform('src/trace_engine_v2/part_014c_field_blower_override.inc', patch_field_blower)
           atomic_transform('src/trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc', patch_1209)
+          atomic_transform('src/trace_engine_v2/part_014c_field_blower_override.inc', patch_field_blower)
           PY
 
           git add src/trace_engine_v2/part_009b1.inc \
-                  src/trace_engine_v2/part_014c_field_blower_override.inc \
-                  src/trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc
+                  src/trace_engine_v2/part_issue_1209_treasure_tapu_crispin_override.inc \
+                  src/trace_engine_v2/part_014c_field_blower_override.inc
 
           if git diff --name-only --diff-filter=U | grep -q .; then
             echo 'Unresolved conflicts remain:' >&2
             git diff --name-only --diff-filter=U >&2
             exit 1
           fi
-      - name: Remove temporary materializers from proposed tree
+      - name: Remove temporary recovery files from proposed tree
         run: |
+          rm -f .github/workflows/dde-materialize-runner.yml
           rm -f .github/workflows/dde-rollup-reclaim-materialize.yml
+          rm -f docs/dde-reclaim-trigger-20260809.md
+          rm -f docs/dde-reclaim-trigger-20260810.md
           git add -A
       - name: Configure Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator and tests
         run: cmake --build build --parallel 2
       - name: Run focused DDE regression suite
-        run: ctest --test-dir build --output-on-failure -R 'issue_2368|issue_241|issue_242|issue_243|issue_244'
+        run: ctest --test-dir build --output-on-failure -R 'issue_2368|issue_241|issue_242|issue_243|issue_244|issue_2714|issue_2800|issue_2807'
       - name: Run three reviewed simulate-this traces
         run: |
           ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3

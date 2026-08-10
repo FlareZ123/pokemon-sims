@@ -10,9 +10,9 @@
 namespace sim {
 
 struct EngineTestAccess {
-  static void set_state(Engine& engine, State state) {
+  static void set_state(Engine& engine, State state, const bool deck_seen = true) {
     engine.state_ = std::move(state);
-    engine.deck_seen_ = true;
+    engine.deck_seen_ = deck_seen;
   }
   static const State& state(const Engine& engine) { return engine.state_; }
   static void choose_supporter(Engine& engine) { engine.choose_supporter(); }
@@ -118,10 +118,14 @@ void test_serena_uses_held_payload_instead_of_burnet() {
   state.deck = {sim::Card::TapuLeleGX, sim::Card::RegidragoV,
                 sim::Card::Dragapult, sim::Card::DialgaGX,
                 sim::Card::Fire, sim::Card::Grass};
-  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::EngineTestAccess::set_state(engine, std::move(state), false);
 
-  // Serena can use its mandatory discard on the held Dragon and complete strict JIT.
-  // Burnet must remain out of the discard pile while Serena uses the Supporter slot:
+  // K0 has not proved a deck-resident payload, so the public held-card Serena route
+  // remains the deterministic strict-JIT completion rather than assuming Burnet hits.
+  // K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2408
   // https://api.pokemontcg.io/v2/cards/swsh12-164
   // https://api.pokemontcg.io/v2/cards/me2pt5-152
   // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26

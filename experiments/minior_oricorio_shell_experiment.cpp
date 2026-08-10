@@ -1,14 +1,16 @@
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
+#include <array>
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include <string_view>
 
 namespace {
 
-constexpr std::uint64_t kTrials = 200000;
+constexpr std::uint64_t kTrials = 100000;
 constexpr std::uint64_t kSeed = 20260810;
 
 sim::DeckRecipe minior_proxy_recipe() {
@@ -56,25 +58,29 @@ void print_row(const sim::Scenario& scenario,
 int main() {
   const sim::DeckRecipe baseline = sim::baseline_recipe();
   const sim::DeckRecipe minior = minior_proxy_recipe();
-  const auto scenarios = sim::all_scenarios();
+  constexpr std::array<std::string_view, 6> scenario_labels{
+      "strict-jit/go-first",
+      "matchup-flex-jit/go-first",
+      "no-discard-control/go-first",
+      "strict-jit/go-second",
+      "matchup-flex-jit/go-second",
+      "no-discard-control/go-second",
+  };
 
   std::cout << "scenario,trials,baseline_t2_pct,minior_t2_pct,delta_t2_pp,"
                "baseline_t3_pct,minior_t3_pct,delta_t3_pp,"
                "baseline_t4_pct,minior_t4_pct,delta_t4_pp\n";
 
-  for (std::size_t scenario_index = 0; scenario_index < scenarios.size(); ++scenario_index) {
-    const sim::Scenario& scenario = scenarios[scenario_index];
+  for (std::size_t scenario_index = 0; scenario_index < scenario_labels.size(); ++scenario_index) {
+    const auto scenario = sim::scenario_by_label(scenario_labels[scenario_index]);
+    if (!scenario) throw std::logic_error("missing unlocked shell scenario");
 
-    // Keep the repository's established scenario stream spacing so both decklists use paired random streams:
+    // Baseline and Minior use the same per-scenario random stream for a paired comparison:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
-    const std::size_t seed_slot = scenario_index +
-        (scenario_index >= 4 ? 1U : 0U) +
-        (scenario_index >= 10 ? 1U : 0U);
-    const std::uint64_t common_seed = kSeed + 104729ULL * seed_slot;
-
-    const sim::Aggregate baseline_result = sim::simulate(scenario, baseline, kTrials, common_seed);
-    const sim::Aggregate minior_result = sim::simulate(scenario, minior, kTrials, common_seed);
-    print_row(scenario, baseline_result, minior_result);
+    const std::uint64_t common_seed = kSeed + 104729ULL * scenario_index;
+    const sim::Aggregate baseline_result = sim::simulate(*scenario, baseline, kTrials, common_seed);
+    const sim::Aggregate minior_result = sim::simulate(*scenario, minior, kTrials, common_seed);
+    print_row(*scenario, baseline_result, minior_result);
   }
 
   return 0;

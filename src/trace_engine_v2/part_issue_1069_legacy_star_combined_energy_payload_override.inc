@@ -1,3 +1,23 @@
+  bool legacy_star_basic_completes_apex(const Pokemon& pokemon, const Card energy) const {
+    if (energy != Card::Grass && energy != Card::Fire) return false;
+    Pokemon projected = pokemon;
+    // DDE supplies two Energy of every type, so DDE-only is one physical Basic
+    // attachment short and either Grass or Fire is a legal completion.
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // DDE semantic-readiness contract: https://github.com/FlareZ123/pokemon-sims/issues/2238
+    // Confirmed migration bug: https://github.com/FlareZ123/pokemon-sims/issues/2423
+    return attach_energy_card(projected, energy) && pays_apex_energy_cost(projected);
+  }
+
+  std::vector<Card> legacy_star_completing_basics(const Pokemon& pokemon) const {
+    std::vector<Card> result;
+    for (const Card energy : {Card::Grass, Card::Fire}) {
+      if (legacy_star_basic_completes_apex(pokemon, energy)) result.push_back(energy);
+    }
+    return result;
+  }
+
   bool held_payload_only_outlet_blocks_combined_legacy_star_route() const {
     // These held cards can establish a current-turn Dragon payload, but none can
     // supply the missing Basic Energy by itself. They therefore cannot suppress a
@@ -18,12 +38,12 @@
       return false;
     }
 
-    const int missing_grass = std::max(0, 2 - state_.active->grass);
-    const int missing_fire = std::max(0, 1 - state_.active->fire);
-    if (missing_grass + missing_fire != 1) return false;
-
-    const Card needed_energy = missing_grass == 1 ? Card::Grass : Card::Fire;
-    if (hand_count(needed_energy) > 0) return false;
+    const auto completing_basics = legacy_star_completing_basics(*state_.active);
+    if (completing_basics.empty()) return false;
+    if (std::any_of(completing_basics.begin(), completing_basics.end(),
+                    [this](const Card energy) { return hand_count(energy) > 0; })) {
+      return false;
+    }
 
     // Admission must be deterministic before Legacy Star reveals its seven cards.
     // A needed Energy already in discard is directly recoverable. Otherwise, an
@@ -39,11 +59,13 @@
     // Resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Existing deterministic Vessel-Burnet route preserved by this boundary: https://github.com/FlareZ123/pokemon-sims/issues/1866
     // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/2313
-    const bool direct_energy_recovery =
-        count_of(state_.discard, needed_energy) > 0;
+    const bool direct_energy_recovery = std::any_of(
+        completing_basics.begin(), completing_basics.end(),
+        [this](const Card energy) { return count_of(state_.discard, energy) > 0; });
     const bool public_vessel_fallback =
         count_of(state_.discard, Card::EarthenVessel) > 0 &&
-        count_of(state_.deck, needed_energy) > 0;
+        std::any_of(completing_basics.begin(), completing_basics.end(),
+                    [this](const Card energy) { return count_of(state_.deck, energy) > 0; });
     return direct_energy_recovery || public_vessel_fallback;
   }
 
@@ -61,17 +83,22 @@
 
     Pokemon* target = target_regi();
     if (target == nullptr || target->card != Card::RegidragoVstar) return false;
-    const int missing_grass = std::max(0, 2 - target->grass);
-    const int missing_fire = std::max(0, 1 - target->fire);
-    if (missing_grass + missing_fire != 1) return false;
-    const Card needed_energy = missing_grass == 1 ? Card::Grass : Card::Fire;
-    if (hand_count(needed_energy) > 0) return false;
+    const auto completing_basics = legacy_star_completing_basics(*target);
+    if (completing_basics.empty()) return false;
+    if (std::any_of(completing_basics.begin(), completing_basics.end(),
+                    [this](const Card energy) { return hand_count(energy) > 0; })) {
+      return false;
+    }
 
     const bool latias_in_deck = count_of(state_.deck, Card::LatiasEx) > 0;
     const bool latias_in_discard = count_of(state_.discard, Card::LatiasEx) > 0;
     if (!latias_in_deck && !latias_in_discard) return false;
+    const bool completing_energy_public = std::any_of(
+        completing_basics.begin(), completing_basics.end(), [this](const Card energy) {
+          return count_of(state_.deck, energy) + count_of(state_.discard, energy) > 0;
+        });
     if (count_of(state_.discard, Card::EarthenVessel) == 0 ||
-        count_of(state_.deck, needed_energy) + count_of(state_.discard, needed_energy) == 0) {
+        !completing_energy_public) {
       return false;
     }
 
@@ -104,9 +131,12 @@
     // Confirmed seed-15 state: https://github.com/FlareZ123/pokemon-sims/issues/2314
     const auto payload_cost = choose_discard(true, true, true, Card::EarthenVessel);
     if (!payload_cost || !is_payload(*payload_cost)) return false;
-    const bool route_replaced_energy_cost =
-        (missing_grass == 0 && hand_count(Card::Grass) > 0) ||
-        (missing_fire == 0 && hand_count(Card::Fire) > 0);
+    const std::array<Card, 2> basic_energies{Card::Grass, Card::Fire};
+    const bool route_replaced_energy_cost = std::any_of(
+        basic_energies.begin(), basic_energies.end(), [this, target](const Card energy) {
+          return hand_count(energy) > 0 &&
+              !legacy_star_basic_completes_apex(*target, energy);
+        });
     if (!route_replaced_energy_cost) {
       const std::vector<Card> original_hand = state_.hand;
       const std::vector<Card> original_discard = state_.discard;
@@ -131,7 +161,8 @@
     if (target == nullptr || target->card != Card::RegidragoVstar) {
       throw std::logic_error("Issue 2314 projected VSTAR target disappeared");
     }
-    const Card needed_energy = target->grass < 2 ? Card::Grass : Card::Fire;
+    const auto completing_basics = legacy_star_completing_basics(*target);
+    if (completing_basics.empty()) return false;
 
     state_.vstar_power_used = true;
     outcome_.used_legacy_star = true;
@@ -151,12 +182,18 @@
       }
       recovered.push_back(Card::LatiasEx);
     }
-    if (count_of(state_.discard, needed_energy) > 0 && recovered.size() < 2U) {
-      if (!recover_discard_to_hand(needed_energy)) {
-        throw std::logic_error("Issue 2314 Legacy Star Energy target disappeared");
+    const auto discard_energy = std::find_if(
+        completing_basics.begin(), completing_basics.end(),
+        [this](const Card energy) { return count_of(state_.discard, energy) > 0; });
+    const auto deck_energy = std::find_if(
+        completing_basics.begin(), completing_basics.end(),
+        [this](const Card energy) { return count_of(state_.deck, energy) > 0; });
+    if (discard_energy != completing_basics.end() && recovered.size() < 2U) {
+      if (!recover_discard_to_hand(*discard_energy)) {
+        throw std::logic_error("Issue 2314 Legacy Star completing Energy disappeared");
       }
-      recovered.push_back(needed_energy);
-    } else if (count_of(state_.deck, needed_energy) > 0 && recovered.size() < 2U) {
+      recovered.push_back(*discard_energy);
+    } else if (deck_energy != completing_basics.end() && recovered.size() < 2U) {
       if (!recover_discard_to_hand(Card::EarthenVessel)) {
         throw std::logic_error("Issue 2314 Legacy Star Vessel target disappeared");
       }
@@ -193,15 +230,15 @@
 
     Pokemon* target = target_regi();
     if (target == nullptr || target->card != Card::RegidragoVstar) return false;
-    const int missing_grass = std::max(0, 2 - target->grass);
-    const int missing_fire = std::max(0, 1 - target->fire);
-    if (missing_grass + missing_fire != 1) return false;
-    const Card needed_energy = missing_grass == 1 ? Card::Grass : Card::Fire;
-    const int needed_energy_before = needed_energy == Card::Grass ? grass_before : fire_before;
-    if (hand_count(needed_energy) <= needed_energy_before ||
-        count_of(state_.deck, needed_energy) == 0) {
-      return false;
-    }
+    const auto completing_basics = legacy_star_completing_basics(*target);
+    const auto needed_energy_it = std::find_if(
+        completing_basics.begin(), completing_basics.end(),
+        [this, grass_before, fire_before](const Card energy) {
+          const int before = energy == Card::Grass ? grass_before : fire_before;
+          return hand_count(energy) > before && count_of(state_.deck, energy) > 0;
+        });
+    if (needed_energy_it == completing_basics.end()) return false;
+    const Card needed_energy = *needed_energy_it;
 
     const std::vector<Card> original_hand = state_.hand;
     const std::vector<Card> original_discard = state_.discard;

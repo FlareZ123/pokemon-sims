@@ -1,10 +1,21 @@
   bool legacy_star_delayed_vessel_route() const {
     const bool held_payload = std::any_of(
         state_.hand.begin(), state_.hand.end(), is_payload);
+    const std::array<Card, 2> delayed_route_basics{Card::Grass, Card::Fire};
+    const bool completing_basic_in_deck = state_.active && std::any_of(
+        delayed_route_basics.begin(), delayed_route_basics.end(),
+        [this](const Card energy) {
+          if (count_of(state_.deck, energy) == 0) return false;
+          Pokemon projected = *state_.active;
+          return attach_energy_card(projected, energy) && pays_apex_energy_cost(projected);
+        });
+    // DDE-only and the canonical GF/GG states are all one physical Basic
+    // attachment short when semantic Apex progress is two.
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Confirmed migration bug: https://github.com/FlareZ123/pokemon-sims/issues/2423
     const bool exact_reported_axis = state_.turn == 2 && active_is_vstar() &&
-        state_.active->grass == 1 && state_.active->fire == 1 &&
-        grass_needed() == 1 && fire_needed() == 0 &&
-        count_of(state_.deck, Card::Grass) > 0;
+        apex_energy_progress(*state_.active) == 2 && completing_basic_in_deck;
 
     // Legacy Star may return Earthen Vessel now for a fully public next-turn
     // finish. The current turn's manual attachment is already spent, while the

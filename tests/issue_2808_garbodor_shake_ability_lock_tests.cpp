@@ -8,7 +8,7 @@
 #include <utility>
 
 namespace sim {
-struct EngineTestAccess {
+struct Issue2808EngineTestAccess {
   static void set_state(Engine& engine, State state) {
     engine.state_ = std::move(state);
     engine.deck_seen_ = true;
@@ -80,7 +80,7 @@ void test_boost_shake_timing_by_seat() {
                             sim::DciProfile::StrictJit, sim::LockMode::None, true, 5};
   sim::Engine first_engine = make_engine(first, rng1);
   sim::State first_state = minimal_state(1);
-  sim::EngineTestAccess::set_state(first_engine, first_state);
+  sim::Issue2808EngineTestAccess::set_state(first_engine, first_state);
 
   // Going first: Regidrago T1 occurs before the opponent can use Boost Shake.
   // The opponent then evolves Garbodor on its first turn, so Garbotoxin begins on
@@ -88,26 +88,26 @@ void test_boost_shake_timing_by_seat() {
   // https://api.pokemontcg.io/v2/cards/swsh7-142
   // https://api.pokemontcg.io/v2/cards/xy9-57
   // https://github.com/FlareZ123/pokemon-sims/issues/2808
-  expect(!sim::EngineTestAccess::garbodor_locked(first_engine),
+  expect(!sim::Issue2808EngineTestAccess::garbodor_locked(first_engine),
          "Going-first T1 must remain unlocked before the opponent's Boost Shake turn.");
-  expect(sim::EngineTestAccess::pokemon_ability_available(first_engine, sim::Card::Oricorio),
+  expect(sim::Issue2808EngineTestAccess::pokemon_ability_available(first_engine, sim::Card::Oricorio),
          "Non-Rule-Box Pokemon Abilities must be available on going-first T1.");
 
   first_state.turn = 2;
-  sim::EngineTestAccess::set_state(first_engine, first_state);
-  expect(sim::EngineTestAccess::garbodor_locked(first_engine),
+  sim::Issue2808EngineTestAccess::set_state(first_engine, first_state);
+  expect(sim::Issue2808EngineTestAccess::garbodor_locked(first_engine),
          "Going-first T2 must be under Garbotoxin.");
-  expect(!sim::EngineTestAccess::pokemon_ability_available(first_engine, sim::Card::Oricorio),
+  expect(!sim::Issue2808EngineTestAccess::pokemon_ability_available(first_engine, sim::Card::Oricorio),
          "Garbotoxin must suppress non-Rule-Box Pokemon Abilities.");
-  expect(!sim::EngineTestAccess::pokemon_ability_available(first_engine, sim::Card::CrobatV),
+  expect(!sim::Issue2808EngineTestAccess::pokemon_ability_available(first_engine, sim::Card::CrobatV),
          "Garbotoxin must suppress Pokemon V Abilities.");
 
   std::mt19937_64 rng2{280802};
   const sim::Scenario second{"garbodor-shake-ability-lock/go-second",
                              sim::DciProfile::StrictJit, sim::LockMode::None, false, 5};
   sim::Engine second_engine = make_engine(second, rng2);
-  sim::EngineTestAccess::set_state(second_engine, minimal_state(1));
-  expect(sim::EngineTestAccess::garbodor_locked(second_engine),
+  sim::Issue2808EngineTestAccess::set_state(second_engine, minimal_state(1));
+  expect(sim::Issue2808EngineTestAccess::garbodor_locked(second_engine),
          "Going-second T1 must start under the opponent's established Garbotoxin.");
 }
 
@@ -118,7 +118,7 @@ void test_field_blower_unlocks_only_current_turn() {
   sim::Engine engine = make_engine(scenario, rng);
   sim::State state = minimal_state(1);
   state.hand = {sim::Card::FieldBlower, sim::Card::CrobatV};
-  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::Issue2808EngineTestAccess::set_state(engine, std::move(state));
 
   // Crobat V's Dark Asset is a live setup connector in this low-hand state. Field
   // Blower may discard the opponent Garbodor's Tool, ending Garbotoxin for this turn:
@@ -126,17 +126,17 @@ void test_field_blower_unlocks_only_current_turn() {
   // https://api.pokemontcg.io/v2/cards/sm2-125
   // https://api.pokemontcg.io/v2/cards/xy9-57
   // https://github.com/FlareZ123/pokemon-sims/issues/2808
-  expect(sim::EngineTestAccess::play_field_blower(engine),
+  expect(sim::Issue2808EngineTestAccess::play_field_blower(engine),
          "Field Blower must be playable when Garbotoxin blocks a live Dark Asset route.");
-  expect(sim::EngineTestAccess::pokemon_ability_available(engine, sim::Card::CrobatV),
+  expect(sim::Issue2808EngineTestAccess::pokemon_ability_available(engine, sim::Card::CrobatV),
          "Pokemon Abilities must become available immediately after Field Blower.");
-  expect(sim::EngineTestAccess::state(engine).path_lock_removed,
+  expect(sim::Issue2808EngineTestAccess::state(engine).path_lock_removed,
          "The current-turn Garbodor Tool-removal marker must be set.");
 
-  sim::EngineTestAccess::begin_turn(engine, 2);
-  expect(!sim::EngineTestAccess::state(engine).path_lock_removed,
+  sim::Issue2808EngineTestAccess::begin_turn(engine, 2);
+  expect(!sim::Issue2808EngineTestAccess::state(engine).path_lock_removed,
          "The opponent re-Tool assumption must clear the temporary unlock next turn.");
-  expect(sim::EngineTestAccess::garbodor_locked(engine),
+  expect(sim::Issue2808EngineTestAccess::garbodor_locked(engine),
          "Garbotoxin must be active again on the next Regidrago turn.");
 }
 
@@ -147,8 +147,8 @@ void test_only_actual_item_lock_blocks_field_blower() {
   sim::Engine ability_engine = make_engine(ability_only, rng1);
   sim::State ability_state = minimal_state(1);
   ability_state.hand = {sim::Card::FieldBlower, sim::Card::CrobatV};
-  sim::EngineTestAccess::set_state(ability_engine, std::move(ability_state));
-  expect(sim::EngineTestAccess::play_field_blower(ability_engine),
+  sim::Issue2808EngineTestAccess::set_state(ability_engine, std::move(ability_state));
+  expect(sim::Issue2808EngineTestAccess::play_field_blower(ability_engine),
          "Garbotoxin itself must not prohibit Item play.");
 
   std::mt19937_64 rng2{280805};
@@ -157,13 +157,13 @@ void test_only_actual_item_lock_blocks_field_blower() {
   sim::Engine item_engine = make_engine(item_lock, rng2);
   sim::State item_state = minimal_state(1);
   item_state.hand = {sim::Card::FieldBlower, sim::Card::CrobatV};
-  sim::EngineTestAccess::set_state(item_engine, std::move(item_state));
+  sim::Issue2808EngineTestAccess::set_state(item_engine, std::move(item_state));
   // Item legality is controlled by the actual Item-lock mode, independently from
   // Garbotoxin's Pokemon-Ability suppression:
   // https://api.pokemontcg.io/v2/cards/sm2-125
   // https://api.pokemontcg.io/v2/cards/xy9-57
   // https://github.com/FlareZ123/pokemon-sims/issues/2808
-  expect(!sim::EngineTestAccess::play_field_blower(item_engine),
+  expect(!sim::Issue2808EngineTestAccess::play_field_blower(item_engine),
          "A real Item lock must block Field Blower.");
 }
 
@@ -177,7 +177,7 @@ void test_arven_searches_field_blower_for_live_unlock() {
   state.deck = {sim::Card::FieldBlower, sim::Card::ForestSealStone,
                 sim::Card::RegidragoVstar, sim::Card::Grass,
                 sim::Card::Fire, sim::Card::MegaDragonite};
-  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::Issue2808EngineTestAccess::set_state(engine, std::move(state));
 
   // Arven may search one Item and one Pokemon Tool. When Garbotoxin blocks the held
   // Dark Asset connector, Field Blower is a live Item target rather than a generic
@@ -186,15 +186,15 @@ void test_arven_searches_field_blower_for_live_unlock() {
   // https://api.pokemontcg.io/v2/cards/sm2-125
   // https://api.pokemontcg.io/v2/cards/xy9-57
   // https://github.com/FlareZ123/pokemon-sims/issues/2808
-  expect(sim::EngineTestAccess::play_arven(engine),
+  expect(sim::Issue2808EngineTestAccess::play_arven(engine),
          "Arven must take the live Garbotoxin-answer route.");
-  expect(sim::EngineTestAccess::state(engine).supporter_used,
+  expect(sim::Issue2808EngineTestAccess::state(engine).supporter_used,
          "Arven must consume the Supporter action.");
-  expect(std::find(sim::EngineTestAccess::state(engine).hand.begin(),
-                   sim::EngineTestAccess::state(engine).hand.end(),
-                   sim::Card::FieldBlower) != sim::EngineTestAccess::state(engine).hand.end(),
+  expect(std::find(sim::Issue2808EngineTestAccess::state(engine).hand.begin(),
+                   sim::Issue2808EngineTestAccess::state(engine).hand.end(),
+                   sim::Card::FieldBlower) != sim::Issue2808EngineTestAccess::state(engine).hand.end(),
          "Arven must search Field Blower when the unlock advances setup.");
-  expect(sim::EngineTestAccess::play_field_blower(engine),
+  expect(sim::Issue2808EngineTestAccess::play_field_blower(engine),
          "The searched Field Blower must unlock the Ability route in the same turn.");
 }
 
@@ -209,7 +209,7 @@ void test_forest_seal_stone_remains_usable_under_garbotoxin() {
   state.deck = {sim::Card::RegidragoVstar, sim::Card::Grass,
                 sim::Card::Fire, sim::Card::MegaDragonite,
                 sim::Card::MysteriousTreasure};
-  sim::EngineTestAccess::set_state(engine, std::move(state));
+  sim::Issue2808EngineTestAccess::set_state(engine, std::move(state));
 
   // The repository's existing ruling treats Star Alchemy as the Tool's Ability that
   // the attached Pokemon V may use. Garbotoxin suppresses Pokemon Abilities, so this
@@ -218,9 +218,9 @@ void test_forest_seal_stone_remains_usable_under_garbotoxin() {
   // https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
   // https://api.pokemontcg.io/v2/cards/xy9-57
   // https://github.com/FlareZ123/pokemon-sims/issues/2808
-  expect(sim::EngineTestAccess::garbodor_locked(engine),
+  expect(sim::Issue2808EngineTestAccess::garbodor_locked(engine),
          "The exact state must actually be under Garbotoxin.");
-  expect(sim::EngineTestAccess::use_fss(engine),
+  expect(sim::Issue2808EngineTestAccess::use_fss(engine),
          "Star Alchemy must remain usable while Garbotoxin suppresses Pokemon Abilities.");
 }
 }  // namespace

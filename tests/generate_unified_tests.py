@@ -171,6 +171,25 @@ def render_generated_preamble(headers: set[str]) -> str:
     return "".join(generated)
 
 
+def render_generated_cases(
+    access_blocks: list[str], cases: list[tuple[str, str, str]]
+) -> str:
+    generated: list[str] = []
+    for block in access_blocks:
+        generated.append(block + "\n\n")
+    for case_name, namespace, text in cases:
+        generated.append(f"namespace {namespace} {{\n")
+        generated.append(f'#line 1 "tests/{case_name}.cpp"\n')
+        generated.append(text)
+        generated.append(f"\n}}  // namespace {namespace}\n\n")
+    generated.append("namespace {\nstruct UnifiedCase { const char* name; int (*run)(); };\n")
+    generated.append("const UnifiedCase kCases[] = {\n")
+    for case_name, namespace, _ in cases:
+        generated.append(f'  {{"{case_name}", &{namespace}::run}},\n')
+    generated.append("};\n}  // namespace\n\n")
+    return "".join(generated)
+
+
 def write_atomic_text(destination: Path, content: str) -> None:
     with tempfile.NamedTemporaryFile(
         mode="w", encoding="utf-8", newline="\n", dir=destination.parent, delete=False
@@ -198,19 +217,10 @@ def generate(source_root: Path, output_cpp: Path, output_cmake: Path) -> None:
         access_blocks.extend(blocks)
         headers.update(test_headers)
 
-    generated: list[str] = [render_generated_preamble(headers)]
-    for block in access_blocks:
-        generated.append(block + "\n\n")
-    for case_name, namespace, text in cases:
-        generated.append(f"namespace {namespace} {{\n")
-        generated.append(f'#line 1 "tests/{case_name}.cpp"\n')
-        generated.append(text)
-        generated.append(f"\n}}  // namespace {namespace}\n\n")
-    generated.append("namespace {\nstruct UnifiedCase { const char* name; int (*run)(); };\n")
-    generated.append("const UnifiedCase kCases[] = {\n")
-    for case_name, namespace, _ in cases:
-        generated.append(f'  {{"{case_name}", &{namespace}::run}},\n')
-    generated.append("};\n}  // namespace\n\n")
+    generated: list[str] = [
+        render_generated_preamble(headers),
+        render_generated_cases(access_blocks, cases),
+    ]
     generated.append(r'''int main(int argc, char** argv) {
   if (argc != 2) {
     std::cerr << "usage: regidrago_unified_tests <case>\n";

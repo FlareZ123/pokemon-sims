@@ -1,0 +1,44 @@
+name: Materialize issue 2891 arbitration fix
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/materialize-2891-arbitration.yml'
+      - 'scripts/apply_2891_arbitration.py'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.head_ref == 'automation/2891-arbitration-materialize'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Apply route-arbitration correction
+        run: |
+          python scripts/apply_2891_arbitration.py
+          rm scripts/apply_2891_arbitration.py
+          rm .github/workflows/materialize-2891-arbitration.yml
+          git diff --check
+      - name: Build and run focused regressions
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R '2891|2224' --output-on-failure
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 939 --require-ready-by 4 > /tmp/seed939.txt
+          grep -F 'Mega Dragonite ex (Earthen Vessel cost)' /tmp/seed939.txt
+          grep -F 'T4 | READY' /tmp/seed939.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 23 --require-ready-by 4 > /tmp/seed23.txt
+          grep -F 'T4 | READY' /tmp/seed23.txt
+      - name: Commit validated permanent diff
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src tests
+          git commit -m 'Fix #2891 preserve stronger Star Alchemy arbitration'
+          git push origin HEAD:${{ github.head_ref }}

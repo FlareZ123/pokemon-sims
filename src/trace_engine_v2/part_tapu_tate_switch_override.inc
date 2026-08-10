@@ -197,8 +197,17 @@
 
 
 bool wonder_tag_can_bank_steven_for_known_t3_active_regi_route() const {
+  // Strict JIT and matchup-flex JIT both require the Dragon payload to enter
+  // discard on the same turn that readiness is created. This route plays
+  // Brilliant Blender on T3, so either JIT profile is semantically valid while
+  // no-discard-control is outside this JIT-specific route projection:
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // https://github.com/FlareZ123/pokemon-sims/issues/1049
+  // https://github.com/FlareZ123/pokemon-sims/issues/2715
   if (state_.turn != 1 || !scenario_.going_first ||
-      scenario_.dci != DciProfile::MatchupFlexJit ||
+      scenario_.dci == DciProfile::NoDiscardControl ||
       scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
       !deck_seen_ || state_.manual_energy_used || !state_.active ||
       state_.active->card != Card::RegidragoV ||
@@ -233,8 +242,15 @@ bool wonder_tag_can_bank_steven_for_known_t3_active_regi_route() const {
 }
 
 bool held_banked_steven_has_known_t3_active_regi_route() const {
+  // The banked Steven route has the same Brilliant Blender T3 payload timing as
+  // the Wonder Tag projection above, so profile identity cannot exclude strict JIT:
+  // https://api.pokemontcg.io/v2/cards/sm7-145
+  // https://api.pokemontcg.io/v2/cards/sv8-164
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // https://github.com/FlareZ123/pokemon-sims/issues/2715
   if (state_.turn != 1 || !scenario_.going_first ||
-      scenario_.dci != DciProfile::MatchupFlexJit ||
+      scenario_.dci == DciProfile::NoDiscardControl ||
       scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
       !deck_seen_ || !state_.active ||
       state_.active->card != Card::RegidragoV ||

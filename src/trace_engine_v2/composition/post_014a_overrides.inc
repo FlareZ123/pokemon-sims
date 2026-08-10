@@ -7,8 +7,28 @@
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
 // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
 // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+// Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+// Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+// Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
 
 #include "../part_issue_1683_serena_dead_quick_ball_override.inc"
-#include "burnet_fss_overrides.inc"
-#include "celestial_roar_overrides.inc"
+
+// Keep the post-part_014a Burnet and Forest Seal Stone aliases in the same
+// composition spine instead of routing them through one-purpose wrapper files.
+#define play_professor_burnet play_professor_burnet_empty_deck_original
+#include "../part_011_burnet_thinning_override.inc"
+#undef play_professor_burnet
+
+#undef use_fss
+#define use_fss use_fss_empty_deck_original
+#include "../part_011_fss_latias_override.inc"
+#undef use_fss
+
+// Preserve the Celestial Roar alias bridge immediately before the final override
+// family, matching the prior wrapper's exact preprocessing lifetime and order.
+#undef use_celestial_roar
+#define use_celestial_roar use_celestial_roar_issue1369_original
+#include "../part_celestial_roar_override.inc"
+#undef use_celestial_roar
+
 #include "final_engine_overrides.inc"

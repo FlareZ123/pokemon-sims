@@ -39,6 +39,8 @@
 // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
 // Chaotic Swell: https://api.pokemontcg.io/v2/cards/sm12-187
 // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
+// Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
+// Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142
 // Team Yell's Cheer: https://api.pokemontcg.io/v2/cards/swsh9-149
 // Roseanne's Backup: https://api.pokemontcg.io/v2/cards/swsh9-148
 // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
@@ -49,6 +51,12 @@
 #define begin_turn begin_turn_original
 #define might_be_unseen might_be_unseen_empty_deck_original
 #include "trace_engine_v2/part_003.inc"
+// Route every later Pokemon-Ability legality check through the Garbotoxin-aware
+// wrapper. part_003 itself contains only the base predicate definition, so no
+// earlier call site bypasses this composition layer:
+// https://api.pokemontcg.io/v2/cards/xy9-57
+// https://github.com/FlareZ123/pokemon-sims/issues/2808
+#define ability_available_for_pokemon ability_available_for_pokemon_garbodor
 // part_003.inc opens begin_turn(), and part_004.inc completes it. part_004.inc
 // later opens state_line(), which part_005.inc completes before a new Engine
 // member may be defined:
@@ -58,6 +66,7 @@
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_005.inc#L1-L5
 #include "trace_engine_v2/part_004.inc"
 #include "trace_engine_v2/part_005.inc"
+#include "trace_engine_v2/part_garbodor_ability_lock_override.inc"
 #undef might_be_unseen
 #include "trace_engine_v2/composition/opening_engine_overrides.inc"
 #define attach_manual attach_manual_tate_blender_original
@@ -130,7 +139,16 @@
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #include "trace_engine_v2/part_014c.inc"
+#undef ability_available_for_pokemon
 #include "trace_engine_v2/part_015.inc"
+#include "trace_engine_v2/scenario_registry_garbodor_override.inc"
+// Keep the legacy registry available to internal historical self-tests while the
+// production CLI receives the two paper-Expanded Garbodor pressure rows:
+// https://github.com/FlareZ123/pokemon-sims/issues/2808
+#define all_scenarios all_scenarios_with_garbodor
+#define scenario_by_label scenario_by_label_with_garbodor
 // C++ preprocessing include grammar: https://eel.is/c++draft/cpp.include
 // Confirmed portability bug: https://github.com/FlareZ123/pokemon-sims/issues/1482
 #include "trace_engine_v2/part_016.inc"
+#undef scenario_by_label
+#undef all_scenarios

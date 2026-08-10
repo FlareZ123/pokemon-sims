@@ -78,15 +78,16 @@ sim::Scenario scenario(const sim::DciProfile dci) {
 
 void test_issue_1821_route_uses_shared_jit_timing() {
   const sim::DeckRecipe recipe = sim::baseline_recipe();
+  const sim::Scenario strict_scenario = scenario(sim::DciProfile::StrictJit);
+  const sim::Scenario flex_scenario = scenario(sim::DciProfile::MatchupFlexJit);
+  const sim::Scenario control_scenario =
+      scenario(sim::DciProfile::NoDiscardControl);
   std::mt19937_64 strict_rng(2770);
   std::mt19937_64 flex_rng(2770);
   std::mt19937_64 control_rng(2770);
-  sim::Engine strict_engine(scenario(sim::DciProfile::StrictJit), recipe,
-                            strict_rng);
-  sim::Engine flex_engine(scenario(sim::DciProfile::MatchupFlexJit), recipe,
-                          flex_rng);
-  sim::Engine control_engine(scenario(sim::DciProfile::NoDiscardControl), recipe,
-                             control_rng);
+  sim::Engine strict_engine(strict_scenario, recipe, strict_rng);
+  sim::Engine flex_engine(flex_scenario, recipe, flex_rng);
+  sim::Engine control_engine(control_scenario, recipe, control_rng);
   sim::EngineTestAccess::set_state(strict_engine, route_state());
   sim::EngineTestAccess::set_state(flex_engine, route_state());
   sim::EngineTestAccess::set_state(control_engine, route_state());

@@ -1,0 +1,4 @@
+Cleanup validation pass 1.
+
+Purpose: trigger the permanent PR CI against main after the three direct Cleanup commits.
+The permanent CI runs eight shell simulate-this audits, three Pineco simulate-this audits, the canonical 100,000-trial T2/T3 matrix, the paired two-deck matrix, the full Release suite, and sanitizers.

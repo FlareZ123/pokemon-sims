@@ -174,3 +174,6 @@
           "Searched the complete T3 route: Regidrago V, Latias ex, Grass Energy. Turn ended.");
     return true;
   }
+
+// Keep the composed Steven policy available to the final issue-2622 overlay.
+#define play_steven play_steven_issue2622_original

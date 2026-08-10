@@ -7,6 +7,7 @@ on:
       - "src/**"
       - "tests/**"
       - "tools/professors_letter_swap_matrix.cpp"
+      - "tools/professors_letter_real_game_analysis.cpp"
       - "CMakeLists.txt"
       - ".github/workflows/professors-letter-validation.yml"
   push:
@@ -15,6 +16,7 @@ on:
       - "src/**"
       - "tests/**"
       - "tools/professors_letter_swap_matrix.cpp"
+      - "tools/professors_letter_real_game_analysis.cpp"
       - "CMakeLists.txt"
       - ".github/workflows/professors-letter-validation.yml"
   workflow_dispatch:
@@ -25,7 +27,7 @@ permissions:
 jobs:
   matrix:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -37,24 +39,69 @@ jobs:
         run: cmake --build build --parallel 2
       - name: Run Professor's Letter focused regression
         run: ./build/regidrago_unified_tests issue_2509_professors_letter_tests
-      - name: Compile matched-seed comparison analyzer
-        shell: bash
+      - name: Compile slot-preserved checkpoint matrix
         run: |
-          # Professor's Letter is a paper-Expanded Item that searches up to two
-          # Basic Energy with no discard cost. The analyzer keeps it outside the
-          # registered deck registry and compares only an in-memory -2 Vessel
-          # +2 Letter derivative of regidrago-shell:
-          # https://api.pokemontcg.io/v2/cards/xy1-123
-          # https://api.pokemontcg.io/v2/cards/sv4-163
-          # https://www.pokemon.com/us/pokemon-tcg/rules
-          # https://github.com/FlareZ123/pokemon-sims/issues/2509
           g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
             tools/professors_letter_swap_matrix.cpp -o professors-letter-swap-matrix
-      - name: Generate 100,000-trial Professor's Letter swap matrix
+      - name: Compile full-game Professor's Letter analyzer
+        shell: bash
+        run: |
+          # The temporary deck remains unregistered and replaces the two physical
+          # Earthen Vessel slots in place, preserving the other 58 pre-shuffle slots.
+          # Real-game branch audits use production Engine::run() and TraceLog.
+          # Professor's Letter: https://api.pokemontcg.io/v2/cards/xy1-123
+          # Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+          # Core rules: https://www.pokemon.com/us/pokemon-tcg/rules
+          # Pairing/trace bug: https://github.com/FlareZ123/pokemon-sims/issues/2599
+          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
+            tools/professors_letter_real_game_analysis.cpp -o professors-letter-real-games
+      - name: Audit one normal full-deck simulate-this hand
+        run: |
+          ./professors-letter-real-games --simulate-this \
+            strict-jit-turn2-item-lock/go-first 165 letter-swap \
+            > professors-letter-simulate-this.txt
+          grep -F "Professor's Letter" professors-letter-simulate-this.txt
+      - name: Capture real full-deck Letter-play traces
+        run: |
+          ./professors-letter-real-games --trace-letter-plays \
+            12 1 strict-jit-turn2-item-lock/go-first \
+            professors-letter-item-lock-traces.txt
+          ./professors-letter-real-games --trace-letter-plays \
+            12 1 strict-jit/go-second \
+            professors-letter-normal-traces.txt
+          grep -F "| Professor's Letter | rules:" professors-letter-item-lock-traces.txt
+          grep -F "| Professor's Letter | rules:" professors-letter-normal-traces.txt
+      - name: Generate 100,000-trial slot-preserved checkpoint matrix
         run: ./professors-letter-swap-matrix 100000 20260705 professors-letter-swap-matrix.csv
-      - name: Upload comparison matrix
+      - name: Analyze 100,000 real traced games per scenario
+        run: |
+          ./professors-letter-real-games --analyze-real-games \
+            100000 20260705 \
+            professors-letter-real-games.csv \
+            professors-letter-branches.csv
+          python - <<'PY'
+          import csv
+          with open('professors-letter-real-games.csv', newline='') as f:
+              rows = list(csv.DictReader(f))
+          if not rows:
+              raise SystemExit('real-game analysis produced no rows')
+          locked = sum(int(row['letter_locked_plays']) for row in rows)
+          if locked:
+              raise SystemExit(f'illegal Professor Letter plays under Item lock: {locked}')
+          plays = sum(int(row['letter_total_plays']) for row in rows)
+          if plays == 0:
+              raise SystemExit('real-game analysis saw no Professor Letter plays')
+          print(f'Professor Letter plays audited: {plays}; locked plays: {locked}')
+          PY
+      - name: Upload Professor's Letter evidence
         uses: actions/upload-artifact@v4
         with:
-          name: professors-letter-swap-matrix-${{ github.run_attempt }}
-          path: professors-letter-swap-matrix.csv
+          name: professors-letter-real-game-analysis-${{ github.run_attempt }}
+          path: |
+            professors-letter-swap-matrix.csv
+            professors-letter-real-games.csv
+            professors-letter-branches.csv
+            professors-letter-simulate-this.txt
+            professors-letter-item-lock-traces.txt
+            professors-letter-normal-traces.txt
           if-no-files-found: error

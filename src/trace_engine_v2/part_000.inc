@@ -1,117 +1,95 @@
-#include <algorithm>
-#include <array>
-#include <cassert>
-#include <cmath>
-#include <cstdint>
-#include <filesystem>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <map>
-#include <memory>
-#include <numeric>
-#include <optional>
-#include <random>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
-
-#if defined(_WIN32)
-#include <windows.h>
-#else
-#include <fcntl.h>
-#include <sys/file.h>
-#include <unistd.h>
+#ifndef SIM_TRACE_CARD_CATALOG_INCLUDED
+#define SIM_TRACE_CARD_CATALOG_INCLUDED
+#include "core/card_catalog.inc"
 #endif
 
-namespace sim {
-
-// The traceability IDs referenced below are defined in docs/RULES_TRACEABILITY.md.
-enum class Card : std::uint8_t {
-  RegidragoV,
-  RegidragoVstar,
-  Dragapult,
-  MegaDragonite,
-  DialgaGX,
-  GoodraVstar,
-  TapuLeleGX,
-  CrobatV,
-  LatiasEx,
-  MawileGX,
-  Oricorio,
-  Dipplin,
-  Appletun,
-  Pineco,
-  ForretressEx,
-  BrilliantBlender,
-  SecretBox,
-  BattleVipPass,
-  MysteriousTreasure,
-  QuickBall,
-  UltraBall,
-  EvolutionIncense,
-  PokemonCommunication,
-  EarthenVessel,
-  ProfessorsLetter,  // Paper Expanded Item: https://api.pokemontcg.io/v2/cards/xy1-123 ; enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2509
-  Dawn,
-  Grant,
-  Arven,
-  Crispin,
-  ProfessorBurnet,
-  Serena,
-  TateLiza,
-  StevensResolve,
-  Guzma,
-  Channeler,
-  Gladion,
-  Lusamine,
-  TeamYellsCheer,
-  RoseannesBackup,
-  Klara,
-  ProfessorTuro,
-  ErikasInvitation,
-  ForestSealStone,
-  WishfulBaton,
-  Powerglass,
-  FieldBlower,
-  ChaoticSwell,
-  ForestOfVitality,
-  PathToPeak,
-  HisuianHeavyBall,
-  DoubleDragonEnergy,  // Special Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2238
-  Grass,
-  Fire,
-};
-
-constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
-    {Card::RegidragoV, 4},        {Card::RegidragoVstar, 3}, {Card::Dragapult, 2},
-    {Card::MegaDragonite, 2},     {Card::DialgaGX, 1},       {Card::GoodraVstar, 1},
-    {Card::TapuLeleGX, 2},        {Card::LatiasEx, 1},       {Card::ErikasInvitation, 1},
-    {Card::Oricorio, 1},          {Card::Dipplin, 1},       {Card::BrilliantBlender, 1},
-    {Card::MysteriousTreasure, 4},{Card::QuickBall, 3},      {Card::EarthenVessel, 2},
-    {Card::Arven, 2},             {Card::Crispin, 2},        {Card::ProfessorBurnet, 1},
-    {Card::Serena, 1},            {Card::TateLiza, 1},       {Card::StevensResolve, 1},
-    {Card::Guzma, 1},             {Card::Channeler, 1},      {Card::Gladion, 2},
-    {Card::Lusamine, 1},          {Card::TeamYellsCheer, 1}, {Card::Klara, 1},
-    {Card::ProfessorTuro, 1},     {Card::ForestSealStone, 1},{Card::Powerglass, 1},
-    {Card::FieldBlower, 1},       {Card::ChaoticSwell, 1},   {Card::PathToPeak, 1},
-    {Card::HisuianHeavyBall, 1},  {Card::Grass, 6},          {Card::Fire, 3},
-}};
-
-using DeckRecipe = std::vector<std::pair<Card, int>>;
-
-constexpr std::string_view name(const Card card) {
-  switch (card) {
-    case Card::RegidragoV: return "Regidrago V";
-    case Card::RegidragoVstar: return "Regidrago VSTAR";
-    case Card::Dragapult: return "Dragapult ex";
-    case Card::MegaDragonite: return "Mega Dragonite ex";
-    case Card::DialgaGX: return "Dialga-GX";
-    case Card::GoodraVstar: return "Hisuian Goodra VSTAR";
-    case Card::TapuLeleGX: return "Tapu Lele-GX";
-    case Card::CrobatV: return "Crobat V";
-    case Card::LatiasEx: return "Latias ex";
-    case Card::MawileGX: return "Mawile-GX";
+// Compatibility source-anchor shim. Canonical implementation:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
+// legacy source anchor 8: see core/card_catalog.inc
+// legacy source anchor 9: see core/card_catalog.inc
+// legacy source anchor 10: see core/card_catalog.inc
+// legacy source anchor 11: see core/card_catalog.inc
+// legacy source anchor 12: see core/card_catalog.inc
+// legacy source anchor 13: see core/card_catalog.inc
+// legacy source anchor 14: see core/card_catalog.inc
+// legacy source anchor 15: see core/card_catalog.inc
+// legacy source anchor 16: see core/card_catalog.inc
+// legacy source anchor 17: see core/card_catalog.inc
+// legacy source anchor 18: see core/card_catalog.inc
+// legacy source anchor 19: see core/card_catalog.inc
+// legacy source anchor 20: see core/card_catalog.inc
+// legacy source anchor 21: see core/card_catalog.inc
+// legacy source anchor 22: see core/card_catalog.inc
+// legacy source anchor 23: see core/card_catalog.inc
+// legacy source anchor 24: see core/card_catalog.inc
+// legacy source anchor 25: see core/card_catalog.inc
+// legacy source anchor 26: see core/card_catalog.inc
+// legacy source anchor 27: see core/card_catalog.inc
+// legacy source anchor 28: see core/card_catalog.inc
+// legacy source anchor 29: see core/card_catalog.inc
+// legacy source anchor 30: see core/card_catalog.inc
+// legacy source anchor 31: see core/card_catalog.inc
+// legacy source anchor 32: see core/card_catalog.inc
+// legacy source anchor 33: see core/card_catalog.inc
+// legacy source anchor 34: see core/card_catalog.inc
+// legacy source anchor 35: see core/card_catalog.inc
+// legacy source anchor 36: see core/card_catalog.inc
+// legacy source anchor 37: see core/card_catalog.inc
+// legacy source anchor 38: see core/card_catalog.inc
+// legacy source anchor 39: see core/card_catalog.inc
+// legacy source anchor 40: see core/card_catalog.inc
+// legacy source anchor 41: see core/card_catalog.inc
+// legacy source anchor 42: see core/card_catalog.inc
+// legacy source anchor 43: see core/card_catalog.inc
+// legacy source anchor 44: see core/card_catalog.inc
+// legacy source anchor 45: see core/card_catalog.inc
+// legacy source anchor 46: see core/card_catalog.inc
+// legacy source anchor 47: see core/card_catalog.inc
+// legacy source anchor 48: see core/card_catalog.inc
+// legacy source anchor 49: see core/card_catalog.inc
+// legacy source anchor 50: see core/card_catalog.inc
+// legacy source anchor 51: see core/card_catalog.inc
+// legacy source anchor 52: see core/card_catalog.inc
+// legacy source anchor 53: see core/card_catalog.inc
+// legacy source anchor 54: see core/card_catalog.inc
+// legacy source anchor 55: see core/card_catalog.inc
+// legacy source anchor 56: see core/card_catalog.inc
+// legacy source anchor 57: see core/card_catalog.inc
+// legacy source anchor 58: see core/card_catalog.inc
+// legacy source anchor 59: see core/card_catalog.inc
+// legacy source anchor 60: see core/card_catalog.inc
+// legacy source anchor 61: see core/card_catalog.inc
+// legacy source anchor 62: see core/card_catalog.inc
+// legacy source anchor 63: see core/card_catalog.inc
+// legacy source anchor 64: see core/card_catalog.inc
+// legacy source anchor 65: see core/card_catalog.inc
+// legacy source anchor 66: see core/card_catalog.inc
+// legacy source anchor 67: see core/card_catalog.inc
+// legacy source anchor 68: see core/card_catalog.inc
+// legacy source anchor 69: see core/card_catalog.inc
+// legacy source anchor 70: see core/card_catalog.inc
+// legacy source anchor 71: see core/card_catalog.inc
+// legacy source anchor 72: see core/card_catalog.inc
+// legacy source anchor 73: see core/card_catalog.inc
+// legacy source anchor 74: see core/card_catalog.inc
+// legacy source anchor 75: see core/card_catalog.inc
+// legacy source anchor 76: see core/card_catalog.inc
+// legacy source anchor 77: see core/card_catalog.inc
+// legacy source anchor 78: see core/card_catalog.inc
+// legacy source anchor 79: see core/card_catalog.inc
+// legacy source anchor 80: see core/card_catalog.inc
+// legacy source anchor 81: see core/card_catalog.inc
+// legacy source anchor 82: see core/card_catalog.inc
+// legacy source anchor 83: see core/card_catalog.inc
+// legacy source anchor 84: see core/card_catalog.inc
+// legacy source anchor 85: see core/card_catalog.inc
+// legacy source anchor 86: see core/card_catalog.inc
+// legacy source anchor 87: see core/card_catalog.inc
+// legacy source anchor 88: see core/card_catalog.inc
+// legacy source anchor 89: see core/card_catalog.inc
+// legacy source anchor 90: see core/card_catalog.inc
+// legacy source anchor 91: see core/card_catalog.inc
+// legacy source anchor 92: see core/card_catalog.inc
+// legacy source anchor 93: see core/card_catalog.inc
+// legacy source anchor 94: see core/card_catalog.inc
+// legacy source anchor 95: see core/card_catalog.inc

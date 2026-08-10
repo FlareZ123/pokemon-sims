@@ -56,11 +56,6 @@ def _manifest(repo_root: Path) -> _SimulatorSourceManifest:
     return _SimulatorSourceManifest(repo_root)
 
 
-def _simulator_source_paths(repo_root: Path) -> PathSequence:
-    """Collect tracked simulator source inputs, excluding writer lock files."""
-    return _manifest(repo_root).source_paths()
-
-
 def _missing_paths(paths: PathSequence) -> PathSequence:
     """Return required provenance inputs that are absent from disk."""
     return tuple(path for path in paths if not path.is_file())
@@ -72,11 +67,6 @@ def _validated_paths(paths: PathSequence) -> PathSequence:
     if missing:
         raise FileNotFoundError(", ".join(str(path) for path in missing))
     return paths
-
-
-def _required_policy_paths(repo_root: Path) -> PathSequence:
-    """Collect and validate every required aggregate simulator input."""
-    return _validated_paths(_manifest(repo_root).required_paths())
 
 
 def simulator_policy_source_paths(repo_root: Path) -> PathSequence:
@@ -125,9 +115,8 @@ class _SourceDigestBuilder:
 
 def _build_source_digest(repo_root: Path) -> _Digest:
     """Build the aggregate digest from the stable simulator input sequence."""
-    source_paths = simulator_policy_source_paths(repo_root)
     builder = _SourceDigestBuilder(repo_root)
-    builder.add_paths(source_paths)
+    builder.add_paths(simulator_policy_source_paths(repo_root))
     return builder.digest
 
 

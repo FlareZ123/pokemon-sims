@@ -1,3 +1,6 @@
+#undef issue_1605_arven_crobat_route_available
+#include "part_issue_2645_arven_crobat_state_override.inc"
+
   bool issue_2323_protect_final_t1_payload() const {
     if (scenario_.dci != DciProfile::StrictJit || scenario_.going_first ||
         scenario_.locks != LockMode::None || state_.turn != 1 ||
@@ -5,8 +8,7 @@
       return false;
     }
 
-    const int held_payloads = static_cast<int>(std::count_if(
-        state_.hand.begin(), state_.hand.end(), is_payload));
+    const int held_payloads = payload_cards_in_hand_count();
     const int spent_payloads_this_turn = static_cast<int>(std::count_if(
         state_.discarded_this_turn.begin(), state_.discarded_this_turn.end(),
         is_payload));

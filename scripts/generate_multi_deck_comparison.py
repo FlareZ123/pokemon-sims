@@ -92,6 +92,27 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def simulate_trace_command(
+    executable: Path,
+    deck: str,
+    scenario: str,
+    seed: int,
+    deadline: int,
+) -> list[str]:
+    return [
+        str(executable),
+        "--simulate-this",
+        "--deck",
+        deck,
+        "--scenario",
+        scenario,
+        "--seed",
+        str(seed),
+        "--require-ready-by",
+        str(deadline),
+    ]
+
+
 def generate_matrix_atomic(
     executable: Path, matrix_path: Path, trials: int, matrix_seed: int
 ) -> None:
@@ -137,18 +158,7 @@ def generate_traces(executable: Path, trace_dir: Path) -> list[dict[str, object]
     expected = {file_name for *_, file_name in TRACE_SPECS}
     for deck, scenario, seed, deadline, file_name in TRACE_SPECS:
         completed = run(
-            [
-                str(executable),
-                "--simulate-this",
-                "--deck",
-                deck,
-                "--scenario",
-                scenario,
-                "--seed",
-                str(seed),
-                "--require-ready-by",
-                str(deadline),
-            ]
+            simulate_trace_command(executable, deck, scenario, seed, deadline)
         )
         atomic_write_text(trace_dir / file_name, completed.stdout)
         manifest_entries.append(

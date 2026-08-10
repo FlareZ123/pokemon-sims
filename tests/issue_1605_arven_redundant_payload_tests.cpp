@@ -46,14 +46,18 @@ void install_public_state(sim::Engine& engine) {
 }
 
 bool route_for(sim::LockMode locks, std::vector<sim::Card> hand,
-               int bench_count = 0, int accounted_regi = 0) {
+               int bench_count = 0, int accounted_regi = 0,
+               bool going_first = false, int turn = 1,
+               bool supporter_used = false) {
   sim::Scenario scenario{"issue-1605-unit", sim::DciProfile::StrictJit,
-                         locks, false, 5};
+                         locks, going_first, 5};
   sim::DeckRecipe recipe(sim::kDeckRecipe.begin(), sim::kDeckRecipe.end());
   std::mt19937_64 rng{1};
   sim::Engine engine = make_unit_engine(scenario, recipe, rng);
   install_public_state(engine);
   auto& state = sim::EngineTestAccess::state(engine);
+  state.turn = turn;
+  state.supporter_used = supporter_used;
   state.hand = std::move(hand);
   for (int i = 0; i < bench_count; ++i) {
     state.bench.push_back(sim::Pokemon{sim::Card::Oricorio, 0, 0, 0,
@@ -103,6 +107,32 @@ void test_public_controls() {
          "The route used Crobat when the projected hand already had six cards.");
 }
 
+void test_issue_2645_state_driven_turn_order_controls() {
+  const std::vector<sim::Card> exact{
+      sim::Card::Arven, sim::Card::MegaDragonite,
+      sim::Card::MegaDragonite, sim::Card::GoodraVstar,
+      sim::Card::TeamYellsCheer, sim::Card::CrobatV,
+      sim::Card::ForestSealStone};
+
+  // The first player cannot play a Supporter on T1. Once that restriction has
+  // passed, the same observable Arven connector remains legal on T2 and later.
+  // Core first-turn and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+  // Crobat V / Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+  // State-based route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed overfit bug: https://github.com/FlareZ123/pokemon-sims/issues/2645
+  expect(route_for(sim::LockMode::None, exact, 0, 0, false, 1),
+         "The original go-second T1 route was rejected.");
+  expect(!route_for(sim::LockMode::None, exact, 0, 0, true, 1),
+         "The first player illegally used Arven on T1.");
+  expect(route_for(sim::LockMode::None, exact, 0, 0, true, 2),
+         "The go-first T2 Arven route remained hard-coded away.");
+  expect(route_for(sim::LockMode::None, exact, 0, 0, false, 3),
+         "A later legal Arven route was rejected by turn identity.");
+  expect(!route_for(sim::LockMode::None, exact, 0, 0, true, 2, true),
+         "The route ignored an already-used Supporter action.");
+}
+
 void test_seed_7_executes_arven_crobat_route() {
   const auto scenario = sim::scenario_by_label("strict-jit/go-second");
   const auto* deck = sim::crobat_modeling_deck_by_id("crobat1-erika");
@@ -135,5 +165,6 @@ void test_seed_7_executes_arven_crobat_route() {
 
 int main() {
   test_public_controls();
+  test_issue_2645_state_driven_turn_order_controls();
   test_seed_7_executes_arven_crobat_route();
 }

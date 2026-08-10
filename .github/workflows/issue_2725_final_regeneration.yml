@@ -34,18 +34,37 @@ jobs:
         run: python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
       - name: Derive canonical shell matrix from same aggregate
         run: python scripts/extract_deck_matrix.py --input results/multi_deck_comparison.csv --output results/simulation_results.csv --deck regidrago-shell
+      - name: Refresh canonical manifest and traces without another aggregate
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from scripts.regenerate_setup_baselines import TRACE_SPECS, atomic_write_text, build_manifest, find_trace_seed, reconcile_generated_traces, trace_file_name
+          exe = Path('build/regidrago_sim').resolve()
+          out = Path('results').resolve()
+          trace_dir = out / 'traces'
+          trace_dir.mkdir(parents=True, exist_ok=True)
+          manifest = build_manifest(20260705, 100000)
+          expected = set()
+          for scenario, deadline, stem in TRACE_SPECS:
+              seed, trace = find_trace_seed(exe, scenario, deadline, 5000)
+              name = trace_file_name(stem, seed)
+              expected.add(name)
+              atomic_write_text(trace_dir / name, trace)
+              manifest['traces'].append({'scenario': scenario, 'deadline': deadline, 'seed': seed, 'file': name})
+          reconcile_generated_traces(trace_dir, expected)
+          atomic_write_text(out / 'baseline_manifest.json', json.dumps(manifest, indent=2, sort_keys=True) + '\n')
+          PY
       - name: Regenerate setup documentation
         run: |
           python scripts/update_setup_docs.py --repo-root .
           python scripts/update_multi_deck_docs.py --repo-root .
           git diff --check
-      - name: Validate source-bound result contracts
+      - name: Validate generated contracts
         run: |
           python tests/setup_report_contract_tests.py
           python tests/multi_deck_report_contract_tests.py
-      - name: Record known source-anchor blocker
-        continue-on-error: true
-        run: python tests/update_setup_docs_tests.py
+          python tests/update_setup_docs_tests.py
       - name: Materialize generated evidence and remove workflow
         run: |
           git config user.name github-actions[bot]

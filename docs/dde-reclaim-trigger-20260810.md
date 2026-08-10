@@ -1,0 +1,1 @@
+DDE semantic rollup reclaim synchronization trigger. This temporary file is removed by the main-branch recovery workflow after it merges current main, resolves only the audited overlap set, validates the focused DDE suite, and runs three fixed-seed --simulate-this traces.

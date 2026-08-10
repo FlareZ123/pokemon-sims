@@ -17,7 +17,16 @@
 #include "../part_issue_1368_earthen_vessel_celestial_roar_override.inc"
 #undef play_earthen_vessel
 
+#define play_earthen_vessel play_earthen_vessel_issue2834_original
 #include "../part_issue_1412_preserve_quick_balls.inc"
+#undef play_earthen_vessel
+
+// Current-turn Powerglass readiness must preempt the historical delayed-Vessel
+// wrappers when Earthen Vessel's cost establishes the strict-JIT Dragon payload:
+// https://api.pokemontcg.io/v2/cards/sv4-163
+// https://api.pokemontcg.io/v2/cards/sv6pt5-63
+// https://github.com/FlareZ123/pokemon-sims/issues/2834
+#include "../part_issue_2834_powerglass_vessel_override.inc"
 
 #ifdef play_earthen_vessel
 #error "Earthen Vessel composition leaked play_earthen_vessel"

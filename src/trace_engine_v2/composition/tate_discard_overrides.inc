@@ -1,8 +1,7 @@
 #pragma once
 
-// Keep post-evolution discard provenance, Tate handling, and the first search-item
-// wrapper family behind one ordered composition boundary. Include order remains
-// behavior-significant because each later layer observes the preceding implementation.
+// Keep post-evolution discard provenance, Tate handling, and the following Item
+// search wrapper family behind one ordered composition boundary.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
 
 #include "../part_discard_recovery_provenance_override.inc"
@@ -11,7 +10,7 @@
 
 #if defined(play_mysterious_treasure) || defined(play_heavy_ball) || \
     defined(play_quick_ball) || defined(play_ultra_ball) || defined(in_play)
-#error "Tate/search composition requires its wrapper aliases to be undefined on entry"
+#error "Tate search-item composition requires wrapper aliases to be undefined on entry"
 #endif
 
 #define play_mysterious_treasure play_mysterious_treasure_empty_deck_original
@@ -37,9 +36,10 @@
 #define play_ultra_ball play_ultra_ball_original
 #include "../part_009b2.inc"
 
-// play_ultra_ball intentionally remains exported until the root translation unit
-// finishes the legacy Item wrapper layer and releases it before late overrides.
 #if defined(play_mysterious_treasure) || defined(play_heavy_ball) || \
     defined(play_quick_ball) || defined(in_play)
-#error "Tate/search composition leaked a local wrapper alias"
+#error "Tate search-item composition leaked a local wrapper alias"
 #endif
+
+// play_ultra_ball intentionally remains exported until the root translation unit
+// finishes the legacy Item wrapper layer and releases it before late overrides.

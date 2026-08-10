@@ -115,8 +115,11 @@
     // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
     // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2069
+    // This continuation only requires same-ready-turn payload timing, which both
+    // registered JIT profiles share: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2801
     if (!prizes_known() || state_.turn != 1 || !scenario_.going_first ||
-        scenario_.dci != DciProfile::StrictJit ||
+        !strict_payload_timing() ||
         scenario_.locks != LockMode::None || scenario_.max_turn < 2 ||
         item_locked() || state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::RegidragoV ||

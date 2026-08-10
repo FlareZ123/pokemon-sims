@@ -4,14 +4,9 @@
 // wrapper stack. Macro entry/exit guards make this composition boundary explicit.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
 
-#ifdef play_evolution_incense
-#error "Steven/Blender composition requires play_evolution_incense to be undefined on entry"
-#endif
-#ifdef play_earthen_vessel
-#error "Steven/Blender composition requires play_earthen_vessel to be undefined on entry"
-#endif
-#ifdef play_brilliant_blender
-#error "Steven/Blender composition requires play_brilliant_blender to be undefined on entry"
+#if defined(play_evolution_incense) || defined(play_earthen_vessel) || \
+    defined(play_brilliant_blender)
+#error "Steven/Blender composition requires search aliases to be undefined on entry"
 #endif
 
 #define play_evolution_incense play_evolution_incense_original
@@ -32,26 +27,7 @@
 #undef should_play_steven
 #undef play_brilliant_blender
 
-// The thinning policy remains the implementation wrapped by the later empty-deck
-// guard, while the legacy part_010 implementation stays dormant:
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010_blender_thinning_override.inc#L1-L77
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_empty_deck_search_override.inc#L78-L85
-#define play_brilliant_blender play_brilliant_blender_empty_deck_original
-#include "../part_010_blender_thinning_override.inc"
-#undef play_brilliant_blender
-#undef play_earthen_vessel
-#undef play_evolution_incense
-#undef play_ultra_ball
-
-#ifdef play_evolution_incense
-#error "Steven/Blender composition leaked play_evolution_incense"
-#endif
-#ifdef play_earthen_vessel
-#error "Steven/Blender composition leaked play_earthen_vessel"
-#endif
-#ifdef play_brilliant_blender
-#error "Steven/Blender composition leaked play_brilliant_blender"
-#endif
+#include "steven_blender_thinning_overrides.inc"
 
 // Continue into the Tapu and late search-item wrapper family at the same macro
 // boundary previously represented by the next root include.

@@ -2,6 +2,23 @@
 //
 // Direct rules/card-text registry. Method-level mappings and validation notes:
 // docs/RULE_SOURCES.md and docs/RULES_TRACEABILITY.md.
+//
+// Composition map for this translation-unit root:
+// 1. part_000..005 establish core state, turn, and trace methods.
+// 2. opening_engine_overrides composes the early-turn wrappers.
+// 3. tate_legacy_body keeps the historical Tate & Liza body isolated.
+// 4. tate_discard_overrides owns the current Tate discard policy chain.
+// 5. steven_blender_overrides composes Steven and Brilliant Blender policy.
+// 6. legacy_supporter_body owns the part_011 legacy supporter aliases.
+// 7. supporter_selector_body owns the part_012 supporter-selector aliases.
+// 8. vstar_power_body owns the part_013 VSTAR-power aliases.
+// 9. part_014a closes the search-item member opened by part_013.
+// 10. post_014a_overrides composes Burnet, FSS, Vessel, and later wrappers.
+// 11. part_014c and part_015 complete turn execution and reporting.
+// 12. part_016 closes the translation-unit implementation.
+// Composition wrappers intentionally preserve macro lifetime where a later stage
+// consumes an alias; see each composition file for the matching continuation URL.
+// C++ textual include semantics: https://eel.is/c++draft/cpp.include
 // Core procedure rules: https://www.pokemon.com/us/pokemon-tcg/rules
 // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
 // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -60,48 +77,15 @@
 #include "trace_engine_v2/part_005.inc"
 #undef might_be_unseen
 #include "trace_engine_v2/composition/opening_engine_overrides.inc"
-#define attach_manual attach_manual_tate_blender_original
-#include "trace_engine_v2/part_007.inc"
-#undef attach_manual
-#define play_tate_switch play_tate_switch_tate_blender_original
-#define play_tate_draw play_tate_draw_tate_blender_original
-#include "trace_engine_v2/part_008a.inc"
-#undef play_tate_draw
-#undef play_tate_switch
-#undef choose_discard
-#define choose_discard choose_discard_issue2323_original
-#include "trace_engine_v2/part_issue_1436_full_supporter_dci_override.inc"
-#undef choose_discard
-#include "trace_engine_v2/part_issue_2323_final_payload_guard.inc"
-// part_007.inc opens evolve_best_regi(), and part_008a.inc completes it before
-// this member-function override may be included:
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_007.inc#L169-L172
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_008a.inc#L1-L18
+#include "trace_engine_v2/composition/tate_legacy_body.inc"
 #include "trace_engine_v2/composition/tate_discard_overrides.inc"
 // base_search_overrides.inc is composed by tate_discard_overrides.inc.
 #include "trace_engine_v2/composition/steven_blender_overrides.inc"
 // tapu_search_overrides.inc is composed by steven_blender_overrides.inc.
-#define use_fss use_fss_latias_original
-#define play_crispin play_crispin_empty_deck_original
-#define play_professor_burnet play_professor_burnet_legacy_original
-#define play_steven play_steven_empty_deck_original
-#include "trace_engine_v2/part_011.inc"
-#undef play_steven
-#undef play_professor_burnet
-#undef play_crispin
-#define play_arven play_arven_original
-#define play_gladion play_gladion_original
-#define play_serena play_serena_issue1683_original
-#include "trace_engine_v2/part_012.inc"
-#undef play_serena
-#undef play_gladion
-#undef play_arven
-#define use_celestial_roar use_celestial_roar_original
-#define use_legacy_star use_legacy_star_original
-#include "trace_engine_v2/part_013.inc"
-#undef use_legacy_star
+#include "trace_engine_v2/composition/legacy_supporter_body.inc"
+#include "trace_engine_v2/composition/supporter_selector_body.inc"
+#include "trace_engine_v2/composition/vstar_power_body.inc"
 #include "trace_engine_v2/part_014a.inc"
-#include "trace_engine_v2/part_issue_1683_serena_dead_quick_ball_override.inc"
 // part_012.inc opens Serena's draw-mode body, part_013.inc closes it and later
 // opens run_search_items_one_step(), and part_014a.inc completes that method.
 // Define the active Burnet policy only after this first complete member boundary:
@@ -115,18 +99,7 @@
 // guard, while the legacy part_011 implementation stays dormant:
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_011_burnet_thinning_override.inc
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_empty_deck_search_override.inc#L102-L107
-#define play_professor_burnet play_professor_burnet_empty_deck_original
-#include "trace_engine_v2/part_011_burnet_thinning_override.inc"
-#undef play_professor_burnet
-#undef use_fss
-#define use_fss use_fss_empty_deck_original
-#include "trace_engine_v2/part_011_fss_latias_override.inc"
-#undef use_fss
-#undef use_celestial_roar
-#define use_celestial_roar use_celestial_roar_issue1369_original
-#include "trace_engine_v2/part_celestial_roar_override.inc"
-#undef use_celestial_roar
-#include "trace_engine_v2/composition/final_engine_overrides.inc"
+#include "trace_engine_v2/composition/post_014a_overrides.inc"
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #include "trace_engine_v2/part_014c.inc"

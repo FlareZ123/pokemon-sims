@@ -37,8 +37,16 @@ bool trace_contains(const sim::TraceLog& trace, const std::string& text) {
                      });
 }
 
-sim::Scenario strict_second(const sim::LockMode lock = sim::LockMode::None) {
-  return sim::Scenario{"issue-2408", sim::DciProfile::StrictJit, lock, false, 5};
+const sim::Scenario& strict_second() {
+  static const sim::Scenario scenario{"issue-2408", sim::DciProfile::StrictJit,
+                                      sim::LockMode::None, false, 5};
+  return scenario;
+}
+
+const sim::Scenario& strict_second_supporter_lock() {
+  static const sim::Scenario scenario{"issue-2408", sim::DciProfile::StrictJit,
+                                      sim::LockMode::FullSupporter, false, 5};
+  return scenario;
 }
 
 sim::State payload_only_state() {
@@ -151,8 +159,8 @@ void test_missing_held_dragon_keeps_burnet_and_supporter_lock_blocks_both() {
   expect(contains(burnet_only.state().discard, sim::Card::ProfessorBurnet),
          "Burnet-only payload state lost its legal route.");
 
-  sim::Engine locked = make_engine(strict_second(sim::LockMode::FullSupporter),
-                                   rng, payload_only_state());
+  sim::Engine locked = make_engine(strict_second_supporter_lock(), rng,
+                                   payload_only_state());
   // Supporter lock blocks both candidate Supporters: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
   // Lock model boundary: https://github.com/FlareZ123/pokemon-sims/issues/2408
   sim::EngineTestAccess::choose_supporter(locked);

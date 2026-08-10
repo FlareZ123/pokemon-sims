@@ -59,24 +59,7 @@
 #include "trace_engine_v2/part_004.inc"
 #include "trace_engine_v2/part_005.inc"
 #undef might_be_unseen
-#include "trace_engine_v2/part_empty_deck_unseen_override.inc"
-#undef begin_turn
-#include "trace_engine_v2/part_begin_turn_override.inc"
-#include "trace_engine_v2/part_tapu_copy_availability_override.inc"
-#define bench_from_hand bench_from_hand_empty_deck_original
-#define bench_oricorio_if_useful bench_oricorio_if_useful_empty_deck_original
-#define needs_oricorio_connector needs_oricorio_connector_original
-#define needs_tapu_connector needs_tapu_connector_original
-#define bench_tapu_if_useful bench_tapu_if_useful_original
-#define recover_discard_to_hand recover_discard_to_hand_name_only_original
-#define choose_discard choose_discard_issue1436_original
-#include "trace_engine_v2/part_006.inc"
-#undef recover_discard_to_hand
-#undef bench_tapu_if_useful
-#undef needs_tapu_connector
-#undef needs_oricorio_connector
-#undef bench_oricorio_if_useful
-#undef bench_from_hand
+#include "trace_engine_v2/composition/opening_engine_overrides.inc"
 #define attach_manual attach_manual_tate_blender_original
 #include "trace_engine_v2/part_007.inc"
 #undef attach_manual
@@ -97,25 +80,7 @@
 #include "trace_engine_v2/part_discard_recovery_provenance_override.inc"
 #include "trace_engine_v2/part_tate_blender_attachment_override.inc"
 #include "trace_engine_v2/part_tate_blender_tate_override.inc"
-#define play_mysterious_treasure play_mysterious_treasure_empty_deck_original
-#define play_heavy_ball play_heavy_ball_prize_payload_original
-#include "trace_engine_v2/part_008b.inc"
-#undef play_heavy_ball
-// Wonder Tag is copy-specific. Preserve all existing selector controls while an
-// in-play Tapu no longer suppresses a second physical copy:
-// https://api.pokemontcg.io/v2/cards/sm2-60
-// https://github.com/FlareZ123/pokemon-sims/issues/746
-#define in_play tapu_connector_copy_aware_in_play
-#include "trace_engine_v2/part_009a.inc"
-#undef in_play
-#undef play_mysterious_treasure
-#define play_quick_ball play_quick_ball_empty_deck_original
-#define in_play tapu_connector_copy_aware_in_play
-#include "trace_engine_v2/part_009b1.inc"
-#undef in_play
-#undef play_quick_ball
-#define play_ultra_ball play_ultra_ball_original
-#include "trace_engine_v2/part_009b2.inc"
+#include "trace_engine_v2/composition/base_search_overrides.inc"
 #define play_evolution_incense play_evolution_incense_original
 #define play_earthen_vessel play_earthen_vessel_empty_deck_original
 #define play_brilliant_blender play_brilliant_blender_legacy_original

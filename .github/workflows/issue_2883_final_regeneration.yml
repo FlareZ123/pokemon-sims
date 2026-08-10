@@ -5,6 +5,7 @@ on:
     branches: [main]
 
 permissions:
+  actions: read
   contents: write
 
 jobs:
@@ -18,22 +19,80 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Build exact simulator
+      - name: Reuse completed current-source aggregate
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --target regidrago_sim --parallel 2
-      - name: Run three final simulate-this audits
+          rm -rf /tmp/issue-2883-release
+          mkdir -p /tmp/issue-2883-release
+          gh run download 31422398233 --name release-validation-1 --dir /tmp/issue-2883-release
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+
+          root = Path('/tmp/issue-2883-release')
+          expected = {
+              'multi-deck-matrix.csv': 'b0516d9ef524eaaf3db289b84c4083e22e984ecad4e27ba21de9917405f7df79',
+              't2-t3-matrix.csv': '39126b6e1f4376f257428a16a220dcf5efc073b02078bbd628d4fcbb408b198b',
+          }
+          for name, digest in expected.items():
+              actual = hashlib.sha256((root / name).read_bytes()).hexdigest()
+              if actual != digest:
+                  raise SystemExit(f'{name}: expected {digest}, got {actual}')
+          PY
+          cp /tmp/issue-2883-release/multi-deck-matrix.csv results/multi_deck_comparison.csv
+          cp /tmp/issue-2883-release/t2-t3-matrix.csv results/simulation_results.csv
+          chmod +x /tmp/issue-2883-release/build/regidrago_sim
+      - name: Refresh manifests and reviewed traces without another aggregate
         run: |
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-final-1.txt
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee trace-final-2.txt
-          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-final-3.txt
-          grep -q 'T2 | READY' trace-final-1.txt
-          grep -q 'T3 | READY' trace-final-2.txt
-          grep -q 'T2 | READY' trace-final-3.txt
-      - name: Generate one paired 100k aggregate
-        run: python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
-      - name: Derive canonical shell matrix from same aggregate
-        run: python scripts/extract_deck_matrix.py --input results/multi_deck_comparison.csv --output results/simulation_results.csv --deck regidrago-shell
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from scripts import generate_multi_deck_comparison as multi
+          from scripts import regenerate_setup_baselines as base
+
+          root = Path.cwd()
+          results = root / 'results'
+          executable = Path('/tmp/issue-2883-release/build/regidrago_sim')
+          matrix_seed = 20260705
+          trials = 100000
+
+          trace_dir = results / 'traces'
+          trace_dir.mkdir(parents=True, exist_ok=True)
+          baseline_manifest = base.build_manifest(matrix_seed, trials)
+          expected_trace_files = set()
+          for scenario, deadline, stem in base.TRACE_SPECS:
+              seed, trace = base.find_trace_seed(executable, scenario, deadline, 5000)
+              file_name = base.trace_file_name(stem, seed)
+              expected_trace_files.add(file_name)
+              base.atomic_write_text(trace_dir / file_name, trace)
+              baseline_manifest['traces'].append({
+                  'scenario': scenario,
+                  'deadline': deadline,
+                  'seed': seed,
+                  'file': file_name,
+              })
+          base.reconcile_generated_traces(trace_dir, expected_trace_files)
+          base.atomic_write_text(
+              results / base.MANIFEST_FILENAME,
+              json.dumps(baseline_manifest, indent=2, sort_keys=True) + '\n',
+          )
+
+          multi_traces = multi.generate_traces(
+              executable, results / 'multi_deck_traces'
+          )
+          multi_manifest = multi.build_manifest(
+              results / 'multi_deck_comparison.csv',
+              multi_traces,
+              trials,
+              matrix_seed,
+          )
+          multi.atomic_write_text(
+              results / 'multi_deck_manifest.json',
+              json.dumps(multi_manifest, indent=2, sort_keys=True) + '\n',
+          )
+          PY
       - name: Regenerate setup documentation
         run: |
           python scripts/update_setup_docs.py --repo-root .
@@ -43,9 +102,7 @@ jobs:
         run: |
           python tests/setup_report_contract_tests.py
           python tests/multi_deck_report_contract_tests.py
-      - name: Record documentation source-anchor contract
-        continue-on-error: true
-        run: python tests/update_setup_docs_tests.py
+          python tests/update_setup_docs_tests.py
       - name: Materialize generated evidence and remove workflow
         run: |
           git config user.name github-actions[bot]

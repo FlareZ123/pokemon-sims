@@ -55,19 +55,6 @@ sim::State exact_blender_state() {
   return state;
 }
 
-sim::Engine make_engine(const sim::DciProfile profile, std::mt19937_64& rng,
-                        const sim::DeckRecipe& recipe,
-                        sim::Scenario& scenario_value) {
-  // Engine currently stores Scenario by reference; keep the Scenario object alive
-  // for the complete Engine lifetime in this regression fixture:
-  // https://github.com/FlareZ123/pokemon-sims/issues/2815
-  // C++ temporary/reference lifetime: https://eel.is/c++draft/class.temporary
-  scenario_value = scenario(profile);
-  sim::Engine engine{scenario_value, recipe, rng};
-  sim::EngineTestAccess::set_state(engine, exact_blender_state());
-  return engine;
-}
-
 void both_jit_profiles_prefer_held_crispin() {
   // Crispin plus the unused manual attachment completes GGF, while the held
   // Brilliant Blender gives a deterministic current-turn Dragon payload outlet.
@@ -85,6 +72,9 @@ void both_jit_profiles_prefer_held_crispin() {
                                         sim::DciProfile::MatchupFlexJit}) {
     std::mt19937_64 rng{2768};
     const sim::DeckRecipe recipe = sim::baseline_recipe();
+    // Engine still stores Scenario by reference, so the fixture owns it for the
+    // Engine's whole lifetime: https://github.com/FlareZ123/pokemon-sims/issues/2815
+    // C++ temporary lifetime: https://eel.is/c++draft/class.temporary
     sim::Scenario scenario_value = scenario(profile);
     sim::Engine engine{scenario_value, recipe, rng};
     sim::EngineTestAccess::set_state(engine, exact_blender_state());
@@ -106,6 +96,8 @@ void no_discard_control_does_not_enter_the_jit_override() {
   // Confirmed cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2768
   std::mt19937_64 rng{2768};
   const sim::DeckRecipe recipe = sim::baseline_recipe();
+  // Keep the referenced Scenario alive until Engine destruction: https://github.com/FlareZ123/pokemon-sims/issues/2815
+  // C++ temporary lifetime: https://eel.is/c++draft/class.temporary
   sim::Scenario scenario_value = scenario(sim::DciProfile::NoDiscardControl);
   sim::Engine engine{scenario_value, recipe, rng};
   sim::EngineTestAccess::set_state(engine, exact_blender_state());

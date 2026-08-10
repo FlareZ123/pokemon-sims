@@ -1,16 +1,16 @@
 name: Issue 2725 regeneration
 
 on:
-  push:
+  pull_request:
     branches:
-      - regen/2725-clean-main-20260810
+      - main
 
 permissions:
   contents: write
 
 jobs:
   regenerate:
-    if: github.actor != 'github-actions[bot]'
+    if: github.head_ref == 'regen/2725-clean-main-20260810' && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

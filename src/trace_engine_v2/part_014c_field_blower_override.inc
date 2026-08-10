@@ -65,6 +65,14 @@
   }
 
   bool play_field_blower() {
+    // In the Garbodor + Boost Shake scenario, spend one Field Blower target on the
+    // opponent's attached Tool only when that unlock exposes a live current-turn
+    // Pokemon Ability route. This turn-scoped branch is distinct from Path removal:
+    // https://api.pokemontcg.io/v2/cards/sm2-125
+    // https://api.pokemontcg.io/v2/cards/xy9-57
+    // https://github.com/FlareZ123/pokemon-sims/issues/2808
+    if (play_garbodor_field_blower()) return true;
+
     if (item_locked() || hand_count(Card::FieldBlower) == 0 ||
         !rule_box_abilities_locked() || !path_removal_unlocks_live_rule_box_route()) {
       return false;

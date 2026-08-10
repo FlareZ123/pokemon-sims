@@ -66,13 +66,7 @@
 #include "trace_engine_v2/composition/steven_blender_overrides.inc"
 // tapu_search_overrides.inc is composed by steven_blender_overrides.inc.
 #include "trace_engine_v2/composition/legacy_supporter_body.inc"
-#define play_arven play_arven_original
-#define play_gladion play_gladion_original
-#define play_serena play_serena_issue1683_original
-#include "trace_engine_v2/part_012.inc"
-#undef play_serena
-#undef play_gladion
-#undef play_arven
+#include "trace_engine_v2/composition/supporter_selector_body.inc"
 #define use_celestial_roar use_celestial_roar_original
 #define use_legacy_star use_legacy_star_original
 #include "trace_engine_v2/part_013.inc"

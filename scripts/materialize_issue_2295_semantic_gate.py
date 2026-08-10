@@ -36,7 +36,7 @@ new_gate = '''    // This is a semantic mobility gate, not a witness-card list. 
     // printed Retreat Cost 1; higher-cost Basics require more payment and must be
     // rejected before any once-per-turn resource is spent:
     // Official Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // Simulator Retreat Cost metadata and direct card sources: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
+    // Simulator Retreat Cost metadata: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
     // State-driven route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2295
     if (!is_basic(state_.active->card) || retreat_cost(state_.active->card) != 1) {
@@ -47,6 +47,16 @@ if source.count(old_gate) != 1:
     raise RuntimeError(f"identity gate count {source.count(old_gate)}")
 source = source.replace(old_gate, new_gate, 1)
 
+old_initial = '''        !state_.active || hand_count(Card::BrilliantBlender) == 0 ||
+        !payload_might_be_in_deck() || !can_play_payload_this_turn()) {
+'''
+new_initial = '''        !state_.active || hand_count(Card::BrilliantBlender) == 0 ||
+        !payload_might_be_in_deck()) {
+'''
+if source.count(old_initial) != 1:
+    raise RuntimeError(f"pre-retreat payload gate count {source.count(old_initial)}")
+source = source.replace(old_initial, new_initial, 1)
+
 old_comment = '''    // Oricorio GRI 55 and Tapu Lele-GX each have a one-Colorless Retreat Cost.
     // Either modeled Basic Energy can pay that cost while the Apex-ready Benched
     // Regidrago VSTAR keeps GGF. The preflight above proves Brilliant Blender can
@@ -56,11 +66,14 @@ old_comment = '''    // Oricorio GRI 55 and Tapu Lele-GX each have a one-Colorle
 '''
 new_comment = '''    // The semantic gate above proves the Basic Active has printed Retreat Cost 1,
     // so either modeled Basic Energy can pay that cost while the Apex-ready Benched
-    // Regidrago VSTAR keeps GGF. Oricorio and Tapu Lele-GX remain exact historical
-    // witnesses, while Mawile-GX is a focused non-witness one-cost control:
+    // Regidrago VSTAR keeps GGF. Payload legality is checked on the exact projected
+    // post-retreat state by play_brilliant_blender(), rather than by a pre-retreat
+    // reachability predicate that can depend on the current Active identity.
     // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
     // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Mawile-GX: https://api.pokemontcg.io/v2/cards/sm11-141
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2295
 '''
 if source.count(old_comment) != 1:
     raise RuntimeError(f"route comment count {source.count(old_comment)}")

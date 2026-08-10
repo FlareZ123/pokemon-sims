@@ -214,23 +214,39 @@
   }
 
   bool fss_should_take_grass_for_seed23_latias_burnet_route() const {
-    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
-    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
-    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2080
-
-    if (!prizes_known() || scenario_.dci != DciProfile::StrictJit ||
-        scenario_.locks != LockMode::None || state_.turn != 3 ||
-        scenario_.max_turn < 4 ||
+    // Historical name retained for regression compatibility. The route is
+    // state-semantic: Star Alchemy searches one Grass, Crispin searches a second
+    // Grass plus Fire and attaches one, and the unused manual attachment supplies
+    // the other current-turn Grass. Quick Ball replaces Tate & Liza with Latias ex.
+    // This override is only an arbitration against the historical duplicate-Crispin
+    // search. If no second Crispin is searchable, the ordinary selector may retain
+    // Star Alchemy or choose another stronger route instead of spending it on Grass.
+    // On the projected next turn the established Regidrago V can evolve, the held
+    // Fire attachment completes GGF, and Professor Burnet supplies the JIT payload.
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Advanced evolution, Item, Supporter, attachment, and Retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // K1, shared JIT timing, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Dynamic DCI/AMR approximation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Original route and state-generic paired Quick Ball route: https://github.com/FlareZ123/pokemon-sims/issues/1403 https://github.com/FlareZ123/pokemon-sims/issues/2704
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2891
+    const int projected_ready_turn = state_.turn + 1;
+    if (!prizes_known() || !strict_payload_timing() ||
+        scenario_.max_turn < projected_ready_turn ||
         !supporter_allowed() || state_.manual_energy_used ||
         state_.retreat_used || item_locked() || !state_.active ||
         !is_basic(state_.active->card) || bench_space() == 0 ||
         !ability_available_for_pokemon(Card::LatiasEx) ||
         in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
         std::count(state_.deck.begin(), state_.deck.end(), Card::LatiasEx) == 0 ||
-        hand_count(Card::Crispin) == 0 || hand_count(Card::QuickBall) == 0 ||
-        hand_count(Card::TateLiza) == 0 ||
+        hand_count(Card::Crispin) == 0 ||
+        deck_count_after_search_started(Card::Crispin) == 0 ||
+        hand_count(Card::QuickBall) == 0 || hand_count(Card::TateLiza) == 0 ||
         hand_count(Card::ProfessorBurnet) == 0 ||
         hand_count(Card::RegidragoVstar) == 0 ||
         std::count(state_.deck.begin(), state_.deck.end(), Card::Grass) < 2 ||
@@ -239,31 +255,24 @@
       return false;
     }
 
-    // Star Alchemy takes one Grass while held Crispin takes a second Grass and Fire.
-    // The manual attachment supplies the other Grass, Quick Ball searches Latias ex,
-    // and Latias replaces Tate & Liza's switch role. Fire, evolution, and Professor
-    // Burnet then complete the legal strict-JIT route on T4:
-    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
-    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
-    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
-    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
-    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // The generic missing-axis predicates project held connectors and therefore
-    // read false in this unevolved two-turn state. This route is admitted from
-    // the exact public board, hand, and K1 deck contents instead:
-    // DCI, K1, and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1403
-    return state_.active->card != Card::RegidragoV &&
-        state_.active->card != Card::RegidragoVstar &&
-        std::any_of(state_.bench.begin(), state_.bench.end(),
-                    [this](const Pokemon& pokemon) {
-                      return pokemon.card == Card::RegidragoV &&
-                          pokemon.entered_turn == state_.turn &&
-                          pokemon.grass == 0 && pokemon.fire == 0;
-                    });
+    if (state_.active->card == Card::RegidragoV ||
+        state_.active->card == Card::RegidragoVstar) {
+      return false;
+    }
+
+    return std::any_of(
+        state_.bench.begin(), state_.bench.end(),
+        [projected_ready_turn](const Pokemon& pokemon) {
+          // A Regidrago V already in play before the projected ready turn may
+          // legally evolve on that next turn. Literal seed turn numbers do not
+          // create an evolution requirement:
+          // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+          // Advanced evolution procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+          // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2891
+          return pokemon.card == Card::RegidragoV &&
+              pokemon.entered_turn < projected_ready_turn &&
+              pokemon.grass == 0 && pokemon.fire == 0;
+        });
   }
 
   Card fss_target_after_search_started() const {

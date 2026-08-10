@@ -64,23 +64,71 @@
            in_play_legacy_star_route || future_legacy_star_route;
   }
 
-  bool play_field_blower() {
-    if (item_locked() || hand_count(Card::FieldBlower) == 0 ||
-        !rule_box_abilities_locked() || !path_removal_unlocks_live_rule_box_route()) {
+  Pokemon* spent_forest_seal_stone_holder() {
+    if (!state_.vstar_power_used) return nullptr;
+    if (state_.active && state_.active->tool == Tool::ForestSealStone) {
+      return &*state_.active;
+    }
+    for (Pokemon& pokemon : state_.bench) {
+      if (pokemon.tool == Tool::ForestSealStone) return &pokemon;
+    }
+    return nullptr;
+  }
+
+  bool spent_fss_removal_unlocks_powerglass_route() const {
+    if (!state_.vstar_power_used || hand_count(Card::Powerglass) == 0 ||
+        !state_.active || state_.active->tool != Tool::ForestSealStone ||
+        (state_.active->card != Card::RegidragoV &&
+         state_.active->card != Card::RegidragoVstar)) {
       return false;
     }
 
-    // Field Blower may discard the Stadium in play. Spend it only when removing
-    // the modeled Path to the Peak unlocks a currently live setup route, so a
-    // discrete-value Stadium answer is preserved after setup is already complete:
+    const bool grass_route = state_.active->grass < 2 &&
+        count_of(state_.discard, Card::Grass) > 0;
+    const bool fire_route = state_.active->fire < 1 &&
+        count_of(state_.discard, Card::Fire) > 0;
+    return grass_route || fire_route;
+  }
+
+  bool play_field_blower() {
+    if (item_locked() || hand_count(Card::FieldBlower) == 0) return false;
+
+    const bool remove_path = rule_box_abilities_locked() &&
+        path_removal_unlocks_live_rule_box_route();
+    Pokemon* spent_fss = spent_forest_seal_stone_holder();
+    const bool clear_active_tool_for_powerglass =
+        spent_fss_removal_unlocks_powerglass_route();
+    if (!remove_path && !clear_active_tool_for_powerglass) return false;
+
+    // Field Blower can choose up to two Tool/Stadium cards in play, including the
+    // player's own. A used VSTAR Power makes Forest Seal Stone spent for the rest
+    // of the game, so clearing that Tool slot is a live action when Powerglass can
+    // advance the Active Regidrago. If Field Blower is already removing Path, the
+    // spent Stone is the legal second target and is safely removed at no extra cost:
     // https://api.pokemontcg.io/v2/cards/sm2-125
-    // https://api.pokemontcg.io/v2/cards/swsh6-148
-    // https://github.com/FlareZ123/pokemon-sims/issues/791
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // https://github.com/FlareZ123/pokemon-sims/issues/2807
     remove_one(state_.hand, Card::FieldBlower);
     state_.discard.push_back(Card::FieldBlower);
-    state_.path_lock_removed = true;
-    trace("PLAY ITEM", "R-GAME-ITEM",
-          "Field Blower discarded the modeled Path to the Peak; Rule Box Pokémon Abilities are available again.");
+
+    if (remove_path) state_.path_lock_removed = true;
+    if (spent_fss != nullptr && (remove_path || clear_active_tool_for_powerglass)) {
+      spent_fss->tool = Tool::None;
+      state_.discard.push_back(Card::ForestSealStone);
+    }
+
+    if (remove_path && spent_fss != nullptr) {
+      trace("PLAY ITEM", "R-GAME-ITEM",
+            "Field Blower discarded the modeled Path to the Peak and a spent Forest Seal Stone.");
+    } else if (remove_path) {
+      trace("PLAY ITEM", "R-GAME-ITEM",
+            "Field Blower discarded the modeled Path to the Peak; Rule Box Pokémon Abilities are available again.");
+    } else {
+      trace("PLAY ITEM", "R-GAME-ITEM",
+            "Field Blower discarded a spent Forest Seal Stone, clearing the Active Pokémon's Tool slot.");
+    }
     return true;
   }
 

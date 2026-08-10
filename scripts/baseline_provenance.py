@@ -51,11 +51,6 @@ class _SimulatorSourceManifest:
         return _stable_paths(_validated_paths(self.required_paths()))
 
 
-def _manifest(repo_root: Path) -> _SimulatorSourceManifest:
-    """Create the simulator provenance manifest for a repository root."""
-    return _SimulatorSourceManifest(repo_root)
-
-
 def _missing_paths(paths: PathSequence) -> PathSequence:
     """Return required provenance inputs that are absent from disk."""
     return tuple(path for path in paths if not path.is_file())
@@ -82,7 +77,7 @@ def simulator_policy_source_paths(repo_root: Path) -> PathSequence:
     # https://github.com/FlareZ123/pokemon-sims/issues/1300
     # The executable target and compile configuration are also simulator inputs:
     # https://github.com/FlareZ123/pokemon-sims/blob/main/CMakeLists.txt#L1-L11
-    return _manifest(repo_root).paths()
+    return _SimulatorSourceManifest(repo_root).paths()
 
 
 def _relative_path_bytes(repo_root: Path, path: Path) -> bytes:

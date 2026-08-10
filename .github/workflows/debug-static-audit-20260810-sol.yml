@@ -1,0 +1,65 @@
+name: Debug Static Audit 20260810 Sol
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan route predicates and witness literals
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          files = sorted(
+              p for p in Path("src").rglob("*")
+              if p.is_file() and p.suffix in {".inc", ".cpp", ".h", ".hpp"}
+          )
+          patterns = {
+              "strict_profile_literal": re.compile(r"DciProfile::StrictJit"),
+              "flex_profile_literal": re.compile(r"DciProfile::MatchupFlexJit"),
+              "no_control_profile_literal": re.compile(r"DciProfile::NoDiscardControl"),
+              "literal_turn_gate": re.compile(r"state_\.turn\s*(?:==|!=|<=|>=|<|>)\s*\d+"),
+              "player_order_gate": re.compile(r"scenario_\.going_first"),
+              "typed_deficit_sum": re.compile(r"grass_needed\(\)\s*\+\s*fire_needed\(\)"),
+              "raw_apex_threshold": re.compile(r"(?:grass\s*(?:>=|<)\s*2.*fire\s*(?:>=|<)\s*1|fire\s*(?:>=|<)\s*1.*grass\s*(?:>=|<)\s*2)"),
+              "raw_active_energy": re.compile(r"state_\.active->(?:grass|fire)"),
+              "seed_named_helper": re.compile(r"\bseed[_A-Za-z0-9]*\b", re.IGNORECASE),
+              "issue_named_helper": re.compile(r"\bissue_\d+[_A-Za-z0-9]*\b"),
+          }
+
+          for name, pattern in patterns.items():
+              print(f"\n===== {name} =====")
+              count = 0
+              for path in files:
+                  text = path.read_text(encoding="utf-8")
+                  for lineno, line in enumerate(text.splitlines(), 1):
+                      if pattern.search(line):
+                          print(f"{path}:{lineno}:{line.strip()}")
+                          count += 1
+              print(f"TOTAL {name}: {count}")
+
+      - name: Scan suspicious comments and one-off fixes
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          pattern = re.compile(r"\b(?:TODO|FIXME|HACK|workaround|special.case|seed[-_ ]?specific|exact seed|one[- ]off|overfit)\b", re.IGNORECASE)
+          count = 0
+          for path in sorted(Path("src").rglob("*")):
+              if not path.is_file() or path.suffix not in {".inc", ".cpp", ".h", ".hpp"}:
+                  continue
+              for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+                  if pattern.search(line):
+                      print(f"{path}:{lineno}:{line.strip()}")
+                      count += 1
+          print(f"TOTAL suspicious-comment matches: {count}")

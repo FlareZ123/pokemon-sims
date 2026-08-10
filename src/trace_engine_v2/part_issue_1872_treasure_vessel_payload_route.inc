@@ -18,10 +18,13 @@
     // Official Item, attachment, search, and discard procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, dynamic DCI/JIT, connector ordering, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1872
-    return scenario_.dci == DciProfile::MatchupFlexJit && state_.turn == 4 &&
-        prizes_known() && !item_locked() && !state_.manual_energy_used &&
-        active_is_vstar() && state_.active->grass == 1 &&
-        state_.active->fire == 1 && need_payload() &&
+    const bool same_turn_jit =
+        scenario_.dci == DciProfile::StrictJit ||
+        scenario_.dci == DciProfile::MatchupFlexJit;  // Same ready-turn payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed profile-overfitting bug: https://github.com/FlareZ123/pokemon-sims/issues/2742
+    return same_turn_jit && state_.turn == 4 && prizes_known() && !item_locked() &&
+        !state_.manual_energy_used && active_is_vstar() &&
+        state_.active->grass == 1 && state_.active->fire == 1 && need_payload() &&
         hand_count(Card::MysteriousTreasure) > 0 &&
         hand_count(Card::EarthenVessel) > 0 &&
         hand_count(Card::ChaoticSwell) > 0 &&
@@ -39,7 +42,7 @@
 
     // Mysterious Treasure uses the setup-dead Stadium cost and searches the known
     // Dragon. Earthen Vessel immediately discards that Dragon, searches Grass, and
-    // the manual attachment completes GGF on the same matchup-flex JIT turn.
+    // the manual attachment completes GGF on the same JIT-ready turn.
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Chaotic Swell: https://api.pokemontcg.io/v2/cards/sm12-187

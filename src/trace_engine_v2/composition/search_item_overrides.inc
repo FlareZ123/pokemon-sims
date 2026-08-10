@@ -18,18 +18,7 @@
 #include "../part_k0_ultra_ball_target_override.inc"
 #include "../part_oricorio_needed_energy_override.inc"
 #include "../part_blender_vstar_axis_override.inc"
-
-// Earthen Vessel wrapper chain. Each alias exposes the preceding implementation
-// to the next override, so the define/include/undef order is behavior-significant.
-#define play_earthen_vessel play_earthen_vessel_issue1368_original
-#include "../part_earthen_vessel_vstar_window_override.inc"
-#undef play_earthen_vessel
-
-#define play_earthen_vessel play_earthen_vessel_issue1412_original
-#include "../part_issue_1368_earthen_vessel_celestial_roar_override.inc"
-#undef play_earthen_vessel
-
-#include "../part_issue_1412_preserve_quick_balls.inc"
+#include "earthen_vessel_overrides.inc"
 
 // Late Mysterious Treasure and Quick Ball wrapper chain. Matching undef boundaries
 // keep each successive wrapper tied to the implementation immediately before it.

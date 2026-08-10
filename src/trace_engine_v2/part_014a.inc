@@ -1,9 +1,28 @@
-const auto issue_1757_prelock_vessel_available = [this] {
+const auto issue_1757_redundant_payload_cost = [this]() -> std::optional<Card> {
+  // The scheduled-lock fallback needs one safely redundant physical copy of the
+  // same modeled Dragon payload, independent of the historical Mega Dragonite
+  // witness. A singleton stays protected for the later strict-JIT payload turn:
+  // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+  // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+  // Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
+  // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Dynamic DCI and resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Systemic overfit fix: https://github.com/FlareZ123/pokemon-sims/issues/2901
+  for (const Card card : {Card::Appletun, Card::MegaDragonite, Card::Dragapult,
+                          Card::GoodraVstar, Card::DialgaGX}) {
+    if (hand_count(card) >= 2) return card;
+  }
+  return std::nullopt;
+};
+
+const auto issue_1757_prelock_vessel_available =
+    [this, &issue_1757_redundant_payload_cost] {
   if (secret_box_combo_enabled() ||
       scenario_.locks != LockMode::TurnTwoItem || scenario_.going_first ||
       state_.turn != 1 || item_locked() || !need_regi() || has_vstar() ||
       hand_count(Card::EarthenVessel) == 0 ||
-      hand_count(Card::MegaDragonite) < 2) {
+      !issue_1757_redundant_payload_cost().has_value()) {
     return false;
   }
 
@@ -15,7 +34,7 @@ const auto issue_1757_prelock_vessel_available = [this] {
       : might_be_unseen(Card::Fire);
 
   // The scheduled T2 Item lock makes a held Vessel use-or-lose. One of two
-  // identical Mega Dragonite ex copies is a realistic DCI cost because the other
+  // identical modeled Dragon payload copies is a realistic DCI cost because the other
   // copy remains protected for a later strict-JIT payload turn. The legal search
   // establishes K1 and takes any live Basic Energy before Items become unusable:
   // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
@@ -28,16 +47,19 @@ const auto issue_1757_prelock_vessel_available = [this] {
 };
 
 const auto play_issue_1757_prelock_vessel =
-    [this, &issue_1757_prelock_vessel_available] {
+    [this, &issue_1757_prelock_vessel_available,
+     &issue_1757_redundant_payload_cost] {
   if (!issue_1757_prelock_vessel_available()) return false;
+  const std::optional<Card> payload_cost = issue_1757_redundant_payload_cost();
+  if (!payload_cost) return false;
   if (!remove_one(state_.hand, Card::EarthenVessel)) {
     throw std::logic_error("Issue-1757 Earthen Vessel disappeared");
   }
   state_.discard.push_back(Card::EarthenVessel);
-  if (!discard_from_hand(Card::MegaDragonite,
+  if (!discard_from_hand(*payload_cost,
                          "Earthen Vessel issue-1757 duplicate payload cost",
                          "R-EV-01; P-DCI-01; P-KNOWLEDGE-01")) {
-    throw std::logic_error("Issue-1757 duplicate payload cost disappeared");
+    throw std::logic_error("Issue-1757 redundant payload cost disappeared");
   }
   search_energy_to_hand(
       2, "R-EV-01; R-GAME-ITEM; P-DCI-01; P-KNOWLEDGE-01",

@@ -8,11 +8,15 @@
     return current_turn_copies > 0 && discard_copies == current_turn_copies;
   }
 
-  void mark_legacy_star_projection_recovery(const Card card) {
+  void remove_current_turn_discard_provenance(const Card card) {
     auto& discarded_this_turn = state_.discarded_this_turn;
     const auto turn_it = std::find(
         discarded_this_turn.begin(), discarded_this_turn.end(), card);
     discarded_this_turn.erase(turn_it);
+  }
+
+  void mark_legacy_star_projection_recovery(const Card card) {
+    remove_current_turn_discard_provenance(card);
     legacy_star_projection_removed_marker_ = card;
   }
 

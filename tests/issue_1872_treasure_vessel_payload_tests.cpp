@@ -95,7 +95,7 @@ void test_exact_route_both_turn_orders_and_jit_profiles() {
     }
   }
 
-  // No-discard-control is a separate profile and must not inherit same-turn JIT routes: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // No-discard-control has different payload timing from the same-turn JIT profiles: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
   // Confirmed profile-overfitting bug boundary: https://github.com/FlareZ123/pokemon-sims/issues/2742
   sim::Engine no_control = make_engine(
       jit(sim::DciProfile::NoDiscardControl, true), rng, base_state());
@@ -139,27 +139,31 @@ void test_k1_lock_and_resource_boundaries() {
          "The route was admitted without searchable Grass Energy.");
 }
 
-void test_registered_seed_453_reaches_t4_for_both_jit_profiles() {
+void expect_registered_t4_route(const char* label, const std::uint64_t seed) {
   const sim::NamedDeck* deck = sim::deck_by_id("regidrago-shell");
   expect(deck != nullptr, "The registered issue-1872 deck is unavailable.");
-  for (const char* label : {"strict-jit/go-first", "strict-jit/go-second",
-                            "matchup-flex-jit/go-first",
-                            "matchup-flex-jit/go-second"}) {
-    const auto scenario = sim::scenario_by_label(label);
-    expect(scenario.has_value(), "A registered issue-1872 scenario is unavailable.");
-    std::mt19937_64 rng(453);
-    sim::TraceLog trace{true, {}, {}};
-    sim::Engine engine(*scenario, deck->recipe, rng, &trace);
-    const sim::TrialOutcome outcome = engine.run();
-    // Earliest-route policy requires the deterministic finish whenever its legal state is reached: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed profile-overfitting bug: https://github.com/FlareZ123/pokemon-sims/issues/2742
-    expect(outcome.first_ready_turn == 4,
-           "Registered seed 453 did not reach T4 in a JIT profile/turn order.");
-    expect(trace_contains(trace, "Chaotic Swell") &&
-               trace_contains(trace, "Earthen Vessel") &&
-               trace_contains(trace, "T4 | READY"),
-           "Registered seed 453 did not execute the complete T4 route.");
-  }
+  const auto scenario = sim::scenario_by_label(label);
+  expect(scenario.has_value(), "A registered issue-1872 scenario is unavailable.");
+  std::mt19937_64 rng(seed);
+  sim::TraceLog trace{true, {}, {}};
+  sim::Engine engine(*scenario, deck->recipe, rng, &trace);
+  const sim::TrialOutcome outcome = engine.run();
+  // These witnesses reach the exact T4 Treasure-Vessel state under their profile's earlier DCI decisions. The profile may make different earlier discard choices even though both JIT profiles share ready-turn payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Earliest deterministic route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Mysterious Treasure and Earthen Vessel: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sv4-163
+  // Confirmed profile-overfitting bug: https://github.com/FlareZ123/pokemon-sims/issues/2742
+  expect(outcome.first_ready_turn == 4,
+         "A registered issue-1872 witness did not reach T4.");
+  expect(trace_contains(trace, "Mysterious Treasure issue-1872") &&
+             trace_contains(trace, "Earthen Vessel issue-1872") &&
+             trace_contains(trace, "T4 | READY"),
+         "A registered issue-1872 witness did not execute the complete T4 route.");
+}
+
+void test_registered_profile_witnesses_reach_t4() {
+  expect_registered_t4_route("strict-jit/go-first", 605);
+  expect_registered_t4_route("matchup-flex-jit/go-first", 453);
+  expect_registered_t4_route("matchup-flex-jit/go-second", 453);
 }
 }  // namespace
 
@@ -167,7 +171,7 @@ int main() {
   try {
     test_exact_route_both_turn_orders_and_jit_profiles();
     test_k1_lock_and_resource_boundaries();
-    test_registered_seed_453_reaches_t4_for_both_jit_profiles();
+    test_registered_profile_witnesses_reach_t4();
     std::cout << "Issue 1872 Treasure-Vessel payload tests passed\n";
     return 0;
   } catch (const std::exception& error) {

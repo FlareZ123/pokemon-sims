@@ -1,0 +1,65 @@
+name: Reclaim issue 2293 on current main
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/reclaim-2293-current-main.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  replay:
+    if: github.head_ref == 'fix/2293-reclaim-20260810-0341'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify reviewed production targets stayed unchanged
+        shell: bash
+        run: |
+          git fetch origin main fix/2293-semantic-k1-latias-20260809
+          git diff --quiet 271544936d00ae89a7f613ce9e8de0155aab3c9d origin/main -- src/trace_engine_v2/part_007.inc src/trace_engine_v2/part_014c_latias_bench_override.inc
+      - name: Apply reviewed semantic route to current main
+        shell: bash
+        run: |
+          git show origin/fix/2293-semantic-k1-latias-20260809:scripts/apply_issue_2293_semantic_fix_20260809.py > /tmp/apply_2293.py
+          git show origin/fix/2293-semantic-k1-latias-20260809:scripts/apply_issue_2293_semantic_gate_fix_20260809.py > /tmp/gate_2293.py
+          cp /tmp/apply_2293.py scripts/apply_issue_2293_semantic_fix_20260809.py
+          cp /tmp/gate_2293.py scripts/apply_issue_2293_semantic_gate_fix_20260809.py
+          python scripts/apply_issue_2293_semantic_fix_20260809.py
+          python scripts/apply_issue_2293_semantic_gate_fix_20260809.py
+          rm scripts/apply_issue_2293_semantic_fix_20260809.py scripts/apply_issue_2293_semantic_gate_fix_20260809.py
+          rm .github/workflows/reclaim-2293-current-main.yml
+          git diff --check
+      - name: Build and validate exact K1 route
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R 'trace_issue_(2293|1870|2164|1030)' --output-on-failure
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 291 --require-ready-by 4 | tee issue-2293-seed291.txt
+          grep -q 'WONDER TAG.*Gladion' issue-2293-seed291.txt
+          grep -q 'GLADION.*Latias ex' issue-2293-seed291.txt
+          grep -q 'T4 | READY' issue-2293-seed291.txt
+      - name: Run three independent simulate-this controls
+        shell: bash
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-control-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee trace-control-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-control-3.txt
+      - name: Commit validated source only
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src CMakeLists.txt
+          git commit -m 'Fix #2293 semantic K1 Latias mobility route'
+          git push origin HEAD:${{ github.head_ref }}

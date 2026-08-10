@@ -20,9 +20,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Prepare final source state
+      - name: Merge latest main and prepare final source state
         run: |
           set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          git merge --no-edit origin/main
+
           python - <<'PY'
           from pathlib import Path
 
@@ -42,9 +47,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          rm -rf /tmp/issue-2808-release
+          rm -rf /tmp/issue-2808-release /tmp/issue-2808-release.zip
           mkdir -p /tmp/issue-2808-release
-          gh run download 31426466125 --repo "$GITHUB_REPOSITORY" --name release-validation-1 --dir /tmp/issue-2808-release
+          curl --fail --location --retry 3 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/9077678152/zip" \
+            -o /tmp/issue-2808-release.zip
+          unzip -q /tmp/issue-2808-release.zip -d /tmp/issue-2808-release
           test -f /tmp/issue-2808-release/multi-deck-matrix.csv
           test -f /tmp/issue-2808-release/t2-t3-matrix.csv
           test -x /tmp/issue-2808-release/build/regidrago_sim || chmod +x /tmp/issue-2808-release/build/regidrago_sim
@@ -107,8 +118,6 @@ jobs:
       - name: Commit generated evidence
         run: |
           set -euo pipefail
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A tests/card_audit_contract_tests.py results docs/REPORT.md docs/TRACE_AUDIT.md docs/MULTI_DECK_REPORT.md README.md .github/workflows/issue_2808_materialize_current.yml
           git diff --cached --check
           git commit -m 'Refresh #2808 current-main setup evidence'

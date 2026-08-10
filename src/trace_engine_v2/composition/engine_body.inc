@@ -18,5 +18,10 @@
 #include "post_014a_overrides.inc"
 #include "turn_reporting_body.inc"
 
-// play_field_blower and run_turn intentionally remain aliased for part_016.inc.
+// play_field_blower, run_turn, and the Garbodor scenario aliases intentionally
+// remain live for part_016.inc. Release only the scenario aliases after the final
+// translation-unit continuation consumes them:
+// https://github.com/FlareZ123/pokemon-sims/issues/2808
 #include "../part_016.inc"
+#undef scenario_by_label
+#undef all_scenarios

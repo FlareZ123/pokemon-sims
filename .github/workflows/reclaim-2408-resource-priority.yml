@@ -24,6 +24,7 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin main bug/2408-burnet-before-serena-sol
+          git rebase origin/main
           git checkout origin/bug/2408-burnet-before-serena-sol -- tests/issue_2408_burnet_before_serena_tests.cpp
           python - <<'PY'
           import fcntl
@@ -73,4 +74,4 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add src tests .github/workflows/reclaim-2408-resource-priority.yml
           git commit -m 'Fix #2408 preserve Serena and held Dragon through Burnet'
-          git push origin HEAD:${{ github.head_ref }}
+          git push --force-with-lease origin HEAD:${{ github.head_ref }}

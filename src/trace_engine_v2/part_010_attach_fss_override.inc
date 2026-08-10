@@ -1,7 +1,8 @@
+#include "core/regidrago_line_helpers.inc"
+
   bool active_powerglass_tool_slot_needed() const {
     if (!state_.active || state_.active->tool != Tool::None ||
-        (state_.active->card != Card::RegidragoV &&
-         state_.active->card != Card::RegidragoVstar)) {
+        !is_regidrago_v_line(state_.active->card)) {
       return false;
     }
 

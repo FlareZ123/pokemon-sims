@@ -1,22 +1,18 @@
 #pragma once
 
-  void reset_turn_action_usage() {
+  void reset_turn_state() {
     state_.supporter_used = false;
     state_.manual_energy_used = false;
     state_.retreat_used = false;
     state_.stadium_used = false;
     state_.dark_asset_used = false;  // Dark Asset is limited per turn: https://api.pokemontcg.io/v2/cards/swsh3-104
-  }
-
-  void reset_turn_transients() {
     state_.turn_ended = false;
     state_.discarded_this_turn.clear();
   }
 
   void reset_per_turn_state(const int turn) {
     state_.turn = turn;
-    reset_turn_action_usage();
-    reset_turn_transients();
+    reset_turn_state();
   }
 
   void record_deck_out_loss() {

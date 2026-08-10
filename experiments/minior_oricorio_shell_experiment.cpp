@@ -6,7 +6,6 @@
 #include <iomanip>
 #include <iostream>
 #include <string>
-#include <string_view>
 
 namespace {
 
@@ -58,7 +57,7 @@ void print_row(const sim::Scenario& scenario,
 int main() {
   const sim::DeckRecipe baseline = sim::baseline_recipe();
   const sim::DeckRecipe minior = minior_proxy_recipe();
-  constexpr std::array<std::string_view, 6> scenario_labels{
+  constexpr std::array<const char*, 6> scenario_labels{
       "strict-jit/go-first",
       "matchup-flex-jit/go-first",
       "no-discard-control/go-first",
@@ -72,7 +71,7 @@ int main() {
                "baseline_t4_pct,minior_t4_pct,delta_t4_pp\n";
 
   for (std::size_t scenario_index = 0; scenario_index < scenario_labels.size(); ++scenario_index) {
-    const auto scenario = sim::scenario_by_label(scenario_labels[scenario_index]);
+    const auto scenario = sim::scenario_by_label(std::string(scenario_labels[scenario_index]));
     if (!scenario) throw std::logic_error("missing unlocked shell scenario");
 
     // Baseline and Minior use the same per-scenario random stream for a paired comparison:

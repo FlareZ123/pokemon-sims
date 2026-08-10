@@ -12,37 +12,10 @@
 #include "../core/payload_hand_policy.inc"
 #include "../core/tapu_legacy_aliases.inc"
 
-// Keep the legacy part_006 Bench, connector, recovery, and discard aliases inside
-// their owning opening composition layer. choose_discard intentionally remains
-// exported through part_007.inc and part_008a.inc for the established wrapper chain.
-// Historical split source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_006.inc
-#if defined(bench_from_hand) || defined(bench_oricorio_if_useful) || \
-    defined(needs_oricorio_connector) || defined(needs_tapu_connector) || \
-    defined(bench_tapu_if_useful) || defined(recover_discard_to_hand) || \
-    defined(choose_discard)
-#error "Opening bench-alias composition requires aliases to be undefined on entry"
-#endif
-
-#define bench_from_hand bench_from_hand_empty_deck_original
-#define bench_oricorio_if_useful bench_oricorio_if_useful_empty_deck_original
-#define needs_oricorio_connector needs_oricorio_connector_original
-#define needs_tapu_connector needs_tapu_connector_original
-#define bench_tapu_if_useful bench_tapu_if_useful_original
-#define recover_discard_to_hand recover_discard_to_hand_name_only_original
-#define choose_discard choose_discard_issue1436_original
-#include "../part_006.inc"
-#undef recover_discard_to_hand
-#undef bench_tapu_if_useful
-#undef needs_tapu_connector
-#undef needs_oricorio_connector
-#undef bench_oricorio_if_useful
-#undef bench_from_hand
-
-#if defined(bench_from_hand) || defined(bench_oricorio_if_useful) || \
-    defined(needs_oricorio_connector) || defined(needs_tapu_connector) || \
-    defined(bench_tapu_if_useful) || defined(recover_discard_to_hand)
-#error "Opening bench-alias composition leaked a local alias"
-#endif
+// part_006 owns the opening Bench/connector aliases and exports choose_discard for
+// the Tate continuation below. Keep the boundary directly before part_007/008a.
+// Composition source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_legacy_bench_body.inc
+#include "opening_legacy_bench_body.inc"
 
 // Keep the legacy Tate attachment/draw body in this same opening boundary. The
 // exported choose_discard alias from part_006.inc is consumed by part_007.inc and

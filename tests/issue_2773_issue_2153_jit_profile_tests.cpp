@@ -8,7 +8,7 @@
 #include <utility>
 
 namespace sim {
-struct Issue2773TestAccess {
+struct EngineTestAccess {
   static void set_state(Engine& engine, State state) {
     engine.state_ = std::move(state);
     engine.deck_seen_ = true;
@@ -94,9 +94,9 @@ void issue_2153_route_uses_shared_jit_timing() {
                           flex_rng);
   sim::Engine control_engine(scenario(sim::DciProfile::NoDiscardControl), recipe,
                              control_rng);
-  sim::Issue2773TestAccess::set_state(strict_engine, route_state());
-  sim::Issue2773TestAccess::set_state(flex_engine, route_state());
-  sim::Issue2773TestAccess::set_state(control_engine, route_state());
+  sim::EngineTestAccess::set_state(strict_engine, route_state());
+  sim::EngineTestAccess::set_state(flex_engine, route_state());
+  sim::EngineTestAccess::set_state(control_engine, route_state());
 
   // The exact #2153 K1 route banks Regidrago V, Latias ex, and Brilliant
   // Blender with Steven. Blender supplies the Dragon payload during the T3 ready
@@ -113,16 +113,16 @@ void issue_2153_route_uses_shared_jit_timing() {
   // K1 and JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
   // Original route: https://github.com/FlareZ123/pokemon-sims/issues/2153
   // Cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2773
-  expect(sim::Issue2773TestAccess::route_available(strict_engine),
+  expect(sim::EngineTestAccess::route_available(strict_engine),
          "StrictJit lost the issue-2153 Steven-to-Blender route.");
-  expect(sim::Issue2773TestAccess::route_available(flex_engine),
+  expect(sim::EngineTestAccess::route_available(flex_engine),
          "MatchupFlexJit still rejects the issue-2153 Steven-to-Blender route.");
-  expect(!sim::Issue2773TestAccess::route_available(control_engine),
+  expect(!sim::EngineTestAccess::route_available(control_engine),
          "NoDiscardControl incorrectly entered the same-turn JIT route.");
 
-  expect(sim::Issue2773TestAccess::play_route(flex_engine),
+  expect(sim::EngineTestAccess::play_route(flex_engine),
          "MatchupFlexJit could not execute the admitted issue-2153 route.");
-  const sim::State& after = sim::Issue2773TestAccess::state(flex_engine);
+  const sim::State& after = sim::EngineTestAccess::state(flex_engine);
   expect(after.supporter_used && after.turn_ended,
          "The flex route did not consume Steven and end T1.");
   expect(contains(after.hand, sim::Card::RegidragoV) &&

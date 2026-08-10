@@ -1,0 +1,39 @@
+name: Materialize issue 2901 redundant payload fix
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/materialize-2901.yml'
+      - 'scripts/apply_issue_2901.py'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.head_ref == 'automation/2901-redundant-payload-materialize'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Apply state-generic repair
+        run: |
+          python scripts/apply_issue_2901.py
+          rm scripts/apply_issue_2901.py
+          rm .github/workflows/materialize-2901.yml
+          git diff --check
+      - name: Build and run focused regression
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R '1757' --output-on-failure
+      - name: Commit validated permanent diff
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src tests
+          git commit -m 'Fix #2901 generic redundant pre-lock Vessel payload'
+          git push origin HEAD:${{ github.head_ref }}

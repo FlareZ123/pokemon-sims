@@ -1,0 +1,46 @@
+name: Reclaim issue 2634 on current main v2
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/reclaim-2634-current-main-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  replay:
+    if: github.head_ref == 'reclaim/2634-state-generic-current'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Replay reviewed gameplay files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main fix/2634-reclaim-20260810-0342
+          git checkout origin/fix/2634-reclaim-20260810-0342 -- src/trace_engine_v2/part_issue_2272_route_replaced_arven_quick_ball_override.inc tests/issue_2634_quick_ball_tapu_arven_state_generic_tests.cpp
+          rm .github/workflows/reclaim-2634-current-main-v2.yml
+          git diff --check
+      - name: Build and validate focused connector
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R 'issue_2634' --output-on-failure
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-control-1.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee trace-control-2.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-control-3.txt
+      - name: Commit validated gameplay-only head
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Fix #2634 state-generic Quick Ball Tapu-Arven route'
+          git push origin HEAD:${{ github.head_ref }}

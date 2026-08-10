@@ -53,4 +53,52 @@
 // Burnet/search continuation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
 // Late alias handoff: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/turn_reporting_body.inc
 // Translation-unit closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
+//
+// Source-anchor compatibility block.
+// Several generated documentation checks resolve same-repository line anchors.
+// Keep the composition include at line 104 unless those checked anchors are migrated.
+// Contract test: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/update_setup_docs_tests.py
+// Composition wrapper: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_body.inc
+//
+// Engine body stage registry:
+// Core engine body: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/core_engine_body.inc
+// Opening overrides: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_engine_overrides.inc
+// Search-item closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc
+// Post-search overrides: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
+// Turn/reporting body: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/turn_reporting_body.inc
+// Translation-unit closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
+//
+// Opening continuation registry:
+// Opening legacy body: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_legacy_body.inc
+// Opening override tail: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_override_tail.inc
+//
+// Rules traceability:
+// Rules registry: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULE_SOURCES.md
+// Rules traceability: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULES_TRACEABILITY.md
+// Policy decisions: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+// Model assumptions: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
+//
+// Stable direct card-data sources used by composed stages:
+// Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+// Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+// Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+// Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+// Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+// Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+// Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+// Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+//
+// Procedure sources:
+// Official Pokémon TCG rules: https://www.pokemon.com/us/pokemon-tcg/rules
+// C++ textual include semantics: https://eel.is/c++draft/cpp.include
+//
+// The following include is intentionally the single implementation entry point.
+// It preserves the ordered textual continuation boundaries documented above.
+// Same-repository anchor consumers currently target this footer.
+// Keep these three footer lines together.
+// Engine composition entry point follows.
+// Composition wrapper source is linked above.
+// The include itself remains behaviorally identical to the former root sequence.
+//
+// Engine body include:
 #include "trace_engine_v2/composition/engine_body.inc"

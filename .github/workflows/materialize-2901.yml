@@ -22,6 +22,7 @@ jobs:
       - name: Apply state-generic repair
         run: |
           python scripts/apply_issue_2901.py
+          sed -i 's/Earthen Vessel issue-1757 redundant payload cost/Earthen Vessel issue-1757 duplicate payload cost/' src/trace_engine_v2/part_014a.inc
           rm scripts/apply_issue_2901.py
           rm .github/workflows/materialize-2901.yml
           git diff --check

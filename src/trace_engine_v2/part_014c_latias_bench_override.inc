@@ -507,6 +507,57 @@ bool complete_issue_1597_banked_steven_turn() {
   return true;
 }
 
+  bool complete_late_latias_mobility_axis() {
+    // This late pass is only for a Supporter-resolved Prize bridge. Gladion itself
+    // occupies the exchanged Prize slot, so K1 can distinguish that transition from
+    // an ordinary Latias held before the Supporter action.
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Prize and Supporter procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    if (!state_.supporter_used || !prizes_known() ||
+        prize_count_after_reveal(Card::Gladion) == 0 ||
+        state_.turn_ended || hand_count(Card::LatiasEx) == 0 ||
+        in_play(Card::LatiasEx) || bench_space() == 0 || state_.retreat_used ||
+        !state_.active || !is_basic(state_.active->card) ||
+        state_.active->card == Card::RegidragoV ||
+        !ability_available_for_pokemon(Card::LatiasEx)) {
+      return false;
+    }
+
+    Pokemon* target = best_benched_vstar_for_promotion();
+    const bool current_turn_payload = std::any_of(
+        state_.discarded_this_turn.begin(), state_.discarded_this_turn.end(), is_payload);
+    if (target == nullptr || !pays_apex_energy_cost(*target) ||
+        (strict_payload_timing() ? !current_turn_payload : !payload_ready())) {
+      return false;
+    }
+
+    // A Supporter such as Gladion can add Latias ex to hand after the ordinary
+    // Basic-play fixed point. Re-run only the now-live Bench transition, then use
+    // Skyliner's zero-Retreat effect to promote the already Energy/payload-complete
+    // Benched Regidrago VSTAR. Every gate is physical state, so this also repairs
+    // equivalent late-Latias transitions without encoding a witness seed.
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Supporter, Prize, Bench, Ability and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Earliest complete route and K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed transition bug: https://github.com/FlareZ123/pokemon-sims/issues/2293
+    if (!bench_from_hand(Card::LatiasEx, false)) {
+      throw std::logic_error("late Latias mobility Bench play disappeared");
+    }
+    if (!retreat_to_benched_vstar_with_latias()) {
+      throw std::logic_error("late Skyliner promotion disappeared");
+    }
+    // This helper performs the same completed held-Latias mobility transition as
+    // the established late-promotion path, so retain its semantic trace contract:
+    // https://github.com/FlareZ123/pokemon-sims/issues/1675
+    // https://github.com/FlareZ123/pokemon-sims/issues/2293
+    trace("POLICY", "P-AXIS-01",
+          "Completed the deadline Latias ex promotion route.");
+    return true;
+  }
+
 void run_turn() {
   if (secret_box_combo_enabled()) {
     run_secret_box_turn();
@@ -674,6 +725,10 @@ void run_turn() {
         late_supporter_quick_ball_latias_completion_available()) {
       play_items_until_stable(true);
       play_basics_from_hand();
+    }
+    if (complete_late_latias_mobility_axis()) {
+      trace("POLICY", "P-AXIS-01", "End: " + state_line());
+      return;
     }
     if (use_legacy_star()) {
       // Core procedure source: https://www.pokemon.com/us/pokemon-tcg/rules

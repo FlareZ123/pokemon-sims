@@ -214,6 +214,121 @@
         (energy_axis_complete || held_manual_completes_energy);
   }
 
+  bool k1_prized_latias_gladion_promotion_route() const {
+    if (!strict_payload_timing() || !prizes_known() || !supporter_allowed() ||
+        item_locked() || state_.retreat_used || !state_.active ||
+        !is_basic(state_.active->card) || state_.active->card == Card::RegidragoV ||
+        bench_space() == 0 ||
+        !ability_available_for_pokemon(Card::LatiasEx) ||
+        in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
+        prize_count_after_reveal(Card::LatiasEx) == 0 ||
+        hand_count(Card::HisuianHeavyBall) > 0 ||
+        deck_count_after_search_started(Card::Gladion) == 0) {
+      return false;
+    }
+
+    // Project the selected Benched attacker through only actions that remain legal
+    // after Wonder Tag spends the Supporter axis. Existing VSTARs are accepted, or
+    // a prior-turn Regidrago V may use a directly held VSTAR card. One unused
+    // manual attachment may finish the exact Apex Dragon Energy cost, including a
+    // legal Double Dragon Energy configuration through the shared Energy helpers.
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Evolution and one-manual-Energy-per-turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    bool attacker_axis_finishes = false;
+    for (const Pokemon& pokemon : state_.bench) {
+      Pokemon projected = pokemon;
+      if (projected.card == Card::RegidragoV) {
+        if (projected.entered_turn >= state_.turn ||
+            hand_count(Card::RegidragoVstar) == 0) {
+          continue;
+        }
+        projected.card = Card::RegidragoVstar;
+      } else if (projected.card != Card::RegidragoVstar) {
+        continue;
+      }
+      if (!pays_apex_energy_cost(projected) && !state_.manual_energy_used) {
+        const auto manual = preferred_manual_energy_from_hand(projected);
+        if (manual) attach_energy_card(projected, *manual);
+      }
+      if (pays_apex_energy_cost(projected)) {
+        attacker_axis_finishes = true;
+        break;
+      }
+    }
+    if (!attacker_axis_finishes) return false;
+
+    // The reclaimed fix is deliberately route-semantic: require the exact observable
+    // supporter-independent axes described by #2293, rather than allowing any held
+    // payload or Blender state to globally outrank established Wonder Tag priorities.
+    // Quick Ball / Mysterious Treasure / Dialga-GX: https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sm5-100
+    // Regidrago V/VSTAR and Latias ex: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/sv8-76
+    // K1 and shortest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    const bool prior_turn_regi = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV &&
+              pokemon.entered_turn < state_.turn;
+        });
+    if (!prior_turn_regi || hand_count(Card::RegidragoVstar) == 0 ||
+        prize_count_after_reveal(Card::HisuianHeavyBall) == 0 ||
+        hand_count(Card::QuickBall) == 0 ||
+        hand_count(Card::MysteriousTreasure) < 2 ||
+        deck_count_after_search_started(Card::DialgaGX) == 0) {
+      return false;
+    }
+
+    // Quick Ball can create a payload without a Supporter only when K1 proves a
+    // Basic Dragon payload in deck and a distinct Mysterious Treasure survives the
+    // first mandatory discard. Simulate the first cost, remove the planned Dialga
+    // from the known deck logically, and require a legal Psychic/Dragon target for
+    // the surviving Treasure. This is a paid two-connector hypergraph route rather
+    // than a seed or hand-identity special case.
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Dialga-GX is the registered Basic Dragon payload: https://api.pokemontcg.io/v2/cards/sm5-100
+    // Trainer cost, search, and shuffle procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, dynamic DCI, strict-JIT, and connector priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    bool quick_ball_treasure_payload = false;
+    if (hand_count(Card::QuickBall) > 0 &&
+        hand_count(Card::MysteriousTreasure) > 0 &&
+        deck_count_after_search_started(Card::DialgaGX) > 0) {
+      const auto first_cost = choose_discard(false, true, true, Card::QuickBall);
+      if (first_cost) {
+        const int surviving_treasure = hand_count(Card::MysteriousTreasure) -
+            (*first_cost == Card::MysteriousTreasure ? 1 : 0);
+        bool treasure_target_after_dialga = false;
+        bool removed_dialga = false;
+        for (const Card card : state_.deck) {
+          if (!removed_dialga && card == Card::DialgaGX) {
+            removed_dialga = true;
+            continue;
+          }
+          if (is_dragon_or_psychic(card)) {
+            treasure_target_after_dialga = true;
+            break;
+          }
+        }
+        quick_ball_treasure_payload =
+            surviving_treasure > 0 && treasure_target_after_dialga;
+      }
+    }
+
+    // Wonder Tag spends the only Supporter play. Gladion is therefore selected only
+    // when every other required setup axis has an observable Supporter-independent
+    // completion and Latias ex is the known prized mobility connector. A held Heavy
+    // Ball remains the cheaper Prize route and suppresses this Supporter exchange.
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Core Prize, Supporter, Item, Bench, Ability and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, Supporter contention, strict-JIT, DCI and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2293
+    return quick_ball_treasure_payload;
+  }
+
   Card choose_supporter_after_search_started() const {
     if (issue_1797_wonder_tag_steven_route_available()) {
       return Card::StevensResolve;
@@ -239,6 +354,14 @@
         crispin_can_advance_energy_axis() &&
         deck_count_after_search_started(Card::Crispin) > 0;
     if (crispin_finishes_current_turn_prized_energy_route) return Card::Crispin;
+
+    if (k1_prized_latias_gladion_promotion_route()) {
+      // Gladion recovers the K1-known prized Latias ex that uniquely completes
+      // the unresolved Active-position axis: https://api.pokemontcg.io/v2/cards/sm4-95
+      // https://api.pokemontcg.io/v2/cards/sv8-76
+      // https://github.com/FlareZ123/pokemon-sims/issues/2293
+      return Card::Gladion;
+    }
 
     // Wonder Tag is resolving after legal deck inspection. A known prized
     // immediate Pokemon axis, or final attachable Basic Energy, makes Gladion

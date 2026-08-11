@@ -57,6 +57,9 @@
 // Ordered late turn-execution, scenario-registry, and reporting composition.
 // Keep these aliases live through part_016 exactly as the historical root wrapper
 // did so the translation unit remains behaviorally identical.
+#if defined(play_field_blower) || defined(run_turn)
+#error "Late turn composition requires aliases to be undefined on entry"
+#endif
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #include "../part_014c.inc"
@@ -82,3 +85,8 @@
 #undef all_scenarios
 #undef run_turn
 #undef play_field_blower
+
+#if defined(play_field_blower) || defined(run_turn) || \
+    defined(all_scenarios) || defined(scenario_by_label)
+#error "Late turn composition leaked a wrapper alias"
+#endif

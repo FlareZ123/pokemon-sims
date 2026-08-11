@@ -87,8 +87,34 @@
 
 #include "../part_issue_1412_preserve_quick_balls.inc"
 
-// Remaining card-action route families.
-#include "treasure_route_overrides.inc" // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+// Mysterious Treasure route family. Keep the wrapper chain adjacent so the macro
+// lifetimes and search-action precedence are visible in one composition file.
+// Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+#define play_mysterious_treasure play_mysterious_treasure_issue1209_original
+#include "../part_issue_1167_treasure_vessel_override.inc"
+#undef play_mysterious_treasure
+
+#define play_quick_ball play_quick_ball_issue1235_original
+#define play_mysterious_treasure play_mysterious_treasure_issue1235_original
+#define choose_supporter choose_supporter_issue1235_original
+#include "../part_issue_1209_treasure_tapu_crispin_override.inc"
+#undef choose_supporter
+#undef play_mysterious_treasure
+#undef play_quick_ball
+
+#define play_quick_ball play_quick_ball_issue1356_original
+#define play_mysterious_treasure play_mysterious_treasure_issue1356_original
+#include "../part_issue_1235_oricorio_treasure_tapu_override.inc"
+#undef play_mysterious_treasure
+#undef play_quick_ball
+
+#define play_quick_ball play_quick_ball_issue1476_original
+#define play_mysterious_treasure play_mysterious_treasure_issue1476_original
+#include "../part_issue_1356_fss_treasure_energy_override.inc"
+#undef play_mysterious_treasure
+#undef play_quick_ball
+
+// Quick Ball remains in its own substantial route family for now.
 #include "quick_ball_route_overrides.inc" // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
 
 #if defined(bench_oricorio_if_useful) || defined(ultra_ball_has_legal_target) || \

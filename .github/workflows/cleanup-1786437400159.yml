@@ -1,0 +1,105 @@
+name: Cleanup 1786437400159 materializer
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.head_ref == 'cleanup-1786437400159'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cleanup-1786437400159
+          fetch-depth: 0
+      - name: Configure commit identity
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+
+      - name: Cleanup commit 1 - centralize payload hand counting
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/trace_engine_v2/part_006.inc')
+          text = path.read_text()
+          anchor = '''  bool sole_known_payload_is_in_hand() const {\n    if (!prizes_known()) return false;\n    const int payloads_in_hand = static_cast<int>(std::count_if(\n        state_.hand.begin(), state_.hand.end(), is_payload));\n'''
+          replacement = '''  int hand_payload_count() const {\n    return static_cast<int>(std::count_if(\n        state_.hand.begin(), state_.hand.end(), is_payload));\n  }\n\n  bool sole_known_payload_is_in_hand() const {\n    if (!prizes_known()) return false;\n    const int payloads_in_hand = hand_payload_count();\n'''
+          if text.count(anchor) != 1:
+              raise SystemExit('payload-count anchor changed')
+          text = text.replace(anchor, replacement)
+          second = '''    const int held_payloads = static_cast<int>(std::count_if(\n        state_.hand.begin(), state_.hand.end(), is_payload));\n'''
+          if text.count(second) != 1:
+              raise SystemExit('held-payload count anchor changed')
+          text = text.replace(second, '    const int held_payloads = hand_payload_count();\n')
+          path.write_text(text)
+          PY
+          git add src/trace_engine_v2/part_006.inc
+          git diff --cached --check
+          git commit -m 'Cleanup: centralize payload hand counting'
+
+      - name: Cleanup commit 2 - centralize current-turn discard bookkeeping
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          part = Path('src/trace_engine_v2/part_006.inc')
+          text = part.read_text()
+          anchor = '''  // Tracks a card leaving the discard pile in the same turn, so strict-JIT state\n  // cannot count a payload that was discarded and then recovered before the ready check.\n  bool recover_discard_to_hand(const Card card) {\n'''
+          replacement = '''  void forget_current_turn_discard(const Card card) {\n    const auto turn_it = std::find(state_.discarded_this_turn.begin(),\n                                   state_.discarded_this_turn.end(), card);\n    if (turn_it != state_.discarded_this_turn.end()) {\n      state_.discarded_this_turn.erase(turn_it);\n    }\n  }\n\n  // Tracks a card leaving the discard pile in the same turn, so strict-JIT state\n  // cannot count a payload that was discarded and then recovered before the ready check.\n  bool recover_discard_to_hand(const Card card) {\n'''
+          if text.count(anchor) != 1:
+              raise SystemExit('discard bookkeeping anchor changed')
+          text = text.replace(anchor, replacement)
+          old = '''    const auto turn_it = std::find(state_.discarded_this_turn.begin(), state_.discarded_this_turn.end(), card);\n    if (turn_it != state_.discarded_this_turn.end()) state_.discarded_this_turn.erase(turn_it);\n'''
+          if text.count(old) != 1:
+              raise SystemExit('recover bookkeeping block changed')
+          text = text.replace(old, '    forget_current_turn_discard(card);\n')
+          part.write_text(text)
+
+          roseanne = Path('src/trace_engine_v2/part_roseanne_multimode_override.inc')
+          rtext = roseanne.read_text()
+          old_r = '''      const auto turn_it = std::find(state_.discarded_this_turn.begin(),\n                                     state_.discarded_this_turn.end(), card);\n      if (turn_it != state_.discarded_this_turn.end()) {\n        state_.discarded_this_turn.erase(turn_it);\n      }\n'''
+          if rtext.count(old_r) != 1:
+              raise SystemExit('Roseanne bookkeeping block changed')
+          rtext = rtext.replace(old_r, '      forget_current_turn_discard(card);\n')
+          roseanne.write_text(rtext)
+          PY
+          git add src/trace_engine_v2/part_006.inc src/trace_engine_v2/part_roseanne_multimode_override.inc
+          git diff --cached --check
+          git commit -m 'Cleanup: centralize recovery discard bookkeeping'
+
+      - name: Cleanup commit 3 - normalize Blender helper formatting
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/trace_engine_v2/part_006.inc')
+          text = path.read_text()
+          old = '''  bool has_live_blender_payload_line() const {\n  // A strict-JIT Blender route is live only when its one-use deck discard can\n  // accompany a current-turn Regidrago VSTAR card route. Higher-level Supporter,\n  // switching, and attachment selectors must use the same boundary as the action:\n  // https://api.pokemontcg.io/v2/cards/sv8-164\n  // https://api.pokemontcg.io/v2/cards/swsh12-136\n  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition\n  // https://github.com/FlareZ123/pokemon-sims/issues/718\n  return !item_locked() && hand_count(Card::BrilliantBlender) > 0 &&\n         can_play_payload_this_turn() && payload_might_be_in_deck() &&\n         blender_vstar_card_axis_can_finish_this_turn();\n}\n'''
+          new = '''  bool has_live_blender_payload_line() const {\n    // A strict-JIT Blender route is live only when its one-use deck discard can\n    // accompany a current-turn Regidrago VSTAR card route. Higher-level Supporter,\n    // switching, and attachment selectors must use the same boundary as the action:\n    // https://api.pokemontcg.io/v2/cards/sv8-164\n    // https://api.pokemontcg.io/v2/cards/swsh12-136\n    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition\n    // https://github.com/FlareZ123/pokemon-sims/issues/718\n    return !item_locked() && hand_count(Card::BrilliantBlender) > 0 &&\n           can_play_payload_this_turn() && payload_might_be_in_deck() &&\n           blender_vstar_card_axis_can_finish_this_turn();\n  }\n'''
+          if text.count(old) != 1:
+              raise SystemExit('Blender formatting anchor changed')
+          path.write_text(text.replace(old, new))
+          PY
+          git add src/trace_engine_v2/part_006.inc
+          git diff --cached --check
+          git commit -m 'Cleanup: normalize Blender helper formatting'
+
+      - name: Remove one-shot workflow
+        run: |
+          git rm .github/workflows/cleanup-1786437400159.yml
+          git commit -m 'Cleanup: remove one-shot cleanup runner'
+
+      - name: Push cleanup commits before validation
+        run: git push origin HEAD:cleanup-1786437400159
+
+      - name: Build final source tree
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Run complete CTest suite
+        run: ctest --test-dir build --output-on-failure

@@ -1,44 +1,14 @@
 {
   "deck": "regidrago-shell",
   "matrix_seed": 20260705,
-  "simulator_policy_source_sha256": "2c19162b3b5e28081e0b4b3f51d3b8dccb6c8a195490a0cea12e15b35dfdeb7b",
+  "simulator_policy_source_sha256": "d91ea651fd68339c0e06a79a04064411e28eacf07e2fbebdcc202494940a2f4a",
   "traces": [
-    {
-      "deadline": 3,
-      "file": "strict_jit_go_second_seed_1.txt",
-      "scenario": "strict-jit/go-second",
-      "seed": 1
-    },
-    {
-      "deadline": 4,
-      "file": "strict_jit_go_first_seed_1.txt",
-      "scenario": "strict-jit/go-first",
-      "seed": 1
-    },
-    {
-      "deadline": 2,
-      "file": "matchup_flex_go_second_seed_1.txt",
-      "scenario": "matchup-flex-jit/go-second",
-      "seed": 1
-    },
-    {
-      "deadline": 3,
-      "file": "strict_turn2_item_lock_go_second_seed_1.txt",
-      "scenario": "strict-jit-turn2-item-lock/go-second",
-      "seed": 1
-    },
-    {
-      "deadline": 3,
-      "file": "strict_rulebox_lock_go_second_seed_4.txt",
-      "scenario": "strict-jit-rulebox-ability-lock/go-second",
-      "seed": 4
-    },
-    {
-      "deadline": 4,
-      "file": "no_discard_control_go_first_seed_1.txt",
-      "scenario": "no-discard-control/go-first",
-      "seed": 1
-    }
+    {"deadline": 3, "file": "strict_jit_go_second_seed_1.txt", "scenario": "strict-jit/go-second", "seed": 1},
+    {"deadline": 4, "file": "strict_jit_go_first_seed_1.txt", "scenario": "strict-jit/go-first", "seed": 1},
+    {"deadline": 2, "file": "matchup_flex_go_second_seed_1.txt", "scenario": "matchup-flex-jit/go-second", "seed": 1},
+    {"deadline": 3, "file": "strict_turn2_item_lock_go_second_seed_1.txt", "scenario": "strict-jit-turn2-item-lock/go-second", "seed": 1},
+    {"deadline": 3, "file": "strict_rulebox_lock_go_second_seed_4.txt", "scenario": "strict-jit-rulebox-ability-lock/go-second", "seed": 4},
+    {"deadline": 4, "file": "no_discard_control_go_first_seed_1.txt", "scenario": "no-discard-control/go-first", "seed": 1}
   ],
   "trials": 100000
 }

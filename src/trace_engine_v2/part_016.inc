@@ -79,6 +79,12 @@ std::size_t scenario_seed_slot(const std::size_t index) {
   return index + (index >= 4 ? 1U : 0U) + (index >= 10 ? 1U : 0U);
 }
 
+double per_game_rate(
+    const sim::Aggregate& aggregate, const std::uint64_t count) {
+  return aggregate.trials == 0 ? 0.0 :
+      static_cast<double>(count) / static_cast<double>(aggregate.trials);
+}
+
 int main(int argc, char** argv) {
   std::uint64_t trials = 100000;
   std::uint64_t seed = 20260705;
@@ -402,10 +408,6 @@ int main(int argc, char** argv) {
         const std::size_t seed_slot = scenario_seed_slot(index);
         const sim::Aggregate a = sim::simulate(
             scenario, deck->recipe, trials, seed + 104729ULL * seed_slot);
-        const auto per_game = [&a](const std::uint64_t count) {
-          return a.trials == 0 ? 0.0 :
-              static_cast<double>(count) / static_cast<double>(a.trials);
-        };
         csv << '"' << deck->id << "\",\"" << scenario.label << "\","
             << a.trials << ','
             << sim::pct(a.by2, a.trials) << ','
@@ -430,27 +432,27 @@ int main(int argc, char** argv) {
             << sim::pct(a.steven, a.trials) << ','
             << sim::pct(a.fss, a.trials) << ','
             << sim::pct(a.legacy, a.trials) << ','
-            << per_game(static_cast<std::uint64_t>(a.total_mulligans)) << ','
-            << per_game(a.secret_box_combo_attempted) << ','
-            << per_game(a.secret_box_cost_blocked) << ','
-            << per_game(a.secret_box_missing_axis) << ','
-            << per_game(a.secret_box_missing_regi_axis) << ','
-            << per_game(a.secret_box_missing_line_axis) << ','
-            << per_game(a.secret_box_missing_vstar_axis) << ','
-            << per_game(a.secret_box_missing_payload_axis) << ','
-            << per_game(a.secret_box_missing_treasure_axis) << ','
-            << per_game(a.secret_box_missing_fire_axis) << ','
-            << per_game(a.secret_box_missing_grass_axis) << ','
-            << per_game(a.secret_box_missing_ability_axis) << ','
-            << per_game(a.secret_box_missing_supporter_axis) << ','
-            << per_game(a.secret_box_missing_known_prize_zone) << ','
-            << per_game(a.secret_box_missing_discard_zone) << ','
-            << per_game(a.secret_box_missing_stranded_hand_zone) << ','
-            << per_game(a.secret_box_bench_blocked) << ','
-            << per_game(a.secret_box_arven_bank) << ','
-            << per_game(a.secret_box_steven_bank) << ','
-            << per_game(a.secret_box_gladion_bank) << ','
-            << per_game(a.secret_box_fss_bank) << ','
+            << per_game_rate(a, static_cast<std::uint64_t>(a.total_mulligans)) << ','
+            << per_game_rate(a, a.secret_box_combo_attempted) << ','
+            << per_game_rate(a, a.secret_box_cost_blocked) << ','
+            << per_game_rate(a, a.secret_box_missing_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_regi_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_line_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_vstar_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_payload_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_treasure_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_fire_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_grass_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_ability_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_supporter_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_known_prize_zone) << ','
+            << per_game_rate(a, a.secret_box_missing_discard_zone) << ','
+            << per_game_rate(a, a.secret_box_missing_stranded_hand_zone) << ','
+            << per_game_rate(a, a.secret_box_bench_blocked) << ','
+            << per_game_rate(a, a.secret_box_arven_bank) << ','
+            << per_game_rate(a, a.secret_box_steven_bank) << ','
+            << per_game_rate(a, a.secret_box_gladion_bank) << ','
+            << per_game_rate(a, a.secret_box_fss_bank) << ','
             << sim::pct(a.t2_missing_active_vstar, a.trials) << ','
             << sim::pct(a.t2_missing_grass, a.trials) << ','
             << sim::pct(a.t2_missing_fire, a.trials) << ','

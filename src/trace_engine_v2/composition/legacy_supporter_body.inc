@@ -54,11 +54,19 @@
 // The part_013 VSTAR-power aliases follow the selector immediately. Preserve the
 // Celestial Roar alias for the later wrapper chain.
 // Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+#if defined(use_celestial_roar) || defined(use_legacy_star)
+#error "VSTAR-power composition requires aliases to be undefined on entry"
+#endif
+
 #define use_celestial_roar use_celestial_roar_original
 #define use_legacy_star use_legacy_star_original
 #include "../part_013.inc"
 #undef use_legacy_star
 
-// Intentionally leave use_celestial_roar defined. celestical_roar_overrides.inc consumes
+#ifdef use_legacy_star
+#error "VSTAR-power composition leaked use_legacy_star"
+#endif
+
+// Intentionally leave use_celestial_roar defined. celestial_roar_overrides.inc consumes
 // and replaces this alias after the part_014a boundary.
 // Wrapper continuation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/celestial_roar_overrides.inc

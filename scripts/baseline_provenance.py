@@ -24,6 +24,11 @@ def _is_simulator_source_input(path: Path) -> bool:
     return path.is_file() and path.suffix != SOURCE_LOCK_SUFFIX
 
 
+def _source_files(source_root: Path) -> PathSequence:
+    """Collect tracked simulator source files below one source root."""
+    return tuple(path for path in source_root.rglob("*") if _is_simulator_source_input(path))
+
+
 def _stable_paths(paths: PathSequence) -> PathSequence:
     """Return provenance paths in deterministic filesystem-independent order."""
     return tuple(sorted(paths))
@@ -35,12 +40,7 @@ class _SimulatorSourceManifest:
 
     def source_paths(self) -> PathSequence:
         """Collect tracked simulator source inputs, excluding writer lock files."""
-        source_root = self.repo_root / SIMULATOR_SOURCE_ROOT
-        return tuple(
-            path
-            for path in source_root.rglob("*")
-            if _is_simulator_source_input(path)
-        )
+        return _source_files(self.repo_root / SIMULATOR_SOURCE_ROOT)
 
     def required_paths(self) -> PathSequence:
         """Collect every required aggregate simulator input."""

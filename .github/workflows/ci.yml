@@ -146,8 +146,26 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 18 --require-ready-by 2 | tee pineco-trace-18.txt
           grep -q "Arven banked the next-turn Secret Box route" pineco-trace-18.txt
           grep -q "T2 | READY" pineco-trace-18.txt
+          # Seed 40 has Secret Box known in Prizes, held Gladion, held Fire, and a
+          # held Dragon payload. Steven reaches the same T2 readiness while keeping
+          # Gladion and the ACE SPEC and avoiding Secret Box's three-card cost. The
+          # deterministic T2 draw is Mega Dragonite ex, which is itself a legal
+          # current-turn Dragon payload for Treasure, so Goodra remains preserved:
+          # Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+          # Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+          # Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+          # Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+          # Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+          # Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Resource preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3152
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 40 --require-ready-by 2 | tee pineco-trace-40.txt
-          grep -q "Gladion recovered the legally known prized Secret Box" pineco-trace-40.txt
+          grep -q "Steven's Resolve banked Regidrago VSTAR, Crispin, and Mysterious Treasure" pineco-trace-40.txt
+          ! grep -q "Gladion recovered the legally known prized Secret Box" pineco-trace-40.txt
+          ! grep -q "Secret Box discarded three other cards" pineco-trace-40.txt
+          grep -q "Mega Dragonite ex (Mysterious Treasure cost)" pineco-trace-40.txt
           grep -q "T2 | READY" pineco-trace-40.txt
       # The paired aggregate contains the canonical shell population as exact rows.
       # Reuse it instead of running the same 1.4 million shell games twice:

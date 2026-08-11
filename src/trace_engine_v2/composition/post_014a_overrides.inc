@@ -151,8 +151,7 @@
 #endif
 
 // Centralize the late search-item wrapper families directly on this ordered
-// post-search spine. This was previously forwarded through search_item_overrides.inc;
-// inlining it keeps the behavior-significant macro/include sequence in one place.
+// post-search spine. Each unit owns its behavior-significant macro/include sequence.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
 #if defined(bench_oricorio_if_useful) || defined(ultra_ball_has_legal_target) || \
     defined(play_ultra_ball) || defined(play_brilliant_blender) || \
@@ -163,56 +162,9 @@
 #error "Late search composition requires search wrapper aliases to be undefined on entry"
 #endif
 
-// Empty-deck search family. Macro aliases deliberately expose the preceding
-// implementation to later wrappers, so preserve both include order and each
-// matching undef boundary.
-#define bench_oricorio_if_useful bench_oricorio_if_useful_target_original
-#define ultra_ball_has_legal_target ultra_ball_has_legal_target_k0_target_original
-#define play_ultra_ball play_ultra_ball_k0_target_original
-#define play_brilliant_blender play_brilliant_blender_vstar_axis_original
-#define play_earthen_vessel play_earthen_vessel_vstar_window_original
-#define play_mysterious_treasure play_mysterious_treasure_issue1167_original
-#define play_quick_ball play_quick_ball_issue1209_original
-#define bench_tapu_if_useful bench_tapu_if_useful_issue989_empty_deck_original
-#define in_play tapu_connector_copy_aware_in_play
-#define play_steven play_steven_issue1002_empty_deck_original
-#define use_fss use_fss_issue1356_original
-#define play_arven play_arven_garbodor_original
-#include "../part_empty_deck_search_override.inc"
-
-#undef play_arven
-#include "../part_arven_garbodor_field_blower_override.inc"
-
-#undef use_fss
-#undef play_steven
-#include "../part_issue_1356_fss_energy_override.inc"
-
-#undef play_quick_ball
-#undef play_mysterious_treasure
-#undef in_play
-#undef bench_tapu_if_useful
-
-#define play_steven play_steven_issue1030_original
-#include "../part_issue_1002_steven_target_override.inc"
-#undef play_steven
-
-#define should_play_steven should_play_steven_issue1067_original
-#include "../part_issue_1030_steven_turo_override.inc"
-#undef should_play_steven
-
-#include "../part_issue_1067_arven_before_late_steven_override.inc"
-
-#define bench_tapu_if_useful bench_tapu_if_useful_issue_991_original
-#include "../part_issue_989_empty_deck_tapu_override.inc"
-#undef bench_tapu_if_useful
-
-#include "../part_issue_991_wonder_tag_burnet_legacy_star_override.inc"
-
-#undef play_earthen_vessel
-#undef play_brilliant_blender
-#undef play_ultra_ball
-#undef ultra_ball_has_legal_target
-#undef bench_oricorio_if_useful
+// The empty-deck composition unit preserves K0/K1 target legality and alias order.
+// Knowledge-state policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+#include "empty_deck_search_overrides.inc"
 
 // Legacy state/target bridges remain direct composition inputs until each fragment
 // is migrated into its owning card-action family.
@@ -222,56 +174,12 @@
 // Core connector policies are composed directly without compatibility wrappers.
 #include "../core/oricorio_connector_policy.inc" // Oricorio Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
 
-// Earthen Vessel route family. Each alias exposes the preceding implementation to
-// the next override, so the sequence remains fixed at this central boundary.
+// Reuse the centralized Earthen Vessel and Treasure route families so their
+// behavior-significant alias lifetimes live beside the overrides they compose.
 // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-#define play_earthen_vessel play_earthen_vessel_issue1368_original
-#include "../part_earthen_vessel_vstar_window_override.inc"
-#undef play_earthen_vessel
-
-#define play_earthen_vessel play_earthen_vessel_issue1412_original
-#include "../part_issue_1368_earthen_vessel_celestial_roar_override.inc"
-#undef play_earthen_vessel
-
-#include "../part_issue_1412_preserve_quick_balls.inc"
-
-// Mysterious Treasure route family. Keep the wrapper chain adjacent so the macro
-// lifetimes and search-action precedence are visible in one composition file.
-// Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-#define play_mysterious_treasure play_mysterious_treasure_issue1209_original
-#include "../part_issue_1167_treasure_vessel_override.inc"
-#undef play_mysterious_treasure
-
-// Wonder Tag belongs to the individual Tapu Lele-GX placed from hand. Reuse the
-// #746 copy-aware in-play predicate for the complete #1209/#1235 Treasure routes,
-// so K1 may use a proven second physical copy while K0 remains conservative.
-// Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
-// Knowledge-state policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-// Shared copy-aware rule: https://github.com/FlareZ123/pokemon-sims/issues/746
-// Confirmed systemic regression: https://github.com/FlareZ123/pokemon-sims/issues/3129
-#define play_quick_ball play_quick_ball_issue1235_original
-#define play_mysterious_treasure play_mysterious_treasure_issue1235_original
-#define choose_supporter choose_supporter_issue1235_original
-#define in_play tapu_connector_copy_aware_in_play
-#include "../part_issue_1209_treasure_tapu_crispin_override.inc"
-#undef in_play
-#undef choose_supporter
-#undef play_mysterious_treasure
-#undef play_quick_ball
-
-#define play_quick_ball play_quick_ball_issue1356_original
-#define play_mysterious_treasure play_mysterious_treasure_issue1356_original
-#define in_play tapu_connector_copy_aware_in_play
-#include "../part_issue_1235_oricorio_treasure_tapu_override.inc"
-#undef in_play
-#undef play_mysterious_treasure
-#undef play_quick_ball
-
-#define play_quick_ball play_quick_ball_issue1476_original
-#define play_mysterious_treasure play_mysterious_treasure_issue1476_original
-#include "../part_issue_1356_fss_treasure_energy_override.inc"
-#undef play_mysterious_treasure
-#undef play_quick_ball
+#include "earthen_vessel_overrides.inc"
+// Mysterious Treasure / Tapu connector composition: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sm2-60
+#include "treasure_route_overrides.inc"
 
 // Compose the Quick Ball-only tail directly on the late search boundary. Each
 // alias deliberately exposes the immediately preceding implementation to the next

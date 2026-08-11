@@ -1,5 +1,12 @@
 #include "core/regidrago_line_helpers.inc"
 
+  bool powerglass_energy_is_only_missing_axis() const {
+    // Preserve the repository's semantic setup-axis test in one reusable helper:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    return need_energy() && !need_regi() && !need_vstar() &&
+        !need_active_vstar() && !need_payload();
+  }
+
   bool active_powerglass_tool_slot_needed() const {
     if (!state_.active || state_.active->tool != Tool::None ||
         !is_regidrago_v_line(state_.active->card)) {
@@ -14,11 +21,9 @@
     // https://api.pokemontcg.io/v2/cards/sv6pt5-63
     // https://api.pokemontcg.io/v2/cards/swsh12-156
     // https://www.pokemon.com/us/pokemon-tcg/rules
-    const bool energy_is_only_missing_axis = need_energy() && !need_regi() &&
-        !need_vstar() && !need_active_vstar() && !need_payload();
     const bool arven_searches_live_powerglass = supporter_allowed() &&
         hand_count(Card::Arven) > 0 && state_.manual_energy_used &&
-        energy_is_only_missing_axis && might_be_unseen(Card::Powerglass);
+        powerglass_energy_is_only_missing_axis() && might_be_unseen(Card::Powerglass);
     if (!powerglass_held && !arven_searches_live_powerglass) return false;
 
     // Powerglass must be attached to the Pokémon that will be Active when its

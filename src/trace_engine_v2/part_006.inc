@@ -213,9 +213,11 @@ bool issue_1605_arven_crobat_route_available() const {
         scenario_.dci == DciProfile::NoDiscardControl &&
         excluded_from_cost && *excluded_from_cost == Card::EarthenVessel &&
         !state_.manual_energy_used && active_is_vstar() && payload_ready() &&
-        grass_needed() + fire_needed() == 1 &&
-        ((grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
-         (fire_needed() == 1 && might_be_unseen(Card::Fire)));
+        completing_basic_energy_for(*state_.active, [this](const Card card) {
+          return might_be_unseen(card);
+        }).has_value();
+    // Physical one-card distance must remain semantic with DDE:
+    // https://github.com/FlareZ123/pokemon-sims/issues/2368
     if (final_energy_vessel_completion) {
       // Once Active Regidrago VSTAR, payload, and two Energy are complete,
       // these held roles no longer advance the repository setup objective.
@@ -419,10 +421,14 @@ bool issue_1605_arven_crobat_route_available() const {
   }
 
   bool oricorio_preserves_burnet_supporter_slot() const {
-    const bool exactly_one_energy_missing = grass_needed() + fire_needed() == 1;
-    const bool needed_energy_might_be_in_deck =
-        (grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
-        (fire_needed() == 1 && might_be_unseen(Card::Fire));
+    const Pokemon* energy_target = target_regi();
+    const bool needed_energy_might_be_in_deck = energy_target != nullptr &&
+        completing_basic_energy_for(*energy_target, [this](const Card card) {
+          return might_be_unseen(card);
+        }).has_value();
+    const bool exactly_one_energy_missing = needed_energy_might_be_in_deck;
+    // DDE typed options are alternatives, not separate physical cards:
+    // https://github.com/FlareZ123/pokemon-sims/issues/2368
     const bool no_payload_in_hand = std::none_of(state_.hand.begin(), state_.hand.end(), is_payload);
     // Vital Dance can search the final Basic Energy for a manual attachment,
     // preserving the one Supporter play for Professor Burnet's deck-to-discard

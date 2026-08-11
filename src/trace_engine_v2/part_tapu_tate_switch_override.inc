@@ -21,10 +21,14 @@
   }
 
   bool oricorio_preserves_burnet_with_current_hand() const {
-    const bool exactly_one_energy_missing = grass_needed() + fire_needed() == 1;
-    const bool needed_energy_might_be_in_deck =
-        (grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
-        (fire_needed() == 1 && might_be_unseen(Card::Fire));
+    const Pokemon* energy_target = target_regi();
+    const bool needed_energy_might_be_in_deck = energy_target != nullptr &&
+        completing_basic_energy_for(*energy_target, [this](const Card card) {
+          return might_be_unseen(card);
+        }).has_value();
+    const bool exactly_one_energy_missing = needed_energy_might_be_in_deck;
+    // DDE typed completion options are not additive deficits:
+    // https://github.com/FlareZ123/pokemon-sims/issues/2368
     const bool payload_in_hand =
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
     const bool live_hand_payload_outlet = payload_in_hand &&
@@ -113,10 +117,14 @@
     // Crispin advances the Energy axis only while a needed Basic Energy remains:
     // https://api.pokemontcg.io/v2/cards/sv7-133
 
-    const bool exactly_one_energy_missing = grass_needed() + fire_needed() == 1;
-    const bool needed_energy_might_be_in_deck =
-        (grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
-        (fire_needed() == 1 && might_be_unseen(Card::Fire));
+    const Pokemon* arven_energy_target = target_regi();
+    const bool needed_energy_might_be_in_deck = arven_energy_target != nullptr &&
+        completing_basic_energy_for(*arven_energy_target, [this](const Card card) {
+          return might_be_unseen(card);
+        }).has_value();
+    const bool exactly_one_energy_missing = needed_energy_might_be_in_deck;
+    // DDE-only is one physical Basic attachment short:
+    // https://github.com/FlareZ123/pokemon-sims/issues/2368
     const bool live_arven_vessel_energy = need_energy() && exactly_one_energy_missing &&
         !state_.manual_energy_used && !item_locked() && needed_energy_might_be_in_deck &&
         hand_count(Card::Arven) == 0 && might_be_unseen(Card::Arven) &&
@@ -320,76 +328,145 @@ bool held_banked_steven_has_known_t3_active_regi_route() const {
         arven_has_concrete_vstar_chain;
 
     const auto future_crispin_completes_ggf = [&]() {
-      if (!need_energy() || state_.manual_energy_used ||
-          hand_count(Card::Crispin) > 0 || !might_be_unseen(Card::Crispin) ||
-          !might_be_unseen(Card::Grass) || !might_be_unseen(Card::Fire)) {
+      if (!need_energy() || hand_count(Card::Crispin) > 0 ||
+          !might_be_unseen(Card::Crispin)) {
         return false;
       }
-
-      const int initial_grass_needed = grass_needed();
-      const int initial_fire_needed = fire_needed();
-      const int held_grass = hand_count(Card::Grass);
-      const int held_fire = hand_count(Card::Fire);
-
-      const auto completes_after_current_manual = [&](const int current_manual) {
-        int remaining_grass = initial_grass_needed;
-        int remaining_fire = initial_fire_needed;
-        int grass_in_hand = held_grass;
-        int fire_in_hand = held_fire;
-
-        if (current_manual == 1) {
-          if (remaining_grass <= 0 || grass_in_hand <= 0) return false;
-          --remaining_grass;
-          --grass_in_hand;
-        } else if (current_manual == 2) {
-          if (remaining_fire <= 0 || fire_in_hand <= 0) return false;
-          --remaining_fire;
-          --fire_in_hand;
+      const Pokemon* target = target_regi();
+      if (target == nullptr) {
+        // Preserve the established pre-Regidrago opening projection. With no
+        // physical Regidrago target yet, this is the legacy Basic-only planning
+        // path: it needs the current manual attachment plus Crispin's two
+        // different-type Basic search and the following turn's manual attachment.
+        // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+        // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+        // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+        // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+        // Turn and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+        // K0/K1 and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+        // Existing pre-target contract: https://github.com/FlareZ123/pokemon-sims/issues/1022
+        // Refined DDE interaction: https://github.com/FlareZ123/pokemon-sims/issues/2446
+        if (state_.manual_energy_used || !might_be_unseen(Card::Grass) ||
+            !might_be_unseen(Card::Fire)) {
+          return false;
         }
 
-        const auto completes_after_crispin = [&](const bool attach_grass) {
-          int grass_after_crispin = remaining_grass;
-          int fire_after_crispin = remaining_fire;
-          int grass_available_for_manual = grass_in_hand;
-          int fire_available_for_manual = fire_in_hand;
+        const int initial_grass_needed = grass_needed();
+        const int initial_fire_needed = fire_needed();
+        const int held_grass = hand_count(Card::Grass);
+        const int held_fire = hand_count(Card::Fire);
 
-          if (attach_grass) {
-            if (grass_after_crispin <= 0) return false;
-            --grass_after_crispin;
-            ++fire_available_for_manual;
-          } else {
-            if (fire_after_crispin <= 0) return false;
-            --fire_after_crispin;
-            ++grass_available_for_manual;
+        const auto completes_after_current_manual = [&](const int current_manual) {
+          int remaining_grass = initial_grass_needed;
+          int remaining_fire = initial_fire_needed;
+          int grass_in_hand = held_grass;
+          int fire_in_hand = held_fire;
+
+          if (current_manual == 1) {
+            if (remaining_grass <= 0 || grass_in_hand <= 0) return false;
+            --remaining_grass;
+            --grass_in_hand;
+          } else if (current_manual == 2) {
+            if (remaining_fire <= 0 || fire_in_hand <= 0) return false;
+            --remaining_fire;
+            --fire_in_hand;
           }
 
-          if (grass_after_crispin == 0 && fire_after_crispin == 0) return true;
-          if (grass_after_crispin == 1 && fire_after_crispin == 0) {
-            return grass_available_for_manual > 0;
-          }
-          if (grass_after_crispin == 0 && fire_after_crispin == 1) {
-            return fire_available_for_manual > 0;
-          }
-          return false;
+          const auto completes_after_crispin = [&](const bool attach_grass) {
+            int grass_after_crispin = remaining_grass;
+            int fire_after_crispin = remaining_fire;
+            int grass_available_for_manual = grass_in_hand;
+            int fire_available_for_manual = fire_in_hand;
+
+            if (attach_grass) {
+              if (grass_after_crispin <= 0) return false;
+              --grass_after_crispin;
+              ++fire_available_for_manual;
+            } else {
+              if (fire_after_crispin <= 0) return false;
+              --fire_after_crispin;
+              ++grass_available_for_manual;
+            }
+
+            if (grass_after_crispin == 0 && fire_after_crispin == 0) return true;
+            if (grass_after_crispin == 1 && fire_after_crispin == 0) {
+              return grass_available_for_manual > 0;
+            }
+            if (grass_after_crispin == 0 && fire_after_crispin == 1) {
+              return fire_available_for_manual > 0;
+            }
+            return false;
+          };
+
+          return completes_after_crispin(true) || completes_after_crispin(false);
         };
 
-        return completes_after_crispin(true) || completes_after_crispin(false);
+        return completes_after_current_manual(0) ||
+               completes_after_current_manual(1) ||
+               completes_after_current_manual(2);
+      }
+
+      const bool grass_searchable = might_be_unseen(Card::Grass);
+      const bool fire_searchable = might_be_unseen(Card::Fire);
+      if (!grass_searchable && !fire_searchable) return false;
+
+      const auto next_turn_crispin_completes = [&](Pokemon projected) {
+        const auto attach_next_manual = [&](Pokemon after_crispin,
+                                            const Card basic) {
+          return attach_energy_card(after_crispin, basic) &&
+              pays_apex_energy_cost(after_crispin);
+        };
+
+        if (grass_searchable && fire_searchable) {
+          for (const Card crispin_attachment : {Card::Grass, Card::Fire}) {
+            Pokemon after_crispin = projected;
+            if (!attach_energy_card(after_crispin, crispin_attachment)) continue;
+            if (pays_apex_energy_cost(after_crispin)) return true;
+            const Card hand_basic = crispin_attachment == Card::Grass
+                ? Card::Fire : Card::Grass;
+            if (attach_next_manual(after_crispin, hand_basic)) return true;
+          }
+          return false;
+        }
+
+        // With only one Basic type searchable, Crispin can search that single card
+        // under "up to 2" and must put it into hand because there is no second
+        // searched Energy to attach. The next turn's manual attachment can still
+        // complete a DDE-equipped Dragon even when this turn's manual attachment
+        // was already used to attach the DDE itself:
+        // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+        // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+        // Manual Energy attachment rule: https://www.pokemon.com/us/pokemon-tcg/rules
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2446
+        return attach_next_manual(projected,
+                                  grass_searchable ? Card::Grass : Card::Fire);
       };
 
-      // Wonder Tag may bank Crispin on the first player's opening turn. Enumerate
-      // the unused current manual attachment, Crispin's different-type search and
-      // attachment, and the next turn's manual attachment. This admits the route
-      // only when those public resources complete GGF without Vital Dance or Star
-      // Alchemy:
-      // https://api.pokemontcg.io/v2/cards/sm2-60
-      // https://api.pokemontcg.io/v2/cards/sv7-133
-      // https://api.pokemontcg.io/v2/cards/swsh12-136
-      // https://www.pokemon.com/us/pokemon-tcg/rules
-      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-      // https://github.com/FlareZ123/pokemon-sims/issues/809
-      return completes_after_current_manual(0) ||
-             completes_after_current_manual(1) ||
-             completes_after_current_manual(2);
+      // If this turn's manual attachment is still unused, include the legal held
+      // Basic choices before projecting next turn. If it was already used, the
+      // observed target state already contains that attachment and Crispin still
+      // has a fresh manual attachment available on the following turn:
+      // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+      // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+      // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Turn and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed route contract: https://github.com/FlareZ123/pokemon-sims/issues/809
+      // Confirmed DDE regression: https://github.com/FlareZ123/pokemon-sims/issues/2446
+      if (next_turn_crispin_completes(*target)) return true;
+      if (state_.manual_energy_used) return false;
+      for (const Card current_basic : {Card::Grass, Card::Fire}) {
+        if (hand_count(current_basic) == 0) continue;
+        Pokemon after_current_manual = *target;
+        if (attach_energy_card(after_current_manual, current_basic) &&
+            !pays_apex_energy_cost(after_current_manual) &&
+            next_turn_crispin_completes(after_current_manual)) {
+          return true;
+        }
+      }
+      return false;
     };
     const bool live_crispin_energy = future_crispin_completes_ggf();
 

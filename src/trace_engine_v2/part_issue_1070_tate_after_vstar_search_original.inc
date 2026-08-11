@@ -16,7 +16,7 @@
            hand_count(Card::RegidragoVstar) > 0 && state_.active &&
            state_.active->card == Card::RegidragoV &&
            state_.active->entered_turn < state_.turn &&
-           state_.active->grass >= 2 && state_.active->fire >= 1;
+           pays_apex_energy_cost(*state_.active); // DDE + Apex semantics: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136
   }
 
   bool tate_switch_after_held_vstar_evolution_route() const {
@@ -33,8 +33,8 @@
     return std::any_of(state_.bench.begin(), state_.bench.end(),
                        [this](const Pokemon& pokemon) {
       return pokemon.card == Card::RegidragoV &&
-          pokemon.entered_turn < state_.turn && pokemon.grass >= 2 &&
-          pokemon.fire >= 1;
+          pokemon.entered_turn < state_.turn &&
+          pays_apex_energy_cost(pokemon); // DDE + Apex semantics: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136
     });
   }
 
@@ -60,9 +60,10 @@
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1197
     return std::any_of(state_.bench.begin(), state_.bench.end(),
                        [this](const Pokemon& pokemon) {
+      // Semantic progress 2 means one physical Basic attachment can complete Apex Dragon:
+      // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136
       return pokemon.card == Card::RegidragoV &&
-          pokemon.entered_turn < state_.turn && pokemon.grass == 1 &&
-          pokemon.fire >= 1;
+          pokemon.entered_turn < state_.turn && apex_energy_progress(pokemon) == 2;
     });
   }
 
@@ -85,9 +86,10 @@
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1197
     return std::any_of(state_.bench.begin(), state_.bench.end(),
                        [this](const Pokemon& pokemon) {
+      // Semantic progress 2 means one physical Basic attachment can complete Apex Dragon:
+      // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136
       return pokemon.card == Card::RegidragoVstar &&
-          pokemon.entered_turn < state_.turn && pokemon.grass == 1 &&
-          pokemon.fire >= 1;
+          pokemon.entered_turn < state_.turn && apex_energy_progress(pokemon) == 2;
     });
   }
 

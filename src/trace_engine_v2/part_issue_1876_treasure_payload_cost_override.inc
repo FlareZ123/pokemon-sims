@@ -5,7 +5,7 @@
         !state_.manual_energy_used && state_.vstar_power_used &&
         state_.active && state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn &&
-        state_.active->grass == 1 && state_.active->fire == 1 &&
+        !pays_apex_energy_cost(*state_.active) && basic_attachment_completes_apex(*state_.active, Card::Grass) &&  // DDE/Apex one-Basic completion: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/issues/2368
         state_.active->tool == Tool::ForestSealStone && need_payload() &&
         hand_count(Card::RegidragoVstar) > 0 && bench_space() > 0 &&
         hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
@@ -40,7 +40,7 @@
     const bool route_available =
         strict_payload_timing() && prizes_known() && !item_locked() &&
         supporter_allowed() && active_is_vstar() &&
-        state_.active->grass >= 2 && state_.active->fire == 0 &&
+        !pays_apex_energy_cost(*state_.active) && basic_attachment_completes_apex(*state_.active, Card::Fire) &&  // Crispin/DDE completion: https://api.pokemontcg.io/v2/cards/sv7-133 https://compendium.pokegym.net/category/5-trainers/crispin/ https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/issues/2368
         need_payload() && hand_count(Card::MysteriousTreasure) > 0 &&
         hand_count(Card::Crispin) == 0 && bench_space() > 0 &&
         hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
@@ -74,7 +74,7 @@
     const bool complete_public_route =
         strict_payload_timing() && prizes_known() && !item_locked() &&
         supporter_allowed() && active_is_vstar() &&
-        state_.active->grass == 1 && state_.active->fire == 0 &&
+        minimum_basic_attachments_to_apex(*state_.active, 1, 1) == 2 &&  // Crispin + manual Basic distance: https://api.pokemontcg.io/v2/cards/sv7-133 https://compendium.pokegym.net/category/5-trainers/crispin/ https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/issues/2368
         !state_.manual_energy_used && need_payload() && bench_space() > 0 &&
         !in_play(Card::TapuLeleGX) && hand_count(Card::TapuLeleGX) == 0 &&
         ability_available_for_pokemon(Card::TapuLeleGX) &&
@@ -111,7 +111,7 @@
         state_.supporter_used && state_.active &&
         state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn &&
-        state_.active->grass >= 2 && state_.active->fire >= 1 &&
+        pays_apex_energy_cost(*state_.active) && // https://github.com/FlareZ123/pokemon-sims/issues/2368
         need_vstar() && need_payload() &&
         hand_count(Card::MysteriousTreasure) > 0 &&
         hand_count(Card::RegidragoVstar) == 0 &&
@@ -141,7 +141,7 @@
         !state_.supporter_used && state_.active &&
         state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn &&
-        state_.active->grass >= 2 && state_.active->fire >= 1 &&
+        pays_apex_energy_cost(*state_.active) &&  // DDE/Apex semantics: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/issues/2368
         need_vstar() && need_payload() &&
         hand_count(Card::MysteriousTreasure) > 0 &&
         hand_count(Card::RegidragoVstar) == 0 &&
@@ -224,7 +224,7 @@
     const bool complete_public_route =
         strict_payload_timing() && prizes_known() &&
         !item_locked() && supporter_allowed() && active_is_vstar() &&
-        state_.active->grass == 1 && state_.active->fire == 1 &&
+        !pays_apex_energy_cost(*state_.active) && basic_attachment_completes_apex(*state_.active, Card::Grass) &&  // DDE/Apex one-Basic completion: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/issues/2368
         need_payload() && hand_count(Card::Crispin) > 0 &&
         crispin_can_advance_energy_axis() &&
         std::any_of(state_.deck.begin(), state_.deck.end(),

@@ -30,10 +30,14 @@
       return std::find(state_.prizes.begin(), state_.prizes.end(), card) != state_.prizes.end();
     };
     const bool can_bench_recovered_basic = bench_space() > 0;
-    const bool exactly_one_energy_missing = grass_needed() + fire_needed() == 1;
-    const bool required_energy_still_in_deck =
-        (grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
-        (fire_needed() == 1 && might_be_unseen(Card::Fire));
+    const Pokemon* energy_target = target_regi();
+    const bool required_energy_still_in_deck = energy_target != nullptr &&
+        completing_basic_energy_for(*energy_target, [this](const Card card) {
+          return might_be_unseen(card);
+        }).has_value();
+    const bool exactly_one_energy_missing = required_energy_still_in_deck;
+    // DDE-only exposes Grass and Fire as alternative one-card completions, not
+    // additive deficits: https://github.com/FlareZ123/pokemon-sims/issues/2368
     const bool payload_still_in_deck = might_be_unseen(Card::MegaDragonite) ||
                                          might_be_unseen(Card::Dragapult) ||
                                          might_be_unseen(Card::GoodraVstar) ||

@@ -1,9 +1,19 @@
   bool issue_2205_serena_payload_latias_draw_route_available() const {
     const bool ready_benched_vstar =
         std::any_of(state_.bench.begin(), state_.bench.end(),
-                    [](const Pokemon& pokemon) {
+                    [this](const Pokemon& pokemon) {
+                      // The Serena-to-Latias continuation needs a Benched VSTAR
+                      // that already pays Apex Dragon before the promotion. DDE
+                      // supplies two Energy of every type while attached to a
+                      // Dragon, so DDE + either Basic is semantically GGF-ready:
+                      // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+                      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+                      // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+                      // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+                      // DDE semantic-readiness contract: https://github.com/FlareZ123/pokemon-sims/issues/2238
+                      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2434
                       return pokemon.card == Card::RegidragoVstar &&
-                             pokemon.grass >= 2 && pokemon.fire >= 1;
+                             pays_apex_energy_cost(pokemon);
                     });
     const bool held_payload =
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);

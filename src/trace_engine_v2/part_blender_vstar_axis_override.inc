@@ -141,10 +141,31 @@
   }
 
   bool issue_1646_hold_blender_for_burnet_finish_visible() const {
-    const bool grass_axis_completes = state_.active &&
-        ((!state_.manual_energy_used && state_.active->grass == 1 &&
-          hand_count(Card::Grass) > 0) ||
-         (state_.manual_energy_used && state_.active->grass >= 2));
+    const auto energy_axis_completes = [this]() {
+      if (!state_.active || state_.active->card != Card::RegidragoVstar) {
+        return false;
+      }
+      if (pays_apex_energy_cost(*state_.active)) return true;
+      if (state_.manual_energy_used) return false;
+
+      // Preserve the original pre-attachment hold: when one held Basic can be the
+      // legal manual attachment that finishes Apex, Burnet still owns the equal-turn
+      // payload route and Blender should remain unused. Project the physical card so
+      // DDE and Basic-only states share the same semantic payment test:
+      // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Official manual Energy attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2429
+      for (const Card basic : {Card::Grass, Card::Fire}) {
+        if (hand_count(basic) == 0) continue;
+        Pokemon projected = *state_.active;
+        if (attach_energy_card(projected, basic) &&
+            pays_apex_energy_cost(projected)) {
+          return true;
+        }
+      }
+      return false;
+    }();
 
     // Professor Burnet already owns the current-turn payload axis whenever the
     // Active Regidrago VSTAR can finish GGF without Brilliant Blender. The hold is
@@ -161,7 +182,7 @@
     return strict_payload_timing() && !item_locked() && prizes_known() &&
         supporter_allowed() && state_.active &&
         state_.active->card == Card::RegidragoVstar &&
-        state_.active->fire >= 1 && grass_axis_completes && need_payload() &&
+        energy_axis_completes && need_payload() &&
         hand_count(Card::ProfessorBurnet) > 0 &&
         hand_count(Card::BrilliantBlender) > 0 && payload_might_be_in_deck();
   }
@@ -169,10 +190,15 @@
   bool play_issue_1700_known_prize_gladion_before_blender() {
     const bool prepared_regidrago = std::any_of(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
-          return pokemon.card == Card::RegidragoV &&
-              pokemon.entered_turn < state_.turn && pokemon.grass == 1 &&
-              pokemon.fire == 0;
-        });
+          if (pokemon.card != Card::RegidragoV ||
+              pokemon.entered_turn >= state_.turn || pokemon.grass != 1 ||
+              pokemon.fire != 0 || pays_apex_energy_cost(pokemon)) {
+            return false;
+          }
+          Pokemon with_prized_fire = pokemon;
+          return attach_energy_card(with_prized_fire, Card::Fire) &&
+              apex_energy_progress(with_prized_fire) > apex_energy_progress(pokemon);
+        }); // https://github.com/FlareZ123/pokemon-sims/issues/2428
     const auto prized_fire =
         std::find(state_.prizes.begin(), state_.prizes.end(), Card::Fire);
 

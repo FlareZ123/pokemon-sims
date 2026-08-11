@@ -119,7 +119,7 @@ void run_turn_issue_1751_core() {
         !item_locked() && post_attach_target != nullptr &&
         post_attach_target->card == Card::RegidragoV &&
         post_attach_target->entered_turn < state_.turn &&
-        post_attach_target->grass >= 2 && post_attach_target->fire >= 1 &&
+        pays_apex_energy_cost(*post_attach_target) && // DDE-aware: https://github.com/FlareZ123/pokemon-sims/issues/2368
         hand_count(Card::RegidragoVstar) == 0 &&
         might_be_unseen(Card::RegidragoVstar) &&
         hand_count(Card::MysteriousTreasure) > 0 &&

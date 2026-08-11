@@ -56,6 +56,35 @@ enum class CliMode : std::uint8_t {
   CrobatModel,
 };
 
+std::optional<CliMode> select_cli_mode(
+    const bool self_test, const bool model_crobat,
+    const bool find_ready_supplied, const bool simulate_this) {
+  const int explicit_mode_count = static_cast<int>(self_test) +
+      static_cast<int>(simulate_this) +
+      static_cast<int>(find_ready_supplied) +
+      static_cast<int>(model_crobat);
+  if (explicit_mode_count > 1) return std::nullopt;
+  if (self_test) return CliMode::SelfTest;
+  if (model_crobat) return CliMode::CrobatModel;
+  if (find_ready_supplied) return CliMode::FindReady;
+  if (simulate_this) return CliMode::SingleTrace;
+  return CliMode::Aggregate;
+}
+
+std::size_t scenario_seed_slot(const std::size_t index) {
+  // Preserve historical random streams after retiring the two full-turn-one
+  // Item-lock rows at slots 4 and 11:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1118
+  // https://github.com/FlareZ123/pokemon-sims/issues/2247
+  return index + (index >= 4 ? 1U : 0U) + (index >= 10 ? 1U : 0U);
+}
+
+double per_game_rate(
+    const sim::Aggregate& aggregate, const std::uint64_t count) {
+  return aggregate.trials == 0 ? 0.0 :
+      static_cast<double>(count) / static_cast<double>(aggregate.trials);
+}
+
 int main(int argc, char** argv) {
   std::uint64_t trials = 100000;
   std::uint64_t seed = 20260705;
@@ -159,18 +188,13 @@ int main(int argc, char** argv) {
     }
   }
 
-  const int explicit_mode_count = static_cast<int>(self_test) +
-      static_cast<int>(simulate_this) + static_cast<int>(find_ready_supplied) +
-      static_cast<int>(model_crobat);
-  if (explicit_mode_count > 1) {
+  const auto selected_mode = select_cli_mode(
+    self_test, model_crobat, find_ready_supplied, simulate_this);
+  if (!selected_mode) {
     std::cerr << "--self-test, --simulate-this, --find-ready, and --model-crobat select incompatible modes\n";
     return 2;
   }
-
-  const CliMode mode = self_test ? CliMode::SelfTest :
-      (model_crobat ? CliMode::CrobatModel :
-       (find_ready_supplied ? CliMode::FindReady :
-        (simulate_this ? CliMode::SingleTrace : CliMode::Aggregate)));
+  const CliMode mode = *selected_mode;
 
   if (mode == CliMode::CrobatModel) {
     // Keep modeling output separate from the canonical setup baseline and reproduce its registered seed:
@@ -381,19 +405,9 @@ int main(int argc, char** argv) {
     for (const sim::NamedDeck* deck : decks) {
       for (std::size_t index = 0; index < scenarios.size(); ++index) {
         const sim::Scenario& scenario = scenarios[index];
-        // Decks share the same scenario seed. Historical slots 4 and 11 remain
-        // reserved for the two retired full-turn-one Item-lock rows:
-        // https://github.com/FlareZ123/pokemon-sims/issues/1118
-        // https://github.com/FlareZ123/pokemon-sims/issues/2247
-        const std::size_t seed_slot = index +
-            (index >= 4 ? 1U : 0U) +
-            (index >= 10 ? 1U : 0U);
+        const std::size_t seed_slot = scenario_seed_slot(index);
         const sim::Aggregate a = sim::simulate(
             scenario, deck->recipe, trials, seed + 104729ULL * seed_slot);
-        const auto per_game = [&a](const std::uint64_t count) {
-          return a.trials == 0 ? 0.0 :
-              static_cast<double>(count) / static_cast<double>(a.trials);
-        };
         csv << '"' << deck->id << "\",\"" << scenario.label << "\","
             << a.trials << ','
             << sim::pct(a.by2, a.trials) << ','
@@ -418,27 +432,27 @@ int main(int argc, char** argv) {
             << sim::pct(a.steven, a.trials) << ','
             << sim::pct(a.fss, a.trials) << ','
             << sim::pct(a.legacy, a.trials) << ','
-            << per_game(static_cast<std::uint64_t>(a.total_mulligans)) << ','
-            << per_game(a.secret_box_combo_attempted) << ','
-            << per_game(a.secret_box_cost_blocked) << ','
-            << per_game(a.secret_box_missing_axis) << ','
-            << per_game(a.secret_box_missing_regi_axis) << ','
-            << per_game(a.secret_box_missing_line_axis) << ','
-            << per_game(a.secret_box_missing_vstar_axis) << ','
-            << per_game(a.secret_box_missing_payload_axis) << ','
-            << per_game(a.secret_box_missing_treasure_axis) << ','
-            << per_game(a.secret_box_missing_fire_axis) << ','
-            << per_game(a.secret_box_missing_grass_axis) << ','
-            << per_game(a.secret_box_missing_ability_axis) << ','
-            << per_game(a.secret_box_missing_supporter_axis) << ','
-            << per_game(a.secret_box_missing_known_prize_zone) << ','
-            << per_game(a.secret_box_missing_discard_zone) << ','
-            << per_game(a.secret_box_missing_stranded_hand_zone) << ','
-            << per_game(a.secret_box_bench_blocked) << ','
-            << per_game(a.secret_box_arven_bank) << ','
-            << per_game(a.secret_box_steven_bank) << ','
-            << per_game(a.secret_box_gladion_bank) << ','
-            << per_game(a.secret_box_fss_bank) << ','
+            << per_game_rate(a, static_cast<std::uint64_t>(a.total_mulligans)) << ','
+            << per_game_rate(a, a.secret_box_combo_attempted) << ','
+            << per_game_rate(a, a.secret_box_cost_blocked) << ','
+            << per_game_rate(a, a.secret_box_missing_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_regi_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_line_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_vstar_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_payload_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_treasure_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_fire_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_grass_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_ability_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_supporter_axis) << ','
+            << per_game_rate(a, a.secret_box_missing_known_prize_zone) << ','
+            << per_game_rate(a, a.secret_box_missing_discard_zone) << ','
+            << per_game_rate(a, a.secret_box_missing_stranded_hand_zone) << ','
+            << per_game_rate(a, a.secret_box_bench_blocked) << ','
+            << per_game_rate(a, a.secret_box_arven_bank) << ','
+            << per_game_rate(a, a.secret_box_steven_bank) << ','
+            << per_game_rate(a, a.secret_box_gladion_bank) << ','
+            << per_game_rate(a, a.secret_box_fss_bank) << ','
             << sim::pct(a.t2_missing_active_vstar, a.trials) << ','
             << sim::pct(a.t2_missing_grass, a.trials) << ','
             << sim::pct(a.t2_missing_fire, a.trials) << ','

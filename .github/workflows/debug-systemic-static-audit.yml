@@ -1,7 +1,8 @@
 name: Debug systemic static audit
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [debug-audit-1786450830391]
 
 permissions:
   contents: read

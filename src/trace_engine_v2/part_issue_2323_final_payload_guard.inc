@@ -2,7 +2,16 @@
 #include "part_issue_2645_arven_crobat_state_override.inc"
 
   bool issue_2323_protect_final_t1_payload() const {
-    if (scenario_.dci != DciProfile::StrictJit || scenario_.going_first ||
+    // The upstream #2323 Treasure route already uses strict_payload_timing(), and
+    // this downstream UDP guard protects the same later ready-turn Dragon event.
+    // StrictJit and MatchupFlexJit therefore share this protection; only the
+    // repository's non-JIT control profile is excluded by the semantic predicate.
+    // Same-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Advanced Item/search/evolution procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Confirmed shared-JIT guard bug: https://github.com/FlareZ123/pokemon-sims/issues/3124
+    if (!strict_payload_timing() || scenario_.going_first ||
         scenario_.locks != LockMode::None || state_.turn != 1 ||
         !prizes_known() || can_play_payload_this_turn()) {
       return false;
@@ -23,18 +32,18 @@
     // The early Mysterious Treasure route has already spent one of two held Dragon
     // payloads, searched and played Regidrago V, and established K1. The generic
     // current-turn need_payload() axis is already satisfied by that first discard,
-    // but strict-JIT cannot credit it toward the later turn when the new Regidrago V
-    // can evolve and attack. The final held Dragon therefore remains UDP until a
-    // same-turn readiness outlet exists. This guard only filters a generic discard
-    // candidate when exactly one protected payload remains; every ordinary
-    // non-payload DCI candidate selected by the existing policy keeps its original
-    // precedence.
+    // but same-turn JIT cannot credit it toward the later turn when the new
+    // Regidrago V can evolve and attack. The final held Dragon therefore remains
+    // UDP until a same-turn readiness outlet exists. This guard only filters a
+    // generic discard candidate when exactly one protected payload remains; every
+    // ordinary non-payload DCI candidate selected by the existing policy keeps its
+    // original precedence.
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Official Item-cost, search, Bench, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1, dynamic DCI, strict-JIT, and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-    // Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/2323
+    // K1, dynamic DCI, same-turn JIT, and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Original refined bug / shared-JIT follow-up: https://github.com/FlareZ123/pokemon-sims/issues/2323 https://github.com/FlareZ123/pokemon-sims/issues/3124
     return held_payloads == 1 && spent_payloads_this_turn >= 1 &&
            timer_started_this_turn;
   }
@@ -115,12 +124,13 @@
         issue_2323_protect_final_t1_payload()) {
       // A printed discard cost is optional because the Trainer itself can simply
       // remain unplayed. Refuse a candidate that would spend the final protected
-      // Dragon before strict-JIT can legally use it on the ready turn.
+      // Dragon before the shared same-turn-JIT contract can legally use it on the
+      // ready turn.
       // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
       // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
       // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-      // Strict-JIT and dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-      // Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/2323
+      // Same-turn JIT and dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+      // Original refined bug / confirmed follow-up: https://github.com/FlareZ123/pokemon-sims/issues/2323 https://github.com/FlareZ123/pokemon-sims/issues/3124
       return std::nullopt;
     }
     return candidate;

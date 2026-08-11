@@ -154,13 +154,25 @@
     const auto missing_energy = setup_regi
         ? issue_2437_apex_completing_basic_from_known_deck(*setup_regi)
         : std::optional<Card>{};
-    if (scenario_.dci != DciProfile::MatchupFlexJit ||
-        scenario_.locks != LockMode::None || state_.turn != scenario_.max_turn ||
-        !prizes_known() || item_locked() || !state_.supporter_used ||
-        state_.manual_energy_used || state_.retreat_used ||
-        !state_.vstar_power_used || !state_.active ||
+    // The DDE-aware projection changes only which Basic completes Apex. Route
+    // admission is still governed by the same public action semantics as the
+    // canonical #1672 line: same-ready-turn payload timing, legal Item/search,
+    // available Skyliner, Bench space, evolution age, and unspent attachment/Retreat.
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Advanced Item, evolution, Ability, attachment, and Retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Same-turn JIT and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // DDE semantics remain owned by: https://github.com/FlareZ123/pokemon-sims/issues/2437
+    // Confirmed semantic-gate bug: https://github.com/FlareZ123/pokemon-sims/issues/3104
+    if (!strict_payload_timing() || state_.turn > scenario_.max_turn ||
+        !prizes_known() || item_locked() || !deck_search_available() ||
+        !ability_available_for_pokemon(Card::LatiasEx) ||
+        !state_.supporter_used || state_.manual_energy_used ||
+        state_.retreat_used || !state_.vstar_power_used || !state_.active ||
         !is_basic(state_.active->card) ||
-        state_.active->card == Card::RegidragoV ||
+        state_.active->card == Card::RegidragoV || bench_space() <= 0 ||
         hand_count(Card::EarthenVessel) == 0 ||
         hand_count(Card::LatiasEx) == 0 ||
         hand_count(Card::RegidragoVstar) == 0 ||
@@ -184,7 +196,8 @@
     // Official Item, discard, search, attachment, evolution, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Dynamic DCI and JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Original route: https://github.com/FlareZ123/pokemon-sims/issues/1672
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2437
+    // DDE migration: https://github.com/FlareZ123/pokemon-sims/issues/2437
+    // Confirmed semantic-gate bug: https://github.com/FlareZ123/pokemon-sims/issues/3104
     remove_one(state_.hand, Card::EarthenVessel);
     state_.discard.push_back(Card::EarthenVessel);
     if (!discard_from_hand(discarded_payload, "Earthen Vessel cost",

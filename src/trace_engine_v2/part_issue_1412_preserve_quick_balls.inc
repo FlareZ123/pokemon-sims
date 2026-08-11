@@ -148,13 +148,23 @@
     const Pokemon* setup_regi = target_regi();
     const auto payload = std::find_if(
         state_.hand.begin(), state_.hand.end(), is_payload);
-    if (scenario_.dci != DciProfile::MatchupFlexJit ||
-        scenario_.locks != LockMode::None || state_.turn != scenario_.max_turn ||
-        !prizes_known() || item_locked() || !state_.supporter_used ||
-        state_.manual_energy_used || state_.retreat_used ||
-        !state_.vstar_power_used || !state_.active ||
+    // This route is defined by public action legality and same-ready-turn payload
+    // timing. StrictJit and MatchupFlexJit share that timing contract, and neither
+    // Earthen Vessel nor Skyliner has a final-turn-only restriction. Evaluate the
+    // current Item/search/Ability state instead of the scenario identity:
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Advanced Item, evolution, Ability, attachment, and Retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Same-turn JIT and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed semantic-gate bug: https://github.com/FlareZ123/pokemon-sims/issues/3104
+    if (!strict_payload_timing() || state_.turn > scenario_.max_turn ||
+        !prizes_known() || item_locked() || !deck_search_available() ||
+        !ability_available_for_pokemon(Card::LatiasEx) ||
+        !state_.supporter_used || state_.manual_energy_used ||
+        state_.retreat_used || !state_.vstar_power_used || !state_.active ||
         !is_basic(state_.active->card) ||
-        state_.active->card == Card::RegidragoV ||
+        state_.active->card == Card::RegidragoV || bench_space() <= 0 ||
         hand_count(Card::EarthenVessel) == 0 ||
         hand_count(Card::LatiasEx) == 0 ||
         hand_count(Card::RegidragoVstar) == 0 ||
@@ -170,7 +180,7 @@
     const Card discarded_payload = *payload;
     // Star Alchemy has already searched Latias ex. Earthen Vessel must now use the
     // held Dragon as its mandatory cost, because that single payment establishes the
-    // matchup-flex current-turn payload while Vessel searches the third GGF Energy.
+    // current-turn payload while Vessel searches the third GGF Energy.
     // The held VSTAR and Skyliner route then complete evolution and promotion:
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
@@ -178,8 +188,9 @@
     // Dialga-GX Dragon payload: https://api.pokemontcg.io/v2/cards/sm5-100
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Core Item, discard, search, attachment, evolution, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // Dynamic DCI, strict current-turn payload, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1672
+    // Dynamic DCI, current-turn payload, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Original route: https://github.com/FlareZ123/pokemon-sims/issues/1672
+    // Confirmed semantic-gate bug: https://github.com/FlareZ123/pokemon-sims/issues/3104
     remove_one(state_.hand, Card::EarthenVessel);
     state_.discard.push_back(Card::EarthenVessel);
     if (!discard_from_hand(discarded_payload, "Earthen Vessel cost",
@@ -223,10 +234,10 @@
     }
 
     const Card discarded_payload = *payload;
-    // Earthen Vessel discards another card before searching Basic Energy. In
-    // this public K1 state, its Grass search plus the unused manual attachment
-    // completes GGF, so the held Dragon becomes DCI 1 because that same cost
-    // supplies the required strict/matchup-flex current-turn Apex Dragon payload:
+    // Earthen Vessel discards another card from hand before searching Basic Energy.
+    // In this public K1 state its Grass search plus the unused manual attachment
+    // completes GGF, so the held Dragon becomes DCI 1 because the same mandatory
+    // cost supplies the required current-turn Apex Dragon payload:
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Mega Dragonite ex payload witness: https://api.pokemontcg.io/v2/cards/me2pt5-152
     // Regidrago VSTAR / Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136

@@ -1,34 +1,107 @@
-name: DDE sol2 conflict audit
+name: DDE current-main integration
 
 on:
   push:
     branches: [reclaim/dde-current-main-sol2-20260811]
 
+permissions:
+  contents: write
+
 jobs:
-  audit:
+  integrate:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
           ref: reclaim/dde-current-main-sol2-20260811
           fetch-depth: 0
-      - name: Audit FSS overlap only
+      - name: Merge reviewed DDE rollup onto current main
         shell: bash
         run: |
           set -euo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git fetch origin fix/dde-semantic-rollup-reclaim-20260809 >/dev/null 2>&1
-          git merge --no-commit --no-edit origin/fix/dde-semantic-rollup-reclaim-20260809 >/dev/null 2>&1 || true
-          path=src/trace_engine_v2/part_010_fss_override.inc
-          echo '=== conflict files ==='
-          git diff --name-only --diff-filter=U
-          echo "=== $path conflict hunks ==="
-          git checkout --conflict=diff3 -- "$path"
-          awk '
-            /^<<<<<<< / {show=1}
-            show {print NR ":" $0}
-            /^>>>>>>> / {show=0; print "---"}
-          ' "$path"
-          exit 1
+          git fetch origin main fix/dde-semantic-rollup-reclaim-20260809 >/dev/null 2>&1
+          test "$(git rev-parse origin/main)" = "57785ca59d15719e72695fbee47147f72c2caacf"
+          old=origin/fix/dde-semantic-rollup-reclaim-20260809
+          base=$(git merge-base origin/main "$old")
+
+          git diff --binary "$base" "$old" -- src/trace_engine_v2/part_010_fss_override.inc > /tmp/fss.patch
+          git diff --binary "$base" "$old" -- src/trace_engine_v2/part_forretress_ex_combo.inc > /tmp/forretress.patch
+          sed 's#src/trace_engine_v2/part_forretress_ex_combo.inc#src/trace_engine_v2/part_forretress_ex_combo_legacy.inc#g' \
+            /tmp/forretress.patch > /tmp/forretress-legacy.patch
+
+          git merge --no-commit --no-edit "$old" || true
+          actual=$(git diff --name-only --diff-filter=U | sort)
+          expected=$(printf '%s\n' \
+            docs/MULTI_DECK_REPORT.md \
+            docs/REPORT.md \
+            results/baseline_manifest.json \
+            results/multi_deck_comparison.csv \
+            results/multi_deck_manifest.json \
+            results/simulation_results.csv \
+            src/trace_engine_v2/part_010_fss_override.inc \
+            src/trace_engine_v2/part_forretress_ex_combo.inc | sort)
+          if [ "$actual" != "$expected" ]; then
+            echo 'Unexpected conflict set:' >&2
+            printf '%s\n' "$actual" >&2
+            exit 1
+          fi
+
+          for path in \
+            docs/MULTI_DECK_REPORT.md \
+            docs/REPORT.md \
+            results/baseline_manifest.json \
+            results/multi_deck_comparison.csv \
+            results/multi_deck_manifest.json \
+            results/simulation_results.csv; do
+            git checkout --ours -- "$path"
+            git add "$path"
+          done
+
+          # Preserve the modern projected-turn fix and replay every reviewed DDE
+          # change onto the current FSS implementation. The rollup changes zero-energy
+          # checks to physical-card units while main retains later evolution-age logic.
+          # DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+          # FSS: https://api.pokemontcg.io/v2/cards/swsh12-156
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          git checkout --ours -- src/trace_engine_v2/part_010_fss_override.inc
+          git add src/trace_engine_v2/part_010_fss_override.inc
+          git apply --3way /tmp/fss.patch
+
+          # Current main split the old full Forretress file into a legacy body plus a
+          # Garbotoxin-aware registry wrapper. Keep that wrapper and replay the DDE
+          # delta onto the legacy body so both semantics survive.
+          # Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+          # Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
+          # DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+          git checkout --ours -- src/trace_engine_v2/part_forretress_ex_combo.inc
+          git add src/trace_engine_v2/part_forretress_ex_combo.inc
+          git apply --3way /tmp/forretress-legacy.patch
+
+          test -z "$(git diff --name-only --diff-filter=U)"
+          rm -f .github/workflows/dde-reclaim-push-recovery.yml
+          rm -f .github/workflows/dde-rollup-reclaim-materialize.yml
+          rm -f docs/dde-reclaim-trigger-20260809.md
+          rm -f docs/dde-reclaim-trigger-20260810.md
+          git rm .github/workflows/dde-sol2-conflict-audit.yml
+          git add -A
+          git diff --cached --check
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run focused DDE regression suite
+        run: ctest --test-dir build --output-on-failure -R 'issue_2368|issue_241|issue_242|issue_243|issue_244|issue_2714|issue_2800|issue_2807'
+      - name: Run three reviewed simulate-this traces
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2
+      - name: Commit integrated DDE rollup
+        run: |
+          set -euo pipefail
+          git commit -m 'Reclaim DDE: integrate reviewed semantic rollup on current main'
+          git push origin HEAD:reclaim/dde-current-main-sol2-20260811

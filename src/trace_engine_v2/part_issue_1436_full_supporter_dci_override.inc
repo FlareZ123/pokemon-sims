@@ -144,8 +144,19 @@
 
   std::optional<Card> issue_1765_treasure_surplus_energy_cost(
       const std::optional<Card> excluded_from_cost) const {
+    // This fallback is a physical same-turn-JIT route. StrictJit and
+    // MatchupFlexJit share that payload timing contract, while NoDiscardControl
+    // remains outside it. Every Energy, evolution, Item, and horizon gate below
+    // continues to prove the concrete discard is surplus before it is admitted:
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item-cost, attachment, and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Shared JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed shared-JIT overfit: https://github.com/FlareZ123/pokemon-sims/issues/3151
     if (excluded_from_cost != Card::MysteriousTreasure ||
-        scenario_.dci != DciProfile::StrictJit || item_locked() ||
+        !strict_payload_timing() || item_locked() ||
         state_.turn != 2 || scenario_.max_turn < 3 ||
         state_.manual_energy_used || state_.vstar_power_used ||
         !state_.active || state_.active->card != Card::RegidragoV ||

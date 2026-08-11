@@ -174,12 +174,12 @@
 // Core connector policies are composed directly without compatibility wrappers.
 #include "../core/oricorio_connector_policy.inc" // Oricorio Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
 
-// Reuse the centralized Earthen Vessel and Treasure route families so their
-// behavior-significant alias lifetimes live beside the overrides they compose.
+// Reuse the centralized adjacent Earthen Vessel and Mysterious Treasure connector
+// implementation directly so post_014a no longer routes through compatibility shims.
 // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-#include "earthen_vessel_overrides.inc"
 // Mysterious Treasure / Tapu connector composition: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sm2-60
-#include "treasure_route_overrides.inc"
+// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
+#include "post_search_connector_overrides.inc"
 
 // Compose the Quick Ball-only tail directly on the late search boundary. Each
 // alias deliberately exposes the immediately preceding implementation to the next

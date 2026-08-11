@@ -150,7 +150,151 @@
 #error "Supporter selector composition leaked choose_supporter"
 #endif
 
-#include "search_item_overrides.inc"
+// Centralize the late search-item wrapper families directly on this ordered
+// post-search spine. This was previously forwarded through search_item_overrides.inc;
+// inlining it keeps the behavior-significant macro/include sequence in one place.
+// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
+#if defined(bench_oricorio_if_useful) || defined(ultra_ball_has_legal_target) || \
+    defined(play_ultra_ball) || defined(play_brilliant_blender) || \
+    defined(play_earthen_vessel) || defined(play_mysterious_treasure) || \
+    defined(play_quick_ball) || defined(bench_tapu_if_useful) || \
+    defined(in_play) || defined(play_steven) || defined(use_fss) || \
+    defined(should_play_steven) || defined(play_arven)
+#error "Late search composition requires search wrapper aliases to be undefined on entry"
+#endif
+
+// Empty-deck search family. Macro aliases deliberately expose the preceding
+// implementation to later wrappers, so preserve both include order and each
+// matching undef boundary.
+#define bench_oricorio_if_useful bench_oricorio_if_useful_target_original
+#define ultra_ball_has_legal_target ultra_ball_has_legal_target_k0_target_original
+#define play_ultra_ball play_ultra_ball_k0_target_original
+#define play_brilliant_blender play_brilliant_blender_vstar_axis_original
+#define play_earthen_vessel play_earthen_vessel_vstar_window_original
+#define play_mysterious_treasure play_mysterious_treasure_issue1167_original
+#define play_quick_ball play_quick_ball_issue1209_original
+#define bench_tapu_if_useful bench_tapu_if_useful_issue989_empty_deck_original
+#define in_play tapu_connector_copy_aware_in_play
+#define play_steven play_steven_issue1002_empty_deck_original
+#define use_fss use_fss_issue1356_original
+#define play_arven play_arven_garbodor_original
+#include "../part_empty_deck_search_override.inc"
+
+#undef play_arven
+#include "../part_arven_garbodor_field_blower_override.inc"
+
+#undef use_fss
+#undef play_steven
+#include "../part_issue_1356_fss_energy_override.inc"
+
+#undef play_quick_ball
+#undef play_mysterious_treasure
+#undef in_play
+#undef bench_tapu_if_useful
+
+#define play_steven play_steven_issue1030_original
+#include "../part_issue_1002_steven_target_override.inc"
+#undef play_steven
+
+#define should_play_steven should_play_steven_issue1067_original
+#include "../part_issue_1030_steven_turo_override.inc"
+#undef should_play_steven
+
+#include "../part_issue_1067_arven_before_late_steven_override.inc"
+
+#define bench_tapu_if_useful bench_tapu_if_useful_issue_991_original
+#include "../part_issue_989_empty_deck_tapu_override.inc"
+#undef bench_tapu_if_useful
+
+#include "../part_issue_991_wonder_tag_burnet_legacy_star_override.inc"
+
+#undef play_earthen_vessel
+#undef play_brilliant_blender
+#undef play_ultra_ball
+#undef ultra_ball_has_legal_target
+#undef bench_oricorio_if_useful
+
+// Legacy state/target bridges remain direct composition inputs until each fragment
+// is migrated into its owning card-action family.
+#include "../part_k0_ultra_ball_target_override.inc"
+#include "../part_blender_vstar_axis_override.inc"
+
+// Core connector policies are composed directly without compatibility wrappers.
+#include "../core/oricorio_connector_policy.inc" // Oricorio Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+
+// Earthen Vessel route family. Each alias exposes the preceding implementation to
+// the next override, so the sequence remains fixed at this central boundary.
+// Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+#define play_earthen_vessel play_earthen_vessel_issue1368_original
+#include "../part_earthen_vessel_vstar_window_override.inc"
+#undef play_earthen_vessel
+
+#define play_earthen_vessel play_earthen_vessel_issue1412_original
+#include "../part_issue_1368_earthen_vessel_celestial_roar_override.inc"
+#undef play_earthen_vessel
+
+#include "../part_issue_1412_preserve_quick_balls.inc"
+
+// Mysterious Treasure route family. Keep the wrapper chain adjacent so the macro
+// lifetimes and search-action precedence are visible in one composition file.
+// Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+#define play_mysterious_treasure play_mysterious_treasure_issue1209_original
+#include "../part_issue_1167_treasure_vessel_override.inc"
+#undef play_mysterious_treasure
+
+#define play_quick_ball play_quick_ball_issue1235_original
+#define play_mysterious_treasure play_mysterious_treasure_issue1235_original
+#define choose_supporter choose_supporter_issue1235_original
+#include "../part_issue_1209_treasure_tapu_crispin_override.inc"
+#undef choose_supporter
+#undef play_mysterious_treasure
+#undef play_quick_ball
+
+#define play_quick_ball play_quick_ball_issue1356_original
+#define play_mysterious_treasure play_mysterious_treasure_issue1356_original
+#include "../part_issue_1235_oricorio_treasure_tapu_override.inc"
+#undef play_mysterious_treasure
+#undef play_quick_ball
+
+#define play_quick_ball play_quick_ball_issue1476_original
+#define play_mysterious_treasure play_mysterious_treasure_issue1476_original
+#include "../part_issue_1356_fss_treasure_energy_override.inc"
+#undef play_mysterious_treasure
+#undef play_quick_ball
+
+// Compose the Quick Ball-only tail directly on the late search boundary. Each
+// alias deliberately exposes the immediately preceding implementation to the next
+// layer. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+#ifdef play_quick_ball
+#error "Quick Ball route composition requires play_quick_ball to be undefined on entry"
+#endif
+
+#define play_quick_ball play_quick_ball_issue1516_original
+#include "../part_issue_1476_redundant_burnet_route_override.inc"
+#undef play_quick_ball
+
+#define play_quick_ball play_quick_ball_issue1595_original
+#include "../part_issue_1516_quick_ball_tapu_crispin_override.inc"
+#undef play_quick_ball
+
+#define play_quick_ball play_quick_ball_issue2272_original
+#include "../part_issue_1595_preserve_turo_over_quick_ball_override.inc"
+#undef play_quick_ball
+
+#include "../part_issue_2272_route_replaced_arven_quick_ball_override.inc"
+
+#ifdef play_quick_ball
+#error "Quick Ball route composition leaked play_quick_ball"
+#endif
+
+#if defined(bench_oricorio_if_useful) || defined(ultra_ball_has_legal_target) || \
+    defined(play_ultra_ball) || defined(play_brilliant_blender) || \
+    defined(play_earthen_vessel) || defined(play_mysterious_treasure) || \
+    defined(play_quick_ball) || defined(bench_tapu_if_useful) || \
+    defined(in_play) || defined(play_steven) || defined(use_fss) || \
+    defined(should_play_steven) || defined(play_arven)
+#error "Late search composition leaked a wrapper alias"
+#endif
 
 // Keep the Crispin provenance shim adjacent to the Secret Box implementation it
 // wraps, followed by the Celestial Roar bridge that consumes that implementation.

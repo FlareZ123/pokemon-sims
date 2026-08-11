@@ -239,15 +239,13 @@ bool attach_manual() {
     }
   }
   // Full Prize inspection establishes the same K1 state as a resolved deck
-  // search, so the route must depend on known zones rather than provenance:
-  // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-  // Correction precedent: https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
-  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1932
+  // search. Admit this continuation from its public legality and resource state:
+  // K1 and same-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Quick Ball, Wonder Tag, Crispin, and Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sm2-60 https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Official procedure and confirmed bug: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf https://github.com/FlareZ123/pokemon-sims/issues/3024
   const bool issue_1552_public_t2_state =
-      !secret_box_combo_enabled() &&
-      scenario_.dci == DciProfile::StrictJit &&
-      scenario_.locks == LockMode::None && scenario_.going_first &&
-      state_.turn == 2 && prizes_known() &&
+      !secret_box_combo_enabled() && strict_payload_timing() &&
+      prizes_known() && !item_locked() &&
       !state_.manual_energy_used && supporter_allowed() &&
       state_.active && state_.active->card == Card::RegidragoV &&
       state_.active->entered_turn < state_.turn &&

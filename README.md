@@ -90,7 +90,7 @@ python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out
 python scripts/update_multi_deck_docs.py --repo-root .
 ```
 
-The paired generator runs both decks across all 14 registered aggregate scenarios, producing 28 independent 100,000-trial rows and 2.8 million simulated games. It writes `results/multi_deck_comparison.csv`, `results/multi_deck_manifest.json`, reviewed named-deck traces, and [`docs/MULTI_DECK_REPORT.md`](docs/MULTI_DECK_REPORT.md). Both decks use the same derived seed for each scenario.
+The paired generator runs both decks across all 16 registered aggregate scenarios, producing 32 independent 100,000-trial rows and 3.2 million simulated games. The added Garbodor + Boost Shake rows model Garbotoxin after Boost Shake establishes the Stage 1 lock line: https://api.pokemontcg.io/v2/cards/xy9-57 https://api.pokemontcg.io/v2/cards/swsh7-142 https://github.com/FlareZ123/pokemon-sims/issues/2933. It writes `results/multi_deck_comparison.csv`, `results/multi_deck_manifest.json`, reviewed named-deck traces, and [`docs/MULTI_DECK_REPORT.md`](docs/MULTI_DECK_REPORT.md). Both decks use the same derived seed for each scenario.
 
 The equivalent direct command is:
 

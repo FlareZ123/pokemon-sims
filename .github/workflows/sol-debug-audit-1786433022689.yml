@@ -1,0 +1,99 @@
+name: Sol current-main debug audit 1786433022689
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/sol-debug-audit-1786433022689.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Inventory systemic hard-coded gates and thin include fragments
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          roots = [Path('src'), Path('tests'), Path('scripts')]
+          text_suffixes = {'.cpp', '.cc', '.cxx', '.h', '.hpp', '.inc', '.py', '.cmake'}
+          rules = {
+              'literal_strict_jit': re.compile(r'DciProfile::StrictJit'),
+              'player_order_identity': re.compile(r'(scenario_\.)?going_(first|second)'),
+              'turn_identity': re.compile(r'(state_\.)?turn\s*(?:==|!=|<=|>=|<|>)\s*\d+'),
+              'seed_identity': re.compile(r'\bseed\s*(?:==|!=|<=|>=|<>)\s*\d+'),
+              'raw_grass_fire_arithmetic': re.compile(r'(?=.*\bgrass\b)(?=.*\bfire\b)(?:.*(?:\+|-|>=|<=|==).*)', re.IGNORECASE),
+          }
+
+          matches = {name: [] for name in rules}
+          files = []
+          for root in roots:
+              if not root.exists():
+                  continue
+              for path in root.rglob('*'):
+                  if path.is_file() and path.suffix.lower() in text_suffixes:
+                      files.append(path)
+                      text = path.read_text(encoding='utf-8', errors='replace')
+                      for lineno, line in enumerate(text.splitlines(), 1):
+                          for name, pattern in rules.items():
+                              if pattern.search(line):
+                                  matches[name].append((path.as_posix(), lineno, line.strip()))
+
+          print(f'SCANNED_FILES {len(files)}')
+          for name, rows in matches.items():
+              print(f'CATEGORY {name} COUNT {len(rows)}')
+              for path, lineno, line in rows[:120]:
+                  print(f'  {path}:{lineno}: {line[:220]}')
+              if len(rows) > 120:
+                  print(f'  ... {len(rows) - 120} additional matches omitted from log')
+
+          print('THIN_INC_CANDIDATES')
+          for path in sorted(Path('src').rglob('*.inc')):
+              lines = path.read_text(encoding='utf-8', errors='replace').splitlines()
+              substantive = [line for line in lines if line.strip() and not line.lstrip().startswith('//')]
+              include_or_macro = [
+                  line for line in substantive
+                  if line.lstrip().startswith(('#include', '#define', '#undef', '#pragma', '#if', '#endif', '#error'))
+              ]
+              if len(substantive) <= 28 and len(substantive) == len(include_or_macro):
+                  print(f'  {path.as_posix()} substantive={len(substantive)}')
+          PY
+
+      - name: Build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+
+      - name: Simulate pass 1 shell strict JIT going second
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+
+      - name: Simulate pass 2 Pineco strict JIT going second
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2
+
+      - name: Simulate pass 3 shell no-discard-control going second
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario no-discard-control/go-second --seed 1
+
+      - name: Generate paired 100k T2 T3 matrix in one run
+        shell: bash
+        run: |
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out /tmp/sol-audit-matrix.csv
+          python - <<'PY'
+          import csv
+          from pathlib import Path
+
+          path = Path('/tmp/sol-audit-matrix.csv')
+          rows = list(csv.DictReader(path.open(encoding='utf-8')))
+          print('MATRIX_COLUMNS', ','.join(rows[0].keys()) if rows else '<empty>')
+          for row in rows:
+              deck = row.get('deck_id', row.get('deck', ''))
+              scenario = row.get('scenario', row.get('scenario_label', ''))
+              t2 = row.get('ready_by_t2_pct', row.get('t2_pct', row.get('ready_t2_pct', '')))
+              t3 = row.get('ready_by_t3_pct', row.get('t3_pct', row.get('ready_t3_pct', '')))
+              print(f'MATRIX_ROW deck={deck} scenario={scenario} T2={t2} T3={t3}')
+          PY

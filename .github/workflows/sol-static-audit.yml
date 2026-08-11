@@ -1,0 +1,53 @@
+name: Sol Static Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Scan systemic gameplay gates
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          roots = [Path('src'), Path('tests'), Path('scripts')]
+          patterns = {
+              'literal_strict_jit': re.compile(r'DciProfile::StrictJit'),
+              'literal_lock_none': re.compile(r'LockMode::None'),
+              'seat_identity': re.compile(r'(?:scenario_|scenario\.)going_first'),
+              'turn_identity': re.compile(r'(?:state_|state\.)turn\s*(?:==|!=|<=|>=|<|>)'),
+              'seed_identity': re.compile(r'\bseed\b\s*(?:==|!=|<=|>=|<|>)'),
+              'raw_grass_fire_axis': re.compile(r'(?:grass|fire)(?:_energy|_attached|_in_hand|_in_deck)', re.IGNORECASE),
+          }
+          out = []
+          for root in roots:
+              for path in sorted(root.rglob('*')):
+                  if not path.is_file() or path.suffix not in {'.cpp', '.h', '.hpp', '.inc', '.py', '.sh'}:
+                      continue
+                  text = path.read_text(encoding='utf-8', errors='replace').splitlines()
+                  for lineno, line in enumerate(text, 1):
+                      hits = [name for name, rx in patterns.items() if rx.search(line)]
+                      if hits:
+                          out.append(f"{path}:{lineno}:{','.join(hits)}:{line.strip()}")
+          Path('sol-static-scan.txt').write_text('\n'.join(out) + '\n', encoding='utf-8')
+          print(f"STATIC_SCAN_MATCHES={len(out)}")
+          for row in out[:120]:
+              print(row)
+          PY
+      - name: Upload static scan
+        uses: actions/upload-artifact@v4
+        with:
+          name: sol-static-scan
+          path: sol-static-scan.txt

@@ -1,10 +1,21 @@
-  std::optional<Card> issue_1871_searchable_payload() const {
+  std::optional<Card> treasure_route_searchable_payload() const {
     for (const Card card : {Card::MegaDragonite, Card::Dragapult,
                             Card::GoodraVstar, Card::DialgaGX,
                             Card::Appletun}) {
       if (deck_count_after_search_started(card) > 0) return card;
     }
     return std::nullopt;
+  }
+
+  void attach_treasure_route_grass(const char* missing_error) {
+    // Both deterministic Treasure payload routes attach the exact held or searched
+    // Grass Energy through the ordinary once-per-turn manual attachment action.
+    // Official attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    if (!remove_one(state_.hand, Card::Grass)) {
+      throw std::logic_error(missing_error);
+    }
+    ++state_.active->grass;
+    state_.manual_energy_used = true;
   }
 
   bool issue_1871_treasure_serena_payload_route_available() const {
@@ -25,13 +36,13 @@
         state_.active->grass == 1 && state_.active->fire == 1 && need_payload() &&
         hand_count(Card::MysteriousTreasure) > 0 &&
         hand_count(Card::Serena) > 0 && hand_count(Card::Grass) >= 2 &&
-        issue_1871_searchable_payload().has_value();
+        treasure_route_searchable_payload().has_value();
   }
 
   bool complete_issue_1871_treasure_serena_payload_route() {
     if (!issue_1871_treasure_serena_payload_route_available()) return false;
 
-    const std::optional<Card> payload = issue_1871_searchable_payload();
+    const std::optional<Card> payload = treasure_route_searchable_payload();
     if (!payload.has_value()) {
       throw std::logic_error("Issue-1871 payload target disappeared");
     }
@@ -55,11 +66,7 @@
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Official once-per-turn attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Earliest deterministic route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    if (!remove_one(state_.hand, Card::Grass)) {
-      throw std::logic_error("Issue-1871 Grass attachment disappeared");
-    }
-    ++state_.active->grass;
-    state_.manual_energy_used = true;
+    attach_treasure_route_grass("Issue-1871 Grass attachment disappeared");
     trace("ATTACH", "R-GAME-ENERGY; P-COMPRESS-01",
           "Grass Energy manually to Regidrago VSTAR before the Treasure-Serena finish.");
 

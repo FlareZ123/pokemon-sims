@@ -17,19 +17,30 @@
     return completing_basic_energy_from_possible_deck(target);
   }
 
-  std::optional<Card> issue_2437_direct_vessel_cost() const {
+  std::optional<Card> issue_2437_direct_vessel_cost() {
     const auto ordinary = choose_discard(false, true, true, Card::EarthenVessel);
     if (ordinary.has_value()) return ordinary;
 
-    // In the no-lock goldfish state, Field Blower has no current setup target.
-    // Spending it lets Vessel take the single Basic that completes a DDE-backed
-    // Apex line while preserving Quick Ball/Tapu/Crispin for later axes:
+    // Field Blower becomes route-replaced Vessel fodder only when every modeled
+    // setup target is dead. Supporter lock itself leaves Items legal and does not
+    // create a Field Blower target, so evaluate current Path, Garbodor, and spent-
+    // FSS/Powerglass value instead of the scenario enum:
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
     // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
-    // Earliest-route / dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed integration bug: https://github.com/FlareZ123/pokemon-sims/issues/2437
-    if (scenario_.locks == LockMode::None && state_.stadium == Stadium::None &&
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Advanced Item/search/discard/attachment procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Dynamic DCI / earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Original DDE integration: https://github.com/FlareZ123/pokemon-sims/issues/2437
+    // Confirmed semantic DCI bug: https://github.com/FlareZ123/pokemon-sims/issues/3118
+    const bool path_has_live_value = rule_box_abilities_locked() &&
+        path_removal_unlocks_live_rule_box_route();
+    const bool garbodor_has_live_value = garbodor_abilities_locked() &&
+        garbodor_removal_unlocks_live_pokemon_route();
+    const bool spent_fss_has_live_value =
+        spent_fss_removal_unlocks_powerglass_route();
+    if (!path_has_live_value && !garbodor_has_live_value &&
+        !spent_fss_has_live_value && state_.stadium == Stadium::None &&
         hand_count(Card::FieldBlower) > 0) {
       return Card::FieldBlower;
     }
@@ -67,7 +78,6 @@
               " as the one-attachment DDE Apex completion.");
     return true;
   }
-
   bool issue_1646_vessel_burnet_finish_visible() const {
     const Pokemon* active = state_.active ? &*state_.active : nullptr;
     if (active == nullptr || active->card != Card::RegidragoVstar) return false;

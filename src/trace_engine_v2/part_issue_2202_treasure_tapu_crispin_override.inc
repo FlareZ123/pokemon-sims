@@ -1,6 +1,16 @@
-  std::optional<Card> issue_2202_treasure_tapu_crispin_payload_cost() const {
-    const bool route_available =
-        strict_payload_timing() && prizes_known() && !item_locked() &&
+  bool issue_2202_treasure_tapu_crispin_route_available() const {
+    // The route requires the same-turn JIT payload obligation, K1, a legal Item and
+    // Supporter channel, an Active GF VSTAR, Bench space, Wonder Tag, Crispin, and
+    // both searchable Basic Energy types. Keep the complete semantic gate in one
+    // place so payload-cost selection only answers which redundant Dragon can pay.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, discard, search, Bench, Ability, Supporter, and Energy procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, dynamic DCI, current-turn JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Reclaimed confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2202
+    return strict_payload_timing() && prizes_known() && !item_locked() &&
         supporter_allowed() && active_is_vstar() &&
         state_.active->grass == 1 && state_.active->fire == 1 &&
         need_payload() && hand_count(Card::MysteriousTreasure) > 0 &&
@@ -11,7 +21,24 @@
         deck_count_after_search_started(Card::Crispin) > 0 &&
         deck_count_after_search_started(Card::Grass) > 0 &&
         deck_count_after_search_started(Card::Fire) > 0;
-    if (!route_available) return std::nullopt;
+  }
+
+  static constexpr std::array<Card, 5> issue_2202_treasure_payload_priority() {
+    // Preserve the established redundant Dragon preference exactly; this helper only
+    // gives the shared priority list a name for the route-specific DCI selector.
+    // Appletun: https://api.pokemontcg.io/v2/cards/sv8-140
+    // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
+    // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+    return {Card::Appletun, Card::MegaDragonite, Card::Dragapult,
+            Card::GoodraVstar, Card::DialgaGX};
+  }
+
+  std::optional<Card> issue_2202_treasure_tapu_crispin_payload_cost() const {
+    if (!issue_2202_treasure_tapu_crispin_route_available()) {
+      return std::nullopt;
+    }
 
     // Treasure's mandatory discard is the strict current-turn Apex Dragon outlet.
     // The same search finds Tapu Lele-GX, Wonder Tag finds Crispin, and Crispin
@@ -23,25 +50,24 @@
     // Official Item, discard, search, Bench, Ability, Supporter, and Energy procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, dynamic DCI, current-turn JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Reclaimed confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2202
-    for (const Card card : {Card::Appletun, Card::MegaDragonite,
-                            Card::Dragapult, Card::GoodraVstar,
-                            Card::DialgaGX}) {
+    for (const Card card : issue_2202_treasure_payload_priority()) {
       if (hand_count(card) > 0) return card;
     }
     return std::nullopt;
   }
 
-  bool play_issue_2202_treasure_tapu_crispin() {
-    const auto cost = issue_2202_treasure_tapu_crispin_payload_cost();
-    if (!cost) return false;
-
-    // This route proves that the Dragon discard is required for the current-turn
-    // strict-JIT axis, so it intentionally outranks the generic Treasure caller's
-    // conservative payload-cost permission after every route-specific gate above.
-    // JIT/DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  bool issue_2202_resolve_treasure_to_tapu(const Card cost) {
+    // Mysterious Treasure pays its discard before searching, then the resolved deck
+    // inspection establishes K1. Keep that state transition together so the caller
+    // only selects the route and its DCI-safe Dragon cost.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Official Item, discard, search, and shuffle procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 and DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Reclaimed confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2202
     remove_one(state_.hand, Card::MysteriousTreasure);
     state_.discard.push_back(Card::MysteriousTreasure);
-    if (!discard_from_hand(*cost, "Mysterious Treasure cost",
+    if (!discard_from_hand(cost, "Mysterious Treasure cost",
                            "R-MT-01; P-DCI-01; P-COMPRESS-01")) {
       throw std::logic_error("projected issue-2202 Dragon payload cost disappeared");
     }
@@ -53,4 +79,15 @@
     trace("PLAY ITEM", "R-MT-01; R-GAME-ITEM; P-DCI-01",
           "Spent the current-turn Dragon payload and searched Tapu Lele-GX for Wonder Tag -> Crispin.");
     return true;
+  }
+
+  bool play_issue_2202_treasure_tapu_crispin() {
+    const auto cost = issue_2202_treasure_tapu_crispin_payload_cost();
+    if (!cost) return false;
+
+    // This route proves that the Dragon discard is required for the current-turn
+    // strict-JIT axis, so it intentionally outranks the generic Treasure caller's
+    // conservative payload-cost permission after every route-specific gate above.
+    // JIT/DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    return issue_2202_resolve_treasure_to_tapu(*cost);
   }

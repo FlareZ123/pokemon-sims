@@ -1,0 +1,92 @@
+name: Cleanup 1786436803143 consolidation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  consolidate:
+    if: github.head_ref == 'cleanup-1786436803143'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cleanup-1786436803143
+          fetch-depth: 0
+      - name: Configure commit identity
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+
+      - name: Cleanup commit 1 - inline Legacy Star provenance wrapper
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/trace_engine_v2/composition/post_014a_overrides.inc')
+          text = path.read_text()
+          old = '#include "../part_legacy_star_projection_provenance_override.inc"'
+          new = '#include "../core/legacy_star_projection_provenance.inc"'
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one Legacy Star wrapper include, found {text.count(old)}')
+          path.write_text(text.replace(old, new))
+          PY
+          git rm src/trace_engine_v2/part_legacy_star_projection_provenance_override.inc
+          git add src/trace_engine_v2/composition/post_014a_overrides.inc
+          git diff --cached --check
+          git commit -m 'Cleanup: inline Legacy Star provenance include'
+
+      - name: Cleanup commit 2 - inline Crispin provenance wrapper
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/trace_engine_v2/composition/post_014a_overrides.inc')
+          text = path.read_text()
+          old = '#include "../part_issue_1437_crispin_trace_override.inc"'
+          new = '#include "../core/crispin_trace_provenance.inc"'
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one Crispin wrapper include, found {text.count(old)}')
+          path.write_text(text.replace(old, new))
+          PY
+          git rm src/trace_engine_v2/part_issue_1437_crispin_trace_override.inc
+          git add src/trace_engine_v2/composition/post_014a_overrides.inc
+          git diff --cached --check
+          git commit -m 'Cleanup: inline Crispin provenance include'
+
+      - name: Cleanup commit 3 - centralize composition citation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/trace_engine_v2/composition/post_014a_overrides.inc')
+          text = path.read_text()
+          citation = '// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include\n'
+          count = text.count(citation)
+          if count < 3:
+              raise SystemExit(f'expected repeated preprocessing citation, found {count}')
+          first = text.index(citation)
+          head = text[:first + len(citation)]
+          tail = text[first + len(citation):].replace(citation, '')
+          path.write_text(head + tail)
+          PY
+          git add src/trace_engine_v2/composition/post_014a_overrides.inc
+          git diff --cached --check
+          git commit -m 'Cleanup: centralize composition include citation'
+
+      - name: Remove one-shot workflow from final tree
+        run: |
+          git rm .github/workflows/cleanup-1786436803143.yml
+          git commit -m 'Cleanup: remove one-shot cleanup runner'
+
+      - name: Build final cleanup tree
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Run full final CTest suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Push validated cleanup commits
+        run: git push origin HEAD:cleanup-1786436803143

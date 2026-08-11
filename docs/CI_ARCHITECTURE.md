@@ -26,14 +26,6 @@ A lighter validation surface for pull requests whose base is another working bra
 
 It exists so dependent changes can receive useful feedback before the stack is retargeted to `main`. It deliberately avoids the full paired matrix, sanitizer duplication, and source-bound report checks. Those become authoritative after the final PR targets `main` and runs `ci.yml`.
 
-### `professors-letter-validation.yml`
-
-A specialist experiment for the unregistered Professor's Letter comparison.
-
-The 100,000-trial analyzer runs on pull requests only when its own analyzer, focused regression, build registration, or workflow changes. Simulator source changes rerun the specialist analysis after they reach `main`, and the workflow remains manually dispatchable.
-
-This keeps the expensive experiment source-sensitive without rerunning it for every unrelated agent PR.
-
 ### `workflow-policy.yml`
 
 The workflow hygiene guard.
@@ -50,12 +42,13 @@ The explicit inventory replaces the older `issue-*` filename convention, which c
 ## Rules for new validation work
 
 1. Prefer a CTest/unified regression for deterministic behavior.
-2. Put reusable experiment logic in `scripts/`, `tests/`, or `tools/`, then call it from an existing workflow.
-3. Add a permanent trace to `ci.yml` only when a full-game route needs source-bound behavioral coverage.
-4. Use the stacked workflow only for dependent PRs. It is not a second main CI.
-5. Do not commit one-off merge, materialization, recovery, or branch-specific workflows to `main`.
-6. Permanent workflows stay read-only. Repository mutation belongs in explicit human/agent GitHub operations, not ambient PR validation.
-7. If a genuinely new permanent workflow is needed, add it to `docs/PERMANENT_WORKFLOWS.txt` in the same reviewed PR and explain why an existing workflow cannot own the job.
+2. Preserve durable correctness findings as normal regression tests under `tests/` so they run with the unified suite.
+3. Treat A/B comparisons, exploratory analyses, and one-time experiments as temporary work. After the experiment is complete, remove its dedicated workflow and experiment-only analyzers or harnesses from `main`.
+4. Add a permanent trace to `ci.yml` only when a full-game route needs source-bound behavioral coverage.
+5. Use the stacked workflow only for dependent PRs. It is not a second main CI.
+6. Do not commit one-off merge, materialization, recovery, audit, experiment, or branch-specific workflows to `main` after their owning work is complete.
+7. Permanent workflows stay read-only. Repository mutation belongs in explicit human/agent GitHub operations rather than ambient PR validation.
+8. If a genuinely new permanent workflow is needed, add it to `docs/PERMANENT_WORKFLOWS.txt` in the same reviewed PR and explain why an existing workflow cannot own the job.
 
 GitHub references:
 
@@ -68,4 +61,3 @@ Repository history:
 
 - Workflow-sprawl incident and cleanup contract: https://github.com/FlareZ123/pokemon-sims/issues/1360
 - Stacked regression-selector scope: https://github.com/FlareZ123/pokemon-sims/issues/2152
-- Professor's Letter overcomputation fix: https://github.com/FlareZ123/pokemon-sims/issues/3008

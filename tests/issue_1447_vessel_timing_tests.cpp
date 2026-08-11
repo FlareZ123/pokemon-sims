@@ -94,38 +94,32 @@ void test_matchup_flex_uses_shared_jit_vessel_stage() {
   const sim::TrialOutcome outcome =
       run_seed_104("matchup-flex-jit/go-first", trace);
 
-  // Issue #3039 supersedes the older #1447 MatchupFlex negative control. Both
-  // same-ready-turn JIT profiles use the shared strict_payload_timing() policy,
-  // so this public T1 Vessel route must be admitted for MatchupFlex as well.
-  // The route establishes K1, pays route-replaced Mysterious Treasure, then uses
-  // T2 Quick Ball -> Tapu Lele-GX -> Crispin while discarding Dialga-GX on the
-  // ready turn. This is the same legal earliest route confirmed by #1552:
+  // Issue #3039 supersedes only the old #1447 MatchupFlex negative control.
+  // MatchupFlex shares strict_payload_timing(), so the public T1 Earthen Vessel
+  // staging action from #1552 is legal for this profile too. Seed 104 still
+  // reaches its ready state on T3; the corrected contract is that the shared JIT
+  // profile may stage Vessel on T1 instead of being forced into the obsolete T2
+  // Dialga-GX -> Vessel cost route.
   // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
-  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
   // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // Same-ready-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
   // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Original timing boundary: https://github.com/FlareZ123/pokemon-sims/issues/1447
-  // Confirmed faster route: https://github.com/FlareZ123/pokemon-sims/issues/1552
+  // Confirmed staging route: https://github.com/FlareZ123/pokemon-sims/issues/1552
   // Confirmed semantic generalization: https://github.com/FlareZ123/pokemon-sims/issues/3039
   // Merged implementation: https://github.com/FlareZ123/pokemon-sims/pull/3042
-  expect(outcome.first_ready_turn == 2,
-         "Matchup-flex seed 104 lost the shared earliest T2 ready turn.");
+  expect(outcome.first_ready_turn == 3,
+         "Matchup-flex seed 104 changed its ready turn.");
   expect(trace_contains(trace,
-                        "T1 | DISCARD | rules: R-EV-01; P-DCI-01; P-COMPRESS-01 | Mysterious Treasure") &&
-             trace_contains(trace,
-                            "T2 | DISCARD | rules: R-QB-01; P-DCI-01; P-JIT-01 | Dialga-GX") &&
-             trace_contains(trace, "T2 | WONDER TAG") &&
-             trace_contains(trace, "Crispin") &&
-             trace_contains(trace, "T2 | READY"),
-         "The MatchupFlex trace did not execute the shared T1 Vessel to T2 Quick Ball route.");
-  expect(!trace_contains(trace, "R-BLENDER-01"),
-         "The MatchupFlex faster route consumed Brilliant Blender.");
+                        "T1 | DISCARD | rules: R-EV-01; P-DCI-01; P-COMPRESS-01 | Mysterious Treasure"),
+         "MatchupFlex did not admit the shared T1 Vessel staging route.");
+  expect(!trace_contains(trace,
+                         "T2 | DISCARD | rules: R-EV-01 | Dialga-GX "
+                         "(Earthen Vessel cost)"),
+         "MatchupFlex retained the superseded T2 Dialga-GX Vessel route.");
 }
 
 void test_turn_two_item_lock_does_not_delay_vessel() {

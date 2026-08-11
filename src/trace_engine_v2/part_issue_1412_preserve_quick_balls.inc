@@ -260,9 +260,17 @@
   bool play_issue_1898_pineco_vessel_payload_finish() {
     const auto payload = std::find_if(
         state_.hand.begin(), state_.hand.end(), is_payload);
+    // Admit this Item route from its observable action legality. Rule Box
+    // Ability lock leaves Trainer Item play, deck search, and a manual Energy
+    // attachment legal while the existing Item/search guards enforce the actual
+    // route restrictions:
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Advanced Item/search/attachment procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Scenario-lock semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3107
     if ((scenario_.dci != DciProfile::StrictJit &&
          scenario_.dci != DciProfile::MatchupFlexJit) ||
-        scenario_.locks != LockMode::None || !prizes_known() || item_locked() ||
+        !prizes_known() || item_locked() ||
         !deck_search_available() || state_.manual_energy_used ||
         !state_.active || state_.active->card != Card::RegidragoVstar ||
         state_.active->grass < 2 || state_.active->fire != 0 ||

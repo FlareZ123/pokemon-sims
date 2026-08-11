@@ -117,14 +117,14 @@
 #error "Tate search-item composition leaked a local wrapper alias"
 #endif
 
-// play_ultra_ball intentionally remains exported until the following Steven/Blender
-// wrapper layer releases it at the same historical boundary.
+// play_ultra_ball intentionally remains exported until the following inline
+// Steven/Blender layer releases it at the same historical boundary.
 
 // Continue into the Steven/Blender, legacy Supporter, Supporter selector, and
 // VSTAR stages in historical order. Each composed boundary owns its local aliases;
 // use_fss and use_celestial_roar intentionally remain live for the post-part_014a
 // continuation.
-// Steven/Blender: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/steven_blender_overrides.inc
+// Steven/Blender source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010.inc
 // Legacy Supporter cards: https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 https://api.pokemontcg.io/v2/cards/sm7-145
 // Supporter selector cards: https://api.pokemontcg.io/v2/cards/sv1-166 https://api.pokemontcg.io/v2/cards/sm4-95 https://api.pokemontcg.io/v2/cards/swsh12-164
 // Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136

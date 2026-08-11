@@ -17,6 +17,15 @@
     return shadow.choose_discard(permit_payload && !is_payload(*first), true).has_value();
   }
 
+  bool held_basic_can_complete_apex(const Pokemon& pokemon) const {
+    // Project one held Basic Energy through the canonical Apex payment helper.
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Manual Energy attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    return completing_basic_energy_for(
+        pokemon, [this](const Card card) { return hand_count(card) > 0; }).has_value();
+  }
+
   bool has_faster_current_turn_regidrago_v_route() const {
     if (item_locked() || !might_be_unseen(Card::RegidragoV)) return false;
 
@@ -90,8 +99,7 @@
     bool after_evolution = false;
     for (const Pokemon& pokemon : state_.bench) {
       if (pokemon.entered_turn >= state_.turn) continue;
-      const bool held_basic_completes = completing_basic_energy_for(
-          pokemon, [this](const Card card) { return hand_count(card) > 0; }).has_value();
+      const bool held_basic_completes = held_basic_can_complete_apex(pokemon);
       const bool semantic_energy_complete = pays_apex_energy_cost(pokemon);
       if (pokemon.card == Card::RegidragoV &&
           !state_.manual_energy_used && hand_count(Card::RegidragoVstar) > 0 &&
@@ -140,9 +148,7 @@
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
           return pokemon.card == Card::RegidragoVstar &&
               pokemon.entered_turn < state_.turn &&
-              (pays_apex_energy_cost(pokemon) ||
-               completing_basic_energy_for(
-                   pokemon, [this](const Card card) { return hand_count(card) > 0; }).has_value());
+              (pays_apex_energy_cost(pokemon) || held_basic_can_complete_apex(pokemon));
         }); // https://github.com/FlareZ123/pokemon-sims/issues/2424
     const bool legal_search_target = std::any_of(
         state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic);

@@ -26,9 +26,12 @@
     return state_.turn >= garbodor_lock_activation_turn();
   }
 
+  bool garbodor_lock_present() const {
+    return garbodor_shake_scenario() && garbodor_lock_established();
+  }
+
   bool garbodor_abilities_locked() const {
-    return garbodor_shake_scenario() && !garbodor_lock_removed() &&
-        garbodor_lock_established();
+    return garbodor_lock_present() && !garbodor_lock_removed();
   }
 
   bool rule_box_ability_available(const Card card) const {

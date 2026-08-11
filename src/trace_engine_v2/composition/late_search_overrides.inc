@@ -19,4 +19,27 @@
 #include "../core/oricorio_connector_policy.inc"
 #include "post_search_connector_overrides.inc"
 
-#include "late_quick_ball_overrides.inc"
+// Ordered Quick Ball tail formerly isolated in late_quick_ball_overrides.inc.
+// Each alias exposes the immediately preceding implementation, so preserve every
+// define/include/undef pair in this order.
+#ifdef play_quick_ball
+#error "Quick Ball route composition requires play_quick_ball to be undefined on entry"
+#endif
+
+#define play_quick_ball play_quick_ball_issue1516_original
+#include "../part_issue_1476_redundant_burnet_route_override.inc"
+#undef play_quick_ball
+
+#define play_quick_ball play_quick_ball_issue1595_original
+#include "../part_issue_1516_quick_ball_tapu_crispin_override.inc"
+#undef play_quick_ball
+
+#define play_quick_ball play_quick_ball_issue2272_original
+#include "../part_issue_1595_preserve_turo_over_quick_ball_override.inc"
+#undef play_quick_ball
+
+#include "../part_issue_2272_route_replaced_arven_quick_ball_override.inc"
+
+#ifdef play_quick_ball
+#error "Quick Ball route composition leaked play_quick_ball"
+#endif

@@ -1,5 +1,12 @@
+  static constexpr std::string_view kGarbodorShakeScenarioPrefix =
+      "garbodor-shake-ability-lock/";
+
   bool garbodor_shake_scenario() const {
-    return scenario_.label.rfind("garbodor-shake-ability-lock/", 0) == 0;
+    return scenario_.label.rfind(kGarbodorShakeScenarioPrefix, 0) == 0;
+  }
+
+  int garbodor_lock_activation_turn() const {
+    return scenario_.going_first ? 2 : 1;
   }
 
   bool garbodor_abilities_locked() const {
@@ -12,7 +19,7 @@
     // https://api.pokemontcg.io/v2/cards/swsh7-142
     // https://api.pokemontcg.io/v2/cards/xy9-57
     // https://github.com/FlareZ123/pokemon-sims/issues/2808
-    return scenario_.going_first ? state_.turn >= 2 : state_.turn >= 1;
+    return state_.turn >= garbodor_lock_activation_turn();
   }
 
   bool ability_available_for_pokemon_garbodor(const Card card) const {
@@ -23,5 +30,7 @@
     // https://api.pokemontcg.io/v2/cards/swsh6-148
     // https://github.com/FlareZ123/pokemon-sims/issues/2808
     if (garbodor_abilities_locked()) return false;
-    return !is_rule_box_pokemon(card) || !rule_box_abilities_locked();
+    const bool rule_box_lock_allows_ability =
+        !is_rule_box_pokemon(card) || !rule_box_abilities_locked();
+    return rule_box_lock_allows_ability;
   }

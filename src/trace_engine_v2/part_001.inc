@@ -1,8 +1,14 @@
 #ifndef SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
 #define SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
-#include "part_000.inc"
-#include "core/card_classification.inc"
+
+#ifndef SIM_TRACE_CARD_CATALOG_INCLUDED
+#define SIM_TRACE_CARD_CATALOG_INCLUDED
+#include "core/card_catalog.inc"
 #endif
+
+#include "core/card_classification.inc"
+
+#endif  // SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
 
 // Compatibility source-contract shim. Canonical implementation:
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc

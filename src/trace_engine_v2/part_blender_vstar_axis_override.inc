@@ -148,14 +148,13 @@
       if (pays_apex_energy_cost(*state_.active)) return true;
       if (state_.manual_energy_used) return false;
 
-      // Preserve the original pre-attachment hold: when one held Basic can be the
-      // legal manual attachment that finishes Apex, Burnet still owns the equal-turn
-      // payload route and Blender should remain unused. Project the physical card so
-      // DDE and Basic-only states share the same semantic payment test:
+      // Preserve the pre-attachment hold when one Basic Energy in hand can legally
+      // finish Apex after the manual attachment. This uses semantic payment so DDE
+      // and Basic-only states share the same readiness calculation:
       // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
       // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
       // Official manual Energy attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2429
+      // Confirmed DDE bug: https://github.com/FlareZ123/pokemon-sims/issues/2429
       for (const Card basic : {Card::Grass, Card::Fire}) {
         if (hand_count(basic) == 0) continue;
         Pokemon projected = *state_.active;
@@ -167,31 +166,23 @@
       return false;
     }();
 
-    // Earthen Vessel has paid its printed cost with the route-dominated Quick
-    // Ball. Before the final attachment, a held Basic may finish Apex. After the
-    // attachment, semantic Apex payment may be Basic-only or DDE-powered. In both
-    // states Burnet supplies the current-turn payload without consuming Blender:
-    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Professor Burnet owns the current-turn payload axis whenever the Active
+    // Regidrago VSTAR can finish Apex without Brilliant Blender. The dominance
+    // rule applies across strict-JIT profiles and does not depend on historical
+    // turn/discard breadcrumbs. Item and Supporter legality remain semantic gates:
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Core Item, Supporter, attachment, search, discard, and shuffle procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // K1, dynamic DCI, strict JIT, and resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Original route contract: https://github.com/FlareZ123/pokemon-sims/issues/1646
-    // Confirmed DDE regression: https://github.com/FlareZ123/pokemon-sims/issues/2429
-    return scenario_.dci == DciProfile::StrictJit &&
-        scenario_.locks == LockMode::None && state_.turn == 3 &&
-        prizes_known() && supporter_allowed() && state_.active &&
+    // Official Item, Supporter, attachment, search, and discard procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Same-turn JIT and resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Original route, systemic refinement, and DDE regression: https://github.com/FlareZ123/pokemon-sims/issues/1646 https://github.com/FlareZ123/pokemon-sims/issues/3010 https://github.com/FlareZ123/pokemon-sims/issues/2429
+    return strict_payload_timing() && !item_locked() && prizes_known() &&
+        supporter_allowed() && state_.active &&
         state_.active->card == Card::RegidragoVstar &&
         energy_axis_completes && need_payload() &&
         hand_count(Card::ProfessorBurnet) > 0 &&
-        hand_count(Card::BrilliantBlender) > 0 &&
-        count_of(state_.discard, Card::EarthenVessel) > 0 &&
-        count_of(state_.discard, Card::QuickBall) > 0 &&
-        count_of(state_.discarded_this_turn, Card::QuickBall) > 0 &&
-        payload_might_be_in_deck();
+        hand_count(Card::BrilliantBlender) > 0 && payload_might_be_in_deck();
   }
 
   bool play_issue_1700_known_prize_gladion_before_blender() {
@@ -205,7 +196,7 @@
           Pokemon with_prized_fire = pokemon;
           return attach_energy_card(with_prized_fire, Card::Fire) &&
               apex_energy_progress(with_prized_fire) > apex_energy_progress(pokemon);
-        }); // https://github.com/FlareZ123/pokemon-sims/issues/2428
+        }); // DDE-aware progression: https://github.com/FlareZ123/pokemon-sims/issues/2428
     const auto prized_fire =
         std::find(state_.prizes.begin(), state_.prizes.end(), Card::Fire);
 
@@ -229,9 +220,10 @@
     // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
     // Core Prize, Supporter, attachment, evolution, retreat, and Item procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // K1, supporter contention, DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1700
+    // Refined confirmed bug and DDE regression: https://github.com/FlareZ123/pokemon-sims/issues/1700 https://github.com/FlareZ123/pokemon-sims/issues/2428
     remove_one(state_.hand, Card::Gladion);
     state_.hand.push_back(Card::Fire);
     *prized_fire = Card::Gladion;
@@ -252,7 +244,7 @@
             state_, "issue-1646-hold-blender-for-burnet", state_.turn,
             "HOLD ITEM",
             "R-BLENDER-01; R-BURNET-01; P-DCI-01; P-JIT-01; P-COMPRESS-01",
-            "Held Brilliant Blender because Professor Burnet completes the current-turn payload after the Vessel-to-Grass route.");
+            "Held Brilliant Blender because Professor Burnet completes the current-turn payload after the visible Energy route.");
       }
       return false;
     }

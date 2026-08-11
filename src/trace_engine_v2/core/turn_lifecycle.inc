@@ -21,20 +21,10 @@
     if (garbodor_shake_scenario()) state_.path_lock_removed = false;
   }
 
-  void reset_turn_state() {
-    reset_turn_action_usage();
-    reset_turn_transients();
-  }
-
   void reset_per_turn_state(const int turn) {
     state_.turn = turn;
-    reset_turn_state();
-  }
-
-  void record_deck_out_loss() {
-    state_.turn_ended = true;
-    trace("GAME LOST", "R-GAME-DECK-OUT",
-          "No cards remained in deck for the required start-of-turn draw.");
+    reset_turn_action_usage();
+    reset_turn_transients();
   }
 
   bool draw_start_of_turn_card() {
@@ -42,7 +32,9 @@
     // the first player's opening turn:
     // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Start_Your_Turn
     if (!deck_has_cards()) {
-      record_deck_out_loss();
+      state_.turn_ended = true;
+      trace("GAME LOST", "R-GAME-DECK-OUT",
+            "No cards remained in deck for the required start-of-turn draw.");
       return false;
     }
 
@@ -50,19 +42,15 @@
     return true;
   }
 
-  void trace_first_turn_restrictions() {
-    // The first player is restricted from playing a Supporter or attacking on that
-    // turn; the restriction does not remove the required draw:
-    // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#First_Turn
-    trace("TURN START", "R-GAME-FIRST-TURN",
-          "Going first: drew for the turn; no Supporter or attack is permitted.");
-  }
-
   void begin_turn(const int turn) {
     reset_per_turn_state(turn);
     if (!draw_start_of_turn_card()) return;
 
     if (first_turn_going_first()) {
-      trace_first_turn_restrictions();
+      // The first player is restricted from playing a Supporter or attacking on
+      // that turn; the restriction does not remove the required draw:
+      // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#First_Turn
+      trace("TURN START", "R-GAME-FIRST-TURN",
+            "Going first: drew for the turn; no Supporter or attack is permitted.");
     }
   }

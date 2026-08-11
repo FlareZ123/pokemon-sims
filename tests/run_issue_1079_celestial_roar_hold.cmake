@@ -25,15 +25,18 @@ function(run_trace scenario seed output_var)
 endfunction()
 
 # Held Fire plus the next legal manual attachment guarantees GGF before Regidrago V
-# can evolve. Held Serena plus Dialga-GX supplies the T2 strict-JIT payload, so seed 19
-# must preserve the unresolved VSTAR and connector axes:
+# can evolve. #1079 therefore holds Celestial Roar. On T2, #2408 prefers Professor
+# Burnet's K1 deck-to-discard payload route over equal-turn Serena, preserving Serena
+# plus held Dialga-GX while retaining the same T2 strict-JIT ready turn:
 # Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
 # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+# Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
 # Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
 # Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
-# Manual attachment, evolution, and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-# Strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-# Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1079
+# Manual attachment, evolution, Supporter, search, and discard procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+# Strict-JIT timing and resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+# Celestial Roar hold bug: https://github.com/FlareZ123/pokemon-sims/issues/1079
+# Equal-turn resource bug: https://github.com/FlareZ123/pokemon-sims/issues/2408
 run_trace("${STRICT_SECOND_SCENARIO}" ${STRICT_HOLD_SEED} strict_seed_19)
 if(NOT strict_seed_19 MATCHES "T1 \\| HOLD ATTACK \\|")
   message(FATAL_ERROR "Strict seed 19 did not hold Celestial Roar:\n${strict_seed_19}")
@@ -41,8 +44,11 @@ endif()
 if(strict_seed_19 MATCHES "T1 \\| ATTACK \\|.*Celestial Roar")
   message(FATAL_ERROR "Strict seed 19 still used Celestial Roar:\n${strict_seed_19}")
 endif()
-if(NOT strict_seed_19 MATCHES "T2 \\| DISCARD \\|.*Dialga-GX")
-  message(FATAL_ERROR "Strict seed 19 lost its held same-turn payload route:\n${strict_seed_19}")
+if(NOT strict_seed_19 MATCHES "T2 \\| PLAY SUPPORTER \\|.*Professor Burnet")
+  message(FATAL_ERROR "Strict seed 19 lost its resource-preserving Burnet payload route:\n${strict_seed_19}")
+endif()
+if(strict_seed_19 MATCHES "T2 \\| DISCARD \\|.*Dialga-GX.*Serena")
+  message(FATAL_ERROR "Strict seed 19 regressed to spending Serena and held Dialga-GX:\n${strict_seed_19}")
 endif()
 if(NOT strict_seed_19 MATCHES "T2 \\| READY \\|")
   message(FATAL_ERROR "Strict seed 19 did not retain T2 readiness:\n${strict_seed_19}")

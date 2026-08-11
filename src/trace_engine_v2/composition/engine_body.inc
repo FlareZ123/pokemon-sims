@@ -5,17 +5,33 @@
 // wrappers are unnecessary. Preserve this textual include sequence and the macro
 // lifetimes because several legacy parts deliberately cross member boundaries.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
-// Core source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_000.inc
+// Card catalog: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
+// Card classification: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
+// Simulator state: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulator_state.inc
 // Opening, search, Steven/Blender, Supporter, and VSTAR composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_engine_overrides.inc
 // Part 010 search/Steven source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010.inc
 // Search-item closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc
 // Post-search Supporter, Legacy Star, and late search-item composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
 // Late turn source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
 
-// Core Engine state, turn, trace body, and Garbotoxin-aware Ability wrapper.
-#include "../part_000.inc"
-#include "../part_001.inc"
-#include "../part_002.inc"
+// Keep the legacy include guards while composing the three core fragments directly.
+// This removes one forwarding .inc layer without changing textual include order.
+#ifndef SIM_TRACE_SIMULATOR_STATE_INCLUDED
+#define SIM_TRACE_SIMULATOR_STATE_INCLUDED
+
+#ifndef SIM_TRACE_CARD_CATALOG_INCLUDED
+#define SIM_TRACE_CARD_CATALOG_INCLUDED
+#include "../core/card_catalog.inc"
+#endif
+
+#ifndef SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
+#define SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
+#include "../core/card_classification.inc"
+#endif
+
+#include "../core/simulator_state.inc"
+
+#endif  // SIM_TRACE_SIMULATOR_STATE_INCLUDED
 
 #define begin_turn begin_turn_original
 #define might_be_unseen might_be_unseen_empty_deck_original
@@ -45,12 +61,22 @@
 #include "../part_014a.inc"
 #include "post_014a_overrides.inc"
 
+// #3057 needs to preserve the Stadium action for a live current-turn
+// Forest/Pineco/Forretress route when Field Blower can remove Path instead.
+// Keep the route predicate outside the historical late-turn source and expose it
+// there only through a scoped hand-count alias so every unrelated action remains
+// byte-for-byte on the existing selector path:
+// https://github.com/FlareZ123/pokemon-sims/issues/3057
+#include "../part_issue_3057_swell_field_blower_route.inc"
+
 // Ordered late turn-execution, scenario-registry, and reporting composition.
 // Keep these aliases live through part_016 exactly as the historical root wrapper
 // did so the translation unit remains behaviorally identical.
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
+#define hand_count hand_count_issue_3057
 #include "../part_014c.inc"
+#undef hand_count
 #undef ability_available_for_pokemon
 
 // part_014c defines the historical scenario registry and leaves only the final

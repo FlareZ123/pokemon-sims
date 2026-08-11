@@ -5,6 +5,10 @@
     return scenario_.label.rfind(kGarbodorShakeScenarioPrefix, 0) == 0;
   }
 
+  int garbodor_lock_activation_turn() const {
+    return scenario_.going_first ? 2 : 1;
+  }
+
   bool garbodor_abilities_locked() const {
     if (!garbodor_shake_scenario() || state_.path_lock_removed) return false;
 
@@ -15,7 +19,7 @@
     // https://api.pokemontcg.io/v2/cards/swsh7-142
     // https://api.pokemontcg.io/v2/cards/xy9-57
     // https://github.com/FlareZ123/pokemon-sims/issues/2808
-    return scenario_.going_first ? state_.turn >= 2 : state_.turn >= 1;
+    return state_.turn >= garbodor_lock_activation_turn();
   }
 
   bool ability_available_for_pokemon_garbodor(const Card card) const {

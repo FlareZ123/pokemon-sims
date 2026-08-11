@@ -31,9 +31,30 @@
 #include "../part_celestial_roar_override.inc"
 #undef use_celestial_roar
 
-// Keep the final policy fragments directly on this named post-search spine so the
-// engine no longer crosses another wrapper whose only job is forwarding includes.
-#include "legacy_star_projection_chain.inc" // Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+// Compose Legacy Star projection and payload bridge wrappers directly on the
+// post-search spine. Each temporary alias exposes only the preceding implementation.
+// Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+#if defined(remove_one) || defined(pokemon_communication_plan) || defined(use_legacy_star)
+#error "Legacy Star projection chain requires wrapper aliases to be undefined on entry"
+#endif
+
+#include "../part_legacy_star_projection_provenance_override.inc"
+#define remove_one remove_one_legacy_star_projection
+#define pokemon_communication_plan pokemon_communication_plan_legacy_star_projection
+#define use_legacy_star use_legacy_star_issue1016_original
+#include "../part_013_legacy_star_override.inc"
+#undef use_legacy_star
+#undef pokemon_communication_plan
+#undef remove_one
+
+#define use_legacy_star use_legacy_star_issue1069_original
+#include "../part_issue_1016_legacy_star_quick_ball_override.inc"
+#undef use_legacy_star
+#include "../part_issue_1069_legacy_star_combined_energy_payload_override.inc"
+
+#if defined(remove_one) || defined(pokemon_communication_plan) || defined(use_legacy_star)
+#error "Legacy Star projection chain leaked a wrapper alias"
+#endif
 
 // Gladion wrappers live directly on the post-search composition boundary. Each
 // alias exposes the implementation from the preceding layer to the next override
@@ -95,7 +116,40 @@
 #error "Arven composition leaked play_arven"
 #endif
 
-#include "supporter_selector_overrides.inc" // Supporter rule: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+// Keep the late Supporter selector wrapper chain directly on this ordered
+// composition boundary. Each alias exposes the preceding implementation to the
+// next layer, so define/include/undef order remains behavior-significant.
+// Supporter turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+#ifdef choose_supporter
+#error "Supporter selector composition requires choose_supporter to be undefined on entry"
+#endif
+
+#define choose_supporter choose_supporter_original
+#include "../part_014b.inc"
+#undef choose_supporter
+
+#define choose_supporter choose_supporter_turo_original
+#include "../part_team_yell_vstar_override.inc"
+#undef choose_supporter
+
+#include "../part_roseanne_multimode_override.inc"
+
+#define choose_supporter choose_supporter_klara_original
+#include "../part_turo_oricorio_override.inc"
+#undef choose_supporter
+
+#define choose_supporter choose_supporter_issue1070_original
+#include "../part_klara_recovery_override.inc"
+#undef choose_supporter
+
+#define choose_supporter choose_supporter_issue1209_original
+#include "../part_issue_1070_tate_after_vstar_search_override.inc"
+#undef choose_supporter
+
+#ifdef choose_supporter
+#error "Supporter selector composition leaked choose_supporter"
+#endif
+
 #include "search_item_overrides.inc"
 
 // Keep the Crispin provenance shim adjacent to the Secret Box implementation it

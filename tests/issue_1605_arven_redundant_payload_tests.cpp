@@ -48,9 +48,9 @@ void install_public_state(sim::Engine& engine) {
 bool route_for(sim::LockMode locks, std::vector<sim::Card> hand,
                int bench_count = 0, int accounted_regi = 0,
                bool going_first = false, int turn = 1,
-               bool supporter_used = false) {
-  sim::Scenario scenario{"issue-1605-unit", sim::DciProfile::StrictJit,
-                         locks, going_first, 5};
+               bool supporter_used = false,
+               sim::DciProfile dci = sim::DciProfile::StrictJit) {
+  sim::Scenario scenario{"issue-1605-unit", dci, locks, going_first, 5};
   sim::DeckRecipe recipe(sim::kDeckRecipe.begin(), sim::kDeckRecipe.end());
   std::mt19937_64 rng{1};
   sim::Engine engine = make_unit_engine(scenario, recipe, rng);
@@ -133,6 +133,34 @@ void test_issue_2645_state_driven_turn_order_controls() {
          "The route ignored an already-used Supporter action.");
 }
 
+void test_issue_3132_shared_jit_profile_controls() {
+  const std::vector<sim::Card> no_matchup_fodder{
+      sim::Card::Arven, sim::Card::MegaDragonite,
+      sim::Card::MegaDragonite, sim::Card::GoodraVstar,
+      sim::Card::CrobatV, sim::Card::ForestSealStone};
+
+  // StrictJit and MatchupFlexJit both require the eventual Dragon payload on the
+  // ready turn. The early duplicated Dragon is route-safe under the same existing
+  // inventory proof when no lower-DCI ordinary fodder is available.
+  // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Crobat V / Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+  // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Same-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3132
+  expect(route_for(sim::LockMode::None, no_matchup_fodder, 0, 0, false, 1,
+                   false, sim::DciProfile::StrictJit),
+         "StrictJit lost the proven redundant-payload route.");
+  expect(route_for(sim::LockMode::None, no_matchup_fodder, 0, 0, false, 1,
+                   false, sim::DciProfile::MatchupFlexJit),
+         "MatchupFlexJit still rejected the same safe redundant-payload route.");
+  expect(!route_for(sim::LockMode::None, no_matchup_fodder, 0, 0, false, 1,
+                    false, sim::DciProfile::NoDiscardControl),
+         "NoDiscardControl entered the shared-JIT redundant-payload fallback.");
+}
+
 void test_seed_7_executes_arven_crobat_route() {
   const auto scenario = sim::scenario_by_label("strict-jit/go-second");
   const auto* deck = sim::crobat_modeling_deck_by_id("crobat1-erika");
@@ -166,5 +194,6 @@ void test_seed_7_executes_arven_crobat_route() {
 int main() {
   test_public_controls();
   test_issue_2645_state_driven_turn_order_controls();
+  test_issue_3132_shared_jit_profile_controls();
   test_seed_7_executes_arven_crobat_route();
 }

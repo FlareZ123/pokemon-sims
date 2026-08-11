@@ -1,0 +1,84 @@
+name: Materialize 2408 source-bound evidence
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  materialize:
+    if: github.head_ref == 'fix/2408-burnet-resource-sol-20260811'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/2408-burnet-resource-sol-20260811
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reuse exact paired CI aggregate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 31470350065 -n release-validation-1 -D .evidence
+          chmod +x .evidence/build/regidrago_sim
+          cp .evidence/t2-t3-matrix.csv results/simulation_results.csv
+          cp .evidence/multi-deck-matrix.csv results/multi_deck_comparison.csv
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from scripts.regenerate_setup_baselines import (
+              TRACE_SPECS, atomic_write_text, build_manifest, find_trace_seed,
+              reconcile_generated_traces, trace_file_name,
+          )
+          from scripts.generate_multi_deck_comparison import (
+              atomic_write_text as atomic_write_multi,
+              build_manifest as build_multi_manifest,
+              generate_traces,
+          )
+
+          exe = Path('.evidence/build/regidrago_sim').resolve()
+          results = Path('results')
+          trace_dir = results / 'traces'
+          trace_dir.mkdir(parents=True, exist_ok=True)
+          manifest = build_manifest(20260705, 100000)
+          expected = set()
+          for scenario, deadline, stem in TRACE_SPECS:
+              seed, trace = find_trace_seed(exe, scenario, deadline, 5000)
+              name = trace_file_name(stem, seed)
+              expected.add(name)
+              atomic_write_text(trace_dir / name, trace)
+              manifest['traces'].append({
+                  'scenario': scenario,
+                  'deadline': deadline,
+                  'seed': seed,
+                  'file': name,
+              })
+          reconcile_generated_traces(trace_dir, expected)
+          atomic_write_text(
+              results / 'baseline_manifest.json',
+              json.dumps(manifest, indent=2, sort_keys=True) + '\n',
+          )
+
+          multi_traces = generate_traces(exe, results / 'multi_deck_traces')
+          multi_manifest = build_multi_manifest(
+              results / 'multi_deck_comparison.csv', multi_traces, 100000, 20260705
+          )
+          atomic_write_multi(
+              results / 'multi_deck_manifest.json',
+              json.dumps(multi_manifest, indent=2, sort_keys=True) + '\n',
+          )
+          PY
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+          rm -rf .evidence
+          git rm .github/workflows/materialize-2408-evidence.yml
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add results docs README.md
+          git commit -m "Update #2408 source-bound setup evidence"
+          git push origin HEAD:fix/2408-burnet-resource-sol-20260811

@@ -242,17 +242,28 @@
 #include "../part_issue_1167_treasure_vessel_override.inc"
 #undef play_mysterious_treasure
 
+// Wonder Tag belongs to the individual Tapu Lele-GX placed from hand. Reuse the
+// #746 copy-aware in-play predicate for the complete #1209/#1235 Treasure routes,
+// so K1 may use a proven second physical copy while K0 remains conservative.
+// Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+// Knowledge-state policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+// Shared copy-aware rule: https://github.com/FlareZ123/pokemon-sims/issues/746
+// Confirmed systemic regression: https://github.com/FlareZ123/pokemon-sims/issues/3129
 #define play_quick_ball play_quick_ball_issue1235_original
 #define play_mysterious_treasure play_mysterious_treasure_issue1235_original
 #define choose_supporter choose_supporter_issue1235_original
+#define in_play tapu_connector_copy_aware_in_play
 #include "../part_issue_1209_treasure_tapu_crispin_override.inc"
+#undef in_play
 #undef choose_supporter
 #undef play_mysterious_treasure
 #undef play_quick_ball
 
 #define play_quick_ball play_quick_ball_issue1356_original
 #define play_mysterious_treasure play_mysterious_treasure_issue1356_original
+#define in_play tapu_connector_copy_aware_in_play
 #include "../part_issue_1235_oricorio_treasure_tapu_override.inc"
+#undef in_play
 #undef play_mysterious_treasure
 #undef play_quick_ball
 

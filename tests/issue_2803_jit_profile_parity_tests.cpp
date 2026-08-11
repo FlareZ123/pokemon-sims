@@ -59,6 +59,11 @@ sim::State t2_state() {
   return state;
 }
 
+sim::State with_benched_tapu(sim::State state) {
+  state.bench.push_back(sim::Pokemon{sim::Card::TapuLeleGX, 0});
+  return state;
+}
+
 void test_t1_and_t2_use_shared_jit_timing() {
   std::mt19937_64 rng{2803};
   const sim::DeckRecipe recipe = sim::baseline_recipe();
@@ -133,12 +138,46 @@ void test_seed_211_preserves_t2_readiness_for_both_jit_profiles() {
   expect(flex_outcome.first_ready_turn == 2,
          "Matchup-flex JIT seed 211 must remain ready on T2.");
 }
+
+void test_issue_3129_copy_aware_tapu_routes() {
+  // The connector belongs to each physical Tapu Lele-GX. An already-Benched copy
+  // therefore leaves a K1-proven second deck copy available for the later Wonder
+  // Tag line. K0 keeps the existing conservative route suppression.
+  // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Core Bench, Ability, Item, and Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Shared copy-aware rule: https://github.com/FlareZ123/pokemon-sims/issues/746
+  // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/3129
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  const sim::Scenario strict_scenario = scenario(sim::DciProfile::StrictJit);
+
+  std::mt19937_64 t1_k1_rng{312911};
+  sim::Engine t1_k1(strict_scenario, recipe, t1_k1_rng);
+  sim::EngineTestAccess::set_state(t1_k1, with_benched_tapu(t1_state()), true);
+  expect(sim::EngineTestAccess::t1_connector(t1_k1),
+         "K1 #1235 T1 connector rejected a proven second Tapu Lele-GX copy.");
+
+  std::mt19937_64 t1_k0_rng{312912};
+  sim::Engine t1_k0(strict_scenario, recipe, t1_k0_rng);
+  sim::EngineTestAccess::set_state(t1_k0, with_benched_tapu(t1_state()), false);
+  expect(!sim::EngineTestAccess::t1_connector(t1_k0),
+         "K0 #1235 connector guessed an uninspected second Tapu Lele-GX copy.");
+
+  std::mt19937_64 t2_k1_rng{312913};
+  sim::Engine t2_k1(strict_scenario, recipe, t2_k1_rng);
+  sim::EngineTestAccess::set_state(t2_k1, with_benched_tapu(t2_state()), true);
+  expect(sim::EngineTestAccess::t2_completion(t2_k1),
+         "K1 #1235 T2 completion rejected a proven second Tapu Lele-GX copy.");
+}
 }  // namespace
 
 int main() {
   try {
     test_t1_and_t2_use_shared_jit_timing();
     test_seed_211_preserves_t2_readiness_for_both_jit_profiles();
+    test_issue_3129_copy_aware_tapu_routes();
     std::cout << "Issue 2803 JIT profile parity tests passed\n";
     return 0;
   } catch (const std::exception& error) {

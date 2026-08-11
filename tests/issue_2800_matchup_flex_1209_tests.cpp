@@ -8,9 +8,9 @@
 
 namespace sim {
 struct EngineTestAccess {
-  static void set_state(Engine& engine, State state) {
+  static void set_state(Engine& engine, State state, const bool deck_seen = true) {
     engine.state_ = std::move(state);
-    engine.deck_seen_ = true;
+    engine.deck_seen_ = deck_seen;
   }
   static bool t1_route_available(const Engine& engine) {
     return engine.issue_1209_t1_treasure_tapu_crispin_route_available();
@@ -53,6 +53,11 @@ sim::State t2_state() {
   state.deck = {sim::Card::TapuLeleGX, sim::Card::Crispin,
                 sim::Card::Grass, sim::Card::Fire,
                 sim::Card::RegidragoV, sim::Card::MegaDragonite};
+  return state;
+}
+
+sim::State with_benched_tapu(sim::State state) {
+  state.bench.push_back(sim::Pokemon{sim::Card::TapuLeleGX, 0});
   return state;
 }
 
@@ -127,12 +132,46 @@ void test_t2_same_turn_jit_profile_parity() {
   expect(!sim::EngineTestAccess::t2_route_available(control),
          "NoDiscardControl must remain outside the same-turn JIT T2 route.");
 }
+
+void test_issue_3129_copy_aware_tapu_routes() {
+  // Wonder Tag triggers from the physical Tapu Lele-GX played from hand. At K1,
+  // one Tapu already on the Bench does not consume a separately proven deck copy;
+  // at K0 the same unseen-copy assumption remains intentionally conservative.
+  // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Core Bench, Ability, Item, and Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Shared copy-aware rule: https://github.com/FlareZ123/pokemon-sims/issues/746
+  // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/3129
+  static const sim::DeckRecipe recipe = sim::baseline_recipe();
+  const sim::Scenario strict_scenario = scenario(sim::DciProfile::StrictJit);
+
+  std::mt19937_64 t1_k1_rng{312901};
+  sim::Engine t1_k1(strict_scenario, recipe, t1_k1_rng, nullptr);
+  sim::EngineTestAccess::set_state(t1_k1, with_benched_tapu(t1_state()), true);
+  expect(sim::EngineTestAccess::t1_route_available(t1_k1),
+         "K1 #1209 T1 route rejected a proven second Tapu Lele-GX copy.");
+
+  std::mt19937_64 t1_k0_rng{312902};
+  sim::Engine t1_k0(strict_scenario, recipe, t1_k0_rng, nullptr);
+  sim::EngineTestAccess::set_state(t1_k0, with_benched_tapu(t1_state()), false);
+  expect(!sim::EngineTestAccess::t1_route_available(t1_k0),
+         "K0 #1209 route guessed an uninspected second Tapu Lele-GX copy.");
+
+  std::mt19937_64 t2_k1_rng{312903};
+  sim::Engine t2_k1(strict_scenario, recipe, t2_k1_rng, nullptr);
+  sim::EngineTestAccess::set_state(t2_k1, with_benched_tapu(t2_state()), true);
+  expect(sim::EngineTestAccess::t2_route_available(t2_k1),
+         "K1 #1209 T2 route rejected a proven second Tapu Lele-GX copy.");
+}
 }  // namespace
 
 int main() {
   try {
     test_t1_same_turn_jit_profile_parity();
     test_t2_same_turn_jit_profile_parity();
+    test_issue_3129_copy_aware_tapu_routes();
     std::cout << "Issue 2800 MatchupFlex #1209 parity tests passed\n";
     return 0;
   } catch (const std::exception& error) {

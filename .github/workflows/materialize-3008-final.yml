@@ -1,0 +1,374 @@
+name: Materialize #3008 final single-pass fix
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/materialize-3008-final.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Materialize combined analyzer
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('tools/professors_letter_real_game_analysis.cpp')
+          text = path.read_text()
+
+          old_run = '''TrialOutcome run_game(
+              const Scenario& scenario, const DeckRecipe& recipe,
+              const std::uint64_t seed, TraceLog* trace = nullptr) {
+            std::mt19937_64 rng(seed);
+            Engine engine(scenario, recipe, rng, trace);
+            return engine.run();
+          }
+          '''
+          new_run = '''struct SetupCheckpoint {
+            bool regi{false};
+            bool vstar{false};
+            bool active_vstar{false};
+            bool energy{false};
+            bool payload{false};
+            bool k1{false};
+          };
+
+          struct CheckpointTrial {
+            TrialOutcome outcome;
+            std::array<SetupCheckpoint, 5> by_turn{};
+          };
+
+          // Capture checkpoint evidence inside the same Engine traversal used by
+          // the full-game analysis, eliminating the second 100k simulator loop.
+          // Engine run contract: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+          // Ready-state policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
+          // Confirmed overcomputation bug: https://github.com/FlareZ123/pokemon-sims/issues/3008
+          struct EngineTestAccess {
+            static SetupCheckpoint checkpoint(Engine& engine) {
+              const Pokemon* target = engine.target_regi();
+              return {
+                  engine.in_play(Card::RegidragoV) ||
+                      engine.in_play(Card::RegidragoVstar),
+                  engine.in_play(Card::RegidragoVstar),
+                  engine.active_is_vstar(),
+                  target != nullptr && engine.pays_apex_energy_cost(*target),
+                  engine.payload_ready(),
+                  engine.prizes_known(),
+              };
+            }
+
+            static CheckpointTrial run(Engine& engine) {
+              CheckpointTrial result;
+              engine.setup();
+              SetupCheckpoint latest;
+              for (int next_turn = 1; next_turn <= engine.scenario_.max_turn;
+                   ++next_turn) {
+                engine.begin_turn(next_turn);
+                if (engine.state_.turn_ended) break;
+                engine.run_turn();
+                engine.record_ready();
+                latest = checkpoint(engine);
+                result.by_turn[static_cast<std::size_t>(next_turn - 1)] = latest;
+                if (engine.outcome_.first_ready_turn != 0) {
+                  for (int future = next_turn + 1; future <= 5; ++future) {
+                    result.by_turn[static_cast<std::size_t>(future - 1)] = latest;
+                  }
+                  break;
+                }
+                engine.resolve_powerglass_end_turn();
+              }
+              if (engine.scenario_.max_turn >= 5) {
+                engine.outcome_.setup_failed = !engine.outcome_.ready_by_4;
+                if (engine.outcome_.setup_failed) {
+                  const std::string detail = engine.outcome_.first_ready_turn == 5
+                      ? "First reached readiness on T5. T5 is diagnostic, so the game remains a setup loss."
+                      : "Did not reach readiness by the end of T4. The game is classified as a setup loss.";
+                  engine.trace("SETUP FAILURE", "P-T5-FAIL-01", detail);
+                }
+              }
+              result.outcome = engine.outcome_;
+              return result;
+            }
+          };
+
+          TrialOutcome run_game(
+              const Scenario& scenario, const DeckRecipe& recipe,
+              const std::uint64_t seed, TraceLog* trace = nullptr) {
+            std::mt19937_64 rng(seed);
+            Engine engine(scenario, recipe, rng, trace);
+            return engine.run();
+          }
+
+          CheckpointTrial run_checkpoint_game(
+              const Scenario& scenario, const DeckRecipe& recipe,
+              const std::uint64_t seed, TraceLog* trace = nullptr) {
+            std::mt19937_64 rng(seed);
+            Engine engine(scenario, recipe, rng, trace);
+            return EngineTestAccess::run(engine);
+          }
+
+          struct VariantCheckpointAggregate {
+            std::uint64_t trials{0};
+            std::uint64_t by2{0};
+            std::uint64_t by3{0};
+            std::uint64_t by4{0};
+            std::array<std::uint64_t, 5> regi{};
+            std::array<std::uint64_t, 5> vstar{};
+            std::array<std::uint64_t, 5> active_vstar{};
+            std::array<std::uint64_t, 5> energy{};
+            std::array<std::uint64_t, 5> payload{};
+            std::array<std::uint64_t, 5> k1{};
+
+            void add(const CheckpointTrial& result) {
+              ++trials;
+              by2 += result.outcome.ready_by_2 ? 1U : 0U;
+              by3 += result.outcome.ready_by_3 ? 1U : 0U;
+              by4 += result.outcome.ready_by_4 ? 1U : 0U;
+              for (std::size_t turn = 0; turn < regi.size(); ++turn) {
+                regi[turn] += result.by_turn[turn].regi ? 1U : 0U;
+                vstar[turn] += result.by_turn[turn].vstar ? 1U : 0U;
+                active_vstar[turn] += result.by_turn[turn].active_vstar ? 1U : 0U;
+                energy[turn] += result.by_turn[turn].energy ? 1U : 0U;
+                payload[turn] += result.by_turn[turn].payload ? 1U : 0U;
+                k1[turn] += result.by_turn[turn].k1 ? 1U : 0U;
+              }
+            }
+          };
+          '''
+          if text.count(old_run) != 1:
+              raise SystemExit('run_game anchor changed')
+          text = text.replace(old_run, new_run)
+
+          old_tail = '''  LetterConditionalAggregate played;
+            LetterConditionalAggregate not_played;
+            std::map<std::pair<int, std::string>, LetterConditionalAggregate> branches;
+          };
+          '''
+          new_tail = '''  LetterConditionalAggregate played;
+            LetterConditionalAggregate not_played;
+            std::map<std::pair<int, std::string>, LetterConditionalAggregate> branches;
+            VariantCheckpointAggregate baseline_checkpoints;
+            VariantCheckpointAggregate letter_checkpoints;
+          };
+          '''
+          if text.count(old_tail) != 1:
+              raise SystemExit('aggregate anchor changed')
+          text = text.replace(old_tail, new_tail)
+
+          old_pair = '''    const std::uint64_t seed = first_seed + trial;
+              const TrialOutcome baseline_outcome = run_game(scenario, baseline, seed);
+
+              TraceLog letter_trace{true, {}};
+              const TrialOutcome letter_outcome =
+                  run_game(scenario, letter, seed, &letter_trace);
+              const LetterFacts facts = inspect_letter_trace(letter_trace, scenario);
+
+              ++aggregate.trials;
+          '''
+          new_pair = '''    const std::uint64_t seed = first_seed + trial;
+              const CheckpointTrial baseline_game =
+                  run_checkpoint_game(scenario, baseline, seed);
+              const TrialOutcome& baseline_outcome = baseline_game.outcome;
+
+              TraceLog letter_trace{true, {}};
+              const CheckpointTrial letter_game =
+                  run_checkpoint_game(scenario, letter, seed, &letter_trace);
+              const TrialOutcome& letter_outcome = letter_game.outcome;
+              const LetterFacts facts = inspect_letter_trace(letter_trace, scenario);
+
+              ++aggregate.trials;
+              aggregate.baseline_checkpoints.add(baseline_game);
+              aggregate.letter_checkpoints.add(letter_game);
+          '''
+          if text.count(old_pair) != 1:
+              raise SystemExit('paired loop anchor changed')
+          text = text.replace(old_pair, new_pair)
+
+          old_analyze = '''void analyze_all(
+              const std::uint64_t trials, const std::uint64_t seed,
+              const std::string& summary_path, const std::string& branch_path) {
+          '''
+          new_analyze = '''void write_checkpoint_header(std::ostream& out) {
+            out << "variant,scenario,trials,ready_by_t2_pct,ready_by_t3_pct,"
+                   "ready_by_t4_pct,"
+                   "t2_regi_pct,t2_vstar_pct,t2_active_vstar_pct,t2_energy_pct,"
+                   "t2_payload_pct,t2_k1_pct,"
+                   "t3_regi_pct,t3_vstar_pct,t3_active_vstar_pct,t3_energy_pct,"
+                   "t3_payload_pct,t3_k1_pct,"
+                   "t4_regi_pct,t4_vstar_pct,t4_active_vstar_pct,t4_energy_pct,"
+                   "t4_payload_pct,t4_k1_pct\\n";
+          }
+
+          void write_checkpoint_row(
+              std::ostream& out, const std::string& variant,
+              const Scenario& scenario, const VariantCheckpointAggregate& aggregate) {
+            out << variant << ',' << scenario.label << ',' << aggregate.trials << ','
+                << std::fixed << std::setprecision(6)
+                << pct(aggregate.by2, aggregate.trials) << ','
+                << pct(aggregate.by3, aggregate.trials) << ','
+                << pct(aggregate.by4, aggregate.trials);
+            for (const std::size_t index : {1U, 2U, 3U}) {
+              out << ',' << pct(aggregate.regi[index], aggregate.trials)
+                  << ',' << pct(aggregate.vstar[index], aggregate.trials)
+                  << ',' << pct(aggregate.active_vstar[index], aggregate.trials)
+                  << ',' << pct(aggregate.energy[index], aggregate.trials)
+                  << ',' << pct(aggregate.payload[index], aggregate.trials)
+                  << ',' << pct(aggregate.k1[index], aggregate.trials);
+            }
+            out << '\\n';
+          }
+
+          void analyze_all(
+              const std::uint64_t trials, const std::uint64_t seed,
+              const std::string& summary_path, const std::string& branch_path,
+              const std::string& checkpoint_path) {
+          '''
+          if text.count(old_analyze) != 1:
+              raise SystemExit('analyze_all anchor changed')
+          text = text.replace(old_analyze, new_analyze)
+
+          old_streams = '''  std::ofstream summary(summary_path, std::ios::binary | std::ios::trunc);
+            std::ofstream branches(branch_path, std::ios::binary | std::ios::trunc);
+            if (!summary || !branches) throw std::runtime_error("could not open output");
+            write_summary_header(summary);
+            write_branch_header(branches);
+          '''
+          new_streams = '''  std::ofstream summary(summary_path, std::ios::binary | std::ios::trunc);
+            std::ofstream branches(branch_path, std::ios::binary | std::ios::trunc);
+            std::ofstream checkpoints(checkpoint_path, std::ios::binary | std::ios::trunc);
+            if (!summary || !branches || !checkpoints) {
+              throw std::runtime_error("could not open output");
+            }
+            write_summary_header(summary);
+            write_branch_header(branches);
+            write_checkpoint_header(checkpoints);
+          '''
+          if text.count(old_streams) != 1:
+              raise SystemExit('stream anchor changed')
+          text = text.replace(old_streams, new_streams)
+
+          old_rows = '''    write_summary_row(summary, scenarios[index], aggregate);
+              write_branch_rows(branches, scenarios[index], aggregate);
+          '''
+          new_rows = '''    write_summary_row(summary, scenarios[index], aggregate);
+              write_branch_rows(branches, scenarios[index], aggregate);
+              write_checkpoint_row(
+                  checkpoints, "regidrago-shell", scenarios[index],
+                  aggregate.baseline_checkpoints);
+              write_checkpoint_row(
+                  checkpoints, "letter-swap", scenarios[index],
+                  aggregate.letter_checkpoints);
+          '''
+          if text.count(old_rows) != 1:
+              raise SystemExit('row anchor changed')
+          text = text.replace(old_rows, new_rows)
+
+          old_main = '''    if (argc == 6 && std::string(argv[1]) == "--analyze-real-games") {
+                const std::uint64_t trials = std::stoull(argv[2]);
+                if (trials == 0) throw std::runtime_error("TRIALS must be positive");
+                sim::analyze_all(trials, std::stoull(argv[3]), argv[4], argv[5]);
+                return 0;
+              }
+          '''
+          new_main = '''    if (argc == 7 && std::string(argv[1]) == "--analyze-real-games") {
+                const std::uint64_t trials = std::stoull(argv[2]);
+                if (trials == 0) throw std::runtime_error("TRIALS must be positive");
+                sim::analyze_all(
+                    trials, std::stoull(argv[3]), argv[4], argv[5], argv[6]);
+                return 0;
+              }
+          '''
+          if text.count(old_main) != 1:
+              raise SystemExit('main anchor changed')
+          text = text.replace(old_main, new_main)
+          text = text.replace(
+              '           "TRIALS SEED SUMMARY.csv BRANCHES.csv\\n"',
+              '           "TRIALS SEED SUMMARY.csv BRANCHES.csv CHECKPOINTS.csv\\n"')
+          path.write_text(text)
+
+          workflow_path = Path('.github/workflows/professors-letter-validation.yml')
+          workflow = workflow_path.read_text()
+          compile_legacy = '''      - name: Compile slot-preserved checkpoint matrix
+                  run: |
+                    g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \\
+                      tools/professors_letter_swap_matrix.cpp -o professors-letter-swap-matrix
+          '''
+          run_legacy = '''      - name: Generate 100,000-trial slot-preserved checkpoint matrix
+                  run: ./professors-letter-swap-matrix 100000 20260705 professors-letter-swap-matrix.csv
+          '''
+          if workflow.count(compile_legacy) != 1 or workflow.count(run_legacy) != 1:
+              raise SystemExit('legacy workflow anchors changed')
+          workflow = workflow.replace(compile_legacy, '').replace(run_legacy, '')
+
+          analysis_step = workflow.index(
+              '      - name: Analyze 100,000 real traced games per scenario\n')
+          tail = '            professors-letter-branches.csv\n'
+          tail_index = workflow.index(tail, analysis_step)
+          insert_at = tail_index + len(tail.rstrip('\n'))
+          workflow = (
+              workflow[:insert_at] + ' \\\n            professors-letter-swap-matrix.csv' +
+              workflow[insert_at:]
+          )
+
+          contract = '''      - name: Enforce one high-trial Professor Letter pass
+                shell: bash
+                run: |
+                  python - <<'PY'
+                  from pathlib import Path
+                  text = Path('.github/workflows/professors-letter-validation.yml').read_text()
+                  analyze_flag = '--analyze-' + 'real-games'
+                  legacy_high_trial = 'professors-letter-swap-matrix ' + '100000'
+                  if text.count(analyze_flag) != 1 or legacy_high_trial in text:
+                      raise SystemExit('Professor Letter CI must schedule exactly one 100k experiment pass')
+                  PY
+          '''
+          analysis_step = workflow.index(
+              '      - name: Analyze 100,000 real traced games per scenario\n')
+          workflow = workflow[:analysis_step] + contract + workflow[analysis_step:]
+          workflow_path.write_text(workflow)
+          PY
+
+      - name: Verify combined checkpoints against legacy tool
+        shell: bash
+        run: |
+          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
+            tools/professors_letter_swap_matrix.cpp -o legacy-checkpoints
+          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
+            tools/professors_letter_real_game_analysis.cpp -o combined-analysis
+          ./legacy-checkpoints 200 20260705 legacy.csv
+          ./combined-analysis --analyze-real-games \
+            200 20260705 summary.csv branches.csv combined.csv
+          cmp legacy.csv combined.csv
+          python - <<'PY'
+          import csv
+          with open('combined.csv', newline='') as handle:
+              rows = list(csv.DictReader(handle))
+          if len(rows) != 32:
+              raise SystemExit(f'expected 32 checkpoint rows, got {len(rows)}')
+          print('200-trial paired checkpoint equivalence: exact')
+          PY
+
+      - name: Commit permanent fix
+        shell: bash
+        run: |
+          git config user.name "pokemon-sims automation"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/workflows/materialize-3008-final.yml
+          git add tools/professors_letter_real_game_analysis.cpp \
+                  .github/workflows/professors-letter-validation.yml
+          git commit -m "Fix #3008: unify Professor Letter 100k analysis"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}

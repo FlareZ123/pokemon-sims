@@ -148,6 +148,23 @@ def build_test_case(
     return (case_name, f"case_{identifier(case_name)}", text), blocks, headers
 
 
+def collect_test_cases(
+    source_root: Path, tests_root: Path
+) -> tuple[list[tuple[str, str, str]], list[str], set[str]]:
+    source_headers = set(ANGLE_INCLUDE.findall(
+        (source_root / "src" / "trace_engine_v2" / "part_000.inc").read_text(encoding="utf-8")
+    ))
+    cases: list[tuple[str, str, str]] = []
+    access_blocks: list[str] = []
+    headers = set(source_headers)
+    for path in discover_test_files(tests_root):
+        case, blocks, test_headers = build_test_case(path, source_root, tests_root)
+        cases.append(case)
+        access_blocks.extend(blocks)
+        headers.update(test_headers)
+    return cases, access_blocks, headers
+
+
 def render_cmake_cases(cases: list[tuple[str, str, str]]) -> str:
     return (
         "set(REGIDRAGO_UNIFIED_CASES\n"
@@ -219,21 +236,8 @@ def write_atomic_text(destination: Path, content: str) -> None:
 
 def generate(source_root: Path, output_cpp: Path, output_cmake: Path) -> None:
     tests_root = source_root / "tests"
-    test_files = discover_test_files(tests_root)
-    source_headers = set(ANGLE_INCLUDE.findall(
-        (source_root / "src" / "trace_engine_v2" / "part_000.inc").read_text(encoding="utf-8")
-    ))
-    headers: set[str] = set(source_headers)
-    access_blocks: list[str] = []
-    cases: list[tuple[str, str, str]] = []
-
-    for path in test_files:
-        case, blocks, test_headers = build_test_case(path, source_root, tests_root)
-        cases.append(case)
-        access_blocks.extend(blocks)
-        headers.update(test_headers)
-
-    generated: list[str] = [
+    cases, access_blocks, headers = collect_test_cases(source_root, tests_root)
+    generated = [
         render_generated_preamble(headers),
         render_generated_cases(access_blocks, cases),
     ]

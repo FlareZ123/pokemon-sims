@@ -26,7 +26,7 @@
   static constexpr std::array<Card, 5> issue_2202_treasure_payload_priority() {
     // Preserve the established redundant Dragon preference exactly; this helper only
     // gives the shared priority list a name for the route-specific DCI selector.
-    // Appletun: https://api.pokemontcg.io/v2/cards/swsh7-121
+    // Appletun: https://api.pokemontcg.io/v2/cards/sv8-140
     // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
     // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
     // Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136

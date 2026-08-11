@@ -123,10 +123,9 @@
 // play_ultra_ball intentionally remains exported until the following inline
 // Steven/Blender layer releases it at the same historical boundary.
 
-// Continue into the Steven/Blender, legacy Supporter, Supporter selector, and
-// VSTAR stages in historical order. Each composed boundary owns its local aliases;
-// use_fss and use_celestial_roar intentionally remain live for the post-part_014a
-// continuation.
+// Continue into the Steven/Blender and centralized legacy Supporter/VSTAR stages
+// in historical order. The composed boundary owns its local aliases; use_fss and
+// use_celestial_roar intentionally remain live for the post-part_014a continuation.
 // Steven/Blender source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010.inc
 // Legacy Supporter cards: https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 https://api.pokemontcg.io/v2/cards/sm7-145
 // Supporter selector cards: https://api.pokemontcg.io/v2/cards/sv1-166 https://api.pokemontcg.io/v2/cards/sm4-95 https://api.pokemontcg.io/v2/cards/swsh12-164
@@ -234,10 +233,7 @@
 #error "Tapu search composition leaked bench_tapu_if_useful"
 #endif
 
-// Keep the legacy Supporter, selector, and VSTAR-power macro bodies in dedicated
-// composition units. This removes the remaining duplicated part_011/012/013 alias
-// blocks from the opening spine while preserving their exact textual order.
+// The part_011/012/013 legacy Supporter selectors and VSTAR-power macro bodies are
+// centralized in one composition unit, preserving their historical textual order.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
 #include "legacy_supporter_body.inc"
-#include "supporter_selector_body.inc"
-#include "vstar_power_body.inc"

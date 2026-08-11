@@ -1,5 +1,5 @@
-  bool needed_basic_energy_might_be_in_deck(const Card energy,
-                                            const int amount_needed) const {
+  bool oricorio_basic_energy_target_is_live(const Card energy,
+                                             const int amount_needed) const {
     return amount_needed > 0 && might_be_unseen(energy);
   }
 
@@ -11,8 +11,13 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    return needed_basic_energy_might_be_in_deck(Card::Grass, grass_needed()) ||
-           needed_basic_energy_might_be_in_deck(Card::Fire, fire_needed());
+    return oricorio_basic_energy_target_is_live(Card::Grass, grass_needed()) ||
+           oricorio_basic_energy_target_is_live(Card::Fire, fire_needed());
+  }
+
+  bool oricorio_connector_route_is_live() const {
+    return needs_oricorio_connector_original() ||
+           oricorio_preserves_burnet_with_current_hand();
   }
 
   bool needs_oricorio_connector() const {
@@ -21,17 +26,17 @@
     // outlet, while preserving Tapu Lele-GX when such an outlet is live:
     // https://github.com/FlareZ123/pokemon-sims/issues/180
     // https://github.com/FlareZ123/pokemon-sims/issues/616
-    const bool burnet_preserving_route =
-        oricorio_preserves_burnet_with_current_hand();
     return needed_oricorio_energy_might_be_in_deck() &&
-           (needs_oricorio_connector_original() || burnet_preserving_route);
+           oricorio_connector_route_is_live();
+  }
+
+  bool can_bench_oricorio_connector() const {
+    return hand_count(Card::Oricorio) > 0 && !in_play(Card::Oricorio) &&
+           bench_space() > 0 && needs_oricorio_connector();
   }
 
   bool bench_oricorio_if_useful() {
-    if (hand_count(Card::Oricorio) == 0 || in_play(Card::Oricorio) ||
-        bench_space() <= 0 || !needs_oricorio_connector()) {
-      return false;
-    }
+    if (!can_bench_oricorio_connector()) return false;
     // Playing Oricorio from hand to the Bench triggers the optional Vital Dance
     // search only after the target-aware preflight has found a needed type:
     // https://api.pokemontcg.io/v2/cards/sm2-55

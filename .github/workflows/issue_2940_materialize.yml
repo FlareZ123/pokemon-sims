@@ -146,7 +146,7 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s\n' "$EXPECTED_MAIN" > results/.issue_2940_materialized
-          git add -A results docs/REPORT.md docs/TRACE_AUDIT.md docs/MULTI_DECK_REPORT.md README.md .github/workflows/issue_2940_materialize.yml
+          git add -A
           git diff --cached --check
           git commit -m 'Fix #2940: regenerate exact current-main evidence'
           git push origin HEAD:bug/2940-refresh-provenance-reclaim-1786428920578

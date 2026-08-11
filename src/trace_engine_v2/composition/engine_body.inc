@@ -43,21 +43,24 @@
 #include "../part_014a.inc"
 #include "post_014a_overrides.inc"
 
-// #3057 needs to preserve the Stadium action for a live current-turn
-// Forest/Pineco/Forretress route when Field Blower can remove Path instead.
-// Keep the route predicate outside the historical late-turn source and expose it
-// there only through a scoped hand-count alias so every unrelated action remains
-// byte-for-byte on the existing selector path:
-// https://github.com/FlareZ123/pokemon-sims/issues/3057
+// #3064 applies the approved #3057 refinement: a held Forest directly replaces
+// Path, while the proved K1 Field Blower -> Wonder Tag -> Gladion bridge preserves
+// the Stadium action only when Forest is not yet in hand. Keep the focused policy
+// outside the historical late-turn source and expose it through scoped aliases:
+// https://github.com/FlareZ123/pokemon-sims/issues/3057#issuecomment-5252233081
+// https://github.com/FlareZ123/pokemon-sims/issues/3064
 #include "../part_issue_3057_swell_field_blower_route.inc"
 
 // Ordered late turn-execution, scenario-registry, and reporting composition.
-// Keep these aliases live through part_016 exactly as the historical root wrapper
-// did so the translation unit remains behaviorally identical.
+// Keep the historical aliases live through part_016 exactly as the root wrapper
+// requires. The Basic-loop alias adds only the confirmed K1 deferred-Forest bridge;
+// every unrelated Basic play delegates to the existing implementation.
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #define hand_count hand_count_issue_3057
+#define play_basics_from_hand play_basics_from_hand_issue_3064
 #include "../part_014c.inc"
+#undef play_basics_from_hand
 #undef hand_count
 #undef ability_available_for_pokemon
 

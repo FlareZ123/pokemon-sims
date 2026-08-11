@@ -51,7 +51,7 @@
 //
 // Search-item closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc
 // Burnet/search continuation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
-// Late alias handoff: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/turn_reporting_body.inc
+// Late alias handoff: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_body.inc
 // Translation-unit closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
 //
 // Source-anchor compatibility block.
@@ -61,16 +61,16 @@
 // Composition wrapper: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_body.inc
 //
 // Engine body stage registry:
-// Core engine body: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/core_engine_body.inc
+// Core engine body: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_body.inc
 // Opening overrides: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_engine_overrides.inc
 // Search-item closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc
 // Post-search overrides: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
-// Turn/reporting body: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/turn_reporting_body.inc
+// Turn/reporting body: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_body.inc
 // Translation-unit closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
 //
 // Opening continuation registry:
-// Opening legacy body: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_legacy_body.inc
-// Opening override tail: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_override_tail.inc
+// Opening legacy body: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_engine_overrides.inc
+// Opening override tail: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_engine_overrides.inc
 //
 // Rules traceability:
 // Rules registry: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULE_SOURCES.md

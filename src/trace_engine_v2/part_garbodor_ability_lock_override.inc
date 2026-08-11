@@ -15,9 +15,7 @@
     return state_.path_lock_removed;
   }
 
-  bool garbodor_abilities_locked() const {
-    if (!garbodor_shake_scenario() || garbodor_lock_removed()) return false;
-
+  bool garbodor_lock_established() const {
     // Boost Shake evolves a Pokemon at the end of the opponent's turn. The modeled
     // opponent uses it on its first turn to establish Garbodor, then keeps a Tool on
     // Garbodor for Garbotoxin. Going first leaves our T1 before that opponent turn;
@@ -26,6 +24,11 @@
     // https://api.pokemontcg.io/v2/cards/xy9-57
     // https://github.com/FlareZ123/pokemon-sims/issues/2808
     return state_.turn >= garbodor_lock_activation_turn();
+  }
+
+  bool garbodor_abilities_locked() const {
+    return garbodor_shake_scenario() && !garbodor_lock_removed() &&
+        garbodor_lock_established();
   }
 
   bool rule_box_ability_available(const Card card) const {

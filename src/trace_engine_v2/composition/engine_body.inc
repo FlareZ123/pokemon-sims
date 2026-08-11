@@ -62,14 +62,26 @@
 // composes part_empty_deck_unseen_override.inc and releases the alias.
 #include "opening_engine_overrides.inc"
 #include "../part_014a.inc"
-#include "post_014a_overrides.inc"
 
-// #3057 needs to preserve the Stadium action for a live current-turn
-// Forest/Pineco/Forretress route when Field Blower can remove Path instead.
-// Keep the route predicate outside the historical late-turn source and expose it
-// there only through a scoped hand-count alias so every unrelated action remains
-// byte-for-byte on the existing selector path:
-// https://github.com/FlareZ123/pokemon-sims/issues/3057
+// #3064 must sit outside the established #1417 Legacy Star layer. Rename that
+// implementation while the post-search spine defines it, then expose the corrective
+// wrapper after the historical stack is complete. This preserves every pre-existing
+// #1417 route and changes only the confirmed public-discard Forest case:
+// Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+// Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+// Governing refinement: https://github.com/FlareZ123/pokemon-sims/issues/3057#issuecomment-5252233081
+// Corrective issue: https://github.com/FlareZ123/pokemon-sims/issues/3064
+#if defined(use_legacy_star_issue_1417)
+#error "Legacy Star #1417 wrapper alias must be undefined before post-search composition"
+#endif
+#define use_legacy_star_issue_1417 use_legacy_star_issue1417_original
+#include "post_014a_overrides.inc"
+#undef use_legacy_star_issue_1417
+
+// #3057/#3064 preserves the Stadium action for the live Forest/Pineco/Forretress
+// route and provides the outer #1417 Legacy Star wrapper defined above.
+// Forest / Path / Field Blower / Chaotic Swell: https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/swsh6-148 https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/sm12-187
+// Confirmed corrective bug: https://github.com/FlareZ123/pokemon-sims/issues/3064
 #include "../part_issue_3057_swell_field_blower_route.inc"
 
 // Ordered late turn-execution, scenario-registry, and reporting composition.

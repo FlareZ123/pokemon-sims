@@ -7,6 +7,14 @@
     return true;
   }
 
+  void forget_current_turn_discard(const Card card) {
+    const auto turn_it = std::find(state_.discarded_this_turn.begin(),
+                                   state_.discarded_this_turn.end(), card);
+    if (turn_it != state_.discarded_this_turn.end()) {
+      state_.discarded_this_turn.erase(turn_it);
+    }
+  }
+
   // Tracks a card leaving the discard pile in the same turn, so strict-JIT state
   // cannot count a payload that was discarded and then recovered before the ready check.
   bool recover_discard_to_hand(const Card card) {
@@ -14,8 +22,7 @@
     if (discard_it == state_.discard.end()) return false;
     state_.hand.push_back(*discard_it);
     state_.discard.erase(discard_it);
-    const auto turn_it = std::find(state_.discarded_this_turn.begin(), state_.discarded_this_turn.end(), card);
-    if (turn_it != state_.discarded_this_turn.end()) state_.discarded_this_turn.erase(turn_it);
+    forget_current_turn_discard(card);
     return true;
   }
 
@@ -39,10 +46,14 @@
     return std::any_of(state_.bench.begin(), state_.bench.end(), can_evolve_now);
   }
 
+  int hand_payload_count() const {
+    return static_cast<int>(std::count_if(
+        state_.hand.begin(), state_.hand.end(), is_payload));
+  }
+
   bool sole_known_payload_is_in_hand() const {
     if (!prizes_known()) return false;
-    const int payloads_in_hand = static_cast<int>(std::count_if(
-        state_.hand.begin(), state_.hand.end(), is_payload));
+    const int payloads_in_hand = hand_payload_count();
     // K1 fixed-list knowledge proves whether another modeled payload remains in
     // deck. Preserve the sole in-hand payload when no replacement is searchable:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
@@ -74,21 +85,20 @@
   }
 
   bool has_live_blender_payload_line() const {
-  // A strict-JIT Blender route is live only when its one-use deck discard can
-  // accompany a current-turn Regidrago VSTAR card route. Higher-level Supporter,
-  // switching, and attachment selectors must use the same boundary as the action:
-  // https://api.pokemontcg.io/v2/cards/sv8-164
-  // https://api.pokemontcg.io/v2/cards/swsh12-136
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
-  // https://github.com/FlareZ123/pokemon-sims/issues/718
-  return !item_locked() && hand_count(Card::BrilliantBlender) > 0 &&
-         can_play_payload_this_turn() && payload_might_be_in_deck() &&
-         blender_vstar_card_axis_can_finish_this_turn();
-}
+    // A strict-JIT Blender route is live only when its one-use deck discard can
+    // accompany a current-turn Regidrago VSTAR card route. Higher-level Supporter,
+    // switching, and attachment selectors must use the same boundary as the action:
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+    // https://github.com/FlareZ123/pokemon-sims/issues/718
+    return !item_locked() && hand_count(Card::BrilliantBlender) > 0 &&
+           can_play_payload_this_turn() && payload_might_be_in_deck() &&
+           blender_vstar_card_axis_can_finish_this_turn();
+  }
 
   bool can_spend_redundant_payload_for_locked_vstar_search() const {
-    const int held_payloads = static_cast<int>(std::count_if(
-        state_.hand.begin(), state_.hand.end(), is_payload));
+    const int held_payloads = hand_payload_count();
     const bool burnet_outlet = hand_count(Card::ProfessorBurnet) > 0 &&
         payload_might_be_in_deck();
     const bool serena_outlet = hand_count(Card::Serena) > 0;

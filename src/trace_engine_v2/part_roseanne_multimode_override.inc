@@ -104,11 +104,7 @@
       if (!remove_one(state_.discard, card)) {
         throw std::logic_error("Roseanne's Backup recovery target disappeared");
       }
-      const auto turn_it = std::find(state_.discarded_this_turn.begin(),
-                                     state_.discarded_this_turn.end(), card);
-      if (turn_it != state_.discarded_this_turn.end()) {
-        state_.discarded_this_turn.erase(turn_it);
-      }
+      forget_current_turn_discard(card);
       state_.deck.push_back(card);
     };
 

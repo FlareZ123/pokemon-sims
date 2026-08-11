@@ -9,6 +9,16 @@
            hand_count(Card::Fire) >= missing_fire;
   }
 
+  bool complete_two_turn_manual_energy_schedule() const {
+    // This route consumes one manual attachment on each of the next two turns.
+    // Keep both the attachment count and visible hand coverage in one reusable
+    // predicate instead of reconstructing the same GGF schedule at the call site.
+    // Regidrago VSTAR / Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // One manual Energy attachment per turn: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    return grass_needed() + fire_needed() == 2 &&
+           hand_covers_missing_basic_energy();
+  }
+
   bool fss_blender_bank_with_complete_manual_schedule_available() const {
     // A resolved deck search or complete Prize inspection establishes the same
     // fixed-list K1. This route reads exact remaining-deck inventory, so it must
@@ -30,11 +40,6 @@
       return false;
     }
 
-    const int remaining_grass = grass_needed();
-    const int remaining_fire = fire_needed();
-    const bool complete_two_turn_manual_schedule =
-        remaining_grass + remaining_fire == 2 &&
-        hand_covers_missing_basic_energy();
     // No-discard-control permits Brilliant Blender to bank the Dragon payload now.
     // A held Regidrago VSTAR plus the two visible future manual attachments then
     // guarantees readiness by T3, while Steven's Resolve would end a later turn
@@ -50,7 +55,7 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1735
-    return complete_two_turn_manual_schedule;
+    return complete_two_turn_manual_energy_schedule();
   }
 
   Card fss_target_after_search_started() const {

@@ -1,0 +1,48 @@
+name: Materialize 2987 public-state Tapu fix
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.head_ref == 'fix/2987-generalize-tapu-bank'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/2987-generalize-tapu-bank
+      - name: Remove scenario-coordinate overfit
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/trace_engine_v2/part_tate_blender_attachment_override.inc')
+          text = path.read_text()
+          old = '''  // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1845
+  return !secret_box_combo_enabled() &&
+      scenario_.dci == DciProfile::StrictJit &&
+      scenario_.locks == LockMode::FullCombined && scenario_.going_first &&
+      state_.turn == 1 && scenario_.max_turn >= 5 &&
+      !state_.manual_energy_used && !state_.retreat_used &&
+'''
+          new = '''  // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1845
+  // The public-state policy must not depend on a DCI profile, lock profile, seat,
+  // turn number, or simulation horizon; those coordinates do not change Tapu's
+  // Retreat Cost or the value of preserving Regidrago's visible Grass reserve:
+  // Systemic overfit correction: https://github.com/FlareZ123/pokemon-sims/issues/2987
+  return !secret_box_combo_enabled() &&
+      !state_.manual_energy_used && !state_.retreat_used &&
+'''
+          if old not in text:
+              raise SystemExit('expected issue-1845 scenario gate not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          git rm .github/workflows/materialize-2987.yml
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add -A
+          git commit -m "Fix #2987: generalize proactive Tapu banking to public state"
+          git push origin HEAD:fix/2987-generalize-tapu-bank

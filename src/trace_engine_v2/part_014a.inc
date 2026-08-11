@@ -72,8 +72,13 @@ if (bench_oricorio_if_useful()) return true;
 if (play_pokemon_communication(permit_payload)) return true;
 
 const auto issue_1552_t1_vessel_route_available = [this] {
+  // StrictJit and MatchupFlexJit share the same ready-turn payload timing,
+  // so profile identity cannot block this already-proven T1 staging route.
+  // Same-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Confirmed cross-profile bug: https://github.com/FlareZ123/pokemon-sims/issues/3039
   if (secret_box_combo_enabled() ||
-      scenario_.dci != DciProfile::StrictJit ||
+      !strict_payload_timing() ||
       scenario_.locks != LockMode::None || !scenario_.going_first ||
       state_.turn != 1 || scenario_.max_turn < 2 || item_locked() ||
       state_.manual_energy_used || !state_.active ||

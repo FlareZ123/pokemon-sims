@@ -11,9 +11,11 @@
   }
 
   template <typename Present>
-  static std::optional<Card> first_payload_by_preference(Present present) {
+  static std::optional<Card> first_payload_by_preference(const Present& present) {
     for (const Card card : kPayloadHandPreference) {
-      if (present(card)) return card;
+      if (present(card)) {
+        return card;
+      }
     }
     return std::nullopt;
   }

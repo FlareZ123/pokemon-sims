@@ -4,18 +4,24 @@
   // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
   // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
   // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/972
+
+  // Combo state and board primitives.
   bool forretress_combo_enabled() const;
+  Pokemon* pokemon_at_board_index(std::size_t index);
+  std::optional<std::size_t> exploding_energy_regidrago_target_index() const;
+  void discard_forretress_ex_stack(const Pokemon& knocked_out);
+
+  // Connector and evolution progression.
   bool needs_pineco_connector() const;
   bool needs_forretress_connector() const;
   bool bench_pineco_if_useful();
   bool evolve_forretress_ex();
-  Pokemon* pokemon_at_board_index(std::size_t index);
-  std::optional<std::size_t> exploding_energy_regidrago_target_index() const;
-  void discard_forretress_ex_stack(const Pokemon& knocked_out);
   bool resolve_exploding_energy(
       const std::vector<std::size_t>& attachment_destinations);
   bool use_exploding_energy_for_setup();
   bool advance_forretress_combo();
+
+  // Search fallback and Item selectors.
   Card fallback_combo_basic_after_search_started() const;
   Card fallback_combo_pokemon_after_search_started() const;
   bool play_quick_ball_for_pineco();

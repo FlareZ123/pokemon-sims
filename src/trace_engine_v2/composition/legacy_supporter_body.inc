@@ -31,6 +31,13 @@
 #error "Legacy Supporter composition leaked a local alias"
 #endif
 
+// use_fss intentionally crosses the part_011 boundary; assert that export here so
+// later cleanup cannot silently sever the Forest Seal Stone wrapper chain.
+// C++ conditional preprocessing: https://eel.is/c++draft/cpp.cond
+#if !defined(use_fss)
+#error "Legacy Supporter composition must export use_fss past part_011"
+#endif
+
 // Intentionally leave use_fss defined. post_014a_overrides.inc consumes and
 // replaces this alias after part_014a.inc reaches the required member boundary.
 // Continuation owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc

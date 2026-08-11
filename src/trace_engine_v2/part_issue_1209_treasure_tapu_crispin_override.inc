@@ -106,11 +106,38 @@
       return false;
     }
 
+    // The inspected deck contains both different Basic Energy types, so Crispin
+    // can legally attach either searched type and put the other into hand. Project
+    // that effect attachment first, then the other searched Basic as the manual
+    // attachment only when the manual attachment remains unused. DDE plus either
+    // Basic already pays Apex after Crispin's effect attachment:
+    // Crispin ruling: https://compendium.pokegym.net/category/5-trainers/crispin/
+    // Crispin: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/sv07/133
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Manual Energy attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/2431
     return std::any_of(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
-          return (pokemon.card == Card::RegidragoV ||
-                  pokemon.card == Card::RegidragoVstar) &&
-              pokemon.entered_turn < state_.turn && pokemon.grass >= 1;
+          if ((pokemon.card != Card::RegidragoV &&
+               pokemon.card != Card::RegidragoVstar) ||
+              pokemon.entered_turn >= state_.turn) {
+            return false;
+          }
+          for (const Card crispin_attachment : {Card::Grass, Card::Fire}) {
+            Pokemon after_crispin = pokemon;
+            if (!attach_energy_card(after_crispin, crispin_attachment)) continue;
+            if (pays_apex_energy_cost(after_crispin)) return true;
+            if (state_.manual_energy_used) continue;
+            const Card hand_basic = crispin_attachment == Card::Grass
+                ? Card::Fire : Card::Grass;
+            Pokemon after_manual = after_crispin;
+            if (attach_energy_card(after_manual, hand_basic) &&
+                pays_apex_energy_cost(after_manual)) {
+              return true;
+            }
+          }
+          return false;
         });
   }
 
@@ -244,9 +271,14 @@
       projected.evolve_best_regi();
       projected.retreat_to_benched_vstar_with_latias();
 
+      // The exact shadow resolves the real Crispin, manual attachment, evolution,
+      // and Latias promotion before judging semantic Apex payment. DDE plus either
+      // Basic Energy is a complete GGF payment:
+      // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/2431
       return projected.active_is_vstar() &&
-          projected.state_.active->grass >= 2 &&
-          projected.state_.active->fire >= 1 &&
+          projected.pays_apex_energy_cost(*projected.state_.active) &&
           projected.payload_ready();
     }();
     rng_ = live_rng;

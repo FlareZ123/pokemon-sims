@@ -1,3 +1,14 @@
+#undef issue_1646_vessel_burnet_finish_visible
+#undef play_issue_1646_vessel_burnet_finish
+#undef play_issue_1672_vessel_payload_finish
+#undef play_issue_1868_vessel_payload_finish
+// The legacy issue-1412 split above is complete at this member boundary. Restore
+// the four public method names through the DDE-aware semantic Vessel layer:
+// Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+// Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+// Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2437
+#include "part_issue_2437_dde_vessel_override.inc"
+
   std::optional<Card> strict_dci_redundant_payload_pair() const {
     // Appletun follows the same dynamic DCI rule as every other modeled
     // payload when two copies are redundant and a distinct payload remains:

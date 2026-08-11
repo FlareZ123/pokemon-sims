@@ -113,6 +113,7 @@
         scenario_.max_turn >= 3 && prizes_known() && !state_.supporter_used &&
         state_.active && state_.active->card == Card::RegidragoV &&
         state_.active->grass == 0 && state_.active->fire == 0 &&
+        state_.active->double_dragon == 0 && // https://github.com/FlareZ123/pokemon-sims/issues/2368
         count_of(state_.discard, Card::QuickBall) > 0 && route_cost_paid &&
         in_play(Card::TapuLeleGX) &&
         ability_available_for_pokemon(Card::TapuLeleGX) &&
@@ -129,7 +130,9 @@
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
           return pokemon.card == Card::RegidragoV &&
               pokemon.entered_turn < state_.turn && pokemon.grass == 0 &&
-              pokemon.fire == 0;
+              pokemon.fire == 0 && pokemon.double_dragon == 0;
+          // This historical package is specifically the zero-Energy branch;
+          // DDE-only is already one Basic from Apex: https://github.com/FlareZ123/pokemon-sims/issues/2368
         });
     const bool deck_payload = std::any_of(
         state_.deck.begin(), state_.deck.end(), is_payload);
@@ -462,10 +465,14 @@
     // https://api.pokemontcg.io/v2/cards/sv1-166
     // https://api.pokemontcg.io/v2/cards/sv4-163
     // https://www.pokemon.com/us/pokemon-tcg/rules
-    const bool exactly_one_energy_missing = grass_needed() + fire_needed() == 1;
-    const bool needed_energy_in_deck =
-        (grass_needed() == 1 && deck_count_after_search_started(Card::Grass) > 0) ||
-        (fire_needed() == 1 && deck_count_after_search_started(Card::Fire) > 0);
+    const Pokemon* arven_energy_target = target_regi();
+    const bool needed_energy_in_deck = arven_energy_target != nullptr &&
+        completing_basic_energy_for(*arven_energy_target, [this](const Card card) {
+          return deck_count_after_search_started(card) > 0;
+        }).has_value();
+    const bool exactly_one_energy_missing = needed_energy_in_deck;
+    // DDE-only is one physical Basic attachment short even though either type
+    // can complete Apex: https://github.com/FlareZ123/pokemon-sims/issues/2368
     const bool arven_vessel_energy_route = need_energy() && exactly_one_energy_missing &&
         !state_.manual_energy_used && !item_locked() && needed_energy_in_deck &&
         deck_count_after_search_started(Card::Arven) > 0 &&

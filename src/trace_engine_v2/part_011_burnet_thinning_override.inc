@@ -56,17 +56,46 @@
         held_latias_route;
     if (!active_axis_can_finish) return false;
 
-    const int missing_energy = grass_needed() + fire_needed();
-    if (missing_energy == 0) return true;
-    if (missing_energy != 1 || state_.manual_energy_used) return false;
+    const Pokemon* energy_target = target_regi();
+    if (energy_target == nullptr) return false;
+    if (pays_apex_energy_cost(*energy_target)) return true;
+    if (state_.manual_energy_used) return false;
 
-    const Card needed_energy = grass_needed() == 1 ? Card::Grass : Card::Fire;
-    const bool held_energy_route = hand_count(needed_energy) > 0;
-    const bool needed_energy_might_be_in_deck = might_be_unseen(needed_energy);
-    const bool held_oricorio_route = needed_energy_might_be_in_deck &&
+    // DDE supplies two flexible Energy units to a Dragon, so Grass and Fire can
+    // be alternative one-card finishes rather than two additive deficits. Project
+    // each physical Basic attachment and require that it actually pays Apex after
+    // the attachment, preserving the prior one-attachment-only admission boundary:
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Energy attachment and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2449
+    const auto finishing_basic = [this, energy_target](const auto available)
+        -> std::optional<Card> {
+      for (const Card basic : {Card::Grass, Card::Fire}) {
+        if (!available(basic)) continue;
+        Pokemon projected = *energy_target;
+        if (attach_energy_card(projected, basic) &&
+            pays_apex_energy_cost(projected)) {
+          return basic;
+        }
+      }
+      return std::nullopt;
+    };
+    const auto held_finishing_energy = finishing_basic(
+        [this](const Card card) { return hand_count(card) > 0; });
+    const auto deck_finishing_energy = finishing_basic(
+        [this](const Card card) { return might_be_unseen(card); });
+    const bool held_energy_route = held_finishing_energy.has_value();
+    const bool finishing_energy_might_be_in_deck = deck_finishing_energy.has_value();
+    // Vital Dance and Earthen Vessel both put Basic Energy into hand; the still-
+    // unused manual attachment then supplies the projected one-card Apex finish:
+    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2449
+    const bool held_oricorio_route = finishing_energy_might_be_in_deck &&
         hand_count(Card::Oricorio) > 0 && !in_play(Card::Oricorio) &&
         bench_space() > 0 && ability_available_for_pokemon(Card::Oricorio);
-    const bool held_vessel_route = needed_energy_might_be_in_deck &&
+    const bool held_vessel_route = finishing_energy_might_be_in_deck &&
         !item_locked() && hand_count(Card::EarthenVessel) > 0 &&
         choose_discard(false, true, true, Card::EarthenVessel).has_value();
     const bool energy_axis_without_new_bench =

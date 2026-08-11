@@ -375,20 +375,22 @@ bool attach_manual() {
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     Pokemon* target = best_benched_vstar_for_promotion();
     if (target != nullptr) {
-      Card energy = Card::Grass;
-      if (target->grass < 2 && hand_count(Card::Grass) > 0) {
-        energy = Card::Grass;
-      } else if (target->fire < 1 && hand_count(Card::Fire) > 0) {
-        energy = Card::Fire;
-      } else {
+      if (pays_apex_energy_cost(*target)) {
+        // Preserve the once-per-turn manual attachment when the selected VSTAR
+        // already pays Apex through DDE plus a Basic Energy.
+        // DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        // Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+        // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2421
+        return false;
+      }
+      const auto preferred = preferred_manual_energy_from_hand(*target);
+      if (!preferred.has_value()) {
         return attach_manual_tate_blender_original();
       }
-
-      remove_one(state_.hand, energy);
-      if (energy == Card::Grass) {
-        ++target->grass;
-      } else {
-        ++target->fire;
+      const Card energy = *preferred;
+      if (!remove_one(state_.hand, energy) || !attach_energy_card(*target, energy)) {
+        throw std::logic_error("Tate promotion Energy projection disappeared");
       }
       state_.manual_energy_used = true;
       trace("ATTACH", "R-GAME-ENERGY; R-TATE-01; R-RVS-01; P-DCI-01",

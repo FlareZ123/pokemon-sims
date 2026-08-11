@@ -171,7 +171,7 @@
         scenario_.locks != LockMode::TurnTwoItem && !rule_box_abilities_locked() &&
         !state_.vstar_power_used && state_.active &&
         state_.active->card == Card::RegidragoV &&
-        state_.active->grass >= 2 && state_.active->fire >= 1 &&
+        pays_apex_energy_cost(*state_.active) && // DDE-aware: https://github.com/FlareZ123/pokemon-sims/issues/2422
         state_.active->tool == Tool::None && need_vstar() && need_payload() &&
         deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
         deck_count_after_search_started(Card::ForestSealStone) > 0 &&

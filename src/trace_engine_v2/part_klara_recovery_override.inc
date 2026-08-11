@@ -138,9 +138,27 @@
         })) {
       return true;
     }
-    return !state_.manual_energy_used && grass_needed() + fire_needed() == 1 &&
-           ((grass_needed() == 1 && count_of(energy, Card::Grass) > 0) ||
-            (fire_needed() == 1 && count_of(energy, Card::Fire) > 0));
+    if (state_.manual_energy_used) return false;
+    const Pokemon* target = target_regi();
+    if (target == nullptr || pays_apex_energy_cost(*target)) return false;
+
+    // Klara puts recovered Basic Energy into hand. Preserve the historical
+    // one-attachment completion boundary by projecting each actually recovered
+    // Basic and requiring that the unused manual attachment pays Apex Dragon.
+    // Klara: https://api.pokemontcg.io/v2/cards/swsh6-145
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2443
+    for (const Card basic : {Card::Grass, Card::Fire}) {
+      if (count_of(energy, basic) == 0) continue;
+      Pokemon projected = *target;
+      if (attach_energy_card(projected, basic) &&
+          pays_apex_energy_cost(projected)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   bool klara_crobat_connector_is_live(

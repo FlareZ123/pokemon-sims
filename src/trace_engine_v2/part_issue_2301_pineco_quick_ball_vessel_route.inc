@@ -334,10 +334,10 @@
     if (!state_.active || state_.active->card != Card::TapuLeleGX ||
         state_.active->grass < 1) return false;
     auto ready = std::find_if(state_.bench.begin(), state_.bench.end(),
-                              [](const Pokemon& pokemon) {
+                              [this](const Pokemon& pokemon) {
       return pokemon.card == Card::RegidragoVstar &&
-             pokemon.grass >= 2 && pokemon.fire >= 1;
-    });
+             pays_apex_energy_cost(pokemon);
+    }); // DDE-aware: https://github.com/FlareZ123/pokemon-sims/issues/2368
     if (ready == state_.bench.end()) return false;
     --state_.active->grass;
     state_.discard.push_back(Card::Grass);

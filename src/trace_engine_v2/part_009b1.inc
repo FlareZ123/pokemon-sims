@@ -231,6 +231,7 @@
         !state_.manual_energy_used && !state_.supporter_used && state_.active &&
         state_.active->card == Card::RegidragoV &&
         state_.active->grass == 0 && state_.active->fire == 0 &&
+        state_.active->double_dragon == 0 && // https://github.com/FlareZ123/pokemon-sims/issues/2368
         count_of(state_.discard, Card::HisuianHeavyBall) > 0 &&
         hand_count(Card::QuickBall) > 0 &&
         hand_count(Card::RegidragoVstar) > 0 &&

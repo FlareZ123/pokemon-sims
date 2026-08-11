@@ -164,6 +164,5 @@
     // Official evolution, attachment, Item, search, discard, and attack procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Same-turn JIT and success horizon: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
     // Cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2764
-    return state_.active->grass >= 2 && state_.active->fire >= 1 &&
-        payload_ready();
+    return pays_apex_energy_cost(*state_.active) && payload_ready();  // DDE/Apex energy semantics: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/issues/2368
   }

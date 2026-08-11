@@ -11,7 +11,7 @@
         scenario_.dci != DciProfile::StrictJit || !state_.active ||
         state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
-        state_.active->grass < 2 || state_.active->fire < 1 ||
+        !pays_apex_energy_cost(*state_.active) ||
         state_.active->tool != Tool::None || state_.vstar_power_used ||
         hand_count(Card::Arven) == 0 || !need_vstar() || !need_payload() ||
         hand_count(Card::RegidragoVstar) > 0 ||
@@ -27,6 +27,11 @@
         hand_count(Card::BrilliantBlender) > 0 ||
         deck_count_after_search_started(Card::BrilliantBlender) > 0;
 
+    // DDE + either Basic already pays Apex Dragon on the Dragon Regidrago V that
+    // will evolve, so the held-Arven fast route must use semantic Energy readiness:
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/2426
     // Arven can search one Item and one Pokémon Tool. Forest Seal Stone then searches
     // the missing Regidrago VSTAR, the prior-turn Basic may evolve, and Brilliant
     // Blender supplies the strict-JIT Dragon payload during the same turn. Steven's

@@ -8,6 +8,11 @@
     return std::any_of(state_.deck.begin(), state_.deck.end(), is_pokemon);
   }
 
+  bool pokemon_search_has_legal_target_for_current_knowledge() const {
+    return prizes_known() ? known_deck_has_pokemon_target()
+                          : fixed_list_has_plausible_pokemon_target();
+  }
+
   bool ultra_ball_has_legal_target() const {
     // Ultra Ball searches for any Pokémon. Once K1 has inspected the physical deck,
     // target legality comes directly from state_.deck, including supported reduced
@@ -22,14 +27,7 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/issues/866
     // https://github.com/FlareZ123/pokemon-sims/issues/2189
-    if (prizes_known()) {
-      return known_deck_has_pokemon_target();
-    }
-
-    // At K0, a target remains plausible only when the fixed list has a Pokémon copy
-    // that public zones have not exhausted:
-    // https://github.com/FlareZ123/pokemon-sims/issues/690
-    return fixed_list_has_plausible_pokemon_target();
+    return pokemon_search_has_legal_target_for_current_knowledge();
   }
 
   bool play_ultra_ball(const bool permit_payload) {

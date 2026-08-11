@@ -21,14 +21,10 @@
     if (garbodor_shake_scenario()) state_.path_lock_removed = false;
   }
 
-  void reset_turn_state() {
-    reset_turn_action_usage();
-    reset_turn_transients();
-  }
-
   void reset_per_turn_state(const int turn) {
     state_.turn = turn;
-    reset_turn_state();
+    reset_turn_action_usage();
+    reset_turn_transients();
   }
 
   void record_deck_out_loss() {

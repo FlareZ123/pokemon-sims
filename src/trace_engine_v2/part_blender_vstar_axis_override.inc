@@ -146,29 +146,24 @@
           hand_count(Card::Grass) > 0) ||
          (state_.manual_energy_used && state_.active->grass >= 2));
 
-    // Earthen Vessel has paid its printed cost with the route-dominated Quick
-    // Ball. Before the attachment, the final Grass is held. After the attachment,
-    // GGF is complete. In both states the Supporter slot and Professor Burnet are
-    // live, so Brilliant Blender would duplicate Burnet's current-turn payload:
-    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Professor Burnet already owns the current-turn payload axis whenever the
+    // Active Regidrago VSTAR can finish GGF without Brilliant Blender. The hold is
+    // therefore a public route-dominance decision, independent of the historical
+    // #1646 turn/profile/discard breadcrumbs. StrictJit and MatchupFlexJit both
+    // require the payload on the ready turn, and Rule Box Ability lock does not
+    // stop either Trainer card. Item and Supporter legality remain semantic gates:
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Regidrago VSTAR / Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Core Item, Supporter, attachment, search, discard, and shuffle procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // K1, dynamic DCI, strict JIT, and resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1646
-    return scenario_.dci == DciProfile::StrictJit &&
-        scenario_.locks == LockMode::None && state_.turn == 3 &&
-        prizes_known() && supporter_allowed() && state_.active &&
+    // Official Item, Supporter, attachment, search, and discard procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Same-turn JIT and resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Original route and systemic refinement: https://github.com/FlareZ123/pokemon-sims/issues/1646 https://github.com/FlareZ123/pokemon-sims/issues/3010
+    return strict_payload_timing() && !item_locked() && prizes_known() &&
+        supporter_allowed() && state_.active &&
         state_.active->card == Card::RegidragoVstar &&
         state_.active->fire >= 1 && grass_axis_completes && need_payload() &&
         hand_count(Card::ProfessorBurnet) > 0 &&
-        hand_count(Card::BrilliantBlender) > 0 &&
-        count_of(state_.discard, Card::EarthenVessel) > 0 &&
-        count_of(state_.discard, Card::QuickBall) > 0 &&
-        count_of(state_.discarded_this_turn, Card::QuickBall) > 0 &&
-        payload_might_be_in_deck();
+        hand_count(Card::BrilliantBlender) > 0 && payload_might_be_in_deck();
   }
 
   bool play_issue_1700_known_prize_gladion_before_blender() {

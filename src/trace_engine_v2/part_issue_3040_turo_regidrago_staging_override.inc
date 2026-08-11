@@ -1,8 +1,8 @@
   bool issue_3040_play_turo_regidrago_staging_route() {
     if (!issue_3040_professor_turo_is_unique_active_escape() ||
-        !strict_payload_timing() || !payload_ready() || !state_.active ||
+        !strict_payload_timing() || !state_.active ||
         !is_basic(state_.active->card) || state_.active->tool != Tool::None ||
-        !need_active_vstar() || need_regi() || !need_vstar() || need_energy() ||
+        need_regi() || !need_vstar() || need_energy() ||
         hand_count(Card::RegidragoVstar) > 0 ||
         deck_count_after_search_started(Card::RegidragoVstar) == 0) {
       return false;
@@ -22,7 +22,9 @@
     // Benched Regidrago V already pays GGF. Turo can therefore advance the public
     // Active-position axis now, during an otherwise unused Supporter action, without
     // consuming the later VSTAR search or the protected Dragon needed for a future
-    // same-ready-turn JIT payload event.
+    // same-ready-turn JIT payload event. The staging turn does not require a current-
+    // turn Dragon discard because strict JIT credits that discard only on the later
+    // turn that actually reaches readiness.
     // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
     // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
     // Regidrago VSTAR / Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136

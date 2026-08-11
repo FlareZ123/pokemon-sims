@@ -90,13 +90,14 @@
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Regidrago VSTAR / Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official Item, Supporter, search, discard, shuffle, and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1, strict JIT, DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // K1, same-turn JIT, DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Advanced legality procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // Original route: https://github.com/FlareZ123/pokemon-sims/issues/1646
     // Refined confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/1866
-    return scenario_.dci == DciProfile::StrictJit &&
-        scenario_.locks == LockMode::None && state_.turn >= 3 &&
-        state_.turn <= scenario_.max_turn && prizes_known() &&
-        supporter_allowed() && !state_.manual_energy_used &&
+    // State-generic admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3026
+    return strict_payload_timing() && !item_locked() &&
+        deck_search_available() && state_.turn <= scenario_.max_turn &&
+        prizes_known() && supporter_allowed() && !state_.manual_energy_used &&
         exactly_one_energy_missing && missing_energy_in_deck &&
         need_payload() &&
         std::none_of(state_.hand.begin(), state_.hand.end(), is_payload) &&

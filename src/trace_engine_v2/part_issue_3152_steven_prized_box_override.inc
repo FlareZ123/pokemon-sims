@@ -34,7 +34,7 @@
         hand_count(Card::Gladion) == 0 || hand_count(Card::StevensResolve) == 0 ||
         !state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::RegidragoV ||
-        state_.active->entered_turn != state_.turn ||
+        state_.active->entered_turn > state_.turn ||
         state_.active->grass != 1 || state_.active->fire != 0 ||
         hand_count(Card::Fire) == 0 ||
         deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
@@ -44,6 +44,14 @@
         !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
       return false;
     }
+
+    // Any Regidrago V already in play by the end of T1 can evolve on T2. This
+    // includes the opening Active, whose entered_turn predates T1, and a V played
+    // during T1. Use that real next-turn evolution rule instead of an entry-turn
+    // witness tied to one route shape:
+    // Evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Advanced evolution procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed connector-domination bug: https://github.com/FlareZ123/pokemon-sims/issues/3152
 
     // Steven removes one Psychic/Dragon target from deck when it banks Regidrago
     // VSTAR. Require two more before the mandatory T2 draw, so every possible draw

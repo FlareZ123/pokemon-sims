@@ -1,9 +1,19 @@
-      const auto issue_1447_should_hold_vessel = [this] {
-        if (secret_box_combo_enabled() ||
-            scenario_.dci != DciProfile::StrictJit ||
-            scenario_.locks != LockMode::None || state_.turn != 2 ||
-            scenario_.max_turn < 3 || !deck_seen_ || !state_.active ||
-            state_.active->card != Card::RegidragoVstar ||
+      // Shared shell window for the paired #1447 hold and ready-turn decisions.
+      // This only centralizes the guards that both historical lambdas already used.
+      // Strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+      // Scenario-lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+      // Original route: https://github.com/FlareZ123/pokemon-sims/issues/1447
+      const auto issue_1447_shell_vessel_window = [this] {
+        return !secret_box_combo_enabled() &&
+            scenario_.dci == DciProfile::StrictJit &&
+            scenario_.locks == LockMode::None && deck_seen_ && state_.active &&
+            state_.active->card == Card::RegidragoVstar;
+      };
+
+      const auto issue_1447_should_hold_vessel = [this,
+                                                   &issue_1447_shell_vessel_window] {
+        if (!issue_1447_shell_vessel_window() || state_.turn != 2 ||
+            scenario_.max_turn < 3 ||
             hand_count(Card::EarthenVessel) == 0 ||
             !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
           return false;
@@ -37,7 +47,7 @@
         const bool before_crispin = !state_.supporter_used &&
             !state_.manual_energy_used && hand_count(Card::Crispin) > 0 &&
             state_.active->grass == 0 && state_.active->fire == 0 &&
-        state_.active->double_dragon == 0 && // https://github.com/FlareZ123/pokemon-sims/issues/2368
+            state_.active->double_dragon == 0 && // https://github.com/FlareZ123/pokemon-sims/issues/2368
             deck_count_after_search_started(Card::Grass) >= 2 &&
             deck_count_after_search_started(Card::Fire) >= 1;
         const bool after_crispin_before_manual = state_.supporter_used &&
@@ -52,7 +62,8 @@
             after_crispin_and_manual;
       };
 
-      const auto issue_1447_should_play_vessel_for_ready_turn = [this] {
+      const auto issue_1447_should_play_vessel_for_ready_turn =
+          [this, &issue_1447_shell_vessel_window] {
         const auto completing_basic = state_.active
             ? issue_2437_apex_completing_basic_from_known_deck(*state_.active)
             : std::optional<Card>{};
@@ -67,11 +78,7 @@
         // Pineco direct route: https://github.com/FlareZ123/pokemon-sims/issues/1420
         // Original route: https://github.com/FlareZ123/pokemon-sims/issues/1447
         // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2437
-        return !secret_box_combo_enabled() &&
-            scenario_.dci == DciProfile::StrictJit &&
-            scenario_.locks == LockMode::None && state_.turn == 3 &&
-            deck_seen_ && state_.active &&
-            state_.active->card == Card::RegidragoVstar &&
+        return issue_1447_shell_vessel_window() && state_.turn == 3 &&
             !state_.manual_energy_used && need_energy() && need_payload() &&
             hand_count(Card::EarthenVessel) > 0 &&
             completing_basic.has_value() &&

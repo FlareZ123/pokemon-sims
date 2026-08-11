@@ -12,6 +12,13 @@ struct CrobatModelingDeck {
   DeckRecipe recipe;
 };
 
+void validate_crobat_modeling_deck(const CrobatModelingDeck& deck) {
+  // Keep temporary modeling recipes under the same 60-card recipe contract as
+  // registered decks: https://github.com/FlareZ123/pokemon-sims/issues/1394
+  std::string error;
+  if (!validate_recipe({deck.id, deck.recipe}, &error)) throw std::logic_error(error);
+}
+
 void adjust_modeling_recipe(DeckRecipe& recipe, const Card card, const int delta) {
   const auto found = std::find_if(recipe.begin(), recipe.end(), [card](const auto& entry) {
     return entry.first == card;
@@ -38,8 +45,7 @@ CrobatModelingDeck make_crobat_modeling_deck(
   }
   adjust_modeling_recipe(recipe, Card::CrobatV, static_cast<int>(cuts.size()));
   CrobatModelingDeck deck{std::move(id), cut_names.str(), std::move(recipe)};
-  std::string error;
-  if (!validate_recipe({deck.id, deck.recipe}, &error)) throw std::logic_error(error);
+  validate_crobat_modeling_deck(deck);
   return deck;
 }
 
@@ -121,7 +127,6 @@ void write_crobat_modeling_matrix(const std::filesystem::path& output,
   }
   write_atomic(output, csv.str());
 }
-
 
 constexpr std::string_view crobat_model_default_output() {
   return "results/crobat_variant_model.csv";  // Reproduction contract: https://github.com/FlareZ123/pokemon-sims/issues/1394

@@ -1,0 +1,87 @@
+name: Stacked PR Validation
+
+on:
+  pull_request:
+    # Stacked PRs target another working branch. PRs targeting main use CI instead,
+    # so ordinary agent PRs no longer run two nearly identical validation suites:
+    # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request
+    branches-ignore: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stacked-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate stacked PR selector contract
+        run: python tests/stacked_pr_ci_contract_tests.py
+      - name: Validate internal Markdown source anchors
+        run: python tests/source_anchor_contract_tests.py
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and unified tests
+        run: cmake --build build --parallel 2
+      - name: Build strict C++20 contract
+        run: |
+          cmake -S . -B build-pedantic -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS=-pedantic-errors
+          cmake --build build-pedantic --parallel 2
+      - name: Run newly added Prize-K1 regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          base_sha='${{ github.event.pull_request.base.sha }}'
+          mapfile -t tests < <(
+            git diff --name-only --diff-filter=A "$base_sha" HEAD |
+              python scripts/select_added_prize_k1_tests.py
+          )
+          if (( ${#tests[@]} == 0 )); then
+            echo "No newly added Prize-K1 regression; skipping focused compile."
+            exit 0
+          fi
+          mkdir -p focused-tests
+          index=0
+          for source in "${tests[@]}"; do
+            index=$((index + 1))
+            binary="focused-tests/test-$index"
+            g++ -std=c++20 -O0 -UNDEBUG -Wall -Wextra -Wpedantic -Wconversion -Wshadow "$source" -o "$binary"
+            "$binary"
+          done
+      - name: Run representative simulate-this audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-1.txt
+          grep -q 'READY' trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee trace-43.txt
+          grep -q 'T2 | READY' trace-43.txt
+          grep -q 'Mysterious Treasure to Tapu Lele-GX to Crispin' trace-43.txt
+          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2 | tee trace-pineco-35.txt
+          grep -q 'T2 | READY' trace-pineco-35.txt
+          grep -q 'Dragapult ex (Mysterious Treasure cost)' trace-pineco-35.txt
+      - name: Run stacked Release suite
+        # Source-bound report contracts are authoritative only after the stack is
+        # retargeted to main, where CI regenerates and verifies the full matrices.
+        run: >-
+          ctest --test-dir build --parallel 4 --output-on-failure
+          -E 'setup_report_contract|multi_deck_report_contract'
+      - name: Upload stacked validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stacked-pr-validation-${{ github.event.pull_request.number }}-${{ github.run_attempt }}
+          path: |
+            trace-*.txt
+            build/Testing
+          if-no-files-found: warn

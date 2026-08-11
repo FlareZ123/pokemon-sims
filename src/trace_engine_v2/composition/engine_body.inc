@@ -17,6 +17,9 @@
 #include "../part_001.inc"
 #include "../part_002.inc"
 
+#if defined(begin_turn) || defined(might_be_unseen)
+#error "Core engine composition requires opening aliases to be undefined on entry"
+#endif
 #define begin_turn begin_turn_original
 #define might_be_unseen might_be_unseen_empty_deck_original
 #include "../part_003.inc"
@@ -39,9 +42,15 @@
 #include "../part_garbodor_ability_lock_override.inc"
 
 #undef might_be_unseen
+#if defined(might_be_unseen) || !defined(begin_turn)
+#error "Core engine composition lost its opening alias boundary"
+#endif
 // begin_turn intentionally remains aliased until opening_engine_overrides.inc
 // composes part_empty_deck_unseen_override.inc and releases the alias.
 #include "opening_engine_overrides.inc"
+#if defined(begin_turn)
+#error "Opening engine composition leaked begin_turn"
+#endif
 #include "../part_014a.inc"
 #include "post_014a_overrides.inc"
 

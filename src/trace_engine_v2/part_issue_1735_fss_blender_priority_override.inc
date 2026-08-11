@@ -10,12 +10,16 @@
   }
 
   bool complete_two_turn_manual_energy_schedule() const {
+    const int remaining_grass = grass_needed();
+    const int remaining_fire = fire_needed();
     // This route consumes one manual attachment on each of the next two turns.
     // Keep both the attachment count and visible hand coverage in one reusable
-    // predicate instead of reconstructing the same GGF schedule at the call site.
+    // predicate while preserving the repository's DDE static-contract source shape.
     // Regidrago VSTAR / Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Double Dragon Energy / semantic Apex payment: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // DDE migration contract: https://github.com/FlareZ123/pokemon-sims/issues/2368
     // One manual Energy attachment per turn: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    return grass_needed() + fire_needed() == 2 &&
+    return remaining_grass + remaining_fire == 2 &&
            hand_covers_missing_basic_energy();
   }
 

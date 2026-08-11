@@ -81,8 +81,8 @@ ProbeResult probe_for(const sim::DciProfile dci, const sim::LockMode lock,
   std::mt19937_64 rng(3026);
   sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, std::move(state));
-  return {sim::EngineTestAccess::route_visible(engine),
-          sim::EngineTestAccess::route_diagnostic(engine)};
+  const std::string diagnostic = sim::EngineTestAccess::route_diagnostic(engine);
+  return {sim::EngineTestAccess::route_visible(engine), diagnostic};
 }
 
 bool visible_for(const sim::DciProfile dci, const sim::LockMode lock,

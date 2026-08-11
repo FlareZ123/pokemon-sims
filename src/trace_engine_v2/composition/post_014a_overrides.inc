@@ -38,7 +38,7 @@
 #error "Legacy Star projection chain requires wrapper aliases to be undefined on entry"
 #endif
 
-#include "../part_legacy_star_projection_provenance_override.inc"
+#include "../core/legacy_star_projection_provenance.inc" // Source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/legacy_star_projection_provenance.inc
 #define remove_one remove_one_legacy_star_projection
 #define pokemon_communication_plan pokemon_communication_plan_legacy_star_projection
 #define use_legacy_star use_legacy_star_issue1016_original
@@ -305,7 +305,7 @@
 #error "Secret Box trace composition requires trace to be undefined on entry"
 #endif
 
-#include "../part_issue_1437_crispin_trace_override.inc"
+#include "../core/crispin_trace_provenance.inc" // Source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/crispin_trace_provenance.inc
 #define trace trace_issue_1437_crispin_provenance
 #include "../part_issue_1118_secret_box.inc"
 #undef trace

@@ -1,0 +1,162 @@
+name: Issue 2940 materialize current evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      artifact_id:
+        description: Exact release-validation artifact ID from this PR head
+        required: true
+        type: string
+      expected_head:
+        description: Exact source commit that produced the artifact
+        required: true
+        type: string
+      expected_main:
+        description: Main commit that this source branch must still extend
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bug/2940-refresh-provenance-reclaim-1786428920578
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify exact source and remove temporary workflow
+        env:
+          EXPECTED_HEAD: ${{ inputs.expected_head }}
+          EXPECTED_MAIN: ${{ inputs.expected_main }}
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          current_head=$(git rev-parse HEAD)
+          if [ "$current_head" != "$EXPECTED_HEAD" ]; then
+            echo "branch head moved: expected $EXPECTED_HEAD, found $current_head" >&2
+            exit 1
+          fi
+          git fetch origin main
+          current_main=$(git rev-parse origin/main)
+          if [ "$current_main" != "$EXPECTED_MAIN" ]; then
+            echo "main moved: expected $EXPECTED_MAIN, found $current_main" >&2
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$EXPECTED_MAIN" HEAD; then
+            echo "expected main is not an ancestor of the materialized source" >&2
+            exit 1
+          fi
+          git rm .github/workflows/issue_2940_materialize.yml
+
+      - name: Reuse exact PR CI aggregate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ inputs.artifact_id }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/issue-2940-release /tmp/issue-2940-release.zip
+          mkdir -p /tmp/issue-2940-release
+          curl --fail --location --retry 3 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" \
+            -o /tmp/issue-2940-release.zip
+          unzip -q /tmp/issue-2940-release.zip -d /tmp/issue-2940-release
+          test -f /tmp/issue-2940-release/multi-deck-matrix.csv
+          test -f /tmp/issue-2940-release/t2-t3-matrix.csv
+          test -x /tmp/issue-2940-release/build/regidrago_sim || chmod +x /tmp/issue-2940-release/build/regidrago_sim
+          cp /tmp/issue-2940-release/multi-deck-matrix.csv results/multi_deck_comparison.csv
+          cp /tmp/issue-2940-release/t2-t3-matrix.csv results/simulation_results.csv
+
+      - name: Regenerate manifests and reviewed traces
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from scripts import generate_multi_deck_comparison as multi
+          from scripts import regenerate_setup_baselines as base
+
+          # Canonical generator specifications:
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/regenerate_setup_baselines.py
+          # https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/generate_multi_deck_comparison.py
+          results = Path('results')
+          executable = Path('/tmp/issue-2940-release/build/regidrago_sim')
+          matrix_seed = 20260705
+          trials = 100000
+
+          trace_dir = results / 'traces'
+          trace_dir.mkdir(parents=True, exist_ok=True)
+          baseline_manifest = base.build_manifest(matrix_seed, trials)
+          expected_trace_files = set()
+          for scenario, deadline, stem in base.TRACE_SPECS:
+              seed, trace = base.find_trace_seed(executable, scenario, deadline, 5000)
+              file_name = base.trace_file_name(stem, seed)
+              expected_trace_files.add(file_name)
+              base.atomic_write_text(trace_dir / file_name, trace)
+              baseline_manifest['traces'].append({
+                  'scenario': scenario,
+                  'deadline': deadline,
+                  'seed': seed,
+                  'file': file_name,
+              })
+          base.reconcile_generated_traces(trace_dir, expected_trace_files)
+          base.atomic_write_text(
+              results / base.MANIFEST_FILENAME,
+              json.dumps(baseline_manifest, indent=2, sort_keys=True) + '\n',
+          )
+
+          multi_traces = multi.generate_traces(executable, results / 'multi_deck_traces')
+          multi_manifest = multi.build_manifest(
+              results / 'multi_deck_comparison.csv', multi_traces, trials, matrix_seed
+          )
+          multi.atomic_write_text(
+              results / 'multi_deck_manifest.json',
+              json.dumps(multi_manifest, indent=2, sort_keys=True) + '\n',
+          )
+          PY
+
+      - name: Regenerate reports and validate generated tree
+        run: |
+          set -euo pipefail
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+          python tests/setup_report_contract_tests.py
+          python tests/multi_deck_report_contract_tests.py
+          python tests/update_setup_docs_tests.py
+          git diff --check
+
+      - name: Refuse stale-main evidence
+        env:
+          EXPECTED_MAIN: ${{ inputs.expected_main }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          current_main=$(git rev-parse origin/main)
+          if [ "$current_main" != "$EXPECTED_MAIN" ]; then
+            echo "main moved during materialization: $EXPECTED_MAIN -> $current_main" >&2
+            exit 1
+          fi
+
+      - name: Commit exact generated evidence
+        env:
+          EXPECTED_MAIN: ${{ inputs.expected_main }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$EXPECTED_MAIN" > results/.issue_2940_materialized
+          git add -A results docs/REPORT.md docs/TRACE_AUDIT.md docs/MULTI_DECK_REPORT.md README.md .github/workflows/issue_2940_materialize.yml
+          git diff --cached --check
+          git commit -m 'Fix #2940: regenerate exact current-main evidence'
+          git push origin HEAD:bug/2940-refresh-provenance-reclaim-1786428920578

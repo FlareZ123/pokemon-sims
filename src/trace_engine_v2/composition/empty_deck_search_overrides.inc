@@ -48,6 +48,14 @@
 #undef in_play
 #undef bench_tapu_if_useful
 
+// Late selector continuations reuse these aliases one at a time. Assert the handoff
+// state once before the chain so each following define/include/undef pair has a
+// single owner at this composition boundary.
+#if defined(play_steven) || defined(should_play_steven) || \
+    defined(bench_tapu_if_useful)
+#error "Late empty-deck selector aliases must be undefined before reuse"
+#endif
+
 #define play_steven play_steven_issue1030_original
 #include "../part_issue_1002_steven_target_override.inc"
 #undef play_steven

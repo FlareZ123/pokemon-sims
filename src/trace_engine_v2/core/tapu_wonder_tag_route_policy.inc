@@ -10,7 +10,7 @@
 #include "../part_issue_989_wonder_tag_complete_route_issue2270_original.inc"
 #undef needs_tapu_connector
 
-  bool issue_2270_has_powered_benched_vstar() const {
+  bool tapu_route_has_powered_benched_vstar() const {
     // Use the semantic Apex payment helper so one DDE plus one matching Basic is
     // accepted exactly like three matching Basic Energy.
     // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
@@ -62,7 +62,7 @@
       return false;
     }
 
-    return issue_2270_has_powered_benched_vstar() &&
+    return tapu_route_has_powered_benched_vstar() &&
            bench_space() >= issue_2270_required_connector_bench_slots();
   }
 

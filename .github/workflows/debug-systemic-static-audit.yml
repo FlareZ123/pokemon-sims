@@ -1,0 +1,74 @@
+name: Debug systemic static audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Scan repository for systemic gameplay and maintenance signatures
+        run: |
+          python - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import re
+          from pathlib import Path
+
+          roots = [Path('src'), Path('tests'), Path('scripts'), Path('docs'), Path('.github/workflows')]
+          suffixes = {'.cpp', '.cc', '.cxx', '.h', '.hh', '.hpp', '.inc', '.py', '.md', '.yml', '.yaml'}
+          patterns = {
+              'literal_dci_profile': re.compile(r'DciProfile::(?:StrictJit|MatchupFlexJit|NoDiscardControl)'),
+              'literal_lock_mode': re.compile(r'LockMode::(?:None|TurnTwoItem|FullItem|FullRuleBoxAbility|FullCombined|FullSupporter)'),
+              'turn_or_seat_coordinate': re.compile(r'(?:going_first|goingSecond|going_second|state_\.turn\s*(?:==|!=|<=|>=|<|>)\s*\d+|scenario_\.max_turn\s*(?:==|!=|<=|>=|<|>)\s*\d+)'),
+              'production_seed_reference': re.compile(r'\bseed\b', re.I),
+              'raw_basic_energy_math': re.compile(r'(?:grass|fire)[A-Za-z0-9_]*(?:\s*)(?:==|!=|<=|>=|<|>|\+|-)'),
+              'raw_apex_ggf_check': re.compile(r'(?:grass\s*>=\s*2|fire\s*>=\s*1|grass_needed\(\)\s*\+\s*fire_needed\(\))'),
+              'scenario_identity': re.compile(r'scenario_[A-Za-z0-9_]*|scenario\.(?:name|id|profile|going_first|going_second)'),
+              'hardcoded_registered_scenario': re.compile(r'(?:strict-jit|matchup-flex-jit|no-discard-control|turn-two-item-lock|full-item-lock|ability-lock|supporter-lock)/(?:go-first|go-second)'),
+              'semantic_helpers': re.compile(r'(?:pays_apex_energy_cost|preferred_manual_energy_for|strict_payload_timing|apex_[A-Za-z0-9_]*energy)'),
+              'issue_specific_logic': re.compile(r'issue[_ -]?\d+', re.I),
+              'temporary_or_one_shot': re.compile(r'(?:temporary|one[- ]shot|materializ|bootstrap|exact seed|matched[- ]seed)', re.I),
+          }
+
+          files: list[Path] = []
+          for root in roots:
+              if root.exists():
+                  files.extend(path for path in root.rglob('*') if path.is_file() and path.suffix.lower() in suffixes)
+          files = sorted(set(files))
+
+          report: dict[str, object] = {'files_scanned': len(files), 'patterns': {}}
+          text_lines = [f'FILES_SCANNED={len(files)}']
+          for label, pattern in patterns.items():
+              hits = []
+              for path in files:
+                  text = path.read_text(encoding='utf-8', errors='replace')
+                  for lineno, line in enumerate(text.splitlines(), 1):
+                      if pattern.search(line):
+                          hits.append({'path': path.as_posix(), 'line': lineno, 'text': line.strip()})
+              report['patterns'][label] = hits
+              text_lines.append(f'\n=== {label}: {len(hits)} hits ===')
+              for hit in hits:
+                  text_lines.append(f"{hit['path']}:{hit['line']}: {hit['text']}")
+
+          Path('debug-static-audit.json').write_text(json.dumps(report, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          Path('debug-static-audit.txt').write_text('\n'.join(text_lines) + '\n', encoding='utf-8')
+          print(f"scanned {len(files)} files")
+          for label, hits in report['patterns'].items():
+              print(f"{label}: {len(hits)}")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: debug-systemic-static-audit
+          path: |
+            debug-static-audit.json
+            debug-static-audit.txt
+          if-no-files-found: error

@@ -32,8 +32,12 @@
     return known_deck_copy_count(card) > 0;
   }
 
+  int known_hand_or_deck_copy_count(const Card card) const {
+    return hand_count(card) + known_deck_copy_count(card);
+  }
+
   bool has_known_hand_or_deck_copy(const Card card) const {
-    return hand_count(card) > 0 || known_deck_contains(card);
+    return known_hand_or_deck_copy_count(card) > 0;
   }
 
   bool might_be_unseen(const Card card) const {

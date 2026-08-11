@@ -1,0 +1,66 @@
+name: Cleanup 1786437400159 provenance refresh
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.head_ref == 'cleanup-1786437400159'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cleanup-1786437400159
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Refresh exact source provenance without resimulating
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from scripts.baseline_provenance import simulator_policy_source_digest
+
+          root = Path.cwd()
+          expected = 'bfdf56c4e8e6a43b60ce9f7568465d7ee0953feaca1e24e71dc8eb9b7543de37'
+          actual = simulator_policy_source_digest(root)
+          if actual != expected:
+              raise SystemExit(f'cleanup source digest moved: expected {expected}, found {actual}')
+
+          for name in ('baseline_manifest.json', 'multi_deck_manifest.json'):
+              path = root / 'results' / name
+              data = json.loads(path.read_text())
+              old = data.get('simulator_policy_source_sha256')
+              if old != '2c19162b3b5e28081e0b4b3f51d3b8dccb6c8a195490a0cea12e15b35dfdeb7b':
+                  raise SystemExit(f'{name} provenance changed unexpectedly: {old}')
+              data['simulator_policy_source_sha256'] = expected
+              path.write_text(json.dumps(data, indent=2, sort_keys=True) + '\n')
+          PY
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+          git rm .github/workflows/cleanup-1786437400159-provenance.yml
+          git diff --check
+
+      - name: Build refreshed final tree
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+
+      - name: Run complete refreshed CTest suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Commit and push validated provenance
+        run: |
+          git add -A results docs README.md .github/workflows/cleanup-1786437400159-provenance.yml
+          git diff --cached --check
+          git commit -m 'Cleanup: refresh source-bound evidence provenance'
+          git push origin HEAD:cleanup-1786437400159

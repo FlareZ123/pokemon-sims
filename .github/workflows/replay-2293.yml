@@ -1,0 +1,22 @@
+name: Replay validated issue 2293 fix
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/replay-2293.yml']
+permissions:
+  contents: write
+jobs:
+  replay:
+    if: github.head_ref == 'replay/2293-post2921-sol'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: '${{ github.head_ref }}', fetch-depth: 0}
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git cherry-pick cc614490e1c8f74344af51f22a9b6761596427e1
+          rm .github/workflows/replay-2293.yml
+          git add .github/workflows/replay-2293.yml
+          git commit --amend --no-edit
+          git push origin HEAD:${{ github.head_ref }}

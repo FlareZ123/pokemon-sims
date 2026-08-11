@@ -150,7 +150,7 @@
 #error "Supporter selector composition leaked choose_supporter"
 #endif
 
-// Centralize the late search-item wrapper families behind named ordered units.
+// Keep the late search-item wrapper families behind one ordered composition unit.
 // The outer guard keeps their shared macro contract visible at this member boundary.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
 #if defined(bench_oricorio_if_useful) || defined(ultra_ball_has_legal_target) || \
@@ -162,8 +162,7 @@
 #error "Late search composition requires search wrapper aliases to be undefined on entry"
 #endif
 
-#include "late_search_connector_stack.inc"
-#include "late_quick_ball_overrides.inc"
+#include "late_search_overrides.inc"
 
 #if defined(bench_oricorio_if_useful) || defined(ultra_ball_has_legal_target) || \
     defined(play_ultra_ball) || defined(play_brilliant_blender) || \

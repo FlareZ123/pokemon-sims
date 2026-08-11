@@ -1,4 +1,4 @@
-  bool pokemon_search_has_legal_target_for_current_knowledge() const {
+  bool pokemon_search_has_legal_target() const {
     if (prizes_known()) {
       return std::any_of(state_.deck.begin(), state_.deck.end(), is_pokemon);
     }
@@ -21,7 +21,7 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/issues/866
     // https://github.com/FlareZ123/pokemon-sims/issues/2189
-    return pokemon_search_has_legal_target_for_current_knowledge();
+    return pokemon_search_has_legal_target();
   }
 
   bool play_ultra_ball(const bool permit_payload) {

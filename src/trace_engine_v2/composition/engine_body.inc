@@ -5,16 +5,14 @@
 // wrappers are unnecessary. Preserve this textual include sequence and the macro
 // lifetimes because several legacy parts deliberately cross member boundaries.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
-// Core source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_000.inc
+// Core source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_002.inc
 // Opening, search, Steven/Blender, Supporter, and VSTAR composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_engine_overrides.inc
 // Part 010 search/Steven source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010.inc
 // Search-item closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc
 // Post-search Supporter, Legacy Star, and late search-item composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
 // Late turn source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
 
-// Core Engine state, turn, trace body, and Garbotoxin-aware Ability wrapper.
-#include "../part_000.inc"
-#include "../part_001.inc"
+// Core Engine state. part_002 owns the ordered catalog -> classification -> state chain.
 #include "../part_002.inc"
 
 #define begin_turn begin_turn_original

@@ -32,9 +32,16 @@
     return needed_grass_in_discard || needed_fire_in_discard;
   }
 
+  bool can_hold_forest_seal_stone(const Pokemon& pokemon) const {
+    // Forest Seal Stone may be attached to a Pokémon V with an open Tool slot:
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Pokémon V includes Pokémon VSTAR: https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
+    return is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None;
+  }
+
   Pokemon* first_open_pokemon_v_on_bench() {
     for (Pokemon& pokemon : state_.bench) {
-      if (is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None) return &pokemon;
+      if (can_hold_forest_seal_stone(pokemon)) return &pokemon;
     }
     return nullptr;
   }

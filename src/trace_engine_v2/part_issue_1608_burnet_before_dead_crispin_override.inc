@@ -23,15 +23,30 @@ bool issue_1697_held_next_turn_manual_energy_route() const {
       crispin_can_advance_energy_axis();
 }
 
-bool play_gladion_issue1737_original() {
-  const bool issue_1644_has_held_vstar_route =
-      hand_count(Card::ForestSealStone) > 0 || hand_count(Card::Arven) > 0 ||
+bool issue_1644_has_held_vstar_route() const {
+  // Keep the already-modeled VSTAR access channels in one reusable preflight so
+  // the Gladion action body only decides between complete routes.
+  // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // Confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/1644
+  return hand_count(Card::ForestSealStone) > 0 || hand_count(Card::Arven) > 0 ||
       hand_count(Card::EvolutionIncense) > 0 ||
       hand_count(Card::MysteriousTreasure) > 0 ||
       hand_count(Card::UltraBall) > 0 ||
       hand_count(Card::PokemonCommunication) > 0;
-  const bool issue_1644_prized_fss_vstar_route =
-      prizes_known() && supporter_allowed() && !rule_box_abilities_locked() &&
+}
+
+bool issue_1644_prized_fss_vstar_route_available() const {
+  // The known-prize FSS line is one complete route predicate. Keep K1, Supporter,
+  // VSTAR-Power, evolution, Energy, payload, and competing-access gates together.
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Core Prize, Supporter, Tool, VSTAR Power, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/1644
+  return prizes_known() && supporter_allowed() && !rule_box_abilities_locked() &&
       !state_.vstar_power_used && state_.active &&
       state_.active->card == Card::RegidragoV &&
       state_.active->entered_turn < state_.turn &&
@@ -40,8 +55,33 @@ bool play_gladion_issue1737_original() {
       !need_payload() && hand_count(Card::Gladion) > 0 &&
       prize_count_after_reveal(Card::ForestSealStone) > 0 &&
       deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
-      !issue_1644_has_held_vstar_route;
-  if (issue_1644_prized_fss_vstar_route) {
+      !issue_1644_has_held_vstar_route();
+}
+
+bool issue_1633_crispin_before_gladion_available() const {
+  // Centralize the K1 no-control Crispin completion preflight used by the Gladion
+  // selector so the action body only handles the resulting hold decision.
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // K1 and direct-completion policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/1633
+  return scenario_.dci == DciProfile::NoDiscardControl && prizes_known() &&
+      supporter_allowed() && state_.manual_energy_used && !need_payload() &&
+      state_.active && state_.active->card == Card::RegidragoV &&
+      completing_basic_energy_for(*state_.active, [this](const Card card) {
+        return deck_count_after_search_started(card) > 0;
+      }).has_value() && hand_count(Card::Gladion) > 0 &&
+      hand_count(Card::Crispin) > 0 &&
+      deck_count_after_search_started(Card::Grass) > 0 &&
+      deck_count_after_search_started(Card::Fire) > 0 &&
+      deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
+      prize_count_after_reveal(Card::RegidragoVstar) == 0 &&
+      crispin_can_advance_energy_axis();
+}
+
+bool play_gladion_issue1737_original() {
+  if (issue_1644_prized_fss_vstar_route_available()) {
     // Gladion exchanges itself for the known prized Forest Seal Stone. The Tool
     // attaches to the prior-turn Active Regidrago V, and Star Alchemy searches
     // the inspected deck for Regidrago VSTAR before the legal same-turn evolution.
@@ -70,20 +110,7 @@ bool play_gladion_issue1737_original() {
     return true;
   }
 
-  const bool issue_1633_crispin_before_gladion =
-      scenario_.dci == DciProfile::NoDiscardControl && prizes_known() &&
-      supporter_allowed() && state_.manual_energy_used && !need_payload() &&
-      state_.active && state_.active->card == Card::RegidragoV &&
-      completing_basic_energy_for(*state_.active, [this](const Card card) {
-        return deck_count_after_search_started(card) > 0;
-      }).has_value() && hand_count(Card::Gladion) > 0 &&
-      hand_count(Card::Crispin) > 0 &&
-      deck_count_after_search_started(Card::Grass) > 0 &&
-      deck_count_after_search_started(Card::Fire) > 0 &&
-      deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
-      prize_count_after_reveal(Card::RegidragoVstar) == 0 &&
-      crispin_can_advance_energy_axis();
-  if (issue_1633_crispin_before_gladion) {
+  if (issue_1633_crispin_before_gladion_available()) {
     // Crispin deterministically attaches the one missing Basic Energy while
     // putting the other type into hand. The no-control payload is already
     // banked, and K1 proves Regidrago VSTAR remains in deck rather than Prizes.

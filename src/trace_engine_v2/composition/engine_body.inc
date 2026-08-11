@@ -41,6 +41,9 @@
 // wrapper after part_003 defines the historical predicate.
 // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
 // Model specification: https://github.com/FlareZ123/pokemon-sims/issues/2808
+#if defined(ability_available_for_pokemon)
+#error "Garbodor composition requires ability_available_for_pokemon to be undefined on entry"
+#endif
 #define ability_available_for_pokemon ability_available_for_pokemon_garbodor
 
 // part_003.inc opens begin_turn(), part_004.inc completes it and later opens
@@ -78,6 +81,9 @@
 #include "../part_014c.inc"
 #undef hand_count
 #undef ability_available_for_pokemon
+#ifdef ability_available_for_pokemon
+#error "Garbodor composition leaked ability_available_for_pokemon"
+#endif
 
 // part_014c defines the historical scenario registry and leaves only the final
 // return/brace of scenario_by_label() for the first two lines of part_015. The

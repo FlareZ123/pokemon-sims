@@ -86,7 +86,13 @@
 // Ordered late turn-execution, scenario-registry, and reporting composition.
 // Keep these aliases live through part_016 exactly as the historical root wrapper
 // did so the translation unit remains behaviorally identical.
-#include "late_turn_execution_aliases.inc"
+// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
+#if defined(play_field_blower) || defined(run_turn) || defined(hand_count)
+#error "Late-turn composition requires execution aliases to be undefined on entry"
+#endif
+#define play_field_blower play_field_blower_original
+#define run_turn run_turn_original
+#define hand_count hand_count_issue_3057
 #include "../part_014c.inc"
 #undef hand_count
 #undef ability_available_for_pokemon
@@ -113,4 +119,17 @@
 // for part_016.inc.
 // Translation-unit closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
 #include "../part_016.inc"
-#include "late_turn_execution_cleanup.inc"
+
+// Release the late-turn textual-composition aliases after part_016 closes the
+// historical execution/reporting chain. Keep the leak guards beside the undefs.
+// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
+#undef scenario_by_label
+#undef all_scenarios
+#if defined(all_scenarios) || defined(scenario_by_label)
+#error "Scenario-registry composition leaked an alias"
+#endif
+#undef run_turn
+#undef play_field_blower
+#if defined(play_field_blower) || defined(run_turn) || defined(hand_count)
+#error "Late-turn composition leaked an execution alias"
+#endif

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -61,9 +63,29 @@ def test_ci_runs_one_fixed_seed_aggregate() -> None:
     assert "--deck regidrago-shell" in workflow
 
 
+def run_dde_2grass_experiment() -> None:
+    # Run the expensive paired experiment exactly once in the Release job. The
+    # experiment runner patches a temporary source copy, so neither the checkout nor
+    # canonical TCG Live matrices are changed. DDE remains paper-Expanded-only:
+    # https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    # https://github.com/FlareZ123/pokemon-sims/issues/2332
+    if os.environ.get("GITHUB_ACTIONS") != "true":
+        return
+    if os.environ.get("GITHUB_JOB") != "release":
+        return
+    if not os.environ.get("GITHUB_HEAD_REF", "").startswith("experiment/dde-2grass-"):
+        return
+    subprocess.run(
+        [sys.executable, str(REPO_ROOT / "experiments" / "run_dde_2grass_experiment.py")],
+        cwd=REPO_ROOT,
+        check=True,
+    )
+
+
 def main() -> int:
     test_exact_deck_row_extraction()
     test_ci_runs_one_fixed_seed_aggregate()
+    run_dde_2grass_experiment()
     return 0
 
 

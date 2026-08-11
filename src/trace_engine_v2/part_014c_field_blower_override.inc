@@ -1,5 +1,4 @@
 #include "part_issue_1871_treasure_serena_payload_route.inc"
-#include "part_issue_1872_treasure_vessel_payload_route.inc"
 #include "part_issue_1874_duplicate_treasure_payload_route.inc"
 #include "part_issue_1877_treasure_quick_ball_payload_bridge.inc"
 #include "part_issue_1878_vessel_quick_ball_tapu_crispin_route.inc"

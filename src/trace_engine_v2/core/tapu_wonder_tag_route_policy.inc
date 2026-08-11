@@ -10,7 +10,7 @@
 #include "../part_issue_989_wonder_tag_complete_route_issue2270_original.inc"
 #undef needs_tapu_connector
 
-  bool issue_2270_has_powered_benched_vstar() const {
+  bool tapu_route_has_powered_benched_vstar() const {
     // Use the semantic Apex payment helper so one DDE plus one matching Basic is
     // accepted exactly like three matching Basic Energy.
     // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
@@ -23,7 +23,7 @@
         });
   }
 
-  int issue_2270_required_connector_bench_slots() const {
+  int tapu_latias_required_bench_slots() const {
     // Before Wonder Tag resolves, one Bench slot is needed for Tapu Lele-GX and a
     // second for Latias ex. Once Tapu is already in play, only the Latias slot must
     // remain for the continuation.
@@ -34,7 +34,7 @@
     return in_play(Card::TapuLeleGX) ? 1 : 2;
   }
 
-  bool issue_2270_wonder_tag_arven_latias_route_available() const {
+  bool wonder_tag_arven_latias_route_available() const {
     // Wonder Tag may find Arven; Arven may find Quick Ball; Quick Ball can discard
     // the held Dragon while searching Latias ex. Skyliner then gives the Basic
     // Active no Retreat Cost into the already powered Benched VSTAR.
@@ -62,8 +62,14 @@
       return false;
     }
 
-    return issue_2270_has_powered_benched_vstar() &&
-           bench_space() >= issue_2270_required_connector_bench_slots();
+    return tapu_route_has_powered_benched_vstar() &&
+           bench_space() >= tapu_latias_required_bench_slots();
+  }
+
+  bool issue_2270_wonder_tag_arven_latias_route_available() const {
+    // Compatibility seam for the source-bound #2270 exact-state regression:
+    // https://github.com/FlareZ123/pokemon-sims/issues/2270
+    return wonder_tag_arven_latias_route_available();
   }
 
   bool needs_tapu_connector() {
@@ -79,5 +85,5 @@
     // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
     // Post-search Supporter fallback implementation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_007.inc#L409-L425
     // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/2270
-    return issue_2270_wonder_tag_arven_latias_route_available();
+    return wonder_tag_arven_latias_route_available();
   }

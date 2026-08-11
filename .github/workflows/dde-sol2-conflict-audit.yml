@@ -120,6 +120,10 @@ jobs:
                   projected.pays_apex_energy_cost(*projected.state_.active) &&
                   projected.payload_ready();
           ''')
+          replace_once(
+              fss,
+              '        [projected_ready_turn](const Pokemon& pokemon) {\n',
+              '        [this, projected_ready_turn](const Pokemon& pokemon) {\n')
           replace_regex(
               fss,
               r'pokemon\.grass == 0 && pokemon\.fire == 0;',

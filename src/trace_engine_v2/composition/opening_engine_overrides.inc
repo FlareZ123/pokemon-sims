@@ -5,9 +5,11 @@
 // they saw when these directives lived in src/regidrago_sim.cpp.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
 
-#include "../part_empty_deck_unseen_override.inc"
+// Deck visibility policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/deck_visibility_policy.inc
+#include "../core/deck_visibility_policy.inc"
 #undef begin_turn
-#include "../part_begin_turn_override.inc"
+// Turn lifecycle policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/turn_lifecycle.inc
+#include "../core/turn_lifecycle.inc"
 // Tapu connector policy now owns its adjacent historical aliases as one core unit.
 #include "../core/tapu_connector_policy.inc"
 #include "../core/payload_hand_policy.inc"

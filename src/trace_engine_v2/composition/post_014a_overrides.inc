@@ -150,8 +150,8 @@
 #error "Supporter selector composition leaked choose_supporter"
 #endif
 
-// Centralize the late search-item wrapper families directly on this ordered
-// post-search spine. Each unit owns its behavior-significant macro/include sequence.
+// Centralize the late search-item wrapper families behind named ordered units.
+// The outer guard keeps their shared macro contract visible at this member boundary.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
 #if defined(bench_oricorio_if_useful) || defined(ultra_ball_has_legal_target) || \
     defined(play_ultra_ball) || defined(play_brilliant_blender) || \
@@ -162,49 +162,8 @@
 #error "Late search composition requires search wrapper aliases to be undefined on entry"
 #endif
 
-// The empty-deck composition unit preserves K0/K1 target legality and alias order.
-// Knowledge-state policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-#include "empty_deck_search_overrides.inc"
-
-// Legacy state/target bridges remain direct composition inputs until each fragment
-// is migrated into its owning card-action family.
-#include "../part_k0_ultra_ball_target_override.inc"
-#include "../part_blender_vstar_axis_override.inc"
-
-// Core connector policies are composed directly without compatibility wrappers.
-#include "../core/oricorio_connector_policy.inc" // Oricorio Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
-
-// Reuse the centralized adjacent Earthen Vessel and Mysterious Treasure connector
-// implementation directly so post_014a no longer routes through compatibility shims.
-// Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-// Mysterious Treasure / Tapu connector composition: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sm2-60
-// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
-#include "post_search_connector_overrides.inc"
-
-// Compose the Quick Ball-only tail directly on the late search boundary. Each
-// alias deliberately exposes the immediately preceding implementation to the next
-// layer. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-#ifdef play_quick_ball
-#error "Quick Ball route composition requires play_quick_ball to be undefined on entry"
-#endif
-
-#define play_quick_ball play_quick_ball_issue1516_original
-#include "../part_issue_1476_redundant_burnet_route_override.inc"
-#undef play_quick_ball
-
-#define play_quick_ball play_quick_ball_issue1595_original
-#include "../part_issue_1516_quick_ball_tapu_crispin_override.inc"
-#undef play_quick_ball
-
-#define play_quick_ball play_quick_ball_issue2272_original
-#include "../part_issue_1595_preserve_turo_over_quick_ball_override.inc"
-#undef play_quick_ball
-
-#include "../part_issue_2272_route_replaced_arven_quick_ball_override.inc"
-
-#ifdef play_quick_ball
-#error "Quick Ball route composition leaked play_quick_ball"
-#endif
+#include "late_search_connector_stack.inc"
+#include "late_quick_ball_overrides.inc"
 
 #if defined(bench_oricorio_if_useful) || defined(ultra_ball_has_legal_target) || \
     defined(play_ultra_ball) || defined(play_brilliant_blender) || \

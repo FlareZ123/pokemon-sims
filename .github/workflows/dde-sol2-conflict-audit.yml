@@ -17,6 +17,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git fetch origin fix/dde-semantic-rollup-reclaim-20260809
           git merge --no-commit --no-edit origin/fix/dde-semantic-rollup-reclaim-20260809 || true
           echo '=== conflict files ==='
@@ -26,7 +28,7 @@ jobs:
               echo "=== $path conflict hunks ==="
               git checkout --conflict=diff3 -- "$path"
               awk '
-                /^<<<<<<< / {show=1; before=8; after=0}
+                /^<<<<<<< / {show=1; after=0}
                 show {print NR ":" $0}
                 /^>>>>>>> / {after=12}
                 after > 0 {after--; if (after == 0) show=0}

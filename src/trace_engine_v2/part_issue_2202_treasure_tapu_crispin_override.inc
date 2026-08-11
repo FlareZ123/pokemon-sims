@@ -15,7 +15,16 @@
         state_.active->grass == 1 && state_.active->fire == 1 &&
         need_payload() && hand_count(Card::MysteriousTreasure) > 0 &&
         hand_count(Card::Crispin) == 0 && bench_space() > 0 &&
-        hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
+        hand_count(Card::TapuLeleGX) == 0 &&
+        // Wonder Tag belongs to the individual Tapu Lele-GX played from hand. A
+        // board copy blocks this route only when K1 does not prove another physical
+        // copy in hand or in the inspected deck.
+        // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+        // Advanced Bench and Ability procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+        // K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+        // Shared copy-aware rule: https://github.com/FlareZ123/pokemon-sims/issues/746
+        // Confirmed systemic regression: https://github.com/FlareZ123/pokemon-sims/issues/3129
+        !tapu_connector_copy_aware_in_play(Card::TapuLeleGX) &&
         ability_available_for_pokemon(Card::TapuLeleGX) &&
         deck_count_after_search_started(Card::TapuLeleGX) > 0 &&
         deck_count_after_search_started(Card::Crispin) > 0 &&

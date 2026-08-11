@@ -42,6 +42,15 @@
     return true;
   }
 
+  void consume_tate_liza_supporter() {
+    // Tate & Liza is a Supporter; playing it consumes the turn's Supporter action:
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    remove_one(state_.hand, Card::TateLiza);
+    state_.discard.push_back(Card::TateLiza);
+    state_.supporter_used = true;
+  }
+
   bool play_tate_switch() {
     // Card text source: https://api.pokemontcg.io/v2/cards/sm7-148
     if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 ||
@@ -49,9 +58,7 @@
       return false;
     }
     if (!promote_best_benched_vstar()) return false;
-    remove_one(state_.hand, Card::TateLiza);
-    state_.discard.push_back(Card::TateLiza);
-    state_.supporter_used = true;
+    consume_tate_liza_supporter();
     // Tate & Liza may switch any Benched Pokémon Active. Select the Regidrago
     // VSTAR that best satisfies Apex Dragon's GGF cost before spending Supporter:
     // https://api.pokemontcg.io/v2/cards/sm7-148
@@ -72,9 +79,7 @@
     // https://api.pokemontcg.io/v2/cards/sm7-148
     // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
     if (state_.deck.empty() && state_.hand.size() == 1U) return false;
-    remove_one(state_.hand, Card::TateLiza);
-    state_.discard.push_back(Card::TateLiza);
-    state_.supporter_used = true;
+    consume_tate_liza_supporter();
     state_.deck.insert(state_.deck.end(), state_.hand.begin(), state_.hand.end());
     state_.hand.clear();
     shuffle(state_.deck);

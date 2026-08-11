@@ -17,6 +17,9 @@
 #include "../part_001.inc"
 #include "../part_002.inc"
 
+#if defined(begin_turn) || defined(might_be_unseen)
+#error "Core engine composition requires opening aliases to be undefined on entry"
+#endif
 #define begin_turn begin_turn_original
 #define might_be_unseen might_be_unseen_empty_deck_original
 #include "../part_003.inc"
@@ -39,15 +42,24 @@
 #include "../part_garbodor_ability_lock_override.inc"
 
 #undef might_be_unseen
+#if defined(might_be_unseen) || !defined(begin_turn)
+#error "Core engine composition lost its opening alias boundary"
+#endif
 // begin_turn intentionally remains aliased until opening_engine_overrides.inc
 // composes part_empty_deck_unseen_override.inc and releases the alias.
 #include "opening_engine_overrides.inc"
+#if defined(begin_turn)
+#error "Opening engine composition leaked begin_turn"
+#endif
 #include "../part_014a.inc"
 #include "post_014a_overrides.inc"
 
 // Ordered late turn-execution, scenario-registry, and reporting composition.
 // Keep these aliases live through part_016 exactly as the historical root wrapper
 // did so the translation unit remains behaviorally identical.
+#if defined(play_field_blower) || defined(run_turn)
+#error "Late turn composition requires aliases to be undefined on entry"
+#endif
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #include "../part_014c.inc"
@@ -71,3 +83,10 @@
 #include "../part_016.inc"
 #undef scenario_by_label
 #undef all_scenarios
+#undef run_turn
+#undef play_field_blower
+
+#if defined(play_field_blower) || defined(run_turn) || \
+    defined(all_scenarios) || defined(scenario_by_label)
+#error "Late turn composition leaked a wrapper alias"
+#endif

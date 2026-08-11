@@ -1,0 +1,47 @@
+name: Cleanup final matrix CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/cleanup-final-matrix-macos-20260811.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build all targets
+        run: cmake --build build --parallel 2
+      - name: Run registered tests
+        run: ctest --test-dir build --output-on-failure
+      - name: Run one combined 100k all-decks setup experiment
+        run: |
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 \
+            --out t2-t3-matrix.csv
+      - name: Print complete T2 T3 matrix
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import csv
+          from pathlib import Path
+          path = Path('t2-t3-matrix.csv')
+          rows = list(csv.DictReader(path.open(newline='')))
+          if not rows:
+              raise SystemExit('T2/T3 matrix is empty')
+          print('MATRIX_HEADER=' + ','.join(rows[0].keys()))
+          for row in rows:
+              print('MATRIX_ROW=' + ','.join(row.values()))
+          print(f'MATRIX_ROWS={len(rows)}')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cleanup-t2-t3-matrix
+          path: t2-t3-matrix.csv
+          if-no-files-found: error

@@ -1,0 +1,44 @@
+name: Cleanup combined T2 T3 matrix
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/cleanup-final-matrix-v2-20260811.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Run one combined 100k all-decks setup experiment
+        run: |
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 \
+            --out t2-t3-matrix.csv
+      - name: Print complete setup matrix
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import csv
+          from pathlib import Path
+          rows = list(csv.DictReader(Path('t2-t3-matrix.csv').open(newline='')))
+          if not rows:
+              raise SystemExit('setup matrix is empty')
+          print('MATRIX_HEADER=' + ','.join(rows[0].keys()))
+          for row in rows:
+              print('MATRIX_ROW=' + ','.join(row.values()))
+          print(f'MATRIX_ROWS={len(rows)}')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cleanup-t2-t3-matrix
+          path: t2-t3-matrix.csv
+          if-no-files-found: error

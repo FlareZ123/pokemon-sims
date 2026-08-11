@@ -18,12 +18,18 @@ struct EngineTestAccess {
   }
   static std::string route_diagnostic(const Engine& engine) {
     const Pokemon* active = engine.state_.active ? &*engine.state_.active : nullptr;
+    const bool active_is_vstar =
+        active != nullptr && active->card == Card::RegidragoVstar;
     const bool completing_energy = active != nullptr &&
         engine.completing_basic_energy_for(*active, [&engine](const Card card) {
           return engine.deck_count_after_search_started(card) > 0;
         }).has_value();
     std::ostringstream out;
-    out << "strict=" << engine.strict_payload_timing()
+    out << "active_vstar=" << active_is_vstar
+        << " turn=" << engine.state_.turn
+        << " max_turn=" << engine.scenario_.max_turn
+        << " horizon=" << (engine.state_.turn <= engine.scenario_.max_turn)
+        << " strict=" << engine.strict_payload_timing()
         << " item_locked=" << engine.item_locked()
         << " search=" << engine.deck_search_available()
         << " prizes=" << engine.prizes_known()

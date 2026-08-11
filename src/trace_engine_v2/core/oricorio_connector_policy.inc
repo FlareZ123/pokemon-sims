@@ -1,5 +1,5 @@
-  bool needed_basic_energy_might_be_in_deck(const Card energy,
-                                            const int amount_needed) const {
+  bool oricorio_basic_energy_target_is_live(const Card energy,
+                                             const int amount_needed) const {
     return amount_needed > 0 && might_be_unseen(energy);
   }
 
@@ -11,8 +11,8 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    return needed_basic_energy_might_be_in_deck(Card::Grass, grass_needed()) ||
-           needed_basic_energy_might_be_in_deck(Card::Fire, fire_needed());
+    return oricorio_basic_energy_target_is_live(Card::Grass, grass_needed()) ||
+           oricorio_basic_energy_target_is_live(Card::Fire, fire_needed());
   }
 
   bool needs_oricorio_connector() const {

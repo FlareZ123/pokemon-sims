@@ -114,9 +114,10 @@
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Core first-turn, Item, Supporter, Ability, Bench, evolution, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Dynamic DCI and K0 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
+    // Strict JIT and MatchupFlex JIT share the same-ready-turn payload rule: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1476
-    return scenario_.dci == DciProfile::StrictJit &&
+    // Confirmed cross-profile bug: https://github.com/FlareZ123/pokemon-sims/issues/2801
+    return strict_payload_timing() &&
         scenario_.locks == LockMode::None && state_.turn == 1 &&
         scenario_.going_first && scenario_.max_turn >= 2 && !item_locked() &&
         state_.active && state_.active->card == Card::RegidragoV &&
@@ -178,6 +179,54 @@
     // Dynamic DCI and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug and source-bound CI reproduction: https://github.com/FlareZ123/pokemon-sims/issues/1765 https://github.com/FlareZ123/pokemon-sims/pull/1768
     if (hand_count(Card::Grass) > missing_grass) return Card::Grass;
+    return std::nullopt;
+  }
+
+  std::optional<Card> issue_2264_latias_burnet_replaced_supporter_cost(
+      const std::optional<Card> excluded_from_cost) const {
+    const bool one_discard_latias_search =
+        excluded_from_cost == Card::MysteriousTreasure ||
+        excluded_from_cost == Card::QuickBall;
+    const bool jit_profile = scenario_.dci == DciProfile::StrictJit ||
+        scenario_.dci == DciProfile::MatchupFlexJit;
+    const bool latias_known_in_deck = prizes_known() &&
+        deck_count_after_search_started(Card::LatiasEx) > 0;
+    const bool burnet_payload_route = hand_count(Card::ProfessorBurnet) > 0 &&
+        supporter_allowed() && !state_.supporter_used &&
+        can_play_payload_this_turn() &&
+        std::any_of(state_.deck.begin(), state_.deck.end(), is_payload);
+
+    if (!one_discard_latias_search || !jit_profile ||
+        scenario_.locks != LockMode::None || item_locked() ||
+        !prizes_known() || state_.retreat_used || !state_.active ||
+        !is_basic(state_.active->card) || !need_active_vstar() ||
+        need_energy() || !benched_vstar_promotion_ready() ||
+        bench_space() == 0 || !ability_available_for_pokemon(Card::LatiasEx) ||
+        in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
+        !latias_known_in_deck || !burnet_payload_route) {
+      return std::nullopt;
+    }
+
+    // Mysterious Treasure and Quick Ball each discard exactly one other card before
+    // searching. In this exact K1 route they search Latias ex, Skyliner gives the
+    // Basic Active no Retreat Cost, and held Professor Burnet supplies the required
+    // same-turn Dragon payload. Once the selected Benched VSTAR already has GGF,
+    // Crispin advances no remaining setup axis. Steven's Resolve also loses its
+    // setup role because it ends the turn while Burnet completes the route now.
+    // Ordinary lower-DCI costs are still preferred because this helper runs only
+    // after the generic and existing route-specific discard selectors fail:
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Item, Supporter, Bench, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1, dynamic DCI, strict-JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2264
+    if (hand_count(Card::Crispin) > 0) return Card::Crispin;
+    if (hand_count(Card::StevensResolve) > 0) return Card::StevensResolve;
     return std::nullopt;
   }
 
@@ -288,6 +337,11 @@
       // Dynamic DCI and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
       // Confirmed reproduction: https://github.com/FlareZ123/pokemon-sims/issues/1576
       return Card::Grass;
+    }
+
+    if (const auto replaced_supporter =
+            issue_2264_latias_burnet_replaced_supporter_cost(excluded_from_cost)) {
+      return replaced_supporter;
     }
 
     if (scenario_.locks != LockMode::FullSupporter) return std::nullopt;

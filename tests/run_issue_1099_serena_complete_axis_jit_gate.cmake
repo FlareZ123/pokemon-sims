@@ -2,14 +2,17 @@ if(NOT DEFINED SIMULATOR)
   message(FATAL_ERROR "SIMULATOR is required")
 endif()
 
+set(ISSUE_1099_SCENARIO "strict-jit/go-first")
+set(ISSUE_1099_SEED 132)
+
 execute_process(
-  COMMAND "${SIMULATOR}" --simulate-this --scenario strict-jit/go-first --seed 132
-  RESULT_VARIABLE status
-  OUTPUT_VARIABLE trace
-  ERROR_VARIABLE error
+  COMMAND "${SIMULATOR}" --simulate-this --scenario "${ISSUE_1099_SCENARIO}" --seed "${ISSUE_1099_SEED}"
+  RESULT_VARIABLE issue_1099_status
+  OUTPUT_VARIABLE issue_1099_trace
+  ERROR_VARIABLE issue_1099_error
 )
-if(NOT status EQUAL 0)
-  message(FATAL_ERROR "Issue 1099 seed 132 trace failed: ${error}\n${trace}")
+if(NOT issue_1099_status EQUAL 0)
+  message(FATAL_ERROR "Issue 1099 seed ${ISSUE_1099_SEED} trace failed: ${issue_1099_error}\n${issue_1099_trace}")
 endif()
 
 # The exact-state Serena fixture preserves the incomplete-Energy-axis boundary.
@@ -22,15 +25,15 @@ endif()
 # Official Supporter and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
 # Strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
 # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1099
-if(trace MATCHES "T5 \\| DISCARD \\|.*Mega Dragonite ex \\(Serena chosen discard\\)")
-  message(FATAL_ERROR "Seed 132 still discarded a strict-JIT Dragon before GGF could finish:\n${trace}")
+if(issue_1099_trace MATCHES "T5 \\| DISCARD \\|.*Mega Dragonite ex \\(Serena chosen discard\\)")
+  message(FATAL_ERROR "Seed ${ISSUE_1099_SEED} still discarded a strict-JIT Dragon before GGF could finish:\n${issue_1099_trace}")
 endif()
-if(NOT trace MATCHES "T5 \\| DISCARD \\|.*Latias ex \\(Serena chosen discard\\)")
-  message(FATAL_ERROR "Seed 132 did not use the observably dead Latias ex Serena cost:\n${trace}")
+if(NOT issue_1099_trace MATCHES "T5 \\| DISCARD \\|.*Latias ex \\(Serena chosen discard\\)")
+  message(FATAL_ERROR "Seed ${ISSUE_1099_SEED} did not use the observably dead Latias ex Serena cost:\n${issue_1099_trace}")
 endif()
-if(NOT trace MATCHES "T5 \\| DISCARD \\|.*Quick Ball cost")
-  message(FATAL_ERROR "Seed 132 lost its legal ready-turn Quick Ball payload outlet:\n${trace}")
+if(NOT issue_1099_trace MATCHES "T5 \\| DISCARD \\|.*Quick Ball cost")
+  message(FATAL_ERROR "Seed ${ISSUE_1099_SEED} lost its legal ready-turn Quick Ball payload outlet:\n${issue_1099_trace}")
 endif()
-if(NOT trace MATCHES "T5 \\| READY \\|")
-  message(FATAL_ERROR "Seed 132 lost T5 readiness after the Serena DCI fix:\n${trace}")
+if(NOT issue_1099_trace MATCHES "T5 \\| READY \\|")
+  message(FATAL_ERROR "Seed ${ISSUE_1099_SEED} lost T5 readiness after the Serena DCI fix:\n${issue_1099_trace}")
 endif()

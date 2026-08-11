@@ -140,6 +140,16 @@ add_test(NAME trace_issue_964_strict_first_seed43 COMMAND regidrago_sim --simula
 # https://github.com/FlareZ123/pokemon-sims/issues/1368
 add_test(NAME trace_rulebox_lock_t3 COMMAND regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3)
 add_test(NAME trace_no_control_first_t4 COMMAND regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 6 --require-ready-by 4)
+# Exact #2295 paid-retreat witnesses. The resolver uses printed Retreat Cost
+# metadata, so these traces guard the route without hard-coding witness cards.
+# Oricorio GRI 55: https://api.pokemontcg.io/v2/cards/sm2-55
+# Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+# Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+# Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+# Official retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+# Confirmed systemic bug: https://github.com/FlareZ123/pokemon-sims/issues/2295
+add_test(NAME trace_issue_2295_oricorio_seed29 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 29 --require-ready-by 4)
+add_test(NAME trace_issue_2295_tapu_seed86 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 86 --require-ready-by 4)
 # Seed 19 must hold the random top-three attack when held Fire already guarantees
 # the last GGF attachment, while multi-Energy and no-discard-control routes stay live:
 # https://api.pokemontcg.io/v2/cards/swsh12-135

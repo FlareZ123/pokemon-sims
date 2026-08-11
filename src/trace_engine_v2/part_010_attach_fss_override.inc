@@ -1,7 +1,8 @@
+#include "core/regidrago_line_helpers.inc"
+
   bool active_powerglass_tool_slot_needed() const {
     if (!state_.active || state_.active->tool != Tool::None ||
-        (state_.active->card != Card::RegidragoV &&
-         state_.active->card != Card::RegidragoVstar)) {
+        !is_regidrago_v_line(state_.active->card)) {
       return false;
     }
 
@@ -31,6 +32,13 @@
     return needed_grass_in_discard || needed_fire_in_discard;
   }
 
+  Pokemon* first_open_pokemon_v_on_bench() {
+    for (Pokemon& pokemon : state_.bench) {
+      if (is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None) return &pokemon;
+    }
+    return nullptr;
+  }
+
   bool attach_fss() {
     if (hand_count(Card::ForestSealStone) == 0) return false;
 
@@ -40,10 +48,10 @@
     // https://api.pokemontcg.io/v2/cards/sv6pt5-63
     // https://www.pokemon.com/us/pokemon-tcg/rules
     if (!state_.vstar_power_used && active_powerglass_tool_slot_needed()) {
-      for (Pokemon& pokemon : state_.bench) {
-        if (!is_pokemon_v(pokemon.card) || pokemon.tool != Tool::None) continue;
+      Pokemon* target = first_open_pokemon_v_on_bench();
+      if (target != nullptr) {
         remove_one(state_.hand, Card::ForestSealStone);
-        pokemon.tool = Tool::ForestSealStone;
+        target->tool = Tool::ForestSealStone;
         trace("ATTACH TOOL", "R-FSS-01; R-GAME-TOOL; R-POWERGLASS-01",
               "Attached Forest Seal Stone to a Benched Pokémon V and reserved the Active Tool slot for Powerglass.");
         return true;
@@ -61,14 +69,7 @@
         state_.active->tool == Tool::None) {
       target = &*state_.active;
     }
-    if (target == nullptr) {
-      for (Pokemon& pokemon : state_.bench) {
-        if (is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None) {
-          target = &pokemon;
-          break;
-        }
-      }
-    }
+    if (target == nullptr) target = first_open_pokemon_v_on_bench();
     if (target == nullptr) return false;
 
     // Pokémon V includes Pokémon VSTAR, and the trace must identify the actual

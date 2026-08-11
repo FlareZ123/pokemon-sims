@@ -2,8 +2,12 @@ if(NOT DEFINED SIMULATOR)
   message(FATAL_ERROR "SIMULATOR is required")
 endif()
 
+set(ISSUE_1090_SCENARIO "strict-jit/go-second")
+set(ISSUE_1090_SEED 862)
+set(ISSUE_1090_READY_BY 3)
+
 execute_process(
-  COMMAND "${SIMULATOR}" --simulate-this --scenario strict-jit/go-second --seed 862 --require-ready-by 3
+  COMMAND "${SIMULATOR}" --simulate-this --scenario "${ISSUE_1090_SCENARIO}" --seed "${ISSUE_1090_SEED}" --require-ready-by "${ISSUE_1090_READY_BY}"
   RESULT_VARIABLE status
   OUTPUT_VARIABLE trace
   ERROR_VARIABLE error)
@@ -11,13 +15,14 @@ if(NOT status EQUAL 0)
   message(FATAL_ERROR "Issue #1090 trace failed (${status}):\n${trace}\n${error}")
 endif()
 
-foreach(required
-    "T1 | PLAY SUPPORTER | rules: R-GLADION-01"
-    "exchanged Gladion for Regidrago V"
-    "T2 | PLAY SUPPORTER | rules: R-ARVEN-01"
-    "T3 | DISCARD | rules: R-MT-01 | Mega Dragonite ex"
-    "T3 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM | Searched a Psychic or Dragon Pokémon: Latias ex"
-    "T3 | READY")
+set(ISSUE_1090_REQUIRED_TRACE_LINES
+  "T1 | PLAY SUPPORTER | rules: R-GLADION-01"
+  "exchanged Gladion for Regidrago V"
+  "T2 | PLAY SUPPORTER | rules: R-ARVEN-01"
+  "T3 | DISCARD | rules: R-MT-01 | Mega Dragonite ex"
+  "T3 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM | Searched a Psychic or Dragon Pokémon: Latias ex"
+  "T3 | READY")
+foreach(required IN LISTS ISSUE_1090_REQUIRED_TRACE_LINES)
   string(FIND "${trace}" "${required}" found)
   if(found EQUAL -1)
     message(FATAL_ERROR "Issue #1090 trace is missing '${required}':\n${trace}")

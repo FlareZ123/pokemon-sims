@@ -57,10 +57,24 @@ def matching_brace(text: str, start: int) -> int:
     raise ValueError("unmatched C++ brace")
 
 
+def is_recursive_test_include(
+    target: Path,
+    tests_root: Path,
+    simulator: Path,
+    compatibility_simulator: Path,
+) -> bool:
+    return (
+        target not in {simulator, compatibility_simulator}
+        and target.exists()
+        and tests_root in target.parents
+    )
+
+
 def expand_test_file(path: Path, source_root: Path, tests_root: Path, stack: tuple[Path, ...] = ()) -> str:
     resolved = path.resolve()
     if resolved in stack:
         raise ValueError(f"test include cycle at {resolved}")
+    resolved_tests_root = tests_root.resolve()
     simulator = (source_root / "src" / "regidrago_sim.cpp").resolve()
     compatibility_simulator = (tests_root / "src" / "regidrago_sim.cpp").resolve()
     output: list[str] = []
@@ -70,7 +84,9 @@ def expand_test_file(path: Path, source_root: Path, tests_root: Path, stack: tup
             target = (resolved.parent / match.group(1)).resolve()
             if target in {simulator, compatibility_simulator}:
                 continue
-            if target.exists() and tests_root.resolve() in target.parents:
+            if is_recursive_test_include(
+                target, resolved_tests_root, simulator, compatibility_simulator
+            ):
                 output.append(expand_test_file(target, source_root, tests_root, stack + (resolved,)))
                 continue
         output.append(line)
@@ -104,55 +120,94 @@ def identifier(value: str) -> str:
     return re.sub(r'\W+', '_', value)
 
 
-def generate(source_root: Path, output_cpp: Path, output_cmake: Path) -> None:
-    tests_root = source_root / "tests"
+def discover_test_files(tests_root: Path) -> list[Path]:
     ignored = {"release_assertion_tests.cpp"}
-    test_files = sorted(path for path in tests_root.glob("*.cpp") if path.name not in ignored)
+    return sorted(path for path in tests_root.glob("*.cpp") if path.name not in ignored)
+
+
+def build_test_case(
+    path: Path, source_root: Path, tests_root: Path
+) -> tuple[tuple[str, str, str], list[str], set[str]]:
+    text = expand_test_file(path, source_root, tests_root)
+    headers = set(ANGLE_INCLUDE.findall(text))
+    text = ANGLE_INCLUDE.sub("", text)
+    text = re.sub(r'^\s*#define\s+REGIDRAGO_SIM_NO_MAIN\s*$', '', text, flags=re.MULTILINE)
+    case_name = path.stem
+    access_name = f"EngineTestAccess_{identifier(case_name)}"
+    text, blocks = extract_access_block(text, access_name)
+    if path.name != "regidrago_sim_tests.cpp" and len(blocks) != 1:
+        raise ValueError(f"{path} must define exactly one EngineTestAccess block")
+    text = text.replace("EngineTestAccess", access_name)
+    mains = list(MAIN.finditer(text))
+    if len(mains) != 1:
+        raise ValueError(f"{path} must define exactly one no-argument main")
+    main_open = mains[0].end() - 1
+    main_close = matching_brace(text, main_open)
+    text = text[:main_close] + "\n  return 0;\n" + text[main_close:]
+    text = text[: mains[0].start()] + "int run() {" + text[mains[0].end() :]
+    return (case_name, f"case_{identifier(case_name)}", text), blocks, headers
+
+
+def collect_test_cases(
+    source_root: Path, tests_root: Path
+) -> tuple[list[tuple[str, str, str]], list[str], set[str]]:
     source_headers = set(ANGLE_INCLUDE.findall(
         (source_root / "src" / "trace_engine_v2" / "part_000.inc").read_text(encoding="utf-8")
     ))
-    headers: set[str] = set(source_headers)
-    access_blocks: list[str] = []
     cases: list[tuple[str, str, str]] = []
-
-    for path in test_files:
-        text = expand_test_file(path, source_root, tests_root)
-        headers.update(ANGLE_INCLUDE.findall(text))
-        text = ANGLE_INCLUDE.sub("", text)
-        text = re.sub(r'^\s*#define\s+REGIDRAGO_SIM_NO_MAIN\s*$', '', text, flags=re.MULTILINE)
-        case_name = path.stem
-        access_name = f"EngineTestAccess_{identifier(case_name)}"
-        text, blocks = extract_access_block(text, access_name)
-        if path.name != "regidrago_sim_tests.cpp" and len(blocks) != 1:
-            raise ValueError(f"{path} must define exactly one EngineTestAccess block")
+    access_blocks: list[str] = []
+    headers = set(source_headers)
+    for path in discover_test_files(tests_root):
+        case, blocks, test_headers = build_test_case(path, source_root, tests_root)
+        cases.append(case)
         access_blocks.extend(blocks)
-        text = text.replace("EngineTestAccess", access_name)
-        mains = list(MAIN.finditer(text))
-        if len(mains) != 1:
-            raise ValueError(f"{path} must define exactly one no-argument main")
-        main_open = mains[0].end() - 1
-        main_close = matching_brace(text, main_open)
-        text = text[:main_close] + "\n  return 0;\n" + text[main_close:]
-        text = text[: mains[0].start()] + "int run() {" + text[mains[0].end() :]
-        cases.append((case_name, f"case_{identifier(case_name)}", text))
+        headers.update(test_headers)
+    return cases, access_blocks, headers
 
-    generated: list[str] = [
+
+def render_cmake_cases(cases: list[tuple[str, str, str]]) -> str:
+    return (
+        "set(REGIDRAGO_UNIFIED_CASES\n"
+        + "".join(f"  {case_name}\n" for case_name, _, _ in cases)
+        + ")\n"
+    )
+
+
+def render_generated_preamble(headers: set[str]) -> str:
+    generated = [
         "// Generated by tests/generate_unified_tests.py. Do not edit.\n",
         "// The simulator is parsed once for all regression cases, avoiding one full\n",
         "// recompilation per test source. CMake still registers every case separately.\n",
     ]
-    headers.discard("<windows.h>")
-    for header in sorted(headers):
+    for header in sorted(headers - {"<windows.h>"}):
         generated.append(f"#include {header}\n")
     generated.extend([
         "#if defined(_WIN32)\n#include <windows.h>\n#endif\n",
         "\n#define REGIDRAGO_SIM_NO_MAIN\n",
+        "// Clang diagnostic contract: https://clang.llvm.org/docs/DiagnosticsReference.html#wkeyword-macro\n",
+        "// Generator source: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/generate_unified_tests.py\n",
+        "// Confirmed issue: https://github.com/FlareZ123/pokemon-sims/issues/2406\n",
+        "// Strict-build contract: https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml\n",
+        "#if defined(__clang__)\n",
+        "#pragma clang diagnostic push\n",
+        "#pragma clang diagnostic ignored \"-Wkeyword-macro\"\n",
+        "#endif\n",
         "#define private public\n",
         "#define protected public\n",
+        "#if defined(__clang__)\n",
+        "#pragma clang diagnostic pop\n",
+        "#endif\n",
         '#include "src/regidrago_sim.cpp"\n',
         "#undef protected\n",
         "#undef private\n\n",
     ])
+    return "".join(generated)
+
+
+def render_generated_cases(
+    access_blocks: list[str], cases: list[tuple[str, str, str]]
+) -> str:
+    generated: list[str] = []
     for block in access_blocks:
         generated.append(block + "\n\n")
     for case_name, namespace, text in cases:
@@ -165,7 +220,11 @@ def generate(source_root: Path, output_cpp: Path, output_cmake: Path) -> None:
     for case_name, namespace, _ in cases:
         generated.append(f'  {{"{case_name}", &{namespace}::run}},\n')
     generated.append("};\n}  // namespace\n\n")
-    generated.append(r'''int main(int argc, char** argv) {
+    return "".join(generated)
+
+
+def render_generated_main() -> str:
+    return r'''int main(int argc, char** argv) {
   if (argc != 2) {
     std::cerr << "usage: regidrago_unified_tests <case>\n";
     return 2;
@@ -185,23 +244,31 @@ def generate(source_root: Path, output_cpp: Path, output_cmake: Path) -> None:
   std::cerr << "unknown case: " << requested << '\n';
   return 2;
 }
-''')
+'''
 
+
+def write_atomic_text(destination: Path, content: str) -> None:
+    with tempfile.NamedTemporaryFile(
+        mode="w", encoding="utf-8", newline="\n", dir=destination.parent, delete=False
+    ) as temporary:
+        temporary.write(content)
+        temporary.flush()
+        os.fsync(temporary.fileno())
+        temporary_path = Path(temporary.name)
+    os.replace(temporary_path, destination)
+
+
+def generate(source_root: Path, output_cpp: Path, output_cmake: Path) -> None:
+    tests_root = source_root / "tests"
+    cases, access_blocks, headers = collect_test_cases(source_root, tests_root)
+    generated = [
+        render_generated_preamble(headers),
+        render_generated_cases(access_blocks, cases),
+        render_generated_main(),
+    ]
     output_cpp.parent.mkdir(parents=True, exist_ok=True)
-    cmake_content = (
-        "set(REGIDRAGO_UNIFIED_CASES\n"
-        + "".join(f"  {case_name}\n" for case_name, _, _ in cases)
-        + ")\n"
-    )
-    for destination, content in ((output_cpp, "".join(generated)), (output_cmake, cmake_content)):
-        with tempfile.NamedTemporaryFile(
-            mode="w", encoding="utf-8", newline="\n", dir=destination.parent, delete=False
-        ) as temporary:
-            temporary.write(content)
-            temporary.flush()
-            os.fsync(temporary.fileno())
-            temporary_path = Path(temporary.name)
-        os.replace(temporary_path, destination)
+    write_atomic_text(output_cpp, "".join(generated))
+    write_atomic_text(output_cmake, render_cmake_cases(cases))
 
 
 def main() -> int:

@@ -1,3 +1,8 @@
+  bool needed_basic_energy_might_be_in_deck(const Card energy,
+                                            const int amount_needed) const {
+    return amount_needed > 0 && might_be_unseen(energy);
+  }
+
   bool needed_oricorio_energy_might_be_in_deck() const {
     // Vital Dance can search Basic Energy, while Apex Dragon specifically requires
     // two Grass and one Fire. At K1, an off-type Energy cannot advance the missing
@@ -6,8 +11,8 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    return (grass_needed() > 0 && might_be_unseen(Card::Grass)) ||
-           (fire_needed() > 0 && might_be_unseen(Card::Fire));
+    return needed_basic_energy_might_be_in_deck(Card::Grass, grass_needed()) ||
+           needed_basic_energy_might_be_in_deck(Card::Fire, fire_needed());
   }
 
   bool needs_oricorio_connector() const {

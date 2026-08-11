@@ -8,6 +8,7 @@ import re
 import tempfile
 from contextlib import contextmanager
 from pathlib import Path
+from typing import NamedTuple
 
 SCENARIO_LABELS = {
     "strict-jit/go-first": "Strict JIT, going first",
@@ -24,7 +25,22 @@ SCENARIO_LABELS = {
     "strict-jit-combined-lock/go-second": "Strict JIT, turn-two Item + Rule Box Ability lock, second",
     "strict-jit-supporter-lock/go-first": "Strict JIT, Supporter lock, first",
     "strict-jit-supporter-lock/go-second": "Strict JIT, Supporter lock, second",
+    "garbodor-shake-ability-lock/go-first": "Garbodor + Boost Shake Ability lock, first",  # Garbotoxin + Boost Shake: https://api.pokemontcg.io/v2/cards/xy9-57 ; https://api.pokemontcg.io/v2/cards/swsh7-142 ; https://github.com/FlareZ123/pokemon-sims/issues/2933
+    "garbodor-shake-ability-lock/go-second": "Garbodor + Boost Shake Ability lock, second",  # Garbotoxin + Boost Shake: https://api.pokemontcg.io/v2/cards/xy9-57 ; https://api.pokemontcg.io/v2/cards/swsh7-142 ; https://github.com/FlareZ123/pokemon-sims/issues/2933
 }
+
+CsvRow = dict[str, str]
+ReportEntry = tuple[str, str, str, str]
+
+
+class SetupInputs(NamedTuple):
+    manifest: dict[str, object]
+    rows: list[CsvRow]
+    fieldnames: list[str]
+
+
+def scenario_label(scenario: str) -> str:
+    return SCENARIO_LABELS.get(scenario, scenario)
 
 
 @contextmanager
@@ -66,31 +82,45 @@ def percent_column(fieldnames: list[str], turn: int) -> str:
     raise KeyError(f"No percentage column found for T{turn}: {fieldnames}")
 
 
-def report_markdown(rows: list[dict[str, str]], fieldnames: list[str], manifest: dict[str, object]) -> str:
-    scenario_column = "scenario" if "scenario" in fieldnames else fieldnames[0]
-    t2_column = percent_column(fieldnames, 2)
-    t3_column = percent_column(fieldnames, 3)
-    t4_column = percent_column(fieldnames, 4)
+def report_table(entries: list[ReportEntry]) -> str:
+    lines = ["| Scenario | T2 | T3 | T4 |", "|---|---:|---:|---:|"]
+    for label, t2, t3, t4 in entries:
+        lines.append(f"| {label} | {t2}% | {t3}% | {t4}% |")
+    return "\n".join(lines)
 
-    baseline = []
-    locks = []
+
+def partition_report_rows(
+    rows: list[CsvRow],
+    scenario_column: str,
+    t2_column: str,
+    t3_column: str,
+    t4_column: str,
+) -> tuple[list[ReportEntry], list[ReportEntry]]:
+    baseline: list[ReportEntry] = []
+    locks: list[ReportEntry] = []
     for row in rows:
         scenario = row[scenario_column]
         target = locks if "lock" in scenario else baseline
         target.append(
             (
-                SCENARIO_LABELS.get(scenario, scenario),
+                scenario_label(scenario),
                 row[t2_column],
                 row[t3_column],
                 row[t4_column],
             )
         )
+    return baseline, locks
 
-    def table(entries: list[tuple[str, str, str, str]]) -> str:
-        lines = ["| Scenario | T2 | T3 | T4 |", "|---|---:|---:|---:|"]
-        for label, t2, t3, t4 in entries:
-            lines.append(f"| {label} | {t2}% | {t3}% | {t4}% |")
-        return "\n".join(lines)
+
+def report_markdown(rows: list[CsvRow], fieldnames: list[str], manifest: dict[str, object]) -> str:
+    scenario_column = "scenario" if "scenario" in fieldnames else fieldnames[0]
+    t2_column = percent_column(fieldnames, 2)
+    t3_column = percent_column(fieldnames, 3)
+    t4_column = percent_column(fieldnames, 4)
+
+    baseline, locks = partition_report_rows(
+        rows, scenario_column, t2_column, t3_column, t4_column
+    )
 
     return f"""# Regidrago VSTAR Setup Report: Corrected Setup-Order Baseline
 
@@ -106,13 +136,13 @@ The simulator counts a ready state only when Regidrago VSTAR is Active, has at l
 
 Seed: `{manifest['matrix_seed']}`.
 
-{table(baseline)}
+{report_table(baseline)}
 
 ## Lock stress tests
 
 Turn-one full Item-lock rows are intentionally omitted and must not be reintroduced as current-paper Expanded matchup scenarios. The official turn procedure prevents the starting player from attacking on the first turn, and Forest of Giant Plants, the historical immediate-evolution enabler for turn-one Vileplume-style locks, is banned in Expanded. Use the turn-two Item-lock rows instead. Combined lock means Rule Box Ability suppression plus Item lock beginning on turn 2. Sources: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf https://www.pokemon.com/es/sol-luna-sombras-ardientes-anuncio-trimestral-sobre-lista-de-cartas-prohibidas-y-cambios-en-las-reglas/ https://github.com/FlareZ123/pokemon-sims/issues/2247
 
-{table(locks)}
+{report_table(locks)}
 
 ## Interpretation boundary
 
@@ -134,7 +164,7 @@ def trace_audit_markdown(repo_root: Path, manifest: dict[str, object]) -> str:
             f"[`{entry['file']}`](../results/traces/{entry['file']})"
         )
         rows.append(
-            f"| {SCENARIO_LABELS.get(entry['scenario'], entry['scenario'])} | {command} | T{ready_turn} | "
+            f"| {scenario_label(entry['scenario'])} | {command} | T{ready_turn} | "
             "Saved executable audit example reproduced from the manifest. |"
         )
 
@@ -192,9 +222,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> int:
-    args = parse_args()
-    repo_root = args.repo_root.resolve()
+def load_setup_inputs(repo_root: Path) -> SetupInputs:
     manifest_path = repo_root / "results" / "baseline_manifest.json"
     csv_path = repo_root / "results" / "simulation_results.csv"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -204,12 +232,32 @@ def main() -> int:
         fieldnames = list(reader.fieldnames or [])
     if not rows or not fieldnames:
         raise ValueError("simulation_results.csv is empty")
+    return SetupInputs(manifest=manifest, rows=rows, fieldnames=fieldnames)
 
+
+def write_setup_documents(repo_root: Path, inputs: SetupInputs) -> None:
     with exclusive_lock(repo_root / ".update-setup-docs.lock"):
-        atomic_write(repo_root / "docs" / "REPORT.md", report_markdown(rows, fieldnames, manifest))
-        atomic_write(repo_root / "docs" / "TRACE_AUDIT.md", trace_audit_markdown(repo_root, manifest))
+        atomic_write(
+            repo_root / "docs" / "REPORT.md",
+            report_markdown(inputs.rows, inputs.fieldnames, inputs.manifest),
+        )
+        atomic_write(
+            repo_root / "docs" / "TRACE_AUDIT.md",
+            trace_audit_markdown(repo_root, inputs.manifest),
+        )
         readme_path = repo_root / "README.md"
-        atomic_write(readme_path, update_readme(readme_path.read_text(encoding="utf-8"), manifest))
+        atomic_write(
+            readme_path,
+            update_readme(readme_path.read_text(encoding="utf-8"), inputs.manifest),
+        )
+
+
+def main() -> int:
+    args = parse_args()
+    repo_root = args.repo_root.resolve()
+    inputs = load_setup_inputs(repo_root)
+
+    write_setup_documents(repo_root, inputs)
     return 0
 
 

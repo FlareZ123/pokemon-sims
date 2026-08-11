@@ -15,6 +15,9 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.baseline_provenance import simulator_policy_source_digest
 
+BASELINE_DECK = "regidrago-shell"
+MATRIX_FILENAME = "simulation_results.csv"
+MANIFEST_FILENAME = "baseline_manifest.json"
 TRACE_SPECS = (
     ("strict-jit/go-second", 3, "strict_jit_go_second"),
     ("strict-jit/go-first", 4, "strict_jit_go_first"),
@@ -57,21 +60,61 @@ def run(command: list[str], *, check: bool = True) -> subprocess.CompletedProces
     )
 
 
+def simulate_trace_command(executable: Path, scenario: str, seed: int, deadline: int) -> list[str]:
+    return [
+        str(executable),
+        "--simulate-this",
+        "--deck",
+        BASELINE_DECK,
+        "--scenario",
+        scenario,
+        "--seed",
+        str(seed),
+        "--require-ready-by",
+        str(deadline),
+    ]
+
+
+def aggregate_matrix_command(
+    executable: Path, output_path: Path, trials: int, seed: int
+) -> list[str]:
+    return [
+        str(executable),
+        "--trials",
+        str(trials),
+        "--seed",
+        str(seed),
+        "--out",
+        str(output_path),
+    ]
+
+
+def trace_file_name(stem: str, seed: int) -> str:
+    return f"{stem}_seed_{seed}.txt"
+
+
+def managed_trace_pattern() -> re.Pattern[str]:
+    generated_stems = "|".join(re.escape(stem) for _, _, stem in TRACE_SPECS)
+    return re.compile(rf"(?:{generated_stems})_seed_[0-9]+\.txt")
+
+
+def reconcile_generated_traces(trace_dir: Path, expected_trace_files: set[str]) -> None:
+    generated_trace_name = managed_trace_pattern()
+    for trace_path in trace_dir.iterdir():
+        # Only canonical generator-owned trace names may be removed. This keeps
+        # unrelated review notes while reconciling the directory to the new manifest:
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md
+        # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
+        # https://github.com/FlareZ123/pokemon-sims/issues/916
+        if (trace_path.is_file() and generated_trace_name.fullmatch(trace_path.name) and
+                trace_path.name not in expected_trace_files):
+            trace_path.unlink()
+
+
 def find_trace_seed(executable: Path, scenario: str, deadline: int, max_seed: int) -> tuple[int, str]:
     for seed in range(1, max_seed + 1):
         completed = run(
-            [
-                str(executable),
-                "--simulate-this",
-                "--deck",
-                "regidrago-shell",
-                "--scenario",
-                scenario,
-                "--seed",
-                str(seed),
-                "--require-ready-by",
-                str(deadline),
-            ],
+            simulate_trace_command(executable, scenario, seed, deadline),
             check=False,
         )
         if completed.returncode == 0:
@@ -97,44 +140,37 @@ def generate_matrix_atomic(executable: Path, matrix_path: Path, trials: int, mat
         # This is the repository's canonical fixed-seed aggregate command:
         # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-aggregate-smoke-test
         # https://github.com/FlareZ123/pokemon-sims/issues/642
-        run(
-            [
-                str(executable),
-                "--trials",
-                str(trials),
-                "--seed",
-                str(matrix_seed),
-                "--out",
-                str(temporary_path),
-            ]
-        )
+        run(aggregate_matrix_command(executable, temporary_path, trials, matrix_seed))
         os.replace(temporary_path, matrix_path)
     finally:
         temporary_path.unlink(missing_ok=True)
         temporary_lock_path.unlink(missing_ok=True)
 
 
-def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, matrix_seed: int) -> None:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    trace_dir = output_dir / "traces"
-    trace_dir.mkdir(parents=True, exist_ok=True)
-
-    manifest: dict[str, object] = {
-        "deck": "regidrago-shell",
+def build_manifest(matrix_seed: int, trials: int) -> dict[str, object]:
+    # Bind the published matrix to every aggregate simulator input, including
+    # part_016's scenario loop and seed derivation:
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
+    # https://github.com/FlareZ123/pokemon-sims/issues/642
+    return {
+        "deck": BASELINE_DECK,
         "matrix_seed": matrix_seed,
         "trials": trials,
-        # Bind the published matrix to every aggregate simulator input, including
-        # part_016's scenario loop and seed derivation:
-        # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
-        # https://github.com/FlareZ123/pokemon-sims/issues/642
         "simulator_policy_source_sha256": simulator_policy_source_digest(REPO_ROOT),
         "traces": [],
     }
 
+
+def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, matrix_seed: int) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    trace_dir = output_dir / "traces"
+    trace_dir.mkdir(parents=True, exist_ok=True)
+    manifest = build_manifest(matrix_seed, trials)
+
     expected_trace_files: set[str] = set()
     for scenario, deadline, stem in TRACE_SPECS:
         seed, trace = find_trace_seed(executable, scenario, deadline, max_seed)
-        file_name = f"{stem}_seed_{seed}.txt"
+        file_name = trace_file_name(stem, seed)
         expected_trace_files.add(file_name)
         atomic_write_text(trace_dir / file_name, trace)
         manifest["traces"].append(
@@ -146,21 +182,10 @@ def regenerate(executable: Path, output_dir: Path, max_seed: int, trials: int, m
             }
         )
 
-    generated_stems = "|".join(re.escape(stem) for _, _, stem in TRACE_SPECS)
-    generated_trace_name = re.compile(rf"(?:{generated_stems})_seed_[0-9]+\.txt")
-    for trace_path in trace_dir.iterdir():
-        # Only canonical generator-owned trace names may be removed. This keeps
-        # unrelated review notes while reconciling the directory to the new manifest:
-        # https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md
-        # https://github.com/FlareZ123/pokemon-sims/blob/main/results/baseline_manifest.json
-        # https://github.com/FlareZ123/pokemon-sims/issues/916
-        if (trace_path.is_file() and generated_trace_name.fullmatch(trace_path.name) and
-                trace_path.name not in expected_trace_files):
-            trace_path.unlink()
-
-    generate_matrix_atomic(executable, output_dir / "simulation_results.csv", trials, matrix_seed)
+    reconcile_generated_traces(trace_dir, expected_trace_files)
+    generate_matrix_atomic(executable, output_dir / MATRIX_FILENAME, trials, matrix_seed)
     atomic_write_text(
-        output_dir / "baseline_manifest.json",
+        output_dir / MANIFEST_FILENAME,
         json.dumps(manifest, indent=2, sort_keys=True) + "\n",
     )
 

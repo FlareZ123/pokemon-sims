@@ -1,20 +1,16 @@
   bool issue_1816_public_preflight() const {
-    const auto recipe_copies = [this](const Card card) {
-      int copies = 0;
-      for (const auto& [candidate, count] : recipe_) {
-        if (candidate == card) copies += count;
-      }
-      return copies;
-    };
     const bool registered_pineco_recipe =
-        recipe_copies(Card::SecretBox) == 1 &&
-        recipe_copies(Card::Pineco) == 2 &&
-        recipe_copies(Card::ForretressEx) == 2;
+        registered_recipe_count(Card::SecretBox) == 1 &&
+        registered_recipe_count(Card::Pineco) == 2 &&
+        registered_recipe_count(Card::ForretressEx) == 2;
 
+    // Both registered JIT profiles require the Dragon payload on the ready turn:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2765
     return registered_pineco_recipe && secret_box_combo_enabled() &&
-        scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
-        state_.turn == 2 && state_.turn < scenario_.max_turn &&
-        !state_.turn_ended && supporter_allowed() && !state_.manual_energy_used &&
+        strict_payload_timing() && scenario_.going_first && state_.turn == 2 &&
+        state_.turn < scenario_.max_turn && !state_.turn_ended &&
+        supporter_allowed() && !state_.manual_energy_used &&
         scenario_.locks != LockMode::FullItem &&
         scenario_.locks != LockMode::FullCombined &&
         scenario_.locks != LockMode::TurnTwoItem && state_.active &&
@@ -44,8 +40,9 @@
     // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
     // Regidrago V/VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official draw, search, evolution, attachment, and Item procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1, dynamic DCI, strict-JIT, lock, and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-model https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1816
+    // K1, dynamic DCI, same-turn JIT, lock, and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-model https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Original confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/1816
+    // Cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2765
     const int treasure_targets = static_cast<int>(std::count_if(
         state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic));
     return treasure_targets >= 3;
@@ -61,7 +58,7 @@
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Official deck-search knowledge and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // No-future-oracle policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1816
+    // Original confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/1816
     Engine projected = *this;
     projected.trace_ = nullptr;
     remove_one(projected.state_.hand, Card::Fire);
@@ -100,7 +97,7 @@
     shuffle(state_.deck);
     trace("PLAY SUPPORTER", "R-STEVEN-01; R-MT-01; P-AXIS-01; P-DCI-01",
           "Steven's Resolve banked Regidrago VSTAR, Grass Energy, and "
-          "Mysterious Treasure for the direct next-turn strict-JIT route; "
+          "Mysterious Treasure for the direct next-turn same-turn-JIT route; "
           "Secret Box was preserved and the turn ended.");
     return true;
   }

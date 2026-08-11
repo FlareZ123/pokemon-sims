@@ -1,6 +1,9 @@
 #define play_mysterious_treasure play_mysterious_treasure_issue2165_original
   bool issue_1478_t1_field_blower_direct_regi_route_available() const {
-    if (scenario_.dci != DciProfile::StrictJit ||
+    // Strict JIT and MatchupFlex JIT share the same ready-turn payload timing:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2798
+    if (!strict_payload_timing() ||
         scenario_.locks != LockMode::None || state_.turn != 1 ||
         !scenario_.going_first || scenario_.max_turn < 3 || item_locked() ||
         state_.supporter_used || state_.manual_energy_used ||
@@ -115,8 +118,11 @@
     // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
     // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2069
+    // This continuation only requires same-ready-turn payload timing, which both
+    // registered JIT profiles share: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2801
     if (!prizes_known() || state_.turn != 1 || !scenario_.going_first ||
-        scenario_.dci != DciProfile::StrictJit ||
+        !strict_payload_timing() ||
         scenario_.locks != LockMode::None || scenario_.max_turn < 2 ||
         item_locked() || state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::RegidragoV ||

@@ -62,7 +62,11 @@ class Engine {
   const State& state() const { return state_; }
 
  private:
-  const Scenario& scenario_;
+  // Engine outlives many synthetic constructor expressions, so keep Scenario by
+  // value instead of retaining a caller reference that may name a temporary.
+  // C++ temporary lifetime: https://eel.is/c++draft/class.temporary
+  // Confirmed lifetime bug: https://github.com/FlareZ123/pokemon-sims/issues/2815
+  Scenario scenario_;
   std::shared_ptr<const DeckRecipe> owned_recipe_;
   const DeckRecipe& recipe_;
   std::mt19937_64& rng_;
@@ -87,12 +91,19 @@ class Engine {
   static int count_of(const std::vector<Card>& zone, const Card card) {
     return static_cast<int>(std::count(zone.begin(), zone.end(), card));
   }
-
   int hand_count(const Card card) const { return count_of(state_.hand, card); }
   int deck_count_after_search_started(const Card card) const { return count_of(state_.deck, card); }
   int prize_count_after_reveal(const Card card) const { return count_of(state_.prizes, card); }
   bool prizes_known() const { return deck_seen_ || prizes_revealed_; }
   bool known_prize(const Card card) const { return prizes_known() && prize_count_after_reveal(card) > 0; }
+
+  int registered_recipe_count(const Card card) const {
+    int copies = 0;
+    for (const auto& [candidate, count] : recipe_) {
+      if (candidate == card) copies += count;
+    }
+    return copies;
+  }
 
   // Call only while resolving a legal search effect. The deck is physically seen,
   // so later policy can deduce the Prize multiset from the fixed deck list and zones.
@@ -120,21 +131,47 @@ class Engine {
     return observed;
   }
 
+  static int attached_public_count_on_pokemon(const Pokemon& pokemon,
+                                              const Card card) {
+    switch (card) {
+      case Card::Grass: return pokemon.grass;
+      case Card::Fire: return pokemon.fire;
+      case Card::DoubleDragonEnergy: return pokemon.double_dragon;
+      case Card::ForestSealStone: return pokemon.tool == Tool::ForestSealStone ? 1 : 0;
+      case Card::WishfulBaton: return pokemon.tool == Tool::WishfulBaton ? 1 : 0;
+      case Card::Powerglass: return pokemon.tool == Tool::Powerglass ? 1 : 0;
+      default: return 0;
+    }
+  }
+
   int attached_public_count(const Card card) const {
-    const auto count_on_pokemon = [card](const Pokemon& pokemon) {
-      switch (card) {
-        case Card::Grass: return pokemon.grass;
-        case Card::Fire: return pokemon.fire;
-        case Card::DoubleDragonEnergy: return pokemon.double_dragon;
-        case Card::ForestSealStone: return pokemon.tool == Tool::ForestSealStone ? 1 : 0;
-        case Card::WishfulBaton: return pokemon.tool == Tool::WishfulBaton ? 1 : 0;
-        case Card::Powerglass: return pokemon.tool == Tool::Powerglass ? 1 : 0;
-        default: return 0;
-      }
-    };
-    int count = state_.active ? count_on_pokemon(*state_.active) : 0;
-    for (const Pokemon& pokemon : state_.bench) count += count_on_pokemon(pokemon);
+    int count = state_.active
+        ? attached_public_count_on_pokemon(*state_.active, card)
+        : 0;
+    for (const Pokemon& pokemon : state_.bench) {
+      count += attached_public_count_on_pokemon(pokemon, card);
+    }
     return count;
+  }
+
+  int public_underlying_evolution_count(const Card card) const {
+    // Evolved Pokémon remain public Evolution stacks. Count the modeled underlying
+    // Basic cards for fixed-list K0 copy accounting without changing strategic counts
+    // of unevolved Pokémon:
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Pineco / Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // Confirmed Pineco accounting bug: https://github.com/FlareZ123/pokemon-sims/issues/972
+    switch (card) {
+      case Card::RegidragoV: return in_play_count(Card::RegidragoVstar);
+      case Card::Pineco: return in_play_count(Card::ForretressEx);
+      default: return 0;
+    }
+  }
+
+  int public_known_count(const Card card) const {
+    return hand_count(card) + count_of(state_.discard, card) + in_play_count(card) +
+           public_underlying_evolution_count(card) + attached_public_count(card);
   }
 
   // P-HIDDEN-01: before a legal deck or Prize inspection, policy uses only public zones and
@@ -146,25 +183,7 @@ class Engine {
   // https://api.pokemontcg.io/v2/cards/swsh10-146
   bool might_be_unseen(const Card card) const {
     if (deck_seen_ || prizes_revealed_) return deck_count_after_search_started(card) > 0;
-    // An evolved Regidrago VSTAR remains a public Evolution stack containing the
-    // Regidrago V it evolved from. Count that underlying Basic for fixed-list K0
-    // copy accounting without changing strategic counts of unevolved Pokémon:
-    // https://www.pokemon.com/us/pokemon-tcg/rules
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    const int evolved_regidrago_bases =
-        card == Card::RegidragoV ? in_play_count(Card::RegidragoVstar) : 0;
-    // Forretress ex is a Stage 1 that evolves from Pineco. Count the public
-    // underlying Pineco in the same fixed-list K0 accounting used for Regidrago's
-    // Evolution stack: https://api.pokemontcg.io/v2/cards/sv4pt5-1
-    // https://api.pokemontcg.io/v2/cards/sv4pt5-2
-    // https://www.pokemon.com/us/pokemon-tcg/rules
-    // https://github.com/FlareZ123/pokemon-sims/issues/972
-    const int evolved_pineco_bases =
-        card == Card::Pineco ? in_play_count(Card::ForretressEx) : 0;
-    const int known = hand_count(card) + count_of(state_.discard, card) + in_play_count(card) +
-                      evolved_regidrago_bases + evolved_pineco_bases +
-                      attached_public_count(card);
-    return total_copies(card) > known;
+    return total_copies(card) > public_known_count(card);
   }
 
   static bool remove_one(std::vector<Card>& zone, const Card card) {
@@ -180,8 +199,18 @@ class Engine {
     if (trace_ != nullptr) trace_->add(state_.turn, action, rules, detail);
   }
 
+  static bool uses_full_supporter_lock(const LockMode locks) {
+    return locks == LockMode::FullSupporter;
+  }
   bool first_turn_going_first() const { return state_.turn == 1 && scenario_.going_first; }
-  bool supporter_allowed() const { return scenario_.locks != LockMode::FullSupporter && !first_turn_going_first() && !state_.supporter_used && !state_.turn_ended; }
+  bool first_turn_going_second() const { return state_.turn == 1 && !scenario_.going_first; }
+  bool supporter_allowed() const {
+    return !uses_full_supporter_lock(scenario_.locks) && !first_turn_going_first() &&
+           !state_.supporter_used && !state_.turn_ended;
+  }
+  static bool uses_turn_two_item_lock(const LockMode locks) {
+    return locks == LockMode::TurnTwoItem || locks == LockMode::FullCombined;
+  }
   bool item_locked() const {
     // `FullItem` remains an explicitly synthetic/historical fixture mode. Aggregate
     // `FullCombined` instead uses the legal current-paper turn-two Item timing:
@@ -189,16 +218,16 @@ class Engine {
     // https://www.pokemon.com/es/sol-luna-sombras-ardientes-anuncio-trimestral-sobre-lista-de-cartas-prohibidas-y-cambios-en-las-reglas/
     // https://github.com/FlareZ123/pokemon-sims/issues/2247
     return scenario_.locks == LockMode::FullItem ||
-           ((scenario_.locks == LockMode::TurnTwoItem ||
-             scenario_.locks == LockMode::FullCombined) &&
-            state_.turn >= 2);
+           (uses_turn_two_item_lock(scenario_.locks) && state_.turn >= 2);
+  }
+  static bool uses_path_style_ability_lock(const LockMode locks) {
+    return locks == LockMode::FullRuleBoxAbility || locks == LockMode::FullCombined;
   }
   bool rule_box_abilities_locked() const {
-    const bool path_style_lock = scenario_.locks == LockMode::FullRuleBoxAbility ||
-                                 scenario_.locks == LockMode::FullCombined;
     // Path to the Peak suppresses Rule Box Pokémon Abilities only while that Stadium
     // remains in play: https://api.pokemontcg.io/v2/cards/swsh6-148
-    return path_style_lock && !state_.path_lock_removed;
+    return uses_path_style_ability_lock(scenario_.locks) &&
+           !state_.path_lock_removed;
   }
   bool ability_available_for_pokemon(const Card card) const {
     return !is_rule_box_pokemon(card) || !rule_box_abilities_locked();

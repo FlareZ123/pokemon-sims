@@ -22,6 +22,7 @@ CARD_SOURCE_TRAILING_PUNCTUATION = ".,;:!?`"
 # This exact card-ID contract was verified against the supplied English corpus:
 # https://github.com/PokemonTCG/pokemon-tcg-data
 # Correct Mega Dragonite ex record: https://api.pokemontcg.io/v2/cards/me2pt5-152
+# Professor's Letter supplied-corpus record: https://api.pokemontcg.io/v2/cards/xy1-123
 # Confirmed source-traceability bug: https://github.com/FlareZ123/pokemon-sims/issues/1696
 CANONICAL_SOURCE_CARD_IDS = {
     "base1-99", "me1-117", "me2-87", "me2pt5-16", "me2pt5-152",
@@ -31,9 +32,11 @@ CANONICAL_SOURCE_CARD_IDS = {
     "sv4-163", "sv4-171", "sv5-146", "sv4pt5-1", "sv4pt5-2", "sv6-127",
     "sv6-130", "sv6-163", "sv6pt5-63", "sv7-133", "sv8-76",
     "sv8-140", "sv8-164", "swsh1-163", "swsh1-179", "swsh3-104",
-    "swsh6-145", "swsh6-148", "swsh8-225", "swsh9-148", "swsh9-149", "swsh10-144",
+    "swsh6-145", "swsh6-148", "swsh7-142",  # Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142 ; https://github.com/FlareZ123/pokemon-sims/issues/2931
+    "swsh8-225", "swsh9-148", "swsh9-149", "swsh10-144",
     "swsh10-146", "swsh11-136", "swsh12-135", "swsh12-136",
     "swsh12-156", "swsh12-164", "swsh12pt5-146", "swsh12tg-TG26",
+    "xy1-123", "xy9-57",  # Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 ; https://github.com/FlareZ123/pokemon-sims/issues/2931
 }
 SCRIPT_PATH = REPO_ROOT / "scripts" / "audit_card_data.py"
 UPSTREAM_COMMIT_URL = (

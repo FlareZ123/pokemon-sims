@@ -6,7 +6,7 @@
     // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
     // Hidden-information boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1199
-    if (state_.turn != 1 || scenario_.going_first ||
+    if (!first_turn_going_second() ||
         scenario_.dci != DciProfile::NoDiscardControl ||
         scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
         !supporter_allowed() || state_.manual_energy_used || deck_seen_ ||
@@ -108,7 +108,7 @@
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1745
     if (play_issue_1745_steven_latias_t3_route()) return true;
 
-    if (state_.turn != 1 || scenario_.going_first ||
+    if (!first_turn_going_second() ||
         scenario_.dci != DciProfile::NoDiscardControl ||
         scenario_.locks != LockMode::None || !state_.manual_energy_used ||
         deck_seen_ || !state_.active ||

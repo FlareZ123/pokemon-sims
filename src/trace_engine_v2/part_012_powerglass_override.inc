@@ -1,6 +1,8 @@
+#include "core/regidrago_line_helpers.inc"
+
   bool arven_powerglass_tool_route_live() const {
     if (!state_.active || state_.active->tool != Tool::None ||
-        (state_.active->card != Card::RegidragoV && state_.active->card != Card::RegidragoVstar)) {
+        !is_regidrago_v_line(state_.active->card)) {
       return false;
     }
 

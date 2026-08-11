@@ -1,6 +1,15 @@
 #define choose_supporter choose_supporter_issue1873_original
+  bool issue_1235_same_turn_jit_profile() const {
+    // Strict JIT and matchup-flex JIT require the Dragon payload to enter discard
+    // on the same turn as readiness; no-discard-control allows earlier banking.
+    // Policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Regression: https://github.com/FlareZ123/pokemon-sims/issues/2803
+    return scenario_.dci == DciProfile::StrictJit ||
+        scenario_.dci == DciProfile::MatchupFlexJit;
+  }
+
   bool issue_1235_t1_quick_ball_connector_state() const {
-    if (scenario_.dci != DciProfile::StrictJit || state_.turn != 1 ||
+    if (!issue_1235_same_turn_jit_profile() || state_.turn != 1 ||
         scenario_.going_first || scenario_.locks != LockMode::None ||
         state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::RegidragoV ||
@@ -85,7 +94,7 @@
     // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2070
 
-    if (scenario_.dci != DciProfile::StrictJit || state_.turn != 2 ||
+    if (!issue_1235_same_turn_jit_profile() || state_.turn != 2 ||
         scenario_.locks != LockMode::None || !prizes_known() ||
         !supporter_allowed() || state_.supporter_used || bench_space() == 0 ||
         hand_count(Card::MysteriousTreasure) == 0 ||

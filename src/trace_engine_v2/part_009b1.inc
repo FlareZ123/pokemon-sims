@@ -32,7 +32,10 @@
   }
 
   std::optional<Card> quick_ball_crispin_replaced_energy_cost() const {
-    if (scenario_.dci != DciProfile::StrictJit || state_.turn != 1 ||
+    // StrictJit and MatchupFlexJit share current-turn payload timing.
+    // JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2757
+    if (!strict_payload_timing() || state_.turn != 1 ||
         scenario_.locks != LockMode::None || !supporter_allowed() ||
         state_.manual_energy_used || state_.supporter_used ||
         hand_count(Card::Crispin) == 0 || hand_count(Card::Grass) < 2 ||
@@ -62,7 +65,7 @@
     // turn-one manual attachment and held Crispin immediately searches Grass plus
     // Fire, attaches the replacement Grass, and leaves Fire for turn two. Held Arven
     // then finds Forest Seal Stone, whose Star Alchemy can find Regidrago VSTAR;
-    // Brilliant Blender supplies the turn-two strict-JIT payload, and Latias ex
+    // Brilliant Blender supplies the turn-two current-turn JIT payload, and Latias ex
     // supplies the legal zero-Retreat promotion. This fallback runs only after
     // ordinary lower-DCI costs fail and only for the exact missing-Regidrago-V route:
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
@@ -79,15 +82,22 @@
   }
 
   bool quick_ball_seed23_latias_route_ready() const {
-    // A legal full-Prize inspection establishes the same exact K1 composition as a
-    // deck search for this route while preserving every physical target and timing gate:
-    // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
-    // Official Prize, Item, Ability, evolution, retreat, Supporter, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1981
-    if (!prizes_known() || scenario_.dci != DciProfile::StrictJit ||
-        scenario_.locks != LockMode::None || state_.turn != 3 ||
-        scenario_.max_turn < 4 || !state_.vstar_power_used ||
+    // Historical name retained for regression compatibility. The route itself is
+    // state-generic: Quick Ball may replace Tate & Liza with Latias ex when the
+    // observable K1 state projects a complete Regidrago VSTAR line on the next turn.
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Advanced evolution / turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // K1, JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2704
+    const bool jit_profile = scenario_.dci == DciProfile::StrictJit ||
+                             scenario_.dci == DciProfile::MatchupFlexJit;
+    const int projected_ready_turn = state_.turn + 1;
+    if (!prizes_known() || !jit_profile || scenario_.locks != LockMode::None ||
+        scenario_.max_turn < projected_ready_turn || !state_.vstar_power_used ||
         !state_.supporter_used || !state_.manual_energy_used ||
         state_.retreat_used || item_locked() || !state_.active ||
         !is_basic(state_.active->card) || bench_space() == 0 ||
@@ -108,9 +118,15 @@
       return false;
     }
     const bool energy_route_finishes = std::any_of(
-        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+        state_.bench.begin(), state_.bench.end(),
+        [this, projected_ready_turn](const Pokemon& pokemon) {
+          // Any Regidrago V already in play before the projected ready turn may
+          // evolve on that next turn; literal seed turn numbers are not legality.
+          // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+          // Advanced evolution procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+          // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2704
           if (pokemon.card != Card::RegidragoV ||
-              pokemon.entered_turn != state_.turn) {
+              pokemon.entered_turn >= projected_ready_turn) {
             return false;
           }
           const bool fire_finishes = pokemon.grass >= 2 && pokemon.fire == 0 &&
@@ -120,20 +136,18 @@
           return fire_finishes || grass_finishes;
         });
 
-    // Latias ex immediately replaces Tate & Liza's remaining switch role. The held
-    // Basic Energy, VSTAR, and Professor Burnet then complete Energy, evolution, and
-    // the next-turn Dragon payload on T4. The generic Active-position and Energy
-    // predicates project held connectors, so this exact K1 route uses only public
-    // physical state and the configured T4 horizon:
+    // Latias ex replaces Tate & Liza's remaining switch role. The held Basic
+    // Energy, VSTAR, and Professor Burnet then complete Energy, evolution, and the
+    // next-turn JIT payload on the projected ready turn. These gates use public K1
+    // state and physical action availability rather than one historical seed label:
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
     // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
-    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Official procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // K1, route priority, and DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1403
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // K1, JIT, route priority, and DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2704
     return energy_route_finishes;
   }
 
@@ -208,9 +222,10 @@
     // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official first-turn, Item, Ability, search, Bench, attachment, evolution, and Supporter procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1, strict-JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1797
-    return scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
+    // K1, same-turn JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2714
+    // Confirmed route bug: https://github.com/FlareZ123/pokemon-sims/issues/1797
+    return strict_payload_timing() && scenario_.going_first &&
         scenario_.locks == LockMode::None && state_.turn == 1 &&
         scenario_.max_turn >= 3 && prizes_known() && !item_locked() &&
         !state_.manual_energy_used && !state_.supporter_used && state_.active &&

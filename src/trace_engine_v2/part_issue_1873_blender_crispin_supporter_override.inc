@@ -79,6 +79,19 @@
 
 #define choose_supporter choose_supporter_issue2225_original
   void choose_supporter() {
+    if (play_issue_2622_steven_latias_blender_package()) {
+      // This package is resolved at the active Supporter dispatch seam after the
+      // turn's scheduled manual attachment. Steven ends the turn after reserving
+      // the K1-proven VSTAR, Latias mobility, and Blender payload channels.
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+      // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Supporter, search, evolution, Ability, Item, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+      // K1, strict-JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2622
+      return;
+    }
     if (tate_switch_then_next_turn_burnet_route()) {
       // The current Supporter action repairs Active position. Burnet remains held
       // for the following turn's same-turn payload, preserving both deterministic

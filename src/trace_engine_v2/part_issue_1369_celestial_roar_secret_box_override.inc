@@ -15,17 +15,10 @@
     // Registered recipes: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc#L71-L150
     // Synthetic fixture copy accounting: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L78-L93
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1369
-    const auto recipe_copies = [this](const Card card) {
-      int copies = 0;
-      for (const auto& [candidate, count] : recipe_) {
-        if (candidate == card) copies += count;
-      }
-      return copies;
-    };
     const bool registered_pineco_recipe =
-        recipe_copies(Card::SecretBox) == 1 &&
-        recipe_copies(Card::Pineco) == 2 &&
-        recipe_copies(Card::ForretressEx) == 2;
+        registered_recipe_count(Card::SecretBox) == 1 &&
+        registered_recipe_count(Card::Pineco) == 2 &&
+        registered_recipe_count(Card::ForretressEx) == 2;
 
     // Regidrago V already has the Energy required to attack, while Secret Box
     // and the held Fire/Grass schedule can complete the next-turn route:
@@ -140,3 +133,12 @@
   #include "part_issue_1816_pineco_steven_treasure_override.inc"
   #undef run_secret_box_turn
   #define run_secret_box_turn run_secret_box_turn_issue1816
+
+  // Compare the equal-turn Secret Box + Crispin + Mysterious Treasure route before
+  // the Pineco policy can spend Forretress ex and concede two Prizes for no speed gain:
+  // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+  // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2485
+  #include "part_issue_2485_secret_box_crispin_resource_override.inc"
+  #undef run_secret_box_turn
+  #define run_secret_box_turn run_secret_box_turn_issue2485

@@ -30,9 +30,11 @@
   bool issue_1877_treasure_quick_ball_payload_bridge_available() const {
     // Full deck inspection or full Prize inspection establishes K1.
     // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-    // Dynamic DCI and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1877
-    return scenario_.dci == DciProfile::StrictJit && state_.turn == 3 &&
+    // Both JIT profiles require the payload on the ready turn; no-discard-control permits earlier banking: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Profile-gate regression: https://github.com/FlareZ123/pokemon-sims/issues/2743
+    // Confirmed route bug: https://github.com/FlareZ123/pokemon-sims/issues/1877
+    return scenario_.dci != DciProfile::NoDiscardControl && state_.turn == 3 &&
         prizes_known() && !item_locked() && active_is_vstar() &&
         state_.active->grass >= 2 && state_.active->fire >= 1 &&
         need_payload() && hand_count(Card::MysteriousTreasure) > 0 &&

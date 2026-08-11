@@ -1,3 +1,4 @@
+#define play_mysterious_treasure play_mysterious_treasure_issue2323_original
   bool issue_2165_burnet_treasure_vstar_route_available() const {
     if (scenario_.dci != DciProfile::StrictJit ||
         scenario_.locks != LockMode::None || state_.turn != 1 ||
@@ -32,7 +33,62 @@
     return issue_1419_publicly_possible_count(Card::RegidragoVstar) > 0;
   }
 
+  bool issue_2265_observable_direct_route_should_hold_treasure() const {
+    const bool jit_profile = scenario_.dci == DciProfile::StrictJit ||
+        scenario_.dci == DciProfile::MatchupFlexJit;
+    const bool held_payload = std::any_of(
+        state_.hand.begin(), state_.hand.end(), is_payload);
+    const bool deck_payload = std::any_of(
+        state_.deck.begin(), state_.deck.end(), is_payload);
+    const bool evolution_ready_benched_regi = std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV &&
+              pokemon.entered_turn < state_.turn && pokemon.double_dragon == 0 &&
+              pokemon.grass >= 2 && pokemon.fire == 0;
+        });
+
+    // At K1, the held Fire, VSTAR, Arven, surplus Grass, Blender, known Quick Ball,
+    // known Latias ex, and a deck Dragon prove a complete same-turn continuation.
+    // Spending Mysterious Treasure before the scheduled attachment consumes an
+    // extra card and can spend a Tapu Lele-GX Bench slot without improving T3.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Attachment, evolution, Supporter, Item, search, Bench, Ability, and retreat rules: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, DCI/JIT, resource preservation, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2265#issuecomment-5215563905
+    return jit_profile && !held_payload && deck_payload && prizes_known() &&
+        supporter_allowed() && !item_locked() && !state_.manual_energy_used &&
+        !state_.retreat_used && state_.active && is_basic(state_.active->card) &&
+        state_.active->card != Card::RegidragoV && evolution_ready_benched_regi &&
+        hand_count(Card::MysteriousTreasure) > 0 && hand_count(Card::Arven) > 0 &&
+        hand_count(Card::RegidragoVstar) > 0 && hand_count(Card::Fire) > 0 &&
+        hand_count(Card::Grass) > 0 && hand_count(Card::QuickBall) == 0 &&
+        hand_count(Card::BrilliantBlender) > 0 &&
+        deck_count_after_search_started(Card::QuickBall) > 0 &&
+        deck_count_after_search_started(Card::LatiasEx) > 0 && bench_space() > 0 &&
+        ability_available_for_pokemon(Card::LatiasEx) && !in_play(Card::LatiasEx) &&
+        hand_count(Card::LatiasEx) == 0;
+  }
+
   bool play_mysterious_treasure(const bool permit_payload) {
+    if (issue_2265_observable_direct_route_should_hold_treasure() ||
+        issue_2265_hold_treasure_for_direct_route()) {
+      // Preserve Treasure until the scheduled Fire attachment and evolution have
+      // changed the DCI/axis state. The direct T3 continuation is already proven.
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+      // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+      // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+      // Core procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+      // Earliest-route/resource policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2265#issuecomment-5215563905
+      return false;
+    }
     if (!issue_2165_burnet_treasure_vstar_route_available()) {
       return play_mysterious_treasure_issue2165_original(permit_payload);
     }
@@ -62,3 +118,5 @@
               : "Discarded redundant Ultra Ball; no Dragon or Psychic Pokemon remained after K1 inspection.");
     return true;
   }
+#undef play_mysterious_treasure
+#include "part_issue_2323_early_treasure_regi_override.inc"

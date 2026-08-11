@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import importlib.util
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from types import ModuleType
 
 ROOT = Path(__file__).resolve().parents[1]
+_MISSING_MODULE = object()
 
 
 def load_module(path: Path, module_name: str) -> ModuleType:
@@ -14,7 +16,19 @@ def load_module(path: Path, module_name: str) -> ModuleType:
     if specification is None or specification.loader is None:
         raise RuntimeError(f"Could not load {path}")
     module = importlib.util.module_from_spec(specification)
-    specification.loader.exec_module(module)
+    previous_module = sys.modules.get(module_name, _MISSING_MODULE)
+    # Python's direct-file import recipe registers the module before exec_module():
+    # https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
+    # Restore the caller's module table after the synthetic test import:
+    # https://docs.python.org/3/library/sys.html#sys.modules
+    sys.modules[module_name] = module
+    try:
+        specification.loader.exec_module(module)
+    finally:
+        if previous_module is _MISSING_MODULE:
+            sys.modules.pop(module_name, None)
+        else:
+            sys.modules[module_name] = previous_module
     return module
 
 

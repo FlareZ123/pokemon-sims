@@ -32,6 +32,10 @@ Battle VIP Pass `swsh8-225` is fully modeled as a first-turn-only Item. A legal 
 
 The validation matrix in [`docs/BATTLE_VIP_PASS_VALIDATION.md`](docs/BATTLE_VIP_PASS_VALIDATION.md) uses an unregistered temporary shell derivative with `-1 Quick Ball`, `-1 Mysterious Treasure`, and `+2 Battle VIP Pass`. The temporary recipe is excluded from `deck_registry()` and `--all-decks`.
 
+## Professor's Letter paper Expanded model
+
+Professor's Letter `xy1-123` is modeled as a paper-Expanded Item that searches up to two Basic Energy into hand and has no discard cost. It establishes K1 through the physical deck search and is held when the Energy axis is already complete. It is intentionally absent from both registered Pokémon TCG Live recipes. CI evaluates an unregistered temporary `regidrago-shell` derivative with exactly `-2 Earthen Vessel` and `+2 Professor's Letter`, using matched scenario seeds and checkpoint metrics for Regidrago, VSTAR, Active position, semantic Apex Energy, current-turn payload, and K1. Professor's Letter: https://api.pokemontcg.io/v2/cards/xy1-123 ; enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2509
+
 ## Run one readable hand
 
 ```bash
@@ -86,7 +90,7 @@ python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out
 python scripts/update_multi_deck_docs.py --repo-root .
 ```
 
-The paired generator runs both decks across all 14 registered aggregate scenarios, producing 28 independent 100,000-trial rows and 2.8 million simulated games. It writes `results/multi_deck_comparison.csv`, `results/multi_deck_manifest.json`, reviewed named-deck traces, and [`docs/MULTI_DECK_REPORT.md`](docs/MULTI_DECK_REPORT.md). Both decks use the same derived seed for each scenario.
+The paired generator runs both decks across all 16 registered aggregate scenarios, producing 32 independent 100,000-trial rows and 3.2 million simulated games. The added Garbodor + Boost Shake rows model Garbotoxin after Boost Shake establishes the Stage 1 lock line: https://api.pokemontcg.io/v2/cards/xy9-57 https://api.pokemontcg.io/v2/cards/swsh7-142 https://github.com/FlareZ123/pokemon-sims/issues/2933. It writes `results/multi_deck_comparison.csv`, `results/multi_deck_manifest.json`, reviewed named-deck traces, and [`docs/MULTI_DECK_REPORT.md`](docs/MULTI_DECK_REPORT.md). Both decks use the same derived seed for each scenario.
 
 The equivalent direct command is:
 
@@ -115,10 +119,10 @@ The current-main validation includes the full Release and sanitizer suites, thre
 A ready state requires:
 
 1. Active Regidrago VSTAR.
-2. At least two Grass Energy and one Fire Energy attached.
+2. Pays Apex Dragon's `[G][G][R]` attack cost with legally attached Energy; Double Dragon Energy may supply two of those Energy units while attached to Regidrago VSTAR. Sources: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/issues/2238 https://github.com/FlareZ123/pokemon-sims/issues/2697
 3. A modeled Dragon payload in discard. Appletun is eligible only in a recipe that contains it.
 4. Strict and matchup-flex JIT require the payload to enter discard during the ready turn.
 
 Readiness through T4 is setup success. T5 remains a diagnostic recovery turn and is counted inside setup failure.
 
-See `docs/MODEL_ASSUMPTIONS.md`, `docs/POLICY_DECISIONS.md`, `docs/RULES_TRACEABILITY.md`, `docs/RULE_SOURCES.md`, `docs/TRACE_AUDIT.md`, `docs/REPORT.md`, and `docs/MULTI_DECK_REPORT.md`.
+See `docs/MODEL_ASSUMPTIONS.md`, `docs/POLICY_DECISIONS.md`, `docs/RULES_TRACEABILITY.md`, `docs/RULE_SOURCES.md`, `docs/TRACE_AUDIT.md`, `docs/REPORT.md`, and [`docs/MULTI_DECK_REPORT.md`](docs/MULTI_DECK_REPORT.md).

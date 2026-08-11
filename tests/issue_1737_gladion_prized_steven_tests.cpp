@@ -38,9 +38,10 @@ bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
 sim::Scenario scenario(
     const sim::LockMode locks = sim::LockMode::None,
     const sim::OpponentBenchState opponent_bench =
-        sim::OpponentBenchState::Unknown) {
-  sim::Scenario value{"issue-1737-prized-steven",
-                      sim::DciProfile::NoDiscardControl, locks, false, 5};
+        sim::OpponentBenchState::Unknown,
+    const sim::DciProfile dci = sim::DciProfile::NoDiscardControl,
+    const bool going_first = false) {
+  sim::Scenario value{"issue-1737-prized-steven", dci, locks, going_first, 5};
   value.opponent_bench = opponent_bench;
   return value;
 }
@@ -105,8 +106,9 @@ void prized_steven_outranks_inert_guzma() {
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Regression: https://github.com/FlareZ123/pokemon-sims/issues/1737
+  // State-semantic correction: https://github.com/FlareZ123/pokemon-sims/issues/2884
   expect(sim::EngineTestAccess::route_available(fixture.engine),
-         "The registered prized-Steven continuation was not recognized");
+         "The prized-Steven continuation was not recognized");
   expect(sim::EngineTestAccess::play_gladion(fixture.engine),
          "Gladion did not resolve the known prized-Steven route");
   const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
@@ -116,6 +118,76 @@ void prized_steven_outranks_inert_guzma() {
          "Gladion did not replace the selected Prize");
   expect(contains(after.prizes, sim::Card::Guzma),
          "Setup-inert Guzma should remain in Prizes");
+}
+
+void harmless_recipe_copy_change_preserves_route() {
+  sim::DeckRecipe recipe = sim::pineco_recipe();
+  sim::adjust_modeling_recipe(recipe, sim::Card::Grass, -1);
+  sim::adjust_modeling_recipe(recipe, sim::Card::Pineco, 1);
+  Fixture fixture{scenario(), std::move(recipe)};
+  sim::EngineTestAccess::set_k1_state(fixture.engine, base_state());
+
+  // The current K1 route already has its two Grass attached and independently
+  // checks every remaining Steven -> Secret Box -> Treasure resource. A harmless
+  // registered-list copy-count difference cannot make printed card effects illegal:
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // K1 and earliest complete route policy:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Overfitting bug: https://github.com/FlareZ123/pokemon-sims/issues/2884
+  expect(sim::EngineTestAccess::route_available(fixture.engine),
+         "A harmless recipe copy-count change disabled the complete K1 route");
+}
+
+void going_first_after_turn_one_preserves_route() {
+  Fixture fixture{scenario(sim::LockMode::None,
+                           sim::OpponentBenchState::Unknown,
+                           sim::DciProfile::NoDiscardControl, true)};
+  sim::EngineTestAccess::set_k1_state(fixture.engine, base_state());
+
+  // The starting-player Supporter restriction applies only on that player's first
+  // turn. This exact state is already on turn 2 and supporter_allowed() is the
+  // physical legality gate:
+  // Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Overfitting bug: https://github.com/FlareZ123/pokemon-sims/issues/2884
+  expect(sim::EngineTestAccess::route_available(fixture.engine),
+         "Going-first identity disabled a later legal Supporter route");
+}
+
+void strict_jit_preserves_same_turn_payload_route() {
+  Fixture fixture{scenario(sim::LockMode::None,
+                           sim::OpponentBenchState::Unknown,
+                           sim::DciProfile::StrictJit)};
+  sim::EngineTestAccess::set_k1_state(fixture.engine, base_state());
+
+  // The projected ready-turn Mysterious Treasure discards the held Dragon on the
+  // same player turn that it searches Regidrago VSTAR and creates readiness:
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Same-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Overfitting bug: https://github.com/FlareZ123/pokemon-sims/issues/2884
+  expect(sim::EngineTestAccess::route_available(fixture.engine),
+         "Strict JIT rejected a projected same-ready-turn Dragon discard");
+}
+
+void matchup_flex_jit_preserves_same_turn_payload_route() {
+  Fixture fixture{scenario(sim::LockMode::None,
+                           sim::OpponentBenchState::Unknown,
+                           sim::DciProfile::MatchupFlexJit)};
+  sim::EngineTestAccess::set_k1_state(fixture.engine, base_state());
+
+  // Matchup-flex JIT shares the repository's same-ready-turn payload requirement
+  // with Strict JIT, and this route satisfies it through Mysterious Treasure:
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Same-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Overfitting bug: https://github.com/FlareZ123/pokemon-sims/issues/2884
+  expect(sim::EngineTestAccess::route_available(fixture.engine),
+         "Matchup-flex JIT rejected the same-ready-turn Dragon discard");
 }
 
 void absent_steven_rejects_route() {
@@ -190,7 +262,7 @@ void shell_recipe_cannot_impersonate_pineco_route() {
   Fixture fixture{scenario(), sim::baseline_recipe()};
   sim::EngineTestAccess::set_k1_state(fixture.engine, base_state());
   expect(!sim::EngineTestAccess::route_available(fixture.engine),
-         "The shell recipe impersonated the registered Pineco continuation");
+         "The shell recipe impersonated the Secret Box continuation capability");
 }
 
 void exact_seed_reaches_turn_four() {
@@ -218,6 +290,7 @@ void exact_seed_reaches_turn_four() {
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://github.com/FlareZ123/pokemon-sims/issues/1737
+  // https://github.com/FlareZ123/pokemon-sims/issues/2884
   expect(outcome.first_ready_turn == 4,
          "Seed 8675309 did not reach the proven T4 route");
   expect(trace_contains("Exchanged Gladion for Steven's Resolve"),
@@ -235,6 +308,10 @@ void exact_seed_reaches_turn_four() {
 int main() {
   try {
     prized_steven_outranks_inert_guzma();
+    harmless_recipe_copy_change_preserves_route();
+    going_first_after_turn_one_preserves_route();
+    strict_jit_preserves_same_turn_payload_route();
+    matchup_flex_jit_preserves_same_turn_payload_route();
     absent_steven_rejects_route();
     held_direct_vstar_connector_stays_ahead();
     item_lock_rejects_future_secret_box();

@@ -14,17 +14,30 @@ bool issue_1737_prized_steven_route_available() const {
         return card != Card::Gladion && !is_payload(card) &&
             card != Card::RegidragoVstar;
       });
+  const bool payload_timing_supported =
+      scenario_.dci == DciProfile::NoDiscardControl || strict_payload_timing();
 
-  // Reject every non-target public state before consulting the registered deck
-  // recipe. Engine unit fixtures may pass a temporary reduced recipe, while this
-  // confirmed route exists only for the registered going-second Pineco seed:
-  // First-turn Supporter procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-  // Registered Pineco route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
-  // Existing going-first Gladion route preserved: https://github.com/FlareZ123/pokemon-sims/issues/1697
-  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1737
-  if (scenario_.going_first ||
-      scenario_.dci != DciProfile::NoDiscardControl ||
-      scenario_.locks != LockMode::None ||
+  // Admit the continuation from observable K1 state and physical route resources,
+  // rather than the historical #1737 seat/profile/recipe identity. Going-first is
+  // already handled by supporter_allowed(); the two JIT profiles are legal because
+  // the projected ready-turn Mysterious Treasure discards the held Dragon on the
+  // same turn that it searches Regidrago VSTAR and completes readiness.
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // First-turn Supporter, Item, search, discard, evolution, attachment, and attack procedure:
+  // https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // K1, route priority, JIT timing, and Pineco route policy:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
+  // Original route and state-semantic correction:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1737
+  // https://github.com/FlareZ123/pokemon-sims/issues/2884
+  if (!payload_timing_supported || scenario_.locks != LockMode::None ||
       scenario_.opponent_bench == OpponentBenchState::Available ||
       state_.turn + 2 > scenario_.max_turn || !prizes_known() ||
       !supporter_allowed() || hand_count(Card::Gladion) == 0 ||
@@ -47,27 +60,13 @@ bool issue_1737_prized_steven_route_available() const {
     return false;
   }
 
-  const auto recipe_copies = [this](const Card card) {
-    int copies = 0;
-    for (const auto& [candidate, count] : recipe_) {
-      if (candidate == card) copies += count;
-    }
-    return copies;
-  };
-  const bool registered_pineco_recipe =
-      recipe_copies(Card::SecretBox) == 1 &&
-      recipe_copies(Card::Pineco) == 2 &&
-      recipe_copies(Card::ForretressEx) == 2 &&
-      recipe_copies(Card::MysteriousTreasure) == 4 &&
-      recipe_copies(Card::StevensResolve) == 1;
-
-  // Gladion reveals every Prize before the exchange. In this registered K1
-  // Pineco state, prized Steven's Resolve is a live multi-axis connector while
-  // Guzma has no modeled switch target unless an opponent Bench is explicitly
-  // available. Steven banks Secret Box plus two discardable cards; Secret Box
-  // then reaches Mysterious Treasure, which spends the held Dragon payload and
-  // searches Regidrago VSTAR. Preserve direct held VSTAR channels ahead of this
-  // deferred route:
+  // Gladion reveals every Prize before the exchange. In this K1 state, prized
+  // Steven's Resolve is a live multi-axis connector while Guzma has no modeled
+  // switch target unless an opponent Bench is explicitly available. Steven banks
+  // Secret Box plus two discardable cards; Secret Box then reaches Mysterious
+  // Treasure, which spends the held Dragon payload and searches Regidrago VSTAR.
+  // Preserve direct held VSTAR channels ahead of this deferred route, and keep the
+  // existing recipe capability switch without requiring exact historical counts.
   // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
   // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
@@ -77,17 +76,67 @@ bool issue_1737_prized_steven_route_available() const {
   // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Prize exchange, Supporter, Item, evolution, attachment, and attack procedure:
   // https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-  // K1, route priority, and registered Pineco policy:
+  // K1, route priority, JIT timing, and registered Pineco policy:
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#secret-box-and-pineco-route-policy
   // Guzma opponent-Bench model:
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#guzma-opponent-bench-prerequisite
-  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1737
-  return registered_pineco_recipe && secret_box_combo_enabled();
+  // Original route and state-semantic correction:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1737
+  // https://github.com/FlareZ123/pokemon-sims/issues/2884
+  return secret_box_combo_enabled();
+}
+
+bool issue_2292_gladion_final_prize_energy_finish(const Card energy) const {
+  if (scenario_.dci != DciProfile::StrictJit || !prizes_known() ||
+      !supporter_allowed() || state_.manual_energy_used ||
+      hand_count(Card::Gladion) == 0 || hand_count(energy) > 0 ||
+      !state_.active || state_.active->card != Card::RegidragoVstar ||
+      prize_count_after_reveal(energy) == 0 ||
+      grass_needed() + fire_needed() != 1 || !payload_ready()) {
+    return false;
+  }
+
+  // Gladion may exchange itself for any known Prize. When the Active Regidrago
+  // VSTAR is exactly one manual attachment from GGF and this turn's strict-JIT
+  // Dragon is already in discard, that prized Basic Energy is the immediate
+  // winning-axis connector even if another copy of the same type remains in deck.
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Prize, Supporter, and manual Energy attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // K1, strict-JIT, and earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2292
+  return (energy == Card::Grass && grass_needed() == 1 && fire_needed() == 0) ||
+         (energy == Card::Fire && grass_needed() == 0 && fire_needed() == 1);
+}
+
+bool play_issue_2292_gladion_final_prize_energy_finish() {
+  const auto target = final_prized_energy_for_gladion();
+  if (!target || !issue_2292_gladion_final_prize_energy_finish(*target)) {
+    return false;
+  }
+
+  remove_one(state_.hand, Card::Gladion);
+  state_.supporter_used = true;
+  prizes_revealed_ = true;
+  const auto prize = std::find(state_.prizes.begin(), state_.prizes.end(), *target);
+  if (prize == state_.prizes.end()) {
+    throw std::logic_error("Known prized final Energy disappeared");
+  }
+  *prize = Card::Gladion;
+  state_.hand.push_back(*target);
+  shuffle(state_.prizes);
+  trace("PLAY SUPPORTER",
+        "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-JIT-01; P-COMPRESS-01",
+        "Exchanged Gladion for the known prized final Basic Energy so the unused manual attachment can complete GGF this turn.");
+  return true;
 }
 
 bool play_gladion() {
+  if (play_issue_2292_gladion_final_prize_energy_finish()) return true;
+
   if (!issue_1737_prized_steven_route_available()) {
     return play_gladion_issue1737_original();
   }
@@ -105,6 +154,6 @@ bool play_gladion() {
   shuffle(state_.prizes);
   trace("PLAY SUPPORTER",
         "R-GLADION-01; R-STEVEN-01; R-SECRET-BOX-01; P-KNOWLEDGE-01; P-COMPRESS-01",
-        "Exchanged Gladion for Steven's Resolve to preserve the registered Secret Box and VSTAR continuation.");
+        "Exchanged Gladion for Steven's Resolve to preserve the state-semantic Secret Box and VSTAR continuation.");
   return true;
 }

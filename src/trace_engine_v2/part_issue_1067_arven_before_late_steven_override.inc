@@ -1,3 +1,5 @@
+#undef play_steven
+
   bool held_arven_fss_blender_finish_available() const {
     const bool forest_seal_ability_available_this_turn =
         ability_available_for_pokemon(Card::RegidragoV) ||
@@ -43,6 +45,16 @@
 
   bool should_play_steven() const {
     if (held_arven_fss_blender_finish_available()) return false;
+    // When Arven cannot complete the current turn, prefer a K1-proven Steven package
+    // that guarantees the next-turn VSTAR, Latias mobility, Blender payload, and
+    // held-Energy Apex completion. This is route projection, not a seed-specific rule:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Earliest deterministic route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2622
+    if (issue_2622_steven_latias_blender_package_available()) return true;
     return should_play_steven_issue1067_original();
   }
 
@@ -53,3 +65,4 @@
   #include "part_issue_1745_steven_latias_t3_override.inc"
   #include "part_issue_1771_steven_t4_package_override.inc"
   #include "part_issue_1772_steven_t3_package_override.inc"
+  #include "part_issue_2622_steven_latias_blender_override.inc"

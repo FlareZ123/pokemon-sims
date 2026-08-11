@@ -1,8 +1,14 @@
-  bool issue_1605_arven_crobat_route_available() const {
-    const bool one_discard_item_plausible =
-        might_be_unseen(Card::QuickBall) ||
-        might_be_unseen(Card::MysteriousTreasure);
+  bool issue_1605_one_discard_search_item_plausible() const {
+    // The #1605 continuation needs a one-discard Basic/Dragon search channel.
+    // Keep target visibility on the existing K0/K1-aware might_be_unseen() path:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Knowledge-state policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    return might_be_unseen(Card::QuickBall) ||
+           might_be_unseen(Card::MysteriousTreasure);
+  }
 
+  bool issue_1605_arven_crobat_route_available() const {
     // The Arven -> one-discard search -> Regidrago V -> Forest Seal Stone ->
     // Crobat V continuation is governed by observable legality and resources.
     // supporter_allowed() already enforces the first player's T1 Supporter ban,
@@ -27,6 +33,6 @@
            ability_available_for_pokemon(Card::CrobatV) &&
            state_.hand.size() <= 9U &&
            might_be_unseen(Card::RegidragoV) &&
-           one_discard_item_plausible &&
+           issue_1605_one_discard_search_item_plausible() &&
            issue_1605_redundant_payload_cost().has_value();
   }

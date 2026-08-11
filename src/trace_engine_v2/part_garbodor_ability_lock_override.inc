@@ -28,6 +28,14 @@
     return state_.turn >= garbodor_lock_activation_turn();
   }
 
+  bool rule_box_ability_available(const Card card) const {
+    // Path to the Peak suppresses Rule Box Pokemon Abilities in the separate
+    // registered Rule Box lock model:
+    // https://api.pokemontcg.io/v2/cards/swsh6-148
+    // https://github.com/FlareZ123/pokemon-sims/issues/2808
+    return !is_rule_box_pokemon(card) || !rule_box_abilities_locked();
+  }
+
   bool ability_available_for_pokemon_garbodor(const Card card) const {
     // Garbotoxin removes Abilities from every other Pokemon while Garbodor has a
     // Pokemon Tool attached. Path to the Peak remains a separate rule-box-only
@@ -36,7 +44,5 @@
     // https://api.pokemontcg.io/v2/cards/swsh6-148
     // https://github.com/FlareZ123/pokemon-sims/issues/2808
     if (garbodor_abilities_locked()) return false;
-    const bool rule_box_lock_allows_ability =
-        !is_rule_box_pokemon(card) || !rule_box_abilities_locked();
-    return rule_box_lock_allows_ability;
+    return rule_box_ability_available(card);
   }

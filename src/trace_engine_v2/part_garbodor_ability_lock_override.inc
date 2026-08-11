@@ -2,7 +2,7 @@
       "garbodor-shake-ability-lock/";
 
   bool garbodor_shake_scenario() const {
-    return scenario_.label.rfind(kGarbodorShakeScenarioPrefix, 0) == 0;
+    return scenario_.label.starts_with(kGarbodorShakeScenarioPrefix);
   }
 
   int garbodor_lock_activation_turn() const {
@@ -26,9 +26,12 @@
     return state_.turn >= garbodor_lock_activation_turn();
   }
 
+  bool garbodor_lock_present() const {
+    return garbodor_shake_scenario() && garbodor_lock_established();
+  }
+
   bool garbodor_abilities_locked() const {
-    return garbodor_shake_scenario() && !garbodor_lock_removed() &&
-        garbodor_lock_established();
+    return garbodor_lock_present() && !garbodor_lock_removed();
   }
 
   bool rule_box_ability_available(const Card card) const {
@@ -36,7 +39,7 @@
     // registered Rule Box lock model:
     // https://api.pokemontcg.io/v2/cards/swsh6-148
     // https://github.com/FlareZ123/pokemon-sims/issues/2808
-    return !is_rule_box_pokemon(card) || !rule_box_abilities_locked();
+    return !(is_rule_box_pokemon(card) && rule_box_abilities_locked());
   }
 
   bool ability_available_for_pokemon_garbodor(const Card card) const {
@@ -46,6 +49,5 @@
     // https://api.pokemontcg.io/v2/cards/xy9-57
     // https://api.pokemontcg.io/v2/cards/swsh6-148
     // https://github.com/FlareZ123/pokemon-sims/issues/2808
-    if (garbodor_abilities_locked()) return false;
-    return rule_box_ability_available(card);
+    return !garbodor_abilities_locked() && rule_box_ability_available(card);
   }

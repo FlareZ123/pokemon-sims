@@ -74,8 +74,20 @@
 // Core connector policies are composed directly without compatibility wrappers.
 #include "../core/oricorio_connector_policy.inc" // Oricorio Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
 
-// Card-action route families own the later search-item overrides.
-#include "earthen_vessel_overrides.inc" // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+// Earthen Vessel route family. Each alias exposes the preceding implementation to
+// the next override, so the sequence remains fixed at this central boundary.
+// Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+#define play_earthen_vessel play_earthen_vessel_issue1368_original
+#include "../part_earthen_vessel_vstar_window_override.inc"
+#undef play_earthen_vessel
+
+#define play_earthen_vessel play_earthen_vessel_issue1412_original
+#include "../part_issue_1368_earthen_vessel_celestial_roar_override.inc"
+#undef play_earthen_vessel
+
+#include "../part_issue_1412_preserve_quick_balls.inc"
+
+// Remaining card-action route families.
 #include "treasure_route_overrides.inc" // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
 #include "quick_ball_route_overrides.inc" // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
 

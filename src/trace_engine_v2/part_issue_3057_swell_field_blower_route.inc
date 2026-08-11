@@ -100,50 +100,69 @@
         projected.secret_box_cost_plan().has_value();
   }
 
-  bool issue_3057_post_item_forest_retry() const {
-    // Item resolution can change the public connector graph. After Path has been
-    // removed, a newly searched Forest must be allowed to re-enter the existing
-    // Forretress fixed point before the turn continues. This is a state-based retry,
-    // so it also fixes equivalent legal Item-search routes without a seed/profile
-    // special case.
-    // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+  bool issue_3057_play_direct_forest_over_path() {
+    if (!issue_3057_direct_forest_over_path() ||
+        !remove_one(state_.hand, Card::ForestOfVitality)) {
+      return false;
+    }
+
+    // Playing the different Stadium discards the modeled Path, restores Rule Box
+    // Abilities, and leaves Forest active. This wrapper performs only that Stadium
+    // action; the existing Forretress planner retains control of evolution and
+    // Exploding Energy afterwards.
     // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
-    // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
-    // Core Item, Stadium, and evolution procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-    // Connector domination/fixed-point policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+    // Stadium replacement/evolution procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3057
-    return !rule_box_abilities_locked() &&
-        hand_count(Card::ForestOfVitality) > 0 &&
-        issue_3057_live_forest_entry_timing();
+    state_.stadium = Stadium::ForestOfVitality;
+    state_.stadium_used = true;
+    state_.path_lock_removed = true;
+    trace("PLAY STADIUM", "R-FOREST-VITALITY-01; R-PATH-01; P-AXIS-01",
+          "Played Forest of Vitality directly over the modeled Path to the Peak; "
+          "the live current-turn Pineco evolution route retained Forest in play.");
+    return true;
   }
 
-  void play_items_until_stable_issue_3057(const bool allow_flexible_discard) {
-    play_items_until_stable(allow_flexible_discard);
-    if (issue_3057_post_item_forest_retry()) {
-      advance_forretress_combo();
+  bool play_chaotic_swell_issue_3057() {
+    if (issue_3057_direct_forest_over_path()) {
+      return issue_3057_play_direct_forest_over_path();
     }
-  }
-
-  int hand_count_issue_3057(const Card card) const {
-    if (issue_3057_direct_forest_over_path() &&
-        (card == Card::ChaoticSwell || card == Card::FieldBlower)) {
-      // Hide only the generic pre-Forretress removal actions. The ordinary
-      // advance_forretress_combo() call then plays Forest directly over Path.
-      // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
-      // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
-      // Chaotic Swell: https://api.pokemontcg.io/v2/cards/sm12-187
-      // Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/3057
-      return 0;
-    }
-    if (card == Card::ChaoticSwell &&
-        issue_3057_deferred_forest_via_field_blower()) {
-      // Forest is known in deck and the post-Blower Secret Box route is payable,
-      // so preserve the Stadium action while leaving Field Blower visible.
-      // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
+    if (issue_3057_deferred_forest_via_field_blower()) {
+      // Preserve the one Stadium play for the K1-proven Secret Box -> Forest leg.
       // Chaotic Swell: https://api.pokemontcg.io/v2/cards/sm12-187
       // Secret Box / Forest: https://api.pokemontcg.io/v2/cards/sv6-163 https://api.pokemontcg.io/v2/cards/me1-117
-      // Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/3057
-      return 0;
+      // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3057
+      return false;
     }
-    return hand_count(card);
+    return play_chaotic_swell();
+  }
+
+  bool play_field_blower_issue_3057() {
+    if (issue_3057_direct_forest_over_path()) {
+      // Forest already owns the dominant Path-removal action, so preserve the Item.
+      // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
+      // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+      // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3057
+      return false;
+    }
+
+    const bool deferred_forest = issue_3057_deferred_forest_via_field_blower();
+    const bool played = play_field_blower();
+    if (!played || !deferred_forest) return played;
+
+    // The K1 projection above already proves the post-Blower Secret Box route and
+    // its three AMR/DCI costs. Resolve that connector immediately while the Stadium
+    // action remains unused, then re-enter the ordinary Forretress fixed point so
+    // the searched Forest can enable the current-turn Pineco evolution.
+    // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
+    // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+    // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+    // Pineco / Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // Item/search/Stadium/evolution procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Dynamic DCI and connector domination: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3057
+    if (play_secret_box()) {
+      advance_forretress_combo();
+    }
+    return true;
   }

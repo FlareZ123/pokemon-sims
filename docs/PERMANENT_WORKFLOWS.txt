@@ -1,7 +1,8 @@
 # Default-branch workflow filenames that are intentionally permanent.
 # Keep one filename per line. Blank lines and lines beginning with # are ignored.
-# Temporary recovery, issue, audit, and materialization workflows must never remain
-# installed on main after their owning work is complete.
+# Temporary recovery, issue, audit, materialization, experiment, and A/B workflows
+# must never remain installed on main after their owning work is complete.
+# Durable correctness findings belong in the normal regression suite.
 # GitHub pull-request workflow behavior:
 # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request
 # GITHUB_TOKEN permission model:
@@ -10,6 +11,5 @@
 # https://github.com/FlareZ123/pokemon-sims/issues/1360
 
 ci.yml
-professors-letter-validation.yml
 stacked-pr-validation.yml
 workflow-policy.yml

@@ -1,9 +1,5 @@
 #pragma once
 
-  bool has_redundant_tapu_connector_copy(const Card card) const {
-    return card == Card::TapuLeleGX && has_known_hand_or_deck_copy(card);
-  }
-
   bool tapu_connector_copy_aware_in_play(const Card card) const {
     // Wonder Tag belongs to the individual Tapu Lele-GX played from hand onto the
     // Bench. Ignore species-level board presence only when another physical copy is
@@ -14,7 +10,9 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/746
-    return in_play(card) && !has_redundant_tapu_connector_copy(card);
+    const bool another_copy_is_known =
+        card == Card::TapuLeleGX && has_known_hand_or_deck_copy(card);
+    return in_play(card) && !another_copy_is_known;
   }
 
 // Keep the legacy Tapu-adjacent aliases with the policy that consumes them so the

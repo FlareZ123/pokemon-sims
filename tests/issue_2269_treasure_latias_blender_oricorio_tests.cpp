@@ -72,15 +72,28 @@ void test_seed_1813_route_stays_closed_under_rulebox_ability_lock() {
   const sim::TraceLog trace =
       run_trace("strict-jit-rulebox-ability-lock/go-second", 1813);
 
-  // Rule Box Ability lock suppresses Latias ex's Skyliner.
+  // Rule Box Ability lock suppresses Latias ex's Skyliner, so the #2269
+  // Treasure-to-Latias route must remain closed. Oricorio is a Basic with printed
+  // Retreat Cost 1, so the independently legal #2295 attach-and-paid-retreat route
+  // may still promote a ready Benched Regidrago VSTAR and use Brilliant Blender.
   // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
-  // Official Ability procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-  // Repository lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#rule-box-ability-lock
-  // Confirmed regression scope: https://github.com/FlareZ123/pokemon-sims/issues/2269
+  // Oricorio GRI 55: https://api.pokemontcg.io/v2/cards/sm2-55
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Official attachment and retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Repository route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Original route: https://github.com/FlareZ123/pokemon-sims/issues/2269
+  // Independent paid-retreat route: https://github.com/FlareZ123/pokemon-sims/issues/2295
+  // Confirmed stale-control bug: https://github.com/FlareZ123/pokemon-sims/issues/2953
   expect(!trace_contains(trace, "Mysterious Treasure issue-2269 Latias route cost"),
          "Issue-2269 route bypassed Rule Box Ability lock.");
-  expect(!trace_contains(trace, "T4 | READY"),
-         "Issue-2269 Rule Box lock control incorrectly reached T4 readiness.");
+  expect(!trace_contains(trace, "Latias ex gives the Basic Active no Retreat Cost"),
+         "Rule Box Ability lock incorrectly enabled Skyliner.");
+  if (trace_contains(trace, "T4 | READY")) {
+    expect(trace_contains(trace, "T4 | RETREAT") &&
+               trace_contains(trace, "Paid Oricorio"),
+           "Rule Box T4 readiness must use the independent paid-retreat route.");
+  }
 }
 
 void test_seed_1813_route_stays_closed_under_turn_two_item_lock() {

@@ -32,9 +32,9 @@ sim::State known_route_state(const int turn) {
   state.deck = {sim::Card::RegidragoVstar, sim::Card::Crispin,
                 sim::Card::LatiasEx, sim::Card::Grass, sim::Card::Fire,
                 sim::Card::MegaDragonite, sim::Card::QuickBall};
-  state.prizes = {sim::Card::ProfessorTurosScenario, sim::Card::Dragapult,
-                  sim::Card::RegidragoV, sim::Card::RegidragoV,
-                  sim::Card::MysteriousTreasure, sim::Card::PathToThePeak};
+  state.prizes = {sim::Card::FieldBlower, sim::Card::Serena,
+                  sim::Card::Arven, sim::Card::QuickBall,
+                  sim::Card::Grass, sim::Card::Fire};
   state.manual_energy_used = true;
   return state;
 }

@@ -1,0 +1,151 @@
+name: Issue 2408 source materializer
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/issue-2408-reclaim-materialize.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/2408-reclaim-20260809-1752
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Merge current main
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git merge --no-edit origin/main
+      - name: Materialize rules-backed source and regression
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          source = Path('src/trace_engine_v2/part_014b.inc')
+          text = source.read_text(encoding='utf-8')
+          marker = '    // Exact Serena text: discard up to 3 cards, but "You must discard at least 1 card."\n'
+          block = '''    // K1 can prove Burnet has deck-resident Dragon payloads. In a payload-only\n    // strict-JIT state, Burnet reaches the same ready turn while preserving Serena\n    // and the held Dragon. Item discard outlets stay higher because they also\n    // preserve the Supporter play.\n    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 \n    // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164 \n    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136 \n    // Supporter and deck-search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf \n    // K1/resource policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities \n    // DCI model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation \n    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2408 \n    const bool burnet_preserves_serena_and_held_payload =\n        scenario_.dci == DciProfile::StrictJit && prizes_known() &&\n        need_payload() && !need_regi() && !need_vstar() && !need_energy() &&\n        !need_active_vstar() && hand_count(Card::ProfessorBurnet) > 0 &&\n        hand_count(Card::Serena) > 0 &&\n        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&\n        professor_burnet_has_live_ready_turn_route() &&\n        !has_live_blender_payload_line() &&\n        !has_live_one_discard_hand_payload_line() &&\n        !has_live_ultra_ball_hand_payload_line();\n    if (burnet_preserves_serena_and_held_payload && play_professor_burnet()) return;\n\n'''
+          if 'burnet_preserves_serena_and_held_payload' not in text:
+              if text.count(marker) != 1:
+                  raise SystemExit('Serena supporter-order anchor changed')
+              source.write_text(text.replace(marker, block + marker, 1), encoding='utf-8', newline='\n')
+
+          test = Path('tests/issue_2408_burnet_before_serena_tests.cpp')
+          test.write_text(r'''#define REGIDRAGO_SIM_NO_MAIN
+#include "../src/regidrago_sim.cpp"
+
+#include <algorithm>
+#include <iostream>
+#include <random>
+#include <stdexcept>
+#include <utility>
+
+namespace sim {
+struct EngineTestAccess {
+  static void set_state(Engine& engine, State state, const bool deck_seen,
+                        const bool prizes_revealed) {
+    engine.state_ = std::move(state);
+    engine.deck_seen_ = deck_seen;
+    engine.prizes_revealed_ = prizes_revealed;
+  }
+  static const State& state(const Engine& engine) { return engine.state_; }
+  static void choose_supporter(Engine& engine) { engine.choose_supporter(); }
+};
+}  // namespace sim
+
+namespace {
+bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
+  return std::find(cards.begin(), cards.end(), card) != cards.end();
+}
+void expect(const bool condition, const char* message) {
+  if (!condition) throw std::runtime_error(message);
+}
+
+sim::State payload_only_state() {
+  sim::State state;
+  state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1,
+                              sim::Tool::None};
+  state.hand = {sim::Card::ProfessorBurnet, sim::Card::Serena,
+                sim::Card::MegaDragonite, sim::Card::Grass};
+  state.deck = {sim::Card::TapuLeleGX, sim::Card::RegidragoV,
+                sim::Card::Dragapult, sim::Card::DialgaGX,
+                sim::Card::Fire, sim::Card::Grass};
+  return state;
+}
+
+void test_k1_prefers_burnet_for_equal_turn_payload_completion() {
+  const sim::Scenario scenario{"issue-2408-k1", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  std::mt19937_64 rng{2408};
+  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  sim::EngineTestAccess::set_state(engine, payload_only_state(), true, true);
+
+  // K1 proves deck-resident Dragons, so Burnet can complete the sole payload axis\n  // while Serena and the held Dragon retain their discrete later-game value.\n  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 \n  // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164 \n  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136 \n  // Rules: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf \n  // Policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states \n  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2408 \n  sim::EngineTestAccess::choose_supporter(engine);
+  const sim::State& result = sim::EngineTestAccess::state(engine);
+  expect(contains(result.discard, sim::Card::ProfessorBurnet),
+         "K1 equal-turn route failed to prefer Professor Burnet.");
+  expect(contains(result.hand, sim::Card::Serena),
+         "K1 Burnet route failed to preserve Serena.");
+  expect(contains(result.hand, sim::Card::MegaDragonite),
+         "K1 Burnet route failed to preserve the held Dragon.");
+}
+
+void test_k0_keeps_observable_serena_route() {
+  const sim::Scenario scenario{"issue-2408-k0", sim::DciProfile::StrictJit,
+                               sim::LockMode::None, false, 4};
+  std::mt19937_64 rng{2409};
+  sim::Engine engine(scenario, sim::baseline_recipe(), rng);
+  sim::EngineTestAccess::set_state(engine, payload_only_state(), false, false);
+
+  // K0 cannot assume a Burnet target is in deck. Serena has the observable held\n  // Dragon discard route and remains the deterministic completion.\n  // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164 \n  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 \n  // K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states \n  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2408 \n  sim::EngineTestAccess::choose_supporter(engine);
+  const sim::State& result = sim::EngineTestAccess::state(engine);
+  expect(contains(result.discard, sim::Card::Serena),
+         "K0 failed to keep the observable Serena route.");
+  expect(contains(result.discard, sim::Card::MegaDragonite),
+         "K0 Serena route failed to discard the held Dragon.");
+  expect(!contains(result.discard, sim::Card::ProfessorBurnet),
+         "K0 incorrectly assumed Burnet had a deck target.");
+}
+}  // namespace
+
+int main() {
+  try {
+    test_k1_prefers_burnet_for_equal_turn_payload_completion();
+    test_k0_keeps_observable_serena_route();
+    std::cout << "Issue 2408 Burnet-before-Serena tests passed\n";
+    return 0;
+  } catch (const std::exception& error) {
+    std::cerr << error.what() << '\n';
+    return 1;
+  }
+}
+''', encoding='utf-8', newline='\n')
+          PY
+      - name: Validate focused behavior and three traces
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R 'issue_2408' --output-on-failure
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2
+      - name: Commit source and tests only
+        shell: bash
+        run: |
+          git add src/trace_engine_v2/part_014b.inc tests/issue_2408_burnet_before_serena_tests.cpp
+          git commit -m 'Fix #2408 prefer K1 Burnet over Serena'
+          git push origin HEAD:fix/2408-reclaim-20260809-1752

@@ -356,6 +356,28 @@
         add_wanted(*direct_basic);
       }
     } // DDE-only is one physical Basic attachment short: https://github.com/FlareZ123/pokemon-sims/issues/2424
+    const bool steven_dde_completes_next_turn = [&]() {
+      if (!need_energy() || projected_regi == nullptr ||
+          (hand_count(Card::DoubleDragonEnergy) == 0 &&
+           deck_count_after_search_started(Card::DoubleDragonEnergy) == 0)) {
+        return false;
+      }
+      Pokemon projected = *projected_regi;
+      return attach_energy_card(projected, Card::DoubleDragonEnergy) &&
+          pays_apex_energy_cost(projected);
+    }();
+    if (steven_dde_completes_next_turn &&
+        hand_count(Card::DoubleDragonEnergy) == 0) {
+      // Steven searches any three cards. When one DDE is the one-card next-turn
+      // Energy completion, reserve it ahead of Crispin so the next Supporter slot
+      // remains open for the payload or consistency Supporter.
+      // Steven: https://api.pokemontcg.io/v2/cards/sm7-145
+      // DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // DDE model: https://github.com/FlareZ123/pokemon-sims/issues/2238
+      // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      add_wanted(Card::DoubleDragonEnergy);
+    }
     const bool held_treasure_crispin_grass_route =
         steven_held_treasure_crispin_grass_route_available(
             wanted, next_turn_item_locked, projected_vstar_available);
@@ -369,8 +391,9 @@
             wanted, next_turn_item_locked, projected_vstar_available);
 
     // Crispin source: https://api.pokemontcg.io/v2/cards/sv7-133
-    if (!held_routes_complete_next_turn && need_energy() &&
-        hand_count(Card::Crispin) == 0 && crispin_can_advance_energy_axis() &&
+    if (!held_routes_complete_next_turn && !steven_dde_completes_next_turn &&
+        need_energy() && hand_count(Card::Crispin) == 0 &&
+        crispin_can_advance_energy_axis() &&
         deck_count_after_search_started(Card::Crispin) > 0) {
       add_wanted(Card::Crispin);
     }

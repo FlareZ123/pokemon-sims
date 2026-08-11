@@ -73,15 +73,21 @@
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/banked_tapu_retreat_policy.inc
 // https://github.com/FlareZ123/pokemon-sims/issues/3089
 #include "../core/banked_tapu_retreat_policy.inc"
-#include "post_014a_overrides.inc"
 
-// #3057 arbitrates the Path-removal connector and restores the Forretress fixed
-// point after an Item search exposes Forest of Vitality. Keep both hooks scoped to
-// the historical late-turn source so unrelated member implementations remain on
-// their established paths:
+// #3057 must wrap the dedicated Pineco/Secret Box dispatcher as well as the
+// historical generic turn source. Compose its state predicates before the Pineco
+// policy and route only the two lock-removal actions through the narrow wrappers.
 // Forest / Field Blower / Secret Box: https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/sv6-163
 // Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/3057
 #include "../part_issue_3057_swell_field_blower_route.inc"
+#if defined(play_chaotic_swell) || defined(play_field_blower)
+#error "Issue-3057 Pineco composition requires lock-removal aliases to be undefined"
+#endif
+#define play_chaotic_swell play_chaotic_swell_issue_3057
+#define play_field_blower play_field_blower_issue_3057
+#include "post_014a_overrides.inc"
+#undef play_field_blower
+#undef play_chaotic_swell
 
 // Ordered late turn-execution, scenario-registry, and reporting composition.
 // Keep these aliases live through part_016 exactly as the historical root wrapper

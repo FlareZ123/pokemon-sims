@@ -4,6 +4,10 @@
     });
   }
 
+  bool known_deck_has_pokemon_target() const {
+    return std::any_of(state_.deck.begin(), state_.deck.end(), is_pokemon);
+  }
+
   bool ultra_ball_has_legal_target() const {
     // Ultra Ball searches for any Pokémon. Once K1 has inspected the physical deck,
     // target legality comes directly from state_.deck, including supported reduced
@@ -19,7 +23,7 @@
     // https://github.com/FlareZ123/pokemon-sims/issues/866
     // https://github.com/FlareZ123/pokemon-sims/issues/2189
     if (prizes_known()) {
-      return std::any_of(state_.deck.begin(), state_.deck.end(), is_pokemon);
+      return known_deck_has_pokemon_target();
     }
 
     // At K0, a target remains plausible only when the fixed list has a Pokémon copy

@@ -1,0 +1,130 @@
+name: DDE sol2 materialize exact CI evidence
+
+on:
+  push:
+    branches: [reclaim/dde-current-main-sol2-20260811]
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      ARTIFACT_ID: '9092900559'
+      EXPECTED_MAIN: 57785ca59d15719e72695fbee47147f72c2caacf
+      EXPECTED_SOURCE_DIGEST: 71ba5921a34926ebb75a722f2460150aeb9df4dcd8161d309b9abc93243f725a
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: reclaim/dde-current-main-sol2-20260811
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify exact source and remove temporary recovery files
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          git merge-base --is-ancestor "$EXPECTED_MAIN" HEAD
+          current_digest=$(python - <<'PY'
+          from pathlib import Path
+          from scripts.baseline_provenance import simulator_policy_source_digest
+          print(simulator_policy_source_digest(Path('.').resolve()))
+          PY
+          )
+          test "$current_digest" = "$EXPECTED_SOURCE_DIGEST"
+          git rm .github/workflows/dde-sol2-materialize.yml
+          rm -f docs/dde-reclaim-trigger-20260811-sol.md
+      - name: Download exact producer artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/dde-release /tmp/dde-release.zip
+          mkdir -p /tmp/dde-release
+          curl --fail --location --retry 3 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" \
+            -o /tmp/dde-release.zip
+          unzip -q /tmp/dde-release.zip -d /tmp/dde-release
+          test -f /tmp/dde-release/multi-deck-matrix.csv
+          test -f /tmp/dde-release/t2-t3-matrix.csv
+          test -f /tmp/dde-release/build/regidrago_sim
+          chmod +x /tmp/dde-release/build/regidrago_sim
+          cp /tmp/dde-release/multi-deck-matrix.csv results/multi_deck_comparison.csv
+          cp /tmp/dde-release/t2-t3-matrix.csv results/simulation_results.csv
+      - name: Regenerate manifests and reviewed traces
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from scripts import generate_multi_deck_comparison as multi
+          from scripts import regenerate_setup_baselines as base
+
+          results = Path('results')
+          executable = Path('/tmp/dde-release/build/regidrago_sim')
+          matrix_seed = 20260705
+          trials = 100000
+
+          trace_dir = results / 'traces'
+          trace_dir.mkdir(parents=True, exist_ok=True)
+          baseline_manifest = base.build_manifest(matrix_seed, trials)
+          expected_trace_files = set()
+          for scenario, deadline, stem in base.TRACE_SPECS:
+              seed, trace = base.find_trace_seed(executable, scenario, deadline, 5000)
+              file_name = base.trace_file_name(stem, seed)
+              expected_trace_files.add(file_name)
+              base.atomic_write_text(trace_dir / file_name, trace)
+              baseline_manifest['traces'].append({
+                  'scenario': scenario,
+                  'deadline': deadline,
+                  'seed': seed,
+                  'file': file_name,
+              })
+          base.reconcile_generated_traces(trace_dir, expected_trace_files)
+          base.atomic_write_text(
+              results / base.MANIFEST_FILENAME,
+              json.dumps(baseline_manifest, indent=2, sort_keys=True) + '\n',
+          )
+
+          multi_traces = multi.generate_traces(executable, results / 'multi_deck_traces')
+          multi_manifest = multi.build_manifest(
+              results / 'multi_deck_comparison.csv', multi_traces, trials, matrix_seed
+          )
+          multi.atomic_write_text(
+              results / 'multi_deck_manifest.json',
+              json.dumps(multi_manifest, indent=2, sort_keys=True) + '\n',
+          )
+          PY
+      - name: Regenerate reports and validate generated tree
+        run: |
+          set -euo pipefail
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+          python tests/setup_report_contract_tests.py
+          python tests/multi_deck_report_contract_tests.py
+          python tests/update_setup_docs_tests.py
+          git diff --check
+      - name: Refuse stale-main evidence
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+      - name: Commit generated evidence
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$EXPECTED_MAIN" > results/.dde_sol2_materialized
+          git add -A
+          git diff --cached --check
+          git commit -m 'Reclaim DDE: regenerate exact current-main evidence'
+          git push origin HEAD:reclaim/dde-current-main-sol2-20260811

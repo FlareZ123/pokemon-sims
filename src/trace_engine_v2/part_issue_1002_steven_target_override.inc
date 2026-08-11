@@ -5,9 +5,13 @@
     // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Official Prize and search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2023
+    const bool same_ready_turn_jit_payload =
+        scenario_.dci == DciProfile::StrictJit ||
+        scenario_.dci == DciProfile::MatchupFlexJit; // Semantic JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed semantic-profile bug: https://github.com/FlareZ123/pokemon-sims/issues/3208
     if (!prizes_known() || !supporter_allowed() ||
         hand_count(Card::StevensResolve) == 0 ||
-        scenario_.dci != DciProfile::StrictJit || scenario_.locks != LockMode::None ||
+        !same_ready_turn_jit_payload || scenario_.locks != LockMode::None ||
         state_.turn + 2 > scenario_.max_turn || !state_.active ||
         !is_basic(state_.active->card) || state_.active->card == Card::RegidragoV ||
         in_play(Card::LatiasEx) || bench_space() == 0 ||

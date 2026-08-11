@@ -48,9 +48,10 @@
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Core Item, Bench, Ability, attachment, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // StrictJit and MatchupFlexJit share ready-turn payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Earliest deterministic route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed stale-claim bug: https://github.com/FlareZ123/pokemon-sims/issues/1419
-    return scenario_.dci == DciProfile::StrictJit &&
+    // Shared-JIT overfit fix: https://github.com/FlareZ123/pokemon-sims/issues/3149
+    return strict_payload_timing() &&
         scenario_.locks == LockMode::None && active_is_vstar() &&
         hand_count(Card::QuickBall) > 0 && hand_count(Card::LatiasEx) > 0 &&
         hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
@@ -79,9 +80,10 @@
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Regidrago VSTAR / GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
     // One-Supporter-per-turn and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // StrictJit and MatchupFlexJit share ready-turn payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Earliest deterministic route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed stale-claim bug: https://github.com/FlareZ123/pokemon-sims/issues/1419
-    return scenario_.dci == DciProfile::StrictJit &&
+    // Shared-JIT overfit fix: https://github.com/FlareZ123/pokemon-sims/issues/3149
+    return strict_payload_timing() &&
         scenario_.locks == LockMode::None && active_is_vstar() &&
         in_play(Card::Oricorio) && missing_energy > 0 &&
         hand_count(Card::Grass) >= missing_grass &&

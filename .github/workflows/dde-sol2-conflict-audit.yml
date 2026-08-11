@@ -46,27 +46,32 @@ jobs:
             results/baseline_manifest.json \
             results/multi_deck_comparison.csv \
             results/multi_deck_manifest.json \
-            results/simulation_results.csv; do
+            results/simulation_results.csv \
+            src/trace_engine_v2/part_010_fss_override.inc \
+            src/trace_engine_v2/part_forretress_ex_combo.inc; do
             git checkout --ours -- "$path"
             git add "$path"
           done
 
-          git checkout --ours -- src/trace_engine_v2/part_010_fss_override.inc
-          git checkout --ours -- src/trace_engine_v2/part_forretress_ex_combo.inc
-          git add src/trace_engine_v2/part_010_fss_override.inc src/trace_engine_v2/part_forretress_ex_combo.inc
-
           python - <<'PY'
+          import re
           from pathlib import Path
 
-          def replace_exact(path: Path, old: str, new: str, count: int = 1) -> None:
+          def replace_once(path: Path, old: str, new: str) -> None:
               text = path.read_text(encoding='utf-8')
-              actual = text.count(old)
-              if actual != count:
-                  raise SystemExit(f'{path}: expected {count} exact matches, found {actual}')
+              if text.count(old) != 1:
+                  raise SystemExit(f'{path}: expected one exact match')
               path.write_text(text.replace(old, new), encoding='utf-8')
 
+          def replace_regex(path: Path, pattern: str, repl: str, expected: int) -> None:
+              text = path.read_text(encoding='utf-8')
+              updated, count = re.subn(pattern, repl, text, flags=re.MULTILINE)
+              if count != expected:
+                  raise SystemExit(f'{path}: expected {expected} regex matches, found {count}')
+              path.write_text(updated, encoding='utf-8')
+
           fss = Path('src/trace_engine_v2/part_010_fss_override.inc')
-          replace_exact(
+          replace_once(
               fss,
               '''    const bool held_manual_already_completes_energy =
                   (grass_needed() == 1 && fire_needed() == 0 && hand_count(Card::Grass) > 0) ||
@@ -100,17 +105,12 @@ jobs:
                        (grass_available && fire_available ? 2 : 1));
               if (!crispin_completes_energy) return false;
           ''')
-          replace_exact(
+          replace_regex(
               fss,
-              '''          return pokemon.card == Card::RegidragoV &&
-                      pokemon.entered_turn < state_.turn && pokemon.grass >= 2 &&
-                      pokemon.fire >= 1;
-          ''',
-              '''          return pokemon.card == Card::RegidragoV &&
-                      pokemon.entered_turn < state_.turn && pays_apex_energy_cost(pokemon);
-          ''',
-              count=2)
-          replace_exact(
+              r'pokemon\.entered_turn < state_\.turn && pokemon\.grass >= 2 &&\s+pokemon\.fire >= 1;',
+              'pokemon.entered_turn < state_.turn && pays_apex_energy_cost(pokemon);',
+              2)
+          replace_once(
               fss,
               '''    return !spends_additional_entry_connector && projected.active_is_vstar() &&
                   projected.state_.active->grass >= 2 &&
@@ -120,13 +120,14 @@ jobs:
                   projected.pays_apex_energy_cost(*projected.state_.active) &&
                   projected.payload_ready();
           ''')
-          replace_exact(
+          replace_regex(
               fss,
-              '              pokemon.grass == 0 && pokemon.fire == 0;\n',
-              '              total_energy_units(pokemon) == 0;\n')
+              r'pokemon\.grass == 0 && pokemon\.fire == 0;',
+              'total_energy_units(pokemon) == 0;',
+              1)
 
           legacy = Path('src/trace_engine_v2/part_forretress_ex_combo_legacy.inc')
-          replace_exact(
+          replace_once(
               legacy,
               '''    const auto promotion_rank = [](const Pokemon& pokemon) {
                 const int role = pokemon.card == Card::RegidragoVstar ? 3 :

@@ -20,8 +20,10 @@
 // Legacy state/target bridges remain direct composition inputs until each fragment
 // is migrated into its owning card-action family.
 #include "../part_k0_ultra_ball_target_override.inc"
-#include "../core/oricorio_connector_policy.inc" // Oricorio Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
 #include "../part_blender_vstar_axis_override.inc"
+
+// Core connector policies are composed directly without compatibility wrappers.
+#include "../core/oricorio_connector_policy.inc" // Oricorio Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
 
 // Card-action route families own the later search-item overrides.
 #include "earthen_vessel_overrides.inc" // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163

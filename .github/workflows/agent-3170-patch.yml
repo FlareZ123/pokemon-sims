@@ -1,0 +1,290 @@
+name: Agent 3170 patch
+
+on:
+  push:
+    branches: [bug-3170-semantic-1795]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bug-3170-semantic-1795
+      - name: Apply semantic route fix and regression
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          source = Path('src/trace_engine_v2/part_014c_issue_1152_bridge.inc')
+          text = source.read_text(encoding='utf-8')
+
+          def replace_once(old: str, new: str) -> None:
+              global text
+              count = text.count(old)
+              if count == 0 and new in text:
+                  return
+              if count != 1:
+                  raise SystemExit(f'expected one source match, found {count}: {old[:80]!r}')
+              text = text.replace(old, new, 1)
+
+          replace_once(
+              '''    if (scenario_.dci != DciProfile::StrictJit || !scenario_.going_first ||
+        scenario_.locks != LockMode::None || state_.turn != 2 ||
+        state_.turn + 2 > scenario_.max_turn || !prizes_known() ||
+        !supporter_allowed() || state_.manual_energy_used || !state_.active ||
+''',
+              '''    // StrictJit and MatchupFlexJit share the same ready-turn payload timing.
+    // This schedule is Trainer-driven, so scenario identity cannot replace the
+    // actual Item and Supporter legality predicates used by each step:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3170
+    if (!strict_payload_timing() || item_locked() ||
+        state_.turn + 2 > scenario_.max_turn || !prizes_known() ||
+        !supporter_allowed() || state_.manual_energy_used || !state_.active ||
+''')
+
+          replace_once(
+              '''    return issue_1795_steven_turn_ == state_.turn &&
+        scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
+        scenario_.locks == LockMode::None && state_.turn + 1 <= scenario_.max_turn &&
+        prizes_known() && supporter_allowed() && state_.active &&
+''',
+              '''    // Keep the continuation on semantic same-turn-JIT and real Trainer
+    // legality so a valid route cannot be dropped after Crispin commits it:
+    // https://api.pokemontcg.io/v2/cards/sm7-145
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://github.com/FlareZ123/pokemon-sims/issues/3170
+    return issue_1795_steven_turn_ == state_.turn &&
+        strict_payload_timing() && !item_locked() &&
+        state_.turn + 1 <= scenario_.max_turn && prizes_known() &&
+        supporter_allowed() && state_.active &&
+''')
+
+          replace_once(
+              '''    const bool route_available =
+        scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
+        scenario_.locks == LockMode::None && !state_.turn_ended &&
+        prizes_known() && !state_.manual_energy_used && !item_locked() &&
+''',
+              '''    // Earthen Vessel is the same-ready-turn Dragon outlet in both JIT
+    // profiles; Rule Box Ability lock does not disable this Trainer-only finish:
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://github.com/FlareZ123/pokemon-sims/issues/3170
+    const bool route_available =
+        strict_payload_timing() && !state_.turn_ended && prizes_known() &&
+        !state_.manual_energy_used && !item_locked() &&
+''')
+
+          source.write_text(text, encoding='utf-8')
+
+          Path('tests/issue_3170_semantic_route_tests.cpp').write_text(r'''#define REGIDRAGO_SIM_NO_MAIN
+#include "../src/regidrago_sim.cpp"
+
+#include <iostream>
+#include <random>
+#include <stdexcept>
+#include <utility>
+
+namespace sim {
+struct EngineTestAccess {
+  static void set_state(Engine& engine, State state, const bool k1 = true) {
+    engine.state_ = std::move(state);
+    engine.deck_seen_ = k1;
+    engine.prizes_revealed_ = false;
+  }
+
+  static bool initial_1795_route(const Engine& engine) {
+    return engine.issue_1795_crispin_steven_vessel_route_available();
+  }
+
+  static bool banked_1795_route(Engine& engine, const int turn) {
+    engine.issue_1795_steven_turn_ = turn;
+    return engine.issue_1795_banked_steven_route_available();
+  }
+
+  static bool finish_1795_route(Engine& engine, const int turn) {
+    engine.issue_1795_vessel_turn_ = turn;
+    return engine.complete_issue_1795_vessel_finish();
+  }
+};
+}  // namespace sim
+
+namespace {
+void require(const bool condition, const char* message) {
+  if (!condition) throw std::runtime_error(message);
+}
+
+sim::State initial_state(const int turn) {
+  sim::State state;
+  state.turn = turn;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, turn - 1, 0, 0,
+                              sim::Tool::None};
+  state.hand = {sim::Card::MegaDragonite, sim::Card::Serena,
+                sim::Card::StevensResolve, sim::Card::Gladion,
+                sim::Card::Crispin, sim::Card::TapuLeleGX};
+  state.deck = {sim::Card::Grass, sim::Card::Grass, sim::Card::Fire,
+                sim::Card::RegidragoVstar, sim::Card::EarthenVessel,
+                sim::Card::QuickBall, sim::Card::MysteriousTreasure};
+  state.prizes = {sim::Card::MysteriousTreasure, sim::Card::Arven,
+                  sim::Card::Guzma, sim::Card::Dragapult,
+                  sim::Card::Grass, sim::Card::Fire};
+  return state;
+}
+
+sim::State banked_state(const int turn) {
+  sim::State state;
+  state.turn = turn;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, turn - 2, 1, 1,
+                              sim::Tool::None};
+  state.hand = {sim::Card::MegaDragonite, sim::Card::StevensResolve};
+  state.deck = {sim::Card::Grass, sim::Card::RegidragoVstar,
+                sim::Card::EarthenVessel};
+  state.prizes = {sim::Card::QuickBall, sim::Card::Arven,
+                  sim::Card::Guzma, sim::Card::Dragapult,
+                  sim::Card::Grass, sim::Card::Fire};
+  return state;
+}
+
+sim::State vessel_state(const int turn) {
+  sim::State state;
+  state.turn = turn;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, turn - 2, 1, 1,
+                              sim::Tool::None};
+  state.hand = {sim::Card::MegaDragonite, sim::Card::RegidragoVstar,
+                sim::Card::EarthenVessel, sim::Card::Grass};
+  state.deck = {sim::Card::Grass, sim::Card::Fire};
+  state.prizes = {sim::Card::QuickBall, sim::Card::Arven,
+                  sim::Card::Guzma, sim::Card::Dragapult,
+                  sim::Card::Grass, sim::Card::Fire};
+  return state;
+}
+
+sim::Scenario scenario(const char* label, const sim::DciProfile dci,
+                       const sim::LockMode lock, const bool going_first,
+                       const int max_turn) {
+  return sim::Scenario{label, dci, lock, going_first, max_turn};
+}
+
+bool initial_visible(const sim::DciProfile dci, const sim::LockMode lock,
+                     const bool going_first, const int turn,
+                     const int max_turn, const bool k1 = true) {
+  const sim::Scenario value = scenario("issue-3170-initial", dci, lock,
+                                      going_first, max_turn);
+  sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng(3170);
+  sim::Engine engine(value, recipe, rng);
+  sim::EngineTestAccess::set_state(engine, initial_state(turn), k1);
+  return sim::EngineTestAccess::initial_1795_route(engine);
+}
+
+void semantic_initial_admission() {
+  // Crispin and Steven are Supporters, Earthen Vessel is an Item, and Apex Dragon
+  // costs GGF. Their printed effects contain no DCI-profile, seat, absolute-turn,
+  // or Rule Box Ability-lock condition. Real Trainer legality and evolution age
+  // remain explicit predicates in production:
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Same-turn JIT and lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3170
+  require(initial_visible(sim::DciProfile::StrictJit, sim::LockMode::None,
+                          true, 2, 4),
+          "StrictJit historical #1795 route disappeared.");
+  require(initial_visible(sim::DciProfile::MatchupFlexJit, sim::LockMode::None,
+                          true, 2, 4),
+          "MatchupFlexJit rejected the same-ready-turn #1795 route.");
+  require(initial_visible(sim::DciProfile::StrictJit, sim::LockMode::None,
+                          false, 2, 4),
+          "Seat identity rejected the legal #1795 route.");
+  require(initial_visible(sim::DciProfile::StrictJit,
+                          sim::LockMode::FullRuleBoxAbility, true, 2, 4),
+          "Rule Box Ability lock rejected the Trainer-only #1795 route.");
+  require(initial_visible(sim::DciProfile::StrictJit, sim::LockMode::None,
+                          true, 3, 5),
+          "Later equivalent turn rejected the legal #1795 route.");
+}
+
+void semantic_negative_controls() {
+  // NoDiscardControl has a different earlier-payload policy. Item lock blocks
+  // Vessel and Supporter lock blocks Crispin/Steven, while K0 cannot consume the
+  // exact known schedule. https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // https://github.com/FlareZ123/pokemon-sims/issues/3170
+  require(!initial_visible(sim::DciProfile::NoDiscardControl, sim::LockMode::None,
+                           true, 2, 4),
+          "NoDiscardControl was incorrectly admitted by the same-turn-JIT route.");
+  require(!initial_visible(sim::DciProfile::StrictJit,
+                           sim::LockMode::TurnTwoItem, true, 2, 4),
+          "Item lock admitted an Earthen Vessel schedule.");
+  require(!initial_visible(sim::DciProfile::StrictJit,
+                           sim::LockMode::FullSupporter, true, 2, 4),
+          "Supporter lock admitted the Crispin/Steven schedule.");
+  require(!initial_visible(sim::DciProfile::StrictJit, sim::LockMode::None,
+                           true, 2, 3),
+          "Expired setup horizon admitted the two-turn continuation.");
+  require(!initial_visible(sim::DciProfile::StrictJit, sim::LockMode::None,
+                           true, 2, 4, false),
+          "K0 admitted a schedule that requires exact deck knowledge.");
+}
+
+void continuation_stays_semantic() {
+  // The route must keep the same semantic admission after Crispin commits it.
+  // Steven: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3170
+  const sim::Scenario banked_value = scenario(
+      "issue-3170-banked", sim::DciProfile::MatchupFlexJit,
+      sim::LockMode::FullRuleBoxAbility, false, 5);
+  sim::DeckRecipe banked_recipe = sim::baseline_recipe();
+  std::mt19937_64 banked_rng(3171);
+  sim::Engine banked_engine(banked_value, banked_recipe, banked_rng);
+  sim::EngineTestAccess::set_state(banked_engine, banked_state(3));
+  require(sim::EngineTestAccess::banked_1795_route(banked_engine, 3),
+          "Banked Steven continuation reintroduced scenario-coordinate gating.");
+
+  const sim::Scenario finish_value = scenario(
+      "issue-3170-finish", sim::DciProfile::MatchupFlexJit,
+      sim::LockMode::FullRuleBoxAbility, false, 5);
+  sim::DeckRecipe finish_recipe = sim::baseline_recipe();
+  std::mt19937_64 finish_rng(3172);
+  sim::Engine finish_engine(finish_value, finish_recipe, finish_rng);
+  sim::EngineTestAccess::set_state(finish_engine, vessel_state(4));
+  require(sim::EngineTestAccess::finish_1795_route(finish_engine, 4),
+          "Vessel finish reintroduced scenario-coordinate gating.");
+}
+}  // namespace
+
+int main() {
+  try {
+    semantic_initial_admission();
+    semantic_negative_controls();
+    continuation_stays_semantic();
+    std::cout << "Issue 3170 semantic route tests passed\n";
+    return 0;
+  } catch (const std::exception& error) {
+    std::cerr << error.what() << '\n';
+    return 1;
+  }
+}
+''', encoding='utf-8')
+          PY
+          git config user.name "pokemon-sims agent"
+          git config user.email "actions@users.noreply.github.com"
+          git add src/trace_engine_v2/part_014c_issue_1152_bridge.inc tests/issue_3170_semantic_route_tests.cpp
+          if git diff --cached --quiet; then
+            echo "Patch already applied."
+            exit 0
+          fi
+          git commit -m "Fix #3170: generalize the #1795 Trainer schedule"
+          git push origin HEAD:bug-3170-semantic-1795

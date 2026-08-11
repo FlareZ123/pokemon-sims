@@ -1,4 +1,4 @@
-  bool recipe_has_unseen_pokemon() const {
+  bool fixed_list_has_plausible_pokemon_target() const {
     return std::any_of(recipe_.begin(), recipe_.end(), [this](const auto& entry) {
       return is_pokemon(entry.first) && might_be_unseen(entry.first);
     });
@@ -25,7 +25,7 @@
     // At K0, a target remains plausible only when the fixed list has a Pokémon copy
     // that public zones have not exhausted:
     // https://github.com/FlareZ123/pokemon-sims/issues/690
-    return recipe_has_unseen_pokemon();
+    return fixed_list_has_plausible_pokemon_target();
   }
 
   bool play_ultra_ball(const bool permit_payload) {

@@ -64,24 +64,31 @@
 #include "../part_014a.inc"
 #include "post_014a_overrides.inc"
 
-// #3057 needs to preserve the Stadium action for a live current-turn
-// Forest/Pineco/Forretress route when Field Blower can remove Path instead.
-// Keep the route predicate outside the historical late-turn source and expose it
-// there only through a scoped hand-count alias so every unrelated action remains
-// byte-for-byte on the existing selector path:
-// https://github.com/FlareZ123/pokemon-sims/issues/3057
+// #3057/#3064 preserves the Stadium action for the live current-turn
+// Forest/Pineco/Forretress route and owns the exact post-Field-Blower recovery hook:
+// Forest / Field Blower / Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/swsh12-136
+// Governing refinement: https://github.com/FlareZ123/pokemon-sims/issues/3057#issuecomment-5252233081
+// Corrective issue: https://github.com/FlareZ123/pokemon-sims/issues/3064
 #include "../part_issue_3057_swell_field_blower_route.inc"
 
 // Ordered late turn-execution, scenario-registry, and reporting composition.
-// Keep these aliases live through part_016 exactly as the historical root wrapper
-// did so the translation unit remains behaviorally identical.
-#if defined(play_field_blower) || defined(run_turn) || defined(hand_count)
+// Every current run-turn layer emits the Field Blower trace only after setting the
+// modeled Path-removal state. Route late trace calls through #3064 so the exact
+// public-discard Forest state can resolve before later actions consume its window;
+// every other trace delegates unchanged:
+// Field Blower transition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
+// Replacement run-turn policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_issue_1751_run_turn_override.inc
+// Forest / Field Blower / Legacy Star: https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/swsh12-136
+// Corrective issue: https://github.com/FlareZ123/pokemon-sims/issues/3064
+#if defined(play_field_blower) || defined(run_turn) || defined(hand_count) || defined(trace)
 #error "Late-turn composition requires execution aliases to be undefined on entry"
 #endif
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #define hand_count hand_count_issue_3057
+#define trace trace_issue3064
 #include "../part_014c.inc"
+#undef trace
 #undef hand_count
 #undef ability_available_for_pokemon
 #ifdef ability_available_for_pokemon
@@ -114,6 +121,6 @@
 #endif
 #undef run_turn
 #undef play_field_blower
-#if defined(play_field_blower) || defined(run_turn) || defined(hand_count)
+#if defined(play_field_blower) || defined(run_turn) || defined(hand_count) || defined(trace)
 #error "Late-turn composition leaked an execution alias"
 #endif

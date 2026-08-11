@@ -95,6 +95,15 @@ double standard_error_pp(const std::uint64_t count, const std::uint64_t total) {
   return 100.0 * std::sqrt(p * (1.0 - p) / static_cast<double>(total));
 }
 
+bool readiness_counters_are_consistent(const Aggregate& aggregate) {
+  // Readiness columns are cumulative. T5 is diagnostic; setup success still ends at T4.
+  // Repository reporting contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/REPORT.md#100000-trial-baseline
+  return aggregate.by3 >= aggregate.by2 && aggregate.by4 >= aggregate.by3 &&
+      aggregate.by5 >= aggregate.by4 &&
+      aggregate.ready_on5 == aggregate.by5 - aggregate.by4 &&
+      aggregate.setup_failures == aggregate.trials - aggregate.by4;
+}
+
 bool probability_regression_self_test() {
   struct BaselineFloor {
     std::string_view scenario;
@@ -126,11 +135,7 @@ bool probability_regression_self_test() {
         std::distance(scenarios.begin(), found));
     const Aggregate aggregate = simulate(*found, deck, trials,
                                          base_seed + seed_stride * scenario_index);
-    // Readiness columns are cumulative. T5 is diagnostic; setup success still ends at T4.
-    if (aggregate.by3 < aggregate.by2 || aggregate.by4 < aggregate.by3 ||
-        aggregate.by5 < aggregate.by4) return false;
-    if (aggregate.ready_on5 != aggregate.by5 - aggregate.by4) return false;
-    if (aggregate.setup_failures != aggregate.trials - aggregate.by4) return false;
+    if (!readiness_counters_are_consistent(aggregate)) return false;
     if (pct(aggregate.by3, aggregate.trials) < floor.minimum_ready_by_t3_pct) return false;
   }
   return true;

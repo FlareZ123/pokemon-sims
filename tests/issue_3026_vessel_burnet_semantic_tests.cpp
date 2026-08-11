@@ -2,7 +2,9 @@
 #include "../src/regidrago_sim.cpp"
 
 #include <random>
+#include <sstream>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 namespace sim {
@@ -10,17 +12,39 @@ struct EngineTestAccess {
   static void set_state(Engine& engine, State state) {
     engine.state_ = std::move(state);
     engine.deck_seen_ = true;
-    engine.prizes_revealed_ = true;
   }
   static bool route_visible(const Engine& engine) {
     return engine.issue_1646_vessel_burnet_finish_visible();
+  }
+  static std::string route_diagnostic(const Engine& engine) {
+    const Pokemon* active = engine.state_.active ? &*engine.state_.active : nullptr;
+    const bool completing_energy = active != nullptr &&
+        engine.completing_basic_energy_for(*active, [&engine](const Card card) {
+          return engine.deck_count_after_search_started(card) > 0;
+        }).has_value();
+    std::ostringstream out;
+    out << "strict=" << engine.strict_payload_timing()
+        << " item_locked=" << engine.item_locked()
+        << " search=" << engine.deck_search_available()
+        << " prizes=" << engine.prizes_known()
+        << " supporter=" << engine.supporter_allowed()
+        << " manual=" << engine.state_.manual_energy_used
+        << " completing_energy=" << completing_energy
+        << " need_payload=" << engine.need_payload()
+        << " held_payload="
+        << std::any_of(engine.state_.hand.begin(), engine.state_.hand.end(), is_payload)
+        << " vessel=" << engine.hand_count(Card::EarthenVessel)
+        << " burnet=" << engine.hand_count(Card::ProfessorBurnet)
+        << " deck_payload=" << engine.payload_might_be_in_deck()
+        << " cost=" << engine.issue_1866_vessel_burnet_cost().has_value();
+    return out.str();
   }
 };
 }  // namespace sim
 
 namespace {
 
-void expect(const bool condition, const char* message) {
+void expect(const bool condition, const std::string& message) {
   if (!condition) throw std::runtime_error(message);
 }
 
@@ -39,14 +63,25 @@ sim::State route_state(const int turn) {
   return state;
 }
 
-bool visible_for(const sim::DciProfile dci, const sim::LockMode lock,
-                 sim::State state, const int max_turn = 5) {
+struct ProbeResult {
+  bool visible{false};
+  std::string diagnostic;
+};
+
+ProbeResult probe_for(const sim::DciProfile dci, const sim::LockMode lock,
+                      sim::State state, const int max_turn = 5) {
   const sim::Scenario scenario{"issue-3026", dci, lock, true, max_turn};
   sim::DeckRecipe recipe = sim::baseline_recipe();
   std::mt19937_64 rng(3026);
   sim::Engine engine(scenario, recipe, rng);
   sim::EngineTestAccess::set_state(engine, std::move(state));
-  return sim::EngineTestAccess::route_visible(engine);
+  return {sim::EngineTestAccess::route_visible(engine),
+          sim::EngineTestAccess::route_diagnostic(engine)};
+}
+
+bool visible_for(const sim::DciProfile dci, const sim::LockMode lock,
+                 sim::State state, const int max_turn = 5) {
+  return probe_for(dci, lock, std::move(state), max_turn).visible;
 }
 
 void test_shared_jit_rulebox_and_t2_admission() {
@@ -59,18 +94,23 @@ void test_shared_jit_rulebox_and_t2_admission() {
   // Advanced legality procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   // Same-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3026
-  expect(visible_for(sim::DciProfile::MatchupFlexJit,
-                     sim::LockMode::FullRuleBoxAbility, route_state(4)),
-         "MatchupFlexJit Rule Box Ability lock hid the legal Vessel-Burnet route");
+  const ProbeResult rulebox = probe_for(sim::DciProfile::MatchupFlexJit,
+                                        sim::LockMode::FullRuleBoxAbility,
+                                        route_state(4));
+  expect(rulebox.visible,
+         "MatchupFlexJit Rule Box Ability lock hid the legal Vessel-Burnet route: " +
+             rulebox.diagnostic);
 
   // Neither printed Trainer effect has a T3 minimum. Once the current public/K1
   // state satisfies the route prerequisites, earliest-route policy admits T2:
   // Official procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
   // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3026
-  expect(visible_for(sim::DciProfile::StrictJit, sim::LockMode::None,
-                     route_state(2)),
-         "The legal T2 Vessel-Burnet route was suppressed by the historical turn witness");
+  const ProbeResult turn_two = probe_for(sim::DciProfile::StrictJit,
+                                         sim::LockMode::None, route_state(2));
+  expect(turn_two.visible,
+         "The legal T2 Vessel-Burnet route was suppressed by the historical turn witness: " +
+             turn_two.diagnostic);
 }
 
 void test_semantic_boundaries() {

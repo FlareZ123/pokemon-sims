@@ -23,7 +23,7 @@
         });
   }
 
-  int issue_2270_required_connector_bench_slots() const {
+  int tapu_latias_required_bench_slots() const {
     // Before Wonder Tag resolves, one Bench slot is needed for Tapu Lele-GX and a
     // second for Latias ex. Once Tapu is already in play, only the Latias slot must
     // remain for the continuation.
@@ -63,7 +63,7 @@
     }
 
     return tapu_route_has_powered_benched_vstar() &&
-           bench_space() >= issue_2270_required_connector_bench_slots();
+           bench_space() >= tapu_latias_required_bench_slots();
   }
 
   bool needs_tapu_connector() {

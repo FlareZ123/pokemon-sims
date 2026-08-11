@@ -342,13 +342,24 @@
     const bool deck_payload = std::any_of(
         state_.deck.begin(), state_.deck.end(), is_payload);
 
-    return scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
-        scenario_.locks == LockMode::None && state_.turn == 2 &&
-        scenario_.max_turn >= 3 && prizes_known() && supporter_allowed() &&
-        state_.manual_energy_used && !item_locked() && !state_.retreat_used &&
-        state_.active && state_.active->card == Card::Oricorio &&
-        regidrago != nullptr && bench_space() > 0 &&
-        ability_available_for_pokemon(Card::LatiasEx) &&
+    // The route is governed by same-ready-turn JIT timing and its current public
+    // Trainer, evolution, Bench, Retreat, Energy, and Skyliner prerequisites. Seat
+    // identity and absolute turn are historical witness coordinates. Rule Box
+    // Ability lock remains blocked by ability_available_for_pokemon(LatiasEx):
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Same-turn JIT and lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3173
+    return strict_payload_timing() &&
+        state_.turn + 1 <= scenario_.max_turn && prizes_known() &&
+        supporter_allowed() && state_.manual_energy_used && !item_locked() &&
+        !state_.retreat_used && state_.active &&
+        state_.active->card == Card::Oricorio && regidrago != nullptr &&
+        bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
         hand_count(Card::StevensResolve) > 0 &&
         hand_count(Card::MysteriousTreasure) > 0 && deck_payload &&
         deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
@@ -402,9 +413,18 @@
 
     const auto payload_it = std::find_if(
         state_.hand.begin(), state_.hand.end(), is_payload);
-    const bool route_available =
-        scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
-        scenario_.locks == LockMode::None && state_.turn == 3 &&
+    // Continue the banked route from its semantic state. The route still requires
+    // current Supporter and Item legality, free Bench space, unused Retreat, and
+    // Latias ex's Rule Box Ability. The stored finish turn supplies the relative
+    // next-turn clock without a literal T3 identity gate:
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Same-turn JIT and lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3173
+    const bool route_available = strict_payload_timing() &&
         state_.turn <= scenario_.max_turn && prizes_known() &&
         !state_.turn_ended && supporter_allowed() && !state_.manual_energy_used &&
         !item_locked() && !state_.retreat_used && state_.active &&

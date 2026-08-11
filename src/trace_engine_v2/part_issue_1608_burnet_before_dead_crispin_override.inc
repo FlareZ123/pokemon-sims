@@ -58,6 +58,28 @@ bool issue_1644_prized_fss_vstar_route_available() const {
       !issue_1644_has_held_vstar_route();
 }
 
+bool issue_1633_crispin_before_gladion_available() const {
+  // Centralize the K1 no-control Crispin completion preflight used by the Gladion
+  // selector so the action body only handles the resulting hold decision.
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // K1 and direct-completion policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/1633
+  return scenario_.dci == DciProfile::NoDiscardControl && prizes_known() &&
+      supporter_allowed() && state_.manual_energy_used && !need_payload() &&
+      state_.active && state_.active->card == Card::RegidragoV &&
+      completing_basic_energy_for(*state_.active, [this](const Card card) {
+        return deck_count_after_search_started(card) > 0;
+      }).has_value() && hand_count(Card::Gladion) > 0 &&
+      hand_count(Card::Crispin) > 0 &&
+      deck_count_after_search_started(Card::Grass) > 0 &&
+      deck_count_after_search_started(Card::Fire) > 0 &&
+      deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
+      prize_count_after_reveal(Card::RegidragoVstar) == 0 &&
+      crispin_can_advance_energy_axis();
+}
+
 bool play_gladion_issue1737_original() {
   if (issue_1644_prized_fss_vstar_route_available()) {
     // Gladion exchanges itself for the known prized Forest Seal Stone. The Tool
@@ -88,20 +110,7 @@ bool play_gladion_issue1737_original() {
     return true;
   }
 
-  const bool issue_1633_crispin_before_gladion =
-      scenario_.dci == DciProfile::NoDiscardControl && prizes_known() &&
-      supporter_allowed() && state_.manual_energy_used && !need_payload() &&
-      state_.active && state_.active->card == Card::RegidragoV &&
-      completing_basic_energy_for(*state_.active, [this](const Card card) {
-        return deck_count_after_search_started(card) > 0;
-      }).has_value() && hand_count(Card::Gladion) > 0 &&
-      hand_count(Card::Crispin) > 0 &&
-      deck_count_after_search_started(Card::Grass) > 0 &&
-      deck_count_after_search_started(Card::Fire) > 0 &&
-      deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
-      prize_count_after_reveal(Card::RegidragoVstar) == 0 &&
-      crispin_can_advance_energy_axis();
-  if (issue_1633_crispin_before_gladion) {
+  if (issue_1633_crispin_before_gladion_available()) {
     // Crispin deterministically attaches the one missing Basic Energy while
     // putting the other type into hand. The no-control payload is already
     // banked, and K1 proves Regidrago VSTAR remains in deck rather than Prizes.

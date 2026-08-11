@@ -1,42 +1,20 @@
   std::optional<Card> issue_2437_apex_completing_basic(
       const Pokemon& target, const bool grass_available,
       const bool fire_available) const {
-    // A physical Basic Energy is one attachment. With DDE already attached to a
-    // Dragon, either Basic type can be the single final card when the semantic
-    // projection pays Apex Dragon; do not add typed alternatives as two deficits:
-    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
-    // Regidrago VSTAR / Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Manual Energy attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // DDE enhancement contract: https://github.com/FlareZ123/pokemon-sims/issues/2238
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2437
-    if (!is_dragon(target.card) || pays_apex_energy_cost(target)) {
-      return std::nullopt;
-    }
-    for (const auto [basic, available] : {
-             std::pair{Card::Grass, grass_available},
-             std::pair{Card::Fire, fire_available},
-         }) {
-      if (!available) continue;
-      Pokemon projected = target;
-      if (attach_energy_card(projected, basic) &&
-          pays_apex_energy_cost(projected)) {
-        return basic;
-      }
-    }
-    return std::nullopt;
+    return completing_basic_energy_for(target,
+        [grass_available, fire_available](const Card card) {
+          return card == Card::Grass ? grass_available : fire_available;
+        });
   }
 
   std::optional<Card> issue_2437_apex_completing_basic_from_known_deck(
       const Pokemon& target) const {
-    return issue_2437_apex_completing_basic(
-        target, deck_count_after_search_started(Card::Grass) > 0,
-        deck_count_after_search_started(Card::Fire) > 0);
+    return completing_basic_energy_from_known_deck(target);
   }
 
   std::optional<Card> issue_2437_apex_completing_basic_from_possible_deck(
       const Pokemon& target) const {
-    return issue_2437_apex_completing_basic(
-        target, might_be_unseen(Card::Grass), might_be_unseen(Card::Fire));
+    return completing_basic_energy_from_possible_deck(target);
   }
 
   std::optional<Card> issue_2437_direct_vessel_cost() const {

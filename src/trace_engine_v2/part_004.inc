@@ -99,6 +99,19 @@
     return std::nullopt;
   }
 
+  std::optional<Card> completing_basic_energy_from_known_deck(
+      const Pokemon& target) const {
+    return completing_basic_energy_for(target, [this](const Card card) {
+      return deck_count_after_search_started(card) > 0;
+    });
+  }
+
+  std::optional<Card> completing_basic_energy_from_possible_deck(
+      const Pokemon& target) const {
+    return completing_basic_energy_for(
+        target, [this](const Card card) { return might_be_unseen(card); });
+  }
+
   int minimum_basic_attachments_to_apex(
       const Pokemon& target, const int grass_available,
       const int fire_available) const {

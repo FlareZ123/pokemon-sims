@@ -18,9 +18,7 @@
           const Pokemon* vessel_target = target_regi();
           const bool vessel_and_manual_complete = !state_.manual_energy_used &&
               vessel_target != nullptr &&
-              completing_basic_energy_for(*vessel_target, [this](const Card card) {
-                return might_be_unseen(card);
-              }).has_value();
+              completing_basic_energy_from_possible_deck(*vessel_target).has_value();
           // DDE provides two units of every Energy type, so typed deficits are
           // alternatives and must not be added as physical-card distance:
           // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/

@@ -112,7 +112,14 @@
   }
 
   std::optional<Card> issue_2323_redundant_payload_cost() const {
-    if (scenario_.dci != DciProfile::StrictJit || scenario_.going_first ||
+    // StrictJit and MatchupFlexJit share the same ready-turn Dragon-payload timing,
+    // so profile identity cannot change this already-proven redundant-payload DCI
+    // decision. Every physical route, K0, legality, resource, and timing guard below
+    // remains independent:
+    // Same-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Advanced Item/Supporter/evolution procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed cross-profile bug: https://github.com/FlareZ123/pokemon-sims/issues/3029
+    if (!strict_payload_timing() || scenario_.going_first ||
         scenario_.locks != LockMode::None || state_.turn != 1 ||
         scenario_.max_turn < 3 || prizes_known() || item_locked() ||
         !supporter_allowed() || state_.supporter_used || state_.manual_energy_used ||
@@ -140,7 +147,7 @@
     // Mysterious Treasure pays one other card before searching a Psychic or Dragon
     // Pokemon. With two distinct held A/S Dragons, one Dragon is route-redundant:
     // spending it starts the Regidrago V evolution timer and legally establishes K1
-    // while a second held Dragon remains protected for the later strict-JIT ready
+    // while a second held Dragon remains protected for the later same-turn-JIT ready
     // turn. Held Grass plus Crispin and publicly possible Grass/Fire copies give the
     // searched Basic an observable same-turn Energy progression without consulting
     // Prize identities or future draws. The ordinary Treasure policy has already
@@ -185,7 +192,7 @@
     if (move_deck_to_hand(Card::RegidragoV)) {
       shuffle(state_.deck);
       trace("PLAY ITEM", "R-MT-01; R-GAME-ITEM; P-DCI-01; P-COMPRESS-01",
-            "Spent one of two distinct held Dragon payloads and searched Regidrago V to start the earliest evolution timer while preserving another Dragon for strict-JIT.");
+            "Spent one of two distinct held Dragon payloads and searched Regidrago V to start the earliest evolution timer while preserving another Dragon for the same-turn-JIT ready turn.");
       if (!bench_from_hand(Card::RegidragoV, false)) {
         throw std::logic_error("projected issue-2323 Regidrago V Bench action disappeared");
       }

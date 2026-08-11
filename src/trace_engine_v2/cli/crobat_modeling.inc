@@ -99,6 +99,14 @@ constexpr std::size_t crobat_model_seed_slot(const std::size_t scenario_index) {
          (scenario_index >= 10 ? 1U : 0U);
 }
 
+double average_dark_asset_cards_drawn(const Aggregate& aggregate) {
+  // Dark Asset use is counted per game while cards drawn accumulate across uses:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1394
+  if (aggregate.dark_asset == 0) return 0.0;
+  return static_cast<double>(aggregate.dark_asset_cards_drawn) /
+      static_cast<double>(aggregate.dark_asset);
+}
+
 void write_crobat_modeling_matrix(const std::filesystem::path& output,
                                   const std::uint64_t trials,
                                   const std::uint64_t seed) {
@@ -112,11 +120,7 @@ void write_crobat_modeling_matrix(const std::filesystem::path& output,
     const std::uint64_t common_seed = seed + 104729ULL * seed_slot;
     for (const CrobatModelingDeck& deck : crobat_modeling_decks()) {
       const Aggregate aggregate = simulate(scenario, deck.recipe, trials, common_seed);
-      // aggregate.dark_asset counts games with at least one use; cards may accumulate
-      // across turns in two-copy variants: https://github.com/FlareZ123/pokemon-sims/issues/1394
-      const double average_draw = aggregate.dark_asset == 0 ? 0.0 :
-          static_cast<double>(aggregate.dark_asset_cards_drawn) /
-          static_cast<double>(aggregate.dark_asset);
+      const double average_draw = average_dark_asset_cards_drawn(aggregate);
       csv << deck.id << ',' << '"' << deck.cuts << '"' << ','
           << crobat_copy_count(deck.recipe) << ','
           << scenario.label << ',' << trials << ',' << std::fixed

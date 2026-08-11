@@ -7,6 +7,14 @@
     return true;
   }
 
+  void forget_current_turn_discard(const Card card) {
+    const auto turn_it = std::find(state_.discarded_this_turn.begin(),
+                                   state_.discarded_this_turn.end(), card);
+    if (turn_it != state_.discarded_this_turn.end()) {
+      state_.discarded_this_turn.erase(turn_it);
+    }
+  }
+
   // Tracks a card leaving the discard pile in the same turn, so strict-JIT state
   // cannot count a payload that was discarded and then recovered before the ready check.
   bool recover_discard_to_hand(const Card card) {
@@ -14,8 +22,7 @@
     if (discard_it == state_.discard.end()) return false;
     state_.hand.push_back(*discard_it);
     state_.discard.erase(discard_it);
-    const auto turn_it = std::find(state_.discarded_this_turn.begin(), state_.discarded_this_turn.end(), card);
-    if (turn_it != state_.discarded_this_turn.end()) state_.discarded_this_turn.erase(turn_it);
+    forget_current_turn_discard(card);
     return true;
   }
 

@@ -1,20 +1,8 @@
 name: Issue 2940 materialize current evidence
 
 on:
-  workflow_dispatch:
-    inputs:
-      artifact_id:
-        description: Exact release-validation artifact ID from this PR head
-        required: true
-        type: string
-      expected_head:
-        description: Exact source commit that produced the artifact
-        required: true
-        type: string
-      expected_main:
-        description: Main commit that this source branch must still extend
-        required: true
-        type: string
+  push:
+    branches: [bug/2940-refresh-provenance-reclaim-1786428920578]
 
 permissions:
   actions: read
@@ -22,8 +10,13 @@ permissions:
 
 jobs:
   materialize:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    env:
+      ARTIFACT_ID: '9091610394'
+      EXPECTED_MAIN: a96fcf48bfeadd224a01827be6d5c0ee3092416d
+      EXPECTED_SOURCE_DIGEST: 19752618d4b4f4d7eaa44269e785692bb08620de904219fd755f950a705c4d19
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,19 +26,11 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Verify exact source and remove temporary workflow
-        env:
-          EXPECTED_HEAD: ${{ inputs.expected_head }}
-          EXPECTED_MAIN: ${{ inputs.expected_main }}
+      - name: Verify exact simulator source and remove temporary workflow
         run: |
           set -euo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          current_head=$(git rev-parse HEAD)
-          if [ "$current_head" != "$EXPECTED_HEAD" ]; then
-            echo "branch head moved: expected $EXPECTED_HEAD, found $current_head" >&2
-            exit 1
-          fi
           git fetch origin main
           current_main=$(git rev-parse origin/main)
           if [ "$current_main" != "$EXPECTED_MAIN" ]; then
@@ -56,12 +41,21 @@ jobs:
             echo "expected main is not an ancestor of the materialized source" >&2
             exit 1
           fi
+          current_digest=$(python - <<'PY'
+          from pathlib import Path
+          from scripts.baseline_provenance import simulator_policy_source_digest
+          print(simulator_policy_source_digest(Path('.').resolve()))
+          PY
+          )
+          if [ "$current_digest" != "$EXPECTED_SOURCE_DIGEST" ]; then
+            echo "simulator source changed: expected $EXPECTED_SOURCE_DIGEST, found $current_digest" >&2
+            exit 1
+          fi
           git rm .github/workflows/issue_2940_materialize.yml
 
       - name: Reuse exact PR CI aggregate
         env:
           GH_TOKEN: ${{ github.token }}
-          ARTIFACT_ID: ${{ inputs.artifact_id }}
         run: |
           set -euo pipefail
           rm -rf /tmp/issue-2940-release /tmp/issue-2940-release.zip
@@ -139,8 +133,6 @@ jobs:
           git diff --check
 
       - name: Refuse stale-main evidence
-        env:
-          EXPECTED_MAIN: ${{ inputs.expected_main }}
         run: |
           set -euo pipefail
           git fetch origin main
@@ -151,8 +143,6 @@ jobs:
           fi
 
       - name: Commit exact generated evidence
-        env:
-          EXPECTED_MAIN: ${{ inputs.expected_main }}
         run: |
           set -euo pipefail
           printf '%s\n' "$EXPECTED_MAIN" > results/.issue_2940_materialized

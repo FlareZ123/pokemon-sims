@@ -93,10 +93,10 @@
     // K1, strict JIT, DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Original route: https://github.com/FlareZ123/pokemon-sims/issues/1646
     // Refined confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/1866
-    return scenario_.dci == DciProfile::StrictJit &&
-        scenario_.locks == LockMode::None && state_.turn >= 3 &&
-        state_.turn <= scenario_.max_turn && prizes_known() &&
-        supporter_allowed() && !state_.manual_energy_used &&
+    // Semantic-gate correction: https://github.com/FlareZ123/pokemon-sims/issues/3026
+    return strict_payload_timing() && !item_locked() &&
+        deck_search_available() && state_.turn <= scenario_.max_turn &&
+        prizes_known() && supporter_allowed() && !state_.manual_energy_used &&
         exactly_one_energy_missing && missing_energy_in_deck &&
         need_payload() &&
         std::none_of(state_.hand.begin(), state_.hand.end(), is_payload) &&

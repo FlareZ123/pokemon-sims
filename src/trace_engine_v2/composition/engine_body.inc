@@ -35,7 +35,14 @@
 
 #define begin_turn begin_turn_original
 #define might_be_unseen might_be_unseen_empty_deck_original
+// Engine::run() is parsed in part_003 before the late semantic wrapper is defined.
+// Route that call through the #3173 wrapper while keeping every other part_003 token
+// unchanged, then release the alias immediately after the fragment.
+// C++ textual macro composition: https://eel.is/c++draft/cpp.replace
+// Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3173
+#define run_turn run_turn_issue_3173
 #include "../part_003.inc"
+#undef run_turn
 
 // Route every later Pokemon-Ability legality check through the Garbotoxin-aware
 // wrapper after part_003 defines the historical predicate.

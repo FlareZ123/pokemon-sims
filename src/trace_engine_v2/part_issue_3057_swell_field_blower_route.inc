@@ -22,7 +22,8 @@
         });
     const bool can_enter = in_play_count(Card::Pineco) == 0 && bench_space() > 0 &&
         (hand_count(Card::Pineco) > 0 || might_be_unseen(Card::Pineco));
-    const bool forretress = hand_count(Card::ForretressEx) > 0 || might_be_unseen(Card::ForretressEx);
+    const bool forretress = hand_count(Card::ForretressEx) > 0 ||
+        might_be_unseen(Card::ForretressEx);
     return forretress && (current || can_enter);
   }
 
@@ -49,7 +50,8 @@
   }
 
   bool issue_3064_should_recover_forest_with_legacy_star() const {
-    // This predicate is evaluated after the non-Stadium Path removal has resolved:
+    // Evaluate after the non-Stadium Path removal has resolved. Legacy Star is legal
+    // only once the modeled Rule Box lock is gone:
     // Regidrago VSTAR / Forest: https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/me1-117
     // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Corrective issue: https://github.com/FlareZ123/pokemon-sims/issues/3064
@@ -61,11 +63,12 @@
   }
 
   bool use_legacy_star_issue3064() {
-    if (!issue_3064_should_recover_forest_with_legacy_star()) {
-      // All unrelated Legacy Star states preserve the historical implementation:
-      // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_013_legacy_star_override.inc
-      return use_legacy_star_before3064();
-    }
+    // This dedicated action is called only after the exact public-state predicate
+    // succeeds. Keeping it separate avoids changing the repository's existing Legacy
+    // Star selector stack for every unrelated state:
+    // Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Corrective issue: https://github.com/FlareZ123/pokemon-sims/issues/3064
+    if (!issue_3064_should_recover_forest_with_legacy_star()) return false;
 
     // Forest was public before the random seven-card discard, so route selection
     // does not depend on hidden top-deck identities:
@@ -83,14 +86,16 @@
     }
 
     std::vector<Card> recovered;
-    if (!recover_discard_to_hand(Card::ForestOfVitality))
+    if (!recover_discard_to_hand(Card::ForestOfVitality)) {
       throw std::logic_error("Legacy Star Forest target disappeared");
+    }
     recovered.push_back(Card::ForestOfVitality);
 
     const auto recover_second = [this, &recovered](const Card card) {
       if (recovered.size() >= 2U || count_of(state_.discard, card) == 0) return false;
-      if (!recover_discard_to_hand(card))
+      if (!recover_discard_to_hand(card)) {
         throw std::logic_error("Legacy Star secondary target disappeared");
+      }
       recovered.push_back(card);
       return true;
     };
@@ -99,34 +104,43 @@
     // another still-missing payload or mobility axis:
     // Forretress ex / Blender / Burnet / Latias ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2 https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 https://api.pokemontcg.io/v2/cards/sv8-76
     // Existing priority: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_013_legacy_star_override.inc
-    if (need_payload() && !item_locked() && payload_might_be_in_deck())
+    if (need_payload() && !item_locked() && payload_might_be_in_deck()) {
       recover_second(Card::BrilliantBlender);
-    if (recovered.size() < 2U && need_payload() && supporter_allowed() && payload_might_be_in_deck())
+    }
+    if (recovered.size() < 2U && need_payload() && supporter_allowed() &&
+        payload_might_be_in_deck()) {
       recover_second(Card::ProfessorBurnet);
+    }
     if (recovered.size() < 2U && need_active_vstar() && state_.active &&
         is_basic(state_.active->card) && bench_space() > 0 && !in_play(Card::LatiasEx) &&
-        ability_available_for_pokemon(Card::LatiasEx)) recover_second(Card::LatiasEx);
+        ability_available_for_pokemon(Card::LatiasEx)) {
+      recover_second(Card::LatiasEx);
+    }
 
     trace("LEGACY STAR", "R-RVS-01; R-VSTAR-01; R-FOREST-VITALITY-01",
           "Discarded top 7: " + join_cards(discarded) +
               "; recovered deferred Forest route: " + join_cards(recovered) + ".");
 
-    // Reuse the existing planner for Forest, evolution, and Exploding Energy:
+    // Forest is now held and the Stadium action remains unused. The original
+    // Forretress planner plays Forest, evolves Pineco, and resolves Exploding Energy:
     // Forest / Forretress ex: https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sv4pt5-2
     // Planner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_forretress_ex_combo_legacy.inc
     advance_forretress_combo();
     return true;
   }
 
-  bool use_legacy_star() {
-    // The historical late run_turn calls this exact base symbol. Intercept only the
-    // confirmed post-Field-Blower public-Forest state and delegate every other state:
-    // Legacy Star / Field Blower / Path / Forest: https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/swsh6-148 https://api.pokemontcg.io/v2/cards/me1-117
-    // Late call site: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
+  bool advance_forretress_combo_issue3064() {
+    // Historical late-turn order calls the Forretress planner immediately after
+    // Field Blower. At that exact transition, recover the public Forest first so the
+    // planner sees the legal same-turn evolution Stadium while its action is unused:
+    // Field Blower / Forest / Legacy Star / Forretress ex: https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // Late execution order: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
+    // Governing refinement: https://github.com/FlareZ123/pokemon-sims/issues/3057#issuecomment-5252233081
     // Corrective issue: https://github.com/FlareZ123/pokemon-sims/issues/3064
-    return issue_3064_should_recover_forest_with_legacy_star()
-        ? use_legacy_star_issue3064()
-        : use_legacy_star_before3064();
+    if (issue_3064_should_recover_forest_with_legacy_star()) {
+      return use_legacy_star_issue3064();
+    }
+    return advance_forretress_combo();
   }
 
   bool issue_3057_preserve_forest_stadium_action() const {
@@ -143,6 +157,7 @@
     // Forest / Path / Blower / Swell: https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/swsh6-148 https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/sm12-187
     if ((card == Card::ChaoticSwell || card == Card::FieldBlower) &&
         issue_3064_direct_forest_over_path_available()) return 0;
-    if (card == Card::ChaoticSwell && issue_3064_deferred_forest_via_legacy_star_available()) return 0;
+    if (card == Card::ChaoticSwell &&
+        issue_3064_deferred_forest_via_legacy_star_available()) return 0;
     return hand_count(card);
   }

@@ -51,6 +51,10 @@ jobs:
         run: |
           c++ -std=c++20 -O0 tests/sol_issue_1795_semantic_probe.cpp -o /tmp/sol_issue_1795_semantic_probe
           /tmp/sol_issue_1795_semantic_probe
+      - name: Build and run issue 1796 semantic probe
+        run: |
+          c++ -std=c++20 -O0 tests/sol_issue_1796_semantic_probe.cpp -o /tmp/sol_issue_1796_semantic_probe
+          /tmp/sol_issue_1796_semantic_probe
       - name: Upload static scan
         uses: actions/upload-artifact@v4
         with:

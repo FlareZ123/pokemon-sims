@@ -6,13 +6,17 @@ on:
   push:
     branches: [main]
 
-# Read-only validation is sufficient for this repository contract:
-# https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication
 permissions:
+  # Permanent validation workflows are read-only by repository policy:
+  # https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication
   contents: read
 
+concurrency:
+  group: workflow-policy-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  reject-obsolete-issue-workflows:
+  enforce:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -20,9 +24,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Enforce permanent workflow allowlist
-        # Completed issue workflows must not run on unrelated pull requests:
-        # https://github.com/FlareZ123/pokemon-sims/issues/1360
-        # Pull-request event behavior:
+      - name: Test workflow policy contract
+        run: python tests/workflow_policy_contract_tests.py
+      - name: Enforce permanent workflow inventory
+        # Workflows installed on the base branch can run for matching pull requests:
         # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request
-        run: python scripts/check_issue_workflow_policy.py
+        # Repository incident and cleanup contract:
+        # https://github.com/FlareZ123/pokemon-sims/issues/1360
+        run: python scripts/check_workflow_policy.py

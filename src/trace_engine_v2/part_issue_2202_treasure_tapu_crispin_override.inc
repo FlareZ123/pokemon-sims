@@ -23,6 +23,18 @@
         deck_count_after_search_started(Card::Fire) > 0;
   }
 
+  static constexpr std::array<Card, 5> issue_2202_treasure_payload_priority() {
+    // Preserve the established redundant Dragon preference exactly; this helper only
+    // gives the shared priority list a name for the route-specific DCI selector.
+    // Appletun: https://api.pokemontcg.io/v2/cards/swsh7-121
+    // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
+    // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+    return {Card::Appletun, Card::MegaDragonite, Card::Dragapult,
+            Card::GoodraVstar, Card::DialgaGX};
+  }
+
   std::optional<Card> issue_2202_treasure_tapu_crispin_payload_cost() const {
     if (!issue_2202_treasure_tapu_crispin_route_available()) {
       return std::nullopt;
@@ -38,9 +50,7 @@
     // Official Item, discard, search, Bench, Ability, Supporter, and Energy procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, dynamic DCI, current-turn JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Reclaimed confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2202
-    for (const Card card : {Card::Appletun, Card::MegaDragonite,
-                            Card::Dragapult, Card::GoodraVstar,
-                            Card::DialgaGX}) {
+    for (const Card card : issue_2202_treasure_payload_priority()) {
       if (hand_count(card) > 0) return card;
     }
     return std::nullopt;

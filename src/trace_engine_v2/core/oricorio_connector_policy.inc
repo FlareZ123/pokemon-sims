@@ -30,11 +30,13 @@
            oricorio_connector_route_is_live();
   }
 
+  bool can_bench_oricorio_connector() const {
+    return hand_count(Card::Oricorio) > 0 && !in_play(Card::Oricorio) &&
+           bench_space() > 0 && needs_oricorio_connector();
+  }
+
   bool bench_oricorio_if_useful() {
-    if (hand_count(Card::Oricorio) == 0 || in_play(Card::Oricorio) ||
-        bench_space() <= 0 || !needs_oricorio_connector()) {
-      return false;
-    }
+    if (!can_bench_oricorio_connector()) return false;
     // Playing Oricorio from hand to the Bench triggers the optional Vital Dance
     // search only after the target-aware preflight has found a needed type:
     // https://api.pokemontcg.io/v2/cards/sm2-55

@@ -129,18 +129,24 @@
     return true;
   }
 
-  bool advance_forretress_combo_issue3064() {
-    // Historical late-turn order calls the Forretress planner immediately after
-    // Field Blower. At that exact transition, recover the public Forest first so the
-    // planner sees the legal same-turn evolution Stadium while its action is unused:
-    // Field Blower / Forest / Legacy Star / Forretress ex: https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/sv4pt5-2
-    // Late execution order: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
+  void trace_issue3064(std::string_view action, std::string_view rules,
+                       std::string_view detail) {
+    // Preserve the original trace exactly, then use the already-emitted Field Blower
+    // transition as a production-visible hook. The side effect is independent of
+    // whether TraceLog is enabled because this wrapper is called unconditionally:
+    // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
+    // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+    // Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+    // Late and replacement run-turn policies: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_issue_1751_run_turn_override.inc
     // Governing refinement: https://github.com/FlareZ123/pokemon-sims/issues/3057#issuecomment-5252233081
     // Corrective issue: https://github.com/FlareZ123/pokemon-sims/issues/3064
-    if (issue_3064_should_recover_forest_with_legacy_star()) {
-      return use_legacy_star_issue3064();
+    trace(action, rules, detail);
+    if (action == "PLAY ITEM" &&
+        detail == "Field Blower discarded the modeled Path to the Peak." &&
+        issue_3064_should_recover_forest_with_legacy_star()) {
+      use_legacy_star_issue3064();
     }
-    return advance_forretress_combo();
   }
 
   bool issue_3057_preserve_forest_stadium_action() const {

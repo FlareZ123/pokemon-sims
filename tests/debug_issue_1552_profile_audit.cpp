@@ -8,7 +8,7 @@
 #include <utility>
 
 namespace sim {
-struct Debug1552ProfileAccess {
+struct EngineTestAccess {
   static void set_state(Engine& engine, State state) {
     engine.state_ = std::move(state);
     engine.deck_seen_ = false;
@@ -70,9 +70,9 @@ bool completes_same_public_route(const sim::DciProfile dci,
                                sim::LockMode::None, going_first, 5};
   std::mt19937_64 rng{seed};
   sim::Engine engine{scenario, sim::baseline_recipe(), rng};
-  sim::Debug1552ProfileAccess::set_state(engine, public_t2_state());
-  sim::Debug1552ProfileAccess::attach_manual(engine);
-  const sim::State& state = sim::Debug1552ProfileAccess::state(engine);
+  sim::EngineTestAccess::set_state(engine, public_t2_state());
+  sim::EngineTestAccess::attach_manual(engine);
+  const sim::State& state = sim::EngineTestAccess::state(engine);
   const bool payload = std::find(state.discarded_this_turn.begin(),
                                  state.discarded_this_turn.end(),
                                  sim::Card::DialgaGX) != state.discarded_this_turn.end();

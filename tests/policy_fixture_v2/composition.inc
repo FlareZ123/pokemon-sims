@@ -1,11 +1,13 @@
-#pragma once
-
 // Keep the policy fixture's textual composition in one ordered spine.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
+
+// Shared fixture state, access bridge, and baseline policy cases.
 #include "part_000.inc"
 #include "part_001.inc"
 #include "part_002.inc"
 #include "part_003.inc"
+
+// Incremental route and regression cases, retained in their historical order.
 #include "part_003h.inc"
 #include "part_003i.inc"
 #include "part_003j.inc"
@@ -19,5 +21,7 @@
 #include "part_003u.inc"
 #include "part_003v.inc"
 #include "part_003w.inc"
+
+// Final test registration and entry point.
 #include "part_004a.inc"
 #include "part_004b.inc"

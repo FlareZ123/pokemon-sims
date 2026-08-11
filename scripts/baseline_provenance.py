@@ -51,14 +51,9 @@ class _SimulatorSourceManifest:
         return _stable_paths(_validated_paths(self.required_paths()))
 
 
-def _missing_paths(paths: PathSequence) -> PathSequence:
-    """Return required provenance inputs that are absent from disk."""
-    return tuple(path for path in paths if not path.is_file())
-
-
 def _validated_paths(paths: PathSequence) -> PathSequence:
     """Require every provenance input to exist and return it unchanged."""
-    missing = _missing_paths(paths)
+    missing = tuple(path for path in paths if not path.is_file())
     if missing:
         raise FileNotFoundError(", ".join(str(path) for path in missing))
     return paths

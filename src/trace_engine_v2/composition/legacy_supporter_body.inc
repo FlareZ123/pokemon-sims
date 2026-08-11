@@ -27,9 +27,9 @@
 #error "Legacy Supporter composition leaked a local alias"
 #endif
 
-// Intentionally leave use_fss defined. burnet_fss_overrides.inc consumes and
+// Intentionally leave use_fss defined. post_014a_overrides.inc consumes and
 // replaces this alias after part_014a.inc reaches the required member boundary.
-// Wrapper continuation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/burnet_fss_overrides.inc
+// Continuation owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
 
 // The part_012 selector follows part_011 immediately in the historical composition.
 // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
@@ -67,6 +67,6 @@
 #error "VSTAR-power composition leaked use_legacy_star"
 #endif
 
-// Intentionally leave use_celestial_roar defined. celestial_roar_overrides.inc consumes
+// Intentionally leave use_celestial_roar defined. post_014a_overrides.inc consumes
 // and replaces this alias after the part_014a boundary.
-// Wrapper continuation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/celestial_roar_overrides.inc
+// Continuation owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc

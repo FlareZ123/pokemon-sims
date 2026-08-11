@@ -338,3 +338,15 @@ add_test(NAME issue_1333_tapu_live_print_contract
 # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2294
 add_test(NAME trace_issue_2294_matchup_first_seed8
   COMMAND regidrago_sim --simulate-this --scenario matchup-flex-jit/go-first --seed 8 --require-ready-by 4)
+
+
+# K1 Wonder Tag must recover the known prized Latias ex through Gladion when the
+# remaining Energy/evolution and current-turn payload axes are independently live.
+# Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+# Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+# Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+# Official procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+# Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2293
+add_test(NAME trace_issue_2293_strict_first_seed291
+  COMMAND regidrago_sim --simulate-this --deck regidrago-shell
+    --scenario strict-jit/go-first --seed 291 --require-ready-by 4)

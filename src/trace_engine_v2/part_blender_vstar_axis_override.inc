@@ -149,17 +149,20 @@
     // Held Professor Burnet already owns the current-turn payload axis whenever
     // the Active VSTAR's remaining Basic-Energy axis can finish independently.
     // Preserve the singleton ACE SPEC in every same-turn-JIT profile instead of
-    // keying the choice to historical Vessel/Quick Ball witness coordinates:
+    // keying the choice to historical Vessel/Quick Ball witness coordinates.
+    // Item lock is checked semantically because Blender is an Item, while Rule Box
+    // Ability lock does not stop either Trainer card:
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Regidrago VSTAR / Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Supporter and manual-Energy procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Item, Supporter, and manual-Energy procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // K1, same-turn JIT, and resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Original route: https://github.com/FlareZ123/pokemon-sims/issues/1646
     // Confirmed systemic bug: https://github.com/FlareZ123/pokemon-sims/issues/3010
-    return strict_payload_timing() && prizes_known() && supporter_allowed() &&
-        state_.active && state_.active->card == Card::RegidragoVstar &&
-        state_.active->fire >= 1 && grass_axis_completes && need_payload() &&
+    return strict_payload_timing() && !item_locked() && prizes_known() &&
+        supporter_allowed() && state_.active &&
+        state_.active->card == Card::RegidragoVstar && state_.active->fire >= 1 &&
+        grass_axis_completes && need_payload() &&
         hand_count(Card::ProfessorBurnet) > 0 &&
         hand_count(Card::BrilliantBlender) > 0 && payload_might_be_in_deck();
   }

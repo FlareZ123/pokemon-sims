@@ -44,6 +44,8 @@
     // supporter_allowed() already enforces the first player's T1 Supporter ban,
     // Supporter lock, prior Supporter use, and turn-end state, so turn/order
     // identity must not suppress the same legal continuation on T2 or later.
+    // StrictJit and MatchupFlexJit share the same ready-turn payload contract;
+    // NoDiscardControl remains outside this redundant-payload fallback.
     // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
@@ -51,10 +53,12 @@
     // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
     // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
     // Core first-turn, Supporter, Item, Bench, Tool, and Ability procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Same-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // State-based earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-    // Confirmed overfit bug: https://github.com/FlareZ123/pokemon-sims/issues/2645
-    return scenario_.dci == DciProfile::StrictJit && supporter_allowed() &&
+    // Prior state-based overfit fix: https://github.com/FlareZ123/pokemon-sims/issues/2645
+    // Confirmed shared-JIT follow-up: https://github.com/FlareZ123/pokemon-sims/issues/3132
+    return strict_payload_timing() && supporter_allowed() &&
            issue_1605_regidrago_search_route_available() &&
            issue_1605_crobat_resources_available();
   }

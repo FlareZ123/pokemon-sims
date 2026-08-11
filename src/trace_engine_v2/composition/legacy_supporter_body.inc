@@ -63,7 +63,7 @@
 #include "../part_013.inc"
 #undef use_legacy_star
 
-#ifdef use_legacy_star
+#if defined(use_legacy_star)
 #error "VSTAR-power composition leaked use_legacy_star"
 #endif
 

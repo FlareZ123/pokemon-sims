@@ -1,0 +1,33 @@
+name: Debug audit 20260811 three simulate-this passes
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  simulate-this-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release simulator
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2
+      - name: Pass 1 strict JIT going first seed 1
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 1 | tee trace-1.txt
+      - name: Pass 2 strict JIT going second seed 1
+        run: ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 | tee trace-2.txt
+      - name: Pass 3 matchup-flex JIT going second seed 3
+        run: ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 | tee trace-3.txt
+      - name: Upload all three traces
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-audit-three-traces
+          path: |
+            trace-1.txt
+            trace-2.txt
+            trace-3.txt

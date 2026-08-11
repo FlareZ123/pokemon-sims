@@ -141,9 +141,9 @@ bool probability_regression_self_test() {
   return true;
 }
 
-class OutputLock {
+class ScopedOutputLock {
  public:
-  explicit OutputLock(const std::filesystem::path& output) {
+  explicit ScopedOutputLock(const std::filesystem::path& output) {
     const std::filesystem::path lock_path = output.string() + ".lock";
 #if defined(_WIN32)
     handle_ = ::CreateFileW(lock_path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -156,15 +156,15 @@ class OutputLock {
     }
 #endif
   }
-  ~OutputLock() {
+  ~ScopedOutputLock() {
 #if defined(_WIN32)
     if (handle_ != INVALID_HANDLE_VALUE) ::CloseHandle(handle_);
 #else
     if (descriptor_ >= 0) { ::flock(descriptor_, LOCK_UN); ::close(descriptor_); }
 #endif
   }
-  OutputLock(const OutputLock&) = delete;
-  OutputLock& operator=(const OutputLock&) = delete;
+  ScopedOutputLock(const ScopedOutputLock&) = delete;
+  ScopedOutputLock& operator=(const ScopedOutputLock&) = delete;
  private:
 #if defined(_WIN32)
   HANDLE handle_{INVALID_HANDLE_VALUE};
@@ -173,16 +173,22 @@ class OutputLock {
 #endif
 };
 
-void write_atomic(const std::filesystem::path& output, const std::string& content) {
-  if (!output.parent_path().empty()) std::filesystem::create_directories(output.parent_path());
-  OutputLock lock(output);
-  const std::filesystem::path temporary = output.string() + ".tmp." + std::to_string(
+std::filesystem::path temporary_output_path(const std::filesystem::path& output) {
+  // Keep the temporary file process-scoped before same-filesystem replacement.
+  // C++ filesystem rename semantics: https://eel.is/c++draft/fs.op.rename
+  return output.string() + ".tmp." + std::to_string(
 #if defined(_WIN32)
       static_cast<unsigned long long>(::GetCurrentProcessId())
 #else
       static_cast<unsigned long long>(::getpid())
 #endif
   );
+}
+
+void write_atomic(const std::filesystem::path& output, const std::string& content) {
+  if (!output.parent_path().empty()) std::filesystem::create_directories(output.parent_path());
+  ScopedOutputLock lock(output);
+  const std::filesystem::path temporary = temporary_output_path(output);
   {
     std::ofstream stream(temporary, std::ios::binary | std::ios::trunc);
     if (!stream) throw std::runtime_error("could not write temporary output");

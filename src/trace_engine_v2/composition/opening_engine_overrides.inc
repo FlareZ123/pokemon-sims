@@ -5,8 +5,9 @@
 // they saw when these directives lived in src/regidrago_sim.cpp.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
 
-// Deck visibility policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/deck_visibility_policy.inc
-#include "../core/deck_visibility_policy.inc"
+// K0/K1 deck visibility and deck-knowledge policy live in the canonical core unit:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/deck_knowledge.inc
+#include "../core/deck_knowledge.inc"
 #undef begin_turn
 // Turn lifecycle policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/turn_lifecycle.inc
 #include "../core/turn_lifecycle.inc"

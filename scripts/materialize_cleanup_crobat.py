@@ -50,7 +50,7 @@ def commit(message: str, *paths: Path) -> None:
 def extract_crobat_module() -> None:
     text = PART.read_text(encoding="utf-8")
     start_marker = "namespace sim {\n\nstruct CrobatModelingDeck {"
-    end_marker = "\n}  // namespace sim\n\n\n#ifndef REGIDRAGO_SIM_NO_MAIN"
+    end_marker = "\n}  // namespace sim\n\n#ifndef REGIDRAGO_SIM_NO_MAIN"
     start = text.find(start_marker)
     end = text.find(end_marker, start)
     if start < 0 or end < 0:
@@ -99,6 +99,7 @@ def centralize_seed_slot() -> None:
   // Historical slots 4 and 11 belonged to retired full-turn-one Item-lock rows.
   // Preserve the established random stream for every surviving scenario:
   // https://github.com/FlareZ123/pokemon-sims/issues/1118
+  // https://github.com/FlareZ123/pokemon-sims/issues/2247
   return scenario_index + (scenario_index >= 4 ? 1U : 0U) +
          (scenario_index >= 10 ? 1U : 0U);
 }
@@ -108,6 +109,7 @@ void write_crobat_modeling_matrix("""
     old = """    // Historical slots 4 and 11 belonged to the retired full-turn-one Item-lock
     // rows. Keep every surviving scenario on its old random stream:
     // https://github.com/FlareZ123/pokemon-sims/issues/1118
+    // https://github.com/FlareZ123/pokemon-sims/issues/2247
     const std::size_t seed_slot = scenario_index +
         (scenario_index >= 4 ? 1U : 0U) +
         (scenario_index >= 10 ? 1U : 0U);"""

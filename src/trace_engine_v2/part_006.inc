@@ -39,10 +39,14 @@
     return std::any_of(state_.bench.begin(), state_.bench.end(), can_evolve_now);
   }
 
+  int hand_payload_count() const {
+    return static_cast<int>(std::count_if(
+        state_.hand.begin(), state_.hand.end(), is_payload));
+  }
+
   bool sole_known_payload_is_in_hand() const {
     if (!prizes_known()) return false;
-    const int payloads_in_hand = static_cast<int>(std::count_if(
-        state_.hand.begin(), state_.hand.end(), is_payload));
+    const int payloads_in_hand = hand_payload_count();
     // K1 fixed-list knowledge proves whether another modeled payload remains in
     // deck. Preserve the sole in-hand payload when no replacement is searchable:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
@@ -87,8 +91,7 @@
 }
 
   bool can_spend_redundant_payload_for_locked_vstar_search() const {
-    const int held_payloads = static_cast<int>(std::count_if(
-        state_.hand.begin(), state_.hand.end(), is_payload));
+    const int held_payloads = hand_payload_count();
     const bool burnet_outlet = hand_count(Card::ProfessorBurnet) > 0 &&
         payload_might_be_in_deck();
     const bool serena_outlet = hand_count(Card::Serena) > 0;

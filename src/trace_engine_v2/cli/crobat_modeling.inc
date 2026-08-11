@@ -84,6 +84,15 @@ int crobat_copy_count(const DeckRecipe& recipe) {
                          });
 }
 
+constexpr std::size_t crobat_model_seed_slot(const std::size_t scenario_index) {
+  // Historical slots 4 and 11 belonged to retired full-turn-one Item-lock rows.
+  // Preserve the established random stream for every surviving scenario:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1118
+  // https://github.com/FlareZ123/pokemon-sims/issues/2247
+  return scenario_index + (scenario_index >= 4 ? 1U : 0U) +
+         (scenario_index >= 10 ? 1U : 0U);
+}
+
 void write_crobat_modeling_matrix(const std::filesystem::path& output,
                                   const std::uint64_t trials,
                                   const std::uint64_t seed) {
@@ -93,13 +102,7 @@ void write_crobat_modeling_matrix(const std::filesystem::path& output,
   const auto scenarios = all_scenarios();
   for (std::size_t scenario_index = 0; scenario_index < scenarios.size(); ++scenario_index) {
     const Scenario& scenario = scenarios[scenario_index];
-    // Historical slots 4 and 11 belonged to the retired full-turn-one Item-lock
-    // rows. Keep every surviving scenario on its old random stream:
-    // https://github.com/FlareZ123/pokemon-sims/issues/1118
-    // https://github.com/FlareZ123/pokemon-sims/issues/2247
-    const std::size_t seed_slot = scenario_index +
-        (scenario_index >= 4 ? 1U : 0U) +
-        (scenario_index >= 10 ? 1U : 0U);
+    const std::size_t seed_slot = crobat_model_seed_slot(scenario_index);
     const std::uint64_t common_seed = seed + 104729ULL * seed_slot;
     for (const CrobatModelingDeck& deck : crobat_modeling_decks()) {
       const Aggregate aggregate = simulate(scenario, deck.recipe, trials, common_seed);

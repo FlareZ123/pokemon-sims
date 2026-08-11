@@ -1,5 +1,5 @@
 // Shared Professor's Letter experiment driver.
-// Overcomputation bug and required one-pass evidence contract:
+// Confirmed overcomputation bug and one-pass evidence contract:
 // https://github.com/FlareZ123/pokemon-sims/issues/3008
 // Existing real-game analysis reused below:
 // https://github.com/FlareZ123/pokemon-sims/blob/main/tools/professors_letter_real_game_analysis.cpp
@@ -24,54 +24,62 @@ struct TrialWithCheckpoints {
   std::array<SetupCheckpoint, 5> by_turn{};
 };
 
-SetupCheckpoint setup_checkpoint(Engine& engine) {
-  SetupCheckpoint checkpoint;
-  Pokemon* target = engine.target_regi();
-  checkpoint.regi = target != nullptr;
-  checkpoint.vstar = engine.in_play(Card::RegidragoVstar);
-  checkpoint.active_vstar = engine.active_is_vstar();
-  checkpoint.energy = target != nullptr && engine.pays_apex_energy_cost(*target);
-  checkpoint.payload = engine.payload_ready();
-  checkpoint.k1 = engine.prizes_known();
-  return checkpoint;
-}
+// Engine intentionally friends this test-access shim. Keep checkpoint collection
+// on the exact production turn loop so the merged experiment observes the same
+// state as Engine::run(), while exposing no new production API just for evidence.
+// Engine source/spec: https://github.com/FlareZ123/pokemon-sims/blob/main/src/regidrago_sim.cpp
+// Confirmed one-pass requirement: https://github.com/FlareZ123/pokemon-sims/issues/3008
+struct EngineTestAccess {
+  static SetupCheckpoint checkpoint(Engine& engine) {
+    const Pokemon* target = engine.target_regi();
+    return {
+        engine.in_play(Card::RegidragoV) ||
+            engine.in_play(Card::RegidragoVstar),
+        engine.in_play(Card::RegidragoVstar),
+        engine.active_is_vstar(),
+        target != nullptr && engine.pays_apex_energy_cost(*target),
+        engine.payload_ready(),
+        engine.prizes_known(),
+    };
+  }
+
+  static TrialWithCheckpoints run(Engine& engine) {
+    TrialWithCheckpoints result;
+    engine.setup();
+    SetupCheckpoint latest;
+    for (int next_turn = 1; next_turn <= engine.scenario_.max_turn; ++next_turn) {
+      engine.begin_turn(next_turn);
+      if (engine.state_.turn_ended) break;
+      engine.run_turn();
+      engine.record_ready();
+      latest = checkpoint(engine);
+      result.by_turn[static_cast<std::size_t>(next_turn - 1)] = latest;
+      if (engine.outcome_.first_ready_turn != 0) {
+        for (int future = next_turn + 1; future <= 5; ++future) {
+          result.by_turn[static_cast<std::size_t>(future - 1)] = latest;
+        }
+        break;
+      }
+      engine.resolve_powerglass_end_turn();
+    }
+    result.outcome = engine.outcome_;
+    return result;
+  }
+};
 
 TrialWithCheckpoints run_game_with_checkpoints(
     const Scenario& scenario, const DeckRecipe& recipe,
     const std::uint64_t seed, TraceLog* trace = nullptr) {
   std::mt19937_64 rng(seed);
   Engine engine(scenario, recipe, rng, trace);
-  TrialWithCheckpoints trial;
-
-  // This is the same turn progression used by the existing checkpoint experiment,
-  // now executed inside the same matched-seed pass that produces real-game and
-  // branch evidence. Apex readiness follows the simulator's semantic payment test.
-  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-  // Turn and attack procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-  // One-pass experiment requirement: https://github.com/FlareZ123/pokemon-sims/issues/3008
-  engine.setup();
-  for (engine.state_.turn = 1; engine.state_.turn <= engine.scenario_.horizon;
-       ++engine.state_.turn) {
-    engine.begin_turn();
-    engine.run_turn();
-    engine.record_ready(trial.outcome);
-    trial.by_turn[static_cast<std::size_t>(engine.state_.turn - 1)] =
-        setup_checkpoint(engine);
-    if (trial.outcome.first_ready_turn != 0) {
-      for (int future = engine.state_.turn + 1; future <= engine.scenario_.horizon;
-           ++future) {
-        trial.by_turn[static_cast<std::size_t>(future - 1)] =
-            trial.by_turn[static_cast<std::size_t>(engine.state_.turn - 1)];
-      }
-      break;
-    }
-    engine.resolve_powerglass_end_turn();
-  }
-  return trial;
+  return EngineTestAccess::run(engine);
 }
 
 struct CheckpointAggregate {
   std::uint64_t trials{0};
+  std::uint64_t by2{0};
+  std::uint64_t by3{0};
+  std::uint64_t by4{0};
   std::array<std::uint64_t, 5> regi{};
   std::array<std::uint64_t, 5> vstar{};
   std::array<std::uint64_t, 5> active_vstar{};
@@ -81,7 +89,10 @@ struct CheckpointAggregate {
 
   void add(const TrialWithCheckpoints& trial) {
     ++trials;
-    for (std::size_t turn = 0; turn < trial.by_turn.size(); ++turn) {
+    by2 += trial.outcome.ready_by_2 ? 1U : 0U;
+    by3 += trial.outcome.ready_by_3 ? 1U : 0U;
+    by4 += trial.outcome.ready_by_4 ? 1U : 0U;
+    for (std::size_t turn = 0; turn < regi.size(); ++turn) {
       regi[turn] += trial.by_turn[turn].regi ? 1U : 0U;
       vstar[turn] += trial.by_turn[turn].vstar ? 1U : 0U;
       active_vstar[turn] += trial.by_turn[turn].active_vstar ? 1U : 0U;
@@ -149,8 +160,8 @@ CombinedScenarioAggregate analyze_scenario_combined(
     const LetterFacts facts = inspect_letter_trace(letter_trace, scenario);
 
     // Both evidence families consume this one matched-seed baseline/Letter pair.
-    // A second independent 100k loop would change neither modeled information nor
-    // legal action selection and is forbidden by the confirmed overcompute issue.
+    // Running a second 100k loop adds no modeled information and is the confirmed
+    // CI overcomputation defect fixed here.
     // https://github.com/FlareZ123/pokemon-sims/issues/3008
     aggregate.baseline_checkpoints.add(baseline_trial);
     aggregate.letter_checkpoints.add(letter_trial);
@@ -161,24 +172,33 @@ CombinedScenarioAggregate analyze_scenario_combined(
 }
 
 void write_checkpoint_header(std::ostream& out) {
-  out << "variant,scenario,trials,turn,regi_pct,vstar_pct,active_vstar_pct,"
-         "energy_pct,payload_pct,k1_pct\n";
+  out << "variant,scenario,trials,ready_by_t2_pct,ready_by_t3_pct,"
+         "ready_by_t4_pct,"
+         "t2_regi_pct,t2_vstar_pct,t2_active_vstar_pct,t2_energy_pct,"
+         "t2_payload_pct,t2_k1_pct,"
+         "t3_regi_pct,t3_vstar_pct,t3_active_vstar_pct,t3_energy_pct,"
+         "t3_payload_pct,t3_k1_pct,"
+         "t4_regi_pct,t4_vstar_pct,t4_active_vstar_pct,t4_energy_pct,"
+         "t4_payload_pct,t4_k1_pct\n";
 }
 
-void write_checkpoint_rows(
+void write_checkpoint_row(
     std::ostream& out, const std::string& variant,
     const Scenario& scenario, const CheckpointAggregate& aggregate) {
-  for (int turn : {2, 3, 4}) {
-    const std::size_t index = static_cast<std::size_t>(turn - 1);
-    out << variant << ',' << scenario.label << ',' << aggregate.trials << ','
-        << turn << ',' << std::fixed << std::setprecision(6)
-        << pct(aggregate.regi[index], aggregate.trials) << ','
-        << pct(aggregate.vstar[index], aggregate.trials) << ','
-        << pct(aggregate.active_vstar[index], aggregate.trials) << ','
-        << pct(aggregate.energy[index], aggregate.trials) << ','
-        << pct(aggregate.payload[index], aggregate.trials) << ','
-        << pct(aggregate.k1[index], aggregate.trials) << '\n';
+  out << variant << ',' << scenario.label << ',' << aggregate.trials << ','
+      << std::fixed << std::setprecision(6)
+      << pct(aggregate.by2, aggregate.trials) << ','
+      << pct(aggregate.by3, aggregate.trials) << ','
+      << pct(aggregate.by4, aggregate.trials);
+  for (const std::size_t index : {1U, 2U, 3U}) {
+    out << ',' << pct(aggregate.regi[index], aggregate.trials)
+        << ',' << pct(aggregate.vstar[index], aggregate.trials)
+        << ',' << pct(aggregate.active_vstar[index], aggregate.trials)
+        << ',' << pct(aggregate.energy[index], aggregate.trials)
+        << ',' << pct(aggregate.payload[index], aggregate.trials)
+        << ',' << pct(aggregate.k1[index], aggregate.trials);
   }
+  out << '\n';
 }
 
 void analyze_all_combined(
@@ -213,11 +233,11 @@ void analyze_all_combined(
 
     write_summary_row(summary, scenarios[index], aggregate.analysis);
     write_branch_rows(branches, scenarios[index], aggregate.analysis);
-    write_checkpoint_rows(
+    write_checkpoint_row(
         checkpoints, "regidrago-shell", scenarios[index],
         aggregate.baseline_checkpoints);
-    write_checkpoint_rows(
-        checkpoints, "professors-letter-temporary-swap", scenarios[index],
+    write_checkpoint_row(
+        checkpoints, "letter-swap", scenarios[index],
         aggregate.letter_checkpoints);
   }
 }

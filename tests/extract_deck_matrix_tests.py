@@ -77,6 +77,11 @@ def run_null_basic_ev_vs_qb_experiment() -> None:
     )
     subprocess.run([str(binary)], cwd=REPO_ROOT, check=True)
 
+    print("NULL-BASIC AGGREGATE CSV")
+    print((REPO_ROOT / "ev-qb-null-basic.csv").read_text(encoding="utf-8"), end="")
+    print("NULL-BASIC PAIRED CSV")
+    print((REPO_ROOT / "ev-qb-null-basic-paired.csv").read_text(encoding="utf-8"), end="")
+
 
 def main() -> int:
     test_exact_deck_row_extraction()

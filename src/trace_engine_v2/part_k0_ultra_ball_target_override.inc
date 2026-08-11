@@ -1,16 +1,10 @@
-  bool fixed_list_has_plausible_pokemon_target() const {
+  bool pokemon_search_has_legal_target_for_current_knowledge() const {
+    if (prizes_known()) {
+      return std::any_of(state_.deck.begin(), state_.deck.end(), is_pokemon);
+    }
     return std::any_of(recipe_.begin(), recipe_.end(), [this](const auto& entry) {
       return is_pokemon(entry.first) && might_be_unseen(entry.first);
     });
-  }
-
-  bool known_deck_has_pokemon_target() const {
-    return std::any_of(state_.deck.begin(), state_.deck.end(), is_pokemon);
-  }
-
-  bool pokemon_search_has_legal_target_for_current_knowledge() const {
-    return prizes_known() ? known_deck_has_pokemon_target()
-                          : fixed_list_has_plausible_pokemon_target();
   }
 
   bool ultra_ball_has_legal_target() const {

@@ -1,3 +1,11 @@
+#pragma once
+
+#ifndef REGIDRAGO_PAYLOAD_HAND_POLICY_DEFINED
+#define REGIDRAGO_PAYLOAD_HAND_POLICY_DEFINED
+
+// Centralized payload-in-hand helpers shared by opening connector and DCI/JIT
+// policies. Keep the preference order here so callers do not rebuild ad hoc
+// payload scans with diverging discard semantics.
   inline static constexpr std::array<Card, 5> kPayloadHandPreference{{
       Card::Appletun,
       Card::MegaDragonite,
@@ -31,3 +39,5 @@
     return first_payload_by_preference(
         [this](const Card card) { return hand_count(card) > 0; });
   }
+
+#endif  // REGIDRAGO_PAYLOAD_HAND_POLICY_DEFINED

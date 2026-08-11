@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/materialize-3039.yml"
+      - "tests/issue_3039_t1_vessel_shared_jit_tests.cpp"
 
 permissions:
   contents: write
@@ -67,8 +68,10 @@ jobs:
           ./build/regidrago_sim --simulate-this --deck regidrago-shell \
             --scenario matchup-flex-jit/go-first --seed 165 --require-ready-by 2 \
             | tee flex.txt
-          grep -F "Earthen Vessel issue-1552 T1 route" strict.txt
-          grep -F "Earthen Vessel issue-1552 T1 route" flex.txt
+          grep -F "T1 | DISCARD | rules: R-EV-01 | Mysterious Treasure (Earthen Vessel cost)" strict.txt
+          grep -F "T1 | DISCARD | rules: R-EV-01 | Mysterious Treasure (Earthen Vessel cost)" flex.txt
+          grep -F "T2 | READY | rules: R-RVS-01; P-JIT-01" strict.txt
+          grep -F "T2 | READY | rules: R-RVS-01; P-JIT-01" flex.txt
       - name: Commit validated production fix
         shell: bash
         run: |

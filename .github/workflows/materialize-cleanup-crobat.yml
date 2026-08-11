@@ -6,19 +6,20 @@ on:
     paths:
       - '.github/workflows/materialize-cleanup-crobat.yml'
       - 'scripts/materialize_cleanup_crobat.py'
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   materialize:
-    if: github.head_ref == 'cleanup-1786437140774'
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'cleanup-1786437140774'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
@@ -32,4 +33,4 @@ jobs:
           cmake --build build --parallel 2
           ctest --test-dir build --parallel 4 --output-on-failure
       - name: Push validated cleanup history
-        run: git push origin HEAD:${{ github.head_ref }}
+        run: git push origin HEAD:${{ github.head_ref || github.ref_name }}

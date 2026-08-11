@@ -39,6 +39,28 @@
     return nullptr;
   }
 
+  Pokemon* first_open_fss_holder() {
+    // Forest Seal Stone may be attached to an Active or Benched Pokémon V with an
+    // open Tool slot; prefer the Active holder before scanning the Bench:
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    if (state_.active && is_pokemon_v(state_.active->card) &&
+        state_.active->tool == Tool::None) {
+      return &*state_.active;
+    }
+    return first_open_pokemon_v_on_bench();
+  }
+
+  void attach_fss_to(Pokemon& target) {
+    // Centralize the physical Forest Seal Stone state transition so every legal
+    // holder path consumes the same hand card and sets the same Tool state:
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    remove_one(state_.hand, Card::ForestSealStone);
+    target.tool = Tool::ForestSealStone;
+  }
+
   bool attach_fss() {
     if (hand_count(Card::ForestSealStone) == 0) return false;
 
@@ -50,8 +72,7 @@
     if (!state_.vstar_power_used && active_powerglass_tool_slot_needed()) {
       Pokemon* target = first_open_pokemon_v_on_bench();
       if (target != nullptr) {
-        remove_one(state_.hand, Card::ForestSealStone);
-        target->tool = Tool::ForestSealStone;
+        attach_fss_to(*target);
         trace("ATTACH TOOL", "R-FSS-01; R-GAME-TOOL; R-POWERGLASS-01",
               "Attached Forest Seal Stone to a Benched Pokémon V and reserved the Active Tool slot for Powerglass.");
         return true;
@@ -64,20 +85,14 @@
       return false;
     }
 
-    Pokemon* target = nullptr;
-    if (state_.active && is_pokemon_v(state_.active->card) &&
-        state_.active->tool == Tool::None) {
-      target = &*state_.active;
-    }
-    if (target == nullptr) target = first_open_pokemon_v_on_bench();
+    Pokemon* target = first_open_fss_holder();
     if (target == nullptr) return false;
 
     // Pokémon V includes Pokémon VSTAR, and the trace must identify the actual
     // holder selected by the legal attachment:
     // https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
     // https://api.pokemontcg.io/v2/cards/swsh12-156
-    remove_one(state_.hand, Card::ForestSealStone);
-    target->tool = Tool::ForestSealStone;
+    attach_fss_to(*target);
     trace("ATTACH TOOL", "R-FSS-01; R-GAME-TOOL",
           "Attached Forest Seal Stone to " + std::string(name(target->card)) + ".");
     return true;

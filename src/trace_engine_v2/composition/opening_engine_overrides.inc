@@ -234,10 +234,9 @@
 #error "Tapu search composition leaked bench_tapu_if_useful"
 #endif
 
-// Keep the legacy Supporter, selector, and VSTAR-power macro bodies in dedicated
-// composition units. This removes the remaining duplicated part_011/012/013 alias
-// blocks from the opening spine while preserving their exact textual order.
+// The legacy Supporter, selector, and VSTAR-power macro bodies share one ordered
+// composition owner. Keeping the include direct removes empty compatibility hops
+// while preserving the historical part_011/012/013 textual order.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
+// Centralized owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/legacy_supporter_body.inc
 #include "legacy_supporter_body.inc"
-#include "supporter_selector_body.inc"
-#include "vstar_power_body.inc"

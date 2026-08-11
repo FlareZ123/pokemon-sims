@@ -10,9 +10,8 @@
 #undef begin_turn
 // Turn lifecycle policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/turn_lifecycle.inc
 #include "../core/turn_lifecycle.inc"
-// Tapu connector policy now owns its adjacent historical aliases as one core unit.
+// Tapu connector policy owns its adjacent payload-hand helpers and historical aliases as one core unit.
 #include "../core/tapu_connector_policy.inc"
-#include "../core/payload_hand_policy.inc"
 
 // Preserve the legacy opening Bench, connector, recovery, discard, and Tate aliases
 // in one composition spine. choose_discard flows from part_006 through the

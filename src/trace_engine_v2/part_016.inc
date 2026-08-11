@@ -71,6 +71,14 @@ std::optional<CliMode> select_cli_mode(
   return CliMode::Aggregate;
 }
 
+std::size_t scenario_seed_slot(const std::size_t index) {
+  // Preserve historical random streams after retiring the two full-turn-one
+  // Item-lock rows at slots 4 and 11:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1118
+  // https://github.com/FlareZ123/pokemon-sims/issues/2247
+  return index + (index >= 4 ? 1U : 0U) + (index >= 10 ? 1U : 0U);
+}
+
 int main(int argc, char** argv) {
   std::uint64_t trials = 100000;
   std::uint64_t seed = 20260705;
@@ -391,13 +399,7 @@ int main(int argc, char** argv) {
     for (const sim::NamedDeck* deck : decks) {
       for (std::size_t index = 0; index < scenarios.size(); ++index) {
         const sim::Scenario& scenario = scenarios[index];
-        // Decks share the same scenario seed. Historical slots 4 and 11 remain
-        // reserved for the two retired full-turn-one Item-lock rows:
-        // https://github.com/FlareZ123/pokemon-sims/issues/1118
-        // https://github.com/FlareZ123/pokemon-sims/issues/2247
-        const std::size_t seed_slot = index +
-            (index >= 4 ? 1U : 0U) +
-            (index >= 10 ? 1U : 0U);
+        const std::size_t seed_slot = scenario_seed_slot(index);
         const sim::Aggregate a = sim::simulate(
             scenario, deck->recipe, trials, seed + 104729ULL * seed_slot);
         const auto per_game = [&a](const std::uint64_t count) {

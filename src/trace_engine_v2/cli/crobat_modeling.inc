@@ -76,6 +76,14 @@ const CrobatModelingDeck* crobat_modeling_deck_by_id(const std::string_view id) 
   return found == decks.end() ? nullptr : &*found;
 }
 
+int crobat_copy_count(const DeckRecipe& recipe) {
+  return std::accumulate(recipe.begin(), recipe.end(), 0,
+                         [](const int total, const auto& entry) {
+                           return total +
+                               (entry.first == Card::CrobatV ? entry.second : 0);
+                         });
+}
+
 void write_crobat_modeling_matrix(const std::filesystem::path& output,
                                   const std::uint64_t trials,
                                   const std::uint64_t seed) {
@@ -101,10 +109,7 @@ void write_crobat_modeling_matrix(const std::filesystem::path& output,
           static_cast<double>(aggregate.dark_asset_cards_drawn) /
           static_cast<double>(aggregate.dark_asset);
       csv << deck.id << ',' << '"' << deck.cuts << '"' << ','
-          << std::accumulate(deck.recipe.begin(), deck.recipe.end(), 0,
-               [](const int total, const auto& entry) {
-                 return total + (entry.first == Card::CrobatV ? entry.second : 0);
-               }) << ','
+          << crobat_copy_count(deck.recipe) << ','
           << scenario.label << ',' << trials << ',' << std::fixed
           << std::setprecision(6) << pct(aggregate.by2, trials) << ','
           << pct(aggregate.by3, trials) << ',' << pct(aggregate.by4, trials) << ','

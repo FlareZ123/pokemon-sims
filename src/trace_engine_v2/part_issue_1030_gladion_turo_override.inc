@@ -28,8 +28,9 @@
     projected.state_.supporter_used = true;
     projected.run_turn();
 
-    return projected.active_is_vstar() && projected.state_.active->grass >= 2 &&
-        projected.state_.active->fire >= 1 && projected.payload_ready();
+    return projected.active_is_vstar() &&
+        projected.pays_apex_energy_cost(*projected.state_.active) &&
+        projected.payload_ready(); // https://github.com/FlareZ123/pokemon-sims/issues/2422
   }
 
   bool known_prized_mysterious_treasure_completes_current_turn() const {
@@ -40,7 +41,7 @@
         prize_count_after_reveal(Card::RegidragoVstar) > 0 ||
         !state_.active || state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
-        state_.active->grass < 2 || state_.active->fire < 1 ||
+        !pays_apex_energy_cost(*state_.active) ||
         !need_vstar() || !need_payload() || !can_play_payload_this_turn() ||
         deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
         std::none_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
@@ -88,8 +89,9 @@
         projected.state_.discarded_this_turn.begin(),
         projected.state_.discarded_this_turn.end(), is_payload);
     return treasure_resolved && payload_entered_discard &&
-        projected.active_is_vstar() && projected.state_.active->grass >= 2 &&
-        projected.state_.active->fire >= 1 && projected.payload_ready();
+        projected.active_is_vstar() &&
+        projected.pays_apex_energy_cost(*projected.state_.active) &&
+        projected.payload_ready(); // https://github.com/FlareZ123/pokemon-sims/issues/2422
   }
 
   bool known_gladion_turo_t4_promotion_route() const {
@@ -121,7 +123,7 @@
         state_.turn == 3 && scenario_.dci == DciProfile::StrictJit &&
         state_.active && state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn &&
-        state_.active->grass >= 2 && state_.active->fire >= 1 &&
+        pays_apex_energy_cost(*state_.active) && // https://github.com/FlareZ123/pokemon-sims/issues/2422
         hand_count(Card::RegidragoVstar) > 0 &&
         hand_count(Card::ProfessorBurnet) > 0 && !has_vstar() &&
         need_payload() && can_play_payload_this_turn() &&

@@ -36,7 +36,7 @@
     // Confirmed route bug: https://github.com/FlareZ123/pokemon-sims/issues/1877
     return scenario_.dci != DciProfile::NoDiscardControl && state_.turn == 3 &&
         prizes_known() && !item_locked() && active_is_vstar() &&
-        state_.active->grass >= 2 && state_.active->fire >= 1 &&
+        pays_apex_energy_cost(*state_.active) && // https://github.com/FlareZ123/pokemon-sims/issues/2368
         need_payload() && hand_count(Card::MysteriousTreasure) > 0 &&
         hand_count(Card::EarthenVessel) > 0 &&
         hand_count(Card::QuickBall) > 0 &&

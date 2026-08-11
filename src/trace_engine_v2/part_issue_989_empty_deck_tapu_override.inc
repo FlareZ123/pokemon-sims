@@ -12,14 +12,24 @@
       return false;
     }
 
-    const bool exactly_one_energy_missing = grass_needed() + fire_needed() == 1;
-    const bool needed_energy_in_deck =
-        (grass_needed() == 1 &&
-         deck_count_after_search_started(Card::Grass) > 0) ||
-        (fire_needed() == 1 &&
-         deck_count_after_search_started(Card::Fire) > 0);
+    const Pokemon* energy_target = target_regi();
+    constexpr std::array<Card, 2> kBasicEnergy{Card::Grass, Card::Fire};
+    const bool one_deck_basic_completes_apex = energy_target != nullptr &&
+        std::any_of(kBasicEnergy.begin(), kBasicEnergy.end(),
+                    [this, energy_target](const Card basic) {
+          if (deck_count_after_search_started(basic) == 0) return false;
+          Pokemon projected = *energy_target;
+          if (!attach_energy_card(projected, basic)) return false;
+          // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+          // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+          // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          // Manual attachment rule: https://www.pokemon.com/us/pokemon-tcg/rules
+          // DDE contract: https://github.com/FlareZ123/pokemon-sims/issues/2238
+          // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2435
+          return pays_apex_energy_cost(projected);
+        });
     const bool duplicate_arven_would_repeat_vessel_route =
-        exactly_one_energy_missing && needed_energy_in_deck &&
+        one_deck_basic_completes_apex &&
         deck_count_after_search_started(Card::EarthenVessel) > 0 &&
         is_legal_cost_available(can_play_payload_this_turn(), true);
     if (!duplicate_arven_would_repeat_vessel_route) return false;
@@ -37,8 +47,12 @@
     const bool played_held_arven = projected.state_.supporter_used &&
         count_of(projected.state_.discard, Card::Arven) > arven_discard_before;
     const bool completed_without_second_tapu = projected.active_is_vstar() &&
-        projected.state_.active->grass >= 2 &&
-        projected.state_.active->fire >= 1 && projected.payload_ready();
+        projected.state_.active &&
+        // DDE semantic readiness: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        // Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2435
+        projected.pays_apex_energy_cost(*projected.state_.active) &&
+        projected.payload_ready();
 
     // Wonder Tag searches one Supporter, while the held Arven already executes the
     // same Earthen Vessel route. Projecting the exact K1 state without the second

@@ -2,8 +2,9 @@
     const bool prepared_benched_regidrago = std::any_of(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
           return pokemon.card == Card::RegidragoV &&
-              pokemon.entered_turn < state_.turn && pokemon.grass >= 2 &&
-              pokemon.fire >= 1;
+              pokemon.entered_turn < state_.turn &&
+              pays_apex_energy_cost(pokemon);
+              // https://github.com/FlareZ123/pokemon-sims/issues/2424
         });
     const bool payload_in_known_deck =
         std::any_of(state_.deck.begin(), state_.deck.end(), is_payload);

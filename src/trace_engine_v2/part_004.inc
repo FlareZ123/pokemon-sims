@@ -75,6 +75,53 @@
     return false;
   }
 
+  bool basic_attachment_completes_apex(const Pokemon& target, const Card energy) const {
+    // Grass and Fire are the Basic Energy types in the modeled Regidrago shell.
+    // Project the physical attachment through the same DDE-aware Apex payment helper
+    // instead of treating grass_needed()/fire_needed() as additive card deficits:
+    // DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Umbrella migration bug: https://github.com/FlareZ123/pokemon-sims/issues/2368
+    if (energy != Card::Grass && energy != Card::Fire) return false;
+    Pokemon projected = target;
+    return attach_energy_card(projected, energy) && pays_apex_energy_cost(projected);
+  }
+
+  template <typename Available>
+  std::optional<Card> completing_basic_energy_for(
+      const Pokemon& target, Available available) const {
+    if (pays_apex_energy_cost(target)) return std::nullopt;
+    for (const Card basic : {Card::Grass, Card::Fire}) {
+      if (available(basic) && basic_attachment_completes_apex(target, basic)) {
+        return basic;
+      }
+    }
+    return std::nullopt;
+  }
+
+  int minimum_basic_attachments_to_apex(
+      const Pokemon& target, const int grass_available,
+      const int fire_available) const {
+    if (pays_apex_energy_cost(target)) return 0;
+    // grass_needed()/fire_needed() are typed *options* when DDE is attached, not
+    // additive physical-card deficits. Brute-force the at-most-three Basic Energy
+    // attachments relevant to Apex Dragon and return physical card distance:
+    // DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Umbrella migration bug: https://github.com/FlareZ123/pokemon-sims/issues/2368
+    for (int count = 1; count <= 3; ++count) {
+      for (int grass = 0; grass <= count; ++grass) {
+        const int fire = count - grass;
+        if (grass > grass_available || fire > fire_available) continue;
+        Pokemon projected = target;
+        for (int i = 0; i < grass; ++i) attach_energy_card(projected, Card::Grass);
+        for (int i = 0; i < fire; ++i) attach_energy_card(projected, Card::Fire);
+        if (pays_apex_energy_cost(projected)) return count;
+      }
+    }
+    return 4;
+  }
+
   template <typename Available>
   std::optional<Card> preferred_manual_energy_for(
       const Pokemon& target, Available available) const {

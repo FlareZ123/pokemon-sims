@@ -12,16 +12,17 @@
     if (!prizes_known() || state_.turn_ended || item_locked() ||
         !state_.active || state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
-        hand_count(Card::RegidragoVstar) == 0 ||
-        grass_needed() + fire_needed() > 1) {
+        hand_count(Card::RegidragoVstar) == 0) {
       return false;
     }
 
-    const int missing_energy = grass_needed() + fire_needed();
-    const bool energy_route_live = missing_energy == 0 ||
+    const bool energy_route_live = pays_apex_energy_cost(*state_.active) ||
         (!state_.manual_energy_used &&
-         ((grass_needed() == 1 && hand_count(Card::Grass) > 0) ||
-          (fire_needed() == 1 && hand_count(Card::Fire) > 0)));
+         completing_basic_energy_for(*state_.active, [this](const Card card) {
+           return hand_count(card) > 0;
+         }).has_value());
+    // DDE-aware physical attachment distance:
+    // https://github.com/FlareZ123/pokemon-sims/issues/2368
     if (!energy_route_live) return false;
 
     const auto live_fss_holder = [this](const Pokemon& pokemon) {

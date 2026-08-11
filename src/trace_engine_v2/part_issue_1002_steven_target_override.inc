@@ -20,7 +20,7 @@
 
     const Pokemon* setup_regi = target_regi();
     if (setup_regi == nullptr || setup_regi->card != Card::RegidragoV ||
-        setup_regi->grass != 0 || setup_regi->fire != 0) {
+        total_energy_units(*setup_regi) != 0) { // https://github.com/FlareZ123/pokemon-sims/issues/2424
       return false;
     }
 

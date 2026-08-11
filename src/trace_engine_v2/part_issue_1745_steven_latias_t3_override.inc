@@ -27,7 +27,9 @@
                      [this](const Pokemon& pokemon) {
                        return pokemon.card == Card::RegidragoV &&
                               pokemon.entered_turn < state_.turn &&
-                              pokemon.grass == 1 && pokemon.fire == 1;
+                              !pays_apex_energy_cost(pokemon) &&
+                              basic_attachment_completes_apex(pokemon, Card::Grass);
+                              // https://github.com/FlareZ123/pokemon-sims/issues/2424
                      });
     if (prepared_regi == state_.bench.end()) return false;
 

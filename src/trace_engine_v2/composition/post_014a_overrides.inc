@@ -35,7 +35,31 @@
 // engine no longer crosses another wrapper whose only job is forwarding includes.
 #include "legacy_star_projection_chain.inc" // Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
 #include "gladion_overrides.inc" // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
-#include "arven_overrides.inc" // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+
+// Inline the ordered Arven alias chain here so the composition spine owns the
+// preprocessing lifetime directly instead of forwarding through a one-purpose file.
+// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
+// Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+#ifdef play_arven
+#error "Arven composition requires play_arven to be undefined on entry"
+#endif
+
+#define play_arven play_arven_powerglass_original
+#include "../part_012_override.inc"
+#undef play_arven
+
+#define play_arven play_arven_fss_blender_contention_original
+#include "../part_012_powerglass_override.inc"
+#undef play_arven
+
+#define play_arven play_arven_empty_deck_original
+#include "../part_012_arven_fss_blender_contention_override.inc"
+#undef play_arven
+
+#ifdef play_arven
+#error "Arven composition leaked play_arven"
+#endif
+
 #include "supporter_selector_overrides.inc" // Supporter rule: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 #include "search_item_overrides.inc"
 

@@ -1,0 +1,206 @@
+name: Bug 3024 materializer
+
+on:
+  push:
+    branches:
+      - bug/3024-semantic-1552-continuation
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.event.head_commit.message == 'Bug 3024: materialize semantic continuation fix'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: bug/3024-semantic-1552-continuation
+      - name: Apply semantic gate and regression coverage
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          source = Path('src/trace_engine_v2/part_tate_blender_attachment_override.inc')
+          text = source.read_text()
+          old = '''  // Full Prize inspection establishes the same K1 state as a resolved deck
+          // search, so the route must depend on known zones rather than provenance:
+          // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+          // Correction precedent: https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
+          // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1932
+          const bool issue_1552_public_t2_state =
+              !secret_box_combo_enabled() &&
+              scenario_.dci == DciProfile::StrictJit &&
+              scenario_.locks == LockMode::None && scenario_.going_first &&
+              state_.turn == 2 && prizes_known() &&
+              !state_.manual_energy_used && supporter_allowed() &&
+              state_.active && state_.active->card == Card::RegidragoV &&
+              state_.active->entered_turn < state_.turn &&
+              state_.active->grass == 1 && state_.active->fire == 0 &&
+              bench_space() > 0 &&
+              ability_available_for_pokemon(Card::TapuLeleGX) &&
+              count_of(state_.discard, Card::EarthenVessel) > 0 &&
+              count_of(state_.discard, Card::MysteriousTreasure) > 0 &&
+              hand_count(Card::RegidragoVstar) > 0 &&
+              hand_count(Card::QuickBall) > 0 && hand_count(Card::Fire) > 0 &&
+              deck_count_after_search_started(Card::TapuLeleGX) > 0 &&
+              deck_count_after_search_started(Card::Crispin) > 0 &&
+              deck_count_after_search_started(Card::Grass) > 0 &&
+              deck_count_after_search_started(Card::Fire) > 0;
+          const auto issue_1552_quick_ball_cost = issue_1552_public_t2_state
+              ? choose_discard(true, true, true, Card::QuickBall)
+              : std::optional<Card>{};
+          const bool issue_1552_t2_vessel_finish =
+              issue_1552_quick_ball_cost &&
+              is_payload(*issue_1552_quick_ball_cost);
+          if (issue_1552_t2_vessel_finish) {
+            // The T1 Earthen Vessel search established K1 and attached the first Grass.
+            // Before spending the T2 manual attachment, evolve, let Quick Ball discard a
+            // current-turn Dragon payload, Bench Tapu Lele-GX, resolve Wonder Tag for
+            // Crispin, and let Crispin attach the second Grass. The ordinary attachment
+            // then supplies the held Fire and completes GGF on the earliest legal turn:
+          '''
+          new = '''  // Full Prize inspection establishes the same K1 state as a resolved deck
+          // search. The continuation is governed by its observable legal resources rather
+          // than the historical witness profile, seat, lock enum, or turn coordinate:
+          // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+          // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+          // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+          // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+          // Official evolution, Item, Ability, Supporter, search, discard, attachment, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+          // K1 and same-ready-turn DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          // Semantic lock and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-model https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+          // K1 correction and confirmed semantic-gate bug: https://github.com/FlareZ123/pokemon-sims/issues/1932 https://github.com/FlareZ123/pokemon-sims/issues/3024
+          const bool issue_1552_public_ready_state =
+              !secret_box_combo_enabled() && strict_payload_timing() &&
+              prizes_known() && !item_locked() &&
+              !state_.manual_energy_used && supporter_allowed() &&
+              state_.active && state_.active->card == Card::RegidragoV &&
+              state_.active->entered_turn < state_.turn &&
+              state_.active->grass == 1 && state_.active->fire == 0 &&
+              bench_space() > 0 &&
+              ability_available_for_pokemon(Card::TapuLeleGX) &&
+              count_of(state_.discard, Card::EarthenVessel) > 0 &&
+              count_of(state_.discard, Card::MysteriousTreasure) > 0 &&
+              hand_count(Card::RegidragoVstar) > 0 &&
+              hand_count(Card::QuickBall) > 0 && hand_count(Card::Fire) > 0 &&
+              deck_count_after_search_started(Card::TapuLeleGX) > 0 &&
+              deck_count_after_search_started(Card::Crispin) > 0 &&
+              deck_count_after_search_started(Card::Grass) > 0 &&
+              deck_count_after_search_started(Card::Fire) > 0;
+          const auto issue_1552_quick_ball_cost = issue_1552_public_ready_state
+              ? choose_discard(true, true, true, Card::QuickBall)
+              : std::optional<Card>{};
+          const bool issue_1552_quick_ball_finish =
+              issue_1552_quick_ball_cost &&
+              is_payload(*issue_1552_quick_ball_cost);
+          if (issue_1552_quick_ball_finish) {
+            // A prior Earthen Vessel search established K1 and attached the first Grass.
+            // Before spending the current manual attachment, evolve, let Quick Ball
+            // discard a current-turn Dragon payload, Bench Tapu Lele-GX, resolve Wonder
+            // Tag for Crispin, and let Crispin attach the second Grass. The ordinary
+            // attachment then supplies the held Fire and completes GGF:
+          '''
+          if text.count(old) != 1:
+              raise SystemExit('issue-1552 gate block changed on current main')
+          text = text.replace(old, new, 1)
+          text = text.replace('"projected issue-1552 T2 evolution disappeared"',
+                              '"projected issue-1552 continuation evolution disappeared"')
+          text = text.replace('record_deck_search_knowledge("Quick Ball issue-1552 T2 route");',
+                              'record_deck_search_knowledge("Quick Ball issue-1552 continuation route");')
+          source.write_text(text)
+
+          test = Path('tests/issue_1552_t1_vessel_route_tests.cpp')
+          t = test.read_text()
+          anchor = '''void test_seed_104_uses_t1_vessel_and_reaches_t2() {
+          '''
+          added = '''ProvenanceOutcome run_issue_3024_semantic_control(
+              const sim::DciProfile dci, const sim::LockMode locks,
+              const bool going_first, const int turn, const std::uint64_t seed) {
+            const sim::Scenario scenario{"issue-3024", dci, locks, going_first, 5};
+            std::mt19937_64 rng{seed};
+            sim::Engine engine{scenario, sim::baseline_recipe(), rng};
+            sim::State state = issue_1932_state();
+            state.turn = turn;
+            state.active->entered_turn = 1;
+            sim::EngineTestAccess::set_state(engine, std::move(state), false, true);
+            expect(sim::EngineTestAccess::attach_manual(engine),
+                   "Issue-3024 semantic fixture took no legal action");
+            const sim::State& after = sim::EngineTestAccess::state(engine);
+            const bool evolved = after.active &&
+                after.active->card == sim::Card::RegidragoVstar;
+            const bool ready = evolved && after.active->grass >= 2 &&
+                after.active->fire >= 1;
+            const bool payload_this_turn =
+                std::find(after.discarded_this_turn.begin(),
+                          after.discarded_this_turn.end(),
+                          sim::Card::DialgaGX) != after.discarded_this_turn.end();
+            return ProvenanceOutcome{ready, payload_this_turn, evolved,
+                                     after.supporter_used,
+                                     after.manual_energy_used};
+          }
+
+          void test_issue_3024_uses_semantic_route_guards() {
+            // StrictJit and MatchupFlexJit both require the Dragon payload on the
+            // actual ready turn. Seat and absolute turn do not change Quick Ball,
+            // Wonder Tag, Crispin, evolution-age, or attachment legality. Item and
+            // Ability locks remain real semantic blockers:
+            // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+            // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+            // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+            // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+            // Official procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+            // DCI/JIT and lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-model
+            // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3024
+            const auto complete = [](const ProvenanceOutcome& outcome) {
+              return outcome.ready && outcome.payload_this_turn && outcome.evolved &&
+                     outcome.used_supporter && outcome.used_manual_attachment;
+            };
+            expect(complete(run_issue_3024_semantic_control(
+                       sim::DciProfile::MatchupFlexJit, sim::LockMode::None,
+                       true, 2, 302401)),
+                   "MatchupFlexJit rejected the same current-turn JIT route");
+            expect(complete(run_issue_3024_semantic_control(
+                       sim::DciProfile::StrictJit, sim::LockMode::None,
+                       false, 2, 302402)),
+                   "Going second rejected an otherwise legal continuation");
+            expect(complete(run_issue_3024_semantic_control(
+                       sim::DciProfile::StrictJit, sim::LockMode::None,
+                       true, 3, 302403)),
+                   "A later legal turn rejected the same observable continuation");
+
+            const ProvenanceOutcome item_locked = run_issue_3024_semantic_control(
+                sim::DciProfile::StrictJit, sim::LockMode::Turn2Item,
+                true, 2, 302404);
+            expect(!item_locked.ready || !item_locked.payload_this_turn,
+                   "Item lock illegally allowed the Quick Ball continuation");
+            const ProvenanceOutcome ability_locked = run_issue_3024_semantic_control(
+                sim::DciProfile::StrictJit, sim::LockMode::RuleBoxAbility,
+                true, 2, 302405);
+            expect(!ability_locked.ready || !ability_locked.used_supporter,
+                   "Rule Box Ability lock illegally allowed Wonder Tag continuation");
+          }
+
+          void test_seed_104_uses_t1_vessel_and_reaches_t2() {
+          '''
+          if t.count(anchor) != 1:
+              raise SystemExit('issue-1552 test anchor changed')
+          t = t.replace(anchor, added, 1)
+          main_old = '''    test_issue_1932_k1_provenance_equivalence();
+              test_seed_104_uses_t1_vessel_and_reaches_t2();
+          '''
+          main_new = '''    test_issue_1932_k1_provenance_equivalence();
+              test_issue_3024_uses_semantic_route_guards();
+              test_seed_104_uses_t1_vessel_and_reaches_t2();
+          '''
+          if t.count(main_old) != 1:
+              raise SystemExit('issue-1552 test main changed')
+          test.write_text(t.replace(main_old, main_new, 1))
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/bug-3024-materialize.yml
+          git add src/trace_engine_v2/part_tate_blender_attachment_override.inc tests/issue_1552_t1_vessel_route_tests.cpp
+          git commit -m "Fix #3024: generalize the #1552 continuation semantically"
+          git push origin bug/3024-semantic-1552-continuation

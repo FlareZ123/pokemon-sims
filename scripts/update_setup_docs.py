@@ -25,6 +25,8 @@ SCENARIO_LABELS = {
     "strict-jit-combined-lock/go-second": "Strict JIT, turn-two Item + Rule Box Ability lock, second",
     "strict-jit-supporter-lock/go-first": "Strict JIT, Supporter lock, first",
     "strict-jit-supporter-lock/go-second": "Strict JIT, Supporter lock, second",
+    "garbodor-shake-ability-lock/go-first": "Garbodor + Boost Shake Ability lock, first",  # Garbotoxin + Boost Shake: https://api.pokemontcg.io/v2/cards/xy9-57 ; https://api.pokemontcg.io/v2/cards/swsh7-142 ; https://github.com/FlareZ123/pokemon-sims/issues/2933
+    "garbodor-shake-ability-lock/go-second": "Garbodor + Boost Shake Ability lock, second",  # Garbotoxin + Boost Shake: https://api.pokemontcg.io/v2/cards/xy9-57 ; https://api.pokemontcg.io/v2/cards/swsh7-142 ; https://github.com/FlareZ123/pokemon-sims/issues/2933
 }
 
 CsvRow = dict[str, str]

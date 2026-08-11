@@ -13,3 +13,7 @@
 #include "part_003u.inc"
 #include "part_003v.inc"
 #include "part_003w.inc"
+
+// Final test registration and entry point.
+#include "part_004a.inc"
+#include "part_004b.inc"

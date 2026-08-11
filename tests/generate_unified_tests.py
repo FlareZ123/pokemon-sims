@@ -57,10 +57,24 @@ def matching_brace(text: str, start: int) -> int:
     raise ValueError("unmatched C++ brace")
 
 
+def is_recursive_test_include(
+    target: Path,
+    tests_root: Path,
+    simulator: Path,
+    compatibility_simulator: Path,
+) -> bool:
+    return (
+        target not in {simulator, compatibility_simulator}
+        and target.exists()
+        and tests_root in target.parents
+    )
+
+
 def expand_test_file(path: Path, source_root: Path, tests_root: Path, stack: tuple[Path, ...] = ()) -> str:
     resolved = path.resolve()
     if resolved in stack:
         raise ValueError(f"test include cycle at {resolved}")
+    resolved_tests_root = tests_root.resolve()
     simulator = (source_root / "src" / "regidrago_sim.cpp").resolve()
     compatibility_simulator = (tests_root / "src" / "regidrago_sim.cpp").resolve()
     output: list[str] = []
@@ -70,7 +84,9 @@ def expand_test_file(path: Path, source_root: Path, tests_root: Path, stack: tup
             target = (resolved.parent / match.group(1)).resolve()
             if target in {simulator, compatibility_simulator}:
                 continue
-            if target.exists() and tests_root.resolve() in target.parents:
+            if is_recursive_test_include(
+                target, resolved_tests_root, simulator, compatibility_simulator
+            ):
                 output.append(expand_test_file(target, source_root, tests_root, stack + (resolved,)))
                 continue
         output.append(line)

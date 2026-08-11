@@ -23,13 +23,22 @@ bool issue_1697_held_next_turn_manual_energy_route() const {
       crispin_can_advance_energy_axis();
 }
 
-bool play_gladion_issue1737_original() {
-  const bool issue_1644_has_held_vstar_route =
-      hand_count(Card::ForestSealStone) > 0 || hand_count(Card::Arven) > 0 ||
+bool issue_1644_has_held_vstar_route() const {
+  // Keep the already-modeled VSTAR access channels in one reusable preflight so
+  // the Gladion action body only decides between complete routes.
+  // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+  // Confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/1644
+  return hand_count(Card::ForestSealStone) > 0 || hand_count(Card::Arven) > 0 ||
       hand_count(Card::EvolutionIncense) > 0 ||
       hand_count(Card::MysteriousTreasure) > 0 ||
       hand_count(Card::UltraBall) > 0 ||
       hand_count(Card::PokemonCommunication) > 0;
+}
+
+bool play_gladion_issue1737_original() {
   const bool issue_1644_prized_fss_vstar_route =
       prizes_known() && supporter_allowed() && !rule_box_abilities_locked() &&
       !state_.vstar_power_used && state_.active &&
@@ -40,7 +49,7 @@ bool play_gladion_issue1737_original() {
       !need_payload() && hand_count(Card::Gladion) > 0 &&
       prize_count_after_reveal(Card::ForestSealStone) > 0 &&
       deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
-      !issue_1644_has_held_vstar_route;
+      !issue_1644_has_held_vstar_route();
   if (issue_1644_prized_fss_vstar_route) {
     // Gladion exchanges itself for the known prized Forest Seal Stone. The Tool
     // attaches to the prior-turn Active Regidrago V, and Star Alchemy searches

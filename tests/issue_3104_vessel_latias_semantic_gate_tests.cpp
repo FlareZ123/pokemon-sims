@@ -45,14 +45,31 @@ sim::State canonical_state() {
   state.vstar_power_used = true;
   state.active = sim::Pokemon{sim::Card::TapuLeleGX, 1, 0, 0,
                               sim::Tool::None, 0};
+  // Canonical #1672 is the pre-DDE GF -> Grass line. Keep DDE at zero so the
+  // fixture remains exactly one Basic attachment from Apex:
+  // Regidrago VSTAR / Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Original route: https://github.com/FlareZ123/pokemon-sims/issues/1672
   state.bench.push_back(sim::Pokemon{sim::Card::RegidragoV, 1, 1, 1,
-                                     sim::Tool::ForestSealStone, 1});
+                                     sim::Tool::ForestSealStone, 0});
   state.hand = {sim::Card::EarthenVessel, sim::Card::LatiasEx,
                 sim::Card::RegidragoVstar, sim::Card::MegaDragonite};
   state.deck = {sim::Card::Grass, sim::Card::Fire, sim::Card::QuickBall};
   state.prizes = {sim::Card::Gladion, sim::Card::Crispin,
                   sim::Card::MysteriousTreasure, sim::Card::ProfessorBurnet,
                   sim::Card::FieldBlower, sim::Card::Powerglass};
+  return state;
+}
+
+sim::State dde_state() {
+  sim::State state = canonical_state();
+  // The DDE-aware #2437 layer is also one physical Basic attachment from Apex,
+  // with one DDE supplying two flexible Energy units and no Basic attached yet:
+  // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // DDE migration: https://github.com/FlareZ123/pokemon-sims/issues/2437
+  state.bench.front().grass = 0;
+  state.bench.front().fire = 0;
+  state.bench.front().double_dragon = 1;
   return state;
 }
 
@@ -73,14 +90,16 @@ void require_route_resolves(const sim::DciProfile dci,
                             const bool path_lock_removed,
                             const bool current_dde_layer) {
   Fixture fixture{dci, locks};
-  sim::State state = canonical_state();
+  sim::State state = current_dde_layer ? dde_state() : canonical_state();
   state.path_lock_removed = path_lock_removed;
   sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
 
   const bool played = current_dde_layer
       ? sim::EngineTestAccess::play_current_latias_finish(fixture.engine)
       : sim::EngineTestAccess::play_canonical_latias_finish(fixture.engine);
-  require(played, "Legal Vessel-Latias route was rejected by a scenario-coordinate gate.");
+  require(played, current_dde_layer
+      ? "Legal DDE Vessel-Latias route was rejected by a scenario-coordinate gate."
+      : "Legal canonical Vessel-Latias route was rejected by a scenario-coordinate gate.");
 
   const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
   // Earthen Vessel discards one other card and searches Basic Energy. Here the
@@ -130,7 +149,7 @@ void test_recovered_rule_box_ability_state_is_legal() {
 void test_live_lock_still_blocks_route() {
   Fixture fixture{sim::DciProfile::StrictJit,
                   sim::LockMode::FullRuleBoxAbility};
-  sim::EngineTestAccess::set_state(fixture.engine, canonical_state());
+  sim::EngineTestAccess::set_state(fixture.engine, dde_state());
 
   // Skyliner is required to promote the prepared Regidrago without spending the
   // already-reserved Retreat action. A live Rule Box Ability lock therefore makes
@@ -146,13 +165,13 @@ void test_item_lock_and_k0_still_block_route() {
   {
     Fixture fixture{sim::DciProfile::StrictJit,
                     sim::LockMode::TurnTwoItem};
-    sim::EngineTestAccess::set_state(fixture.engine, canonical_state());
+    sim::EngineTestAccess::set_state(fixture.engine, dde_state());
     require(!sim::EngineTestAccess::play_current_latias_finish(fixture.engine),
             "Live Item lock incorrectly admitted Earthen Vessel.");
   }
   {
     Fixture fixture{sim::DciProfile::StrictJit, sim::LockMode::None};
-    sim::EngineTestAccess::set_state(fixture.engine, canonical_state(), false);
+    sim::EngineTestAccess::set_state(fixture.engine, dde_state(), false);
     require(!sim::EngineTestAccess::play_current_latias_finish(fixture.engine),
             "K0 state incorrectly used hidden deck knowledge for the Vessel route.");
   }
@@ -168,7 +187,7 @@ void test_item_lock_and_k0_still_block_route() {
 void test_physical_route_guards_remain() {
   {
     Fixture fixture{sim::DciProfile::StrictJit, sim::LockMode::None};
-    sim::State state = canonical_state();
+    sim::State state = dde_state();
     state.manual_energy_used = true;
     sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
     require(!sim::EngineTestAccess::play_current_latias_finish(fixture.engine),
@@ -176,7 +195,7 @@ void test_physical_route_guards_remain() {
   }
   {
     Fixture fixture{sim::DciProfile::StrictJit, sim::LockMode::None};
-    sim::State state = canonical_state();
+    sim::State state = dde_state();
     state.retreat_used = true;
     sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
     require(!sim::EngineTestAccess::play_current_latias_finish(fixture.engine),
@@ -184,7 +203,7 @@ void test_physical_route_guards_remain() {
   }
   {
     Fixture fixture{sim::DciProfile::StrictJit, sim::LockMode::None};
-    sim::State state = canonical_state();
+    sim::State state = dde_state();
     state.bench.front().entered_turn = state.turn;
     sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
     require(!sim::EngineTestAccess::play_current_latias_finish(fixture.engine),
@@ -192,7 +211,7 @@ void test_physical_route_guards_remain() {
   }
   {
     Fixture fixture{sim::DciProfile::StrictJit, sim::LockMode::None};
-    sim::State state = canonical_state();
+    sim::State state = dde_state();
     while (state.bench.size() < 5) {
       state.bench.push_back(sim::Pokemon{sim::Card::Pineco, 1});
     }

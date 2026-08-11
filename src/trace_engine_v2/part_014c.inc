@@ -315,9 +315,12 @@
   // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c_latias_bench_override.inc#L1-L105
 #undef run_turn
 #include "part_014c_issue_1152_bridge.inc"
+#include "part_issue_3173_steven_treasure_latias_semantic.inc"
 #define use_legacy_star use_legacy_star_issue_1152
-#define choose_supporter choose_supporter_issue_1152
+#define choose_supporter choose_supporter_issue_3173
+#define run_turn run_turn_issue_3173_legacy
 #include "part_014c_latias_bench_override.inc"
+#undef run_turn
 #undef choose_supporter
 #undef use_legacy_star
 };

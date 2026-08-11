@@ -38,7 +38,7 @@
 #include "../part_empty_deck_search_override.inc"
 
 #undef play_arven
-#ifdef play_arven
+#if defined(play_arven)
 #error "Arven wrapper alias must be released before the Garbodor continuation"
 #endif
 #include "../part_arven_garbodor_field_blower_override.inc"
@@ -145,7 +145,7 @@
 #endif
 
 // Quick Ball tail.
-#ifdef play_quick_ball
+#if defined(play_quick_ball)
 #error "Quick Ball route composition requires play_quick_ball to be undefined on entry"
 #endif
 
@@ -163,6 +163,6 @@
 
 #include "../part_issue_2272_route_replaced_arven_quick_ball_override.inc"
 
-#ifdef play_quick_ball
+#if defined(play_quick_ball)
 #error "Quick Ball route composition leaked play_quick_ball"
 #endif

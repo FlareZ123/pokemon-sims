@@ -1,5 +1,5 @@
 {
-  "comparison_csv_sha256": "4c91ade612736b078dd21856c27b8958c5c1a765b28e4d4b8640a28988798896",
+  "comparison_csv_sha256": "451ab09d73a42c04441b796588ef92917553d63cbfbb2062ad0fe08739f8d985",
   "condition_count": 32,
   "decks": [
     "regidrago-shell",
@@ -24,7 +24,7 @@
     "garbodor-shake-ability-lock/go-first",
     "garbodor-shake-ability-lock/go-second"
   ],
-  "simulator_policy_source_sha256": "3676a3b5084a9ccae4df0a80c498349c6f76f3a12e52dc8d855d8fe508615cb6",
+  "simulator_policy_source_sha256": "c440e8be24851663945db9665ecdae4861c0771eba82634265f1fb62caf2f939",
   "total_simulated_games": 3200000,
   "traces": [
     {

@@ -1,3 +1,8 @@
+#pragma once
+
+// Centralized payload-in-hand helpers shared by opening connector and DCI/JIT
+// policies. Keep the preference order here so callers do not rebuild ad hoc
+// payload scans with diverging discard semantics.
   inline static constexpr std::array<Card, 5> kPayloadHandPreference{{
       Card::Appletun,
       Card::MegaDragonite,

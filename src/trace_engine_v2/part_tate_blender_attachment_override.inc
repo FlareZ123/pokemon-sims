@@ -238,15 +238,19 @@ bool attach_manual() {
     }
   }
   // Full Prize inspection establishes the same K1 state as a resolved deck
-  // search, so the route must depend on known zones rather than provenance:
-  // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-  // Correction precedent: https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
-  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1932
-  const bool issue_1552_public_t2_state =
-      !secret_box_combo_enabled() &&
-      scenario_.dci == DciProfile::StrictJit &&
-      scenario_.locks == LockMode::None && scenario_.going_first &&
-      state_.turn == 2 && prizes_known() &&
+  // search. The continuation is governed by its observable legal resources rather
+  // than the historical witness profile, seat, lock enum, or turn coordinate:
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Official evolution, Item, Ability, Supporter, search, discard, attachment, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // K1 and same-ready-turn DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Semantic lock and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-model https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // K1 correction and confirmed semantic-gate bug: https://github.com/FlareZ123/pokemon-sims/issues/1932 https://github.com/FlareZ123/pokemon-sims/issues/3024
+  const bool issue_1552_public_ready_state =
+      !secret_box_combo_enabled() && strict_payload_timing() &&
+      prizes_known() && !item_locked() &&
       !state_.manual_energy_used && supporter_allowed() &&
       state_.active && state_.active->card == Card::RegidragoV &&
       state_.active->entered_turn < state_.turn &&
@@ -261,18 +265,18 @@ bool attach_manual() {
       deck_count_after_search_started(Card::Crispin) > 0 &&
       deck_count_after_search_started(Card::Grass) > 0 &&
       deck_count_after_search_started(Card::Fire) > 0;
-  const auto issue_1552_quick_ball_cost = issue_1552_public_t2_state
+  const auto issue_1552_quick_ball_cost = issue_1552_public_ready_state
       ? choose_discard(true, true, true, Card::QuickBall)
       : std::optional<Card>{};
-  const bool issue_1552_t2_vessel_finish =
+  const bool issue_1552_quick_ball_finish =
       issue_1552_quick_ball_cost &&
       is_payload(*issue_1552_quick_ball_cost);
-  if (issue_1552_t2_vessel_finish) {
-    // The T1 Earthen Vessel search established K1 and attached the first Grass.
-    // Before spending the T2 manual attachment, evolve, let Quick Ball discard a
-    // current-turn Dragon payload, Bench Tapu Lele-GX, resolve Wonder Tag for
-    // Crispin, and let Crispin attach the second Grass. The ordinary attachment
-    // then supplies the held Fire and completes GGF on the earliest legal turn:
+  if (issue_1552_quick_ball_finish) {
+    // A prior Earthen Vessel search established K1 and attached the first Grass.
+    // Before spending the current manual attachment, evolve, let Quick Ball
+    // discard a current-turn Dragon payload, Bench Tapu Lele-GX, resolve Wonder
+    // Tag for Crispin, and let Crispin attach the second Grass. The ordinary
+    // attachment then supplies the held Fire and completes GGF:
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
@@ -281,10 +285,10 @@ bool attach_manual() {
     // Regidrago VSTAR / GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Evolution, Item, Bench, Ability, Supporter, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // K1, DCI, strict-JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k1-after-a-legal-deck-or-prize-inspection https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1552 https://github.com/FlareZ123/pokemon-sims/issues/1932
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1552 https://github.com/FlareZ123/pokemon-sims/issues/1932 https://github.com/FlareZ123/pokemon-sims/issues/3024
     if (!evolve_best_regi()) {
       throw std::logic_error(
-          "projected issue-1552 T2 evolution disappeared");
+          "projected issue-1552 continuation evolution disappeared");
     }
     if (!remove_one(state_.hand, Card::QuickBall)) {
       throw std::logic_error(
@@ -298,7 +302,7 @@ bool attach_manual() {
       throw std::logic_error(
           "projected issue-1552 Dragon payload cost disappeared");
     }
-    record_deck_search_knowledge("Quick Ball issue-1552 T2 route");
+    record_deck_search_knowledge("Quick Ball issue-1552 continuation route");
     if (!move_deck_to_hand(Card::TapuLeleGX)) {
       throw std::logic_error(
           "projected issue-1552 Tapu Lele-GX target disappeared");

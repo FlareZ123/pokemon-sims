@@ -36,6 +36,8 @@ SCENARIOS = (
     "strict-jit-combined-lock/go-second",
     "strict-jit-supporter-lock/go-first",
     "strict-jit-supporter-lock/go-second",
+    "garbodor-shake-ability-lock/go-first",  # Garbotoxin + Boost Shake: https://api.pokemontcg.io/v2/cards/xy9-57 ; https://api.pokemontcg.io/v2/cards/swsh7-142 ; https://github.com/FlareZ123/pokemon-sims/issues/2933
+    "garbodor-shake-ability-lock/go-second",  # Garbotoxin + Boost Shake: https://api.pokemontcg.io/v2/cards/xy9-57 ; https://api.pokemontcg.io/v2/cards/swsh7-142 ; https://github.com/FlareZ123/pokemon-sims/issues/2933
 )
 
 # Reviewed route contracts. Shell examples preserve representative historical

@@ -43,12 +43,22 @@
 #include "../part_014a.inc"
 #include "post_014a_overrides.inc"
 
+// #3057 needs to preserve the Stadium action for a live current-turn
+// Forest/Pineco/Forretress route when Field Blower can remove Path instead.
+// Keep the route predicate outside the historical late-turn source and expose it
+// there only through a scoped hand-count alias so every unrelated action remains
+// byte-for-byte on the existing selector path:
+// https://github.com/FlareZ123/pokemon-sims/issues/3057
+#include "../part_issue_3057_swell_field_blower_route.inc"
+
 // Ordered late turn-execution, scenario-registry, and reporting composition.
 // Keep these aliases live through part_016 exactly as the historical root wrapper
 // did so the translation unit remains behaviorally identical.
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
+#define hand_count hand_count_issue_3057
 #include "../part_014c.inc"
+#undef hand_count
 #undef ability_available_for_pokemon
 
 // part_014c defines the historical scenario registry and leaves only the final

@@ -1,9 +1,11 @@
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
+#include <algorithm>
 #include <random>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 namespace sim {
 struct EngineTestAccess {
@@ -12,6 +14,12 @@ struct EngineTestAccess {
     engine.state_ = std::move(state);
     engine.deck_seen_ = deck_seen;
     engine.prizes_revealed_ = prizes_known;
+  }
+  static const State& state(const Engine& engine) { return engine.state_; }
+  static bool play_steven(Engine& engine) { return engine.play_steven(); }
+  static bool dde_completes_apex(Engine& engine, Pokemon pokemon) {
+    return engine.attach_energy_card(pokemon, Card::DoubleDragonEnergy) &&
+           engine.pays_apex_energy_cost(pokemon);
   }
   static bool late_compression(const Engine& engine) {
     return engine.late_steven_has_known_t3_compression_route();
@@ -31,6 +39,10 @@ struct EngineTestAccess {
 namespace {
 void require(bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);
+}
+
+bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
+  return std::find(cards.begin(), cards.end(), card) != cards.end();
 }
 
 sim::Pokemon dde_regi(sim::Card card, int entered, int grass = 0,
@@ -139,6 +151,58 @@ void test_dde_only_issue1772_does_not_require_crispin() {
   require(sim::EngineTestAccess::t3_package(engine),
           "DDE-only Steven T3 package still incorrectly required Crispin/two Basics.");
 }
+
+void test_steven_reserves_dde_instead_of_crispin_for_one_card_completion() {
+  sim::Scenario scenario{"issue-2424-steven-search-dde", sim::DciProfile::StrictJit,
+                         sim::LockMode::None, false, 3};
+  auto recipe = sim::double_dragon_modeling_recipe();
+  std::mt19937_64 rng{20260811};
+  sim::Engine engine{scenario, recipe, rng};
+  sim::State state;
+  state.turn = 1;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 1, 0,
+                              sim::Tool::None, 0};
+  state.hand = {sim::Card::StevensResolve};
+  state.deck = {sim::Card::RegidragoVstar,
+                sim::Card::DoubleDragonEnergy,
+                sim::Card::Crispin,
+                sim::Card::ProfessorBurnet,
+                sim::Card::MegaDragonite,
+                sim::Card::Grass,
+                sim::Card::Fire};
+  sim::EngineTestAccess::set_state(engine, std::move(state), false, false);
+
+  // Steven can search any three cards. With one Grass already attached, one DDE is
+  // the complete next-turn manual Energy step for Apex Dragon's GGF cost, so Steven
+  // should reserve VSTAR + DDE + Burnet and leave Crispin in deck. This keeps the
+  // next-turn Supporter slot available for the payload Supporter instead of spending
+  // it on Energy acceleration.
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // DDE modeling contract: https://github.com/FlareZ123/pokemon-sims/issues/2238
+  // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  require(sim::EngineTestAccess::play_steven(engine),
+          "Steven did not select the DDE one-card completion route.");
+
+  const sim::State& after = sim::EngineTestAccess::state(engine);
+  require(contains(after.hand, sim::Card::RegidragoVstar),
+          "Steven failed to reserve Regidrago VSTAR.");
+  require(contains(after.hand, sim::Card::DoubleDragonEnergy),
+          "Steven failed to reserve Double Dragon Energy.");
+  require(contains(after.hand, sim::Card::ProfessorBurnet),
+          "Steven failed to preserve the next-turn payload Supporter.");
+  require(!contains(after.hand, sim::Card::Crispin) &&
+              contains(after.deck, sim::Card::Crispin),
+          "Steven still spent a search target on Crispin despite DDE completion.");
+  require(after.turn_ended && contains(after.discard, sim::Card::StevensResolve),
+          "Steven did not end the turn after resolving.");
+
+  sim::Pokemon projected = *after.active;
+  require(sim::EngineTestAccess::dde_completes_apex(engine, projected),
+          "One attached Grass plus DDE did not pay Apex Dragon's GGF cost.");
+}
 }  // namespace
 
 int main() {
@@ -146,4 +210,5 @@ int main() {
   test_dde_is_not_zero_energy_for_steven();
   test_dde_complete_benched_regi_admits_t4_package();
   test_dde_only_issue1772_does_not_require_crispin();
+  test_steven_reserves_dde_instead_of_crispin_for_one_card_completion();
 }

@@ -24,6 +24,17 @@
     }
   }
 
+  void emit_setup_trace() {
+    if (trace_ == nullptr || !trace_->enabled) return;
+    trace_->note("===== SIMULATE THIS =====");
+    trace_->note("Deck: " + current_deck_id());
+    trace_->note("Scenario: " + scenario_.label + " | DCI: " + dci_name() + " | Locks: " + lock_name());
+    trace_->note("Mulligans: " + std::to_string(outcome_.mulligans));
+    trace_->note("Opening player-known state: " + state_line());
+    trace_->note("DEBUG ONLY: prizes=" + join_cards(state_.prizes) + ". Policy may use them only after a legal deck or Prize inspection.");
+    trace_->note("Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.");
+  }
+
   void setup() {
     deck_seen_ = false;
     prizes_revealed_ = false;
@@ -37,14 +48,5 @@
     outcome_.started_tapu = state_.active && state_.active->card == Card::TapuLeleGX;
     choose_opening_bench();
     deal_prizes_after_opening_setup();
-
-    if (trace_ != nullptr && trace_->enabled) {
-      trace_->note("===== SIMULATE THIS =====");
-      trace_->note("Deck: " + current_deck_id());
-      trace_->note("Scenario: " + scenario_.label + " | DCI: " + dci_name() + " | Locks: " + lock_name());
-      trace_->note("Mulligans: " + std::to_string(outcome_.mulligans));
-      trace_->note("Opening player-known state: " + state_line());
-      trace_->note("DEBUG ONLY: prizes=" + join_cards(state_.prizes) + ". Policy may use them only after a legal deck or Prize inspection.");
-      trace_->note("Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.");
-    }
+    emit_setup_trace();
   }

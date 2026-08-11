@@ -27,7 +27,7 @@
     // Forest Seal Stone ruling: https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1195
     if (state_.turn != 1 || !scenario_.going_first ||
-        scenario_.dci != DciProfile::StrictJit || rule_box_abilities_locked() ||
+        !strict_payload_timing() || rule_box_abilities_locked() || // Same-ready-turn JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment ; https://github.com/FlareZ123/pokemon-sims/issues/3216
         issue_1022_items_locked_by_turn_four() || scenario_.max_turn < 4 ||
         !prizes_known() || state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::Oricorio || state_.retreat_used ||
@@ -47,7 +47,7 @@
     // and the second Grass Energy. The held opening Grass pays Oricorio's Retreat
     // Cost, Crispin plus the searched Grass establish GG on T3, and held Arven finds
     // Forest Seal Stone on T4 so Star Alchemy can supply the known VSTAR before
-    // Brilliant Blender creates the strict-JIT payload:
+    // Brilliant Blender creates the same-ready-turn JIT payload:
     // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
@@ -55,9 +55,10 @@
     // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
     // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Advanced turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // Core turn, attachment, evolution, Tool, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1022
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3216
     return deck_count_after_search_started(Card::StevensResolve) > 0 &&
         deck_count_after_search_started(Card::RegidragoV) > 0 &&
         deck_count_after_search_started(Card::Crispin) > 0 &&
@@ -80,7 +81,7 @@
     // Forest Seal Stone ruling: https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1195
     return issue_1022_banked_route_ && state_.turn == 2 &&
-        scenario_.going_first && scenario_.dci == DciProfile::StrictJit &&
+        scenario_.going_first && strict_payload_timing() && // Same-ready-turn JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment ; https://github.com/FlareZ123/pokemon-sims/issues/3216
         !issue_1022_items_locked_by_turn_four() && scenario_.max_turn >= 4 &&
         supporter_allowed() && prizes_known() && state_.active &&
         state_.active->card == Card::Oricorio && state_.active->grass >= 1 &&

@@ -9,8 +9,14 @@
     return scenario_.going_first ? 2 : 1;
   }
 
+  bool garbodor_lock_removed() const {
+    // The registered Garbodor model reuses the shared lock-removal state:
+    // https://github.com/FlareZ123/pokemon-sims/issues/2808
+    return state_.path_lock_removed;
+  }
+
   bool garbodor_abilities_locked() const {
-    if (!garbodor_shake_scenario() || state_.path_lock_removed) return false;
+    if (!garbodor_shake_scenario() || garbodor_lock_removed()) return false;
 
     // Boost Shake evolves a Pokemon at the end of the opponent's turn. The modeled
     // opponent uses it on its first turn to establish Garbodor, then keeps a Tool on

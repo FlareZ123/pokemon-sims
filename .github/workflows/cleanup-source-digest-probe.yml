@@ -1,0 +1,23 @@
+name: Cleanup source digest probe
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/cleanup-source-digest-probe.yml'
+      - 'src/**'
+      - 'CMakeLists.txt'
+
+permissions:
+  contents: read
+
+jobs:
+  digest:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Print simulator policy source digest
+        run: python -c "from pathlib import Path; from scripts.baseline_provenance import simulator_policy_source_digest; print('SIMULATOR_POLICY_SOURCE_SHA256=' + simulator_policy_source_digest(Path('.').resolve()))"

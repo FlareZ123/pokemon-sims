@@ -78,9 +78,15 @@ sim::State seed23_fss_state() {
                               sim::Tool::ForestSealStone}};
   state.hand = {sim::Card::TateLiza, sim::Card::QuickBall, sim::Card::Crispin,
                 sim::Card::RegidragoVstar, sim::Card::ProfessorBurnet};
+  // #2891's generalized FSS arbitration is specifically against a second
+  // searchable Crispin, so this legacy route fixture must model that deck copy.
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Generalized FSS contract: https://github.com/FlareZ123/pokemon-sims/issues/2891
+  // Confirmed stale-fixture bug: https://github.com/FlareZ123/pokemon-sims/issues/2952
   state.deck = {sim::Card::Grass, sim::Card::Grass, sim::Card::Fire,
                 sim::Card::LatiasEx, sim::Card::MegaDragonite,
-                sim::Card::Dragapult, sim::Card::RegidragoV};
+                sim::Card::Dragapult, sim::Card::RegidragoV,
+                sim::Card::Crispin};
   state.discard = {sim::Card::StevensResolve};
   return state;
 }

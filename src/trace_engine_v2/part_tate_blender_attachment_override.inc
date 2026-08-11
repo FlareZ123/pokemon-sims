@@ -7,10 +7,15 @@ bool issue_1845_proactive_tapu_attachment_available() const {
   // Official attachment, retreat, and first-turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
   // Observable-information, lock, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-model https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1845
+  // The proactive bank is governed by the visible resource state below, not
+  // by DCI profile, lock schedule, player order, turn number, or horizon. Those
+  // scenario coordinates do not change Tapu's printed one-Energy Retreat Cost
+  // or Regidrago VSTAR's two-Grass attack reserve:
+  // https://api.pokemontcg.io/v2/cards/sm2-60
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/1845#issuecomment-5123772411
+  // https://github.com/FlareZ123/pokemon-sims/issues/2987
   return !secret_box_combo_enabled() &&
-      scenario_.dci == DciProfile::StrictJit &&
-      scenario_.locks == LockMode::FullCombined && scenario_.going_first &&
-      state_.turn == 1 && scenario_.max_turn >= 5 &&
       !state_.manual_energy_used && !state_.retreat_used &&
       state_.active && state_.active->card == Card::TapuLeleGX &&
       state_.active->grass == 0 && state_.active->fire == 0 &&

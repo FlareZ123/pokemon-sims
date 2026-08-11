@@ -32,15 +32,17 @@ void expect(const bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);
 }
 
-sim::Scenario scenario() {
-  // FullCombined now means Rule Box Ability suppression from the start plus Item
-  // lock beginning on turn 2. These exact-state tests exercise the proactive
-  // attachment/retreat policy independent of the retired historical seed trace:
-  // https://assets.pokemon.com/assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf
-  // https://github.com/FlareZ123/pokemon-sims/issues/2247
-  return sim::Scenario{"issue-1845-proactive-tapu-retreat",
-                       sim::DciProfile::StrictJit,
-                       sim::LockMode::FullCombined, true, 5};
+sim::Scenario scenario(
+    const sim::DciProfile dci = sim::DciProfile::StrictJit,
+    const sim::LockMode locks = sim::LockMode::FullCombined,
+    const bool going_first = true, const int max_turn = 5) {
+  // Lock/profile metadata remains useful for the surrounding simulation, while
+  // the proactive attachment itself is defined by observable resources:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-model
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // https://github.com/FlareZ123/pokemon-sims/issues/2987
+  return sim::Scenario{"issue-1845-proactive-tapu-retreat", dci, locks,
+                       going_first, max_turn};
 }
 
 sim::State opening_state() {
@@ -59,8 +61,8 @@ struct Fixture {
   std::mt19937_64 rng;
   sim::Engine engine;
 
-  Fixture()
-      : scenario_value(scenario()),
+  explicit Fixture(sim::Scenario selected = scenario())
+      : scenario_value(std::move(selected)),
         recipe(sim::deck_by_id("regidrago-shell")->recipe),
         rng(1845),
         engine(scenario_value, recipe, rng) {}
@@ -85,6 +87,39 @@ void public_surplus_attachment_is_admitted() {
              std::count(state.hand.begin(), state.hand.end(),
                         sim::Card::Grass) == 2,
          "Tapu attachment did not preserve exactly two Grass");
+}
+
+void scenario_coordinates_do_not_gate_public_surplus() {
+  const auto verify = [](sim::Scenario selected, const int turn,
+                         const char* message) {
+    Fixture fixture(std::move(selected));
+    sim::State state = opening_state();
+    state.turn = turn;
+    sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+    expect(sim::EngineTestAccess::proactive_tapu_attachment(fixture.engine),
+           message);
+  };
+
+  // Tapu's one-Colorless Retreat Cost and Regidrago's GGF attack requirement
+  // are unchanged by these scenario coordinates. The visible third Grass stays
+  // surplus after reserving the two Grass required by Apex Dragon:
+  // https://api.pokemontcg.io/v2/cards/sm2-60
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/issues/1845#issuecomment-5123772411
+  // https://github.com/FlareZ123/pokemon-sims/issues/2987
+  verify(scenario(sim::DciProfile::MatchupFlexJit), 1,
+         "Matchup-flex JIT incorrectly gated the public surplus attachment");
+  verify(scenario(sim::DciProfile::NoDiscardControl), 1,
+         "No-discard-control incorrectly gated the public surplus attachment");
+  verify(scenario(sim::DciProfile::StrictJit, sim::LockMode::TurnTwoItem), 1,
+         "Lock schedule incorrectly gated the public surplus attachment");
+  verify(scenario(sim::DciProfile::StrictJit, sim::LockMode::FullCombined, false),
+         1, "Going second incorrectly gated the public surplus attachment");
+  verify(scenario(), 3,
+         "Later turn incorrectly gated the same public surplus attachment");
+  verify(scenario(sim::DciProfile::StrictJit, sim::LockMode::FullCombined, true,
+                  3),
+         1, "Shorter horizon incorrectly gated the public surplus attachment");
 }
 
 void only_two_grass_is_rejected() {
@@ -168,6 +203,7 @@ void banked_energy_pays_later_retreat() {
 int main() {
   try {
     public_surplus_attachment_is_admitted();
+    scenario_coordinates_do_not_gate_public_surplus();
     only_two_grass_is_rejected();
     stronger_regidrago_attachment_is_rejected();
     stronger_switch_routes_are_rejected();

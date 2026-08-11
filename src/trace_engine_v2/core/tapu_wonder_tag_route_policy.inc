@@ -10,6 +10,30 @@
 #include "../part_issue_989_wonder_tag_complete_route_issue2270_original.inc"
 #undef needs_tapu_connector
 
+  bool issue_2270_has_powered_benched_vstar() const {
+    // Use the semantic Apex payment helper so one DDE plus one matching Basic is
+    // accepted exactly like three matching Basic Energy.
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Semantic helper specification: https://github.com/FlareZ123/pokemon-sims/issues/2238
+    return std::any_of(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoVstar &&
+                 pays_apex_energy_cost(pokemon);
+        });
+  }
+
+  int issue_2270_required_connector_bench_slots() const {
+    // Before Wonder Tag resolves, one Bench slot is needed for Tapu Lele-GX and a
+    // second for Latias ex. Once Tapu is already in play, only the Latias slot must
+    // remain for the continuation.
+    // Bench procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/2270
+    return in_play(Card::TapuLeleGX) ? 1 : 2;
+  }
+
   bool issue_2270_wonder_tag_arven_latias_route_available() const {
     // Wonder Tag may find Arven; Arven may find Quick Ball; Quick Ball can discard
     // the held Dragon while searching Latias ex. Skyliner then gives the Basic
@@ -38,27 +62,8 @@
       return false;
     }
 
-    const bool benched_powered_vstar = std::any_of(
-        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
-          // Use the semantic Apex payment helper so one DDE plus one matching Basic
-          // is accepted exactly like three matching Basic Energy.
-          // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
-          // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-          // Semantic helper specification: https://github.com/FlareZ123/pokemon-sims/issues/2238
-          return pokemon.card == Card::RegidragoVstar &&
-                 pays_apex_energy_cost(pokemon);
-        });
-    if (!benched_powered_vstar) return false;
-
-    // Before Wonder Tag resolves, one Bench slot is needed for Tapu Lele-GX and a
-    // second for Latias ex. Once Tapu is already in play, only the Latias slot must
-    // remain for the continuation.
-    // Bench procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
-    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
-    // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/2270
-    const int required_open_slots = in_play(Card::TapuLeleGX) ? 1 : 2;
-    return bench_space() >= required_open_slots;
+    return issue_2270_has_powered_benched_vstar() &&
+           bench_space() >= issue_2270_required_connector_bench_slots();
   }
 
   bool needs_tapu_connector() {

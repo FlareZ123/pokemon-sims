@@ -26,5 +26,4 @@
 // #2645 installs the state-driven route after part_006.inc is parsed:
 // https://github.com/FlareZ123/pokemon-sims/issues/1605
 // https://github.com/FlareZ123/pokemon-sims/issues/2645
-#define issue_1605_arven_crobat_route_available \
-  issue_1605_arven_crobat_route_available_issue2645_original
+#define issue_1605_arven_crobat_route_available issue_1605_arven_crobat_route_available_issue2645_original

@@ -31,9 +31,30 @@
 #include "../part_celestial_roar_override.inc"
 #undef use_celestial_roar
 
-// Keep the final policy fragments directly on this named post-search spine so the
-// engine no longer crosses another wrapper whose only job is forwarding includes.
-#include "legacy_star_projection_chain.inc" // Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+// Compose Legacy Star projection and payload bridge wrappers directly on the
+// post-search spine. Each temporary alias exposes only the preceding implementation.
+// Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+#if defined(remove_one) || defined(pokemon_communication_plan) || defined(use_legacy_star)
+#error "Legacy Star projection chain requires wrapper aliases to be undefined on entry"
+#endif
+
+#include "../part_legacy_star_projection_provenance_override.inc"
+#define remove_one remove_one_legacy_star_projection
+#define pokemon_communication_plan pokemon_communication_plan_legacy_star_projection
+#define use_legacy_star use_legacy_star_issue1016_original
+#include "../part_013_legacy_star_override.inc"
+#undef use_legacy_star
+#undef pokemon_communication_plan
+#undef remove_one
+
+#define use_legacy_star use_legacy_star_issue1069_original
+#include "../part_issue_1016_legacy_star_quick_ball_override.inc"
+#undef use_legacy_star
+#include "../part_issue_1069_legacy_star_combined_energy_payload_override.inc"
+
+#if defined(remove_one) || defined(pokemon_communication_plan) || defined(use_legacy_star)
+#error "Legacy Star projection chain leaked a wrapper alias"
+#endif
 
 // Gladion wrappers live directly on the post-search composition boundary. Each
 // alias exposes the implementation from the preceding layer to the next override

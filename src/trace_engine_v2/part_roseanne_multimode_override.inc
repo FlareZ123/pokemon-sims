@@ -1,3 +1,19 @@
+  void restore_roseanne_backup_card_to_deck(const Card card) {
+    // Roseanne's Backup moves each selected card from the discard pile into the
+    // deck. Keep discard-this-turn provenance synchronized with the physical zone
+    // move before shuffling the completed recovery package:
+    // https://api.pokemontcg.io/v2/cards/swsh9-148
+    if (!remove_one(state_.discard, card)) {
+      throw std::logic_error("Roseanne's Backup recovery target disappeared");
+    }
+    const auto turn_it = std::find(state_.discarded_this_turn.begin(),
+                                   state_.discarded_this_turn.end(), card);
+    if (turn_it != state_.discarded_this_turn.end()) {
+      state_.discarded_this_turn.erase(turn_it);
+    }
+    state_.deck.push_back(card);
+  }
+
   bool play_roseanne_vstar_energy_recovery() {
     if (!supporter_allowed() || hand_count(Card::RoseannesBackup) == 0 ||
         !need_vstar() || !need_energy() || state_.manual_energy_used ||
@@ -100,20 +116,8 @@
     state_.discard.push_back(Card::RoseannesBackup);
     state_.supporter_used = true;
 
-    const auto restore_to_deck = [this](const Card card) {
-      if (!remove_one(state_.discard, card)) {
-        throw std::logic_error("Roseanne's Backup recovery target disappeared");
-      }
-      const auto turn_it = std::find(state_.discarded_this_turn.begin(),
-                                     state_.discarded_this_turn.end(), card);
-      if (turn_it != state_.discarded_this_turn.end()) {
-        state_.discarded_this_turn.erase(turn_it);
-      }
-      state_.deck.push_back(card);
-    };
-
-    restore_to_deck(Card::RegidragoVstar);
-    restore_to_deck(needed_energy);
+    restore_roseanne_backup_card_to_deck(Card::RegidragoVstar);
+    restore_roseanne_backup_card_to_deck(needed_energy);
     shuffle(state_.deck);
     trace("PLAY SUPPORTER", "R-GAME-SUPPORTER",
           "Roseanne's Backup chose both Pokémon and Energy modes, restoring Regidrago VSTAR and " +

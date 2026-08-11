@@ -26,14 +26,8 @@ jobs:
           git fetch origin main fix/dde-semantic-rollup-reclaim-20260809 >/dev/null 2>&1
           test "$(git rev-parse origin/main)" = "57785ca59d15719e72695fbee47147f72c2caacf"
           old=origin/fix/dde-semantic-rollup-reclaim-20260809
-          base=$(git merge-base origin/main "$old")
-
-          git diff --binary "$base" "$old" -- src/trace_engine_v2/part_010_fss_override.inc > /tmp/fss.patch
-          git diff --binary "$base" "$old" -- src/trace_engine_v2/part_forretress_ex_combo.inc > /tmp/forretress.patch
-          sed 's#src/trace_engine_v2/part_forretress_ex_combo.inc#src/trace_engine_v2/part_forretress_ex_combo_legacy.inc#g' \
-            /tmp/forretress.patch > /tmp/forretress-legacy.patch
-
           git merge --no-commit --no-edit "$old" || true
+
           actual=$(git diff --name-only --diff-filter=U | sort)
           expected=$(printf '%s\n' \
             docs/MULTI_DECK_REPORT.md \
@@ -44,11 +38,7 @@ jobs:
             results/simulation_results.csv \
             src/trace_engine_v2/part_010_fss_override.inc \
             src/trace_engine_v2/part_forretress_ex_combo.inc | sort)
-          if [ "$actual" != "$expected" ]; then
-            echo 'Unexpected conflict set:' >&2
-            printf '%s\n' "$actual" >&2
-            exit 1
-          fi
+          test "$actual" = "$expected"
 
           for path in \
             docs/MULTI_DECK_REPORT.md \
@@ -61,26 +51,128 @@ jobs:
             git add "$path"
           done
 
-          # Preserve the modern projected-turn fix and replay every reviewed DDE
-          # change onto the current FSS implementation. The rollup changes zero-energy
-          # checks to physical-card units while main retains later evolution-age logic.
-          # DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
-          # FSS: https://api.pokemontcg.io/v2/cards/swsh12-156
-          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
           git checkout --ours -- src/trace_engine_v2/part_010_fss_override.inc
-          git add src/trace_engine_v2/part_010_fss_override.inc
-          git apply --3way /tmp/fss.patch
-
-          # Current main split the old full Forretress file into a legacy body plus a
-          # Garbotoxin-aware registry wrapper. Keep that wrapper and replay the DDE
-          # delta onto the legacy body so both semantics survive.
-          # Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
-          # Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
-          # DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
           git checkout --ours -- src/trace_engine_v2/part_forretress_ex_combo.inc
-          git add src/trace_engine_v2/part_forretress_ex_combo.inc
-          git apply --3way /tmp/forretress-legacy.patch
+          git add src/trace_engine_v2/part_010_fss_override.inc src/trace_engine_v2/part_forretress_ex_combo.inc
 
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_exact(path: Path, old: str, new: str, count: int = 1) -> None:
+              text = path.read_text(encoding='utf-8')
+              actual = text.count(old)
+              if actual != count:
+                  raise SystemExit(f'{path}: expected {count} exact matches, found {actual}')
+              path.write_text(text.replace(old, new), encoding='utf-8')
+
+          fss = Path('src/trace_engine_v2/part_010_fss_override.inc')
+          replace_exact(
+              fss,
+              '''    const bool held_manual_already_completes_energy =
+                  (grass_needed() == 1 && fire_needed() == 0 && hand_count(Card::Grass) > 0) ||
+                  (grass_needed() == 0 && fire_needed() == 1 && hand_count(Card::Fire) > 0);
+              if (held_manual_already_completes_energy) return false;
+
+              const bool grass_available = deck_count_after_search_started(Card::Grass) > 0;
+              const bool fire_available = deck_count_after_search_started(Card::Fire) > 0;
+              const bool crispin_completes_energy =
+                  (grass_needed() == 1 && fire_needed() == 0 && grass_available) ||
+                  (grass_needed() == 0 && fire_needed() == 1 && fire_available) ||
+                  (grass_needed() == 1 && fire_needed() == 1 && grass_available && fire_available);
+              if (!crispin_completes_energy) return false;
+
+              const Pokemon* regi = target_regi();
+          ''',
+              '''    // DDE makes Grass and Fire alternative one-card completions; do not add the
+              // typed helpers as independent deficits. https://github.com/FlareZ123/pokemon-sims/issues/2427
+              const Pokemon* regi = target_regi();
+              const bool held_manual_already_completes_energy = regi != nullptr &&
+                  completing_basic_energy_for(*regi, [this](const Card card) {
+                    return hand_count(card) > 0;
+                  }).has_value();
+              if (held_manual_already_completes_energy) return false;
+
+              const bool grass_available = deck_count_after_search_started(Card::Grass) > 0;
+              const bool fire_available = deck_count_after_search_started(Card::Fire) > 0;
+              const bool crispin_completes_energy = regi != nullptr &&
+                  (minimum_basic_attachments_to_apex(
+                       *regi, grass_available ? 1 : 0, fire_available ? 1 : 0) <=
+                       (grass_available && fire_available ? 2 : 1));
+              if (!crispin_completes_energy) return false;
+          ''')
+          replace_exact(
+              fss,
+              '''          return pokemon.card == Card::RegidragoV &&
+                      pokemon.entered_turn < state_.turn && pokemon.grass >= 2 &&
+                      pokemon.fire >= 1;
+          ''',
+              '''          return pokemon.card == Card::RegidragoV &&
+                      pokemon.entered_turn < state_.turn && pays_apex_energy_cost(pokemon);
+          ''',
+              count=2)
+          replace_exact(
+              fss,
+              '''    return !spends_additional_entry_connector && projected.active_is_vstar() &&
+                  projected.state_.active->grass >= 2 &&
+                  projected.state_.active->fire >= 1 && projected.payload_ready();
+          ''',
+              '''    return !spends_additional_entry_connector && projected.active_is_vstar() &&
+                  projected.pays_apex_energy_cost(*projected.state_.active) &&
+                  projected.payload_ready();
+          ''')
+          replace_exact(
+              fss,
+              '              pokemon.grass == 0 && pokemon.fire == 0;\n',
+              '              total_energy_units(pokemon) == 0;\n')
+
+          legacy = Path('src/trace_engine_v2/part_forretress_ex_combo_legacy.inc')
+          replace_exact(
+              legacy,
+              '''    const auto promotion_rank = [](const Pokemon& pokemon) {
+                const int role = pokemon.card == Card::RegidragoVstar ? 3 :
+                    (pokemon.card == Card::RegidragoV ? 2 : 1);
+                return std::tuple{role, pokemon.grass + pokemon.fire,
+                                  -pokemon.entered_turn};
+              };
+          ''',
+              '''    const auto promotion_rank = [this](const Pokemon& pokemon) {
+                const int role = pokemon.card == Card::RegidragoVstar ? 3 :
+                    (pokemon.card == Card::RegidragoV ? 2 : 1);
+                const bool regidrago = pokemon.card == Card::RegidragoVstar ||
+                    pokemon.card == Card::RegidragoV;
+                const bool apex_paid = regidrago && pays_apex_energy_cost(pokemon);
+                bool one_basic_from_apex = false;
+                if (regidrago && !apex_paid) {
+                  for (const Card basic : {Card::Grass, Card::Fire}) {
+                    Pokemon projected = pokemon;
+                    if (attach_energy_card(projected, basic) &&
+                        pays_apex_energy_cost(projected)) {
+                      one_basic_from_apex = true;
+                      break;
+                    }
+                  }
+                }
+                // Preserve evolution-stage priority, then prefer the same-stage attacker
+                // closest to an immediate Apex Dragon. DDE supplies two Energy of every type:
+                // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+                // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+                // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+                // Knock Out / replacement Active: https://www.pokemon.com/us/pokemon-tcg/rules
+                // DDE semantic contract: https://github.com/FlareZ123/pokemon-sims/issues/2238
+                // Policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+                // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2447
+                const int semantic_energy_class = apex_paid ? 2 :
+                    (one_basic_from_apex ? 1 : 0);
+                const int attached_energy_units = pokemon.grass + pokemon.fire +
+                    2 * pokemon.double_dragon;
+                return std::tuple{role, semantic_energy_class, attached_energy_units,
+                                  -pokemon.entered_turn};
+              };
+          ''')
+          PY
+
+          git add src/trace_engine_v2/part_010_fss_override.inc \
+                  src/trace_engine_v2/part_forretress_ex_combo_legacy.inc
           test -z "$(git diff --name-only --diff-filter=U)"
           rm -f .github/workflows/dde-reclaim-push-recovery.yml
           rm -f .github/workflows/dde-rollup-reclaim-materialize.yml

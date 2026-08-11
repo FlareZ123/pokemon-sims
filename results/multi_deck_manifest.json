@@ -1,6 +1,6 @@
 {
-  "comparison_csv_sha256": "029cf21d77e1a045017db09e525d3a73fe1d9b9f81a558e4b6b2e0d838239b78",
-  "condition_count": 28,
+  "comparison_csv_sha256": "74a07907be09bb7df53887720982ad3e0a979c906f036860a1df36a970757b8c",
+  "condition_count": 32,
   "decks": [
     "regidrago-shell",
     "regidrago-pineco"
@@ -20,10 +20,12 @@
     "strict-jit-rulebox-ability-lock/go-second",
     "strict-jit-combined-lock/go-second",
     "strict-jit-supporter-lock/go-first",
-    "strict-jit-supporter-lock/go-second"
+    "strict-jit-supporter-lock/go-second",
+    "garbodor-shake-ability-lock/go-first",
+    "garbodor-shake-ability-lock/go-second"
   ],
-  "simulator_policy_source_sha256": "261d1c41e2706aa85dffd0adf5851a7460004df37e916b7d6df42f81d1e0a227",
-  "total_simulated_games": 2800000,
+  "simulator_policy_source_sha256": "5f91b017a850b82252230081f3b67802c8ca6b2c81062208a1c12875b755b3ec",
+  "total_simulated_games": 3200000,
   "traces": [
     {
       "deadline": 3,

@@ -15,16 +15,19 @@
            oricorio_basic_energy_target_is_live(Card::Fire, fire_needed());
   }
 
+  bool oricorio_connector_route_is_live() const {
+    return needs_oricorio_connector_original() ||
+           oricorio_preserves_burnet_with_current_hand();
+  }
+
   bool needs_oricorio_connector() const {
     // The original #180 predicate covers hands with no payload. #616 extends the
     // same final-slot policy to an in-hand payload that has no legal Item discard
     // outlet, while preserving Tapu Lele-GX when such an outlet is live:
     // https://github.com/FlareZ123/pokemon-sims/issues/180
     // https://github.com/FlareZ123/pokemon-sims/issues/616
-    const bool burnet_preserving_route =
-        oricorio_preserves_burnet_with_current_hand();
     return needed_oricorio_energy_might_be_in_deck() &&
-           (needs_oricorio_connector_original() || burnet_preserving_route);
+           oricorio_connector_route_is_live();
   }
 
   bool bench_oricorio_if_useful() {

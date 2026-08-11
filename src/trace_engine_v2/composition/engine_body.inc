@@ -71,3 +71,5 @@
 #include "../part_016.inc"
 #undef scenario_by_label
 #undef all_scenarios
+#undef run_turn
+#undef play_field_blower

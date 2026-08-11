@@ -96,6 +96,9 @@
 // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
 // Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142
 // Model specification: https://github.com/FlareZ123/pokemon-sims/issues/2808
+#if defined(all_scenarios) || defined(scenario_by_label)
+#error "Scenario-registry composition requires aliases to be undefined on entry"
+#endif
 #define all_scenarios all_scenarios_with_garbodor
 #define scenario_by_label scenario_by_label_with_garbodor
 #include "../part_015.inc"
@@ -106,6 +109,9 @@
 #include "../part_016.inc"
 #undef scenario_by_label
 #undef all_scenarios
+#if defined(all_scenarios) || defined(scenario_by_label)
+#error "Scenario-registry composition leaked an alias"
+#endif
 #undef run_turn
 #undef play_field_blower
 #if defined(play_field_blower) || defined(run_turn) || defined(hand_count)

@@ -1,13 +1,3 @@
-// #3064 scopes its planner wrapper only to the historical late-turn member bodies.
-// Release the alias before the real namespace-scope planner definition so its symbol
-// remains the stable delegation target used by the corrective wrapper:
-// Late execution order: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
-// Forest / Field Blower / Legacy Star: https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/swsh12-136
-// Corrective issue: https://github.com/FlareZ123/pokemon-sims/issues/3064
-#ifdef advance_forretress_combo
-#undef advance_forretress_combo
-#endif
-
 // Preserve established Pineco/Forretress behavior before composing the later
 // namespace-scope Garbodor scenario extension.
 #include "part_forretress_ex_combo_legacy.inc"

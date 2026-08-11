@@ -165,7 +165,6 @@ void test_registered_seed_19_uses_burnet_on_t2() {
   // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
   // Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Earliest/resource policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-  sim::EngineTestAccess::choose_supporter;
   expect(outcome.first_ready_turn == 2,
          "Registered seed 19 lost its earliest T2 ready turn.");
   expect(trace_contains(trace, "Professor Burnet"),

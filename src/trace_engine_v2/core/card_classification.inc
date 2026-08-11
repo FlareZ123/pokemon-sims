@@ -150,9 +150,8 @@ constexpr bool is_dragon_or_psychic(const Card card) {
 // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
 // https://github.com/FlareZ123/pokemon-sims/issues/2238
 constexpr bool is_dragon(const Card card) {
+  if (is_regidrago(card)) return true;
   switch (card) {
-    case Card::RegidragoV:
-    case Card::RegidragoVstar:
     case Card::Dragapult:
     case Card::MegaDragonite:
     case Card::DialgaGX:

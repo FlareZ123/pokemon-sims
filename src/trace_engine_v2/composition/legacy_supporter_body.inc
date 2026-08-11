@@ -78,6 +78,13 @@
 #error "VSTAR-power composition leaked use_legacy_star"
 #endif
 
+// use_celestial_roar intentionally crosses the part_013 boundary; assert that export
+// where the wrapper chain is centralized instead of relying on an undocumented leak.
+// C++ conditional preprocessing: https://eel.is/c++draft/cpp.cond
+#if !defined(use_celestial_roar)
+#error "Legacy Supporter composition must export use_celestial_roar past part_013"
+#endif
+
 // Intentionally leave use_celestial_roar defined. post_014a_overrides.inc consumes
 // and replaces this alias after the part_014a boundary.
 // Continuation owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc

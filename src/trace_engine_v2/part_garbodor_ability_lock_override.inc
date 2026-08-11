@@ -2,7 +2,7 @@
       "garbodor-shake-ability-lock/";
 
   bool garbodor_shake_scenario() const {
-    return scenario_.label.rfind(kGarbodorShakeScenarioPrefix, 0) == 0;
+    return scenario_.label.starts_with(kGarbodorShakeScenarioPrefix);
   }
 
   int garbodor_lock_activation_turn() const {

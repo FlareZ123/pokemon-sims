@@ -2,111 +2,11 @@
     return out.str();
   }
 
-  // Test-variant combo support. Definitions are emitted after Engine closes so
-  // these declarations are visible to opening setup, connector policy, and the
-  // active turn composition without disturbing the split translation unit.
-  // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
-  // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
-  // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/972
-  bool forretress_combo_enabled() const;
-  bool needs_pineco_connector() const;
-  bool needs_forretress_connector() const;
-  bool bench_pineco_if_useful();
-  bool evolve_forretress_ex();
-  Pokemon* pokemon_at_board_index(std::size_t index);
-  std::optional<std::size_t> exploding_energy_regidrago_target_index() const;
-  void discard_forretress_ex_stack(const Pokemon& knocked_out);
-  bool resolve_exploding_energy(
-      const std::vector<std::size_t>& attachment_destinations);
-  bool use_exploding_energy_for_setup();
-  bool advance_forretress_combo();
-  Card fallback_combo_basic_after_search_started() const;
-  Card fallback_combo_pokemon_after_search_started() const;
-  bool play_quick_ball_for_pineco();
-  bool play_ultra_ball_for_forretress_combo();
-  bool play_evolution_incense_for_forretress();
-  bool run_forretress_combo_search_step(bool permit_payload);
+  #include "core/forretress_combo_contract.inc"
 
-  std::string current_deck_id() const {
-    if (total_copies(Card::DoubleDragonEnergy) > 0) {
-      return "regidrago-dde-model";  // Modeling recipe: https://github.com/FlareZ123/pokemon-sims/issues/2238 ; DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
-    }
-    if (total_copies(Card::CrobatV) > 0) {
-      return "modeling-crobat-variant";
-    }
-    if (total_copies(Card::SecretBox) > 0 && total_copies(Card::Pineco) > 0) {
-      return "regidrago-pineco";
-    }
-    if (total_copies(Card::RegidragoV) == 4 &&
-        total_copies(Card::BrilliantBlender) == 1) {
-      return "regidrago-shell";
-    }
-    return "custom";
-  }
+  #include "core/simulation_labels.inc"
 
-  void setup() {
-    deck_seen_ = false;
-    prizes_revealed_ = false;
-    for (const auto& [card, copies] : recipe_) {
-      for (int copy = 0; copy < copies; ++copy) state_.deck.push_back(card);
-    }
-    shuffle(state_.deck);
-    while (true) {
-      state_.hand.clear();
-      for (int card = 0; card < 7; ++card) {
-        const Card drawn = state_.deck.back();
-        state_.deck.pop_back();
-        state_.hand.push_back(drawn);
-      }
-      if (std::any_of(state_.hand.begin(), state_.hand.end(), is_basic)) break;
-      state_.deck.insert(state_.deck.end(), state_.hand.begin(), state_.hand.end());
-      state_.hand.clear();
-      shuffle(state_.deck);
-      ++outcome_.mulligans;
-    }
-
-    choose_opening_active();
-    outcome_.started_tapu = state_.active && state_.active->card == Card::TapuLeleGX;
-    choose_opening_bench();
-    // Place six Prize cards from the already-shuffled remaining deck after the
-    // opening Active and optional Bench are selected. The setup procedure does
-    // not add another shuffle at this point: https://www.pokemon.com/us/pokemon-tcg/rules
-    for (int prize = 0; prize < 6; ++prize) {
-      state_.prizes.push_back(state_.deck.back());
-      state_.deck.pop_back();
-    }
-
-    if (trace_ != nullptr && trace_->enabled) {
-      trace_->note("===== SIMULATE THIS =====");
-      trace_->note("Deck: " + current_deck_id());
-      trace_->note("Scenario: " + scenario_.label + " | DCI: " + dci_name() + " | Locks: " + lock_name());
-      trace_->note("Mulligans: " + std::to_string(outcome_.mulligans));
-      trace_->note("Opening player-known state: " + state_line());
-      trace_->note("DEBUG ONLY: prizes=" + join_cards(state_.prizes) + ". Policy may use them only after a legal deck or Prize inspection.");
-      trace_->note("Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.");
-    }
-  }
-
-  std::string dci_name() const {
-    switch (scenario_.dci) {
-      case DciProfile::StrictJit: return "strict-JIT";
-      case DciProfile::MatchupFlexJit: return "matchup-flex-JIT";
-      case DciProfile::NoDiscardControl: return "no-discard-control";
-    }
-    return "unknown";
-  }
-
-  std::string lock_name() const {
-    switch (scenario_.locks) {
-      case LockMode::None: return "none";
-      case LockMode::TurnTwoItem: return "turn-two Item lock";
-      case LockMode::FullItem: return "full Item lock";
-      case LockMode::FullRuleBoxAbility: return "full Rule Box Ability lock";
-      case LockMode::FullCombined: return "full Item + Rule Box Ability lock";
-      case LockMode::FullSupporter: return "full Supporter lock";
-    }
-    return "unknown";
-  }
+  #include "core/setup_lifecycle.inc"
 
   void choose_opening_active() {
     const bool tapu_oricorio_are_only_opening_basics =

@@ -1,0 +1,15 @@
+# Default-branch workflow filenames that are intentionally permanent.
+# Keep one filename per line. Blank lines and lines beginning with # are ignored.
+# Temporary recovery, issue, audit, and materialization workflows must never remain
+# installed on main after their owning work is complete.
+# GitHub pull-request workflow behavior:
+# https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request
+# GITHUB_TOKEN permission model:
+# https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication
+# Repository workflow incident and cleanup contract:
+# https://github.com/FlareZ123/pokemon-sims/issues/1360
+
+ci.yml
+professors-letter-validation.yml
+stacked-pr-validation.yml
+workflow-policy.yml

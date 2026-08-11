@@ -13,6 +13,7 @@
 #error "Empty-deck search composition requires wrapper aliases to be undefined on entry"
 #endif
 
+// Basic/search-target wrappers.
 #define bench_oricorio_if_useful bench_oricorio_if_useful_target_original
 #define ultra_ball_has_legal_target ultra_ball_has_legal_target_k0_target_original
 #define play_ultra_ball play_ultra_ball_k0_target_original
@@ -22,6 +23,8 @@
 #define play_quick_ball play_quick_ball_issue1209_original
 #define bench_tapu_if_useful bench_tapu_if_useful_issue989_empty_deck_original
 #define in_play tapu_connector_copy_aware_in_play
+
+// Supporter/VSTAR wrappers that share the same empty-deck implementation boundary.
 #define play_steven play_steven_issue1002_empty_deck_original
 #define use_fss use_fss_issue1356_original
 #define play_arven play_arven_garbodor_original

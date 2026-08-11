@@ -10,9 +10,9 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/746
-    const bool another_copy_is_known =
-        card == Card::TapuLeleGX && has_known_hand_or_deck_copy(card);
-    return in_play(card) && !another_copy_is_known;
+    const bool another_tapu_copy_is_known =
+        card == Card::TapuLeleGX && known_hand_or_deck_copy_count(card) > 0;
+    return in_play(card) && !another_tapu_copy_is_known;
   }
 
 // Keep the legacy Tapu-adjacent aliases with the policy that consumes them so the

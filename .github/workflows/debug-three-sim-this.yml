@@ -15,6 +15,17 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Scan policy-coordinate literals
+        shell: bash
+        run: |
+          echo '=== literal StrictJit checks ==='
+          grep -R -n "scenario_\.dci == DciProfile::StrictJit" src/trace_engine_v2 || true
+          echo '=== literal no-lock checks ==='
+          grep -R -n "scenario_\.locks == LockMode::None" src/trace_engine_v2 || true
+          echo '=== exact turn equality checks ==='
+          grep -R -n -E "state_\.turn == [1-5]" src/trace_engine_v2 || true
+          echo '=== seat-coordinate checks ==='
+          grep -R -n "scenario_\.going_first" src/trace_engine_v2 || true
       - name: Configure Release
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build simulator

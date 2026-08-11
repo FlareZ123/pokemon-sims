@@ -1,6 +1,10 @@
   bool issue_1393_held_crispin_completion_available() const {
     // A resolved full Prize inspection establishes K1 without a deck search: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-    if (scenario_.dci != DciProfile::StrictJit ||
+    // StrictJit and MatchupFlexJit share current-turn payload timing; keep the
+    // semantic predicate centralized instead of duplicating profile names here:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://github.com/FlareZ123/pokemon-sims/issues/2768
+    if (!strict_payload_timing() ||
         scenario_.locks != LockMode::None || state_.turn != 2 ||
         !prizes_known() || !supporter_allowed() ||
         state_.manual_energy_used || !state_.active ||

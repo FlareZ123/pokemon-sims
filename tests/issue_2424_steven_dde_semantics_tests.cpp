@@ -152,8 +152,8 @@ void test_dde_only_issue1772_does_not_require_crispin() {
           "DDE-only Steven T3 package still incorrectly required Crispin/two Basics.");
 }
 
-void test_steven_reserves_dde_instead_of_crispin_for_one_card_completion() {
-  sim::Scenario scenario{"issue-2424-steven-search-dde", sim::DciProfile::StrictJit,
+void test_steven_reserves_vstar_dde_blender_triple() {
+  sim::Scenario scenario{"issue-2424-steven-dde-triple", sim::DciProfile::StrictJit,
                          sim::LockMode::None, false, 3};
   auto recipe = sim::double_dragon_modeling_recipe();
   std::mt19937_64 rng{20260811};
@@ -166,33 +166,33 @@ void test_steven_reserves_dde_instead_of_crispin_for_one_card_completion() {
   state.deck = {sim::Card::RegidragoVstar,
                 sim::Card::DoubleDragonEnergy,
                 sim::Card::Crispin,
-                sim::Card::ProfessorBurnet,
+                sim::Card::BrilliantBlender,
+                sim::Card::Arven,
                 sim::Card::MegaDragonite,
                 sim::Card::Grass,
                 sim::Card::Fire};
   sim::EngineTestAccess::set_state(engine, std::move(state), false, false);
 
   // Steven can search any three cards. With one Grass already attached, one DDE is
-  // the complete next-turn manual Energy step for Apex Dragon's GGF cost, so Steven
-  // should reserve VSTAR + DDE + Burnet and leave Crispin in deck. This keeps the
-  // next-turn Supporter slot available for the payload Supporter instead of spending
-  // it on Energy acceleration.
+  // the complete next-turn manual Energy step for Apex Dragon's GGF cost. The
+  // earliest strict-JIT package is therefore VSTAR + DDE + Brilliant Blender, while
+  // Crispin remains in deck and the following turn's Supporter slot stays unused.
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
   // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
   // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
   // DDE modeling contract: https://github.com/FlareZ123/pokemon-sims/issues/2238
   // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   require(sim::EngineTestAccess::play_steven(engine),
-          "Steven did not select the DDE one-card completion route.");
+          "Steven did not select the VSTAR + DDE + Blender route.");
 
   const sim::State& after = sim::EngineTestAccess::state(engine);
   require(contains(after.hand, sim::Card::RegidragoVstar),
           "Steven failed to reserve Regidrago VSTAR.");
   require(contains(after.hand, sim::Card::DoubleDragonEnergy),
           "Steven failed to reserve Double Dragon Energy.");
-  require(contains(after.hand, sim::Card::ProfessorBurnet),
-          "Steven failed to preserve the next-turn payload Supporter.");
+  require(contains(after.hand, sim::Card::BrilliantBlender),
+          "Steven failed to reserve Brilliant Blender.");
   require(!contains(after.hand, sim::Card::Crispin) &&
               contains(after.deck, sim::Card::Crispin),
           "Steven still spent a search target on Crispin despite DDE completion.");
@@ -210,5 +210,5 @@ int main() {
   test_dde_is_not_zero_energy_for_steven();
   test_dde_complete_benched_regi_admits_t4_package();
   test_dde_only_issue1772_does_not_require_crispin();
-  test_steven_reserves_dde_instead_of_crispin_for_one_card_completion();
+  test_steven_reserves_vstar_dde_blender_triple();
 }

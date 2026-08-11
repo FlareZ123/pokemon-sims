@@ -1,8 +1,9 @@
 #pragma once
 
-// Compose the legacy Supporter body and its immediately adjacent Supporter selector
-// in one ordered unit. Keeping these macro lifetimes together makes the historical
-// part_011 -> part_012 member boundary explicit without changing textual order.
+// Compose the legacy Supporter body, its immediately adjacent Supporter selector,
+// and the following VSTAR-power body in one ordered unit. Keeping these macro
+// lifetimes together makes the historical part_011 -> part_012 -> part_013 member
+// boundary explicit without changing textual order.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
 // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
 // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
@@ -49,3 +50,15 @@
 #if defined(play_arven) || defined(play_gladion) || defined(play_serena)
 #error "Supporter selector composition leaked a local alias"
 #endif
+
+// The part_013 VSTAR-power aliases follow the selector immediately. Preserve the
+// Celestial Roar alias for the later wrapper chain.
+// Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+#define use_celestial_roar use_celestial_roar_original
+#define use_legacy_star use_legacy_star_original
+#include "../part_013.inc"
+#undef use_legacy_star
+
+// Intentionally leave use_celestial_roar defined. celestical_roar_overrides.inc consumes
+// and replaces this alias after the part_014a boundary.
+// Wrapper continuation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/celestial_roar_overrides.inc

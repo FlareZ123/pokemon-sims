@@ -14,6 +14,16 @@
     }
   }
 
+  void deal_prizes_after_opening_setup() {
+    // Place six Prize cards from the already-shuffled remaining deck after the
+    // opening Active and optional Bench are selected. The setup procedure does
+    // not add another shuffle at this point: https://www.pokemon.com/us/pokemon-tcg/rules
+    for (int prize = 0; prize < 6; ++prize) {
+      state_.prizes.push_back(state_.deck.back());
+      state_.deck.pop_back();
+    }
+  }
+
   void setup() {
     deck_seen_ = false;
     prizes_revealed_ = false;
@@ -26,13 +36,7 @@
     choose_opening_active();
     outcome_.started_tapu = state_.active && state_.active->card == Card::TapuLeleGX;
     choose_opening_bench();
-    // Place six Prize cards from the already-shuffled remaining deck after the
-    // opening Active and optional Bench are selected. The setup procedure does
-    // not add another shuffle at this point: https://www.pokemon.com/us/pokemon-tcg/rules
-    for (int prize = 0; prize < 6; ++prize) {
-      state_.prizes.push_back(state_.deck.back());
-      state_.deck.pop_back();
-    }
+    deal_prizes_after_opening_setup();
 
     if (trace_ != nullptr && trace_->enabled) {
       trace_->note("===== SIMULATE THIS =====");

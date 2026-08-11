@@ -47,6 +47,10 @@ jobs:
           for row in out[:120]:
               print(row)
           PY
+      - name: Build and run issue 1795 semantic probe
+        run: |
+          c++ -std=c++20 -O0 tests/sol_issue_1795_semantic_probe.cpp -o /tmp/sol_issue_1795_semantic_probe
+          /tmp/sol_issue_1795_semantic_probe
       - name: Upload static scan
         uses: actions/upload-artifact@v4
         with:

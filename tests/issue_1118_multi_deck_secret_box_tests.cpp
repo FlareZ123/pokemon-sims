@@ -347,12 +347,14 @@ void test_reviewed_seeded_routes() {
   // Seed 40 exposes prized Secret Box at K1, yet the complete Steven route reaches
   // the same T2 deadline while preserving Gladion, the ACE SPEC, and its three-card
   // discard cost. Held Fire supplies the manual attachment, Crispin searches the
-  // draw-safe Grass channel, and Treasure discards the held Goodra payload:
+  // draw-safe Grass channel, and the deterministic T2 draw supplies a current-turn
+  // Dragon payload for Treasure while the held Goodra remains preserved:
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
   // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
   // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
   // Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Advanced rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
@@ -361,7 +363,7 @@ void test_reviewed_seeded_routes() {
   expect_seeded_route(40, {
       "Wonder Tag: deck inspected",
       "Steven's Resolve banked Regidrago VSTAR, Crispin, and Mysterious Treasure",
-      "Goodra VSTAR (Mysterious Treasure cost)",
+      "Mega Dragonite ex (Mysterious Treasure cost)",
       "T2 | READY",
   });
 }

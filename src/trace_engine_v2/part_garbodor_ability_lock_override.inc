@@ -1,5 +1,8 @@
+  static constexpr std::string_view kGarbodorShakeScenarioPrefix =
+      "garbodor-shake-ability-lock/";
+
   bool garbodor_shake_scenario() const {
-    return scenario_.label.rfind("garbodor-shake-ability-lock/", 0) == 0;
+    return scenario_.label.rfind(kGarbodorShakeScenarioPrefix, 0) == 0;
   }
 
   bool garbodor_abilities_locked() const {

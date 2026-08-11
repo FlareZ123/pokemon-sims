@@ -217,5 +217,13 @@
             "Completed the semantic Steven, Treasure, and Latias ex route.");
       return;
     }
-    run_turn_issue_3173_legacy();
+    // Defer lookup of the later-composed Latias turn member through a dependent
+    // generic lambda. This keeps textual include order intact while allowing the
+    // fallback member to be declared later in the same Engine class.
+    // C++ dependent member lookup: https://eel.is/c++draft/temp.dep
+    // Confirmed composition fix: https://github.com/FlareZ123/pokemon-sims/issues/3173
+    auto run_legacy = []<typename EngineLike>(EngineLike* engine) {
+      engine->run_turn_issue_3173_legacy();
+    };
+    run_legacy(this);
   }

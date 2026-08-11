@@ -56,6 +56,21 @@ enum class CliMode : std::uint8_t {
   CrobatModel,
 };
 
+std::optional<CliMode> select_cli_mode(
+    const bool self_test, const bool model_crobat,
+    const bool find_ready_supplied, const bool simulate_this) {
+  const int explicit_mode_count = static_cast<int>(self_test) +
+      static_cast<int>(simulate_this) +
+      static_cast<int>(find_ready_supplied) +
+      static_cast<int>(model_crobat);
+  if (explicit_mode_count > 1) return std::nullopt;
+  if (self_test) return CliMode::SelfTest;
+  if (model_crobat) return CliMode::CrobatModel;
+  if (find_ready_supplied) return CliMode::FindReady;
+  if (simulate_this) return CliMode::SingleTrace;
+  return CliMode::Aggregate;
+}
+
 int main(int argc, char** argv) {
   std::uint64_t trials = 100000;
   std::uint64_t seed = 20260705;
@@ -159,18 +174,13 @@ int main(int argc, char** argv) {
     }
   }
 
-  const int explicit_mode_count = static_cast<int>(self_test) +
-      static_cast<int>(simulate_this) + static_cast<int>(find_ready_supplied) +
-      static_cast<int>(model_crobat);
-  if (explicit_mode_count > 1) {
+  const auto selected_mode = select_cli_mode(
+    self_test, model_crobat, find_ready_supplied, simulate_this);
+  if (!selected_mode) {
     std::cerr << "--self-test, --simulate-this, --find-ready, and --model-crobat select incompatible modes\n";
     return 2;
   }
-
-  const CliMode mode = self_test ? CliMode::SelfTest :
-      (model_crobat ? CliMode::CrobatModel :
-       (find_ready_supplied ? CliMode::FindReady :
-        (simulate_this ? CliMode::SingleTrace : CliMode::Aggregate)));
+  const CliMode mode = *selected_mode;
 
   if (mode == CliMode::CrobatModel) {
     // Keep modeling output separate from the canonical setup baseline and reproduce its registered seed:

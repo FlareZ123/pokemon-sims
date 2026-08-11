@@ -1,13 +1,11 @@
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
-#include <array>
 #include <cstdint>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <map>
-#include <sstream>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -25,9 +23,12 @@ constexpr std::uint64_t kTrials = 100000;
 constexpr std::uint64_t kBaseSeed = 20260810;
 constexpr std::uint64_t kScenarioStride = 104729;
 constexpr std::size_t kWitnessesPerDirection = 4;
+constexpr std::size_t kExceptionWitnesses = 4;
 
 struct Stats {
-  std::uint64_t trials{};
+  std::uint64_t attempted{};
+  std::uint64_t valid{};
+  std::uint64_t logic_errors{};
   std::uint64_t by2{};
   std::uint64_t by3{};
   std::uint64_t by4{};
@@ -36,15 +37,26 @@ struct Stats {
   std::uint64_t started_regi{};
   std::uint64_t started_tapu{};
   std::uint64_t mulligans{};
+  std::vector<std::uint64_t> exception_witnesses;
 };
 
 struct PairStats {
+  std::uint64_t attempted{};
+  std::uint64_t valid{};
   std::uint64_t qb_faster{};
   std::uint64_t vessel_faster{};
   std::uint64_t same_ready_turn{};
   std::uint64_t both_fail_by4{};
+  std::uint64_t vessel_only_error{};
+  std::uint64_t qb_only_error{};
+  std::uint64_t both_error{};
   std::vector<std::uint64_t> qb_witnesses;
   std::vector<std::uint64_t> vessel_witnesses;
+};
+
+struct RunResult {
+  std::optional<TrialOutcome> outcome;
+  std::string error;
 };
 
 void adjust(DeckRecipe& recipe, const Card card, const int delta) {
@@ -87,18 +99,6 @@ DeckRecipe quick_ball_recipe() {
   return recipe;
 }
 
-void accumulate(Stats& stats, const TrialOutcome& outcome) {
-  ++stats.trials;
-  stats.by2 += outcome.ready_by_2 ? 1U : 0U;
-  stats.by3 += outcome.ready_by_3 ? 1U : 0U;
-  stats.by4 += outcome.ready_by_4 ? 1U : 0U;
-  stats.by5 += outcome.ready_by_5 ? 1U : 0U;
-  stats.failures += outcome.setup_failed ? 1U : 0U;
-  stats.started_regi += outcome.started_regi ? 1U : 0U;
-  stats.started_tapu += outcome.started_tapu ? 1U : 0U;
-  stats.mulligans += outcome.mulligans;
-}
-
 double pct(const std::uint64_t count, const std::uint64_t total) {
   return total == 0 ? 0.0 : 100.0 * static_cast<double>(count) / static_cast<double>(total);
 }
@@ -109,11 +109,36 @@ int comparable_ready_turn(const TrialOutcome& outcome) {
       : 99;
 }
 
-TrialOutcome run_one(const Scenario& scenario, const DeckRecipe& recipe,
-                     const std::uint64_t seed, TraceLog* trace = nullptr) {
-  std::mt19937_64 rng(seed);
-  Engine engine(scenario, recipe, rng, trace);
-  return engine.run();
+RunResult run_one(const Scenario& scenario, const DeckRecipe& recipe,
+                  const std::uint64_t seed, TraceLog* trace = nullptr) {
+  try {
+    std::mt19937_64 rng(seed);
+    Engine engine(scenario, recipe, rng, trace);
+    return RunResult{engine.run(), {}};
+  } catch (const std::logic_error& error) {
+    return RunResult{std::nullopt, error.what()};
+  }
+}
+
+void accumulate(Stats& stats, const RunResult& run, const std::uint64_t seed) {
+  ++stats.attempted;
+  if (!run.outcome) {
+    ++stats.logic_errors;
+    if (stats.exception_witnesses.size() < kExceptionWitnesses) {
+      stats.exception_witnesses.push_back(seed);
+    }
+    return;
+  }
+  ++stats.valid;
+  const TrialOutcome& outcome = *run.outcome;
+  stats.by2 += outcome.ready_by_2 ? 1U : 0U;
+  stats.by3 += outcome.ready_by_3 ? 1U : 0U;
+  stats.by4 += outcome.ready_by_4 ? 1U : 0U;
+  stats.by5 += outcome.ready_by_5 ? 1U : 0U;
+  stats.failures += outcome.setup_failed ? 1U : 0U;
+  stats.started_regi += outcome.started_regi ? 1U : 0U;
+  stats.started_tapu += outcome.started_tapu ? 1U : 0U;
+  stats.mulligans += outcome.mulligans;
 }
 
 std::string sanitize(std::string text) {
@@ -126,14 +151,19 @@ std::string sanitize(std::string text) {
 void write_trace(const std::string& path, const Scenario& scenario,
                  const DeckRecipe& recipe, const std::uint64_t seed) {
   TraceLog trace{true, {}};
-  const TrialOutcome outcome = run_one(scenario, recipe, seed, &trace);
+  const RunResult run = run_one(scenario, recipe, seed, &trace);
   std::ofstream out(path, std::ios::binary | std::ios::trunc);
   out << "scenario: " << scenario.label << '\n';
   out << "seed: " << seed << '\n';
-  out << "first-ready turn: "
-      << (outcome.first_ready_turn > 0 ? std::to_string(outcome.first_ready_turn) : "not ready")
-      << '\n';
-  out << "setup result: " << (outcome.setup_failed ? "failure" : "success") << "\n\n";
+  if (!run.outcome) {
+    out << "logic-error: " << run.error << "\n\n";
+  } else {
+    const TrialOutcome& outcome = *run.outcome;
+    out << "first-ready turn: "
+        << (outcome.first_ready_turn > 0 ? std::to_string(outcome.first_ready_turn) : "not ready")
+        << '\n';
+    out << "setup result: " << (outcome.setup_failed ? "failure" : "success") << "\n\n";
+  }
   for (const std::string& line : trace.lines) out << line << '\n';
 }
 
@@ -155,8 +185,8 @@ int main() {
   std::ofstream witnesses("ev-vs-quick-ball-witnesses.csv", std::ios::binary | std::ios::trunc);
   if (!aggregate || !paired || !witnesses) return 3;
 
-  aggregate << "variant,scenario,trials,effective_cards,quick_ball,earthen_vessel,ready_by_t2_pct,ready_by_t3_pct,ready_by_t4_pct,ready_by_t5_pct,setup_failure_pct,started_regi_pct,started_tapu_pct,mean_mulligans\n";
-  paired << "scenario,trials,qb_faster_pct,vessel_faster_pct,same_ready_turn_pct,both_fail_by4_pct,qb_minus_vessel_t2_pp,qb_minus_vessel_t3_pp,qb_minus_vessel_t4_pp\n";
+  aggregate << "variant,scenario,attempted_trials,valid_trials,logic_error_pct,effective_cards,quick_ball,earthen_vessel,ready_by_t2_pct_valid,ready_by_t3_pct_valid,ready_by_t4_pct_valid,ready_by_t5_pct_valid,setup_failure_pct_valid,started_regi_pct_valid,started_tapu_pct_valid,mean_mulligans_valid\n";
+  paired << "scenario,attempted_pairs,valid_pairs,invalid_pair_pct,qb_faster_pct_valid,vessel_faster_pct_valid,same_ready_turn_pct_valid,both_fail_by4_pct_valid,qb_minus_vessel_t2_pp_valid,qb_minus_vessel_t3_pp_valid,qb_minus_vessel_t4_pp_valid,vessel_only_logic_error_pct,qb_only_logic_error_pct,both_logic_error_pct\n";
   witnesses << "scenario,direction,seed,vessel_ready_turn,quick_ball_ready_turn\n";
 
   const std::vector<Scenario> scenarios = sim::all_scenarios();
@@ -169,13 +199,26 @@ int main() {
 
     for (std::uint64_t trial = 0; trial < kTrials; ++trial) {
       const std::uint64_t seed = scenario_seed + trial;
-      const TrialOutcome vessel_outcome = run_one(scenario, vessel, seed);
-      const TrialOutcome qb_outcome = run_one(scenario, quick_ball, seed);
-      accumulate(vessel_stats, vessel_outcome);
-      accumulate(qb_stats, qb_outcome);
+      const RunResult vessel_run = run_one(scenario, vessel, seed);
+      const RunResult qb_run = run_one(scenario, quick_ball, seed);
+      accumulate(vessel_stats, vessel_run, seed);
+      accumulate(qb_stats, qb_run, seed);
+      ++pair.attempted;
 
-      const int vessel_turn = comparable_ready_turn(vessel_outcome);
-      const int qb_turn = comparable_ready_turn(qb_outcome);
+      if (!vessel_run.outcome || !qb_run.outcome) {
+        if (!vessel_run.outcome && !qb_run.outcome) {
+          ++pair.both_error;
+        } else if (!vessel_run.outcome) {
+          ++pair.vessel_only_error;
+        } else {
+          ++pair.qb_only_error;
+        }
+        continue;
+      }
+
+      ++pair.valid;
+      const int vessel_turn = comparable_ready_turn(*vessel_run.outcome);
+      const int qb_turn = comparable_ready_turn(*qb_run.outcome);
       if (qb_turn < vessel_turn) {
         ++pair.qb_faster;
         if (pair.qb_witnesses.size() < kWitnessesPerDirection) {
@@ -198,24 +241,31 @@ int main() {
 
     const auto write_stats = [&](const std::string_view variant, const DeckRecipe& recipe,
                                  const Stats& stats) {
-      aggregate << variant << ',' << scenario.label << ',' << stats.trials << ','
-                << card_count(recipe) << ',' << copies(recipe, Card::QuickBall) << ','
-                << copies(recipe, Card::EarthenVessel) << ',' << std::fixed << std::setprecision(6)
-                << pct(stats.by2, stats.trials) << ',' << pct(stats.by3, stats.trials) << ','
-                << pct(stats.by4, stats.trials) << ',' << pct(stats.by5, stats.trials) << ','
-                << pct(stats.failures, stats.trials) << ',' << pct(stats.started_regi, stats.trials)
-                << ',' << pct(stats.started_tapu, stats.trials) << ','
-                << static_cast<double>(stats.mulligans) / static_cast<double>(stats.trials) << '\n';
+      aggregate << variant << ',' << scenario.label << ',' << stats.attempted << ','
+                << stats.valid << ',' << std::fixed << std::setprecision(6)
+                << pct(stats.logic_errors, stats.attempted) << ',' << card_count(recipe) << ','
+                << copies(recipe, Card::QuickBall) << ',' << copies(recipe, Card::EarthenVessel)
+                << ',' << pct(stats.by2, stats.valid) << ',' << pct(stats.by3, stats.valid) << ','
+                << pct(stats.by4, stats.valid) << ',' << pct(stats.by5, stats.valid) << ','
+                << pct(stats.failures, stats.valid) << ',' << pct(stats.started_regi, stats.valid)
+                << ',' << pct(stats.started_tapu, stats.valid) << ','
+                << (stats.valid == 0 ? 0.0 : static_cast<double>(stats.mulligans) /
+                                            static_cast<double>(stats.valid)) << '\n';
     };
     write_stats("1-ev-null", vessel, vessel_stats);
     write_stats("1-qb-null", quick_ball, qb_stats);
 
-    paired << scenario.label << ',' << kTrials << ',' << std::fixed << std::setprecision(6)
-           << pct(pair.qb_faster, kTrials) << ',' << pct(pair.vessel_faster, kTrials) << ','
-           << pct(pair.same_ready_turn, kTrials) << ',' << pct(pair.both_fail_by4, kTrials) << ','
-           << (pct(qb_stats.by2, kTrials) - pct(vessel_stats.by2, kTrials)) << ','
-           << (pct(qb_stats.by3, kTrials) - pct(vessel_stats.by3, kTrials)) << ','
-           << (pct(qb_stats.by4, kTrials) - pct(vessel_stats.by4, kTrials)) << '\n';
+    const std::uint64_t invalid_pairs = pair.attempted - pair.valid;
+    paired << scenario.label << ',' << pair.attempted << ',' << pair.valid << ','
+           << std::fixed << std::setprecision(6) << pct(invalid_pairs, pair.attempted) << ','
+           << pct(pair.qb_faster, pair.valid) << ',' << pct(pair.vessel_faster, pair.valid) << ','
+           << pct(pair.same_ready_turn, pair.valid) << ',' << pct(pair.both_fail_by4, pair.valid) << ','
+           << (pct(qb_stats.by2, qb_stats.valid) - pct(vessel_stats.by2, vessel_stats.valid)) << ','
+           << (pct(qb_stats.by3, qb_stats.valid) - pct(vessel_stats.by3, vessel_stats.valid)) << ','
+           << (pct(qb_stats.by4, qb_stats.valid) - pct(vessel_stats.by4, vessel_stats.valid)) << ','
+           << pct(pair.vessel_only_error, pair.attempted) << ','
+           << pct(pair.qb_only_error, pair.attempted) << ','
+           << pct(pair.both_error, pair.attempted) << '\n';
 
     const std::string scenario_name = sanitize(scenario.label);
     for (const std::uint64_t seed : pair.qb_witnesses) {
@@ -230,9 +280,18 @@ int main() {
       write_trace("trace-" + scenario_name + "-vessel-faster-" + std::to_string(seed) + "-qb.txt",
                   scenario, quick_ball, seed);
     }
+    for (const std::uint64_t seed : vessel_stats.exception_witnesses) {
+      write_trace("trace-" + scenario_name + "-vessel-logic-error-" + std::to_string(seed) + ".txt",
+                  scenario, vessel, seed);
+    }
+    for (const std::uint64_t seed : qb_stats.exception_witnesses) {
+      write_trace("trace-" + scenario_name + "-qb-logic-error-" + std::to_string(seed) + ".txt",
+                  scenario, quick_ball, seed);
+    }
   }
 
   std::cout << "Wrote paired 1-EV-null vs 1-QB-null experiment over "
-            << sim::all_scenarios().size() << " scenarios x " << kTrials << " trials.\n";
+            << sim::all_scenarios().size() << " scenarios x " << kTrials
+            << " attempted pairs, with simulator logic errors reported separately.\n";
   return 0;
 }

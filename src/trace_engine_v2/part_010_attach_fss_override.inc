@@ -39,6 +39,19 @@
     return nullptr;
   }
 
+  Pokemon* first_open_fss_holder() {
+    // Forest Seal Stone may be attached to an Active or Benched Pokémon V with an
+    // open Tool slot; prefer the Active holder before scanning the Bench:
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    if (state_.active && is_pokemon_v(state_.active->card) &&
+        state_.active->tool == Tool::None) {
+      return &*state_.active;
+    }
+    return first_open_pokemon_v_on_bench();
+  }
+
   bool attach_fss() {
     if (hand_count(Card::ForestSealStone) == 0) return false;
 
@@ -64,12 +77,7 @@
       return false;
     }
 
-    Pokemon* target = nullptr;
-    if (state_.active && is_pokemon_v(state_.active->card) &&
-        state_.active->tool == Tool::None) {
-      target = &*state_.active;
-    }
-    if (target == nullptr) target = first_open_pokemon_v_on_bench();
+    Pokemon* target = first_open_fss_holder();
     if (target == nullptr) return false;
 
     // Pokémon V includes Pokémon VSTAR, and the trace must identify the actual

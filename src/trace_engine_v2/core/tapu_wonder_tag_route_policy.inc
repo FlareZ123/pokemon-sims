@@ -34,7 +34,7 @@
     return in_play(Card::TapuLeleGX) ? 1 : 2;
   }
 
-  bool issue_2270_wonder_tag_arven_latias_route_available() const {
+  bool wonder_tag_arven_latias_route_available() const {
     // Wonder Tag may find Arven; Arven may find Quick Ball; Quick Ball can discard
     // the held Dragon while searching Latias ex. Skyliner then gives the Basic
     // Active no Retreat Cost into the already powered Benched VSTAR.
@@ -79,5 +79,5 @@
     // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
     // Post-search Supporter fallback implementation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_007.inc#L409-L425
     // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/2270
-    return issue_2270_wonder_tag_arven_latias_route_available();
+    return wonder_tag_arven_latias_route_available();
   }

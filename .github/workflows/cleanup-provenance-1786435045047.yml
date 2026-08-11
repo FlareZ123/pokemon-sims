@@ -14,3 +14,4 @@ jobs:
       - uses: actions/checkout@v4
       - name: Compute simulator policy source digest
         run: python -c "from pathlib import Path; from scripts.baseline_provenance import simulator_policy_source_digest; print(simulator_policy_source_digest(Path('.').resolve()))"
+      # Retriggered after main advanced so checkout validates the current PR merge ref.

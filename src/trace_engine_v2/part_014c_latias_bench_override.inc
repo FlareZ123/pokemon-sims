@@ -121,7 +121,23 @@
 
     const Card retreating = state_.active->card;
     const Card payment = hand_count(Card::Grass) > 0 ? Card::Grass : Card::Fire;
-    if (hand_count(payment) == 0 || !remove_one(state_.hand, payment)) return false;
+    if (hand_count(payment) == 0) return false;
+
+    // Execute the exact promised payload action before consuming the manual
+    // attachment or Retreat Cost. Brilliant Blender is a legal Item before retreat,
+    // and its deck-to-discard effect does not alter the checked Active, target, or
+    // held Basic Energy. If the ordinary selector preserves the ACE SPEC because a
+    // superior visible payload outlet exists, abandon this paid-retreat route with
+    // every mobility resource still intact.
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, attachment, and retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Resource-preserving route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Dynamic DCI/AMR model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Original paid-retreat route: https://github.com/FlareZ123/pokemon-sims/issues/2295
+    // Confirmed preflight/execution bug: https://github.com/FlareZ123/pokemon-sims/issues/2951
+    if (blender_completes_payload && !play_brilliant_blender()) return false;
+    if (!remove_one(state_.hand, payment)) return false;
 
     // A printed one-Colorless Retreat Cost accepts either modeled Basic Energy.
     // The Benched VSTAR is already GGF-ready, so this attachment is mobility value;
@@ -153,9 +169,6 @@
     trace("RETREAT", "R-GAME-RETREAT",
           "Paid " + std::string(name(retreating)) +
               "'s one-Energy Retreat Cost and promoted the ready Benched Regidrago VSTAR.");
-    if (blender_completes_payload && !play_brilliant_blender()) {
-      throw std::logic_error("Issue-2295 held Brilliant Blender route disappeared");
-    }
     return true;
   }
 

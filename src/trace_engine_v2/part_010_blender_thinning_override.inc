@@ -121,6 +121,25 @@
     if (!benched_vstar_promotion_ready()) return true;
     if (can_free_retreat_with_latias()) return true;
 
+    // A Basic Active with printed Retreat Cost 1 can be given a held Basic Energy
+    // by the still-unused manual attachment, then retreat into the already Apex-ready
+    // Benched VSTAR. This makes the Active axis completable before Blender resolves,
+    // so the ACE SPEC selector may safely evaluate the whole atomic route without
+    // spending the attachment or Retreat Cost first.
+    // Oricorio GRI 55: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official attachment and retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Earliest complete route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Paid-retreat route: https://github.com/FlareZ123/pokemon-sims/issues/2295
+    // Confirmed preflight/execution bug: https://github.com/FlareZ123/pokemon-sims/issues/2951
+    const bool paid_one_energy_retreat = !state_.retreat_used &&
+        !state_.manual_energy_used && state_.active &&
+        is_basic(state_.active->card) && retreat_cost(state_.active->card) == 1 &&
+        (hand_count(Card::Grass) > 0 || hand_count(Card::Fire) > 0);
+    if (paid_one_energy_retreat) return true;
+
     // Tate & Liza switches unconditionally. Professor Turo's Scenario may remove a
     // Basic Active. Guzma completes the same promotion only when the scenario proves
     // an eligible opposing Benched Pokémon for its printed first switch:

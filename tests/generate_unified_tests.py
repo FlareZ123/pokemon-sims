@@ -223,25 +223,8 @@ def render_generated_cases(
     return "".join(generated)
 
 
-def write_atomic_text(destination: Path, content: str) -> None:
-    with tempfile.NamedTemporaryFile(
-        mode="w", encoding="utf-8", newline="\n", dir=destination.parent, delete=False
-    ) as temporary:
-        temporary.write(content)
-        temporary.flush()
-        os.fsync(temporary.fileno())
-        temporary_path = Path(temporary.name)
-    os.replace(temporary_path, destination)
-
-
-def generate(source_root: Path, output_cpp: Path, output_cmake: Path) -> None:
-    tests_root = source_root / "tests"
-    cases, access_blocks, headers = collect_test_cases(source_root, tests_root)
-    generated = [
-        render_generated_preamble(headers),
-        render_generated_cases(access_blocks, cases),
-    ]
-    generated.append(r'''int main(int argc, char** argv) {
+def render_generated_main() -> str:
+    return r'''int main(int argc, char** argv) {
   if (argc != 2) {
     std::cerr << "usage: regidrago_unified_tests <case>\n";
     return 2;
@@ -261,8 +244,28 @@ def generate(source_root: Path, output_cpp: Path, output_cmake: Path) -> None:
   std::cerr << "unknown case: " << requested << '\n';
   return 2;
 }
-''')
+'''
 
+
+def write_atomic_text(destination: Path, content: str) -> None:
+    with tempfile.NamedTemporaryFile(
+        mode="w", encoding="utf-8", newline="\n", dir=destination.parent, delete=False
+    ) as temporary:
+        temporary.write(content)
+        temporary.flush()
+        os.fsync(temporary.fileno())
+        temporary_path = Path(temporary.name)
+    os.replace(temporary_path, destination)
+
+
+def generate(source_root: Path, output_cpp: Path, output_cmake: Path) -> None:
+    tests_root = source_root / "tests"
+    cases, access_blocks, headers = collect_test_cases(source_root, tests_root)
+    generated = [
+        render_generated_preamble(headers),
+        render_generated_cases(access_blocks, cases),
+        render_generated_main(),
+    ]
     output_cpp.parent.mkdir(parents=True, exist_ok=True)
     write_atomic_text(output_cpp, "".join(generated))
     write_atomic_text(output_cmake, render_cmake_cases(cases))

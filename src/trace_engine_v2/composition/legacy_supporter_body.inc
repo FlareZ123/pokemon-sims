@@ -9,9 +9,13 @@
 // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
 // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
 // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+// Centralize every alias owned by this composition unit in one entry contract:
+// C++ conditional preprocessing: https://eel.is/c++draft/cpp.cond
 #if defined(use_fss) || defined(play_crispin) || \
-    defined(play_professor_burnet) || defined(play_steven)
-#error "Legacy Supporter composition requires aliases to be undefined on entry"
+    defined(play_professor_burnet) || defined(play_steven) || \
+    defined(play_arven) || defined(play_gladion) || defined(play_serena) || \
+    defined(use_celestial_roar) || defined(use_legacy_star)
+#error "Legacy Supporter composition requires owned aliases to be undefined on entry"
 #endif
 
 #define use_fss use_fss_latias_original
@@ -25,6 +29,13 @@
 
 #if defined(play_crispin) || defined(play_professor_burnet) || defined(play_steven)
 #error "Legacy Supporter composition leaked a local alias"
+#endif
+
+// use_fss intentionally crosses the part_011 boundary; assert that export here so
+// later cleanup cannot silently sever the Forest Seal Stone wrapper chain.
+// C++ conditional preprocessing: https://eel.is/c++draft/cpp.cond
+#if !defined(use_fss)
+#error "Legacy Supporter composition must export use_fss past part_011"
 #endif
 
 // Intentionally leave use_fss defined. post_014a_overrides.inc consumes and
@@ -65,6 +76,13 @@
 
 #if defined(use_legacy_star)
 #error "VSTAR-power composition leaked use_legacy_star"
+#endif
+
+// use_celestial_roar intentionally crosses the part_013 boundary; assert that export
+// where the wrapper chain is centralized instead of relying on an undocumented leak.
+// C++ conditional preprocessing: https://eel.is/c++draft/cpp.cond
+#if !defined(use_celestial_roar)
+#error "Legacy Supporter composition must export use_celestial_roar past part_013"
 #endif
 
 // Intentionally leave use_celestial_roar defined. post_014a_overrides.inc consumes

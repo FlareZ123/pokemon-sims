@@ -1,5 +1,12 @@
 #undef play_steven
 
+  bool known_hand_or_deck_card_available(const Card card) const {
+    // Once the deck is known, route package checks should express card access once
+    // rather than duplicate hand-or-known-deck predicates at every call site.
+    // K1 knowledge-state policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    return hand_count(card) > 0 || deck_count_after_search_started(card) > 0;
+  }
+
   bool held_arven_fss_blender_finish_available() const {
     const bool forest_seal_ability_available_this_turn =
         ability_available_for_pokemon(Card::RegidragoV) ||
@@ -21,11 +28,9 @@
     }
 
     const bool forest_seal_stone_available =
-        hand_count(Card::ForestSealStone) > 0 ||
-        deck_count_after_search_started(Card::ForestSealStone) > 0;
+        known_hand_or_deck_card_available(Card::ForestSealStone);
     const bool brilliant_blender_available =
-        hand_count(Card::BrilliantBlender) > 0 ||
-        deck_count_after_search_started(Card::BrilliantBlender) > 0;
+        known_hand_or_deck_card_available(Card::BrilliantBlender);
 
     // Arven can search one Item and one Pokémon Tool. Forest Seal Stone then searches
     // the missing Regidrago VSTAR, the prior-turn Basic may evolve, and Brilliant

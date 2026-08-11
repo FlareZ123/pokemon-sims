@@ -87,12 +87,20 @@ constexpr bool is_pokemon(const Card card) {
   }
 }
 
+// Regidrago V and Regidrago VSTAR repeatedly form one modeled evolution family.
+// Keep that identity in one predicate so callers do not duplicate the pair:
+// Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+// Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+constexpr bool is_regidrago(const Card card) {
+  return card == Card::RegidragoV || card == Card::RegidragoVstar;
+}
+
 // TPCi defines Pokémon V to include Pokémon VSTAR. Forest Seal Stone can remain
 // usable after its Pokémon V evolves into a Pokémon VSTAR:
 // https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
 // https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
 constexpr bool is_pokemon_v(const Card card) {
-  return card == Card::RegidragoV || card == Card::RegidragoVstar ||
+  return is_regidrago(card) ||
          card == Card::CrobatV;  // Pokémon V: https://api.pokemontcg.io/v2/cards/swsh3-104
 }
 constexpr bool is_rule_box_pokemon(const Card card) {

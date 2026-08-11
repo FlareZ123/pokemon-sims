@@ -24,6 +24,20 @@
            state_.hand.size() <= 9U;
   }
 
+  bool issue_1605_regidrago_search_route_available() const {
+    // Group the Item legality, Regidrago target, and dynamic-DCI payment gates that
+    // make the one-discard search connector executable from the public state:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Core Item and search procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Completed route fix: https://github.com/FlareZ123/pokemon-sims/issues/1605
+    return !item_locked() && need_regi() && might_be_unseen(Card::RegidragoV) &&
+           issue_1605_one_discard_search_item_plausible() &&
+           issue_1605_redundant_payload_cost().has_value();
+  }
+
   bool issue_1605_arven_crobat_route_available() const {
     // The Arven -> one-discard search -> Regidrago V -> Forest Seal Stone ->
     // Crobat V continuation is governed by observable legality and resources.
@@ -40,10 +54,7 @@
     // State-based earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // Confirmed overfit bug: https://github.com/FlareZ123/pokemon-sims/issues/2645
-    return scenario_.dci == DciProfile::StrictJit &&
-           supporter_allowed() && !item_locked() && need_regi() &&
-           issue_1605_crobat_resources_available() &&
-           might_be_unseen(Card::RegidragoV) &&
-           issue_1605_one_discard_search_item_plausible() &&
-           issue_1605_redundant_payload_cost().has_value();
+    return scenario_.dci == DciProfile::StrictJit && supporter_allowed() &&
+           issue_1605_regidrago_search_route_available() &&
+           issue_1605_crobat_resources_available();
   }

@@ -33,20 +33,20 @@
     // Both JIT profiles require the Dragon payload on the ready turn. Treasure
     // supplies that discard on the projected ready turn, so the physical route is
     // shared by StrictJit and MatchupFlexJit. NoDiscardControl remains excluded by
-    // strict_payload_timing(). A Regidrago V already on the Bench now may evolve on
-    // the following turn even when it entered play during this Steven turn.
+    // strict_payload_timing(). The current turn's manual-attachment flag is not an
+    // admission coordinate: if the required one-Grass board already exists, Steven
+    // is legal whether that Grass was attached earlier or during this turn.
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-    // Official evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Official evolution and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Knowledge-state policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3173
     return strict_payload_timing() && state_.turn + 1 <= scenario_.max_turn &&
         prizes_known() && !state_.turn_ended && supporter_allowed() &&
-        state_.manual_energy_used && !state_.retreat_used &&
-        active_can_use_skyliner && regidrago != nullptr && bench_space() > 0 &&
-        !in_play(Card::LatiasEx) && next_turn_actions_legal &&
-        hand_count(Card::StevensResolve) > 0 &&
+        !state_.retreat_used && active_can_use_skyliner &&
+        regidrago != nullptr && bench_space() > 0 && !in_play(Card::LatiasEx) &&
+        next_turn_actions_legal && hand_count(Card::StevensResolve) > 0 &&
         hand_count(Card::MysteriousTreasure) > 0 && deck_payload &&
         deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
         deck_count_after_search_started(Card::Crispin) > 0 &&
@@ -199,6 +199,34 @@
         payload_ready();
   }
 
+  bool play_issue_3173_from_turn_start() {
+    // Engine::run reaches the turn policy immediately after the start-of-turn draw.
+    // The legacy #1796 selector is invoked later, after generic attachment logic, so
+    // a semantic wrapper must compare the same deterministic attachment state before
+    // delegating to that legacy policy. First admit an already-prepared one-Grass
+    // Regidrago. Otherwise project exactly the normal manual attachment, and commit
+    // it only when that action exposes the complete Steven continuation.
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Official attachment and Supporter procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Connector domination / earliest route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Engine turn entry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3173
+    if (issue_3173_steven_route_available()) {
+      return play_issue_3173_banked_steven();
+    }
+
+    if (state_.manual_energy_used) return false;
+    Engine projected = *this;
+    if (!projected.attach_manual() ||
+        !projected.issue_3173_steven_route_available()) {
+      return false;
+    }
+    if (!attach_manual()) {
+      throw std::logic_error("Issue-3173 projected manual attachment disappeared");
+    }
+    return play_issue_3173_banked_steven();
+  }
+
   void choose_supporter_issue_3173() {
     if (play_issue_3173_banked_steven()) return;
     choose_supporter_issue_1152();
@@ -207,9 +235,11 @@
   void run_turn_issue_3173() {
     // A banked Steven continuation is a deterministic earliest-ready route. Resolve
     // it before generic Items, attachments, or Supporters can consume its reserved
-    // channels on the projected turn. The #1152 bridge has already composed the
-    // current public run_turn() through the Latias, #1673, and #1751 policy layers,
-    // so that public member is the behavior-preserving fallback.
+    // channels on the projected turn. On the starting turn, compare the semantic
+    // route before the legacy policy can spend the Supporter slot on a weaker line.
+    // The #1152 bridge has already composed the current public run_turn() through
+    // the Latias, #1673, and #1751 policy layers, so that public member remains the
+    // behavior-preserving fallback for every state outside this confirmed route.
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Connector priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
@@ -220,5 +250,6 @@
             "Completed the semantic Steven, Treasure, and Latias ex route.");
       return;
     }
+    if (play_issue_3173_from_turn_start()) return;
     run_turn();
   }

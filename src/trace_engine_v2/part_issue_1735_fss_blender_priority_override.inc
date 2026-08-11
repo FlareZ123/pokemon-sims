@@ -1,3 +1,14 @@
+  bool hand_covers_missing_basic_energy() const {
+    const int missing_grass = grass_needed();
+    const int missing_fire = fire_needed();
+    // Keep the visible manual-attachment inventory check in one predicate so route
+    // selectors do not reimplement the GGF hand-coverage arithmetic.
+    // Regidrago VSTAR / Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Manual Energy attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    return hand_count(Card::Grass) >= missing_grass &&
+           hand_count(Card::Fire) >= missing_fire;
+  }
+
   bool fss_blender_bank_with_complete_manual_schedule_available() const {
     // A resolved deck search or complete Prize inspection establishes the same
     // fixed-list K1. This route reads exact remaining-deck inventory, so it must
@@ -23,8 +34,7 @@
     const int remaining_fire = fire_needed();
     const bool complete_two_turn_manual_schedule =
         remaining_grass + remaining_fire == 2 &&
-        hand_count(Card::Grass) >= remaining_grass &&
-        hand_count(Card::Fire) >= remaining_fire;
+        hand_covers_missing_basic_energy();
     // No-discard-control permits Brilliant Blender to bank the Dragon payload now.
     // A held Regidrago VSTAR plus the two visible future manual attachments then
     // guarantees readiness by T3, while Steven's Resolve would end a later turn

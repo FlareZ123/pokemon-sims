@@ -55,6 +55,16 @@
     return false;
   }
 
+  bool team_yell_prior_turn_regi_v_pays_apex(const Pokemon& pokemon) const {
+    // Double Dragon Energy provides two Energy of every type while attached to a Dragon Pokemon.
+    // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Apex Dragon costs Grass Grass Fire: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // DDE semantic-readiness contract: https://github.com/FlareZ123/pokemon-sims/issues/2238
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2420
+    return pokemon.card == Card::RegidragoV && pokemon.entered_turn < state_.turn &&
+           pays_apex_energy_cost(pokemon);
+  }
+
   bool play_team_yell_vstar_recovery() {
     if (!supporter_allowed() || hand_count(Card::TeamYellsCheer) == 0 || !need_vstar() ||
         !has_regidrago_v_that_can_evolve_this_turn() ||
@@ -203,8 +213,7 @@
     // https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Retreat_Your_Active_Pokemon
     const bool powered_benched_regi_can_evolve = std::any_of(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
-          return pokemon.card == Card::RegidragoV && pokemon.entered_turn < state_.turn &&
-                 pokemon.grass >= 2 && pokemon.fire >= 1;
+          return team_yell_prior_turn_regi_v_pays_apex(pokemon); // https://github.com/FlareZ123/pokemon-sims/issues/2420
         });
     // An Active Regidrago V makes Latias redundant only when it can legally evolve now
     // and already carries GGF for Apex Dragon. A Regidrago V that entered this turn or
@@ -212,8 +221,7 @@
     // https://www.pokemon.com/us/pokemon-tcg/rules
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     const bool active_regi_can_be_ready_without_retreat = state_.active &&
-        state_.active->card == Card::RegidragoV && state_.active->entered_turn < state_.turn &&
-        state_.active->grass >= 2 && state_.active->fire >= 1;
+        team_yell_prior_turn_regi_v_pays_apex(*state_.active); // https://github.com/FlareZ123/pokemon-sims/issues/2420
     const bool restore_latias_for_promotion = state_.active && is_basic(state_.active->card) &&
         !active_regi_can_be_ready_without_retreat && powered_benched_regi_can_evolve &&
         !state_.retreat_used && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
@@ -313,9 +321,9 @@
 
   bool play_team_yell_latias_recovery() {
     const bool powered_benched_vstar = std::any_of(
-        state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
-          return pokemon.card == Card::RegidragoVstar && pokemon.grass >= 2 && pokemon.fire >= 1;
-        });
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoVstar && pays_apex_energy_cost(pokemon);
+        }); // DDE-aware: https://github.com/FlareZ123/pokemon-sims/issues/2368
     const bool active_can_evolve_from_hand = state_.active && state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn && hand_count(Card::RegidragoVstar) > 0;
     if (!supporter_allowed() || hand_count(Card::TeamYellsCheer) == 0 || !need_active_vstar() ||

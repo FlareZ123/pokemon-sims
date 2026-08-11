@@ -191,10 +191,37 @@ bool Engine::resolve_exploding_energy(
             "Prize cards in a complete two-player game.");
 
   if (!state_.active && !state_.bench.empty()) {
-    const auto promotion_rank = [](const Pokemon& pokemon) {
+    const auto promotion_rank = [this](const Pokemon& pokemon) {
       const int role = pokemon.card == Card::RegidragoVstar ? 3 :
           (pokemon.card == Card::RegidragoV ? 2 : 1);
-      return std::tuple{role, pokemon.grass + pokemon.fire,
+      const bool regidrago = pokemon.card == Card::RegidragoVstar ||
+          pokemon.card == Card::RegidragoV;
+      const bool apex_paid = regidrago && pays_apex_energy_cost(pokemon);
+      bool one_basic_from_apex = false;
+      if (regidrago && !apex_paid) {
+        for (const Card basic : {Card::Grass, Card::Fire}) {
+          Pokemon projected = pokemon;
+          if (attach_energy_card(projected, basic) &&
+              pays_apex_energy_cost(projected)) {
+            one_basic_from_apex = true;
+            break;
+          }
+        }
+      }
+      // Preserve evolution-stage priority, then prefer the same-stage attacker
+      // closest to an immediate Apex Dragon. DDE supplies two Energy of every type:
+      // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+      // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Knock Out / replacement Active: https://www.pokemon.com/us/pokemon-tcg/rules
+      // DDE semantic contract: https://github.com/FlareZ123/pokemon-sims/issues/2238
+      // Policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2447
+      const int semantic_energy_class = apex_paid ? 2 :
+          (one_basic_from_apex ? 1 : 0);
+      const int attached_energy_units = pokemon.grass + pokemon.fire +
+          2 * pokemon.double_dragon;
+      return std::tuple{role, semantic_energy_class, attached_energy_units,
                         -pokemon.entered_turn};
     };
     const auto promoted = std::max_element(

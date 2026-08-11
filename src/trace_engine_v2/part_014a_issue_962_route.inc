@@ -15,10 +15,17 @@
           // deficit, so the extra Basic, Bench slot, and Supporter connector add no setup
           // speed in that state: https://api.pokemontcg.io/v2/cards/sv4-163
           // https://www.pokemon.com/us/pokemon-tcg/rules
+          const Pokemon* vessel_target = target_regi();
           const bool vessel_and_manual_complete = !state_.manual_energy_used &&
-              grass_needed() + fire_needed() == 1 &&
-              ((grass_needed() == 1 && might_be_unseen(Card::Grass)) ||
-               (fire_needed() == 1 && might_be_unseen(Card::Fire)));
+              vessel_target != nullptr &&
+              completing_basic_energy_for(*vessel_target, [this](const Card card) {
+                return might_be_unseen(card);
+              }).has_value();
+          // DDE provides two units of every Energy type, so typed deficits are
+          // alternatives and must not be added as physical-card distance:
+          // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+          // https://api.pokemontcg.io/v2/cards/swsh12-136
+          // https://github.com/FlareZ123/pokemon-sims/issues/2368
           if (vessel_and_manual_complete) return false;
       
           const auto pay_quick_ball_cost = [permit_payload](Engine& projected) {

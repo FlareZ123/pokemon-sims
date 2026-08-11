@@ -90,20 +90,27 @@
     bool after_evolution = false;
     for (const Pokemon& pokemon : state_.bench) {
       if (pokemon.entered_turn >= state_.turn) continue;
-      if (pokemon.card == Card::RegidragoV && pokemon.grass == 1 && pokemon.fire == 0 &&
+      const bool held_basic_completes = completing_basic_energy_for(
+          pokemon, [this](const Card card) { return hand_count(card) > 0; }).has_value();
+      const bool semantic_energy_complete = pays_apex_energy_cost(pokemon);
+      if (pokemon.card == Card::RegidragoV &&
           !state_.manual_energy_used && hand_count(Card::RegidragoVstar) > 0 &&
-          hand_count(Card::Fire) > 0 && hand_count(Card::Grass) > 0) {
+          ((pokemon.grass == 1 && pokemon.fire == 0 &&
+            hand_count(Card::Fire) > 0 && hand_count(Card::Grass) > 0) ||
+           semantic_energy_complete || held_basic_completes)) {
         before_attachment = true;
       }
-      if (pokemon.card == Card::RegidragoV && pokemon.grass == 1 && pokemon.fire == 1 &&
-          state_.manual_energy_used && hand_count(Card::RegidragoVstar) > 0 &&
-          hand_count(Card::Grass) > 0) {
+      if (pokemon.card == Card::RegidragoV && state_.manual_energy_used &&
+          hand_count(Card::RegidragoVstar) > 0 &&
+          ((pokemon.grass == 1 && pokemon.fire == 1 && hand_count(Card::Grass) > 0) ||
+           semantic_energy_complete || held_basic_completes)) {
         after_attachment = true;
       }
-      if (pokemon.card == Card::RegidragoVstar && pokemon.grass == 1 && pokemon.fire == 1 &&
-          state_.manual_energy_used && hand_count(Card::Grass) > 0) {
+      if (pokemon.card == Card::RegidragoVstar && state_.manual_energy_used &&
+          ((pokemon.grass == 1 && pokemon.fire == 1 && hand_count(Card::Grass) > 0) ||
+           semantic_energy_complete || held_basic_completes)) {
         after_evolution = true;
-      }
+      } // DDE semantic staging: https://github.com/FlareZ123/pokemon-sims/issues/2424
     }
 
     // Steven's Resolve can bank Latias ex, Mysterious Treasure, and Mega Dragonite ex
@@ -124,16 +131,19 @@
 
   bool play_known_steven_t3_payload_outlet() {
     if (state_.turn != 3 || item_locked() || hand_count(Card::MysteriousTreasure) == 0 ||
-        hand_count(Card::MegaDragonite) == 0 || hand_count(Card::Grass) == 0 ||
+        hand_count(Card::MegaDragonite) == 0 ||
         state_.manual_energy_used || !need_payload() || !in_play(Card::LatiasEx) ||
         !ability_available_for_pokemon(Card::LatiasEx)) {
       return false;
     }
     const bool prepared_vstar = std::any_of(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
-          return pokemon.card == Card::RegidragoVstar && pokemon.grass == 1 &&
-              pokemon.fire == 1 && pokemon.entered_turn < state_.turn;
-        });
+          return pokemon.card == Card::RegidragoVstar &&
+              pokemon.entered_turn < state_.turn &&
+              (pays_apex_energy_cost(pokemon) ||
+               completing_basic_energy_for(
+                   pokemon, [this](const Card card) { return hand_count(card) > 0; }).has_value());
+        }); // https://github.com/FlareZ123/pokemon-sims/issues/2424
     const bool legal_search_target = std::any_of(
         state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic);
     if (!prepared_vstar || !legal_search_target) return false;

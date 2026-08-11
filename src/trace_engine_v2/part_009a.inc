@@ -38,7 +38,7 @@
     const bool active_route_complete = state_.active &&
         state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn &&
-        state_.active->grass >= 2 && state_.active->fire >= 1 &&
+        pays_apex_energy_cost(*state_.active) && // https://github.com/FlareZ123/pokemon-sims/issues/2368
         !item_locked() && hand_count(Card::MysteriousTreasure) > 0 &&
         might_be_unseen(Card::RegidragoVstar);
     if (!burnet_resolved_this_turn || !active_route_complete) return std::nullopt;

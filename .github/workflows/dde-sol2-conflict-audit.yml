@@ -13,26 +13,22 @@ jobs:
         with:
           ref: reclaim/dde-current-main-sol2-20260811
           fetch-depth: 0
-      - name: Audit stale rollup overlap
+      - name: Audit FSS overlap only
         shell: bash
         run: |
           set -euo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git fetch origin fix/dde-semantic-rollup-reclaim-20260809
-          git merge --no-commit --no-edit origin/fix/dde-semantic-rollup-reclaim-20260809 || true
+          git fetch origin fix/dde-semantic-rollup-reclaim-20260809 >/dev/null 2>&1
+          git merge --no-commit --no-edit origin/fix/dde-semantic-rollup-reclaim-20260809 >/dev/null 2>&1 || true
+          path=src/trace_engine_v2/part_010_fss_override.inc
           echo '=== conflict files ==='
           git diff --name-only --diff-filter=U
-          for path in src/trace_engine_v2/part_010_fss_override.inc src/trace_engine_v2/part_forretress_ex_combo.inc; do
-            if git diff --name-only --diff-filter=U | grep -Fxq "$path"; then
-              echo "=== $path conflict hunks ==="
-              git checkout --conflict=diff3 -- "$path"
-              awk '
-                /^<<<<<<< / {show=1; after=0}
-                show {print NR ":" $0}
-                /^>>>>>>> / {after=12}
-                after > 0 {after--; if (after == 0) show=0}
-              ' "$path"
-            fi
-          done
+          echo "=== $path conflict hunks ==="
+          git checkout --conflict=diff3 -- "$path"
+          awk '
+            /^<<<<<<< / {show=1}
+            show {print NR ":" $0}
+            /^>>>>>>> / {show=0; print "---"}
+          ' "$path"
           exit 1

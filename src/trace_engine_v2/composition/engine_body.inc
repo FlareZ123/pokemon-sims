@@ -1,9 +1,9 @@
 #pragma once
 
 // Single ordered composition spine for the simulator Engine implementation.
-// This wrapper centralizes the textual include order without changing macro
-// lifetime or member boundaries. Several legacy parts deliberately open a member
-// that the next stage closes, so preserve this sequence exactly.
+// Core and late-reporting stages live here directly so the legacy forwarding
+// wrappers are unnecessary. Preserve this textual include sequence and the macro
+// lifetimes because several legacy parts deliberately cross member boundaries.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
 // Core source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_000.inc
 // Opening through VSTAR: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_engine_overrides.inc

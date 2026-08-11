@@ -9,9 +9,13 @@
 // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
 // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
 // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+// Centralize every alias owned by this composition unit in one entry contract:
+// C++ conditional preprocessing: https://eel.is/c++draft/cpp.cond
 #if defined(use_fss) || defined(play_crispin) || \
-    defined(play_professor_burnet) || defined(play_steven)
-#error "Legacy Supporter composition requires aliases to be undefined on entry"
+    defined(play_professor_burnet) || defined(play_steven) || \
+    defined(play_arven) || defined(play_gladion) || defined(play_serena) || \
+    defined(use_celestial_roar) || defined(use_legacy_star)
+#error "Legacy Supporter composition requires owned aliases to be undefined on entry"
 #endif
 
 #define use_fss use_fss_latias_original

@@ -34,7 +34,41 @@
 // Keep the final policy fragments directly on this named post-search spine so the
 // engine no longer crosses another wrapper whose only job is forwarding includes.
 #include "legacy_star_projection_chain.inc" // Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
-#include "gladion_overrides.inc" // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+
+// Gladion wrappers live directly on the post-search composition boundary. Each
+// alias exposes the implementation from the preceding layer to the next override
+// without leaking macro state outward.
+// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
+// Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+#ifdef play_gladion
+#error "Gladion composition requires play_gladion to be undefined on entry"
+#endif
+
+#define play_gladion play_gladion_prize_payload_original
+#include "../part_012_gladion_override.inc"
+#undef play_gladion
+
+#define play_gladion play_gladion_issue1030_original
+#include "../part_prize_payload_outlet_override.inc"
+#undef play_gladion
+
+#define play_gladion play_gladion_issue1191_original
+#include "../part_issue_1030_gladion_turo_override.inc"
+#undef play_gladion
+
+#define play_gladion play_gladion_issue1595_original
+#include "../part_issue_1191_gladion_steven_override.inc"
+#undef play_gladion
+
+#define play_gladion play_gladion_issue1608_original
+#include "../part_issue_1595_gladion_grass_turo_blender_override.inc"
+#undef play_gladion
+
+#include "../part_issue_1608_burnet_before_dead_crispin_override.inc"
+
+#ifdef play_gladion
+#error "Gladion composition leaked play_gladion"
+#endif
 
 // Arven wrappers live directly on the post-search composition boundary. Each alias
 // exposes the implementation from the preceding layer to the next override without

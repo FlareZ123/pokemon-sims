@@ -39,20 +39,17 @@ jobs:
         run: cmake --build build --parallel 2
       - name: Run Professor's Letter focused regression
         run: ./build/regidrago_unified_tests issue_2509_professors_letter_tests
-      - name: Compile slot-preserved checkpoint matrix
-        run: |
-          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
-            tools/professors_letter_swap_matrix.cpp -o professors-letter-swap-matrix
       - name: Compile full-game Professor's Letter analyzer
         shell: bash
         run: |
           # The temporary deck remains unregistered and replaces the two physical
           # Earthen Vessel slots in place, preserving the other 58 pre-shuffle slots.
-          # Real-game branch audits use production Engine::run() and TraceLog.
+          # Real-game branch audits use the production Engine traversal.
           # Professor's Letter: https://api.pokemontcg.io/v2/cards/xy1-123
           # Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-          # Core rules: https://www.pokemon.com/us/pokemon-tcg/rules
-          # Pairing/trace bug: https://github.com/FlareZ123/pokemon-sims/issues/2599
+          # Engine run contract: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+          # Ready-state policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scope
+          # Overcomputation fix: https://github.com/FlareZ123/pokemon-sims/issues/3008
           g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
             tools/professors_letter_real_game_analysis.cpp -o professors-letter-real-games
       - name: Audit one normal full-deck simulate-this hand
@@ -71,14 +68,24 @@ jobs:
             professors-letter-normal-traces.txt
           grep -F "| Professor's Letter | rules:" professors-letter-item-lock-traces.txt
           grep -F "| Professor's Letter | rules:" professors-letter-normal-traces.txt
-      - name: Generate 100,000-trial slot-preserved checkpoint matrix
-        run: ./professors-letter-swap-matrix 100000 20260705 professors-letter-swap-matrix.csv
+      - name: Enforce one high-trial Professor Letter pass
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('.github/workflows/professors-letter-validation.yml').read_text()
+          analyze_flag = '--analyze-' + 'real-games'
+          legacy_high_trial = 'professors-letter-swap-matrix ' + '100000'
+          if text.count(analyze_flag) != 1 or legacy_high_trial in text:
+              raise SystemExit('Professor Letter CI must schedule exactly one 100k experiment pass')
+          PY
       - name: Analyze 100,000 real traced games per scenario
         run: |
           ./professors-letter-real-games --analyze-real-games \
             100000 20260705 \
             professors-letter-real-games.csv \
-            professors-letter-branches.csv
+            professors-letter-branches.csv \
+            professors-letter-swap-matrix.csv
           python - <<'PY'
           import csv
           with open('professors-letter-real-games.csv', newline='') as f:

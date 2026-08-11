@@ -7,6 +7,11 @@
 // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
 // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
 // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+#if defined(use_fss) || defined(play_crispin) || \
+    defined(play_professor_burnet) || defined(play_steven)
+#error "Legacy Supporter composition requires aliases to be undefined on entry"
+#endif
+
 #define use_fss use_fss_latias_original
 #define play_crispin play_crispin_empty_deck_original
 #define play_professor_burnet play_professor_burnet_legacy_original
@@ -15,6 +20,10 @@
 #undef play_steven
 #undef play_professor_burnet
 #undef play_crispin
+
+#if defined(play_crispin) || defined(play_professor_burnet) || defined(play_steven)
+#error "Legacy Supporter composition leaked a local alias"
+#endif
 
 // Intentionally leave use_fss defined. composition/burnet_fss_overrides.inc consumes
 // and replaces this alias after part_014a.inc reaches the required member boundary.

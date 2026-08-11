@@ -30,7 +30,7 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 | Strict JIT, turn-two Item lock, first | 4.625% | 10.455% | 18.344% |
 | Strict JIT, Rule Box Ability lock, first | 4.449% | 26.837% | 40.528% |
 | Strict JIT, turn-two Item + Rule Box Ability lock, first | 0.814% | 4.665% | 9.585% |
-| Strict JIT, turn-two Item lock, second | 14.233% | 28.553% | 37.057% |
+| Strict JIT, turn-two Item lock, second | 14.284% | 28.511% | 37.017% |
 | Strict JIT, Rule Box Ability lock, second | 18.502% | 35.938% | 46.817% |
 | Strict JIT, turn-two Item + Rule Box Ability lock, second | 3.797% | 14.322% | 19.877% |
 | Strict JIT, Supporter lock, first | 0.002% | 14.719% | 21.198% |

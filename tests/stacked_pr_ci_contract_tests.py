@@ -1,8 +1,9 @@
 from pathlib import Path
 import sys
 
+
 # Direct execution starts Python from tests/, so add the tracked repository root
-# before importing the workflow selector:
+# before importing the focused regression selector:
 # https://docs.python.org/3/library/sys_path_init.html
 # https://github.com/FlareZ123/pokemon-sims/issues/2152
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -11,10 +12,6 @@ from scripts.select_added_prize_k1_tests import select_added_prize_k1_tests
 
 
 def test_ordinary_pull_request_has_no_focused_tests() -> None:
-    # A general pull_request workflow may receive source, documentation, audit, or
-    # unrelated test paths. The focused Prize-K1 step must skip those paths:
-    # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request
-    # https://github.com/FlareZ123/pokemon-sims/issues/2152
     paths = [
         "src/trace_engine_v2/part_example.inc",
         "docs/REPORT.md",
@@ -24,9 +21,9 @@ def test_ordinary_pull_request_has_no_focused_tests() -> None:
 
 
 def test_intended_prize_k1_tests_are_selected() -> None:
-    # The temporary workflow retains its original focused naming contract for
-    # newly added issue-specific Prize-K1 C++ regressions:
-    # https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/k1-stacked-ci.yml
+    # Stacked PR validation retains the focused Prize-K1 naming contract without
+    # running the old duplicate full CI workflow on every main-targeting PR:
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/stacked-pr-validation.yml
     # https://github.com/FlareZ123/pokemon-sims/issues/2152
     paths = [
         "tests/issue_2103_prize_k1_wonder_tag_arven_tests.cpp",

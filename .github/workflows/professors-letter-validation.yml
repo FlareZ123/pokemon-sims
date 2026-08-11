@@ -3,26 +3,34 @@ name: Professor Letter Validation
 on:
   pull_request:
     branches: [main]
+    # Ordinary simulator PRs already run the focused Professor's Letter regression
+    # through CI. The expensive 100k specialist analysis runs on PRs only when its
+    # own analyzer, focused test, build registration, or workflow changes.
     paths:
-      - "src/**"
-      - "tests/**"
       - "tools/professors_letter_swap_matrix.cpp"
       - "tools/professors_letter_real_game_analysis.cpp"
+      - "tests/issue_2509_professors_letter_tests.cpp"
       - "CMakeLists.txt"
       - ".github/workflows/professors-letter-validation.yml"
   push:
     branches: [main]
+    # After merge, rerun the specialist analysis for simulator changes because the
+    # analyzer includes the production Engine directly.
     paths:
       - "src/**"
-      - "tests/**"
       - "tools/professors_letter_swap_matrix.cpp"
       - "tools/professors_letter_real_game_analysis.cpp"
+      - "tests/issue_2509_professors_letter_tests.cpp"
       - "CMakeLists.txt"
       - ".github/workflows/professors-letter-validation.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: professors-letter-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   matrix:

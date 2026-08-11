@@ -133,12 +133,12 @@ void test_semantic_locks_still_block() {
   // Lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-model
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3024
   const Outcome item_locked = run_control(
-      sim::DciProfile::StrictJit, sim::LockMode::Turn2Item, true, 2, 302404);
+      sim::DciProfile::StrictJit, sim::LockMode::TurnTwoItem, true, 2, 302404);
   expect(!item_locked.ready || !item_locked.payload_this_turn,
          "Item lock illegally allowed the Quick Ball continuation");
 
   const Outcome ability_locked = run_control(
-      sim::DciProfile::StrictJit, sim::LockMode::RuleBoxAbility,
+      sim::DciProfile::StrictJit, sim::LockMode::FullRuleBoxAbility,
       true, 2, 302405);
   expect(!ability_locked.ready || !ability_locked.used_supporter,
          "Rule Box Ability lock illegally allowed Wonder Tag continuation");

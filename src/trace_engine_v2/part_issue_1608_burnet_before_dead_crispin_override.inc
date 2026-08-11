@@ -38,9 +38,15 @@ bool issue_1644_has_held_vstar_route() const {
       hand_count(Card::PokemonCommunication) > 0;
 }
 
-bool play_gladion_issue1737_original() {
-  const bool issue_1644_prized_fss_vstar_route =
-      prizes_known() && supporter_allowed() && !rule_box_abilities_locked() &&
+bool issue_1644_prized_fss_vstar_route_available() const {
+  // The known-prize FSS line is one complete route predicate. Keep K1, Supporter,
+  // VSTAR-Power, evolution, Energy, payload, and competing-access gates together.
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Core Prize, Supporter, Tool, VSTAR Power, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/1644
+  return prizes_known() && supporter_allowed() && !rule_box_abilities_locked() &&
       !state_.vstar_power_used && state_.active &&
       state_.active->card == Card::RegidragoV &&
       state_.active->entered_turn < state_.turn &&
@@ -50,7 +56,10 @@ bool play_gladion_issue1737_original() {
       prize_count_after_reveal(Card::ForestSealStone) > 0 &&
       deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
       !issue_1644_has_held_vstar_route();
-  if (issue_1644_prized_fss_vstar_route) {
+}
+
+bool play_gladion_issue1737_original() {
+  if (issue_1644_prized_fss_vstar_route_available()) {
     // Gladion exchanges itself for the known prized Forest Seal Stone. The Tool
     // attaches to the prior-turn Active Regidrago V, and Star Alchemy searches
     // the inspected deck for Regidrago VSTAR before the legal same-turn evolution.

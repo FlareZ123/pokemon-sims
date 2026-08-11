@@ -75,25 +75,28 @@
 #include "../core/banked_tapu_retreat_policy.inc"
 #include "post_014a_overrides.inc"
 
-// #3057 needs to preserve the Stadium action for a live current-turn
-// Forest/Pineco/Forretress route when Field Blower can remove Path instead.
-// Keep the route predicate outside the historical late-turn source and expose it
-// there only through a scoped hand-count alias so every unrelated action remains
-// byte-for-byte on the existing selector path:
-// https://github.com/FlareZ123/pokemon-sims/issues/3057
+// #3057 arbitrates the Path-removal connector and restores the Forretress fixed
+// point after an Item search exposes Forest of Vitality. Keep both hooks scoped to
+// the historical late-turn source so unrelated member implementations remain on
+// their established paths:
+// Forest / Field Blower / Secret Box: https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/sv6-163
+// Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/3057
 #include "../part_issue_3057_swell_field_blower_route.inc"
 
 // Ordered late turn-execution, scenario-registry, and reporting composition.
 // Keep these aliases live through part_016 exactly as the historical root wrapper
 // did so the translation unit remains behaviorally identical.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
-#if defined(play_field_blower) || defined(run_turn) || defined(hand_count)
+#if defined(play_field_blower) || defined(run_turn) || defined(hand_count) || \
+    defined(play_items_until_stable)
 #error "Late-turn composition requires execution aliases to be undefined on entry"
 #endif
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #define hand_count hand_count_issue_3057
+#define play_items_until_stable play_items_until_stable_issue_3057
 #include "../part_014c.inc"
+#undef play_items_until_stable
 #undef hand_count
 #undef ability_available_for_pokemon
 #ifdef ability_available_for_pokemon
@@ -130,6 +133,7 @@
 #endif
 #undef run_turn
 #undef play_field_blower
-#if defined(play_field_blower) || defined(run_turn) || defined(hand_count)
+#if defined(play_field_blower) || defined(run_turn) || defined(hand_count) || \
+    defined(play_items_until_stable)
 #error "Late-turn composition leaked an execution alias"
 #endif

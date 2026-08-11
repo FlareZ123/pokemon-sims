@@ -1,4 +1,4 @@
-name: Four-pass simulate-this debug audit
+name: Five-pass simulate-this debug audit
 
 on:
   pull_request:
@@ -35,19 +35,24 @@ jobs:
         run: |
           ./build/regidrago_sim --simulate-this --deck regidrago-shell \
             --scenario matchup-flex-jit/go-second --seed 3 | tee trace-4.txt
-      - name: Require four nonempty rule traces
+      - name: Pass 5 matchup-flex Crobat issue-1605 generalization audit
+        run: |
+          ./build/regidrago_sim --simulate-this --model-variant crobat1-erika \
+            --scenario matchup-flex-jit/go-second --seed 7 | tee trace-5.txt
+      - name: Require five nonempty rule traces
         shell: bash
         run: |
-          for file in trace-1.txt trace-2.txt trace-3.txt trace-4.txt; do
+          for file in trace-1.txt trace-2.txt trace-3.txt trace-4.txt trace-5.txt; do
             test -s "$file"
             grep -F "rules:" "$file"
           done
       - uses: actions/upload-artifact@v4
         with:
-          name: debug-four-sim-this
+          name: debug-five-sim-this
           path: |
             trace-1.txt
             trace-2.txt
             trace-3.txt
             trace-4.txt
+            trace-5.txt
           if-no-files-found: error

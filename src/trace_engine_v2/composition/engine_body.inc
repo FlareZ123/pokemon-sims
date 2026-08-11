@@ -60,8 +60,18 @@
 #undef might_be_unseen
 // begin_turn intentionally remains aliased until opening_engine_overrides.inc
 // composes part_empty_deck_unseen_override.inc and releases the alias.
+// Replace only the historical banked-Tapu implementation while preserving the
+// rest of the opening override ordering. The replacement uses the shared DDE-aware
+// Apex payment predicate: https://github.com/FlareZ123/pokemon-sims/issues/3089
+#define retreat_banked_tapu_to_regidrago retreat_banked_tapu_to_regidrago_issue3089_original
 #include "opening_engine_overrides.inc"
 #include "../part_014a.inc"
+#undef retreat_banked_tapu_to_regidrago
+// part_014a closes run_search_items_one_step(), so the replacement member is
+// composed at the same safe class-member boundary as the post-search overrides:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc
+// https://github.com/FlareZ123/pokemon-sims/issues/3089
+#include "../part_issue_3089_banked_tapu_retreat.inc"
 #include "post_014a_overrides.inc"
 
 // #3057 needs to preserve the Stadium action for a live current-turn

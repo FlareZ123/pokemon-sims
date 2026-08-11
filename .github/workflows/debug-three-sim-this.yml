@@ -1,0 +1,48 @@
+name: Three-pass simulate-this debug audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/debug-three-sim-this.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  traces:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Pass 1 strict JIT going second
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell \
+            --scenario strict-jit/go-second --seed 1 | tee trace-1.txt
+      - name: Pass 2 strict JIT going first
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell \
+            --scenario strict-jit/go-first --seed 165 | tee trace-2.txt
+      - name: Pass 3 matchup-flex JIT going second
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell \
+            --scenario matchup-flex-jit/go-second --seed 871 | tee trace-3.txt
+      - name: Require three nonempty rule traces
+        shell: bash
+        run: |
+          for file in trace-1.txt trace-2.txt trace-3.txt; do
+            test -s "$file"
+            grep -F "rules:" "$file"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: debug-three-sim-this
+          path: |
+            trace-1.txt
+            trace-2.txt
+            trace-3.txt
+          if-no-files-found: error

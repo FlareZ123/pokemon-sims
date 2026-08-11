@@ -8,6 +8,22 @@
            might_be_unseen(Card::MysteriousTreasure);
   }
 
+  bool issue_1605_crobat_resources_available() const {
+    // Keep the connector's Bench, hand-compression, Tool, Ability, and once-per-game
+    // resources in one public-state preflight:
+    // Crobat V / Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+    // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Core Bench, Tool, and Ability procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    return bench_space() >= 2 && hand_count(Card::Arven) > 0 &&
+           hand_count(Card::CrobatV) > 0 &&
+           hand_count(Card::ForestSealStone) > 0 &&
+           !state_.vstar_power_used && !state_.dark_asset_used &&
+           ability_available_for_pokemon(Card::CrobatV) &&
+           state_.hand.size() <= 9U;
+  }
+
   bool issue_1605_arven_crobat_route_available() const {
     // The Arven -> one-discard search -> Regidrago V -> Forest Seal Stone ->
     // Crobat V continuation is governed by observable legality and resources.
@@ -26,12 +42,7 @@
     // Confirmed overfit bug: https://github.com/FlareZ123/pokemon-sims/issues/2645
     return scenario_.dci == DciProfile::StrictJit &&
            supporter_allowed() && !item_locked() && need_regi() &&
-           bench_space() >= 2 && hand_count(Card::Arven) > 0 &&
-           hand_count(Card::CrobatV) > 0 &&
-           hand_count(Card::ForestSealStone) > 0 &&
-           !state_.vstar_power_used && !state_.dark_asset_used &&
-           ability_available_for_pokemon(Card::CrobatV) &&
-           state_.hand.size() <= 9U &&
+           issue_1605_crobat_resources_available() &&
            might_be_unseen(Card::RegidragoV) &&
            issue_1605_one_discard_search_item_plausible() &&
            issue_1605_redundant_payload_cost().has_value();

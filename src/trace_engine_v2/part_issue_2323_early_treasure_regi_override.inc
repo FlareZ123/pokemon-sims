@@ -297,6 +297,7 @@
 
     std::vector<Card> targets{Card::RegidragoVstar, Card::BrilliantBlender};
     if (regi->grass == 1 && regi->fire >= 1) targets.push_back(Card::Grass);
+
     std::vector<Card> found;
     for (const Card target : targets) {
       if (!move_deck_to_hand(target)) {

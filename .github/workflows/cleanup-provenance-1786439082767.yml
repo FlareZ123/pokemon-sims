@@ -1,0 +1,32 @@
+name: Cleanup provenance materializer 1786439082767
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'cleanup-1786439082767'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cleanup-1786439082767
+      - name: Refresh source-bound provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -c "import json; from pathlib import Path; from scripts.baseline_provenance import simulator_policy_source_digest; root=Path('.').resolve(); digest=simulator_policy_source_digest(root); paths=[root/'results'/'baseline_manifest.json', root/'results'/'multi_deck_manifest.json']; [(lambda p: p.write_text(json.dumps({**json.loads(p.read_text(encoding='utf-8')), 'simulator_policy_source_sha256': digest}, indent=2) + '\n', encoding='utf-8'))(p) for p in paths]; print(digest)"
+          python scripts/update_multi_deck_docs.py --repo-root .
+          changed="$(git diff --name-only | sort)"
+          expected="$(printf '%s\n' docs/MULTI_DECK_REPORT.md results/baseline_manifest.json results/multi_deck_manifest.json | sort)"
+          test "$changed" = "$expected"
+          git rm .github/workflows/cleanup-provenance-1786439082767.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add docs/MULTI_DECK_REPORT.md results/baseline_manifest.json results/multi_deck_manifest.json
+          git commit -m "Cleanup: refresh source-bound provenance"
+          git push origin HEAD:cleanup-1786439082767

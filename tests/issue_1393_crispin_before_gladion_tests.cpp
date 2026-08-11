@@ -108,6 +108,39 @@ void test_exact_route_holds_fss_and_plays_crispin() {
          "Gladion must remain in hand when it does not advance the earliest route.");
 }
 
+void test_issue_2768_shared_jit_profiles() {
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  for (const sim::DciProfile profile : {sim::DciProfile::StrictJit,
+                                        sim::DciProfile::MatchupFlexJit}) {
+    const sim::Scenario scenario{"issue-2768-jit", profile,
+                                 sim::LockMode::None, false, 4};
+    std::mt19937_64 rng{2768};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::EngineTestAccess::set_state(engine, exact_state());
+    // Both registered current-turn JIT profiles have the same payload timing.
+    // Crispin completes GGF while held Brilliant Blender supplies the payload;
+    // Gladion remains the slower competing Supporter.
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Shared JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2768
+    expect(sim::EngineTestAccess::route_available(engine),
+           "Both current-turn JIT profiles must admit the held-Crispin route.");
+  }
+
+  const sim::Scenario control{"issue-2768-control",
+                              sim::DciProfile::NoDiscardControl,
+                              sim::LockMode::None, false, 4};
+  std::mt19937_64 control_rng{2769};
+  sim::Engine control_engine(control, recipe, control_rng);
+  sim::EngineTestAccess::set_state(control_engine, exact_state());
+  expect(!sim::EngineTestAccess::route_available(control_engine),
+         "NoDiscardControl must remain outside the current-turn JIT route.");
+}
+
 void test_prize_inspection_alone_establishes_k1() {
   const sim::Scenario scenario{"issue-1918", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
@@ -153,6 +186,7 @@ void test_missing_fire_preserves_gladion_fallback() {
 int main() {
   try {
     test_exact_route_holds_fss_and_plays_crispin();
+    test_issue_2768_shared_jit_profiles();
     test_prize_inspection_alone_establishes_k1();
     test_seed_61_reaches_turn_two();
     test_missing_fire_preserves_gladion_fallback();

@@ -201,11 +201,20 @@
   bool play_issue_1868_vessel_payload_finish() {
     const auto payload = std::find_if(
         state_.hand.begin(), state_.hand.end(), is_payload);
+    // This route consumes an Item, deck search, a Dragon discard, and the still-
+    // unused manual attachment. Rule Box Ability lock does not disable any of
+    // those actions, so admission follows their live legality predicates instead
+    // of the scenario label:
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Advanced Item/search/discard/attachment procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Scenario-lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3105
     if ((scenario_.dci != DciProfile::StrictJit &&
          scenario_.dci != DciProfile::MatchupFlexJit) ||
-        scenario_.locks != LockMode::None || !prizes_known() || item_locked() ||
-        !deck_search_available() || state_.manual_energy_used ||
-        !state_.active || state_.active->card != Card::RegidragoVstar ||
+        !prizes_known() || item_locked() || !deck_search_available() ||
+        state_.manual_energy_used || !state_.active ||
+        state_.active->card != Card::RegidragoVstar ||
         state_.active->grass != 1 || state_.active->fire < 1 ||
         !need_payload() || hand_count(Card::EarthenVessel) == 0 ||
         deck_count_after_search_started(Card::Grass) == 0 ||

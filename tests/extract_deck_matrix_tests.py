@@ -75,6 +75,12 @@ def run_dde_2grass_experiment() -> None:
         return
     if not os.environ.get("GITHUB_HEAD_REF", "").startswith("experiment/dde-2grass-"):
         return
+    # This test script runs once as a dedicated contract step and again inside the
+    # complete CTest suite. Reuse the first paired population instead of launching
+    # another 3.2 million simulations in the same job:
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
+    if (REPO_ROOT / "trace-dde-2grass-summary.txt").exists():
+        return
     subprocess.run(
         [sys.executable, str(REPO_ROOT / "experiments" / "run_dde_2grass_experiment.py")],
         cwd=REPO_ROOT,

@@ -1,0 +1,30 @@
+name: Audit systemic static gates 1786434428964
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  static-audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inventory gameplay-risk literals
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '=== literal DCI profile gates ==='
+          grep -RInE 'DciProfile::(StrictJit|MatchupFlexJit|NoDiscardControl)' src tests scripts || true
+          echo '=== literal scenario/seat gates ==='
+          grep -RInE '(strict-jit|matchup-flex-jit|no-discard-control|go-first|go-second)' src tests scripts || true
+          echo '=== literal turn/seed gates ==='
+          grep -RInE '(turn[[:space:]]*==[[:space:]]*[0-9]|seed[[:space:]]*==|seed[[:space:]]*[=:][[:space:]]*[0-9])' src tests scripts || true
+          echo '=== raw Apex-energy arithmetic ==='
+          grep -RInE '(grass_needed|fire_needed|grass_attached|fire_attached|grass[[:space:]]*>=[[:space:]]*2|fire[[:space:]]*>=[[:space:]]*1)' src tests scripts || true
+          echo '=== issue-specific production logic ==='
+          grep -RInE '(issue[_-]?[0-9]+|seed[0-9]+)' src --include='*.inc' --include='*.cpp' --include='*.hpp' || true
+          echo '=== 100k experiment invocations ==='
+          grep -RInE '(100000|--trials[[:space:]]+100000)' .github/workflows scripts tests CMakeLists.txt || true

@@ -51,6 +51,15 @@
     return nullptr;
   }
 
+  Pokemon* preferred_forest_seal_stone_holder() {
+    // Preserve the existing Active-first attachment order, then fall back to Bench:
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    if (state_.active && can_hold_forest_seal_stone(*state_.active)) {
+      return &*state_.active;
+    }
+    return first_open_pokemon_v_on_bench();
+  }
+
   bool attach_fss() {
     if (hand_count(Card::ForestSealStone) == 0) return false;
 
@@ -76,12 +85,7 @@
       return false;
     }
 
-    Pokemon* target = nullptr;
-    if (state_.active && is_pokemon_v(state_.active->card) &&
-        state_.active->tool == Tool::None) {
-      target = &*state_.active;
-    }
-    if (target == nullptr) target = first_open_pokemon_v_on_bench();
+    Pokemon* target = preferred_forest_seal_stone_holder();
     if (target == nullptr) return false;
 
     // Pokémon V includes Pokémon VSTAR, and the trace must identify the actual

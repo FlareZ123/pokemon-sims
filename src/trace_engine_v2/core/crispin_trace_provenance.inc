@@ -21,6 +21,19 @@
     trace(action, rules, detail);
   }
 
+  // part_issue_1118_secret_box.inc calls bench_pineco_if_useful immediately after
+  // the T1 manual attachment and before its Prize-Supporter selector. Scope the
+  // #3152 comparator to that exact policy boundary so a proven complete Steven
+  // route consumes the Supporter slot before Gladion can recover the known prized
+  // ACE SPEC:
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+  // Policy boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_issue_1118_secret_box.inc
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3152
+  #include "../part_issue_3152_steven_prized_box_override.inc"
+  #define bench_pineco_if_useful bench_pineco_if_useful_issue3152
+
   // part_issue_1118_secret_box.inc defines the Pineco turn policy. Rename that
   // implementation so the issue-1439 post-include wrapper can compare its exact
   // complete route before the original Secret Box action sequence:

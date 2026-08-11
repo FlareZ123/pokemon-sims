@@ -1,3 +1,8 @@
+  // Release the #3152 pre-Supporter hook immediately after the historical Pineco
+  // policy body so later Forretress route layers keep their established dispatch:
+  // https://github.com/FlareZ123/pokemon-sims/issues/3152
+  #undef bench_pineco_if_useful
+
   // Restore the public Pineco turn-policy name after the issue-1118 body, then
   // install the exact issue-1439 route comparator before later overrides:
   // https://github.com/FlareZ123/pokemon-sims/issues/1439

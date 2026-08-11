@@ -31,10 +31,16 @@
 #include "../part_empty_deck_search_override.inc"
 
 #undef play_arven
+#ifdef play_arven
+#error "Arven wrapper alias must be released before the Garbodor continuation"
+#endif
 #include "../part_arven_garbodor_field_blower_override.inc"
 
 #undef use_fss
 #undef play_steven
+#if defined(use_fss) || defined(play_steven)
+#error "FSS and Steven aliases must be released before the FSS-energy continuation"
+#endif
 #include "../part_issue_1356_fss_energy_override.inc"
 
 #undef play_quick_ball

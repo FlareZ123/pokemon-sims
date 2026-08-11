@@ -85,6 +85,12 @@ def _relative_path_bytes(repo_root: Path, path: Path) -> bytes:
     return path.relative_to(repo_root).as_posix().encode("utf-8")
 
 
+def _add_framed_bytes(digest: _Digest, data: bytes) -> None:
+    """Append one null-terminated field to the aggregate source digest."""
+    digest.update(data)
+    digest.update(SOURCE_FRAME_SEPARATOR)
+
+
 @dataclass
 class _SourceDigestBuilder:
     repo_root: Path
@@ -92,10 +98,8 @@ class _SourceDigestBuilder:
 
     def add_path(self, path: Path) -> None:
         """Add one framed source input to the aggregate digest."""
-        self.digest.update(_relative_path_bytes(self.repo_root, path))
-        self.digest.update(SOURCE_FRAME_SEPARATOR)
-        self.digest.update(path.read_bytes())
-        self.digest.update(SOURCE_FRAME_SEPARATOR)
+        _add_framed_bytes(self.digest, _relative_path_bytes(self.repo_root, path))
+        _add_framed_bytes(self.digest, path.read_bytes())
 
     def add_paths(self, paths: PathSequence) -> None:
         """Add a stable sequence of source inputs to the aggregate digest."""

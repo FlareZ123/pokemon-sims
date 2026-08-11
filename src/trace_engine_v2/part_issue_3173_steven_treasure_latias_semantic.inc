@@ -207,23 +207,18 @@
   void run_turn_issue_3173() {
     // A banked Steven continuation is a deterministic earliest-ready route. Resolve
     // it before generic Items, attachments, or Supporters can consume its reserved
-    // channels on the projected turn.
+    // channels on the projected turn. The #1152 bridge has already composed the
+    // current public run_turn() through the Latias, #1673, and #1751 policy layers,
+    // so that public member is the behavior-preserving fallback.
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Connector priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Bridge composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c_issue_1152_bridge.inc
     // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3173
     if (complete_issue_3173_finish()) {
       trace("POLICY", "P-COMPRESS-01; P-JIT-01",
             "Completed the semantic Steven, Treasure, and Latias ex route.");
       return;
     }
-    // Defer lookup of the later-composed Latias turn member through a dependent
-    // generic lambda. This keeps textual include order intact while allowing the
-    // fallback member to be declared later in the same Engine class.
-    // C++ dependent member lookup: https://eel.is/c++draft/temp.dep
-    // Confirmed composition fix: https://github.com/FlareZ123/pokemon-sims/issues/3173
-    auto run_legacy = []<typename EngineLike>(EngineLike* engine) {
-      engine->run_turn_issue_3173_legacy();
-    };
-    run_legacy(this);
+    run_turn();
   }

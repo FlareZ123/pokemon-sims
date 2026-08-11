@@ -61,7 +61,7 @@
 // without leaking macro state outward.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
 // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
-#ifdef play_gladion
+#if defined(play_gladion)
 #error "Gladion composition requires play_gladion to be undefined on entry"
 #endif
 
@@ -87,7 +87,7 @@
 
 #include "../part_issue_1608_burnet_before_dead_crispin_override.inc"
 
-#ifdef play_gladion
+#if defined(play_gladion)
 #error "Gladion composition leaked play_gladion"
 #endif
 
@@ -96,7 +96,7 @@
 // leaking macro state outward.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
 // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
-#ifdef play_arven
+#if defined(play_arven)
 #error "Arven composition requires play_arven to be undefined on entry"
 #endif
 
@@ -112,7 +112,7 @@
 #include "../part_012_arven_fss_blender_contention_override.inc"
 #undef play_arven
 
-#ifdef play_arven
+#if defined(play_arven)
 #error "Arven composition leaked play_arven"
 #endif
 
@@ -120,7 +120,7 @@
 // composition boundary. Each alias exposes the preceding implementation to the
 // next layer, so define/include/undef order remains behavior-significant.
 // Supporter turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-#ifdef choose_supporter
+#if defined(choose_supporter)
 #error "Supporter selector composition requires choose_supporter to be undefined on entry"
 #endif
 
@@ -146,7 +146,7 @@
 #include "../part_issue_1070_tate_after_vstar_search_override.inc"
 #undef choose_supporter
 
-#ifdef choose_supporter
+#if defined(choose_supporter)
 #error "Supporter selector composition leaked choose_supporter"
 #endif
 

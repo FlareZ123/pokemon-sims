@@ -2,6 +2,10 @@
     return !state_.deck.empty();
   }
 
+  static bool has_known_copies(const int count) {
+    return count > 0;
+  }
+
   int loose_public_copy_count(const Card card) const {
     return hand_count(card) + count_of(state_.discard, card);
   }
@@ -29,7 +33,7 @@
   }
 
   bool known_deck_contains(const Card card) const {
-    return known_deck_copy_count(card) > 0;
+    return has_known_copies(known_deck_copy_count(card));
   }
 
   int known_hand_or_deck_copy_count(const Card card) const {
@@ -37,7 +41,7 @@
   }
 
   bool has_known_hand_or_deck_copy(const Card card) const {
-    return known_hand_or_deck_copy_count(card) > 0;
+    return has_known_copies(known_hand_or_deck_copy_count(card));
   }
 
   bool might_be_unseen(const Card card) const {

@@ -1,3 +1,11 @@
+  bool inspected_deck_has_pokemon_target() const {
+    // Once a legal deck inspection establishes K1, Pokémon-search target legality
+    // comes from the exact physical deck rather than fixed-list plausibility:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    return std::any_of(state_.deck.begin(), state_.deck.end(), is_pokemon);
+  }
+
   bool pokemon_search_has_legal_target() const {
     // K0 keeps fixed-list Pokémon plausible through might_be_unseen(); after K1,
     // target legality comes from the inspected physical deck, including supported
@@ -5,9 +13,7 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/issues/2189
-    if (prizes_known()) {
-      return std::any_of(state_.deck.begin(), state_.deck.end(), is_pokemon);
-    }
+    if (prizes_known()) return inspected_deck_has_pokemon_target();
     return std::any_of(recipe_.begin(), recipe_.end(), [this](const auto& entry) {
       return is_pokemon(entry.first) && might_be_unseen(entry.first);
     });

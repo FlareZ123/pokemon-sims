@@ -10,12 +10,20 @@
             state_.active->card == Card::RegidragoVstar;
       };
 
-      const auto issue_1447_should_hold_vessel = [this,
-                                                   &issue_1447_shell_vessel_window] {
+      // Both decisions require a held Dragon payload. Keep the physical-hand test in
+      // one place so the hold and ready-turn paths cannot drift during later cleanup.
+      // Dynamic DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+      const auto issue_1447_has_payload_in_hand = [this] {
+        return std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+      };
+
+      const auto issue_1447_should_hold_vessel =
+          [this, &issue_1447_shell_vessel_window,
+           &issue_1447_has_payload_in_hand] {
         if (!issue_1447_shell_vessel_window() || state_.turn != 2 ||
             scenario_.max_turn < 3 ||
             hand_count(Card::EarthenVessel) == 0 ||
-            !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+            !issue_1447_has_payload_in_hand()) {
           return false;
         }
 
@@ -63,7 +71,8 @@
       };
 
       const auto issue_1447_should_play_vessel_for_ready_turn =
-          [this, &issue_1447_shell_vessel_window] {
+          [this, &issue_1447_shell_vessel_window,
+           &issue_1447_has_payload_in_hand] {
         const auto completing_basic = state_.active
             ? issue_2437_apex_completing_basic_from_known_deck(*state_.active)
             : std::optional<Card>{};
@@ -81,6 +90,5 @@
         return issue_1447_shell_vessel_window() && state_.turn == 3 &&
             !state_.manual_energy_used && need_energy() && need_payload() &&
             hand_count(Card::EarthenVessel) > 0 &&
-            completing_basic.has_value() &&
-            std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+            completing_basic.has_value() && issue_1447_has_payload_in_hand();
       };

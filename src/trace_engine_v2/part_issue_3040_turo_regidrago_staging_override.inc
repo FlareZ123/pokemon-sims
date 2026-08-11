@@ -42,8 +42,3 @@
           "Professor Turo returned the zero-resource Basic Active and promoted the powered prior-turn Regidrago V for its observable VSTAR staging route.");
     return true;
   }
-
-  void choose_supporter() {
-    if (supporter_allowed() && issue_3040_play_turo_regidrago_staging_route()) return;
-    choose_supporter_issue3040_original();
-  }

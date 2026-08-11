@@ -1,0 +1,89 @@
+name: Materialize issue 2295 systemic paid-retreat fix v2
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/materialize-2295-fix2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize-and-validate:
+    if: github.head_ref == 'reclaim/2295-current-main-sol-20260811'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Apply systemic one-cost Basic route atomically
+        shell: bash
+        run: |
+          python - <<'PY'
+          import fcntl
+          import os
+          import tempfile
+          from pathlib import Path
+
+          def atomic_replace(path_text, replacements):
+              path = Path(path_text)
+              lock_path = path.with_name(path.name + '.issue2295.lock')
+              with lock_path.open('w', encoding='utf-8') as lock_file:
+                  fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+                  text = path.read_text(encoding='utf-8')
+                  for old, new in replacements:
+                      if text.count(old) != 1:
+                          raise RuntimeError(f'{path}: expected one match, found {text.count(old)} for {old[:80]!r}')
+                      text = text.replace(old, new, 1)
+                  fd, temp_name = tempfile.mkstemp(dir=path.parent, prefix=path.name + '.', suffix='.tmp')
+                  try:
+                      with os.fdopen(fd, 'w', encoding='utf-8', newline='') as temp_file:
+                          temp_file.write(text)
+                          temp_file.flush()
+                          os.fsync(temp_file.fileno())
+                      os.replace(temp_name, path)
+                  finally:
+                      if os.path.exists(temp_name):
+                          os.unlink(temp_name)
+              lock_path.unlink(missing_ok=True)
+
+          source = 'src/trace_engine_v2/part_014c_latias_bench_override.inc'
+          old_gate = '''  bool pay_tapu_retreat_to_ready_benched_vstar() {\n    if (!need_active_vstar() || need_energy() || need_payload() ||\n        state_.retreat_used || state_.manual_energy_used || !state_.active ||\n        state_.active->card != Card::TapuLeleGX) {\n      return false;\n    }\n'''
+          new_gate = '''  bool pay_tapu_retreat_to_ready_benched_vstar() {\n    // This stable helper name is retained for regression accessors; eligibility is\n    // systemic and comes from the centralized printed Retreat Cost metadata.\n    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60\n    // Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104\n    // Mawile-GX: https://api.pokemontcg.io/v2/cards/sm11-141\n    // Oricorio GRI 55: https://api.pokemontcg.io/v2/cards/sm2-55\n    // Printed-cost registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc\n    // Confirmed systemic bug: https://github.com/FlareZ123/pokemon-sims/issues/2295\n    if (!need_active_vstar() || need_energy() || state_.retreat_used ||\n        state_.manual_energy_used || !state_.active ||\n        !is_basic(state_.active->card) || retreat_cost(state_.active->card) != 1) {\n      return false;\n    }\n\n    const bool blender_completes_payload =\n        need_payload() && prizes_known() && strict_payload_timing() &&\n        !item_locked() && hand_count(Card::BrilliantBlender) > 0 &&\n        payload_might_be_in_deck() && can_play_payload_this_turn();\n    // Brilliant Blender is an independent Item channel for the current-turn Dragon\n    // payload once K1 proves a legal payload remains in deck.\n    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164\n    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136\n    // Official attachment and retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf\n    // K1/JIT/earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities\n    // Dynamic DCI/AMR model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation\n    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2295\n    if (need_payload() && !blender_completes_payload) return false;\n'''
+          old_target = '''    const Card payment = hand_count(Card::Grass) > 0 ? Card::Grass : Card::Fire;\n    if (hand_count(payment) == 0 || !remove_one(state_.hand, payment)) return false;\n\n    // Tapu Lele-GX has a one-Colorless Retreat Cost, so either modeled Basic\n    // Energy may be attached for the turn and immediately discarded to promote an\n    // already-GGF Regidrago VSTAR. Restrict this route to states where Energy and\n    // payload axes are already complete, preserving the attachment for setup when\n    // the Benched VSTAR still needs it:\n    // https://api.pokemontcg.io/v2/cards/sm2-60\n    // https://api.pokemontcg.io/v2/cards/swsh12-136\n    // https://www.pokemon.com/us/pokemon-tcg/rules\n    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities\n    // https://github.com/FlareZ123/pokemon-sims/issues/802\n'''
+          new_target = '''    const Card retreating = state_.active->card;\n    const Card payment = hand_count(Card::Grass) > 0 ? Card::Grass : Card::Fire;\n    if (hand_count(payment) == 0 || !remove_one(state_.hand, payment)) return false;\n\n    // A printed one-Colorless Retreat Cost accepts either modeled Basic Energy.\n    // The Benched VSTAR is already GGF-ready, so this attachment is mobility value;\n    // when payload is missing, the independently held Blender resolves that axis.\n    // Basic Energy attachment/retreat: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf\n    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164\n    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136\n    // Earlier completed-axis Tapu route: https://github.com/FlareZ123/pokemon-sims/issues/802\n    // Free Latias route remains preferred by resolver order: https://github.com/FlareZ123/pokemon-sims/issues/905\n    // Confirmed systemic extension: https://github.com/FlareZ123/pokemon-sims/issues/2295\n'''
+          old_trace = '''    trace("ATTACH", "R-GAME-ENERGY",\n          std::string(name(payment)) +\n              " manually to Tapu Lele-GX for its Retreat Cost.");\n'''
+          new_trace = '''    trace("ATTACH", "R-GAME-ENERGY",\n          std::string(name(payment)) + " manually to " +\n              std::string(name(retreating)) + " for its Retreat Cost.");\n'''
+          old_finish = '''    trace("RETREAT", "R-GAME-RETREAT",\n          "Paid Tapu Lele-GX's one-Energy Retreat Cost and promoted the ready "\n          "Benched Regidrago VSTAR.");\n    return true;\n  }\n'''
+          new_finish = '''    trace("RETREAT", "R-GAME-RETREAT",\n          "Paid " + std::string(name(retreating)) +\n              "'s one-Energy Retreat Cost and promoted the ready Benched Regidrago VSTAR.");\n    if (blender_completes_payload && !play_brilliant_blender()) {\n      throw std::logic_error("Issue-2295 held Brilliant Blender route disappeared");\n    }\n    return true;\n  }\n'''
+          atomic_replace(source, [(old_gate, new_gate), (old_target, new_target),\n                                  (old_trace, new_trace), (old_finish, new_finish)])
+
+          cmake = 'CMakeLists.txt'
+          anchor = 'add_test(NAME trace_no_control_first_t4 COMMAND regidrago_sim --simulate-this --scenario no-discard-control/go-first --seed 6 --require-ready-by 4)\n'
+          block = anchor + '''# Exact #2295 paid-retreat witnesses. The resolver uses printed Retreat Cost\n# metadata, so these traces guard the route without hard-coding witness cards.\n# Oricorio GRI 55: https://api.pokemontcg.io/v2/cards/sm2-55\n# Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60\n# Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164\n# Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136\n# Official retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf\n# Confirmed systemic bug: https://github.com/FlareZ123/pokemon-sims/issues/2295\nadd_test(NAME trace_issue_2295_oricorio_seed29 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 29 --require-ready-by 4)\nadd_test(NAME trace_issue_2295_tapu_seed86 COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 86 --require-ready-by 4)\n'''
+          atomic_replace(cmake, [(anchor, block)])
+          PY
+          git diff --check
+
+      - name: Build and validate both exact issue traces
+        shell: bash
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release -j2
+          ctest --test-dir build --output-on-failure -R 'trace_issue_2295_(oricorio_seed29|tapu_seed86)'
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 29 --require-ready-by 4
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 86 --require-ready-by 4
+
+      - name: Commit validated source and permanent regressions
+        shell: bash
+        run: |
+          rm .github/workflows/materialize-2295-sol.yml .github/workflows/materialize-2295-fix2.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/trace_engine_v2/part_014c_latias_bench_override.inc CMakeLists.txt .github/workflows/materialize-2295-sol.yml .github/workflows/materialize-2295-fix2.yml
+          git commit -m 'Fix #2295 generalize one-cost Basic paid retreat'
+          git push origin HEAD:${{ github.head_ref }}

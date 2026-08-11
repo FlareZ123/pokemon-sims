@@ -1,12 +1,3 @@
-  std::optional<Card> issue_1872_searchable_payload() const {
-    for (const Card card : {Card::MegaDragonite, Card::Dragapult,
-                            Card::GoodraVstar, Card::DialgaGX,
-                            Card::Appletun}) {
-      if (deck_count_after_search_started(card) > 0) return card;
-    }
-    return std::nullopt;
-  }
-
   bool issue_1872_treasure_vessel_payload_route_available() const {
     // Public K1 makes the deck payload and Basic Energy counts deterministic. Spend
     // Chaotic Swell on Mysterious Treasure first, then use the searched Dragon as
@@ -26,13 +17,13 @@
         hand_count(Card::EarthenVessel) > 0 &&
         hand_count(Card::ChaoticSwell) > 0 &&
         deck_count_after_search_started(Card::Grass) > 0 &&
-        issue_1872_searchable_payload().has_value();
+        treasure_route_searchable_payload().has_value();
   }
 
   bool complete_issue_1872_treasure_vessel_payload_route() {
     if (!issue_1872_treasure_vessel_payload_route_available()) return false;
 
-    const std::optional<Card> payload = issue_1872_searchable_payload();
+    const std::optional<Card> payload = treasure_route_searchable_payload();
     if (!payload.has_value()) {
       throw std::logic_error("Issue-1872 payload target disappeared");
     }
@@ -82,11 +73,7 @@
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Official once-per-turn attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Earliest deterministic route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    if (!remove_one(state_.hand, Card::Grass)) {
-      throw std::logic_error("Issue-1872 Grass attachment disappeared");
-    }
-    ++state_.active->grass;
-    state_.manual_energy_used = true;
+    attach_treasure_route_grass("Issue-1872 Grass attachment disappeared");
     trace("ATTACH", "R-GAME-ENERGY; P-COMPRESS-01",
           "Grass Energy manually to Regidrago VSTAR after the Treasure-Vessel payload route.");
     return active_is_vstar() && !need_energy() && !need_payload();

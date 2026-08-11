@@ -30,5 +30,7 @@
     // https://api.pokemontcg.io/v2/cards/swsh6-148
     // https://github.com/FlareZ123/pokemon-sims/issues/2808
     if (garbodor_abilities_locked()) return false;
-    return !is_rule_box_pokemon(card) || !rule_box_abilities_locked();
+    const bool rule_box_lock_allows_ability =
+        !is_rule_box_pokemon(card) || !rule_box_abilities_locked();
+    return rule_box_lock_allows_ability;
   }

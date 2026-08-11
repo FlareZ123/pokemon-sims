@@ -9,11 +9,7 @@
     state_.turn_ended = false;
   }
 
-  void reset_per_turn_state(const int turn) {
-    state_.turn = turn;
-    reset_turn_action_usage();
-    state_.discarded_this_turn.clear();
-
+  void reset_turn_scoped_lock_state() {
     // In the Garbodor pressure scenario path_lock_removed is reused only as the
     // current-turn "opponent Tool removed" flag. The maximum-pressure opponent
     // reattaches a Tool before each following Regidrago turn, so Field Blower's
@@ -22,6 +18,13 @@
     // https://api.pokemontcg.io/v2/cards/sm2-125
     // https://github.com/FlareZ123/pokemon-sims/issues/2808
     if (garbodor_shake_scenario()) state_.path_lock_removed = false;
+  }
+
+  void reset_per_turn_state(const int turn) {
+    state_.turn = turn;
+    reset_turn_action_usage();
+    state_.discarded_this_turn.clear();
+    reset_turn_scoped_lock_state();
   }
 
   bool draw_start_of_turn_card() {

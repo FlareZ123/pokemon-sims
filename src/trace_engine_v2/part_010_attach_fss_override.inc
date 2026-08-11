@@ -52,6 +52,15 @@
     return first_open_pokemon_v_on_bench();
   }
 
+  void attach_fss_to(Pokemon& target) {
+    // Centralize the physical Forest Seal Stone state transition so every legal
+    // holder path consumes the same hand card and sets the same Tool state:
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    remove_one(state_.hand, Card::ForestSealStone);
+    target.tool = Tool::ForestSealStone;
+  }
+
   bool attach_fss() {
     if (hand_count(Card::ForestSealStone) == 0) return false;
 
@@ -63,8 +72,7 @@
     if (!state_.vstar_power_used && active_powerglass_tool_slot_needed()) {
       Pokemon* target = first_open_pokemon_v_on_bench();
       if (target != nullptr) {
-        remove_one(state_.hand, Card::ForestSealStone);
-        target->tool = Tool::ForestSealStone;
+        attach_fss_to(*target);
         trace("ATTACH TOOL", "R-FSS-01; R-GAME-TOOL; R-POWERGLASS-01",
               "Attached Forest Seal Stone to a Benched Pokémon V and reserved the Active Tool slot for Powerglass.");
         return true;
@@ -84,8 +92,7 @@
     // holder selected by the legal attachment:
     // https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
     // https://api.pokemontcg.io/v2/cards/swsh12-156
-    remove_one(state_.hand, Card::ForestSealStone);
-    target->tool = Tool::ForestSealStone;
+    attach_fss_to(*target);
     trace("ATTACH TOOL", "R-FSS-01; R-GAME-TOOL",
           "Attached Forest Seal Stone to " + std::string(name(target->card)) + ".");
     return true;

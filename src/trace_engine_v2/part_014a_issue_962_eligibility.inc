@@ -1,3 +1,3 @@
 #define REGIDRAGO_ISSUE_962_SECTION_ELIGIBILITY
-#include "part_014a_issue_962_route.inc"
+#include "core/issue_962_route.inc"
 #undef REGIDRAGO_ISSUE_962_SECTION_ELIGIBILITY

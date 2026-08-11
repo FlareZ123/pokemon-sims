@@ -157,9 +157,12 @@
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Same-ready-turn DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/978
-    return scenario_.dci == DciProfile::StrictJit &&
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3196
+    const bool same_ready_turn_jit = scenario_.dci == DciProfile::StrictJit ||
+                                     scenario_.dci == DciProfile::MatchupFlexJit;
+    return same_ready_turn_jit &&
            state_.turn < scenario_.max_turn && prior_turn_active_regi_can_evolve &&
            held_manual_energy_completes_next_turn && need_payload() &&
            held_quick_ball_payload_route;

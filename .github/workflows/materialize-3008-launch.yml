@@ -1,0 +1,70 @@
+name: Materialize #3008 permanent fix
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/materialize-3008-launch.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Apply reviewed materialization script
+        shell: bash
+        run: |
+          git fetch origin fix/3008-professor-letter-single-pass
+          git show origin/fix/3008-professor-letter-single-pass:.github/workflows/materialize-3008-final.yml > /tmp/materializer.yml
+          python - <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          wrapper = Path('/tmp/materializer.yml').read_text()
+          begin = wrapper.index("          from pathlib import Path\n")
+          end = wrapper.index("\n          PY\n\n      - name: Verify combined checkpoints", begin)
+          script = textwrap.dedent(wrapper[begin:end])
+          exec(compile(script, '<materialize-3008>', 'exec'))
+          PY
+      - name: Verify combined checkpoints against legacy tool
+        shell: bash
+        run: |
+          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
+            tools/professors_letter_swap_matrix.cpp -o legacy-checkpoints
+          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
+            tools/professors_letter_real_game_analysis.cpp -o combined-analysis
+          ./legacy-checkpoints 200 20260705 legacy.csv
+          ./combined-analysis --analyze-real-games \
+            200 20260705 summary.csv branches.csv combined.csv
+          cmp legacy.csv combined.csv
+          python - <<'PY'
+          import csv
+          from collections import Counter
+          with open('combined.csv', newline='') as handle:
+              rows = list(csv.DictReader(handle))
+          if not rows:
+              raise SystemExit('combined checkpoint matrix is empty')
+          variants = Counter(row['variant'] for row in rows)
+          if set(variants) != {'regidrago-shell', 'letter-swap'}:
+              raise SystemExit(f'unexpected checkpoint variants: {sorted(variants)}')
+          if len(set(variants.values())) != 1:
+              raise SystemExit(f'unbalanced checkpoint variants: {variants}')
+          print(f'200-trial paired checkpoint equivalence: exact ({len(rows)} rows)')
+          PY
+      - name: Commit permanent fix
+        shell: bash
+        run: |
+          git config user.name "pokemon-sims automation"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/workflows/materialize-3008-launch.yml
+          git add tools/professors_letter_real_game_analysis.cpp \
+                  .github/workflows/professors-letter-validation.yml
+          git commit -m "Fix #3008: unify Professor Letter 100k analysis"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}

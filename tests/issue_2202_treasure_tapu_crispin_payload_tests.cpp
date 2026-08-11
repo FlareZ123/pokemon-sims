@@ -73,7 +73,12 @@ void test_issue_3129_proven_second_tapu_copy() {
 
   sim::State state;
   state.turn = 2;
-  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 1, 0};
+  // Pokemon aggregate order is card, entered_turn, grass, fire, tool, DDE.
+  // This is the intended GF Active VSTAR before Crispin supplies the second Grass.
+  // State contract: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/game_state_types.inc
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 1, 1};
   state.bench = {sim::Pokemon{sim::Card::TapuLeleGX, 0}};
   state.hand = {sim::Card::MysteriousTreasure, sim::Card::DialgaGX};
   state.deck = {sim::Card::TapuLeleGX, sim::Card::Crispin,

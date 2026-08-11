@@ -21,62 +21,66 @@ const NamedDeck* tcg_live_deck_by_id(const std::string_view id) {
 #define deck_by_id tcg_live_deck_by_id
 #endif
 
+void accumulate_trial_outcome(Aggregate& aggregate, const TrialOutcome& outcome) {
+  ++aggregate.trials;
+  aggregate.by2 += outcome.ready_by_2 ? 1U : 0U;
+  aggregate.by3 += outcome.ready_by_3 ? 1U : 0U;
+  aggregate.by4 += outcome.ready_by_4 ? 1U : 0U;
+  aggregate.by5 += outcome.ready_by_5 ? 1U : 0U;
+  aggregate.ready_on5 += outcome.first_ready_turn == 5 ? 1U : 0U;
+  aggregate.setup_failures += outcome.setup_failed ? 1U : 0U;
+  aggregate.started_regi += outcome.started_regi ? 1U : 0U;
+  aggregate.started_tapu += outcome.started_tapu ? 1U : 0U;
+  aggregate.dark_asset += outcome.used_dark_asset ? 1U : 0U;
+  aggregate.dark_asset_cards_drawn += outcome.dark_asset_cards_drawn;
+  aggregate.fss += outcome.used_fss ? 1U : 0U;
+  aggregate.legacy += outcome.used_legacy_star ? 1U : 0U;
+  aggregate.steven += outcome.used_steven ? 1U : 0U;
+  aggregate.blender += outcome.used_blender ? 1U : 0U;
+  aggregate.secret_box += outcome.used_secret_box ? 1U : 0U;
+  aggregate.exploding_energy += outcome.used_exploding_energy ? 1U : 0U;
+  aggregate.secret_box_combo_attempted += outcome.secret_box_combo_attempted;
+  aggregate.secret_box_cost_blocked += outcome.secret_box_cost_blocked;
+  aggregate.secret_box_missing_axis += outcome.secret_box_missing_axis;
+  aggregate.secret_box_missing_regi_axis += outcome.secret_box_missing_regi_axis;
+  aggregate.secret_box_missing_line_axis += outcome.secret_box_missing_line_axis;
+  aggregate.secret_box_missing_vstar_axis += outcome.secret_box_missing_vstar_axis;
+  aggregate.secret_box_missing_payload_axis += outcome.secret_box_missing_payload_axis;
+  aggregate.secret_box_missing_treasure_axis += outcome.secret_box_missing_treasure_axis;
+  aggregate.secret_box_missing_fire_axis += outcome.secret_box_missing_fire_axis;
+  aggregate.secret_box_missing_grass_axis += outcome.secret_box_missing_grass_axis;
+  aggregate.secret_box_missing_ability_axis += outcome.secret_box_missing_ability_axis;
+  aggregate.secret_box_missing_supporter_axis += outcome.secret_box_missing_supporter_axis;
+  aggregate.secret_box_missing_known_prize_zone += outcome.secret_box_missing_known_prize_zone;
+  aggregate.secret_box_missing_discard_zone += outcome.secret_box_missing_discard_zone;
+  aggregate.secret_box_missing_stranded_hand_zone += outcome.secret_box_missing_stranded_hand_zone;
+  aggregate.secret_box_bench_blocked += outcome.secret_box_bench_blocked;
+  aggregate.secret_box_arven_bank += outcome.secret_box_arven_bank;
+  aggregate.secret_box_steven_bank += outcome.secret_box_steven_bank;
+  aggregate.secret_box_gladion_bank += outcome.secret_box_gladion_bank;
+  aggregate.secret_box_fss_bank += outcome.secret_box_fss_bank;
+  aggregate.t2_missing_active_vstar += outcome.t2_missing_active_vstar ? 1U : 0U;
+  aggregate.t2_missing_grass += outcome.t2_missing_grass ? 1U : 0U;
+  aggregate.t2_missing_fire += outcome.t2_missing_fire ? 1U : 0U;
+  aggregate.t2_missing_payload += outcome.t2_missing_payload ? 1U : 0U;
+  aggregate.t2_eligible_regi_start += outcome.t2_eligible_regi_start ? 1U : 0U;
+  aggregate.t2_active_regi_start += outcome.t2_active_regi_start ? 1U : 0U;
+  aggregate.t2_pineco_line_start += outcome.t2_pineco_line_start ? 1U : 0U;
+  aggregate.t2_vstar_held_start += outcome.t2_vstar_held_start ? 1U : 0U;
+  aggregate.t2_eligible_held_vstar_missed_active +=
+      outcome.t2_eligible_held_vstar_missed_active ? 1U : 0U;
+  aggregate.t2_eligible_missed_active +=
+      outcome.t2_eligible_missed_active ? 1U : 0U;
+  aggregate.total_mulligans += outcome.mulligans;
+}
+
 Aggregate simulate(const Scenario& scenario, const DeckRecipe& recipe, const std::uint64_t trials, const std::uint64_t seed) {
   std::mt19937_64 rng(seed);
   Aggregate aggregate{};
   for (std::uint64_t trial = 0; trial < trials; ++trial) {
     Engine engine(scenario, recipe, rng);
     const TrialOutcome outcome = engine.run();
-    ++aggregate.trials;
-    aggregate.by2 += outcome.ready_by_2 ? 1U : 0U;
-    aggregate.by3 += outcome.ready_by_3 ? 1U : 0U;
-    aggregate.by4 += outcome.ready_by_4 ? 1U : 0U;
-    aggregate.by5 += outcome.ready_by_5 ? 1U : 0U;
-    aggregate.ready_on5 += outcome.first_ready_turn == 5 ? 1U : 0U;
-    aggregate.setup_failures += outcome.setup_failed ? 1U : 0U;
-    aggregate.started_regi += outcome.started_regi ? 1U : 0U;
-    aggregate.started_tapu += outcome.started_tapu ? 1U : 0U;
-    aggregate.dark_asset += outcome.used_dark_asset ? 1U : 0U;
-    aggregate.dark_asset_cards_drawn += outcome.dark_asset_cards_drawn;
-    aggregate.fss += outcome.used_fss ? 1U : 0U;
-    aggregate.legacy += outcome.used_legacy_star ? 1U : 0U;
-    aggregate.steven += outcome.used_steven ? 1U : 0U;
-    aggregate.blender += outcome.used_blender ? 1U : 0U;
-    aggregate.secret_box += outcome.used_secret_box ? 1U : 0U;
-    aggregate.exploding_energy += outcome.used_exploding_energy ? 1U : 0U;
-    aggregate.secret_box_combo_attempted += outcome.secret_box_combo_attempted;
-    aggregate.secret_box_cost_blocked += outcome.secret_box_cost_blocked;
-    aggregate.secret_box_missing_axis += outcome.secret_box_missing_axis;
-    aggregate.secret_box_missing_regi_axis += outcome.secret_box_missing_regi_axis;
-    aggregate.secret_box_missing_line_axis += outcome.secret_box_missing_line_axis;
-    aggregate.secret_box_missing_vstar_axis += outcome.secret_box_missing_vstar_axis;
-    aggregate.secret_box_missing_payload_axis += outcome.secret_box_missing_payload_axis;
-    aggregate.secret_box_missing_treasure_axis += outcome.secret_box_missing_treasure_axis;
-    aggregate.secret_box_missing_fire_axis += outcome.secret_box_missing_fire_axis;
-    aggregate.secret_box_missing_grass_axis += outcome.secret_box_missing_grass_axis;
-    aggregate.secret_box_missing_ability_axis += outcome.secret_box_missing_ability_axis;
-    aggregate.secret_box_missing_supporter_axis += outcome.secret_box_missing_supporter_axis;
-    aggregate.secret_box_missing_known_prize_zone += outcome.secret_box_missing_known_prize_zone;
-    aggregate.secret_box_missing_discard_zone += outcome.secret_box_missing_discard_zone;
-    aggregate.secret_box_missing_stranded_hand_zone += outcome.secret_box_missing_stranded_hand_zone;
-    aggregate.secret_box_bench_blocked += outcome.secret_box_bench_blocked;
-    aggregate.secret_box_arven_bank += outcome.secret_box_arven_bank;
-    aggregate.secret_box_steven_bank += outcome.secret_box_steven_bank;
-    aggregate.secret_box_gladion_bank += outcome.secret_box_gladion_bank;
-    aggregate.secret_box_fss_bank += outcome.secret_box_fss_bank;
-    aggregate.t2_missing_active_vstar += outcome.t2_missing_active_vstar ? 1U : 0U;
-    aggregate.t2_missing_grass += outcome.t2_missing_grass ? 1U : 0U;
-    aggregate.t2_missing_fire += outcome.t2_missing_fire ? 1U : 0U;
-    aggregate.t2_missing_payload += outcome.t2_missing_payload ? 1U : 0U;
-    aggregate.t2_eligible_regi_start += outcome.t2_eligible_regi_start ? 1U : 0U;
-    aggregate.t2_active_regi_start += outcome.t2_active_regi_start ? 1U : 0U;
-    aggregate.t2_pineco_line_start += outcome.t2_pineco_line_start ? 1U : 0U;
-    aggregate.t2_vstar_held_start += outcome.t2_vstar_held_start ? 1U : 0U;
-    aggregate.t2_eligible_held_vstar_missed_active +=
-        outcome.t2_eligible_held_vstar_missed_active ? 1U : 0U;
-    aggregate.t2_eligible_missed_active +=
-        outcome.t2_eligible_missed_active ? 1U : 0U;
-    aggregate.total_mulligans += outcome.mulligans;
+    accumulate_trial_outcome(aggregate, outcome);
   }
   return aggregate;
 }

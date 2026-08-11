@@ -83,11 +83,33 @@
   }
 
   bool pay_tapu_retreat_to_ready_benched_vstar() {
-    if (!need_active_vstar() || need_energy() || need_payload() ||
-        state_.retreat_used || state_.manual_energy_used || !state_.active ||
-        state_.active->card != Card::TapuLeleGX) {
+    // This stable helper name is retained for regression accessors; eligibility is
+    // systemic and comes from the centralized printed Retreat Cost metadata.
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104
+    // Mawile-GX: https://api.pokemontcg.io/v2/cards/sm11-141
+    // Oricorio GRI 55: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Printed-cost registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
+    // Confirmed systemic bug: https://github.com/FlareZ123/pokemon-sims/issues/2295
+    if (!need_active_vstar() || need_energy() || state_.retreat_used ||
+        state_.manual_energy_used || !state_.active ||
+        !is_basic(state_.active->card) || retreat_cost(state_.active->card) != 1) {
       return false;
     }
+
+    const bool blender_completes_payload =
+        need_payload() && prizes_known() && strict_payload_timing() &&
+        !item_locked() && hand_count(Card::BrilliantBlender) > 0 &&
+        payload_might_be_in_deck() && can_play_payload_this_turn();
+    // Brilliant Blender is an independent Item channel for the current-turn Dragon
+    // payload once K1 proves a legal payload remains in deck.
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official attachment and retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1/JIT/earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Dynamic DCI/AMR model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2295
+    if (need_payload() && !blender_completes_payload) return false;
 
     Pokemon* target = best_benched_vstar_for_promotion();
     // DDE + either Basic Energy pays Apex Dragon's GGF cost and is a legal
@@ -97,19 +119,19 @@
     // https://github.com/FlareZ123/pokemon-sims/issues/2430
     if (target == nullptr || !pays_apex_energy_cost(*target)) return false;
 
+    const Card retreating = state_.active->card;
     const Card payment = hand_count(Card::Grass) > 0 ? Card::Grass : Card::Fire;
     if (hand_count(payment) == 0 || !remove_one(state_.hand, payment)) return false;
 
-    // Tapu Lele-GX has a one-Colorless Retreat Cost, so either modeled Basic
-    // Energy may be attached for the turn and immediately discarded to promote an
-    // already-GGF Regidrago VSTAR. Restrict this route to states where Energy and
-    // payload axes are already complete, preserving the attachment for setup when
-    // the Benched VSTAR still needs it:
-    // https://api.pokemontcg.io/v2/cards/sm2-60
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // https://www.pokemon.com/us/pokemon-tcg/rules
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // https://github.com/FlareZ123/pokemon-sims/issues/802
+    // A printed one-Colorless Retreat Cost accepts either modeled Basic Energy.
+    // The Benched VSTAR is already GGF-ready, so this attachment is mobility value;
+    // when payload is missing, the independently held Blender resolves that axis.
+    // Basic Energy attachment/retreat: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Earlier completed-axis Tapu route: https://github.com/FlareZ123/pokemon-sims/issues/802
+    // Free Latias route remains preferred by resolver order: https://github.com/FlareZ123/pokemon-sims/issues/905
+    // Confirmed systemic extension: https://github.com/FlareZ123/pokemon-sims/issues/2295
     if (payment == Card::Grass) {
       ++state_.active->grass;
     } else {
@@ -117,8 +139,8 @@
     }
     state_.manual_energy_used = true;
     trace("ATTACH", "R-GAME-ENERGY",
-          std::string(name(payment)) +
-              " manually to Tapu Lele-GX for its Retreat Cost.");
+          std::string(name(payment)) + " manually to " +
+              std::string(name(retreating)) + " for its Retreat Cost.");
 
     if (payment == Card::Grass) {
       --state_.active->grass;
@@ -129,8 +151,11 @@
     std::swap(*state_.active, *target);
     state_.retreat_used = true;
     trace("RETREAT", "R-GAME-RETREAT",
-          "Paid Tapu Lele-GX's one-Energy Retreat Cost and promoted the ready "
-          "Benched Regidrago VSTAR.");
+          "Paid " + std::string(name(retreating)) +
+              "'s one-Energy Retreat Cost and promoted the ready Benched Regidrago VSTAR.");
+    if (blender_completes_payload && !play_brilliant_blender()) {
+      throw std::logic_error("Issue-2295 held Brilliant Blender route disappeared");
+    }
     return true;
   }
 

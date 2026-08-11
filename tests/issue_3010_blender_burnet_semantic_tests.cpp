@@ -31,8 +31,9 @@ void expect(const bool condition, const char* message) {
 }
 
 struct Fixture {
-  explicit Fixture(const sim::DciProfile profile)
-      : scenario{"issue-3010/exact", profile, sim::LockMode::None, true, 5},
+  Fixture(const sim::DciProfile profile,
+          const sim::LockMode lock = sim::LockMode::None)
+      : scenario{"issue-3010/exact", profile, lock, true, 5},
         recipe{sim::baseline_recipe()},
         rng{3010},
         engine{scenario, recipe, rng} {}
@@ -88,6 +89,36 @@ void test_same_turn_jit_profiles_preserve_blender() {
                       sim::Card::BrilliantBlender) == 1,
            "The singleton Blender did not remain in hand.");
   }
+}
+
+void test_rulebox_ability_lock_preserves_blender_hold() {
+  Fixture fixture{sim::DciProfile::MatchupFlexJit,
+                  sim::LockMode::FullRuleBoxAbility};
+  install(fixture, burnet_owned_payload_state());
+
+  // Rule Box Ability lock does not make either Trainer card illegal. Burnet still
+  // owns the payload axis and the manual Grass attachment still finishes GGF:
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Trainer and Energy procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Lock model and confirmed bug: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulator_state.inc https://github.com/FlareZ123/pokemon-sims/issues/3010
+  expect(sim::EngineTestAccess::hold_blender(fixture.engine),
+         "Rule Box Ability lock incorrectly disabled the Burnet-owned Blender hold.");
+}
+
+void test_item_lock_releases_blender_hold() {
+  Fixture fixture{sim::DciProfile::MatchupFlexJit, sim::LockMode::FullItem};
+  install(fixture, burnet_owned_payload_state());
+
+  // Brilliant Blender is an Item, so under the simulator's full Item-lock state it
+  // is already illegal to play and this route-dominance helper must stay inactive:
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Item classification and lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulator_state.inc
+  // Confirmed systemic bug: https://github.com/FlareZ123/pokemon-sims/issues/3010
+  expect(!sim::EngineTestAccess::hold_blender(fixture.engine),
+         "The Burnet-owned Blender hold remained active under Item lock.");
 }
 
 void test_non_jit_profile_is_not_forced_into_hold() {
@@ -150,6 +181,8 @@ void test_unresolved_energy_axis_releases_blender() {
 int main() {
   try {
     test_same_turn_jit_profiles_preserve_blender();
+    test_rulebox_ability_lock_preserves_blender_hold();
+    test_item_lock_releases_blender_hold();
     test_non_jit_profile_is_not_forced_into_hold();
     test_burnet_illegal_releases_blender();
     test_missing_payload_releases_blender();

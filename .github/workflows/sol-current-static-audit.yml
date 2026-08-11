@@ -26,8 +26,8 @@ jobs:
           patterns = {
               'strict-jit': re.compile(r'DciProfile::StrictJit'),
               'lock-none': re.compile(r'LockMode::None'),
-              'seat': re.compile(r'(?:scenario_|scenario\.)going_first'),
-              'turn-coordinate': re.compile(r'(?:state_|state\.)turn\s*(?:==|!=|<=|>=|<|>)'),
+              'seat': re.compile(r'(?:scenario_\.|scenario\.)going_first'),
+              'turn-coordinate': re.compile(r'(?:state_\.|state\.)turn\s*(?:==|!=|<=|>=|<|>)'),
               'seed-coordinate': re.compile(r'\bseed\b\s*(?:==|!=|<=|>=|<|>)'),
               'raw-energy-axis': re.compile(r'(?:grass|fire)(?:_energy|_attached|_in_hand|_in_deck)', re.IGNORECASE),
           }

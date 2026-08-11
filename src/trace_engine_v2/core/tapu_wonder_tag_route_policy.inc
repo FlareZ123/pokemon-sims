@@ -66,6 +66,12 @@
            bench_space() >= tapu_latias_required_bench_slots();
   }
 
+  bool issue_2270_wonder_tag_arven_latias_route_available() const {
+    // Compatibility seam for the source-bound #2270 exact-state regression:
+    // https://github.com/FlareZ123/pokemon-sims/issues/2270
+    return wonder_tag_arven_latias_route_available();
+  }
+
   bool needs_tapu_connector() {
     if (needs_tapu_connector_issue2270_original()) return true;
 

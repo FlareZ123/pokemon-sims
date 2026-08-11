@@ -81,7 +81,7 @@
     // held, Arven's Item-search role is replaced for this exact completion: Quick
     // Ball can search Latias ex, Skyliner can give the Basic Active free Retreat,
     // and the already-held Brilliant Blender can independently put a Dragon payload
-    // into discard during the same strict-JIT turn. Arven may therefore become the
+    // into discard during the same JIT-ready turn. Arven may therefore become the
     // one-card Quick Ball cost only after the VSTAR and GGF Energy axes are already
     // complete and every other completion gate is observable.
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
@@ -91,13 +91,14 @@
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Core Item, search, Bench, Ability, Retreat, and Supporter procedure:
     // https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1 / strict-JIT / dynamic DCI / earliest-route policy:
+    // K1 / shared-JIT / dynamic DCI / earliest-route policy:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2272
-    if (scenario_.dci != DciProfile::StrictJit || !prizes_known() || item_locked() ||
+    // Original confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2272
+    // Shared-JIT overfit fix: https://github.com/FlareZ123/pokemon-sims/issues/3136
+    if (!strict_payload_timing() || !prizes_known() || item_locked() ||
         hand_count(Card::QuickBall) == 0 || hand_count(Card::Arven) == 0 ||
         hand_count(Card::BrilliantBlender) == 0 || need_regi() || need_vstar() ||
         need_energy() || !need_active_vstar() || !need_payload() ||

@@ -14,8 +14,8 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | Strict JIT, going first | 12.133% | 19.820% | +7.687 pp | 41.504% | 49.067% | +7.563 pp | 58.959% | 66.591% | +7.632 pp |
 | Strict JIT, going second | 29.696% | 48.373% | +18.677 pp | 54.785% | 64.310% | +9.525 pp | 66.891% | 74.680% | +7.789 pp |
-| Matchup-flex JIT, going first | 16.996% | 21.368% | +4.372 pp | 50.351% | 50.603% | +0.252 pp | 67.091% | 68.430% | +1.339 pp |
-| Matchup-flex JIT, going second | 37.436% | 51.408% | +13.972 pp | 63.195% | 67.187% | +3.992 pp | 74.522% | 76.762% | +2.240 pp |
+| Matchup-flex JIT, going first | 16.988% | 21.368% | +4.380 pp | 50.302% | 50.603% | +0.301 pp | 67.091% | 68.430% | +1.339 pp |
+| Matchup-flex JIT, going second | 37.383% | 51.316% | +13.933 pp | 63.108% | 67.175% | +4.067 pp | 74.461% | 76.773% | +2.312 pp |
 | No discard control, going first | 19.747% | 25.207% | +5.460 pp | 56.986% | 60.410% | +3.424 pp | 73.750% | 75.805% | +2.055 pp |
 | No discard control, going second | 39.935% | 59.434% | +19.499 pp | 68.330% | 73.939% | +5.609 pp | 79.952% | 82.494% | +2.542 pp |
 
@@ -24,13 +24,13 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 | Scenario | T2 ± SE | T3 ± SE | T4 ± SE | Failure ± SE |
 |---|---:|---:|---:|---:|
 | Strict JIT, going first | 12.133% ± 0.103 | 41.504% ± 0.156 | 58.959% ± 0.156 | 41.041% ± 0.156 |
-| Matchup-flex JIT, going first | 16.996% ± 0.119 | 50.351% ± 0.158 | 67.091% ± 0.149 | 32.909% ± 0.149 |
+| Matchup-flex JIT, going first | 16.988% ± 0.119 | 50.302% ± 0.158 | 67.091% ± 0.149 | 32.909% ± 0.149 |
 | No discard control, going first | 19.747% ± 0.126 | 56.986% ± 0.157 | 73.750% ± 0.139 | 26.250% ± 0.139 |
 | Strict JIT, turn-two Item lock, first | 4.575% ± 0.066 | 10.488% ± 0.097 | 18.444% ± 0.123 | 81.556% ± 0.123 |
 | Strict JIT, Rule Box Ability lock, first | 4.594% ± 0.066 | 27.234% ± 0.141 | 41.615% ± 0.156 | 58.385% ± 0.156 |
 | Strict JIT, turn-two Item + Rule Box Ability lock, first | 0.781% ± 0.028 | 4.648% ± 0.067 | 9.655% ± 0.093 | 90.345% ± 0.093 |
 | Strict JIT, going second | 29.696% ± 0.144 | 54.785% ± 0.157 | 66.891% ± 0.149 | 33.109% ± 0.149 |
-| Matchup-flex JIT, going second | 37.436% ± 0.153 | 63.195% ± 0.153 | 74.522% ± 0.138 | 25.478% ± 0.138 |
+| Matchup-flex JIT, going second | 37.383% ± 0.153 | 63.108% ± 0.153 | 74.461% ± 0.138 | 25.539% ± 0.138 |
 | No discard control, going second | 39.935% ± 0.155 | 68.330% ± 0.147 | 79.952% ± 0.127 | 20.048% ± 0.127 |
 | Strict JIT, turn-two Item lock, second | 14.141% ± 0.110 | 28.427% ± 0.143 | 36.845% ± 0.153 | 63.155% ± 0.153 |
 | Strict JIT, Rule Box Ability lock, second | 18.528% ± 0.123 | 36.608% ± 0.152 | 48.266% ± 0.158 | 51.734% ± 0.158 |
@@ -45,10 +45,10 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 | Scenario | Ready on T2 | Ready on T3 | Ready on T4 | Ready on T5 diagnostic |
 |---|---:|---:|---:|---:|
 | Strict JIT, going first | 12.133% | 29.371% | 17.455% | 10.920% |
-| Matchup-flex JIT, going first | 16.996% | 33.355% | 16.740% | 9.842% |
+| Matchup-flex JIT, going first | 16.988% | 33.314% | 16.789% | 9.836% |
 | No discard control, going first | 19.747% | 37.239% | 16.764% | 8.982% |
 | Strict JIT, going second | 29.696% | 25.089% | 12.106% | 8.049% |
-| Matchup-flex JIT, going second | 37.436% | 25.759% | 11.327% | 7.038% |
+| Matchup-flex JIT, going second | 37.383% | 25.725% | 11.353% | 7.098% |
 | No discard control, going second | 39.935% | 28.395% | 11.622% | 6.493% |
 
 ## Regidrago-Pineco with Secret Box
@@ -62,7 +62,7 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 | Strict JIT, Rule Box Ability lock, first | 4.759% ± 0.067 | 18.355% ± 0.122 | 30.421% ± 0.145 | 69.579% ± 0.145 |
 | Strict JIT, turn-two Item + Rule Box Ability lock, first | 0.903% ± 0.030 | 2.287% ± 0.047 | 4.776% ± 0.067 | 95.224% ± 0.067 |
 | Strict JIT, going second | 48.373% ± 0.158 | 64.310% ± 0.151 | 74.680% ± 0.138 | 25.320% ± 0.138 |
-| Matchup-flex JIT, going second | 51.408% ± 0.158 | 67.187% ± 0.148 | 76.762% ± 0.134 | 23.238% ± 0.134 |
+| Matchup-flex JIT, going second | 51.316% ± 0.158 | 67.175% ± 0.148 | 76.773% ± 0.134 | 23.227% ± 0.134 |
 | No discard control, going second | 59.434% ± 0.155 | 73.939% ± 0.139 | 82.494% ± 0.120 | 17.506% ± 0.120 |
 | Strict JIT, turn-two Item lock, second | 6.866% ± 0.080 | 12.754% ± 0.105 | 19.120% ± 0.124 | 80.880% ± 0.124 |
 | Strict JIT, Rule Box Ability lock, second | 12.506% ± 0.105 | 24.678% ± 0.136 | 34.496% ± 0.150 | 65.504% ± 0.150 |
@@ -80,7 +80,7 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 | Matchup-flex JIT, going first | 21.368% | 29.235% | 17.827% | 10.321% |
 | No discard control, going first | 25.207% | 35.203% | 15.395% | 7.194% |
 | Strict JIT, going second | 48.373% | 15.937% | 10.370% | 6.720% |
-| Matchup-flex JIT, going second | 51.408% | 15.779% | 9.575% | 6.469% |
+| Matchup-flex JIT, going second | 51.316% | 15.859% | 9.598% | 6.441% |
 | No discard control, going second | 59.434% | 14.505% | 8.555% | 4.635% |
 
 ## Secret Box route graph
@@ -162,6 +162,6 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 ## Provenance
 
-Simulator policy digest: `386f104d09775ef59d8d237a5072945f8165696ca33abd5444fea7a3f13b5427`.
+Simulator policy digest: `c6020aaa85cb16826ace5cf7daf3127007fc2f87797b2691fa9f8c6c5ad85f28`.
 
-Comparison CSV SHA-256: `b6245c2798e9f5f441b7372d12d60c1ad3b9bb8ee0b4fb794ef8f31b89fed0ac`.
+Comparison CSV SHA-256: `ad07e0838dfec35334a6f01b738db55832c672a054769038da8990eb56eb8a12`.

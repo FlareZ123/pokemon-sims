@@ -60,7 +60,13 @@
 #undef might_be_unseen
 // begin_turn intentionally remains aliased until opening_engine_overrides.inc
 // composes part_empty_deck_unseen_override.inc and releases the alias.
+// Replace only the historical banked-Tapu implementation while preserving the
+// rest of the opening override ordering. The replacement uses the shared DDE-aware
+// Apex payment predicate: https://github.com/FlareZ123/pokemon-sims/issues/3089
+#define retreat_banked_tapu_to_regidrago retreat_banked_tapu_to_regidrago_issue3089_original
 #include "opening_engine_overrides.inc"
+#undef retreat_banked_tapu_to_regidrago
+#include "../part_issue_3089_banked_tapu_retreat.inc"
 #include "../part_014a.inc"
 #include "post_014a_overrides.inc"
 

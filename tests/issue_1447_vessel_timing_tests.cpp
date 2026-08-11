@@ -89,21 +89,37 @@ void test_no_discard_control_keeps_early_vessel() {
          "The strict-JIT guard leaked into no-discard-control.");
 }
 
-void test_matchup_flex_keeps_existing_route() {
+void test_matchup_flex_uses_shared_jit_vessel_stage() {
   sim::TraceLog trace{true, {}};
   const sim::TrialOutcome outcome =
       run_seed_104("matchup-flex-jit/go-first", trace);
 
-  // Matchup-flex has its own dynamic DCI route. The issue-1447 change is scoped
-  // to the stricter resource proof and must leave this profile unchanged:
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-  // https://github.com/FlareZ123/pokemon-sims/issues/1447
+  // Issue #3039 supersedes only the old #1447 MatchupFlex negative control.
+  // MatchupFlex shares strict_payload_timing(), so the public T1 Earthen Vessel
+  // staging action from #1552 is legal for this profile too. Seed 104 still
+  // reaches its ready state on T3; the corrected contract is that the shared JIT
+  // profile may stage Vessel on T1 instead of being forced into the obsolete T2
+  // Dialga-GX -> Vessel cost route.
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Core procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+  // Same-ready-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Original timing boundary: https://github.com/FlareZ123/pokemon-sims/issues/1447
+  // Confirmed staging route: https://github.com/FlareZ123/pokemon-sims/issues/1552
+  // Confirmed semantic generalization: https://github.com/FlareZ123/pokemon-sims/issues/3039
+  // Merged implementation: https://github.com/FlareZ123/pokemon-sims/pull/3042
   expect(outcome.first_ready_turn == 3,
          "Matchup-flex seed 104 changed its ready turn.");
   expect(trace_contains(trace,
-                        "T2 | DISCARD | rules: R-EV-01 | Dialga-GX "
-                        "(Earthen Vessel cost)"),
-         "The strict-only Vessel hold changed matchup-flex DCI behavior.");
+                        "T1 | DISCARD | rules: R-EV-01; P-DCI-01; P-COMPRESS-01 | Mysterious Treasure"),
+         "MatchupFlex did not admit the shared T1 Vessel staging route.");
+  expect(!trace_contains(trace,
+                         "T2 | DISCARD | rules: R-EV-01 | Dialga-GX "
+                         "(Earthen Vessel cost)"),
+         "MatchupFlex retained the superseded T2 Dialga-GX Vessel route.");
 }
 
 void test_turn_two_item_lock_does_not_delay_vessel() {
@@ -129,7 +145,7 @@ int main() {
   try {
     test_strict_jit_preserves_vessel_for_t3_payload();
     test_no_discard_control_keeps_early_vessel();
-    test_matchup_flex_keeps_existing_route();
+    test_matchup_flex_uses_shared_jit_vessel_stage();
     test_turn_two_item_lock_does_not_delay_vessel();
     std::cout << "Issue 1447 Vessel timing tests passed\n";
     return 0;

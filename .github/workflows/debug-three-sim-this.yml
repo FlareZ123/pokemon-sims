@@ -1,4 +1,4 @@
-name: Three-pass simulate-this debug audit
+name: Four-pass simulate-this debug audit
 
 on:
   pull_request:
@@ -27,22 +27,27 @@ jobs:
         run: |
           ./build/regidrago_sim --simulate-this --deck regidrago-shell \
             --scenario strict-jit/go-first --seed 165 | tee trace-2.txt
-      - name: Pass 3 matchup-flex JIT going second
+      - name: Pass 3 matchup-flex JIT going second bug witness
         run: |
           ./build/regidrago_sim --simulate-this --deck regidrago-shell \
             --scenario matchup-flex-jit/go-second --seed 871 | tee trace-3.txt
-      - name: Require three nonempty rule traces
+      - name: Pass 4 matchup-flex JIT known-ready replacement
+        run: |
+          ./build/regidrago_sim --simulate-this --deck regidrago-shell \
+            --scenario matchup-flex-jit/go-second --seed 3 | tee trace-4.txt
+      - name: Require four nonempty rule traces
         shell: bash
         run: |
-          for file in trace-1.txt trace-2.txt trace-3.txt; do
+          for file in trace-1.txt trace-2.txt trace-3.txt trace-4.txt; do
             test -s "$file"
             grep -F "rules:" "$file"
           done
       - uses: actions/upload-artifact@v4
         with:
-          name: debug-three-sim-this
+          name: debug-four-sim-this
           path: |
             trace-1.txt
             trace-2.txt
             trace-3.txt
+            trace-4.txt
           if-no-files-found: error

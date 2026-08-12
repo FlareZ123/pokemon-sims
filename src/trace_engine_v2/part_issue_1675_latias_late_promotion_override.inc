@@ -1,4 +1,5 @@
 #include "part_issue_1798_steven_blender_route.inc"
+#include "part_issue_3316_1797_semantic_continuation.inc"
 
   bool complete_issue_1675_latias_late_promotion() {
     if (state_.turn_ended || state_.turn != scenario_.max_turn ||
@@ -38,14 +39,24 @@
   }
 
   void run_turn_issue1775_original() {
-    if (complete_issue_1797_t2_steven_package()) return;
-    if (complete_issue_1797_t3_finish()) {
-      // The K1 Heavy Ball, Quick Ball, Wonder Tag, Steven, Crispin, and Vessel route
-      // completes the registered strict-JIT setup on T3:
-      // https://api.pokemontcg.io/v2/cards/swsh10-146 https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sm2-60 https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/sv4-163
-      // https://github.com/FlareZ123/pokemon-sims/issues/1797
+    // #1797's connector has already produced public K1 state here. Continue from
+    // action legality and the relative next-turn marker instead of replaying the
+    // original seed's turn, seat, JIT-profile, and no-lock identities:
+    // https://github.com/FlareZ123/pokemon-sims/issues/3316
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    if (issue_3316_1797_bank_continuation()) return;
+    if (issue_3316_1797_finish_continuation()) {
+      // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Advanced turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+      // Same-ready-turn JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
       trace("POLICY", "P-AXIS-01; R-QB-01; R-STEVEN-01; R-EV-01; P-JIT-01; P-COMPRESS-01",
-            "Completed the issue-1797 deterministic T3 route: " + state_line());
+            "Completed the semantic issue-1797 deterministic continuation: " + state_line());
       return;
     }
     if (complete_issue_1796_t3_finish()) {

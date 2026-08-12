@@ -9,6 +9,13 @@
 // https://github.com/FlareZ123/pokemon-sims/issues/2808
 std::vector<Scenario> all_scenarios();
 
+const std::array<Scenario, 2> kGarbodorScenarios{{
+    {"garbodor-shake-ability-lock/go-first",
+     DciProfile::StrictJit, LockMode::None, true, 5},
+    {"garbodor-shake-ability-lock/go-second",
+     DciProfile::StrictJit, LockMode::None, false, 5},
+}};
+
 std::vector<Scenario> all_scenarios_with_garbodor() {
   std::vector<Scenario> result = all_scenarios();
   // Garbodor BKP 57 suppresses Pokemon Abilities while it has a Tool. Boost Shake
@@ -18,10 +25,8 @@ std::vector<Scenario> all_scenarios_with_garbodor() {
   // https://api.pokemontcg.io/v2/cards/xy9-57
   // https://api.pokemontcg.io/v2/cards/swsh7-142
   // https://github.com/FlareZ123/pokemon-sims/issues/2808
-  result.push_back({"garbodor-shake-ability-lock/go-first",
-                    DciProfile::StrictJit, LockMode::None, true, 5});
-  result.push_back({"garbodor-shake-ability-lock/go-second",
-                    DciProfile::StrictJit, LockMode::None, false, 5});
+  result.push_back(kGarbodorScenarios[0]);
+  result.push_back(kGarbodorScenarios[1]);
   return result;
 }
 

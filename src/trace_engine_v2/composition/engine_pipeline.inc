@@ -75,3 +75,9 @@
 #undef all_scenarios
 #undef run_turn
 #undef play_field_blower
+
+#if defined(play_field_blower) || defined(run_turn) || defined(hand_count) || \
+    defined(play_items_until_stable) || defined(all_scenarios) || \
+    defined(scenario_by_label)
+#error "Canonical engine pipeline leaked a late composition alias"
+#endif

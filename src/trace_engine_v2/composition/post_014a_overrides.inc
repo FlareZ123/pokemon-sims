@@ -15,9 +15,15 @@
 
 // Keep the post-part_014a Burnet and Forest Seal Stone aliases in the same
 // composition spine instead of routing them through one-purpose wrapper files.
+#if defined(play_professor_burnet)
+#error "Post-search Burnet composition requires play_professor_burnet to be undefined on entry"
+#endif
 #define play_professor_burnet play_professor_burnet_empty_deck_original
 #include "../part_011_burnet_thinning_override.inc"
 #undef play_professor_burnet
+#if defined(play_professor_burnet)
+#error "Post-search Burnet composition leaked play_professor_burnet"
+#endif
 
 #undef use_fss
 #define use_fss use_fss_empty_deck_original

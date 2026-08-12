@@ -162,7 +162,7 @@
 #error "Late search composition requires search wrapper aliases to be undefined on entry"
 #endif
 
-#include "late_search_overrides.inc"
+#include "late_search_routes.inc"
 
 #if defined(bench_oricorio_if_useful) || defined(ultra_ball_has_legal_target) || \
     defined(play_ultra_ball) || defined(play_brilliant_blender) || \

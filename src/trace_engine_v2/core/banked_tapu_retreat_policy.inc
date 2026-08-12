@@ -14,10 +14,9 @@ bool banked_tapu_paid_retreat_available() {
          !(supporter_allowed() && hand_count(Card::TateLiza) > 0);
 }
 
-bool retreat_banked_tapu_to_regidrago() {
-  if (!banked_tapu_paid_retreat_available()) return false;
+bool banked_tapu_regidrago_ready(const Pokemon* target) {
+  if (target == nullptr || target->card != Card::RegidragoVstar) return false;
 
-  Pokemon* target = target_regi();
   // Preserve the historical two-Grass promotion state while admitting physical
   // DDE payment shapes that already satisfy Apex Dragon. Double Dragon Energy
   // supplies two Energy of every type while attached to a Dragon Pokemon, so a
@@ -30,14 +29,15 @@ bool retreat_banked_tapu_to_regidrago() {
   // Historical proactive-Tapu route: https://github.com/FlareZ123/pokemon-sims/issues/1845
   // Earliest deterministic route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Confirmed DDE regression: https://github.com/FlareZ123/pokemon-sims/issues/3089
-  const bool historical_two_grass_state = target != nullptr &&
-      target->grass >= 2 && target->fire == 0;
-  const bool dde_or_other_complete_payment =
-      target != nullptr && pays_apex_energy_cost(*target);
-  if (target == nullptr || target->card != Card::RegidragoVstar ||
-      (!historical_two_grass_state && !dde_or_other_complete_payment)) {
-    return false;
-  }
+  const bool historical_two_grass_state = target->grass >= 2 && target->fire == 0;
+  return historical_two_grass_state || pays_apex_energy_cost(*target);
+}
+
+bool retreat_banked_tapu_to_regidrago() {
+  if (!banked_tapu_paid_retreat_available()) return false;
+
+  Pokemon* target = target_regi();
+  if (!banked_tapu_regidrago_ready(target)) return false;
 
   const Card payment = state_.active->grass > 0 ? Card::Grass : Card::Fire;
   if (payment == Card::Grass) {

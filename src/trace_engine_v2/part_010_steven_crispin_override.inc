@@ -678,11 +678,21 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
   }
 
   bool late_steven_has_active_regidrago_t3_blender_route() const {
-    if (state_.turn != 2 || !scenario_.going_first ||
-        scenario_.dci != DciProfile::StrictJit ||
-        scenario_.locks != LockMode::None || scenario_.max_turn < 3 ||
-        !supporter_allowed() || !state_.active ||
-        state_.active->card != Card::RegidragoV ||
+    const bool next_turn_items_locked =
+        scenario_.locks == LockMode::FullItem ||
+        scenario_.locks == LockMode::FullCombined ||
+        (scenario_.locks == LockMode::TurnTwoItem && state_.turn + 1 == 2);
+    // Steven is a Supporter and Brilliant Blender is an Item. Rule Box Ability lock
+    // does not affect either Trainer card, while a full or scheduled next-turn Item
+    // lock removes the projected Blender finish:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Advanced Supporter, Item, evolution, and attachment procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Lock specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3228
+    if (!strict_payload_timing() || next_turn_items_locked ||
+        state_.turn >= scenario_.max_turn || !supporter_allowed() ||
+        !state_.active || state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
         !state_.manual_energy_used || state_.active->grass < 2 ||
         state_.active->fire != 0 || hand_count(Card::Fire) == 0 ||
@@ -698,16 +708,18 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
     // Steven is selected at K0 before any expendable search Item is burned. Fixed-list
     // targets may remain plausible until Steven legally inspects the deck; its search
     // then chooses only targets actually present. A current-turn VSTAR connector still
-    // outranks this banked route. Otherwise the held Fire completes GGF on T3 and the
-    // prior-turn Active may evolve before Brilliant Blender supplies the JIT payload:
-    // https://api.pokemontcg.io/v2/cards/sm7-145
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // https://api.pokemontcg.io/v2/cards/sv8-164
-    // https://www.pokemon.com/us/pokemon-tcg/rules
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // https://github.com/FlareZ123/pokemon-sims/issues/952
+    // outranks this banked route. Otherwise the held Fire completes GGF next turn and
+    // the prior-turn Active may evolve before Brilliant Blender supplies the same-turn
+    // JIT payload. Neither printed card imposes an absolute turn or seat identity:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // K0 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    // Same-ready-turn JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Original route: https://github.com/FlareZ123/pokemon-sims/issues/952
+    // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3228
     return !blender_vstar_card_axis_can_finish_this_turn();
   }
 

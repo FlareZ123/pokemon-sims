@@ -5,11 +5,11 @@
     // Hisuian Heavy Ball Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
     // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Official Prize, search, evolution, attachment, Bench, Ability, Retreat, and Supporter procedure: https://assets.pokemon.com/assets/cms2-en-uk/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2061
-    if (!prizes_known() || scenario_.going_first ||
-        scenario_.dci != DciProfile::NoDiscardControl ||
-        scenario_.locks != LockMode::None || state_.turn != 2 ||
-        scenario_.max_turn < 3 || !supporter_allowed() ||
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed coordinate bug: https://github.com/FlareZ123/pokemon-sims/issues/3276
+    if (!prizes_known() || scenario_.dci != DciProfile::NoDiscardControl ||
+        scenario_.locks != LockMode::None ||
+        state_.turn + 1 > scenario_.max_turn || !supporter_allowed() ||
         !state_.manual_energy_used || !state_.active ||
         !is_basic(state_.active->card) ||
         state_.active->card == Card::RegidragoV ||
@@ -33,8 +33,8 @@
                      });
     if (prepared_regi == state_.bench.end()) return false;
 
-    // Steven searches the missing VSTAR, Latias ex, and final Grass before ending T2.
-    // The prior-turn Regidrago evolves on T3, receives Grass, and Skyliner gives the
+    // Steven searches the missing VSTAR, Latias ex, and final Grass before ending the current turn.
+    // The prior-turn Regidrago evolves on the following turn, receives Grass, and Skyliner gives the
     // Basic Active zero Retreat Cost. The banked Dragon already satisfies the
     // no-discard-control payload axis, so every missing component is deterministic:
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
@@ -46,6 +46,7 @@
     // K1, no-discard-control payload, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed route bug: https://github.com/FlareZ123/pokemon-sims/issues/1745
     // Confirmed K1 provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2061
+    // Confirmed coordinate bug: https://github.com/FlareZ123/pokemon-sims/issues/3276
     return deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
         deck_count_after_search_started(Card::LatiasEx) > 0 &&
         deck_count_after_search_started(Card::Grass) > 0;
@@ -76,7 +77,7 @@
     // Confirmed route bug: https://github.com/FlareZ123/pokemon-sims/issues/1745
     trace("PLAY SUPPORTER",
           "R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
-          "Searched the deterministic T3 Latias route: Regidrago VSTAR, Latias ex, Grass Energy. Turn ended.");
+          "Searched the deterministic next-turn Latias route: Regidrago VSTAR, Latias ex, Grass Energy. Turn ended.");
     return true;
   }
 

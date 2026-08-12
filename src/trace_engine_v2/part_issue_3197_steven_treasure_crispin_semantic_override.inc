@@ -1,9 +1,4 @@
   bool issue_3197_steven_treasure_crispin_route_available() const {
-    const bool next_turn_item_locked =
-        scenario_.locks == LockMode::TurnTwoItem ||
-        scenario_.locks == LockMode::FullItem ||
-        scenario_.locks == LockMode::FullCombined;
-
     // This route is evaluated only from K1/public state. Steven ends the current
     // turn after reserving VSTAR, Crispin, and one Grass. On the following turn,
     // Crispin supplies the other Grass axis while held Mysterious Treasure pays
@@ -20,7 +15,8 @@
     // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3197
     if (!prizes_known() || !strict_payload_timing() || !supporter_allowed() ||
-        held_arven_fss_blender_finish_available() || next_turn_item_locked ||
+        held_arven_fss_blender_finish_available() ||
+        item_locked_on_turn(state_.turn + 1) || // Persistent projected Item lock: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
         state_.turn + 1 > scenario_.max_turn || !state_.active ||
         state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn > state_.turn ||

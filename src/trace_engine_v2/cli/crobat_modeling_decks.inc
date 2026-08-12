@@ -42,37 +42,48 @@ CrobatModelingDeck make_crobat_modeling_deck(
   return deck;
 }
 
+class CrobatModelingRegistry {
+ public:
+  static const std::vector<CrobatModelingDeck>& all() {
+    // These temporary recipes are deliberately absent from deck_registry() and
+    // --all-decks: https://github.com/FlareZ123/pokemon-sims/issues/1394
+    static const std::vector<CrobatModelingDeck> decks{
+        {"regidrago-shell", "none", baseline_recipe()},
+        make_crobat_modeling_deck("crobat1-erika", {Card::ErikasInvitation}),
+        make_crobat_modeling_deck("crobat1-channeler", {Card::Channeler}),
+        make_crobat_modeling_deck("crobat1-team-yell", {Card::TeamYellsCheer}),
+        make_crobat_modeling_deck("crobat1-klara", {Card::Klara}),
+        make_crobat_modeling_deck("crobat1-turo", {Card::ProfessorTuro}),
+        make_crobat_modeling_deck("crobat1-powerglass", {Card::Powerglass}),
+        make_crobat_modeling_deck("crobat1-heavy-ball", {Card::HisuianHeavyBall}),
+        make_crobat_modeling_deck("crobat1-tapu-lele", {Card::TapuLeleGX}),
+        make_crobat_modeling_deck("crobat2-erika-channeler",
+                                  {Card::ErikasInvitation, Card::Channeler}),
+        make_crobat_modeling_deck("crobat2-erika-team-yell",
+                                  {Card::ErikasInvitation, Card::TeamYellsCheer}),
+        make_crobat_modeling_deck("crobat2-erika-tapu-lele",
+                                  {Card::ErikasInvitation, Card::TapuLeleGX}),
+        make_crobat_modeling_deck("crobat2-tapu-lele-both",
+                                  {Card::TapuLeleGX, Card::TapuLeleGX}),
+    };
+    return decks;
+  }
+
+  static const CrobatModelingDeck* find(const std::string_view id) {
+    const auto& decks = all();
+    const auto found = std::find_if(decks.begin(), decks.end(), [id](const auto& deck) {
+      return deck.id == id;
+    });
+    return found == decks.end() ? nullptr : &*found;
+  }
+};
+
 const std::vector<CrobatModelingDeck>& crobat_modeling_decks() {
-  // These temporary recipes are deliberately absent from deck_registry() and
-  // --all-decks: https://github.com/FlareZ123/pokemon-sims/issues/1394
-  static const std::vector<CrobatModelingDeck> decks{
-      {"regidrago-shell", "none", baseline_recipe()},
-      make_crobat_modeling_deck("crobat1-erika", {Card::ErikasInvitation}),
-      make_crobat_modeling_deck("crobat1-channeler", {Card::Channeler}),
-      make_crobat_modeling_deck("crobat1-team-yell", {Card::TeamYellsCheer}),
-      make_crobat_modeling_deck("crobat1-klara", {Card::Klara}),
-      make_crobat_modeling_deck("crobat1-turo", {Card::ProfessorTuro}),
-      make_crobat_modeling_deck("crobat1-powerglass", {Card::Powerglass}),
-      make_crobat_modeling_deck("crobat1-heavy-ball", {Card::HisuianHeavyBall}),
-      make_crobat_modeling_deck("crobat1-tapu-lele", {Card::TapuLeleGX}),
-      make_crobat_modeling_deck("crobat2-erika-channeler",
-                                {Card::ErikasInvitation, Card::Channeler}),
-      make_crobat_modeling_deck("crobat2-erika-team-yell",
-                                {Card::ErikasInvitation, Card::TeamYellsCheer}),
-      make_crobat_modeling_deck("crobat2-erika-tapu-lele",
-                                {Card::ErikasInvitation, Card::TapuLeleGX}),
-      make_crobat_modeling_deck("crobat2-tapu-lele-both",
-                                {Card::TapuLeleGX, Card::TapuLeleGX}),
-  };
-  return decks;
+  return CrobatModelingRegistry::all();
 }
 
 const CrobatModelingDeck* crobat_modeling_deck_by_id(const std::string_view id) {
-  const auto& decks = crobat_modeling_decks();
-  const auto found = std::find_if(decks.begin(), decks.end(), [id](const auto& deck) {
-    return deck.id == id;
-  });
-  return found == decks.end() ? nullptr : &*found;
+  return CrobatModelingRegistry::find(id);
 }
 
 int crobat_copy_count(const DeckRecipe& recipe) {

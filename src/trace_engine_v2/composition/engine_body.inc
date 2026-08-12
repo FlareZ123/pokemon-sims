@@ -14,24 +14,7 @@
 // Post-search Supporter, Legacy Star, and late search-item composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
 // Late turn source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
 
-// Keep the legacy include guards while composing the three core fragments directly.
-// This removes one forwarding .inc layer without changing textual include order.
-#ifndef SIM_TRACE_SIMULATOR_STATE_INCLUDED
-#define SIM_TRACE_SIMULATOR_STATE_INCLUDED
-
-#ifndef SIM_TRACE_CARD_CATALOG_INCLUDED
-#define SIM_TRACE_CARD_CATALOG_INCLUDED
-#include "../core/card_catalog.inc"
-#endif
-
-#ifndef SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
-#define SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
-#include "../core/card_classification.inc"
-#endif
-
-#include "../core/simulator_state.inc"
-
-#endif  // SIM_TRACE_SIMULATOR_STATE_INCLUDED
+#include "core_fragments.inc"
 
 #define begin_turn begin_turn_original
 #define might_be_unseen might_be_unseen_empty_deck_original

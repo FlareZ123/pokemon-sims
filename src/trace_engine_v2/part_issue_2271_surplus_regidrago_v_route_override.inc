@@ -1,5 +1,5 @@
   bool issue_2271_surplus_regidrago_v_treasure_route_available() const {
-    if (scenario_.dci != DciProfile::StrictJit || !prizes_known() ||
+    if (!strict_payload_timing() || !prizes_known() ||
         item_locked() || !supporter_allowed() || state_.manual_energy_used ||
         !active_is_vstar() || state_.active->grass != 1 ||
         state_.active->fire != 1 || !need_energy() || !need_payload() ||
@@ -32,8 +32,9 @@
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official Item, discard, search, Ability, Supporter, and Energy procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1, strict-JIT, dynamic DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Reclaimed confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2271
+    // K1, same-ready-turn JIT, dynamic DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Original confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/2271
+    // Confirmed cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/3268
     return true;
   }
 

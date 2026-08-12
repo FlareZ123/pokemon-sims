@@ -114,12 +114,12 @@
 #undef in_play
 #undef play_quick_ball
 
+// part_009b2.inc now owns the one live Quick Ball card-class composition boundary.
+// Keeping that include centralized avoids a second guarded include at this layer.
+// C++ textual include semantics: https://eel.is/c++draft/cpp.include
+// Quick Ball boundary repair: https://github.com/FlareZ123/pokemon-sims/issues/3341
 #define play_ultra_ball play_ultra_ball_original
 #include "../part_009b2.inc"
-
-#define in_play tapu_connector_copy_aware_in_play
-#include "../core/quick_ball_card_class_base.inc"
-#undef in_play
 
 #if defined(play_mysterious_treasure) || defined(play_heavy_ball) || \
     defined(play_quick_ball) || defined(in_play)

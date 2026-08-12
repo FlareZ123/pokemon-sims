@@ -211,15 +211,17 @@ class Engine {
   static bool uses_turn_two_item_lock(const LockMode locks) {
     return locks == LockMode::TurnTwoItem || locks == LockMode::FullCombined;
   }
-  bool item_locked() const {
-    // `FullItem` remains an explicitly synthetic/historical fixture mode. Aggregate
-    // `FullCombined` instead uses the legal current-paper turn-two Item timing:
-    // https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf
-    // https://www.pokemon.com/es/sol-luna-sombras-ardientes-anuncio-trimestral-sobre-lista-de-cartas-prohibidas-y-cambios-en-las-reglas/
-    // https://github.com/FlareZ123/pokemon-sims/issues/2247
+  bool item_locked_on_turn(const int turn) const {
+    // Keep current and projected Item-lock checks on one persistent-turn contract.
+    // `TurnTwoItem` and `FullCombined` begin on the player's second turn and remain
+    // active afterward: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+    // `FullItem` remains the explicit synthetic/historical always-on fixture mode.
+    // Canonical Item timing background: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf
+    // Historical aggregate-lock correction: https://github.com/FlareZ123/pokemon-sims/issues/2247
     return scenario_.locks == LockMode::FullItem ||
-           (uses_turn_two_item_lock(scenario_.locks) && state_.turn >= 2);
+           (uses_turn_two_item_lock(scenario_.locks) && turn >= 2);
   }
+  bool item_locked() const { return item_locked_on_turn(state_.turn); }
   static bool uses_path_style_ability_lock(const LockMode locks) {
     return locks == LockMode::FullRuleBoxAbility || locks == LockMode::FullCombined;
   }

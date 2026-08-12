@@ -22,6 +22,17 @@
     return payload_card_count(state_.hand);
   }
 
+  int payload_cards_in_known_deck_count() const {
+    // Reuse the canonical payload set when a legal deck inspection has established K1.
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    int count = 0;
+    for (const Card card : kPayloadHandPreference) {
+      count += deck_count_after_search_started(card);
+    }
+    return count;
+  }
+
   std::optional<Card> first_payload_card_in_hand() const {
     // Keep the simulator's established payload preference order while centralizing
     // repeated DCI/JIT hand scans:

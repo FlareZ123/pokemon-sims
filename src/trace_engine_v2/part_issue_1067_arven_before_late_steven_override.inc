@@ -55,19 +55,23 @@
     return forest_seal_stone_available && brilliant_blender_available;
   }
 
+  bool late_steven_package_available() const {
+    // Centralize the two semantic late-Steven package checks so the dispatcher only
+    // chooses between a current-turn Arven finish and the best legal Steven package.
+    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Latias/Blender package: https://github.com/FlareZ123/pokemon-sims/issues/2622
+    // Burnet package: https://github.com/FlareZ123/pokemon-sims/issues/3223
+    return issue_2622_steven_latias_blender_package_available() ||
+           late_steven_burnet_route_available();
+  }
+
   bool should_play_steven() const {
     if (held_arven_fss_blender_finish_available()) return false;
     // When Arven cannot complete the current turn, prefer a K1-proven Steven package
-    // that guarantees the next-turn VSTAR, Latias mobility, Blender payload, and
-    // held-Energy Apex completion. This is route projection, not a seed-specific rule:
+    // that guarantees the next-turn setup represented by the semantic package checks.
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
-    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
-    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
-    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Earliest deterministic route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2622
-    if (issue_2622_steven_latias_blender_package_available()) return true;
-    if (late_steven_burnet_route_available()) return true; // Semantic JIT/lock route: https://github.com/FlareZ123/pokemon-sims/issues/3223
+    if (late_steven_package_available()) return true;
     return should_play_steven_issue1067_original();
   }
 

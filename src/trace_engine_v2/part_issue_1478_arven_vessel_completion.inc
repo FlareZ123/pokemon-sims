@@ -14,45 +14,19 @@
       return false;
     }
 
-    int deck_payloads = 0;
-    for (const Card card : {Card::Appletun, Card::MegaDragonite,
-                            Card::Dragapult, Card::GoodraVstar,
-                            Card::DialgaGX}) {
-      deck_payloads += deck_count_after_search_started(card);
-    }
+    const int deck_payloads = payload_cards_in_known_deck_count();
     return deck_count_after_search_started(Card::EarthenVessel) > 0 &&
         deck_count_after_search_started(Card::Grass) > 0 &&
         deck_payloads > 0;
   }
 
-  bool play_issue_1478_t3_arven_vessel_completion() {
-    if (!issue_1478_t3_arven_vessel_completion_available()) return false;
-
-    // The T1 Treasure route has already established K1. Arven searches Earthen
-    // Vessel, and the deterministic current-turn GGF plus Blender finish makes
-    // Team Yell's Cheer dynamically discardable. Vessel may choose one Grass,
-    // the unused manual attachment supplies it, and Blender then establishes the
-    // strict-JIT Dragon payload before the same T3 ready-state check:
-    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+  bool resolve_issue_1478_earthen_vessel_step() {
+    // Earthen Vessel pays the already-proven route-secondary Team Yell's Cheer
+    // discard and searches the final Grass for the still-unused manual attachment:
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Team Yell's Cheer: https://api.pokemontcg.io/v2/cards/swsh9-149
-    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
-    // Regidrago VSTAR / GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Core Supporter, Item, discard, search, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // K1, dynamic DCI, strict-JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1478
-    remove_one(state_.hand, Card::Arven);
-    state_.discard.push_back(Card::Arven);
-    state_.supporter_used = true;
-    record_deck_search_knowledge("Arven");
-    if (!move_deck_to_hand(Card::EarthenVessel)) {
-      throw std::logic_error(
-          "projected issue-1478 Earthen Vessel target disappeared");
-    }
-    shuffle(state_.deck);
-    trace("PLAY SUPPORTER", "R-ARVEN-01; R-GAME-SUPPORTER; P-COMPRESS-01",
-          "Searched Earthen Vessel for the final Grass Energy route.");
-
+    // Item, discard, search, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Dynamic DCI and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     if (!remove_one(state_.hand, Card::EarthenVessel)) {
       throw std::logic_error(
           "projected issue-1478 Earthen Vessel disappeared from hand");
@@ -73,6 +47,33 @@
     trace("PLAY ITEM", "R-EV-01; R-GAME-ITEM; P-DCI-01; P-COMPRESS-01",
           "Discarded route-secondary Team Yell's Cheer and searched one Grass Energy for the T3 manual attachment.");
     return true;
+  }
+
+  bool play_issue_1478_t3_arven_vessel_completion() {
+    if (!issue_1478_t3_arven_vessel_completion_available()) return false;
+
+    // The T1 Treasure route has already established K1. Arven searches Earthen
+    // Vessel, and the deterministic current-turn GGF plus Blender finish makes
+    // Team Yell's Cheer dynamically discardable. The extracted Vessel step then
+    // establishes the final Basic Energy source for the same T3 ready-state check:
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Core Supporter and search procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K1 and strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1478
+    remove_one(state_.hand, Card::Arven);
+    state_.discard.push_back(Card::Arven);
+    state_.supporter_used = true;
+    record_deck_search_knowledge("Arven");
+    if (!move_deck_to_hand(Card::EarthenVessel)) {
+      throw std::logic_error(
+          "projected issue-1478 Earthen Vessel target disappeared");
+    }
+    shuffle(state_.deck);
+    trace("PLAY SUPPORTER", "R-ARVEN-01; R-GAME-SUPPORTER; P-COMPRESS-01",
+          "Searched Earthen Vessel for the final Grass Energy route.");
+    return resolve_issue_1478_earthen_vessel_step();
   }
 
   bool issue_3170_crispin_energy_axis_without_connector_domination() const {

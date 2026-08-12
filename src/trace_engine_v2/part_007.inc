@@ -197,12 +197,12 @@
           hand_count(Card::Fire) > 0));
     const bool energy_axis_complete = benched_vstar_promotion_ready();
 
-    // At K1, the seed-220 route is fully observable. Wonder Tag should take Burnet
-    // instead of Crispin when the held manual Energy already completes GGF, or when
-    // GGF has just been completed, and Quick Ball can turn the route-replaced
-    // Steven's Resolve into Latias ex. Skyliner then gives the Basic Active a free
-    // Retreat while Burnet creates the same-turn Dragon payload. A held payload or
-    // live Blender is a cheaper payload axis, so this route does not displace them.
+    // At K1, the route is fully observable. Wonder Tag should take Burnet instead
+    // of Crispin when the held manual Energy already completes GGF, or when GGF has
+    // just been completed, and Quick Ball can turn the route-replaced Steven's
+    // Resolve into Latias ex. Skyliner then gives the Basic Active a free Retreat
+    // while Burnet creates the same-turn Dragon payload. The same route is legal for
+    // both same-ready-turn JIT profiles; profile identity is not a card prerequisite.
     // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
@@ -210,9 +210,10 @@
     // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Core Item, Supporter, Bench, Ability, attachment, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1, dynamic DCI, strict-JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2343
-    return scenario_.dci == DciProfile::MatchupFlexJit &&
+    // K1 and same-ready-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3372
+    return strict_payload_timing() &&
         scenario_.locks == LockMode::None && state_.turn == 3 &&
         scenario_.max_turn >= 3 && prizes_known() && supporter_allowed() &&
         !item_locked() && !state_.retreat_used && state_.active &&

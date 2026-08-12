@@ -156,10 +156,12 @@
 #error "Supporter selector composition leaked choose_supporter"
 #endif
 
-// The included late-search unit owns the complete shared alias entry/exit contract,
-// so this parent composition delegates validation instead of repeating the same list.
-// Contract owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_search_routes.inc
-#include "late_search_routes.inc"
+// Keep the late-search units directly on their single composition owner. This
+// preserves the historical order while removing an aggregate include-only wrapper.
+// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
+#include "empty_deck_search_routes.inc"
+#include "post_search_connector_routes.inc"
+#include "quick_ball_tail.inc"
 
 // Keep the Crispin provenance shim adjacent to the Secret Box implementation it
 // wraps, followed by the Celestial Roar bridge that consumes that implementation.

@@ -1,3 +1,5 @@
+#include "part_issue_3203_active_vstar_steven_semantic_override.inc"
+
   bool late_steven_vstar_vessel_route_available() const {
     const bool next_turn_item_locked =
         scenario_.locks == LockMode::FullItem ||
@@ -60,5 +62,6 @@
 
   bool should_play_steven_issue1030_original() const {
     return late_steven_vstar_vessel_route_available() ||
+        issue_3203_active_vstar_steven_crispin_treasure_route_available() ||
         should_play_steven_issue3202_original();
   }

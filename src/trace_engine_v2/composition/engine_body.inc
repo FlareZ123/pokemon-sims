@@ -66,5 +66,8 @@
 #include "post_014a_overrides.inc"
 #undef play_field_blower
 #undef play_chaotic_swell
+#if defined(play_chaotic_swell) || defined(play_field_blower)
+#error "Issue-3057 Pineco composition leaked a lock-removal alias"
+#endif
 
 #include "late_execution_reporting.inc"

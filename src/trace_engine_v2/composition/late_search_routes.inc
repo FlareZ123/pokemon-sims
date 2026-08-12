@@ -1,3 +1,5 @@
+#pragma once
+
 // Consolidated late-search route composition. Keep the three historical layers in
 // this order because later wrappers consume member implementations exposed by the
 // preceding layer. This file only centralizes preprocessor composition; route logic

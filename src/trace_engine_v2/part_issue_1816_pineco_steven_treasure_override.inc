@@ -7,8 +7,9 @@
     // Both registered JIT profiles require the Dragon payload on the ready turn:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Confirmed cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/2765
+    // Confirmed historical-coordinate bug: https://github.com/FlareZ123/pokemon-sims/issues/3280
     return registered_pineco_recipe && secret_box_combo_enabled() &&
-        strict_payload_timing() && scenario_.going_first && state_.turn == 2 &&
+        strict_payload_timing() &&
         state_.turn < scenario_.max_turn && !state_.turn_ended &&
         supporter_allowed() && !state_.manual_energy_used &&
         scenario_.locks != LockMode::FullItem &&

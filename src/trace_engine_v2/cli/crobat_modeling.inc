@@ -26,18 +26,23 @@ void adjust_modeling_recipe(DeckRecipe& recipe, const Card card, const int delta
   if (found->second == 0) recipe.erase(found);
 }
 
+std::string crobat_modeling_cut_names(const std::initializer_list<Card> cuts) {
+  std::ostringstream names;
+  std::size_t index = 0;
+  for (const Card cut : cuts) {
+    if (index++ > 0) names << " + ";
+    names << name(cut);
+  }
+  return names.str();
+}
+
 CrobatModelingDeck make_crobat_modeling_deck(
     std::string id, const std::initializer_list<Card> cuts) {
   DeckRecipe recipe = baseline_recipe();
-  std::ostringstream cut_names;
-  std::size_t index = 0;
-  for (const Card cut : cuts) {
-    adjust_modeling_recipe(recipe, cut, -1);
-    if (index++ > 0) cut_names << " + ";
-    cut_names << name(cut);
-  }
+  for (const Card cut : cuts) adjust_modeling_recipe(recipe, cut, -1);
   adjust_modeling_recipe(recipe, Card::CrobatV, static_cast<int>(cuts.size()));
-  CrobatModelingDeck deck{std::move(id), cut_names.str(), std::move(recipe)};
+  CrobatModelingDeck deck{
+      std::move(id), crobat_modeling_cut_names(cuts), std::move(recipe)};
   std::string error;
   if (!validate_recipe({deck.id, deck.recipe}, &error)) throw std::logic_error(error);
   return deck;

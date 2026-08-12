@@ -154,9 +154,20 @@
 
 #include "../part_010_late_steven_override.inc"
 
+#if defined(choose_supporter_after_search_started) || \
+    defined(play_banked_steven_for_known_t3_blender_route)
+#error "Issue-3200 composition requires its wrapper aliases to be undefined on entry"
+#endif
+#define choose_supporter_after_search_started \
+    choose_supporter_after_search_started_issue3200_original
+#define play_banked_steven_for_known_t3_blender_route \
+    play_banked_steven_for_known_t3_blender_route_issue3200_original
 #define should_play_steven should_play_steven_issue1030_original
 #include "../part_010_steven_crispin_override.inc"
 #undef should_play_steven
+#undef play_banked_steven_for_known_t3_blender_route
+#undef choose_supporter_after_search_started
+#include "../part_issue_3200_t3_blender_profile_override.inc"
 #undef play_brilliant_blender
 
 // Isolate the active Brilliant Blender thinning layer and release the search-item
@@ -177,7 +188,8 @@
 #if defined(play_evolution_incense) || defined(play_earthen_vessel) || \
     defined(play_brilliant_blender) || defined(play_ultra_ball) || \
     defined(fss_target_after_search_started) || defined(attach_fss) || \
-    defined(should_play_steven)
+    defined(should_play_steven) || defined(choose_supporter_after_search_started) || \
+    defined(play_banked_steven_for_known_t3_blender_route)
 #error "Steven/Blender composition leaked a local wrapper alias"
 #endif
 

@@ -182,8 +182,13 @@ void test_required_cards_and_payload_axes() {
                                vstar_already_held),
          "Already-held VSTAR should leave this Steven-search route.");
 
+  // Strict-JIT readiness is provenance-sensitive: being in discard is insufficient
+  // unless the payload entered discard this turn. Mark both public discard presence
+  // and current-turn provenance to exercise a truly completed payload axis.
+  // Same-ready-turn JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
   sim::State payload_already_ready = route_state();
   payload_already_ready.discard.push_back(sim::Card::Dragapult);
+  payload_already_ready.discarded_this_turn.push_back(sim::Card::Dragapult);
   expect(!available_with_state(sim::DciProfile::StrictJit, sim::LockMode::None,
                                payload_already_ready),
          "Already-ready payload axis should leave this missing-payload route.");

@@ -197,12 +197,14 @@
       cost = issue_1797_quick_ball_cost();
     }
     if (!cost) {
-      // Preserve the complete route-conditioned Quick Ball cost chain after the
+      // Preserve the final route-conditioned Quick Ball discard selector after the
       // macro lifetime ends at the historical Ultra Ball boundary.
       // Quick Ball printed cost: https://api.pokemontcg.io/v2/cards/swsh1-179
-      // Existing wrapper chain: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_discard_recovery_provenance_override.inc
+      // Final pre-release selector layer: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_issue_1876_treasure_payload_cost_override.inc
+      // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+      // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
       // Confirmed migration regression: https://github.com/FlareZ123/pokemon-sims/issues/3348
-      cost = choose_discard_issue_1237(
+      cost = choose_discard_issue1876(
           can_pay_payload_cost, true, true, Card::QuickBall);
     }
     if (!cost && want_latias) {

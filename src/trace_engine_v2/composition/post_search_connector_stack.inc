@@ -1,8 +1,9 @@
 #pragma once
 
-// Post-search Earthen Vessel and Mysterious Treasure connector stack. Keep each
-// wrapper alias scoped around the implementation it replaces so later selectors
-// see the same member definitions as the historical flat composition.
+// Post-search connector composition. The first section owns Earthen Vessel and
+// Mysterious Treasure wrapper lifecycles; the tail owns the ordered Quick Ball
+// replacements. Keep these layers together because they form one contiguous
+// post-search selector chain in the Engine class body.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
 // Parent composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_search_routes.inc
 
@@ -52,4 +53,28 @@
 #if defined(play_earthen_vessel) || defined(play_mysterious_treasure) || \
     defined(play_quick_ball) || defined(choose_supporter) || defined(in_play)
 #error "Post-search connector composition leaked a wrapper alias"
+#endif
+
+// Quick Ball tail. Each override sees the previous implementation before its
+// alias is released, matching the historical flat order.
+#if defined(play_quick_ball)
+#error "Quick Ball route composition requires play_quick_ball to be undefined on entry"
+#endif
+
+#define play_quick_ball play_quick_ball_issue1516_original
+#include "../part_issue_1476_redundant_burnet_route_override.inc"
+#undef play_quick_ball
+
+#define play_quick_ball play_quick_ball_issue1595_original
+#include "../part_issue_1516_quick_ball_tapu_crispin_override.inc"
+#undef play_quick_ball
+
+#define play_quick_ball play_quick_ball_issue2272_original
+#include "../part_issue_1595_preserve_turo_over_quick_ball_override.inc"
+#undef play_quick_ball
+
+#include "../part_issue_2272_route_replaced_arven_quick_ball_override.inc"
+
+#if defined(play_quick_ball)
+#error "Quick Ball route composition leaked play_quick_ball"
 #endif

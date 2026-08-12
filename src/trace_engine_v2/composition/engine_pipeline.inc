@@ -9,7 +9,6 @@
 // Simulator state: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulator_state.inc
 // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
 // Garbodor composition model: https://github.com/FlareZ123/pokemon-sims/issues/2808
-// Post-search lock removal: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_search_lock_removal.inc
 // Late execution/reporting: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_execution_reporting.inc
 
 #ifndef SIM_TRACE_SIMULATOR_STATE_INCLUDED
@@ -80,5 +79,20 @@
 #endif
 #include "../core/banked_tapu_retreat_policy.inc"
 
-#include "post_search_lock_removal.inc"
+// Compose the #3057 Pineco/Secret Box lock-removal wrapper at this canonical boundary.
+// Forest / Field Blower / Secret Box: https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/sv6-163
+// Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/3057
+#include "../part_issue_3057_swell_field_blower_route.inc"
+#if defined(play_chaotic_swell) || defined(play_field_blower)
+#error "Issue-3057 Pineco composition requires lock-removal aliases to be undefined"
+#endif
+#define play_chaotic_swell play_chaotic_swell_issue_3057
+#define play_field_blower play_field_blower_issue_3057
+#include "post_014a_overrides.inc"
+#undef play_field_blower
+#undef play_chaotic_swell
+#if defined(play_chaotic_swell) || defined(play_field_blower)
+#error "Issue-3057 Pineco composition leaked a temporary lock-removal alias"
+#endif
+
 #include "late_execution_reporting.inc"

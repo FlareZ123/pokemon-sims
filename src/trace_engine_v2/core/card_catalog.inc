@@ -79,7 +79,7 @@ constexpr std::string_view name(const Card card) {
     case Card::SecretBox: return "Secret Box";
     case Card::BattleVipPass: return "Battle VIP Pass";
     case Card::MysteriousTreasure: return "Mysterious Treasure";
-    case Card::QuickBall: return "Quick Ball";
+    case Card::QuickBall: break;  // Registered CardDefinition owns this name.
     case Card::UltraBall: return "Ultra Ball";
     case Card::EvolutionIncense: return "Evolution Incense";
     case Card::PokemonCommunication: return "Pokémon Communication";

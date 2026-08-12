@@ -30,8 +30,10 @@ std::vector<Scenario> all_scenarios_with_garbodor() {
 }
 
 std::optional<Scenario> scenario_by_label_with_garbodor(const std::string& label) {
-  for (const Scenario& scenario : all_scenarios_with_garbodor()) {
-    if (scenario.label == label) return scenario;
-  }
-  return std::nullopt;
+  const std::vector<Scenario> scenarios = all_scenarios_with_garbodor();
+  const auto match = std::find_if(
+      scenarios.begin(), scenarios.end(), [&label](const Scenario& scenario) {
+        return scenario.label == label;
+      });
+  return match == scenarios.end() ? std::nullopt : std::optional<Scenario>{*match};
 }

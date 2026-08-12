@@ -98,8 +98,8 @@
 #endif
 
 // Arven wrappers live directly on the post-search composition boundary. Each alias
-// exposes the implementation from the preceding layer to the next override without
-// leaking macro state outward.
+// exposes the implementation from the preceding layer to the next override
+// without leaking macro state outward.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
 // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
 #if defined(play_arven)
@@ -156,10 +156,42 @@
 #error "Supporter selector composition leaked choose_supporter"
 #endif
 
-// The included late-search unit owns the complete shared alias entry/exit contract,
-// so this parent composition delegates validation instead of repeating the same list.
-// Contract owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_search_routes.inc
-#include "late_search_routes.inc"
+// Keep the late-search units directly on their single composition owner. This
+// preserves the historical order while removing aggregate and one-purpose wrappers.
+// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
+#include "empty_deck_search_routes.inc"
+#include "post_search_connector_routes.inc"
+
+// Keep the Quick Ball tail on this same late-search spine. Each alias exposes the
+// immediately preceding implementation and is released before the next layer.
+// Quick Ball card data: https://api.pokemontcg.io/v2/cards/swsh1-179
+#if defined(play_quick_ball)
+#error "Quick Ball route composition requires play_quick_ball to be undefined on entry"
+#endif
+
+#define play_quick_ball play_quick_ball_issue1516_original
+#include "../part_issue_1476_redundant_burnet_route_override.inc"
+#undef play_quick_ball
+
+#define play_quick_ball play_quick_ball_issue1595_original
+#include "../part_issue_1516_quick_ball_tapu_crispin_override.inc"
+#undef play_quick_ball
+
+#define play_quick_ball play_quick_ball_issue2272_original
+#include "../part_issue_1595_preserve_turo_over_quick_ball_override.inc"
+#undef play_quick_ball
+
+// Keep the historical final wrapper compiled under a dormant name so its route
+// admission helpers remain available. The active final member is supplied by the
+// card-class bridge immediately afterward.
+#define play_quick_ball play_quick_ball_card_class_tail_legacy
+#include "../part_issue_2272_route_replaced_arven_quick_ball_override.inc"
+#undef play_quick_ball
+#include "../core/quick_ball_card_class_tail.inc"
+
+#if defined(play_quick_ball)
+#error "Quick Ball route composition leaked play_quick_ball"
+#endif
 
 // Keep the Crispin provenance shim adjacent to the Secret Box implementation it
 // wraps, followed by the Celestial Roar bridge that consumes that implementation.

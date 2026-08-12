@@ -1,9 +1,12 @@
 #pragma once
 
-// Compose the early legacy Engine body through the first stable class-member
-// boundary. `begin_turn` intentionally stays aliased after this unit because
-// opening_engine_overrides.inc owns the matching release point.
+// Compose core Engine state and the early legacy body through the first stable
+// class-member boundary. `begin_turn` intentionally stays aliased after this unit
+// because opening_engine_overrides.inc owns the matching release point.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
+// Core state composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/core_state.inc
+#include "core_state.inc"
+
 #define begin_turn begin_turn_original
 #define might_be_unseen might_be_unseen_empty_deck_original
 #include "../part_003.inc"

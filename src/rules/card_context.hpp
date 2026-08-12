@@ -19,19 +19,19 @@ class CardContext final {
   using IsBasicPokemonFn = bool (*)(const void*, Card);
   using BeginDeckSearchFn = void (*)(void*, std::string_view);
 
-  constexpr CardContext(void* opaque, HandCountFn hand_count,
-                        DiscardFromHandFn discard_from_hand,
-                        SearchDeckToHandFn search_deck_to_hand,
-                        ShuffleDeckFn shuffle_deck,
-                        IsBasicPokemonFn is_basic_pokemon,
-                        BeginDeckSearchFn begin_deck_search)
+  constexpr CardContext(void* opaque, HandCountFn hand_count_fn,
+                        DiscardFromHandFn discard_from_hand_fn,
+                        SearchDeckToHandFn search_deck_to_hand_fn,
+                        ShuffleDeckFn shuffle_deck_fn,
+                        IsBasicPokemonFn is_basic_pokemon_fn,
+                        BeginDeckSearchFn begin_deck_search_fn)
       : opaque_(opaque),
-        hand_count_(hand_count),
-        discard_from_hand_(discard_from_hand),
-        search_deck_to_hand_(search_deck_to_hand),
-        shuffle_deck_(shuffle_deck),
-        is_basic_pokemon_(is_basic_pokemon),
-        begin_deck_search_(begin_deck_search) {}
+        hand_count_(hand_count_fn),
+        discard_from_hand_(discard_from_hand_fn),
+        search_deck_to_hand_(search_deck_to_hand_fn),
+        shuffle_deck_(shuffle_deck_fn),
+        is_basic_pokemon_(is_basic_pokemon_fn),
+        begin_deck_search_(begin_deck_search_fn) {}
 
   int hand_count(const Card card) const {
     return hand_count_(static_cast<const void*>(opaque_), card);

@@ -175,7 +175,7 @@
     // No-discard-control policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Regression: https://github.com/FlareZ123/pokemon-sims/issues/1351
     const bool supported_payload_profile =
-        scenario_.dci == DciProfile::StrictJit ||
+        strict_payload_timing() || // Shared same-ready-turn JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment ; https://github.com/FlareZ123/pokemon-sims/issues/3200
         scenario_.dci == DciProfile::NoDiscardControl;
     if (state_.turn != 1 || !scenario_.going_first ||
         !supported_payload_profile ||
@@ -228,7 +228,7 @@
     // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     // No-discard-control policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Regression: https://github.com/FlareZ123/pokemon-sims/issues/1351
-    const bool strict_payload_route = scenario_.dci == DciProfile::StrictJit &&
+    const bool strict_payload_route = strict_payload_timing() && // Shared same-ready-turn JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment ; Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164 ; https://github.com/FlareZ123/pokemon-sims/issues/3200
         hand_count(Card::BrilliantBlender) > 0 && need_payload() &&
         payload_might_be_in_deck();
     const bool banked_no_control_payload =

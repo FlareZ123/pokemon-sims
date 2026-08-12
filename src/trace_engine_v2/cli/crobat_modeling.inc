@@ -106,6 +106,20 @@ double crobat_average_dark_asset_cards_drawn(const Aggregate& aggregate) {
          static_cast<double>(aggregate.dark_asset);
 }
 
+void write_crobat_modeling_row(std::ostringstream& csv,
+                               const CrobatModelingDeck& deck,
+                               const Scenario& scenario,
+                               const Aggregate& aggregate,
+                               const std::uint64_t trials) {
+  csv << deck.id << ',' << '"' << deck.cuts << '"' << ','
+      << crobat_copy_count(deck.recipe) << ','
+      << scenario.label << ',' << trials << ',' << std::fixed
+      << std::setprecision(6) << pct(aggregate.by2, trials) << ','
+      << pct(aggregate.by3, trials) << ',' << pct(aggregate.by4, trials) << ','
+      << pct(aggregate.dark_asset, trials) << ','
+      << crobat_average_dark_asset_cards_drawn(aggregate) << '\n';
+}
+
 void write_crobat_modeling_matrix(const std::filesystem::path& output,
                                   const std::uint64_t trials,
                                   const std::uint64_t seed) {
@@ -119,13 +133,7 @@ void write_crobat_modeling_matrix(const std::filesystem::path& output,
     const std::uint64_t common_seed = seed + 104729ULL * seed_slot;
     for (const CrobatModelingDeck& deck : crobat_modeling_decks()) {
       const Aggregate aggregate = simulate(scenario, deck.recipe, trials, common_seed);
-      const double average_draw = crobat_average_dark_asset_cards_drawn(aggregate);
-      csv << deck.id << ',' << '"' << deck.cuts << '"' << ','
-          << crobat_copy_count(deck.recipe) << ','
-          << scenario.label << ',' << trials << ',' << std::fixed
-          << std::setprecision(6) << pct(aggregate.by2, trials) << ','
-          << pct(aggregate.by3, trials) << ',' << pct(aggregate.by4, trials) << ','
-          << pct(aggregate.dark_asset, trials) << ',' << average_draw << '\n';
+      write_crobat_modeling_row(csv, deck, scenario, aggregate, trials);
     }
   }
   write_atomic(output, csv.str());

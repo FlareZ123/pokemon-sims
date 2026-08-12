@@ -1,3 +1,7 @@
+  Card choose_supporter_after_search_started_issue3200_original() const {
+    return choose_supporter_after_search_started();
+  }
+
   bool issue_3200_matchup_flex_t3_blender_initial_route() const {
     if (scenario_.dci != DciProfile::MatchupFlexJit) return false; // Same-ready-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     if (state_.turn != 1 || !scenario_.going_first ||

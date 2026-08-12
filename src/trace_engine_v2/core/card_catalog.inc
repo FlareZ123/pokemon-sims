@@ -70,3 +70,49 @@ constexpr std::string_view name(const Card card) {
     case Card::CrobatV: return "Crobat V";
     case Card::LatiasEx: return "Latias ex";
     case Card::MawileGX: return "Mawile-GX";
+    case Card::Oricorio: return "Oricorio GRI 55";
+    case Card::Dipplin: return "Dipplin TWM 127";
+    case Card::Appletun: return "Appletun sv8-140";
+    case Card::Pineco: return "Pineco";
+    case Card::ForretressEx: return "Forretress ex";
+    case Card::BrilliantBlender: return "Brilliant Blender";
+    case Card::SecretBox: return "Secret Box";
+    case Card::BattleVipPass: return "Battle VIP Pass";
+    case Card::MysteriousTreasure: return "Mysterious Treasure";
+    case Card::QuickBall: return "Quick Ball";
+    case Card::UltraBall: return "Ultra Ball";
+    case Card::EvolutionIncense: return "Evolution Incense";
+    case Card::PokemonCommunication: return "Pokémon Communication";
+    case Card::EarthenVessel: return "Earthen Vessel";
+    case Card::ProfessorsLetter: return "Professor's Letter";  // https://api.pokemontcg.io/v2/cards/xy1-123 ; https://github.com/FlareZ123/pokemon-sims/issues/2509
+    case Card::Dawn: return "Dawn";
+    case Card::Grant: return "Grant";
+    case Card::Arven: return "Arven";
+    case Card::Crispin: return "Crispin";
+    case Card::ProfessorBurnet: return "Professor Burnet";
+    case Card::Serena: return "Serena";
+    case Card::TateLiza: return "Tate & Liza";
+    case Card::StevensResolve: return "Steven's Resolve";
+    case Card::Guzma: return "Guzma";
+    case Card::Channeler: return "Channeler";
+    case Card::Gladion: return "Gladion";
+    case Card::Lusamine: return "Lusamine";
+    case Card::TeamYellsCheer: return "Team Yell's Cheer";
+    case Card::RoseannesBackup: return "Roseanne's Backup";
+    case Card::Klara: return "Klara";
+    case Card::ProfessorTuro: return "Professor Turo's Scenario";
+    case Card::ErikasInvitation: return "Erika's Invitation";
+    case Card::ForestSealStone: return "Forest Seal Stone";
+    case Card::WishfulBaton: return "Wishful Baton";
+    case Card::Powerglass: return "Powerglass";
+    case Card::FieldBlower: return "Field Blower";
+    case Card::ChaoticSwell: return "Chaotic Swell";
+    case Card::ForestOfVitality: return "Forest of Vitality";
+    case Card::PathToPeak: return "Path to the Peak";
+    case Card::HisuianHeavyBall: return "Hisuian Heavy Ball";
+    case Card::DoubleDragonEnergy: return "Double Dragon Energy";  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
+    case Card::Grass: return "Grass Energy";
+    case Card::Fire: return "Fire Energy";
+  }
+  return "Unknown";
+}

@@ -2,7 +2,7 @@
     if (issue_1797_finish_turn_ != 0) return false;
 
     const bool next_turn_items_locked =
-        scenario_.locks == LockMode::TurnTwoItem ||
+        (scenario_.locks == LockMode::TurnTwoItem && state_.turn + 1 == 2) ||
         scenario_.locks == LockMode::FullItem ||
         scenario_.locks == LockMode::FullCombined;
     const bool tapu_in_play = in_play(Card::TapuLeleGX);
@@ -24,6 +24,7 @@
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Supporter, Item, attachment, evolution, search, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Advanced Supporter, Item, attachment, evolution, search, and turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // K1/JIT/lock/route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Original route: https://github.com/FlareZ123/pokemon-sims/issues/1797
@@ -124,6 +125,7 @@
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official evolution, Supporter, Item, attachment, discard, and search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Advanced Supporter, Item, evolution, attachment, discard, and search procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // Same-ready-turn JIT and lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
     // Confirmed semantic-continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/3316

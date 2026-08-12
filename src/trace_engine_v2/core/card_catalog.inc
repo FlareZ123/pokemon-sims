@@ -34,9 +34,9 @@ namespace sim {
 
 // Stable Card identifiers now live in src/cards/card_id.hpp. The existing names
 // and values are preserved so migrated card modules and legacy engine code coexist.
-static_assert(cards::find_definition(Card::QuickBall) != nullptr);
-static_assert(cards::find_definition(Card::QuickBall)->canonical_id == "swsh1-179");
-static_assert(cards::find_definition(Card::QuickBall)->name == "Quick Ball");
+static_assert(cards::QuickBall::definition.id == Card::QuickBall);
+static_assert(cards::QuickBall::definition.canonical_id == "swsh1-179");
+static_assert(cards::QuickBall::definition.name == "Quick Ball");
 
 constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
     {Card::RegidragoV, 4},        {Card::RegidragoVstar, 3}, {Card::Dragapult, 2},

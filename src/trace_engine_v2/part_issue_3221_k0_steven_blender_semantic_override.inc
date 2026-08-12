@@ -1,8 +1,11 @@
   bool issue_3221_k0_steven_blender_route_available() const {
-    const bool next_turn_items_locked =
-        scenario_.locks == LockMode::FullItem ||
-        scenario_.locks == LockMode::FullCombined ||
-        (scenario_.locks == LockMode::TurnTwoItem && state_.turn + 1 == 2);
+    // Brilliant Blender is an Item, and the registered TurnTwoItem scenario locks
+    // Items from the player's second turn onward. Use the central projected-turn
+    // predicate so this route cannot drift from the engine's lock contract.
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Persistent Item lock: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+    // Shared implementation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    const bool next_turn_items_locked = item_locked_on_turn(state_.turn + 1);
 
     // This is specifically the K0 variant. Any legal K1 source, including a complete
     // Prize inspection, leaves this helper and is handled by the known-composition route.

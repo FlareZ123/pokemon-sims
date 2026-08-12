@@ -87,12 +87,20 @@ constexpr bool is_pokemon(const Card card) {
   }
 }
 
+// Regidrago V and Regidrago VSTAR repeatedly form one modeled evolution family.
+// Keep that identity in one predicate so callers do not duplicate the pair:
+// Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+// Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+constexpr bool is_regidrago(const Card card) {
+  return card == Card::RegidragoV || card == Card::RegidragoVstar;
+}
+
 // TPCi defines Pokémon V to include Pokémon VSTAR. Forest Seal Stone can remain
 // usable after its Pokémon V evolves into a Pokémon VSTAR:
 // https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
 // https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
 constexpr bool is_pokemon_v(const Card card) {
-  return card == Card::RegidragoV || card == Card::RegidragoVstar ||
+  return is_regidrago(card) ||
          card == Card::CrobatV;  // Pokémon V: https://api.pokemontcg.io/v2/cards/swsh3-104
 }
 constexpr bool is_rule_box_pokemon(const Card card) {
@@ -114,25 +122,6 @@ constexpr bool is_rule_box_pokemon(const Card card) {
   }
 }
 
-constexpr bool is_dragon_or_psychic(const Card card) {
-  switch (card) {
-    case Card::RegidragoV:
-    case Card::RegidragoVstar:
-    case Card::Dragapult:
-    case Card::MegaDragonite:
-    case Card::DialgaGX:
-    case Card::GoodraVstar:
-    case Card::TapuLeleGX:
-    case Card::LatiasEx:
-    case Card::Oricorio:
-    case Card::Dipplin:
-    case Card::Appletun:
-      return true;
-    default:
-      return false;
-  }
-}
-
 // This is the model's A/S-tier Apex payload and readiness set. Dipplin TWM 127
 // is a Dragon Pokémon for legal search effects: https://api.pokemontcg.io/v2/cards/sv6-127
 // Maintainer policy excludes Syrup Catcher from the A/S win-condition set, so
@@ -142,9 +131,8 @@ constexpr bool is_dragon_or_psychic(const Card card) {
 // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
 // https://github.com/FlareZ123/pokemon-sims/issues/2238
 constexpr bool is_dragon(const Card card) {
+  if (is_regidrago(card)) return true;
   switch (card) {
-    case Card::RegidragoV:
-    case Card::RegidragoVstar:
     case Card::Dragapult:
     case Card::MegaDragonite:
     case Card::DialgaGX:
@@ -155,6 +143,22 @@ constexpr bool is_dragon(const Card card) {
     default:
       return false;
   }
+}
+
+// Mysterious Treasure's non-Dragon modeled targets are the Psychic Pokémon in
+// this compact set. Keep them separate from Dragon identity so DDE legality and
+// Dragon-only effects cannot inherit Psychic targets by accident:
+// Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+// Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+// Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+// Oricorio GRI 55: https://api.pokemontcg.io/v2/cards/sm2-55
+constexpr bool is_mysterious_treasure_psychic_target(const Card card) {
+  return card == Card::TapuLeleGX || card == Card::LatiasEx ||
+         card == Card::Oricorio;
+}
+
+constexpr bool is_dragon_or_psychic(const Card card) {
+  return is_dragon(card) || is_mysterious_treasure_psychic_target(card);
 }
 
 constexpr bool is_payload(const Card card) {

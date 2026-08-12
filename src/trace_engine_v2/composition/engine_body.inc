@@ -55,7 +55,7 @@
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_005.inc#L1-L5
 #include "../part_004.inc"
 #include "../part_005.inc"
-#include "../part_garbodor_ability_lock_override.inc"
+#include "../core/garbodor_lock_policy.inc"
 
 #undef might_be_unseen
 // begin_turn intentionally remains aliased until opening_engine_overrides.inc

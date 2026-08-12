@@ -1,6 +1,7 @@
 #pragma once
 
 #include "card_definition.hpp"
+#include "trainers/guzma_hala.hpp"
 #include "trainers/quick_ball.hpp"
 
 namespace sim::cards {
@@ -11,6 +12,8 @@ constexpr const CardDefinition* find_definition(const Card card) {
   switch (card) {
     case Card::QuickBall:
       return &QuickBall::definition;
+    case Card::GuzmaHala:
+      return &GuzmaHala::definition;
     default:
       return nullptr;
   }
@@ -23,6 +26,7 @@ constexpr const CardDefinition* find_definition(const Card card) {
 constexpr bool has_definition(const Card card) {
   switch (card) {
     case Card::QuickBall:
+    case Card::GuzmaHala:
       return true;
     default:
       return false;
@@ -34,6 +38,16 @@ constexpr bool registered_is_item(const Card card) {
     case Card::QuickBall:
       return QuickBall::definition.kind == CardKind::Trainer &&
              QuickBall::definition.trainer_kind == TrainerKind::Item;
+    default:
+      return false;
+  }
+}
+
+constexpr bool registered_is_supporter(const Card card) {
+  switch (card) {
+    case Card::GuzmaHala:
+      return GuzmaHala::definition.kind == CardKind::Trainer &&
+             GuzmaHala::definition.trainer_kind == TrainerKind::Supporter;
     default:
       return false;
   }

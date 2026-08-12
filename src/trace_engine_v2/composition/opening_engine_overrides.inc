@@ -106,7 +106,9 @@
 #undef in_play
 #undef play_mysterious_treasure
 
-#define play_quick_ball play_quick_ball_empty_deck_original
+// Keep the historical base compiled for regression archaeology, but expose the
+// card-class-backed base under the legacy wrapper name consumed by later layers.
+#define play_quick_ball play_quick_ball_card_class_legacy_original
 #define in_play tapu_connector_copy_aware_in_play
 #include "../part_009b1.inc"
 #undef in_play
@@ -114,6 +116,10 @@
 
 #define play_ultra_ball play_ultra_ball_original
 #include "../part_009b2.inc"
+
+#define in_play tapu_connector_copy_aware_in_play
+#include "../core/quick_ball_card_class_base.inc"
+#undef in_play
 
 #if defined(play_mysterious_treasure) || defined(play_heavy_ball) || \
     defined(play_quick_ball) || defined(in_play)

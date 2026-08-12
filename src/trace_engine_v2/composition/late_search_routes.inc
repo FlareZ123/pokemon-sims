@@ -160,7 +160,13 @@
 #include "../part_issue_1595_preserve_turo_over_quick_ball_override.inc"
 #undef play_quick_ball
 
+// Keep the historical final wrapper compiled under a dormant name so its route
+// admission helpers remain available. The active final member is supplied by the
+// card-class bridge immediately afterward.
+#define play_quick_ball play_quick_ball_card_class_tail_legacy
 #include "../part_issue_2272_route_replaced_arven_quick_ball_override.inc"
+#undef play_quick_ball
+#include "../core/quick_ball_card_class_tail.inc"
 
 #if defined(play_quick_ball)
 #error "Quick Ball route composition leaked play_quick_ball"

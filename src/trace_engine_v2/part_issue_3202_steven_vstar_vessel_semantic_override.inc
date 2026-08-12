@@ -34,6 +34,14 @@
            deck_count_after_search_started(Card::Fire) > 0;
   }
 
+  // The legacy non-const selector was macro-renamed for this wrapper. Its internal
+  // fallback explicitly casts to const, so preserve the matching const overload and
+  // forward that call to the pre-wrapper selector.
+  // C++ member overload lookup: https://eel.is/c++draft/class.member.lookup
+  Card choose_supporter_after_search_started_issue3202_original() const {
+    return choose_supporter_after_search_started_issue3202_const_fallback();
+  }
+
   Card choose_supporter_after_search_started() {
     if (late_steven_vstar_vessel_route_available() &&
         deck_count_after_search_started(Card::StevensResolve) > 0) {
@@ -47,7 +55,7 @@
       // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3202
       return Card::StevensResolve;
     }
-    return choose_supporter_after_search_started_issue3202_const_fallback();
+    return choose_supporter_after_search_started_issue3202_original();
   }
 
   bool should_play_steven_issue1030_original() const {

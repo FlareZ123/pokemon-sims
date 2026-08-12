@@ -30,8 +30,9 @@ sim::State route_state(const int turn) {
   state.turn = turn;
   state.manual_energy_used = true;
   // The Active only needs to remain a Basic for Latias ex's Skyliner pivot.
+  // Tapu Lele-GX Basic identity: https://api.pokemontcg.io/v2/cards/sm2-60
   // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
-  state.active = sim::Pokemon{sim::Card::Mimikyu, turn, 0, 0,
+  state.active = sim::Pokemon{sim::Card::TapuLeleGX, turn, 0, 0,
                               sim::Tool::None, 0};
   // This Regidrago V entered on an earlier turn and is exactly one Grass short
   // of Apex Dragon's GGF cost. Regidrago V/VSTAR:

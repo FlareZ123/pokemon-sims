@@ -31,15 +31,10 @@
 #error "Legacy Supporter composition leaked a local alias"
 #endif
 
-// use_fss intentionally crosses the part_011 boundary; assert that export here so
-// later cleanup cannot silently sever the Forest Seal Stone wrapper chain.
-// C++ conditional preprocessing: https://eel.is/c++draft/cpp.cond
-#if !defined(use_fss)
-#error "Legacy Supporter composition must export use_fss past part_011"
-#endif
-
-// Intentionally leave use_fss defined. post_014a_overrides.inc consumes and
-// replaces this alias after part_014a.inc reaches the required member boundary.
+// use_fss intentionally crosses the part_011 boundary. post_014a_overrides.inc
+// consumes and replaces this alias after part_014a.inc reaches the required member
+// boundary. The final continuation contract below verifies that export together
+// with the later Celestial Roar export.
 // Continuation owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
 
 // The part_012 selector follows part_011 immediately in the historical composition.
@@ -78,13 +73,14 @@
 #error "VSTAR-power composition leaked use_legacy_star"
 #endif
 
-// use_celestial_roar intentionally crosses the part_013 boundary; assert that export
-// where the wrapper chain is centralized instead of relying on an undocumented leak.
+// Both continuation aliases intentionally cross this composition boundary. Keep one
+// exit contract beside their shared continuation owner so future reorganizations
+// cannot silently sever either wrapper chain.
 // C++ conditional preprocessing: https://eel.is/c++draft/cpp.cond
-#if !defined(use_celestial_roar)
-#error "Legacy Supporter composition must export use_celestial_roar past part_013"
+#if !defined(use_fss) || !defined(use_celestial_roar)
+#error "Legacy Supporter composition must export use_fss and use_celestial_roar"
 #endif
 
-// Intentionally leave use_celestial_roar defined. post_014a_overrides.inc consumes
-// and replaces this alias after the part_014a boundary.
-// Continuation owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
+// post_014a_overrides.inc consumes and replaces both aliases after the part_014a
+// boundary. Continuation owner:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc

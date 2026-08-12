@@ -36,8 +36,9 @@
     // Both JIT profiles require the payload on the ready turn; no-discard-control permits earlier banking: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Official Prize and search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Profile-gate regression: https://github.com/FlareZ123/pokemon-sims/issues/2744
+    // Absolute-turn regression: https://github.com/FlareZ123/pokemon-sims/issues/3284
     // Confirmed route bug: https://github.com/FlareZ123/pokemon-sims/issues/1979
-    if (scenario_.dci == DciProfile::NoDiscardControl || state_.turn != 3 ||
+    if (scenario_.dci == DciProfile::NoDiscardControl ||
         !prizes_known() || item_locked() || !supporter_allowed() ||
         state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::RegidragoVstar ||

@@ -8,7 +8,6 @@
 // Core Engine state composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/core_state.inc
 // Opening, search, Steven/Blender, Supporter, and VSTAR composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_engine_overrides.inc
 // Search-item closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc
-// Post-search lock-removal composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_search_lock_removal.inc
 // Late execution/reporting composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_execution_reporting.inc
 
 #include "core_state.inc"
@@ -54,5 +53,18 @@
 // https://github.com/FlareZ123/pokemon-sims/issues/3089
 #include "../core/banked_tapu_retreat_policy.inc"
 
-#include "post_search_lock_removal.inc"
+// Compose the #3057 Pineco/Secret Box lock-removal wrapper directly at the
+// post-search boundary instead of forwarding through a one-purpose .inc file.
+// Forest / Field Blower / Secret Box: https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/sv6-163
+// Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/3057
+#include "../part_issue_3057_swell_field_blower_route.inc"
+#if defined(play_chaotic_swell) || defined(play_field_blower)
+#error "Issue-3057 Pineco composition requires lock-removal aliases to be undefined"
+#endif
+#define play_chaotic_swell play_chaotic_swell_issue_3057
+#define play_field_blower play_field_blower_issue_3057
+#include "post_014a_overrides.inc"
+#undef play_field_blower
+#undef play_chaotic_swell
+
 #include "late_execution_reporting.inc"

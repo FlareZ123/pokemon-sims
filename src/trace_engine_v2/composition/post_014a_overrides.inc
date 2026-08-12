@@ -15,9 +15,15 @@
 
 // Keep the post-part_014a Burnet and Forest Seal Stone aliases in the same
 // composition spine instead of routing them through one-purpose wrapper files.
+#if defined(play_professor_burnet)
+#error "Post-search Burnet composition requires play_professor_burnet to be undefined on entry"
+#endif
 #define play_professor_burnet play_professor_burnet_empty_deck_original
 #include "../part_011_burnet_thinning_override.inc"
 #undef play_professor_burnet
+#if defined(play_professor_burnet)
+#error "Post-search Burnet composition leaked play_professor_burnet"
+#endif
 
 #undef use_fss
 #define use_fss use_fss_empty_deck_original
@@ -150,28 +156,10 @@
 #error "Supporter selector composition leaked choose_supporter"
 #endif
 
-// Keep the late search-item wrapper families behind one ordered composition unit.
-// The outer guard keeps their shared macro contract visible at this member boundary.
-// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
-#if defined(bench_oricorio_if_useful) || defined(ultra_ball_has_legal_target) || \
-    defined(play_ultra_ball) || defined(play_brilliant_blender) || \
-    defined(play_earthen_vessel) || defined(play_mysterious_treasure) || \
-    defined(play_quick_ball) || defined(bench_tapu_if_useful) || \
-    defined(in_play) || defined(play_steven) || defined(use_fss) || \
-    defined(should_play_steven) || defined(play_arven)
-#error "Late search composition requires search wrapper aliases to be undefined on entry"
-#endif
-
+// The included late-search unit owns the complete shared alias entry/exit contract,
+// so this parent composition delegates validation instead of repeating the same list.
+// Contract owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_search_routes.inc
 #include "late_search_routes.inc"
-
-#if defined(bench_oricorio_if_useful) || defined(ultra_ball_has_legal_target) || \
-    defined(play_ultra_ball) || defined(play_brilliant_blender) || \
-    defined(play_earthen_vessel) || defined(play_mysterious_treasure) || \
-    defined(play_quick_ball) || defined(bench_tapu_if_useful) || \
-    defined(in_play) || defined(play_steven) || defined(use_fss) || \
-    defined(should_play_steven) || defined(play_arven)
-#error "Late search composition leaked a wrapper alias"
-#endif
 
 // Keep the Crispin provenance shim adjacent to the Secret Box implementation it
 // wraps, followed by the Celestial Roar bridge that consumes that implementation.

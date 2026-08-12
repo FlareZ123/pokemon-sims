@@ -137,26 +137,25 @@
     const bool deck_payload = std::any_of(
         state_.deck.begin(), state_.deck.end(), is_payload);
 
-    // Wonder Tag has already established K1. The held Grass attaches on T2, while
-    // Steven's Resolve banks Regidrago VSTAR, Crispin, and a Dragon payload. Held
-    // Mysterious Treasure then discards that payload on T3 and searches Latias ex,
-    // whose Skyliner Ability gives the Basic Oricorio Active free Retreat:
+    // Wonder Tag has already established K1. The held Grass attaches this turn,
+    // while Steven's Resolve banks Regidrago VSTAR, Crispin, and a Dragon payload.
+    // Mysterious Treasure discards that payload on the next turn and searches
+    // Latias ex for Skyliner. Profile, seat, and absolute turn are historical
+    // witness coordinates; the route is controlled by same-ready-turn JIT and its
+    // current Trainer, evolution, Bench, Retreat, Ability, resource, and horizon gates:
     // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
-    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
-    // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
-    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Official Supporter, Item, search, attachment, evolution, Bench, Ability, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1, strict-JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1796
-    return scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
-        scenario_.locks == LockMode::None && state_.turn == 2 &&
-        scenario_.max_turn >= 3 && prizes_known() && supporter_allowed() &&
-        !state_.manual_energy_used && !item_locked() && !state_.retreat_used &&
-        state_.active && state_.active->card == Card::Oricorio &&
-        prior_turn_regidrago && bench_space() > 0 &&
+    // Same-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3173
+    return strict_payload_timing() &&
+        state_.turn + 1 <= scenario_.max_turn && prizes_known() &&
+        supporter_allowed() && !state_.manual_energy_used && !item_locked() &&
+        !state_.retreat_used && state_.active &&
+        state_.active->card == Card::Oricorio && prior_turn_regidrago &&
+        bench_space() > 0 &&
         ability_available_for_pokemon(Card::TapuLeleGX) &&
         ability_available_for_pokemon(Card::LatiasEx) &&
         hand_count(Card::MysteriousTreasure) > 0 &&
@@ -344,7 +343,7 @@
     // Dragon payload cost, Wonder Tag has established K1, and Crispin can supply
     // the last Energy without consuming a later turn:
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136

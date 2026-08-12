@@ -3,6 +3,9 @@
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
 // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
 // Model specification: https://github.com/FlareZ123/pokemon-sims/issues/2808
+#if defined(begin_turn) || defined(might_be_unseen)
+#error "Opening composition requires begin_turn and might_be_unseen aliases to be undefined on entry"
+#endif
 #define begin_turn begin_turn_original
 #define might_be_unseen might_be_unseen_empty_deck_original
 #include "../part_003.inc"
@@ -24,3 +27,6 @@
 #include "../core/garbodor_lock_policy.inc"
 
 #undef might_be_unseen
+#if defined(might_be_unseen)
+#error "Opening composition leaked the temporary might_be_unseen alias"
+#endif

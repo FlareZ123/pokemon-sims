@@ -137,7 +137,9 @@ const auto play_issue_1552_t1_vessel_route =
 };
 
 if (play_issue_1552_t1_vessel_route()) return true;
-      #include "part_014a_issue_962_eligibility.inc"
+      #define REGIDRAGO_ISSUE_962_SECTION_ELIGIBILITY
+      #include "core/issue_962_route.inc" // Former wrapper: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a_issue_962_eligibility.inc
+      #undef REGIDRAGO_ISSUE_962_SECTION_ELIGIBILITY
       #include "part_014a_issue_962_projection.inc"
       #include "part_014a_issue_962_decision.inc"
       #include "part_014a_issue_1447_vessel_hold.inc"

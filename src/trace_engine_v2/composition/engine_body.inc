@@ -13,20 +13,6 @@
 
 #include "core_state.inc"
 #include "early_engine.inc"
-
-// Replace only the historical banked-Tapu implementation while preserving the
-// rest of the opening override ordering. The replacement uses the shared DDE-aware
-// Apex payment predicate: https://github.com/FlareZ123/pokemon-sims/issues/3089
-#define retreat_banked_tapu_to_regidrago retreat_banked_tapu_to_regidrago_issue3089_original
-#include "opening_engine_overrides.inc"
-#include "../part_014a.inc"
-#undef retreat_banked_tapu_to_regidrago
-// part_014a closes run_search_items_one_step(), so the completed replacement member
-// is composed directly from core at the same safe class-member boundary:
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/banked_tapu_retreat_policy.inc
-// https://github.com/FlareZ123/pokemon-sims/issues/3089
-#include "../core/banked_tapu_retreat_policy.inc"
-
+#include "banked_tapu_bridge.inc"
 #include "post_search_lock_removal.inc"
 #include "late_execution_reporting.inc"

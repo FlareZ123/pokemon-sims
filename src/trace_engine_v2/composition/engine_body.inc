@@ -9,7 +9,7 @@
 // Opening, search, Steven/Blender, Supporter, and VSTAR composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_engine_overrides.inc
 // Part 010 search/Steven source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010.inc
 // Search-item closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc
-// Post-search Supporter, Legacy Star, and late search-item composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
+// Post-search lock-removal composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_search_lock_removal.inc
 // Late turn source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
 
 #include "core_state.inc"
@@ -55,20 +55,7 @@
 // https://github.com/FlareZ123/pokemon-sims/issues/3089
 #include "../core/banked_tapu_retreat_policy.inc"
 
-// #3057 must wrap the dedicated Pineco/Secret Box dispatcher as well as the
-// historical generic turn source. Compose its state predicates before the Pineco
-// policy and route only the two lock-removal actions through the narrow wrappers.
-// Forest / Field Blower / Secret Box: https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/sv6-163
-// Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/3057
-#include "../part_issue_3057_swell_field_blower_route.inc"
-#if defined(play_chaotic_swell) || defined(play_field_blower)
-#error "Issue-3057 Pineco composition requires lock-removal aliases to be undefined"
-#endif
-#define play_chaotic_swell play_chaotic_swell_issue_3057
-#define play_field_blower play_field_blower_issue_3057
-#include "post_014a_overrides.inc"
-#undef play_field_blower
-#undef play_chaotic_swell
+#include "post_search_lock_removal.inc"
 
 // Ordered late turn-execution, scenario-registry, and reporting composition.
 // Keep these aliases live through part_016 exactly as the historical root wrapper

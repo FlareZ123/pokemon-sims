@@ -64,6 +64,7 @@
 
   #include "part_issue_3222_steven_blender_semantic_override.inc"
   #include "part_issue_3221_k0_steven_blender_semantic_override.inc"
+  #include "part_issue_3203_active_vstar_steven_semantic_override.inc"
 
   bool late_steven_package_available() const {
     // Centralize semantic late-Steven package checks so the dispatcher only chooses
@@ -73,10 +74,12 @@
     // Burnet package: https://github.com/FlareZ123/pokemon-sims/issues/3223
     // K1 semantic Blender fallback: https://github.com/FlareZ123/pokemon-sims/issues/3222
     // K0 semantic Blender fallback: https://github.com/FlareZ123/pokemon-sims/issues/3221
+    // Active-VSTAR Crispin/Treasure package: https://github.com/FlareZ123/pokemon-sims/issues/3203
     return issue_2622_steven_latias_blender_package_available() ||
            late_steven_burnet_route_available() ||
            issue_3222_steven_blender_fallback_available() ||
-           issue_3221_k0_steven_blender_route_available();
+           issue_3221_k0_steven_blender_route_available() ||
+           issue_3203_active_vstar_steven_crispin_treasure_route_available();
   }
 
   bool should_play_steven() const {

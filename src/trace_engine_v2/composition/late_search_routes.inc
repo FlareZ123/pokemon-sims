@@ -61,7 +61,13 @@
 #include "../part_issue_1030_steven_turo_override.inc"
 #undef should_play_steven
 
+#define should_play_steven should_play_steven_issue3197_original
+#define TRACE_ENGINE_FINAL_PLAY_STEVEN_ALIAS play_steven_issue3197_original
 #include "../part_issue_1067_arven_before_late_steven_override.inc"
+#undef TRACE_ENGINE_FINAL_PLAY_STEVEN_ALIAS
+#undef play_steven
+#undef should_play_steven
+#include "../part_issue_3197_steven_treasure_crispin_semantic_override.inc"
 
 #define bench_tapu_if_useful bench_tapu_if_useful_issue_991_original
 #include "../part_issue_989_empty_deck_tapu_override.inc"

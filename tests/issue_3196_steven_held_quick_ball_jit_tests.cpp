@@ -30,7 +30,7 @@ namespace {
 sim::State route_state() {
   sim::State state;
   state.turn = 2;
-  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 1, 0,
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 0,
                               sim::Tool::None};
   state.hand = {sim::Card::StevensResolve, sim::Card::QuickBall,
                 sim::Card::MegaDragonite, sim::Card::Fire};

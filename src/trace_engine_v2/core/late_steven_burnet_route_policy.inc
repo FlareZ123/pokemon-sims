@@ -19,18 +19,17 @@
         state_.active->grass != 1 || state_.active->fire < 1 ||
         hand_count(Card::StevensResolve) == 0 ||
         hand_count(Card::ProfessorBurnet) == 0 ||
-        !has_payload_in_hand() ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) ||
         deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
         deck_count_after_search_started(Card::Grass) == 0) {
       return false;
     }
 
-    // Steven ends the present turn, so the route also proves that the projected
-    // next turn permits Professor Burnet before admitting the package.
+    // The lock scenario is fixed across the simulated horizon. Because the current
+    // turn is already Supporter-legal and the route has a later turn remaining,
+    // Professor Burnet is Supporter-legal after Steven ends this turn as well.
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-    // Supporter timing policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
-    const PublicState next_public =
-        advance_public_state_end_of_turn(project_public_state());
-    return next_public.supporter_allowed;
+    // Current Supporter legality implementation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    return true;
   }

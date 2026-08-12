@@ -131,16 +131,25 @@
           return pokemon.card == Card::RegidragoV &&
               pokemon.entered_turn < state_.turn && pokemon.grass == 0 &&
               pokemon.fire == 0 && pokemon.double_dragon == 0;
-          // This historical package is specifically the zero-Energy branch;
-          // DDE-only is already one Basic from Apex: https://github.com/FlareZ123/pokemon-sims/issues/2368
+          // This route begins before the current manual Grass attachment. DDE-only
+          // already changes the Energy axis and belongs to another route:
+          // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+          // https://github.com/FlareZ123/pokemon-sims/issues/2368
         });
     const bool deck_payload = std::any_of(
         state_.deck.begin(), state_.deck.end(), is_payload);
+    const int finish_turn = state_.turn + 1;
+    const bool finish_turn_item_locked =
+        scenario_.locks == LockMode::FullItem ||
+        (uses_turn_two_item_lock(scenario_.locks) && finish_turn >= 2);
 
-    // Wonder Tag has already established K1. The held Grass attaches on T2, while
-    // Steven's Resolve banks Regidrago VSTAR, Crispin, and a Dragon payload. Held
-    // Mysterious Treasure then discards that payload on T3 and searches Latias ex,
-    // whose Skyliner Ability gives the Basic Oricorio Active free Retreat:
+    // Wonder Tag has established K1. The held Grass attaches this turn before
+    // Steven's Resolve banks Regidrago VSTAR, Crispin, and a Dragon payload. On the
+    // next turn, Mysterious Treasure discards that payload and searches Latias ex;
+    // Skyliner supplies the Basic Oricorio Active's free Retreat. The route therefore
+    // depends on same-ready-turn JIT timing, legal Supporter sequencing, evolution
+    // age, future Item legality, K1 resources, Bench/Retreat state, and Skyliner.
+    // Seat identity and absolute turn are only historical witness coordinates:
     // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
@@ -149,15 +158,14 @@
     // Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official Supporter, Item, search, attachment, evolution, Bench, Ability, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1, strict-JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1796
-    return scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
-        scenario_.locks == LockMode::None && state_.turn == 2 &&
-        scenario_.max_turn >= 3 && prizes_known() && supporter_allowed() &&
-        !state_.manual_energy_used && !item_locked() && !state_.retreat_used &&
-        state_.active && state_.active->card == Card::Oricorio &&
-        prior_turn_regidrago && bench_space() > 0 &&
-        ability_available_for_pokemon(Card::TapuLeleGX) &&
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // K1, same-turn JIT, lock, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed remaining selector bug: https://github.com/FlareZ123/pokemon-sims/issues/3173
+    return strict_payload_timing() && finish_turn <= scenario_.max_turn &&
+        prizes_known() && supporter_allowed() && !state_.manual_energy_used &&
+        !finish_turn_item_locked && !state_.retreat_used && state_.active &&
+        state_.active->card == Card::Oricorio && prior_turn_regidrago &&
+        bench_space() > 0 && ability_available_for_pokemon(Card::TapuLeleGX) &&
         ability_available_for_pokemon(Card::LatiasEx) &&
         hand_count(Card::MysteriousTreasure) > 0 &&
         hand_count(Card::Grass) > 0 && need_vstar() && need_energy() &&

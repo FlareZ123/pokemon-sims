@@ -42,7 +42,6 @@ enum class Card : std::uint8_t {
   TateLiza,
   StevensResolve,
   Guzma,
-  GuzmaHala,
   Channeler,
   Gladion,
   Lusamine,
@@ -62,6 +61,7 @@ enum class Card : std::uint8_t {
   DoubleDragonEnergy,
   Grass,
   Fire,
+  GuzmaHala,
 };
 
 }  // namespace sim

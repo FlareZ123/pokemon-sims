@@ -1,7 +1,12 @@
+#ifndef SIM_TRACE_QUICK_BALL_CARD_CLASS_BASE_INCLUDED
+#define SIM_TRACE_QUICK_BALL_CARD_CLASS_BASE_INCLUDED
+
 // Card-class-backed Quick Ball base implementation. The historical part_009b1/2
 // implementation remains compiled under a dormant compatibility name so all helper
 // policy stays available while the live base routes printed resolution through
 // cards::QuickBall.
+// Single-inclusion boundary: https://eel.is/c++draft/cpp.include
+// Confirmed composition defect: https://github.com/FlareZ123/pokemon-sims/issues/3341
 
   rules::CardContext make_runtime_card_context() {
     return trace_engine_v2::make_card_context_adapter(
@@ -245,3 +250,5 @@
     }
     return true;
   }
+
+#endif  // SIM_TRACE_QUICK_BALL_CARD_CLASS_BASE_INCLUDED

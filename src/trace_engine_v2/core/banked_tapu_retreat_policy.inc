@@ -1,13 +1,21 @@
 #pragma once
 
+bool banked_tapu_paid_retreat_available() {
+  // Tapu's printed one-Colorless Retreat Cost may be paid with its banked Basic
+  // Energy. Preserve the cheaper free-Latias and Tate routes ahead of this path:
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+  // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+  // Official Retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  return !state_.retreat_used && state_.active &&
+         state_.active->card == Card::TapuLeleGX &&
+         state_.active->grass + state_.active->fire >= 1 &&
+         !can_free_retreat_with_latias() &&
+         !(supporter_allowed() && hand_count(Card::TateLiza) > 0);
+}
+
 bool retreat_banked_tapu_to_regidrago() {
-  if (state_.retreat_used || !state_.active ||
-      state_.active->card != Card::TapuLeleGX ||
-      state_.active->grass + state_.active->fire < 1 ||
-      can_free_retreat_with_latias() ||
-      (supporter_allowed() && hand_count(Card::TateLiza) > 0)) {
-    return false;
-  }
+  if (!banked_tapu_paid_retreat_available()) return false;
 
   Pokemon* target = target_regi();
   // Preserve the historical two-Grass promotion state while admitting physical

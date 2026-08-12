@@ -16,11 +16,13 @@
     // Chaotic Swell: https://api.pokemontcg.io/v2/cards/sm12-187
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official Item, attachment, search, and discard procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // K1, dynamic DCI/JIT, connector ordering, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Equivalent-turn admission fix: https://github.com/FlareZ123/pokemon-sims/issues/3282
     // Confirmed route bug: https://github.com/FlareZ123/pokemon-sims/issues/1872
     // Confirmed profile-overfitting bug: https://github.com/FlareZ123/pokemon-sims/issues/2742
-    return strict_payload_timing() && state_.turn == 4 && prizes_known() &&
-        !item_locked() && !state_.manual_energy_used && active_is_vstar() &&
+    return strict_payload_timing() && prizes_known() && !item_locked() &&
+        !state_.manual_energy_used && active_is_vstar() &&
         state_.active->grass == 1 && state_.active->fire == 1 && need_payload() &&
         hand_count(Card::MysteriousTreasure) > 0 &&
         hand_count(Card::EarthenVessel) > 0 &&
@@ -51,7 +53,7 @@
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official Item, attachment, search, and discard procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, DCI/JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1872 https://github.com/FlareZ123/pokemon-sims/issues/2742
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1872 https://github.com/FlareZ123/pokemon-sims/issues/2742 https://github.com/FlareZ123/pokemon-sims/issues/3282
     remove_one(state_.hand, Card::MysteriousTreasure);
     state_.discard.push_back(Card::MysteriousTreasure);
     if (!discard_from_hand(Card::ChaoticSwell,

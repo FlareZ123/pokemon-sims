@@ -646,10 +646,22 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
     // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2085
+    // Steven is a Supporter now and the already-held Brilliant Blender is an Item
+    // on the projected ready turn. Reuse the shared semantic predicates so both
+    // same-ready-turn JIT profiles are admitted, Rule Box Ability lock remains
+    // irrelevant to this Trainer-only route, and projected Item/combined locks block it.
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Same-ready-turn JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Lock semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3225
 
     if (!prizes_known() || state_.turn >= scenario_.max_turn ||
-        scenario_.dci != DciProfile::StrictJit ||
-        scenario_.locks != LockMode::None || !supporter_allowed() ||
+        !strict_payload_timing() || item_locked_on_turn(state_.turn + 1) ||
+        !supporter_allowed() ||
         !state_.active || state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
         state_.active->grass < 2 || state_.active->fire < 1 ||
@@ -663,17 +675,18 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
     // Steven's Resolve may reserve the known-searchable Regidrago VSTAR and end
     // the turn. On the following turn the prior-turn Active may evolve before the
     // held Brilliant Blender searches and discards a permitted Dragon payload on
-    // that same strict-JIT ready turn. This complete route outranks Gladion for a
-    // backup Basic because the Active-position and GGF Energy axes are already met:
+    // that same ready turn. This complete route outranks Gladion for a backup Basic
+    // because the Active-position and GGF Energy axes are already met:
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
-    // Core evolution, Supporter, Item, search, discard, and turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Advanced evolution, Supporter, Item, search, discard, and turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // K1 and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Strict-JIT payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Same-ready-turn JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1109
+    // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3225
     return deck_count_after_search_started(Card::RegidragoVstar) > 0;
   }
 

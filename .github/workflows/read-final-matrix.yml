@@ -1,6 +1,7 @@
 name: Read final matrix artifact
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - cleanup-1786513161846

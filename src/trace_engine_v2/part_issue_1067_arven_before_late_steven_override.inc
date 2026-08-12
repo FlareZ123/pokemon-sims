@@ -55,14 +55,18 @@
     return forest_seal_stone_available && brilliant_blender_available;
   }
 
+  #include "part_issue_3222_steven_blender_semantic_override.inc"
+
   bool late_steven_package_available() const {
-    // Centralize the two semantic late-Steven package checks so the dispatcher only
-    // chooses between a current-turn Arven finish and the best legal Steven package.
+    // Centralize semantic late-Steven package checks so the dispatcher only chooses
+    // between a current-turn Arven finish and the best legal Steven package.
     // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Latias/Blender package: https://github.com/FlareZ123/pokemon-sims/issues/2622
     // Burnet package: https://github.com/FlareZ123/pokemon-sims/issues/3223
+    // Semantic Blender fallback: https://github.com/FlareZ123/pokemon-sims/issues/3222
     return issue_2622_steven_latias_blender_package_available() ||
-           late_steven_burnet_route_available();
+           late_steven_burnet_route_available() ||
+           issue_3222_steven_blender_fallback_available();
   }
 
   bool should_play_steven() const {

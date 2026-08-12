@@ -12,8 +12,13 @@
     // Complete legal deck or Prize inspection establishes K1:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Confirmed provenance defect: https://github.com/FlareZ123/pokemon-sims/issues/2065
+    // The package needs one following simulated turn; its legality does not depend
+    // on a fixed absolute turn number once the semantic board/K1 gates below hold.
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/3277
     if (!prizes_known() || !strict_payload_timing() || !supporter_allowed() ||
-        state_.turn != 3 || state_.turn + 1 > scenario_.max_turn ||
+        state_.turn + 1 > scenario_.max_turn ||
         !state_.active || !is_basic(state_.active->card) ||
         state_.active->card == Card::RegidragoV || state_.retreat_used ||
         bench_space() == 0 || !prepared_benched_regidrago ||

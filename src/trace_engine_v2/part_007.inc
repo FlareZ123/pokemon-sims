@@ -107,8 +107,10 @@
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Official first-turn and Ability search procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1 and complete-route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1797
-    return scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
+    // Same-ready-turn JIT profile equivalence: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Confirmed original route: https://github.com/FlareZ123/pokemon-sims/issues/1797
+    // Confirmed selector regression: https://github.com/FlareZ123/pokemon-sims/issues/3165
+    return strict_payload_timing() && scenario_.going_first &&
         scenario_.locks == LockMode::None && state_.turn == 1 &&
         scenario_.max_turn >= 3 && prizes_known() && !state_.supporter_used &&
         state_.active && state_.active->card == Card::RegidragoV &&

@@ -12,6 +12,7 @@
     // Action-specific lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
     // K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Confirmed semantic-profile/lock bug: https://github.com/FlareZ123/pokemon-sims/issues/3223
+    // Confirmed Burnet payload-zone bug: https://github.com/FlareZ123/pokemon-sims/issues/3302
     if (!prizes_known() || state_.turn >= scenario_.max_turn ||
         !strict_payload_timing() || !supporter_allowed() ||
         !state_.active || state_.active->card != Card::RegidragoV ||
@@ -19,7 +20,7 @@
         state_.active->grass != 1 || state_.active->fire < 1 ||
         hand_count(Card::StevensResolve) == 0 ||
         hand_count(Card::ProfessorBurnet) == 0 ||
-        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) ||
+        !first_searchable_payload_in_known_deck().has_value() ||
         deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
         deck_count_after_search_started(Card::Grass) == 0) {
       return false;

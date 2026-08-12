@@ -1,3 +1,5 @@
+#pragma once
+
 // Centralize the banked-Tapu override's macro lifetime and replacement member.
 // Preserve this order because part_014a closes run_search_items_one_step() before
 // the completed replacement policy is composed at the safe class-member boundary.

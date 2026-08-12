@@ -4,14 +4,16 @@
            std::any_of(state_.bench.begin(), state_.bench.end(), predicate);
   }
 
+  [[nodiscard]] static bool pokemon_has_open_v_tool_slot(
+      const Pokemon& pokemon) {
+    return is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None;
+  }
+
   [[nodiscard]] bool board_has_open_pokemon_v_tool_slot() const {
-    const auto open_v = [](const Pokemon& pokemon) {
-      return is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None;
-    };
     // Pokémon Tools attach to Pokémon in play, and Forest Seal Stone requires a Pokémon V:
     // https://www.pokemon.com/us/pokemon-tcg/rules
     // https://api.pokemontcg.io/v2/cards/swsh12-156
-    return board_has_pokemon_matching(open_v);
+    return board_has_pokemon_matching(pokemon_has_open_v_tool_slot);
   }
 
   [[nodiscard]] bool pokemon_can_evolve_into_regidrago_vstar(

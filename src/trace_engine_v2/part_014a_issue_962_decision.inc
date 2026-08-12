@@ -1,3 +1,1 @@
-#define REGIDRAGO_ISSUE_962_SECTION_DECISION
-#include "core/issue_962_route.inc"
-#undef REGIDRAGO_ISSUE_962_SECTION_DECISION
+// Decision now composes through part_014a_issue_962_sections.inc.

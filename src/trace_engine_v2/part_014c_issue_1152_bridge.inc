@@ -101,8 +101,15 @@
     const bool held_vessel_payload = std::any_of(
         state_.hand.begin(), state_.hand.end(), is_payload);
 
-    if (scenario_.dci != DciProfile::StrictJit || !scenario_.going_first ||
-        scenario_.locks != LockMode::None || state_.turn != 2 ||
+    // StrictJit and MatchupFlexJit share the same ready-turn Dragon-discard timing.
+    // Earthen Vessel remains an Item dependency. Rule Box Ability lock leaves this
+    // Trainer-only Crispin -> Steven -> Vessel schedule legal:
+    // Same-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Scenario lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // Advanced Trainer procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3170
+    if (!strict_payload_timing() || item_locked() ||
         state_.turn + 2 > scenario_.max_turn || !prizes_known() ||
         !supporter_allowed() || state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::RegidragoV ||
@@ -519,9 +526,17 @@
     const bool held_payload = std::any_of(
         state_.hand.begin(), state_.hand.end(), is_payload);
 
+    // Continue the banked schedule from its public semantic state. The future
+    // Vessel step still needs Item legality and the current Steven step needs
+    // Supporter legality:
+    // Same-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Advanced Trainer procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3170
     return issue_1795_steven_turn_ == state_.turn &&
-        scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
-        scenario_.locks == LockMode::None && state_.turn + 1 <= scenario_.max_turn &&
+        strict_payload_timing() && !item_locked() &&
+        state_.turn + 1 <= scenario_.max_turn &&
         prizes_known() && supporter_allowed() && state_.active &&
         state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn &&
@@ -591,9 +606,16 @@
     const bool has_final_grass = !need_energy() ||
         hand_count(Card::Grass) > 0 ||
         deck_count_after_search_started(Card::Grass) > 0;  // DDE-ready attackers need no redundant final Basic: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
+    // The final Vessel step depends on same-turn JIT timing and current Item
+    // legality. Seat identity, absolute turn number, and Rule Box Ability lock add
+    // no printed restriction to Earthen Vessel, evolution, or manual attachment:
+    // Same-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Advanced evolution, Item, and attachment procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3170
     const bool route_available =
-        scenario_.dci == DciProfile::StrictJit && scenario_.going_first &&
-        scenario_.locks == LockMode::None && !state_.turn_ended &&
+        strict_payload_timing() && !state_.turn_ended &&
         prizes_known() && !state_.manual_energy_used && !item_locked() &&
         state_.active && state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn &&

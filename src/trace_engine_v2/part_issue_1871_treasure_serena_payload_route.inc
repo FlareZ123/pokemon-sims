@@ -1,3 +1,8 @@
+// Release the #3170 admission-only alias at the first include after the #1795 bridge.
+// The alias exists only to compare that generalized packet against the completed
+// MatchupFlex connector contract: https://github.com/FlareZ123/pokemon-sims/issues/3170
+#undef crispin_can_advance_energy_axis
+
   std::optional<Card> issue_1871_searchable_payload() const {
     for (const Card card : {Card::MegaDragonite, Card::Dragapult,
                             Card::GoodraVstar, Card::DialgaGX,

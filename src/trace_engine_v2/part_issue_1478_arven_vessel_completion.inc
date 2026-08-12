@@ -74,3 +74,24 @@
           "Discarded route-secondary Team Yell's Cheer and searched one Grass Energy for the T3 manual attachment.");
     return true;
   }
+
+  bool issue_3170_crispin_energy_axis_without_connector_domination() const {
+    // MatchupFlexJit can preserve the already-held Crispin for the following Energy
+    // turn when the completed #1038 K1 predicate proves that held Gladion owns the
+    // current Supporter action. In that connector-dominated state, the generalized
+    // #1795 Crispin -> Steven -> Vessel packet yields to the existing route.
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // One Supporter per turn: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Connector and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Completed connector contract: https://github.com/FlareZ123/pokemon-sims/issues/1038
+    // Refined semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3170
+    if (scenario_.dci == DciProfile::MatchupFlexJit &&
+        wonder_tag_duplicate_held_crispin_has_no_marginal_route()) {
+      return false;
+    }
+    return crispin_can_advance_energy_axis();
+  }
+
+#define crispin_can_advance_energy_axis issue_3170_crispin_energy_axis_without_connector_domination

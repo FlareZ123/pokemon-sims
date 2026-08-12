@@ -172,12 +172,16 @@ constexpr bool is_supporter(const Card card) {
 }
 
 constexpr bool is_item(const Card card) {
+  // A migrated card's intrinsic Trainer classification is owned by its registered
+  // CardDefinition. Legacy tables are only a compatibility fallback for cards that
+  // have not entered the card-class architecture yet.
+  if (cards::has_definition(card)) return cards::registered_is_item(card);
+
   switch (card) {
     case Card::BrilliantBlender:
     case Card::SecretBox:
     case Card::BattleVipPass:
     case Card::MysteriousTreasure:
-    case Card::QuickBall:
     case Card::UltraBall:
     case Card::EvolutionIncense:
     case Card::PokemonCommunication:

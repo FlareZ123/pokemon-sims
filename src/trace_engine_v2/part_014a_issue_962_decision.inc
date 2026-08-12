@@ -1,3 +1,3 @@
-#define REGIDRAGO_ISSUE_962_SECTION_DECISION
-#include "core/issue_962_route.inc"
-#undef REGIDRAGO_ISSUE_962_SECTION_DECISION
+#define REGIDRAGO_ISSUE_962_SELECT_DECISION
+#include "composition/issue_962_route_sections.inc"
+#undef REGIDRAGO_ISSUE_962_SELECT_DECISION

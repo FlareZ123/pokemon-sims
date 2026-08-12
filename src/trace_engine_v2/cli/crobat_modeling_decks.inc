@@ -42,6 +42,27 @@ CrobatModelingDeck make_crobat_modeling_deck(
   return deck;
 }
 
+CrobatModelingDeck make_guzma_hala_validation_deck() {
+  // Temporary issue-3386 paper-Expanded validation shell. It is reachable only
+  // through --model-variant and is removed before the behavior PR is merged.
+  // Start from the real regidrago-shell, cut exactly two Grass and one Arven, then
+  // add two DDE and one Guzma & Hala while preserving 60 cards.
+  // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+  // Guzma & Hala: https://www.pokemon.com/uk/pokemon-tcg/pokemon-cards/sm-series/sm12/229/
+  // Validation enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3386
+  DeckRecipe recipe = baseline_recipe();
+  adjust_modeling_recipe(recipe, Card::Grass, -2);
+  adjust_modeling_recipe(recipe, Card::Arven, -1);
+  adjust_modeling_recipe(recipe, Card::DoubleDragonEnergy, 2);
+  adjust_modeling_recipe(recipe, Card::GuzmaHala, 1);
+  CrobatModelingDeck deck{"guzma-hala-test-shell",
+                          "-2 Grass -1 Arven +2 DDE +1 Guzma & Hala",
+                          std::move(recipe)};
+  std::string error;
+  if (!validate_recipe({deck.id, deck.recipe}, &error)) throw std::logic_error(error);
+  return deck;
+}
+
 class CrobatModelingRegistry {
  public:
   static const std::vector<CrobatModelingDeck>& all() {
@@ -49,6 +70,7 @@ class CrobatModelingRegistry {
     // --all-decks: https://github.com/FlareZ123/pokemon-sims/issues/1394
     static const std::vector<CrobatModelingDeck> decks{
         {"regidrago-shell", "none", baseline_recipe()},
+        make_guzma_hala_validation_deck(),
         make_crobat_modeling_deck("crobat1-erika", {Card::ErikasInvitation}),
         make_crobat_modeling_deck("crobat1-channeler", {Card::Channeler}),
         make_crobat_modeling_deck("crobat1-team-yell", {Card::TeamYellsCheer}),

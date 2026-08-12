@@ -33,12 +33,11 @@ bool banked_tapu_regidrago_ready(const Pokemon* target) {
   return historical_two_grass_state || pays_apex_energy_cost(*target);
 }
 
-bool retreat_banked_tapu_to_regidrago() {
-  if (!banked_tapu_paid_retreat_available()) return false;
-
-  Pokemon* target = target_regi();
-  if (!banked_tapu_regidrago_ready(target)) return false;
-
+void pay_banked_tapu_retreat_cost() {
+  // The active Tapu is already proven to have at least one Basic Energy, so pay
+  // exactly one physical Energy for its one-Colorless printed Retreat Cost:
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Official Retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   const Card payment = state_.active->grass > 0 ? Card::Grass : Card::Fire;
   if (payment == Card::Grass) {
     --state_.active->grass;
@@ -46,6 +45,15 @@ bool retreat_banked_tapu_to_regidrago() {
     --state_.active->fire;
   }
   state_.discard.push_back(payment);
+}
+
+bool retreat_banked_tapu_to_regidrago() {
+  if (!banked_tapu_paid_retreat_available()) return false;
+
+  Pokemon* target = target_regi();
+  if (!banked_tapu_regidrago_ready(target)) return false;
+
+  pay_banked_tapu_retreat_cost();
   std::swap(*state_.active, *target);
   state_.retreat_used = true;
 

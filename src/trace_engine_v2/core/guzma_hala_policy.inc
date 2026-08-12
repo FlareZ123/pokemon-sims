@@ -79,22 +79,23 @@
   bool guzma_hala_payload_cost_can_finish_this_turn() const {
     if (can_play_payload_this_turn()) return true;
 
-    // The generic JIT gate sees the board before Guzma & Hala searches. Extend it
-    // only for the complete route that Guzma & Hala itself creates: a prior-turn
-    // Active Regidrago V can evolve from the held VSTAR, then the searched DDE can
-    // use the still-open manual attachment and satisfy GGF. This projection uses
-    // only current public hand/board state plus the same K0 DDE availability that
-    // admits the Supporter; target selection still waits for the legal K1 search.
+    // Before evolution, the generic payload predicate does not yet apply because
+    // Regidrago V has no Apex Dragon requirement. Project only the complete route:
+    // a prior-turn Active Regidrago V evolves from the held VSTAR, the searched DDE
+    // completes GGF, and no Dragon payload has already been established this turn.
+    // This avoids circularly asking the pre-evolution board whether a post-evolution
+    // payload is needed while preserving strict same-turn JIT semantics.
     // Guzma & Hala: https://www.pokemon.com/uk/pokemon-tcg/pokemon-cards/sm-series/sm12/229/
     // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Dynamic JIT and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3386
-    if (!strict_payload_timing() || !need_payload() ||
-        state_.manual_energy_used || !state_.active ||
+    if (!strict_payload_timing() || state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
         hand_count(Card::RegidragoVstar) == 0 ||
+        std::any_of(state_.discarded_this_turn.begin(),
+                    state_.discarded_this_turn.end(), is_payload) ||
         !guzma_hala_dde_axis_available()) {
       return false;
     }

@@ -1,3 +1,2 @@
-#define REGIDRAGO_ISSUE_962_SECTION_ELIGIBILITY
-#include "core/issue_962_route.inc"
-#undef REGIDRAGO_ISSUE_962_SECTION_ELIGIBILITY
+// Compatibility seam while issue-962 composition sections are consolidated.
+#include "part_014a_issue_962_sections.inc"

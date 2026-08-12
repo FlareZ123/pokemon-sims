@@ -9,6 +9,7 @@
 // Simulator state: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulator_state.inc
 // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
 // Garbodor composition model: https://github.com/FlareZ123/pokemon-sims/issues/2808
+// Banked-Tapu composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/banked_tapu_override.inc
 // Late execution/reporting: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_execution_reporting.inc
 
 #ifndef SIM_TRACE_SIMULATOR_STATE_INCLUDED
@@ -58,26 +59,7 @@
 #error "Opening composition leaked the temporary might_be_unseen alias"
 #endif
 
-// Centralize the banked-Tapu override's macro lifetime and replacement member.
-// Preserve this order because part_014a closes run_search_items_one_step() before
-// the completed replacement policy is composed at the safe class-member boundary.
-// DDE-aware Apex payment / confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/3089
-// Search-item closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc
-// Replacement policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/banked_tapu_retreat_policy.inc
-#if defined(retreat_banked_tapu_to_regidrago)
-#error "Banked-Tapu composition requires the retreat alias to be undefined on entry"
-#endif
-#define retreat_banked_tapu_to_regidrago retreat_banked_tapu_to_regidrago_issue3089_original
-#include "opening_engine_overrides.inc"
-#include "../part_014a.inc"
-#undef retreat_banked_tapu_to_regidrago
-#if defined(retreat_banked_tapu_to_regidrago)
-#error "Banked-Tapu composition leaked the temporary retreat alias"
-#endif
-#if defined(begin_turn)
-#error "Banked-Tapu composition expected opening_engine_overrides.inc to release begin_turn"
-#endif
-#include "../core/banked_tapu_retreat_policy.inc"
+#include "banked_tapu_override.inc"
 
 // Compose the #3057 Pineco/Secret Box lock-removal wrapper at this canonical boundary.
 // Forest / Field Blower / Secret Box: https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/sv6-163

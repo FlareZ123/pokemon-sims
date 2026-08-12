@@ -14,7 +14,8 @@
 #if defined(use_fss) || defined(play_crispin) || \
     defined(play_professor_burnet) || defined(play_steven) || \
     defined(play_arven) || defined(play_gladion) || defined(play_serena) || \
-    defined(use_celestial_roar) || defined(use_legacy_star)
+    defined(use_celestial_roar) || defined(use_legacy_star) || \
+    defined(should_play_steven)
 #error "Legacy Supporter composition requires owned aliases to be undefined on entry"
 #endif
 
@@ -22,12 +23,15 @@
 #define play_crispin play_crispin_empty_deck_original
 #define play_professor_burnet play_professor_burnet_legacy_original
 #define play_steven play_steven_empty_deck_original
+#define should_play_steven should_play_steven_issue3200
 #include "../part_011.inc"
+#undef should_play_steven
 #undef play_steven
 #undef play_professor_burnet
 #undef play_crispin
 
-#if defined(play_crispin) || defined(play_professor_burnet) || defined(play_steven)
+#if defined(play_crispin) || defined(play_professor_burnet) || \
+    defined(play_steven) || defined(should_play_steven)
 #error "Legacy Supporter composition leaked a local alias"
 #endif
 

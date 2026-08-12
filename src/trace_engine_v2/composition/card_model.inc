@@ -1,3 +1,5 @@
+#pragma once
+
 // Centralized card-model composition for simulator state.
 // Keep the historical include guards in one place so state composition does not
 // duplicate catalog/classification ownership details.

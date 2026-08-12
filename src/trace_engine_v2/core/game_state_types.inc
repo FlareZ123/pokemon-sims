@@ -1,4 +1,15 @@
 enum class DciProfile : std::uint8_t { StrictJit, MatchupFlexJit, NoDiscardControl };
+
+// StrictJit and MatchupFlexJit both require the Dragon payload to be discarded on
+// the same player turn that setup readiness is created. NoDiscardControl may bank
+// payloads earlier: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+constexpr bool same_ready_turn_payload_timing(const DciProfile profile) {
+  return profile == DciProfile::StrictJit || profile == DciProfile::MatchupFlexJit;
+}
+static_assert(same_ready_turn_payload_timing(DciProfile::StrictJit));
+static_assert(same_ready_turn_payload_timing(DciProfile::MatchupFlexJit));
+static_assert(!same_ready_turn_payload_timing(DciProfile::NoDiscardControl));
+
 enum class LockMode : std::uint8_t { None, TurnTwoItem, FullItem, FullRuleBoxAbility, FullCombined, FullSupporter };
 enum class Tool : std::uint8_t { None, ForestSealStone, WishfulBaton, Powerglass };
 enum class Stadium : std::uint8_t { None, ChaoticSwell, ForestOfVitality };

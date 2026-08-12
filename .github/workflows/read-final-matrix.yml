@@ -1,0 +1,23 @@
+name: Read final matrix artifact
+
+on:
+  push:
+    branches:
+      - cleanup-1786513161846
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  read-matrix:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download existing final cleanup artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download 31567429730 --repo "$GITHUB_REPOSITORY" --name release-validation-1 --dir artifact
+      - name: Print exact final T2/T3 matrix
+        run: cat artifact/t2-t3-matrix.csv
+      - name: Print exact final paired matrix
+        run: cat artifact/multi-deck-matrix.csv

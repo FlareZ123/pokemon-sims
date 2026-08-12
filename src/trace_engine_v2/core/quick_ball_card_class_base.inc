@@ -177,10 +177,14 @@
 
     const bool payload_already_held =
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    // The legacy Quick Ball policy aliases are intentionally released before Ultra Ball,
+    // so the card-class planner calls the already-composed wrapper function explicitly.
+    // Existing wrapper chain: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_discard_recovery_provenance_override.inc
+    // Confirmed migration regression: https://github.com/FlareZ123/pokemon-sims/issues/3348
     const bool want_payload =
         need_payload() && !payload_already_held &&
         might_be_unseen(Card::DialgaGX) && !can_pay_payload_cost &&
-        has_payable_payload_outlet_after_costed_search(Card::QuickBall);
+        has_payable_payload_outlet_after_costed_search_issue_1237(Card::QuickBall);
     const bool has_preferred_search_target =
         want_regi || want_latias || want_tapu || want_oricorio ||
         want_crobat || want_payload;
@@ -193,7 +197,13 @@
       cost = issue_1797_quick_ball_cost();
     }
     if (!cost) {
-      cost = choose_discard(can_pay_payload_cost, true, true, Card::QuickBall);
+      // Preserve the complete route-conditioned Quick Ball cost chain after the
+      // macro lifetime ends at the historical Ultra Ball boundary.
+      // Quick Ball printed cost: https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Existing wrapper chain: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_discard_recovery_provenance_override.inc
+      // Confirmed migration regression: https://github.com/FlareZ123/pokemon-sims/issues/3348
+      cost = choose_discard_issue_1237(
+          can_pay_payload_cost, true, true, Card::QuickBall);
     }
     if (!cost && want_latias) {
       cost = quick_ball_final_surplus_energy_cost();

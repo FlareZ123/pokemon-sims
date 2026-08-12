@@ -1,3 +1,5 @@
+#pragma once
+
 // Centralized Engine state composition. Keep the historical guards and include order
 // together so the root composition spine does not duplicate core ownership details.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include

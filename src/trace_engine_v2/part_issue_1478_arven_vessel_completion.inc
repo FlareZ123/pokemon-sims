@@ -14,12 +14,7 @@
       return false;
     }
 
-    int deck_payloads = 0;
-    for (const Card card : {Card::Appletun, Card::MegaDragonite,
-                            Card::Dragapult, Card::GoodraVstar,
-                            Card::DialgaGX}) {
-      deck_payloads += deck_count_after_search_started(card);
-    }
+    const int deck_payloads = payload_cards_in_known_deck_count();
     return deck_count_after_search_started(Card::EarthenVessel) > 0 &&
         deck_count_after_search_started(Card::Grass) > 0 &&
         deck_payloads > 0;

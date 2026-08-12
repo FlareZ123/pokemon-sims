@@ -40,28 +40,50 @@ void expect(const bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);
 }
 
-void test_exact_route_and_boundaries() {
-  std::mt19937_64 rng{2271};
-  const sim::Scenario scenario{"issue-2271/exact", sim::DciProfile::StrictJit,
-                               sim::LockMode::None, false, 5};
-  const auto recipe = sim::baseline_recipe();
-  sim::Engine engine{scenario, recipe, rng};
-  sim::EngineTestAccess::set_state(engine, route_state());
+sim::Scenario scenario(const sim::DciProfile dci) {
+  return sim::Scenario{"issue-3268/surplus-regidrago", dci,
+                       sim::LockMode::None, false, 5};
+}
 
-  // The Active VSTAR already owns the Basic/evolution/Active axes. K1 proves
-  // Treasure -> Tapu -> Arven -> Vessel -> Grass; Vessel can spend the separate
-  // held Dialga-GX as the same-turn payload while the extra Regidrago V is DCI-high.
-  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
-  // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
-  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-  // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
-  // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
-  // Official Item, discard, search, Ability, Supporter, and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-  // K1 / strict-JIT / dynamic DCI / earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-  // Reclaimed confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2271
-  expect(sim::EngineTestAccess::route_available(engine),
-         "issue-2271 exact route was rejected");
+void test_jit_profile_parity() {
+  const auto recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{3268};
+
+  for (const sim::DciProfile dci :
+       {sim::DciProfile::StrictJit, sim::DciProfile::MatchupFlexJit}) {
+    sim::Engine engine{scenario(dci), recipe, rng};
+    sim::EngineTestAccess::set_state(engine, route_state());
+
+    // The Active VSTAR already owns the Basic/evolution/Active axes. K1 proves
+    // Treasure -> Tapu -> Arven -> Vessel -> Grass; Vessel can spend the separate
+    // held Dialga-GX as the same-ready-turn payload while the extra Regidrago V is
+    // route-surplus. Both JIT profiles use that same ready-turn timing contract.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official Item, discard, search, Ability, Supporter, and attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 / same-ready-turn JIT / dynamic DCI / earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Original route: https://github.com/FlareZ123/pokemon-sims/issues/2271
+    // Cross-profile regression: https://github.com/FlareZ123/pokemon-sims/issues/3268
+    expect(sim::EngineTestAccess::route_available(engine),
+           "same-ready-turn JIT profile rejected the surplus-Regidrago route");
+  }
+
+  sim::Engine control{scenario(sim::DciProfile::NoDiscardControl), recipe, rng};
+  sim::EngineTestAccess::set_state(control, route_state());
+  // NoDiscardControl is a different discard policy and stays outside this route:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  expect(!sim::EngineTestAccess::route_available(control),
+         "NoDiscardControl incorrectly entered the same-ready-turn JIT route");
+}
+
+void test_exact_route_boundaries() {
+  std::mt19937_64 rng{2271};
+  const auto recipe = sim::baseline_recipe();
+  sim::Engine engine{scenario(sim::DciProfile::StrictJit), recipe, rng};
 
   auto state = route_state();
   sim::EngineTestAccess::set_state(engine, state, false);
@@ -95,6 +117,7 @@ void test_exact_route_and_boundaries() {
 }  // namespace
 
 int main() {
-  test_exact_route_and_boundaries();
+  test_jit_profile_parity();
+  test_exact_route_boundaries();
   return 0;
 }

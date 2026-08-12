@@ -9,8 +9,6 @@
 // Simulator state: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulator_state.inc
 // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
 // Garbodor composition model: https://github.com/FlareZ123/pokemon-sims/issues/2808
-// Banked-Tapu/search closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/banked_tapu_override.inc
-// Post-search lock removal: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_search_lock_removal.inc
 // Late execution/reporting: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_execution_reporting.inc
 
 #ifndef SIM_TRACE_SIMULATOR_STATE_INCLUDED
@@ -60,8 +58,41 @@
 #error "Opening composition leaked the temporary might_be_unseen alias"
 #endif
 
-// begin_turn intentionally remains aliased until opening_engine_overrides.inc,
-// composed by banked_tapu_override.inc, releases the alias.
-#include "banked_tapu_override.inc"
-#include "post_search_lock_removal.inc"
+// Centralize the banked-Tapu override's macro lifetime and replacement member.
+// Preserve this order because part_014a closes run_search_items_one_step() before
+// the completed replacement policy is composed at the safe class-member boundary.
+// DDE-aware Apex payment / confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/3089
+// Search-item closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc
+// Replacement policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/banked_tapu_retreat_policy.inc
+#if defined(retreat_banked_tapu_to_regidrago)
+#error "Banked-Tapu composition requires the retreat alias to be undefined on entry"
+#endif
+#define retreat_banked_tapu_to_regidrago retreat_banked_tapu_to_regidrago_issue3089_original
+#include "opening_engine_overrides.inc"
+#include "../part_014a.inc"
+#undef retreat_banked_tapu_to_regidrago
+#if defined(retreat_banked_tapu_to_regidrago)
+#error "Banked-Tapu composition leaked the temporary retreat alias"
+#endif
+#if defined(begin_turn)
+#error "Banked-Tapu composition expected opening_engine_overrides.inc to release begin_turn"
+#endif
+#include "../core/banked_tapu_retreat_policy.inc"
+
+// Compose the #3057 Pineco/Secret Box lock-removal wrapper at this canonical boundary.
+// Forest / Field Blower / Secret Box: https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/sv6-163
+// Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/3057
+#include "../part_issue_3057_swell_field_blower_route.inc"
+#if defined(play_chaotic_swell) || defined(play_field_blower)
+#error "Issue-3057 Pineco composition requires lock-removal aliases to be undefined"
+#endif
+#define play_chaotic_swell play_chaotic_swell_issue_3057
+#define play_field_blower play_field_blower_issue_3057
+#include "post_014a_overrides.inc"
+#undef play_field_blower
+#undef play_chaotic_swell
+#if defined(play_chaotic_swell) || defined(play_field_blower)
+#error "Issue-3057 Pineco composition leaked a temporary lock-removal alias"
+#endif
+
 #include "late_execution_reporting.inc"

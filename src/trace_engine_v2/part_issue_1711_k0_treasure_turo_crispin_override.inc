@@ -8,16 +8,18 @@
     // counts, an open Bench, and plausible fixed-list targets. Mysterious Treasure
     // creates K1 during resolution before the continuation reads exact deck state:
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-    // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
-    // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
-    // Appletun: https://api.pokemontcg.io/v2/cards/sv8-140
-    // K0/K1 and route-aware DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1711
-    return secret_box_combo_enabled() &&
-        scenario_.dci == DciProfile::StrictJit &&
-        scenario_.locks == LockMode::None && !scenario_.going_first &&
-        state_.turn == 2 && state_.turn < scenario_.max_turn &&
+    // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // K0/K1, same-ready-turn JIT, and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Advanced Supporter/evolution procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Original route / semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/1711 https://github.com/FlareZ123/pokemon-sims/issues/3267
+    return secret_box_combo_enabled() && strict_payload_timing() &&
+        state_.turn < scenario_.max_turn &&
         !deck_seen_ && !prizes_revealed_ && !item_locked() &&
+        !item_locked_on_turn(state_.turn + 1) &&
         supporter_allowed() && !state_.manual_energy_used &&
         !state_.turn_ended && clean_active_tapu && state_.bench.empty() &&
         ability_available_for_pokemon(Card::TapuLeleGX) &&
@@ -71,14 +73,14 @@
     // K1 now proves the entire continuation. Turo frees the Active position and
     // returns Tapu Lele-GX, replaying Tapu legally triggers Wonder Tag for Crispin.
     // The held Grass attachment establishes the prior-turn Regidrago line, while
-    // Crispin plus the next manual attachment completes GGF on T3:
+    // Crispin plus the next manual attachment completes GGF on the following turn:
     // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
     // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official Supporter, Bench, Ability, attachment, promotion, and evolution procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1711
+    // Original route / semantic-admission follow-up: https://github.com/FlareZ123/pokemon-sims/issues/1711 https://github.com/FlareZ123/pokemon-sims/issues/3267
     remove_one(state_.hand, Card::ProfessorTuro);
     state_.discard.push_back(Card::ProfessorTuro);
     state_.supporter_used = true;
@@ -106,14 +108,14 @@
     ++state_.active->grass;
     state_.manual_energy_used = true;
     trace("ATTACH", "R-GAME-ENERGY; P-COMPRESS-01",
-          "Grass Energy manually to Regidrago V for the deterministic T3 route.");
+          "Grass Energy manually to Regidrago V for the deterministic next-turn route.");
     return true;
   }
 
   void run_secret_box_turn_issue1711() {
     if (play_issue_1711_k0_treasure_turo_crispin_route()) {
       trace("POLICY", "R-MT-01; R-TAPU-01; R-CRISPIN-01; P-AXIS-01",
-            "Completed the K0 Treasure, Turo, replayed Wonder Tag, and T3 Crispin setup: " +
+            "Completed the K0 Treasure, Turo, replayed Wonder Tag, and next-turn Crispin setup: " +
                 state_line());
       return;
     }

@@ -1,3 +1,3 @@
-#define REGIDRAGO_ISSUE_962_SECTION_PROJECTION
-#include "core/issue_962_route.inc"
-#undef REGIDRAGO_ISSUE_962_SECTION_PROJECTION
+#define REGIDRAGO_ISSUE_962_SELECT_PROJECTION
+#include "composition/issue_962_route_sections.inc"
+#undef REGIDRAGO_ISSUE_962_SELECT_PROJECTION

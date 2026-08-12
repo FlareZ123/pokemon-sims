@@ -70,7 +70,7 @@
 
     // Reuse the simulator's dynamic DCI/UDP selector rather than assigning fixed
     // discard values to Guzma & Hala. The first selected payload may satisfy JIT;
-    // only one Dragon payload is ever deliberately spent by this two-card cost.
+    // the normal second-cost pass preserves all remaining payload identities.
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     const bool flex_fodder = scenario_.dci == DciProfile::MatchupFlexJit;
@@ -79,8 +79,23 @@
       state_.hand = original_hand;
       return std::nullopt;
     }
-    const auto second = choose_discard(
+    std::optional<Card> second = choose_discard(
         permit_payload && !is_payload(*first), flex_fodder);
+
+    // If the first current-turn JIT cost is a Dragon payload and ordinary DCI has
+    // no second safe card, an additional physical copy of that same payload is the
+    // lowest-loss fallback. Spending the duplicate preserves every distinct Apex
+    // Dragon attack identity while allowing Guzma & Hala's deterministic DDE + Tool
+    // compression to finish this turn instead of waiting for arbitrary new fodder.
+    // Guzma & Hala: https://www.pokemon.com/uk/pokemon-tcg/pokemon-cards/sm-series/sm12/229/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Dynamic DCI and discrete-resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3386
+    if (!second && permit_payload && is_payload(*first) &&
+        hand_count(*first) > 0) {
+      second = *first;
+    }
+
     state_.hand = original_hand;
     if (!second) return std::nullopt;
     return std::array<Card, 2>{*first, *second};

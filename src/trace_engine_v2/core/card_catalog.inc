@@ -19,6 +19,9 @@
 #include <utility>
 #include <vector>
 
+#include "../../cards/card_registry.hpp"
+#include "card_context_adapter.inc"
+
 #if defined(_WIN32)
 #include <windows.h>
 #else
@@ -29,62 +32,11 @@
 
 namespace sim {
 
-// The traceability IDs referenced below are defined in docs/RULES_TRACEABILITY.md.
-enum class Card : std::uint8_t {
-  RegidragoV,
-  RegidragoVstar,
-  Dragapult,
-  MegaDragonite,
-  DialgaGX,
-  GoodraVstar,
-  TapuLeleGX,
-  CrobatV,
-  LatiasEx,
-  MawileGX,
-  Oricorio,
-  Dipplin,
-  Appletun,
-  Pineco,
-  ForretressEx,
-  BrilliantBlender,
-  SecretBox,
-  BattleVipPass,
-  MysteriousTreasure,
-  QuickBall,
-  UltraBall,
-  EvolutionIncense,
-  PokemonCommunication,
-  EarthenVessel,
-  ProfessorsLetter,  // Paper Expanded Item: https://api.pokemontcg.io/v2/cards/xy1-123 ; enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2509
-  Dawn,
-  Grant,
-  Arven,
-  Crispin,
-  ProfessorBurnet,
-  Serena,
-  TateLiza,
-  StevensResolve,
-  Guzma,
-  Channeler,
-  Gladion,
-  Lusamine,
-  TeamYellsCheer,
-  RoseannesBackup,
-  Klara,
-  ProfessorTuro,
-  ErikasInvitation,
-  ForestSealStone,
-  WishfulBaton,
-  Powerglass,
-  FieldBlower,
-  ChaoticSwell,
-  ForestOfVitality,
-  PathToPeak,
-  HisuianHeavyBall,
-  DoubleDragonEnergy,  // Special Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; enhancement: https://github.com/FlareZ123/pokemon-sims/issues/2238
-  Grass,
-  Fire,
-};
+// Stable Card identifiers now live in src/cards/card_id.hpp. The existing names
+// and values are preserved so migrated card modules and legacy engine code coexist.
+static_assert(cards::find_definition(Card::QuickBall) != nullptr);
+static_assert(cards::find_definition(Card::QuickBall)->canonical_id == "swsh1-179");
+static_assert(cards::find_definition(Card::QuickBall)->name == "Quick Ball");
 
 constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
     {Card::RegidragoV, 4},        {Card::RegidragoVstar, 3}, {Card::Dragapult, 2},
@@ -104,6 +56,9 @@ constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
 using DeckRecipe = std::vector<std::pair<Card, int>>;
 
 constexpr std::string_view name(const Card card) {
+  if (const cards::CardDefinition* definition = cards::find_definition(card)) {
+    return definition->name;
+  }
   switch (card) {
     case Card::RegidragoV: return "Regidrago V";
     case Card::RegidragoVstar: return "Regidrago VSTAR";

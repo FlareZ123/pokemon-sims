@@ -26,15 +26,30 @@
 
   bool guzma_hala_dde_axis_available() const {
     // Double Dragon Energy is Special Energy and may attach only to Dragon Pokemon.
-    // A searched DDE is useful here only while a Regidrago V/VSTAR can receive the
-    // still-unused manual attachment and the Energy axis is unresolved.
+    // The ordinary energy-axis predicate covers an already-evolved Regidrago VSTAR.
+    // Also project a prior-turn Active Regidrago V with VSTAR in hand, because the
+    // searched DDE may attach before that legal same-turn evolution and still satisfy
+    // Apex Dragon's GGF requirement once the evolution occurs.
     // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // https://api.pokemontcg.io/v2/cards/swsh12-135
     // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // https://github.com/FlareZ123/pokemon-sims/issues/2238
-    return need_energy() && !state_.manual_energy_used &&
-           guzma_hala_has_regidrago_energy_holder() &&
-           hand_count(Card::DoubleDragonEnergy) == 0 &&
-           might_be_unseen(Card::DoubleDragonEnergy);
+    // https://github.com/FlareZ123/pokemon-sims/issues/3386
+    if (state_.manual_energy_used || !guzma_hala_has_regidrago_energy_holder() ||
+        hand_count(Card::DoubleDragonEnergy) > 0 ||
+        !might_be_unseen(Card::DoubleDragonEnergy)) {
+      return false;
+    }
+    if (need_energy()) return true;
+    if (!state_.active || state_.active->card != Card::RegidragoV ||
+        state_.active->entered_turn >= state_.turn ||
+        hand_count(Card::RegidragoVstar) == 0) {
+      return false;
+    }
+    Pokemon projected = *state_.active;
+    projected.card = Card::RegidragoVstar;
+    if (pays_apex_energy_cost(projected)) return false;
+    return attach_energy_card(projected, Card::DoubleDragonEnergy) &&
+           pays_apex_energy_cost(projected);
   }
 
   bool guzma_hala_fss_axis_available() const {

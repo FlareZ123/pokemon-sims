@@ -19,7 +19,8 @@
     // K1, dynamic DCI/JIT, Supporter contention, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed route bug: https://github.com/FlareZ123/pokemon-sims/issues/1871
     // Confirmed profile-overfitting bug: https://github.com/FlareZ123/pokemon-sims/issues/2741
-    return strict_payload_timing() && scenario_.going_first && state_.turn == 3 &&
+    // Confirmed historical-coordinate bug: https://github.com/FlareZ123/pokemon-sims/issues/3281
+    return strict_payload_timing() &&
         prizes_known() && !item_locked() && supporter_allowed() &&
         !state_.manual_energy_used && active_is_vstar() &&
         state_.active->grass == 1 && state_.active->fire == 1 && need_payload() &&

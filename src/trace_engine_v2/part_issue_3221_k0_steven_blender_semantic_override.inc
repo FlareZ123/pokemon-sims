@@ -1,8 +1,11 @@
   bool issue_3221_k0_steven_blender_route_available() const {
+    // TurnTwoItem locks Items from the player's second turn onward, so any projected
+    // Blender on T2+ is illegal: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+    // Brilliant Blender is an Item: https://api.pokemontcg.io/v2/cards/sv8-164
     const bool next_turn_items_locked =
         scenario_.locks == LockMode::FullItem ||
         scenario_.locks == LockMode::FullCombined ||
-        (scenario_.locks == LockMode::TurnTwoItem && state_.turn + 1 == 2);
+        (scenario_.locks == LockMode::TurnTwoItem && state_.turn + 1 >= 2);
 
     // This is specifically the K0 variant. Any legal K1 source, including a complete
     // Prize inspection, leaves this helper and is handled by the known-composition route.

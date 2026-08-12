@@ -1,9 +1,20 @@
 #pragma once
 
 // Single ordered composition entry point for the simulator Engine implementation.
-// The complete textual include chain lives in engine_pipeline.inc so macro lifetimes
-// remain centralized and the root body cannot drift from the canonical order.
+// Keep the full textual sequence here so macro lifetimes and continuation ownership
+// cannot drift across an additional wrapper layer.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
-// Engine pipeline: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_pipeline.inc
+// Core Engine state: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/core_state.inc
+// Opening core: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_core.inc
+// Banked-Tapu/search closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/banked_tapu_override.inc
+// Post-search lock removal: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_search_lock_removal.inc
+// Late execution/reporting: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_execution_reporting.inc
 
-#include "engine_pipeline.inc"
+#include "core_state.inc"
+#include "opening_core.inc"
+
+// begin_turn intentionally remains aliased until opening_engine_overrides.inc,
+// composed by banked_tapu_override.inc, releases the alias.
+#include "banked_tapu_override.inc"
+#include "post_search_lock_removal.inc"
+#include "late_execution_reporting.inc"

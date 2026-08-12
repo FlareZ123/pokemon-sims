@@ -1,3 +1,5 @@
+  int issue_1772_completion_turn_{0};
+
   const Pokemon* issue_1772_prepared_fire_regidrago() const {
     const auto found = std::find_if(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
@@ -25,8 +27,19 @@
     const bool dde_one_basic_finish = prepared_regi != nullptr &&
         prepared_regi->double_dragon > 0 && !pays_apex_energy_cost(*prepared_regi) &&
         basic_attachment_completes_apex(*prepared_regi, Card::Grass);
+
+    // The package is a relative bank-now / finish-next-turn route. Steven is the
+    // current Supporter, while Earthen Vessel must still be legal on the recorded
+    // following turn. Project that Item window directly instead of requiring the
+    // historical absolute T2 witness.
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Advanced Supporter and Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // JIT, K1, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed relative-continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/3278
     if (!prizes_known() || !strict_payload_timing() || !supporter_allowed() ||
-        item_locked() || state_.turn != 2 || state_.turn + 1 > scenario_.max_turn ||
+        item_locked() || item_locked_on_turn(state_.turn + 1) ||
+        state_.turn + 1 > scenario_.max_turn ||
         !state_.active || !is_basic(state_.active->card) ||
         state_.active->card == Card::RegidragoV || state_.retreat_used ||
         bench_space() == 0 || issue_1772_prepared_fire_regidrago() == nullptr ||
@@ -53,7 +66,8 @@
     // Regidrago V and VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official search, Supporter, Item, attachment, evolution, Ability, and retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // K1, dynamic DCI, supporter contention, JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1772
+    // Original confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/1772
+    // Relative-continuation follow-up: https://github.com/FlareZ123/pokemon-sims/issues/3278
     if (dde_one_basic_finish) {
       return deck_count_after_search_started(Card::Grass) > 0 &&
           deck_count_after_search_started(Card::LatiasEx) > 0 && payload_in_known_deck;
@@ -84,24 +98,42 @@
       throw std::logic_error("Issue-1772 Steven target disappeared");
     }
     shuffle(state_.deck);
+    issue_1772_completion_turn_ = state_.turn + 1;
 
     // Steven's printed "up to 3" search selects the exact Energy, promotion, and
-    // discard-payload package and then ends T2:
-    // https://api.pokemontcg.io/v2/cards/sm7-145
-    // https://api.pokemontcg.io/v2/cards/sv8-76
-    // https://api.pokemontcg.io/v2/cards/sv6-130
-    // https://github.com/FlareZ123/pokemon-sims/issues/1772
+    // discard-payload package and records the immediately following completion turn:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Official search/end-turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Original route: https://github.com/FlareZ123/pokemon-sims/issues/1772
+    // Confirmed relative-continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/3278
     trace("PLAY SUPPORTER",
           "R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
-          "Searched the deterministic T3 Grass-Latias-payload package. Turn ended.");
+          "Searched the deterministic T" +
+              std::to_string(issue_1772_completion_turn_) +
+              " Grass-Latias-payload package. Turn ended.");
     return true;
   }
 
   bool issue_1772_t3_crispin_completion_available() const {
     const bool payload_held =
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
-    return deck_seen_ && strict_payload_timing() && supporter_allowed() &&
-        !item_locked() && state_.turn == 3 && state_.active &&
+
+    // Only the package banked by this helper on the immediately preceding turn may
+    // unlock its specialized Crispin/Vessel continuation. The recorded relative turn
+    // prevents a later unrelated hand state from reactivating the route.
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official attachment, Item, Ability, evolution, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // JIT / lock / earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed relative-continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/3278
+    return issue_1772_completion_turn_ == state_.turn && deck_seen_ &&
+        strict_payload_timing() && supporter_allowed() && !item_locked() &&
+        state_.turn <= scenario_.max_turn && state_.active &&
         is_basic(state_.active->card) && state_.active->card != Card::RegidragoV &&
         !state_.retreat_used && bench_space() > 0 &&
         issue_1772_prepared_fire_regidrago() != nullptr &&

@@ -1,0 +1,83 @@
+name: Phase 2 route audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Static route-coordinate scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' > phase2-static-scan.txt
+          from pathlib import Path
+          import re
+
+          roots = [Path('src')]
+          patterns = {
+              'literal-dci-profile': re.compile(r'DciProfile::(?:StrictJit|MatchupFlexJit|NoDiscardControl)'),
+              'literal-lock-none': re.compile(r'(?:scenario_\.)?locks\s*(?:==|!=)\s*LockMode::None'),
+              'exact-turn-coordinate': re.compile(r'(?:state_\.)?turn\s*(?:==|!=)\s*[1-5]\b'),
+              'seat-coordinate': re.compile(r'scenario_\.going_first'),
+              'raw-apex-energy-shape': re.compile(r'(?:\.grass|\.fire|grass_attached|fire_attached)\s*(?:==|<|>|<=|>=)'),
+          }
+          suffixes = {'.cpp', '.inc', '.hpp', '.h'}
+          for path in sorted(p for root in roots for p in root.rglob('*') if p.is_file() and p.suffix in suffixes):
+              lines = path.read_text(encoding='utf-8').splitlines()
+              for number, line in enumerate(lines, 1):
+                  matches = [name for name, rx in patterns.items() if rx.search(line)]
+                  if not matches:
+                      continue
+                  lo = max(1, number - 2)
+                  hi = min(len(lines), number + 2)
+                  print(f'## {path}:{number} [{", ".join(matches)}]')
+                  for idx in range(lo, hi + 1):
+                      print(f'{idx:5}: {lines[idx-1]}')
+                  print()
+          PY
+          test -s phase2-static-scan.txt
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2 --target regidrago_sim
+      - name: Run three independent simulate-this passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee phase2-trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee phase2-trace-2.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee phase2-trace-3.txt
+          python - <<'PY' > phase2-critical.txt
+          from pathlib import Path
+          keep = ('PLAY SUPPORTER', 'DISCARD', 'SEARCH', 'EVOLVE', 'ATTACH', 'RETREAT', 'ABILITY', 'READY', 'PRIZE', 'HOLD')
+          for path in [Path('phase2-trace-1.txt'), Path('phase2-trace-2.txt'), Path('phase2-trace-3.txt')]:
+              print(f'## {path.name}')
+              for line in path.read_text(encoding='utf-8').splitlines():
+                  if any(token in line for token in keep):
+                      print(line)
+              print()
+          PY
+          grep -q 'READY' phase2-trace-1.txt
+          grep -q 'READY' phase2-trace-2.txt
+          grep -q 'READY' phase2-trace-3.txt
+      - name: Upload phase 2 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase2-audit-${{ github.run_attempt }}
+          path: |
+            phase2-static-scan.txt
+            phase2-trace-*.txt
+            phase2-critical.txt
+          if-no-files-found: error

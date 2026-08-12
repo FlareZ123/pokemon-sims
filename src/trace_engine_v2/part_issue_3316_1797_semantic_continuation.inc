@@ -161,7 +161,13 @@
     }
     shuffle(state_.deck);
 
-    if (searched_fire) {
+    // Crispin attaches "the other" searched Energy. A one-card search is legal,
+    // but after that card goes to the hand there is no second searched Energy for
+    // Crispin to attach, so the route must spend the normal manual attachment.
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // "Up to" and partial-resolution rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed one-search attachment bug: https://github.com/FlareZ123/pokemon-sims/issues/3334
+    if (searched_fire && searched_grass) {
       remove_one(state_.hand, Card::Fire);
       ++state_.active->fire;
       trace("CRISPIN ATTACH", "R-CRISPIN-01; R-GAME-ENERGY",
@@ -174,7 +180,7 @@
       ++state_.active->fire;
       state_.manual_energy_used = true;
       trace("ATTACH ENERGY", "R-GAME-ENERGY; R-CRISPIN-01",
-            "Used the held Fire because the intervening draw removed Fire from Crispin's deck targets.");
+            "Used the held Fire because Crispin did not search a second Basic Energy type to attach.");
     }
     trace("PLAY SUPPORTER", "R-CRISPIN-01; R-GAME-SUPPORTER",
           std::string("Crispin searched ") +

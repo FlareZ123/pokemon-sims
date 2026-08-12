@@ -1,3 +1,5 @@
+#pragma once
+
 // Ordered late turn-execution, scenario-registry, and reporting composition.
 // Keep these aliases live through part_016 exactly as the historical root wrapper
 // did so the translation unit remains behaviorally identical.

@@ -75,6 +75,9 @@ void test_semantic_admission() {
   expect(visible(sim::DciProfile::StrictJit, sim::LockMode::None,
                  true, wonder_state(3), 4),
          "Equivalent later-turn Wonder Tag route was suppressed");
+  expect(visible(sim::DciProfile::StrictJit, sim::LockMode::None,
+                 false, wonder_state(1), 2),
+         "Legal going-second T1 Wonder Tag bank was suppressed");
 }
 
 void test_semantic_boundaries() {
@@ -83,6 +86,8 @@ void test_semantic_boundaries() {
   // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Turn-two Item lock starts on the player's second turn, so a T1 bank must
+  // project Treasure legality to its T2 continuation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
   // Scenario lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
   // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3173
   expect(!visible(sim::DciProfile::NoDiscardControl, sim::LockMode::None,
@@ -95,6 +100,9 @@ void test_semantic_boundaries() {
   expect(!visible(sim::DciProfile::StrictJit, sim::LockMode::FullItem,
                   true, wonder_state(2), 3),
          "Item lock admitted the Treasure-dependent next turn");
+  expect(!visible(sim::DciProfile::StrictJit, sim::LockMode::TurnTwoItem,
+                  false, wonder_state(1), 2),
+         "Scheduled T2 Item lock admitted a T1 bank whose Treasure is locked next turn");
   expect(!visible(sim::DciProfile::StrictJit, sim::LockMode::FullSupporter,
                   true, wonder_state(2), 3),
          "Supporter lock admitted Wonder Tag into Steven");

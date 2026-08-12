@@ -25,7 +25,7 @@
   }
 
   bool guzma_hala_dde_axis_available() const {
-    // Double Dragon Energy is Special Energy and may attach only to Dragon Pokémon.
+    // Double Dragon Energy is Special Energy and may attach only to Dragon Pokemon.
     // A searched DDE is useful here only while a Regidrago V/VSTAR can receive the
     // still-unused manual attachment and the Energy axis is unresolved.
     // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
@@ -38,7 +38,7 @@
   }
 
   bool guzma_hala_fss_axis_available() const {
-    // Forest Seal Stone supplies a one-per-game any-card search from a Pokémon V.
+    // Forest Seal Stone supplies a one-per-game any-card search from a Pokemon V.
     // Do not spend the two-card Guzma & Hala bonus for a Tool whose VSTAR Power is
     // already spent or whose holder is unavailable.
     // https://api.pokemontcg.io/v2/cards/swsh12-156
@@ -51,7 +51,7 @@
 
   bool guzma_hala_stadium_unlock_available() const {
     // Chaotic Swell can replace the modeled Path to the Peak and restore Rule Box
-    // Pokémon Abilities. Stadium use is independent of Item lock.
+    // Pokemon Abilities. Stadium use is independent of Item lock.
     // https://api.pokemontcg.io/v2/cards/sm12-187
     // https://api.pokemontcg.io/v2/cards/swsh6-148
     // https://www.pokemon.com/us/pokemon-tcg/rules
@@ -59,6 +59,35 @@
            state_.stadium != Stadium::ChaoticSwell &&
            hand_count(Card::ChaoticSwell) == 0 &&
            might_be_unseen(Card::ChaoticSwell);
+  }
+
+  bool guzma_hala_payload_cost_can_finish_this_turn() const {
+    if (can_play_payload_this_turn()) return true;
+
+    // The generic JIT gate sees the board before Guzma & Hala searches. Extend it
+    // only for the complete route that Guzma & Hala itself creates: a prior-turn
+    // Active Regidrago V can evolve from the held VSTAR, then the searched DDE can
+    // use the still-open manual attachment and satisfy GGF. This projection uses
+    // only current public hand/board state plus the same K0 DDE availability that
+    // admits the Supporter; target selection still waits for the legal K1 search.
+    // Guzma & Hala: https://www.pokemon.com/uk/pokemon-tcg/pokemon-cards/sm-series/sm12/229/
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Dynamic JIT and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3386
+    if (!strict_payload_timing() || !need_payload() ||
+        state_.manual_energy_used || !state_.active ||
+        state_.active->card != Card::RegidragoV ||
+        state_.active->entered_turn >= state_.turn ||
+        hand_count(Card::RegidragoVstar) == 0 ||
+        !guzma_hala_dde_axis_available()) {
+      return false;
+    }
+
+    Pokemon projected = *state_.active;
+    projected.card = Card::RegidragoVstar;
+    return attach_energy_card(projected, Card::DoubleDragonEnergy) &&
+           pays_apex_energy_cost(projected);
   }
 
   std::optional<std::array<Card, 2>> guzma_hala_bonus_costs(
@@ -120,7 +149,7 @@
     // hand resource once Guzma & Hala has been selected. After the legal inspection
     // establishes K1, take the best modeled Stadium that actually remains in deck
     // instead of deliberately failing a known productive search. Chaotic Swell is
-    // preferred because it is safe into the shell's own Rule Box Pokémon; Forest of
+    // preferred because it is safe into the shell's own Rule Box Pokemon; Forest of
     // Vitality is the next generally useful Stadium, and Path to the Peak remains a
     // legal last-resort hand resource when it is the only searchable Stadium.
     // Guzma & Hala: https://www.pokemon.com/uk/pokemon-tcg/pokemon-cards/sm-series/sm12/229/
@@ -186,7 +215,7 @@
     const bool want_unlock = guzma_hala_stadium_unlock_available();
     const bool want_fss = guzma_hala_fss_axis_available();
     const bool want_dde = guzma_hala_dde_axis_available();
-    const bool permit_payload = can_play_payload_this_turn();
+    const bool permit_payload = guzma_hala_payload_cost_can_finish_this_turn();
     const auto costs = guzma_hala_bonus_costs(permit_payload);
     const bool bonus_available = costs.has_value();
 

@@ -14,9 +14,19 @@
   }
 
   bool issue_2622_steven_latias_blender_package_available() const {
+    // StrictJit and MatchupFlexJit share the repository's same-ready-turn Dragon
+    // payload requirement. This route already proves its physical next-turn package,
+    // so admit it through the shared timing predicate instead of one enum identity.
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Advanced evolution, Ability, and Retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Same-ready-turn JIT / K1 / priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Original route / profile-admission follow-up: https://github.com/FlareZ123/pokemon-sims/issues/2622 https://github.com/FlareZ123/pokemon-sims/issues/3270
     if (!deck_seen_ || !supporter_allowed() ||
         hand_count(Card::StevensResolve) == 0 ||
-        scenario_.dci != DciProfile::StrictJit ||
+        !strict_payload_timing() ||
         state_.turn >= scenario_.max_turn || !state_.active ||
         !is_basic(state_.active->card) ||
         state_.active->card == Card::RegidragoV ||
@@ -64,8 +74,9 @@
     // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Basic Energy attachment, evolution, Ability, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1, strict-JIT, and earliest deterministic route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2622
+    // K1, same-ready-turn JIT, and earliest deterministic route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Original confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/2622
+    // Confirmed profile-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3270
     return payloads_remaining >= 2;
   }
 

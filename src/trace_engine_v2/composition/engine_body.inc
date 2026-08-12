@@ -1,37 +1,17 @@
 #pragma once
 
 // Single ordered composition spine for the simulator Engine implementation.
-// Core and late-reporting stages live here directly so the legacy forwarding
-// wrappers are unnecessary. Preserve this textual include sequence and the macro
-// lifetimes because several legacy parts deliberately cross member boundaries.
+// Core and late-reporting stages live in named composition units so the legacy
+// forwarding wrappers are unnecessary. Preserve this textual include sequence and
+// the macro lifetimes because several legacy parts deliberately cross boundaries.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
-// Card catalog: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
-// Card classification: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
-// Simulator state: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulator_state.inc
+// Core Engine state composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/core_state.inc
 // Opening, search, Steven/Blender, Supporter, and VSTAR composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_engine_overrides.inc
-// Part 010 search/Steven source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010.inc
 // Search-item closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc
-// Post-search Supporter, Legacy Star, and late search-item composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
-// Late turn source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
+// Post-search lock-removal composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_search_lock_removal.inc
+// Late execution/reporting composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_execution_reporting.inc
 
-// Keep the legacy include guards while composing the three core fragments directly.
-// This removes one forwarding .inc layer without changing textual include order.
-#ifndef SIM_TRACE_SIMULATOR_STATE_INCLUDED
-#define SIM_TRACE_SIMULATOR_STATE_INCLUDED
-
-#ifndef SIM_TRACE_CARD_CATALOG_INCLUDED
-#define SIM_TRACE_CARD_CATALOG_INCLUDED
-#include "../core/card_catalog.inc"
-#endif
-
-#ifndef SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
-#define SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
-#include "../core/card_classification.inc"
-#endif
-
-#include "../core/simulator_state.inc"
-
-#endif  // SIM_TRACE_SIMULATOR_STATE_INCLUDED
+#include "core_state.inc"
 
 #define begin_turn begin_turn_original
 #define might_be_unseen might_be_unseen_empty_deck_original
@@ -74,72 +54,5 @@
 // https://github.com/FlareZ123/pokemon-sims/issues/3089
 #include "../core/banked_tapu_retreat_policy.inc"
 
-// #3057 must wrap the dedicated Pineco/Secret Box dispatcher as well as the
-// historical generic turn source. Compose its state predicates before the Pineco
-// policy and route only the two lock-removal actions through the narrow wrappers.
-// Forest / Field Blower / Secret Box: https://api.pokemontcg.io/v2/cards/me1-117 https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/sv6-163
-// Refined bug: https://github.com/FlareZ123/pokemon-sims/issues/3057
-#include "../part_issue_3057_swell_field_blower_route.inc"
-#if defined(play_chaotic_swell) || defined(play_field_blower)
-#error "Issue-3057 Pineco composition requires lock-removal aliases to be undefined"
-#endif
-#define play_chaotic_swell play_chaotic_swell_issue_3057
-#define play_field_blower play_field_blower_issue_3057
-#include "post_014a_overrides.inc"
-#undef play_field_blower
-#undef play_chaotic_swell
-
-// Ordered late turn-execution, scenario-registry, and reporting composition.
-// Keep these aliases live through part_016 exactly as the historical root wrapper
-// did so the translation unit remains behaviorally identical.
-// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
-#if defined(play_field_blower) || defined(run_turn) || defined(hand_count) || \
-    defined(play_items_until_stable)
-#error "Late-turn composition requires execution aliases to be undefined on entry"
-#endif
-#define play_field_blower play_field_blower_original
-#define run_turn run_turn_original
-#define hand_count hand_count_issue_3057
-#define play_items_until_stable play_items_until_stable_issue_3057
-#include "../part_014c.inc"
-#undef play_items_until_stable
-#undef hand_count
-#undef ability_available_for_pokemon
-#ifdef ability_available_for_pokemon
-#error "Garbodor composition leaked ability_available_for_pokemon"
-#endif
-
-// part_014c defines the historical scenario registry and leaves only the final
-// return/brace of scenario_by_label() for the first two lines of part_015. The
-// Garbodor wrapper is composed at namespace scope through part_forretress_ex_combo.inc.
-// Route reporting and the production CLI through the appended two rows while the
-// historical public registry remains available to focused tests.
-// Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
-// Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142
-// Model specification: https://github.com/FlareZ123/pokemon-sims/issues/2808
-#if defined(all_scenarios) || defined(scenario_by_label)
-#error "Scenario-registry composition requires aliases to be undefined on entry"
-#endif
-#define all_scenarios all_scenarios_with_garbodor
-#define scenario_by_label scenario_by_label_with_garbodor
-#include "../part_015.inc"
-
-// play_field_blower, run_turn, and the scenario aliases intentionally remain live
-// for part_016.inc.
-// Translation-unit closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
-#include "../part_016.inc"
-
-// Release the late-turn textual-composition aliases after part_016 closes the
-// historical execution/reporting chain. Keep the leak guards beside the undefs.
-// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
-#undef scenario_by_label
-#undef all_scenarios
-#if defined(all_scenarios) || defined(scenario_by_label)
-#error "Scenario-registry composition leaked an alias"
-#endif
-#undef run_turn
-#undef play_field_blower
-#if defined(play_field_blower) || defined(run_turn) || defined(hand_count) || \
-    defined(play_items_until_stable)
-#error "Late-turn composition leaked an execution alias"
-#endif
+#include "post_search_lock_removal.inc"
+#include "late_execution_reporting.inc"

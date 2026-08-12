@@ -1,7 +1,10 @@
 #pragma once
 
-// Opening legacy fragments and the Garbotoxin-aware Ability alias remain together
-// so their temporary macro lifetimes are owned by one composition stage.
+// Opening-stage composition owns three ordered macro phases. Keep each phase's
+// aliases local to this stage while preserving the historical textual include order.
+// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
+
+// Phase 1: open the legacy turn body and expose the Garbotoxin-aware Ability alias.
 #if defined(begin_turn) || defined(might_be_unseen)
 #error "Opening composition requires begin_turn and might_be_unseen aliases to be undefined on entry"
 #endif
@@ -14,6 +17,7 @@
 #endif
 #define ability_available_for_pokemon ability_available_for_pokemon_garbodor
 
+// Phase 2: complete the legacy member continuation before opening overrides.
 // part_003.inc opens begin_turn(), part_004.inc completes it and later opens
 // state_line(), and part_005.inc closes state_line() before the first override
 // member is introduced.
@@ -30,7 +34,7 @@
 #error "Opening composition leaked the temporary might_be_unseen alias"
 #endif
 
-// Centralize the banked-Tapu override's macro lifetime and replacement member.
+// Phase 3: compose the banked-Tapu replacement at the post-search member boundary.
 // Preserve this order because part_014a closes run_search_items_one_step() before
 // the completed replacement policy is composed at the safe class-member boundary.
 // DDE-aware Apex payment / confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/3089

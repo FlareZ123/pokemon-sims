@@ -58,7 +58,7 @@
     // Original route bug: https://github.com/FlareZ123/pokemon-sims/issues/1874
     // Shared current-turn JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Confirmed profile-gate bug: https://github.com/FlareZ123/pokemon-sims/issues/2759
-    return strict_payload_timing() && state_.turn == 3 &&
+    return strict_payload_timing() &&
         prizes_known() && !item_locked() && !state_.manual_energy_used &&
         deck_search_available() && active_is_vstar() && state_.active &&
         state_.active->grass == 2 && state_.active->fire == 0 &&

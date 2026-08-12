@@ -100,9 +100,26 @@
       return std::find(engine.state_.deck.begin(), engine.state_.deck.end(), card) !=
              engine.state_.deck.end();
     };
-    if (plan.want_stadium_unlock && in_deck(Card::ChaoticSwell)) {
+
+    // The printed Stadium search is part of the base effect and costs no additional
+    // hand resource once Guzma & Hala has been selected. After the legal inspection
+    // establishes K1, take the best modeled Stadium that actually remains in deck
+    // instead of deliberately failing a known productive search. Chaotic Swell is
+    // preferred because it is safe into the shell's own Rule Box Pokémon; Forest of
+    // Vitality is the next generally useful Stadium, and Path to the Peak remains a
+    // legal last-resort hand resource when it is the only searchable Stadium.
+    // Guzma & Hala: https://www.pokemon.com/uk/pokemon-tcg/pokemon-cards/sm-series/sm12/229/
+    // Chaotic Swell: https://api.pokemontcg.io/v2/cards/sm12-187
+    // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+    // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+    if (in_deck(Card::ChaoticSwell)) {
       targets.stadium = Card::ChaoticSwell;
+    } else if (in_deck(Card::ForestOfVitality)) {
+      targets.stadium = Card::ForestOfVitality;
+    } else if (in_deck(Card::PathToPeak)) {
+      targets.stadium = Card::PathToPeak;
     }
+
     if (plan.want_fss && in_deck(Card::ForestSealStone)) {
       targets.tool = Card::ForestSealStone;
     }

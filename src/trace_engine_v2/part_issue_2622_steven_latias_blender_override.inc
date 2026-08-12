@@ -16,7 +16,7 @@
   bool issue_2622_steven_latias_blender_package_available() const {
     if (!deck_seen_ || !supporter_allowed() ||
         hand_count(Card::StevensResolve) == 0 ||
-        scenario_.dci != DciProfile::StrictJit ||
+        !same_ready_turn_payload_timing(scenario_.dci) ||
         state_.turn >= scenario_.max_turn || !state_.active ||
         !is_basic(state_.active->card) ||
         state_.active->card == Card::RegidragoV ||
@@ -64,8 +64,10 @@
     // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Basic Energy attachment, evolution, Ability, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1, strict-JIT, and earliest deterministic route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // StrictJit and MatchupFlexJit share same-ready-turn payload timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // K1 and earliest deterministic route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2622
+    // Profile-admission regression: https://github.com/FlareZ123/pokemon-sims/issues/3270
     return payloads_remaining >= 2;
   }
 

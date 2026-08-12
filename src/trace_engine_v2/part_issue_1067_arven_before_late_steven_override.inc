@@ -1,4 +1,11 @@
 #undef play_steven
+#if defined(TRACE_ENGINE_FINAL_PLAY_STEVEN_ALIAS)
+// The final Steven dispatcher is defined by the issue-2622 overlay included below.
+// Let composition layers rename that one public method without interfering with
+// the issue-1821 -> issue-1030 -> issue-2622 internal wrapper chain.
+// C++ macro replacement: https://eel.is/c++draft/cpp.replace
+#define play_steven TRACE_ENGINE_FINAL_PLAY_STEVEN_ALIAS
+#endif
 
 #include "core/late_steven_burnet_route_policy.inc"
 

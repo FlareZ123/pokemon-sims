@@ -1,10 +1,6 @@
   bool issue_3316_1797_bank_continuation() {
     if (issue_1797_finish_turn_ != 0) return false;
 
-    const bool next_turn_items_locked =
-        scenario_.locks == LockMode::TurnTwoItem ||
-        scenario_.locks == LockMode::FullItem ||
-        scenario_.locks == LockMode::FullCombined;
     const bool tapu_in_play = in_play(Card::TapuLeleGX);
     const bool quick_ball_paid = count_of(state_.discard, Card::QuickBall) > 0 &&
         (count_of(state_.discard, Card::TateLiza) > 0 ||
@@ -34,7 +30,8 @@
     const bool route_available = strict_payload_timing() &&
         state_.turn + 1 <= scenario_.max_turn && prizes_known() &&
         supporter_allowed() && !state_.manual_energy_used && !item_locked() &&
-        !next_turn_items_locked && state_.active &&
+        !item_locked_on_turn(state_.turn + 1) && // Persistent projected Item lock: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+        state_.active &&
         state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn &&
         state_.active->grass == 1 && state_.active->fire == 0 && tapu_in_play &&

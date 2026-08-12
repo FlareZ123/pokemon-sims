@@ -1,5 +1,7 @@
 #undef play_steven
 
+#include "core/late_steven_burnet_route_policy.inc"
+
   bool known_hand_or_deck_card_available(const Card card) const {
     // Once the deck is known, route package checks should express card access once
     // rather than duplicate hand-or-known-deck predicates at every call site.
@@ -65,6 +67,7 @@
     // Earliest deterministic route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2622
     if (issue_2622_steven_latias_blender_package_available()) return true;
+    if (late_steven_burnet_route_available()) return true; // Semantic JIT/lock route: https://github.com/FlareZ123/pokemon-sims/issues/3223
     return should_play_steven_issue1067_original();
   }
 

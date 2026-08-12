@@ -56,13 +56,14 @@
 #undef play_steven
 
 #define should_play_steven should_play_steven_issue1067_original
-#define play_steven play_steven_issue3197_original
 #include "../part_issue_1030_steven_turo_override.inc"
-#undef play_steven
 #undef should_play_steven
 
 #define should_play_steven should_play_steven_issue3197_original
+#define TRACE_ENGINE_FINAL_PLAY_STEVEN_ALIAS play_steven_issue3197_original
 #include "../part_issue_1067_arven_before_late_steven_override.inc"
+#undef TRACE_ENGINE_FINAL_PLAY_STEVEN_ALIAS
+#undef play_steven
 #undef should_play_steven
 #include "../part_issue_3197_steven_treasure_crispin_semantic_override.inc"
 

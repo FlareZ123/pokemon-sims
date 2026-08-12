@@ -61,6 +61,26 @@ void test_seed_461_uses_complete_t2_route() {
          "Seed 461 did not execute the K1 Treasure-Latias-Vessel route.");
 }
 
+void test_seed_461_matchup_flex_uses_complete_t2_route() {
+  sim::TraceLog trace{true, {}};
+  const sim::TrialOutcome outcome = run_seed("matchup-flex-jit/go-second", trace);
+
+  // MatchupFlexJit and StrictJit share the same ready-turn payload timing, and
+  // Brilliant Blender supplies the Dragon payload on the T2 ready turn:
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Confirmed profile bug: https://github.com/FlareZ123/pokemon-sims/issues/3245
+  expect(outcome.first_ready_turn == 2 && !outcome.setup_failed,
+         "Seed 461 did not reach MatchupFlex-JIT readiness on T2.");
+  expect(trace_contains(trace, "Quick Ball issue-1705 route") &&
+             trace_contains(trace, "searched Latias ex") &&
+             trace_contains(trace, "Blender-replaced Dragapult ex") &&
+             trace_contains(trace, "complete T2 route") &&
+             trace_contains(trace, "T2 | READY"),
+         "Seed 461 did not execute the MatchupFlex Treasure-Latias-Vessel route.");
+}
+
 void test_rule_box_lock_preserves_route_costs() {
   sim::TraceLog trace{true, {}};
   (void)run_seed("strict-jit-rulebox-ability-lock/go-second", trace);
@@ -73,6 +93,7 @@ void test_rule_box_lock_preserves_route_costs() {
 int main() {
   try {
     test_seed_461_uses_complete_t2_route();
+    test_seed_461_matchup_flex_uses_complete_t2_route();
     test_rule_box_lock_preserves_route_costs();
     std::cout << "Issue 1705 Treasure-Latias-Vessel tests passed\n";
     return 0;

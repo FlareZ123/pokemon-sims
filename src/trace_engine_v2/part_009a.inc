@@ -67,33 +67,58 @@
            hand_count(Card::ErikasInvitation) > 0;
   }
 
-bool play_mysterious_treasure(const bool permit_payload) {
-  if (item_locked() || hand_count(Card::MysteriousTreasure) == 0) return false;
-  const bool bank_for_deterministic_next_turn_payload =
-      issue_1598_bank_prized_treasure_ && strict_payload_timing() &&
-      state_.turn < scenario_.max_turn && state_.manual_energy_used &&
-      state_.active && state_.active->card == Card::RegidragoV &&
-      state_.active->entered_turn < state_.turn &&
-      state_.active->grass >= 2 && state_.active->fire == 0 &&
-      need_vstar() && need_payload() && hand_count(Card::Fire) > 0 &&
-      std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
-      might_be_unseen(Card::RegidragoVstar);
-  if (bank_for_deterministic_next_turn_payload) {
-    // Preserve the Treasure recovered by Gladion for the exact public route.
-    // Playing it now would discard the held Dragon one turn before strict-JIT
-    // permits that cost and would make T3 depend on an unknown Legacy Star mill.
-    // On the next turn, attach Fire, discard the held Dragon to Treasure, search
-    // VSTAR, evolve the prior-turn Active, and reach deterministic readiness:
-    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
-    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-    // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
-    // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
-    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Core Item, discard, attachment, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // Dynamic DCI and strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1598
-    return false;
+  bool mysterious_treasure_search_has_target() const {
+    // Mysterious Treasure searches only Psychic or Dragon Pokémon:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // K0 keeps unaccounted fixed-list targets plausible, while K1 uses the inspected deck exactly:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    if (prizes_known()) {
+      return std::any_of(state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic);
+    }
+    return std::any_of(recipe_.begin(), recipe_.end(), [this](const auto& entry) {
+      return is_dragon_or_psychic(entry.first) && might_be_unseen(entry.first);
+    });
   }
+
+  static constexpr std::array<Card, 10> preferred_mysterious_treasure_targets() {
+    // Mysterious Treasure searches Psychic or Dragon Pokémon, and Appletun is a legal Dragon target:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/sv8-140
+    // The ordering preserves the repository's earliest-ready-route priority:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    return {Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx,
+            Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
+            Card::DialgaGX, Card::Appletun, Card::TapuLeleGX, Card::Oricorio};
+  }
+
+  bool play_mysterious_treasure(const bool permit_payload) {
+    if (item_locked() || hand_count(Card::MysteriousTreasure) == 0) return false;
+    const bool bank_for_deterministic_next_turn_payload =
+        issue_1598_bank_prized_treasure_ && strict_payload_timing() &&
+        state_.turn < scenario_.max_turn && state_.manual_energy_used &&
+        state_.active && state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        state_.active->grass >= 2 && state_.active->fire == 0 &&
+        need_vstar() && need_payload() && hand_count(Card::Fire) > 0 &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
+        might_be_unseen(Card::RegidragoVstar);
+    if (bank_for_deterministic_next_turn_payload) {
+      // Preserve the Treasure recovered by Gladion for the exact public route.
+      // Playing it now would discard the held Dragon one turn before strict-JIT
+      // permits that cost and would make T3 depend on an unknown Legacy Star mill.
+      // On the next turn, attach Fire, discard the held Dragon to Treasure, search
+      // VSTAR, evolve the prior-turn Active, and reach deterministic readiness:
+      // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+      // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Core Item, discard, attachment, and evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Dynamic DCI and strict-JIT timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1598
+      return false;
+    }
     // is_payload is the A/S readiness set. Dipplin is a legal Dragon search
     // target, while maintainer policy keeps it out of payload-discard routing:
     // https://api.pokemontcg.io/v2/cards/sv6-127
@@ -109,24 +134,7 @@ bool play_mysterious_treasure(const bool permit_payload) {
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
                                   blender_energy_axis_can_finish_this_turn() &&
                                   std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
-    // Mysterious Treasure searches for a Psychic or Dragon Pokémon. At K0, a target
-    // remains plausible only when a fixed-list copy is not accounted for in public
-    // zones. At K1, the inspected deck is checked exactly before paying the cost:
-    // https://api.pokemontcg.io/v2/cards/sm6-113
-    // Appletun is an off-recipe Dragon target that the exact K1 deck must admit:
-    // https://api.pokemontcg.io/v2/cards/sv8-140
-    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
-    // https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-    // https://github.com/FlareZ123/pokemon-sims/issues/693
-    // https://github.com/FlareZ123/pokemon-sims/issues/2188
-    const bool search_has_target = prizes_known()
-        ? std::any_of(state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic)
-        : std::any_of(recipe_.begin(), recipe_.end(), [this](const auto& entry) {
-            return is_dragon_or_psychic(entry.first) && might_be_unseen(entry.first);
-          });
-    if (!search_has_target) return false;
+    if (!mysterious_treasure_search_has_target()) return false;
     // Mysterious Treasure searches only the deck after paying its discard cost.
     // K0 keeps fixed-list targets plausible; K1 requires the inspected deck to
     // contain the desired Psychic or Dragon Pokémon before spending both cards:
@@ -182,19 +190,19 @@ bool play_mysterious_treasure(const bool permit_payload) {
       cost = choose_discard(can_jit_discard, true, true,
                             Card::MysteriousTreasure);
     }
-if (!cost && want_regi && issue_1605_arven_redundant_payload_route_) {
-  // Arven already established K1 and selected this exact one-discard search
-  // Item. Spend only the duplicated payload identity, after all ordinary DCI
-  // costs fail, while two distinct Dragon payloads survive for later strict-JIT:
-  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-  // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
-  // Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
-  // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
-  // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1605
-  cost = issue_1605_redundant_payload_cost();
-}
-if (!cost && want_regi && issue_1304_t1_treasure_erika_cost_available()) {
+    if (!cost && want_regi && issue_1605_arven_redundant_payload_route_) {
+      // Arven already established K1 and selected this exact one-discard search
+      // Item. Spend only the duplicated payload identity, after all ordinary DCI
+      // costs fail, while two distinct Dragon payloads survive for later strict-JIT:
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
+      // Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136
+      // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+      // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1605
+      cost = issue_1605_redundant_payload_cost();
+    }
+    if (!cost && want_regi && issue_1304_t1_treasure_erika_cost_available()) {
       // Erika's Invitation cannot advance this single-player setup state, while
       // Mysterious Treasure establishes the prior-turn Regidrago V required by
       // the complete T2 Forest Seal Stone plus Exploding Energy route:
@@ -237,11 +245,7 @@ if (!cost && want_regi && issue_1304_t1_treasure_erika_cost_available()) {
     // https://api.pokemontcg.io/v2/cards/sm6-113
     // https://api.pokemontcg.io/v2/cards/sv8-140
     // https://github.com/FlareZ123/pokemon-sims/issues/1253
-    const std::array<Card, 10> targets{Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx,
-                                       Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
-                                       Card::DialgaGX, Card::Appletun, Card::TapuLeleGX,
-                                       Card::Oricorio};
-    for (const Card target : targets) {
+    for (const Card target : preferred_mysterious_treasure_targets()) {
       const bool desired = (target == Card::RegidragoV && want_regi) ||
                            (target == Card::RegidragoVstar && want_vstar) ||
                            (target == Card::LatiasEx && want_latias) ||

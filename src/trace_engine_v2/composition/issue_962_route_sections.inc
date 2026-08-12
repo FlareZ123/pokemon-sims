@@ -17,10 +17,9 @@
 
 #include "../core/issue_962_route.inc"
 
-#if defined(REGIDRAGO_ISSUE_962_SELECT_ELIGIBILITY)
+// Only one section macro can be defined by the selector guard above. Unconditionally
+// clearing all three keeps this re-includable composition boundary symmetric and
+// removes duplicated selector branching from cleanup.
 #undef REGIDRAGO_ISSUE_962_SECTION_ELIGIBILITY
-#elif defined(REGIDRAGO_ISSUE_962_SELECT_PROJECTION)
 #undef REGIDRAGO_ISSUE_962_SECTION_PROJECTION
-#else
 #undef REGIDRAGO_ISSUE_962_SECTION_DECISION
-#endif

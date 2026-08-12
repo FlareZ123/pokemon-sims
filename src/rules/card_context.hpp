@@ -12,6 +12,7 @@ namespace sim::rules {
 class CardContext final {
  public:
   using HandCountFn = int (*)(const void*, Card);
+  using MoveHandToDiscardFn = bool (*)(void*, Card);
   using DiscardFromHandFn = bool (*)(void*, Card, std::string_view,
                                      std::string_view);
   using SearchDeckToHandFn = bool (*)(void*, Card);
@@ -20,6 +21,7 @@ class CardContext final {
   using BeginDeckSearchFn = void (*)(void*, std::string_view);
 
   constexpr CardContext(void* opaque, HandCountFn hand_count_fn,
+                        MoveHandToDiscardFn move_hand_to_discard_fn,
                         DiscardFromHandFn discard_from_hand_fn,
                         SearchDeckToHandFn search_deck_to_hand_fn,
                         ShuffleDeckFn shuffle_deck_fn,
@@ -27,6 +29,7 @@ class CardContext final {
                         BeginDeckSearchFn begin_deck_search_fn)
       : opaque_(opaque),
         hand_count_(hand_count_fn),
+        move_hand_to_discard_(move_hand_to_discard_fn),
         discard_from_hand_(discard_from_hand_fn),
         search_deck_to_hand_(search_deck_to_hand_fn),
         shuffle_deck_(shuffle_deck_fn),
@@ -35,6 +38,10 @@ class CardContext final {
 
   int hand_count(const Card card) const {
     return hand_count_(static_cast<const void*>(opaque_), card);
+  }
+
+  bool move_hand_to_discard(const Card card) {
+    return move_hand_to_discard_(opaque_, card);
   }
 
   bool discard_from_hand(const Card card, const std::string_view reason,
@@ -59,6 +66,7 @@ class CardContext final {
  private:
   void* opaque_;
   HandCountFn hand_count_;
+  MoveHandToDiscardFn move_hand_to_discard_;
   DiscardFromHandFn discard_from_hand_;
   SearchDeckToHandFn search_deck_to_hand_;
   ShuffleDeckFn shuffle_deck_;

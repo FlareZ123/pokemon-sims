@@ -1,3 +1,5 @@
+#pragma once
+
 // Ordered late turn-execution, scenario-registry, and reporting composition.
 // Keep these aliases live through part_016 exactly as the historical root wrapper
 // did so the translation unit remains behaviorally identical.
@@ -14,15 +16,12 @@
 #undef play_items_until_stable
 #undef hand_count
 #undef ability_available_for_pokemon
-#ifdef ability_available_for_pokemon
-#error "Garbodor composition leaked ability_available_for_pokemon"
-#endif
 
 // part_014c defines the historical scenario registry and leaves only the final
 // return/brace of scenario_by_label() for the first two lines of part_015. The
 // Garbodor wrapper is composed at namespace scope through part_forretress_ex_combo.inc.
-// Route reporting and the production CLI through the appended two rows while the
-// historical public registry remains available to focused tests.
+// Route reporting and the production CLI continue through the appended two rows while
+// the historical public registry remains available to focused tests.
 // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
 // Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142
 // Model specification: https://github.com/FlareZ123/pokemon-sims/issues/2808
@@ -38,17 +37,10 @@
 // Translation-unit closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
 #include "../part_016.inc"
 
-// Release the late-turn textual-composition aliases after part_016 closes the
-// historical execution/reporting chain. Keep the leak guards beside the undefs.
-// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
+// Release every alias owned by this composition unit in one place after part_016
+// closes the historical execution/reporting chain. Entry guards above validate the
+// ownership boundary before these aliases are introduced.
 #undef scenario_by_label
 #undef all_scenarios
-#if defined(all_scenarios) || defined(scenario_by_label)
-#error "Scenario-registry composition leaked an alias"
-#endif
 #undef run_turn
 #undef play_field_blower
-#if defined(play_field_blower) || defined(run_turn) || defined(hand_count) || \
-    defined(play_items_until_stable)
-#error "Late-turn composition leaked an execution alias"
-#endif

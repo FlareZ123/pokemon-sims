@@ -1,6 +1,9 @@
 bool play_issue_1705_t1_treasure_latias_vessel_route() {
+  const bool same_turn_payload_profile =
+      scenario_.dci == DciProfile::StrictJit ||
+      scenario_.dci == DciProfile::MatchupFlexJit; // Same-ready-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
   const bool public_entry =
-      scenario_.dci == DciProfile::StrictJit &&
+      same_turn_payload_profile &&
       scenario_.locks == LockMode::None && !scenario_.going_first &&
       state_.turn == 1 && supporter_allowed() && !item_locked() &&
       !state_.manual_energy_used && state_.active &&
@@ -54,7 +57,7 @@ bool play_issue_1705_t1_treasure_latias_vessel_route() {
   // K1 proves that singleton Field Blower has no modeled role in this lock-free
   // setup and that Brilliant Blender deterministically replaces the early Dragapult
   // payload on the T2 ready turn. These exact replacement proofs make both costs
-  // admissible under strict JIT while every incomplete route preserves the cards:
+  // admissible under same-ready-turn JIT while every incomplete route preserves the cards:
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
   // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
   // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
@@ -116,14 +119,15 @@ bool play_issue_1705_t1_treasure_latias_vessel_route() {
   // Steven ends T1 after banking the exact VSTAR, Energy, and current-turn payload
   // channels. The prior-turn Regidrago can evolve on T2; Crispin plus the manual
   // Fire attachment completes GGF; Latias gives Crobat V free Retreat; Blender then
-  // supplies the strict-JIT payload during the ready turn:
+  // supplies the ready-turn Dragon payload for both same-turn JIT profiles:
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
   // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104
   // Core turn, Supporter, attachment, evolution, and retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
   // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-  // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1705
+  // Confirmed profile bug: https://github.com/FlareZ123/pokemon-sims/issues/3245
   trace("PLAY SUPPORTER",
         "R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
         "Searched Regidrago VSTAR, Crispin, Brilliant Blender; turn ended after the complete T2 route.");

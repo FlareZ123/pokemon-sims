@@ -25,8 +25,7 @@ std::vector<Scenario> all_scenarios_with_garbodor() {
   // https://api.pokemontcg.io/v2/cards/xy9-57
   // https://api.pokemontcg.io/v2/cards/swsh7-142
   // https://github.com/FlareZ123/pokemon-sims/issues/2808
-  result.push_back(kGarbodorScenarios[0]);
-  result.push_back(kGarbodorScenarios[1]);
+  result.insert(result.end(), kGarbodorScenarios.begin(), kGarbodorScenarios.end());
   return result;
 }
 

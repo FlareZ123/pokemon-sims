@@ -177,10 +177,19 @@
 
     const bool payload_already_held =
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    // The class owns Quick Ball's printed discard/search transaction, while Engine
+    // owns route selection. Call the named #1237 outlet policy directly so this K1
+    // Dialga-GX -> Earthen Vessel continuation no longer depends on the legacy
+    // preprocessor alias that intentionally ends at part_009b2.inc.
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // K1 and route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed policy-dispatch bug: https://github.com/FlareZ123/pokemon-sims/issues/3348
     const bool want_payload =
         need_payload() && !payload_already_held &&
         might_be_unseen(Card::DialgaGX) && !can_pay_payload_cost &&
-        has_payable_payload_outlet_after_costed_search(Card::QuickBall);
+        has_payable_payload_outlet_after_costed_search_issue_1237(Card::QuickBall);
     const bool has_preferred_search_target =
         want_regi || want_latias || want_tapu || want_oricorio ||
         want_crobat || want_payload;
@@ -193,7 +202,17 @@
       cost = issue_1797_quick_ball_cost();
     }
     if (!cost) {
-      cost = choose_discard(can_pay_payload_cost, true, true, Card::QuickBall);
+      // `choose_discard_issue1876` is the current named top of the established
+      // Quick Ball discard-policy chain. It keeps #1869's Tapu/Burnet cost first,
+      // then falls through #1740 and the #1237 wrapper instead of binding to the
+      // generic discard selector after the historical macro lifetime ends.
+      // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Tapu Lele-GX / Professor Burnet: https://api.pokemontcg.io/v2/cards/sm2-60 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+      // Dialga-GX / Earthen Vessel: https://api.pokemontcg.io/v2/cards/sm5-100 https://api.pokemontcg.io/v2/cards/sv4-163
+      // Current-turn JIT and earliest route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed policy-dispatch bug: https://github.com/FlareZ123/pokemon-sims/issues/3348
+      cost = choose_discard_issue1876(
+          can_pay_payload_cost, true, true, Card::QuickBall);
     }
     if (!cost && want_latias) {
       cost = quick_ball_final_surplus_energy_cost();

@@ -1,11 +1,9 @@
 #pragma once
 
-// Single ordered composition spine for the simulator Engine implementation.
-// Core state remains here while the opening and late Engine stages live in one
-// named pipeline. Preserve textual include order and macro lifetimes throughout.
+// Single ordered composition entry point for the simulator Engine implementation.
+// The complete textual include chain lives in engine_pipeline.inc so macro lifetimes
+// remain centralized and the root body cannot drift from the canonical order.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
-// Core Engine state: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/core_state.inc
 // Engine pipeline: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_pipeline.inc
 
-#include "core_state.inc"
 #include "engine_pipeline.inc"

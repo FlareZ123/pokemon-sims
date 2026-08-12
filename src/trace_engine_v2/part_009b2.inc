@@ -26,6 +26,18 @@
     return true;
   }
 
+// The card-class base defines Engine members, so compose it at this class-member
+// boundary after the legacy Quick Ball closes and before Ultra Ball opens.
+// Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+// C++ textual include semantics: https://eel.is/c++draft/cpp.include
+// Confirmed compile-integration bug: https://github.com/FlareZ123/pokemon-sims/issues/3341
+#if defined(in_play)
+#error "Quick Ball card-class base requires the copy-aware in_play alias to be locally owned"
+#endif
+#define in_play tapu_connector_copy_aware_in_play
+#include "core/quick_ball_card_class_base.inc"
+#undef in_play
+
   bool play_ultra_ball(const bool permit_payload) {
     if (item_locked() || hand_count(Card::UltraBall) == 0) return false;
     // Ultra Ball discards 2 other cards from hand before searching a Pokémon: https://api.pokemontcg.io/v2/cards/swsh12pt5-146

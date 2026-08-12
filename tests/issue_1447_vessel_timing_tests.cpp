@@ -97,9 +97,10 @@ void test_matchup_flex_uses_shared_jit_vessel_stage() {
   // Issue #3039 supersedes only the old #1447 MatchupFlex negative control.
   // MatchupFlex shares strict_payload_timing(), so the public T1 Earthen Vessel
   // staging action from #1552 is legal for this profile too. Seed 104 still
-  // reaches its ready state on T3; the corrected contract is that the shared JIT
-  // profile may stage Vessel on T1 instead of being forced into the obsolete T2
-  // Dialga-GX -> Vessel cost route.
+  // now reaches the same earliest T2 Quick Ball -> Wonder Tag -> Crispin finish
+  // as StrictJit. The shared JIT profile stages Vessel on T1, then discards the
+  // Dragon payload on the actual ready turn:
+  // Confirmed continuation generalization: https://github.com/FlareZ123/pokemon-sims/issues/3024
   // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
   // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
@@ -111,15 +112,17 @@ void test_matchup_flex_uses_shared_jit_vessel_stage() {
   // Confirmed staging route: https://github.com/FlareZ123/pokemon-sims/issues/1552
   // Confirmed semantic generalization: https://github.com/FlareZ123/pokemon-sims/issues/3039
   // Merged implementation: https://github.com/FlareZ123/pokemon-sims/pull/3042
-  expect(outcome.first_ready_turn == 3,
-         "Matchup-flex seed 104 changed its ready turn.");
+  expect(outcome.first_ready_turn == 2,
+         "Matchup-flex seed 104 lost its semantic T2 continuation.");
   expect(trace_contains(trace,
                         "T1 | DISCARD | rules: R-EV-01; P-DCI-01; P-COMPRESS-01 | Mysterious Treasure"),
          "MatchupFlex did not admit the shared T1 Vessel staging route.");
-  expect(!trace_contains(trace,
-                         "T2 | DISCARD | rules: R-EV-01 | Dialga-GX "
-                         "(Earthen Vessel cost)"),
-         "MatchupFlex retained the superseded T2 Dialga-GX Vessel route.");
+  expect(trace_contains(trace,
+                        "T2 | DISCARD | rules: R-QB-01; P-DCI-01; P-JIT-01 | Dialga-GX") &&
+             trace_contains(trace, "T2 | WONDER TAG") &&
+             trace_contains(trace, "Crispin") &&
+             trace_contains(trace, "T2 | READY"),
+         "MatchupFlex did not execute the semantic T2 Quick Ball continuation.");
 }
 
 void test_turn_two_item_lock_does_not_delay_vessel() {

@@ -74,17 +74,22 @@ void test_k0_rejects_prize_inspection_k1() {
 }
 
 void test_action_specific_lock_projection() {
-  // Rule Box Ability lock does not suppress Steven or Blender. A T2-only Item lock
-  // is expired before a T3 Blender following T2 Steven.
+  // Rule Box Ability lock does not suppress Steven or Blender. TurnTwoItem begins
+  // on the player's second turn and remains active, so projected T3+ Blender is
+  // still illegal after a T2 Steven play.
   // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Persistent Item-lock contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
   // Lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
-  // Regression: https://github.com/FlareZ123/pokemon-sims/issues/3221
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Regression: https://github.com/FlareZ123/pokemon-sims/issues/3326
   expect(available(sim::DciProfile::StrictJit, sim::LockMode::FullRuleBoxAbility,
                    false, 3),
          "Rule Box Ability lock incorrectly blocked K0 Trainer route.");
-  expect(available(sim::DciProfile::MatchupFlexJit, sim::LockMode::TurnTwoItem,
-                   true, 2),
-         "Expired T2 Item lock incorrectly blocked T3 Blender.");
+  expect(!available(sim::DciProfile::MatchupFlexJit, sim::LockMode::TurnTwoItem,
+                    true, 2),
+         "Persistent T2 Item lock admitted projected T3 Blender.");
+  expect(!available(sim::DciProfile::StrictJit, sim::LockMode::TurnTwoItem, true, 3),
+         "Persistent T2 Item lock admitted projected T4 Blender.");
   expect(!available(sim::DciProfile::StrictJit, sim::LockMode::FullItem, true, 3),
          "Full Item lock admitted K0 Blender route.");
   expect(!available(sim::DciProfile::StrictJit, sim::LockMode::FullCombined, true, 3),

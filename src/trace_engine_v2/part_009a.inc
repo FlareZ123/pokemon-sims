@@ -81,6 +81,17 @@
     });
   }
 
+  static constexpr std::array<Card, 10> preferred_mysterious_treasure_targets() {
+    // Mysterious Treasure searches Psychic or Dragon Pokémon, and Appletun is a legal Dragon target:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/sv8-140
+    // The ordering preserves the repository's earliest-ready-route priority:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    return {Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx,
+            Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
+            Card::DialgaGX, Card::Appletun, Card::TapuLeleGX, Card::Oricorio};
+  }
+
   bool play_mysterious_treasure(const bool permit_payload) {
     if (item_locked() || hand_count(Card::MysteriousTreasure) == 0) return false;
     const bool bank_for_deterministic_next_turn_payload =
@@ -234,11 +245,7 @@
     // https://api.pokemontcg.io/v2/cards/sm6-113
     // https://api.pokemontcg.io/v2/cards/sv8-140
     // https://github.com/FlareZ123/pokemon-sims/issues/1253
-    const std::array<Card, 10> targets{Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx,
-                                       Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
-                                       Card::DialgaGX, Card::Appletun, Card::TapuLeleGX,
-                                       Card::Oricorio};
-    for (const Card target : targets) {
+    for (const Card target : preferred_mysterious_treasure_targets()) {
       const bool desired = (target == Card::RegidragoV && want_regi) ||
                            (target == Card::RegidragoVstar && want_vstar) ||
                            (target == Card::LatiasEx && want_latias) ||

@@ -1,3 +1,5 @@
-#define REGIDRAGO_ISSUE_962_SELECT_ELIGIBILITY
-#include "composition/issue_962_route_sections.inc"
-#undef REGIDRAGO_ISSUE_962_SELECT_ELIGIBILITY
+// Select only the issue-962 eligibility section at this class-member boundary.
+// C++ textual include semantics: https://eel.is/c++draft/cpp.include
+#define REGIDRAGO_ISSUE_962_SECTION_ELIGIBILITY
+#include "core/issue_962_route.inc"
+#undef REGIDRAGO_ISSUE_962_SECTION_ELIGIBILITY

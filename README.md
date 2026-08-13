@@ -37,7 +37,7 @@ Crobat V swap studies use a separate modeling surface through `--model-crobat` a
 A trial becomes setup-ready when the modeled state satisfies all current readiness requirements:
 
 1. Regidrago VSTAR is Active.
-2. Apex Dragon's Energy requirement is payable from legally attached Energy.
+2. Pays Apex Dragon's `[G][G][R]` attack cost with legally attached Energy; Double Dragon Energy may supply two of those Energy units while attached to Regidrago VSTAR. Sources: https://api.pokemontcg.io/v2/cards/xy6-97 https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_004.inc
 3. The discard pile contains a modeled Apex Dragon payload permitted by the selected recipe.
 4. Strict JIT and matchup-flex JIT require a qualifying payload to enter the discard pile during the ready turn.
 5. Readiness begins on turn 2.

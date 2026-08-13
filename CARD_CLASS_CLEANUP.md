@@ -94,9 +94,13 @@ Do not put model policy into `CardDefinition`. `is_payload`, DCI rank, strict-JI
 
 When another card needs new metadata, add the smallest generic intrinsic field that describes a real card property. Do not add a field named after a particular Regidrago route or a particular card effect.
 
+Shared predicates for intrinsic facts belong on `CardDefinition` when they can be derived entirely from exact-print metadata. `is_item()` and `is_basic_pokemon()` are the first such predicates. Compatibility code should call these helpers instead of repeating the same enum comparisons in multiple files.
+
 ### `card_registry.hpp`
 
 Registration is explicit and deterministic. Every migrated card adds one explicit include/entry. Do not use static-constructor self-registration, global initialization side effects, or linker-retention tricks.
+
+The registry exposes `registered_cards` as the canonical value list for membership and audit traversal. Add each migrated `Card` value there exactly once, then keep `find_definition()` as the explicit exact-definition mapping. This prevents registration membership from being duplicated in a second switch while retaining deterministic lookup without static initialization.
 
 The compatibility layer must consult registered metadata before using legacy fallback tables. Once the registry owns a migrated fact, remove that card's duplicate legacy data for that fact.
 
@@ -325,7 +329,7 @@ Do not copy policy helpers into the card file.
 
 ### 3. Register it once
 
-Add the module to `card_registry.hpp` with deterministic explicit registration.
+Add the module to `card_registry.hpp` with deterministic explicit registration. Add the `Card` id to `registered_cards` exactly once and map that id to the module definition in `find_definition()`.
 
 Add a focused test proving registry lookup and exact canonical metadata.
 
@@ -381,6 +385,7 @@ A cleanup card migration is complete only when all applicable items are true:
 - [ ] one enhancement issue exists and is claimed;
 - [ ] one individual module owns exact-print metadata;
 - [ ] the registry has exactly one explicit entry;
+- [ ] `registered_cards` lists the migrated id exactly once;
 - [ ] migrated metadata/classification duplicates are removed;
 - [ ] the active printed effect is invoked through the card module;
 - [ ] reusable card code cannot access raw Engine state containers;

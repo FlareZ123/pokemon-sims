@@ -1,14 +1,12 @@
 # Card Class Cleanup
 
-**Cleanup directive:** read this file, file and claim an enhancement issue for exactly one card that is already modeled by the simulator but has not yet been migrated into the card-class architecture, then migrate only that card using the architecture and compatibility rules below.
+**Cleanup directive:** each cleanup wave selects exactly one card that is already modeled by the simulator and has not yet entered the card-class architecture. Search for an existing migration issue, file and claim an enhancement when none exists, and keep the migration behavior-preserving.
 
-In this document, **unimplemented card** means **not yet implemented in the new card-class architecture**. The card may already be modeled by the legacy simulator. This workflow is a behavior-preserving migration task. It does not authorize unrelated gameplay changes or strategy-policy changes.
+An **unimplemented card** in this document means a card that is not yet implemented in the new card-class architecture. It may already be fully modeled by the legacy simulator.
 
 ## Bootstrap gate
 
-The architecture skeleton and complete Quick Ball reference path must exist before an agent starts another card migration.
-
-Verify these files:
+Do not begin another migration unless the Quick Ball reference seam exists:
 
 ```text
 src/cards/card_id.hpp
@@ -22,40 +20,54 @@ src/trace_engine_v2/core/quick_ball_card_class_tail.inc
 tests/quick_ball_card_class_tests.cpp
 ```
 
-If the skeleton or active Quick Ball reference path is missing, stop and report that the bootstrap is incomplete. Do not invent another class hierarchy, registration mechanism, side-effectful registry, or CMake library layout.
+Quick Ball is the reference because it demonstrates explicit registration, exact-print metadata, cost validation, K0 -> K1 search timing, strategy-owned target choice, printed target filtering, source-card movement, failed-search behavior, shuffle, and trace compatibility. Card source: https://api.pokemontcg.io/v2/cards/swsh1-179
+
+## Migration ledger
+
+### Quick Ball
+
+- Status: active reference migration complete.
+- Module: `src/cards/trainers/quick_ball.hpp`.
+- Canonical print: `swsh1-179`.
+- Active compatibility bridges: `quick_ball_card_class_base.inc` and `quick_ball_card_class_tail.inc`.
+- Keep the split bridges until declaration-order dependencies can be removed without changing gameplay.
+
+### Professor's Letter
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3434
+- Canonical print: `xy1-123`.
+- Card data: https://api.pokemontcg.io/v2/cards/xy1-123
+- Current cleanup wave: metadata and intrinsic Item classification moved to `src/cards/trainers/professors_letter.hpp` and explicit registry ownership.
+- Existing strategy remains in Engine, including the Earthen Vessel comparison and Energy-axis route selection. Current ordering: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc
+- Existing route behavior remains governed by https://github.com/FlareZ123/pokemon-sims/issues/2509
+- Follow-up for this card must locate the single live `play_professors_letter()` printed-resolution owner before moving state transitions. Do not duplicate or bypass the active resolver through a second gameplay entry point.
+
+This staged entry advances the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
 ## Composition consolidation status
 
-Late-search composition now has one explicit owner: `src/trace_engine_v2/composition/post_014a_overrides.inc`.
+The canonical Engine composition owner is `src/trace_engine_v2/composition/engine_body.inc`.
 
-The former one-purpose wrappers `composition/empty_deck_search_routes.inc` and `composition/post_search_connector_routes.inc` have been merged into that owner without changing their textual include order, macro guards, alias lifetimes, or gameplay entry points. This reduces wrapper depth while keeping the behavior-sensitive legacy sequence auditable at one class-member boundary.
+`src/trace_engine_v2/composition/post_014a_overrides.inc` owns late-search composition. Former one-purpose late-search wrappers were merged there while preserving textual include order and macro lifetimes.
 
-Early Supporter/VSTAR composition now has one explicit owner too: `src/trace_engine_v2/composition/opening_engine_overrides.inc`. The former `composition/legacy_supporter_body.inc` wrapper has been inlined there with the original `part_011.inc` -> `part_012.inc` -> `part_013.inc` order, entry/exit guards, and exported `use_fss` / `use_celestial_roar` alias lifetimes preserved. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+`src/trace_engine_v2/composition/opening_engine_overrides.inc` owns the early Supporter/VSTAR continuation. The former one-purpose Supporter wrapper was inlined there while preserving the `part_011.inc` -> `part_012.inc` -> `part_013.inc` order.
 
-The next safe cleanup should continue removing single-owner composition forwarding only after proving the receiving member boundary. Do not inline `opening_engine_overrides.inc` into `engine_body.inc` until CI confirms the new Supporter/VSTAR ownership boundary and the `begin_turn`, `use_fss`, `use_celestial_roar`, and post-`part_014a` alias contracts remain stable.
+The unused `composition/issue_962_route_sections.inc` selector was removed after the canonical search stage had already moved to direct issue-962 section includes. The active sections remain under `src/trace_engine_v2/part_014a_issue_962_*.inc`.
 
-Keep these cleanup rules going forward:
+For mechanical `.inc` cleanup:
 
-- when a composition-only `.inc` file has exactly one owner and exists only to forward an ordered macro/include block, prefer merging that block into the owner once the dependency boundary is proven by CI;
-- preserve the original `#define` / `#include` / `#undef` order exactly during a mechanical merge;
-- keep entry and exit macro guards beside the inlined block so alias ownership remains explicit;
-- do not merge a transitional card bridge merely to reduce file count when its split marks a real declaration-order dependency;
-- specifically, keep `quick_ball_card_class_base.inc` and `quick_ball_card_class_tail.inc` separate until the helpers consumed by the tail can be made available at a single safe member boundary without reordering legacy declarations;
-- after each composition merge, require strict compilation, the full regression suite, and representative `--simulate-this` traces before merging.
+- merge a composition-only forwarding file into its single owner only after proving the receiving member boundary;
+- preserve `#define` / `#include` / `#undef` order exactly;
+- keep entry and exit macro guards adjacent to the moved block;
+- never move an include across a declaration-order dependency to reduce file count;
+- do not merge the Quick Ball base/tail bridge while their split marks a real member-declaration boundary;
+- validate strict compilation, the regression suite, and representative `--simulate-this` traces after composition changes.
 
-C++ textual-include semantics used by these mechanical consolidations: https://eel.is/c++draft/cpp.include
-
-## Why migration is incremental
-
-The simulator is currently composed as one translation unit through `src/regidrago_sim.cpp` and ordered `.inc` files under `src/trace_engine_v2/`. Legacy metadata, classifiers, policy helpers, state transitions, and card effects still cross textual include boundaries.
-
-Migrated and legacy cards therefore coexist. A one-card cleanup must not replace the composition pipeline, create a new linked library target, rename every `Card` use, or migrate neighboring cards.
-
-The reusable source layout is intentionally header-shaped so a later architecture change can turn it into normal library targets after enough cards migrate.
+C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
 ## Dependency direction
 
-The migration must preserve this direction:
+Preserve this direction:
 
 ```text
 rules <- cards <- simulator/strategy
@@ -65,357 +77,83 @@ The operating rule is:
 
 > **Strategy chooses. Card code validates and resolves. Rules primitives perform state transitions.**
 
-A card module must never reach back into trace-engine policy or raw simulator state.
+Code under `src/cards/` must not include trace-engine implementation files or inspect raw `Engine`/`State` data.
 
-## Target layout
-
-```text
-src/
-  cards/
-    card_id.hpp
-    card_definition.hpp
-    card_registry.hpp
-    pokemon/
-      <one-card>.hpp
-    trainers/
-      <one-card>.hpp
-    energy/
-      <one-card>.hpp
-  rules/
-    card_context.hpp
-  trace_engine_v2/
-    core/
-      card_context_adapter.inc
-      <transitional card bridge>.inc
-```
-
-## Core architecture contracts
+## Architecture contracts
 
 ### `card_id.hpp`
 
-`src/cards/card_id.hpp` owns the stable existing `sim::Card` enum. Do not introduce a second identifier system during cleanup and do not renumber or rename existing enumerators.
-
-The external exact-print identity belongs in `CardDefinition::canonical_id`.
+`src/cards/card_id.hpp` owns the stable `sim::Card` identifier set. Do not add a second card-ID system or renumber existing enumerators during cleanup. External exact-print identity belongs in `CardDefinition::canonical_id`.
 
 ### `card_definition.hpp`
 
-`CardDefinition` stores intrinsic facts about the exact modeled print. Appropriate fields include:
+`CardDefinition` stores intrinsic exact-print facts such as name, canonical print id, Trainer subtype, stage/type, retreat cost, Rule Box/Pokémon V/ACE SPEC/Basic Energy flags, and a direct source URL.
 
-- stable `Card` id;
-- canonical print id;
-- display name;
-- card kind;
-- Trainer subtype;
-- Pokémon stage and type;
-- retreat cost;
-- rule-box / Pokémon V / ACE SPEC / Basic Energy flags;
-- direct source URL.
-
-Do not put model policy into `CardDefinition`. `is_payload`, DCI rank, strict-JIT value, connector priority, matchup-flex value, route preference, Supporter contention, and setup-axis value remain simulator strategy.
-
-When another card needs new metadata, add the smallest generic intrinsic field that describes a real card property. Do not add a field named after a particular Regidrago route or a particular card effect.
+Do not store Regidrago policy in card metadata. Payload role, DCI, strict-JIT value, AMR, route priority, matchup logic, Supporter contention, and setup-axis value belong in simulator strategy.
 
 ### `card_registry.hpp`
 
-Registration is explicit and deterministic. Every migrated card adds one explicit include/entry. Do not use static-constructor self-registration, global initialization side effects, or linker-retention tricks.
+Registration is explicit and deterministic. Do not use static-constructor self-registration or linker-retention behavior.
 
-The compatibility layer must consult registered metadata before using legacy fallback tables. Once the registry owns a migrated fact, remove that card's duplicate legacy data for that fact.
-
-For derived facts, prefer deriving from `CardDefinition`:
-
-- Trainer subtype -> Item / Supporter / Stadium / Tool;
-- Pokémon stage -> Basic;
-- Pokémon type -> Dragon or another printed type;
-- intrinsic flags -> Rule Box / Pokémon V / ACE SPEC;
-- retreat metadata -> retreat cost;
-- Energy metadata -> Basic Energy.
-
-Model-specific roles such as `is_payload()` remain outside the registry schema.
+Compatibility code consults registered metadata first, then legacy tables for unmigrated cards. When a migrated intrinsic fact is fully owned by the registry, remove its duplicate legacy case in a later safe mechanical edit.
 
 ### `card_context.hpp`
 
-`CardContext` is the narrow reusable rules seam used by card modules. The current implementation is a concrete callback-backed object rather than a virtual base class. That keeps the transitional single-TU integration allocation-free and prevents card code from receiving raw `Engine` or `State` pointers.
+`CardContext` is the narrow reusable rules seam. Add only general game operations needed by printed card effects. Never add card-specific operations such as `resolve_quick_ball()` or route-policy queries such as `can_use_crispin()`.
 
-The Quick Ball reference currently needs generic operations equivalent to:
-
-```cpp
-int hand_count(Card card) const;
-bool move_hand_to_discard(Card card);
-bool discard_from_hand(Card card,
-                       std::string_view reason,
-                       std::string_view rules_reference);
-bool search_deck_to_hand(Card card);
-void shuffle_deck();
-bool is_basic_pokemon(Card card) const;
-void begin_deck_search(std::string_view reason);
-```
-
-Future migrations may justify generic operations for deck-to-discard search, discard recovery, bench placement, attachment, evolution, switching, Prize inspection/recovery, or an in-play target reference.
-
-Never add a card-specific context operation such as `resolve_quick_ball()` or `can_use_crispin()`. The context exposes reusable game/rules operations. The card module composes them.
-
-### `card_context_adapter.inc`
-
-The trace engine still owns simulator state and policy. `card_context_adapter.inc` bridges Engine callbacks into `CardContext`.
-
-This compatibility layer may know both APIs. Code under `src/cards/` must not include `trace_engine_v2` implementation files or directly inspect `Engine::state_`.
-
-Keep knowledge transitions, state mutations, shuffle behavior, and trace ordering compatible with the existing simulator unless a separate behavioral issue explicitly changes them.
+Knowledge transitions, zone mutations, shuffle behavior, and trace ordering must remain compatible with the existing simulator unless a separately confirmed bug authorizes a behavior change.
 
 ## Card module contract
 
-Each migrated card gets exactly one primary module under `src/cards/pokemon/`, `src/cards/trainers/`, or `src/cards/energy/`.
+Each migrated card gets one primary module under `src/cards/pokemon/`, `src/cards/trainers/`, or `src/cards/energy/`.
 
 A card module owns:
 
-- exact-print `CardDefinition` metadata;
-- card-specific action/choice data required to resolve the printed effect;
+- exact-print metadata;
+- printed action/choice shape;
 - intrinsic cost legality;
-- printed target categories and choice cardinality;
+- printed target categories and cardinality;
 - printed effect resolution through `CardContext`;
-- direct source identity for the modeled print.
+- direct source identity.
 
-A card module does not own:
+Engine/strategy owns:
 
-- when the Regidrago planner wants to play the card;
-- which legal target is strategically preferred;
-- DCI discard ranking;
-- strict-JIT or matchup-flex timing;
+- whether the current route wants to play the card;
+- DCI/UDP/AMR decisions;
+- strict-JIT and matchup-flex timing;
 - Supporter contention;
-- connector or setup-axis priorities;
-- issue/seed route selection;
+- connector domination and setup-axis priorities;
 - scenario lock schedules;
-- readiness or payload policy.
-
-If a legacy function mixes these responsibilities, leave route admission, cost selection, and target preference in Engine policy. Move printed validation and resolution behind the card API.
-
-## Reference migration: Quick Ball
-
-Exact modeled print:
-
-```text
-Quick Ball — swsh1-179
-https://api.pokemontcg.io/v2/cards/swsh1-179
-```
-
-Quick Ball is the reference because it exercises all of the important seams at once:
-
-- exact-print metadata and registry lookup;
-- Trainer/Item classification;
-- a mandatory **other card** hand cost;
-- a legal deck inspection that changes knowledge from K0 to K1;
-- strategy-owned target selection after inspection;
-- intrinsic Basic-Pokémon target filtering;
-- a legal failed/empty search;
-- shuffle after the search;
-- source Item movement through a generic state primitive.
-
-The current conceptual public shape is:
-
-```cpp
-class QuickBall final {
- public:
-  using SearchTargetSelector = std::optional<Card> (*)(void*);
-
-  struct Action {
-    Card discard;
-    void* search_context = nullptr;
-    SearchTargetSelector choose_search_target = nullptr;
-    std::string_view cost_reason = "Quick Ball cost";
-    std::string_view rules_reference = "R-QB-01";
-    std::string_view search_reason = "Quick Ball";
-  };
-
-  struct Resolution {
-    bool played = false;
-    std::optional<Card> search_target;
-    bool found_target = false;
-  };
-
-  static constexpr CardDefinition definition{/* exact swsh1-179 metadata */};
-
-  static bool validate(const rules::CardContext& context,
-                       const Action& action);
-  static Resolution resolve(rules::CardContext& context,
-                            const Action& action);
-};
-```
-
-The target selector is deliberately a strategy callback. `QuickBall::resolve()` starts the legal deck search first, which establishes K1 through `CardContext::begin_deck_search()`. Only then does it invoke the Engine-owned selector. This ordering is mandatory for hidden-information policy.
-
-Do not precompute a Quick Ball deck target while the simulator is still at K0 merely to simplify the card API.
-
-`QuickBall::validate()` checks that a source Quick Ball exists and that the selected mandatory discard is payable as an **other card**. Two Quick Ball copies therefore allow one copy to pay the other's cost; one copy cannot discard itself.
-
-`QuickBall::resolve()` owns the printed transaction through generic rules primitives:
-
-1. move the played Quick Ball from hand to discard;
-2. discard the strategy-selected other-card cost;
-3. begin the legal deck search and establish K1;
-4. ask Engine strategy for the post-inspection preferred target;
-5. accept only a Basic Pokémon target;
-6. move the target to hand when present, while permitting a legal failed search;
-7. shuffle the deck;
-8. return a small resolution summary so Engine can preserve its existing trace wording.
-
-Global Item locks, route admission, DCI/JIT policy, cost preference, target preference, connector policy, and trace narration remain in Engine/strategy code.
-
-The active Quick Ball paths in `quick_ball_card_class_base.inc` and `quick_ball_card_class_tail.inc` route the printed transaction through `cards::QuickBall` and `CardContext`. Historical resolver text may temporarily remain compiled under a dormant compatibility name where the current `.inc` composition still needs interleaved policy helper declarations. That dormant code must not be an active gameplay entry point, and new migrations must not copy this transitional composition debt. Helper extraction/removal belongs in a separate mechanical cleanup when safe.
-
-`tests/quick_ball_card_class_tests.cpp` is the focused reference test. Later migrations should copy the separation of responsibilities and testing depth, not Quick Ball-specific action fields.
-
-## Selecting one cleanup card
-
-Choose exactly one card per cleanup issue and PR.
-
-A card is eligible only when all of these are true:
-
-1. `Card::<Name>` already exists and the legacy simulator already models it.
-2. It has no registered migrated module yet.
-3. Its exact modeled print and authoritative source can be identified from repository evidence.
-4. No active card-class migration issue already claims it.
-5. The work can remain behavior-preserving.
-
-If you discover a real card-text/gameplay bug during migration, keep that behavioral correction in the normal bug workflow rather than silently folding it into the architecture cleanup.
-
-Prefer early cards whose printed effects separate cleanly from strategy. Leave highly entangled multi-mode or opponent-dependent cards until the generic context primitives they need exist.
-
-## File and claim the enhancement issue first
-
-Search open issues before filing. Do not duplicate another active migration or bypass an existing claim.
-
-Use this title:
-
-```text
-Enhancement: migrate <Card Name> to card class architecture
-```
-
-Record at least:
-
-```markdown
-## Card
-- Card: <Card Name>
-- Canonical print: `<set-id>`
-- Source: <authoritative card URL>
-
-## Current legacy ownership
-- Metadata/classification: <files/functions>
-- Printed effect/resolution: <files/functions>
-- Strategy/policy that must remain in Engine: <files/functions or description>
-
-## Migration scope
-Move only this card's intrinsic metadata and printed effect into its
-`src/cards/...` module, register it explicitly, route compatibility classifiers
-through registered metadata, and make the active Engine path call the card module.
-
-Do not change route choice, DCI/JIT policy, scenario behavior, deck recipes, or
-unrelated cards.
-
-## Acceptance criteria
-- [ ] Exact metadata is represented by `CardDefinition`.
-- [ ] Card is explicitly registered once.
-- [ ] Duplicate legacy metadata/classification ownership is removed.
-- [ ] Active printed effect resolution is invoked through the card module.
-- [ ] Strategy/target-selection policy remains in Engine/policy.
-- [ ] Focused legality/effect tests pass.
-- [ ] Existing regression tests have no unexplained drift.
-- [ ] Relevant `--simulate-this` traces preserve legal decisions/readiness.
-```
-
-Claim the issue using the repository's normal claim protocol before editing.
-
-## Implementation procedure
-
-### 1. Map every occurrence
-
-Search every `Card::<Name>` occurrence and classify it as:
-
-- intrinsic metadata;
-- printed legality/effect;
-- generic rules/state transition;
-- strategy/policy;
-- test/reporting/documentation.
-
-Do not assume every occurrence belongs in the card module.
-
-### 2. Add one card module
-
-Create one file in the appropriate card directory. Add the exact `CardDefinition` and the smallest card-specific action/choice structures needed for printed resolution.
-
-Do not copy policy helpers into the card file.
-
-### 3. Register it once
-
-Add the module to `card_registry.hpp` with deterministic explicit registration.
-
-Add a focused test proving registry lookup and exact canonical metadata.
-
-### 4. Remove duplicate legacy metadata ownership
-
-When registry metadata owns a migrated fact, remove that card's duplicate legacy case for the same fact. Keep the fallback table itself because unmigrated cards still use it.
-
-### 5. Route active printed resolution through the card module
-
-Keep route admission and strategic choice in Engine. Feed the chosen legal action into the card module, and let `CardContext` perform generic state transitions.
-
-If a required operation is missing, add the smallest reusable context primitive. Its name and contract must describe a general game operation rather than the migrating card.
-
-### 6. Preserve knowledge boundaries
-
-Reusable card code must not inspect hidden deck/Prize contents for strategy. K0/K1 and other knowledge-policy decisions remain in the simulator layer.
-
-Some cards, including Quick Ball, require a strategic choice only after a legal inspection changes knowledge. Model that as staged resolution or a strategy callback invoked after the context establishes the new knowledge state. Do not move the choice earlier.
-
-A context operation may inspect the zone required to carry out a legal effect. Keep that access behind the rules/context API.
-
-### 7. Preserve trace behavior
-
-Maintain existing trace events, reasons, and ordering unless a separate approved behavioral issue changes them. Return small resolution facts from card code when Engine needs them to produce the same narration.
-
-### 8. Test at three levels
-
-**Focused card tests** cover exact metadata plus main legality/effect boundaries. Include legal and rejected/edge cases. Search cards should cover failed-search/shuffle behavior and any important knowledge-ordering seam.
-
-**Compatibility/regression tests** prove existing callers still receive the correct name/classification/retreat facts and that the full suite has no unexplained new failures.
-
-**Simulation traces** run relevant existing `--simulate-this` scenarios/seeds. Prefer at least three known-good traces when the card participates in registered recipes. Compare important decisions, state transitions, and ready turn. If three relevant traces do not exist, explain why and compensate with focused effect tests.
-
-For a pure migration, unexplained behavior, matrix, or trace drift is a failure.
-
-### 9. Keep the PR atomic
-
-One cleanup PR migrates one card. It may contain only:
-
-- that card module;
-- its registry entry;
-- removal of its duplicate legacy metadata/effect ownership;
-- a minimal generic `CardContext` extension required by that card;
-- focused tests;
-- directly related documentation.
-
-Do not migrate neighboring cards, broadly rename APIs, reorganize the composition pipeline, or introduce new library targets in the same PR.
-
-## Completion checklist
-
-A cleanup card migration is complete only when all applicable items are true:
-
-- [ ] one enhancement issue exists and is claimed;
-- [ ] one individual module owns exact-print metadata;
-- [ ] the registry has exactly one explicit entry;
-- [ ] migrated metadata/classification duplicates are removed;
-- [ ] the active printed effect is invoked through the card module;
-- [ ] reusable card code cannot access raw Engine state containers;
-- [ ] strategy policy remains outside the card module;
-- [ ] authoritative card/rule sources remain traceable;
-- [ ] focused tests pass;
-- [ ] full regression tests pass subject only to documented pre-existing `main` failures;
-- [ ] relevant simulation traces have no unexplained behavioral drift;
-- [ ] no unrelated card was migrated in the same cleanup.
-
-## Later library extraction
-
-Do not perform library extraction during ordinary card cleanup.
-
-After a substantial set of cards migrates and the compatibility bridge is proven, a separate architecture change may create normal CMake library targets, move implementations into `.cpp` files where useful, and retire the remaining legacy `.inc` card-model tables after the last card migrates.
-
-The incremental phase exists so that later extraction is mechanical rather than a one-shot gameplay rewrite.
+- readiness and payload policy;
+- strategic target preference.
+
+When a legacy function mixes these responsibilities, leave route admission and strategic choice in Engine. Move printed validation/resolution only after the live owner and required reusable context operations are known.
+
+## One-card workflow
+
+1. Search open issues for an existing migration owner.
+2. File and claim `Enhancement: migrate <Card Name> to card class architecture` when unowned.
+3. Map every `Card::<Name>` occurrence into metadata, printed effect, rules transition, strategy, test, or documentation.
+4. Add exactly one card module.
+5. Register it explicitly.
+6. Move intrinsic metadata/classification ownership first.
+7. Route active printed resolution through the card module only after locating the live resolver and preserving K0/K1 timing.
+8. Keep strategy in Engine.
+9. Add focused tests for exact metadata and printed legality/effect boundaries as each phase becomes active.
+10. Run the full CI matrix and representative `--simulate-this` traces before merge.
+
+If migration reveals a gameplay defect, file it through the normal bug workflow. Do not silently combine the behavior correction with architecture cleanup.
+
+## Validation gate
+
+A cleanup PR is mergeable only when:
+
+- strict Release compilation succeeds;
+- focused card tests and the full regression suite succeed;
+- sanitizer/structural checks have no new failure;
+- representative `--simulate-this` traces preserve legal action ordering and readiness;
+- the T2/T3 probability matrix has no unexplained drift;
+- the PR contains no second card migration.
+
+Rules source for Item/Supporter/search procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md

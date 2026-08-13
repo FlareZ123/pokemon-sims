@@ -172,21 +172,18 @@ constexpr bool is_supporter(const Card card) {
 }
 
 constexpr bool is_item(const Card card) {
-  // A migrated card's intrinsic Trainer classification is owned by its registered
-  // CardDefinition. Legacy tables are only a compatibility fallback for cards that
-  // have not entered the card-class architecture yet.
+  // Migrated cards own intrinsic Item classification in the explicit card registry.
+  // Registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+  // Exact migrated prints: https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/xy1-123 https://api.pokemontcg.io/v2/cards/swsh1-163 https://api.pokemontcg.io/v2/cards/sm6-113
   if (cards::has_definition(card)) return cards::registered_is_item(card);
 
   switch (card) {
     case Card::BrilliantBlender:
     case Card::SecretBox:
     case Card::BattleVipPass:
-    case Card::MysteriousTreasure:
     case Card::UltraBall:
-    case Card::EvolutionIncense:
     case Card::PokemonCommunication:
     case Card::EarthenVessel:
-    case Card::ProfessorsLetter:  // https://api.pokemontcg.io/v2/cards/xy1-123 ; https://github.com/FlareZ123/pokemon-sims/issues/2509
     case Card::FieldBlower:
     case Card::HisuianHeavyBall:
       return true;

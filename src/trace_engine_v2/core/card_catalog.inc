@@ -108,7 +108,6 @@ constexpr std::string_view name(const Card card) {
     case Card::ChaoticSwell: return "Chaotic Swell";
     case Card::ForestOfVitality: return "Forest of Vitality";
     case Card::PathToPeak: return "Path to the Peak";
-    case Card::HisuianHeavyBall: return "Hisuian Heavy Ball";
     case Card::DoubleDragonEnergy: return "Double Dragon Energy";  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
     case Card::Grass: return "Grass Energy";
     case Card::Fire: return "Fire Energy";
@@ -117,7 +116,8 @@ constexpr std::string_view name(const Card card) {
     case Card::QuickBall:
     case Card::ProfessorsLetter:
     case Card::EvolutionIncense:
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+    case Card::HisuianHeavyBall:
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; https://api.pokemontcg.io/v2/cards/swsh10-146
   }
   return "Unknown";
 }

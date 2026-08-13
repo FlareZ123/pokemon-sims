@@ -55,6 +55,8 @@ The canonical Engine composition owner is `src/trace_engine_v2/composition/engin
 
 The unused `composition/issue_962_route_sections.inc` selector was removed after the canonical search stage had already moved to direct issue-962 section includes. The active sections remain under `src/trace_engine_v2/part_014a_issue_962_*.inc`.
 
+`src/trace_engine_v2/core/crispin_trace_provenance.inc` now directly owns the issue-3152 Steven/Secret Box comparator beside its `bench_pineco_if_useful` handoff. The historical `part_issue_3152_steven_prized_box_override.inc` path contains only migration provenance. Preserve the existing macro order through `part_issue_1118_secret_box.inc` and its release points in `part_issue_1369_celestial_roar_secret_box_override.inc`. Sources: https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/sv6-163 https://github.com/FlareZ123/pokemon-sims/issues/3152
+
 Registered-card compatibility now uses `find_definition()` as the single registry lookup. `has_definition()` and intrinsic Item classification delegate to that lookup instead of maintaining parallel card switches, reducing duplicate ownership as additional cards migrate.
 
 For mechanical `.inc` cleanup:

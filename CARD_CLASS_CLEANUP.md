@@ -30,6 +30,10 @@ Late-search composition now has one explicit owner: `src/trace_engine_v2/composi
 
 The former one-purpose wrappers `composition/empty_deck_search_routes.inc` and `composition/post_search_connector_routes.inc` have been merged into that owner without changing their textual include order, macro guards, alias lifetimes, or gameplay entry points. This reduces wrapper depth while keeping the behavior-sensitive legacy sequence auditable at one class-member boundary.
 
+Early Supporter/VSTAR composition now has one explicit owner too: `src/trace_engine_v2/composition/opening_engine_overrides.inc`. The former `composition/legacy_supporter_body.inc` wrapper has been inlined there with the original `part_011.inc` -> `part_012.inc` -> `part_013.inc` order, entry/exit guards, and exported `use_fss` / `use_celestial_roar` alias lifetimes preserved. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+
+The next safe cleanup should continue removing single-owner composition forwarding only after proving the receiving member boundary. Do not inline `opening_engine_overrides.inc` into `engine_body.inc` until CI confirms the new Supporter/VSTAR ownership boundary and the `begin_turn`, `use_fss`, `use_celestial_roar`, and post-`part_014a` alias contracts remain stable.
+
 Keep these cleanup rules going forward:
 
 - when a composition-only `.inc` file has exactly one owner and exists only to forward an ordered macro/include block, prefer merging that block into the owner once the dependency boundary is proven by CI;

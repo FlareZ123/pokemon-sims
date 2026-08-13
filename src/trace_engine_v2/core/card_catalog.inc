@@ -79,12 +79,13 @@ constexpr std::string_view name(const Card card) {
     case Card::SecretBox: return "Secret Box";
     case Card::BattleVipPass: return "Battle VIP Pass";
     case Card::MysteriousTreasure: return "Mysterious Treasure";
-    case Card::QuickBall: break;  // Registered CardDefinition owns this name.
+    case Card::QuickBall:
+    case Card::ProfessorsLetter:
+      break;  // Registered CardDefinition owns these names.
     case Card::UltraBall: return "Ultra Ball";
     case Card::EvolutionIncense: return "Evolution Incense";
     case Card::PokemonCommunication: return "Pokémon Communication";
     case Card::EarthenVessel: return "Earthen Vessel";
-    case Card::ProfessorsLetter: return "Professor's Letter";  // https://api.pokemontcg.io/v2/cards/xy1-123 ; https://github.com/FlareZ123/pokemon-sims/issues/2509
     case Card::Dawn: return "Dawn";
     case Card::Grant: return "Grant";
     case Card::Arven: return "Arven";

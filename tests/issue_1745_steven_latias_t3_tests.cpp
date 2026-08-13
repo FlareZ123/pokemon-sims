@@ -101,7 +101,9 @@ void test_steven_searches_complete_t3_package() {
              count(after.hand, sim::Card::LatiasEx) == 1 &&
              count(after.hand, sim::Card::Grass) == 1,
          "Steven did not search the exact three-card T3 package.");
-  expect(trace_contains(trace, "deterministic T3 Latias route"),
+  // Production wording generalized by #3276: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_issue_1745_steven_latias_t3_override.inc
+  // Stale-regression repair: https://github.com/FlareZ123/pokemon-sims/issues/3407
+  expect(trace_contains(trace, "deterministic next-turn Latias route"),
          "The corrected Steven trace was not emitted.");
 }
 
@@ -205,7 +207,9 @@ void test_crobat_seed_1234567_reaches_t3() {
   // Issue and original CI witness: https://github.com/FlareZ123/pokemon-sims/issues/1745 https://github.com/FlareZ123/pokemon-sims/actions/runs/30394042881
   expect(outcome.first_ready_turn == 3,
          "Crobat seed 1234567 did not improve from failure to T3 readiness.");
-  expect(trace_contains(trace, "deterministic T3 Latias route") &&
+  // Production wording generalized by #3276: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_issue_1745_steven_latias_t3_override.inc
+  // Stale-regression repair: https://github.com/FlareZ123/pokemon-sims/issues/3407
+  expect(trace_contains(trace, "deterministic next-turn Latias route") &&
              trace_contains(trace, "T3 | EVOLVE") &&
              trace_contains(trace, "T3 | BENCH") &&
              trace_contains(trace, "T3 | RETREAT") &&

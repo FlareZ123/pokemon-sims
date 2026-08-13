@@ -54,7 +54,7 @@ The opponent's hand, attacks, damage, Knock Outs caused by an opposing deck, pri
 
 The policy uses information available through the modeled game state.
 
-A deck search establishes deterministic knowledge of the remaining deck composition. Prize identities become available only after a legal Prize-inspection effect. Future draw order remains unavailable to the action policy.
+A resolved deck search or a legal full Prize inspection establishes K1. The fixed 60-card recipe and known zones then let the policy deduce the complementary hidden-zone multiset, so a resolved deck search also makes the Prize identities deducible. Future draw order remains unavailable to the action policy. Canonical K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states Hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
 
 Debug trace output may print hidden information for auditing. That output is separate from the policy's decision inputs.
 

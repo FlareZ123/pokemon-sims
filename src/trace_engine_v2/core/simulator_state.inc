@@ -1,9 +1,7 @@
-// Compose the state model with aggregate metrics and trace ownership before the
-// formatting helpers that consume them. Preserve this textual include order:
+// Compose simulator state, aggregate metrics, and trace ownership before the
+// formatting helpers that consume them. Preserve this textual include boundary:
 // https://eel.is/c++draft/cpp.include
-// State model: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/game_state_types.inc
-// Runtime metrics + trace: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulation_runtime.inc
-#include "game_state_types.inc"
+// Runtime state + metrics + trace: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulation_runtime.inc
 #include "simulation_runtime.inc"
 
 std::string join_cards(const std::vector<Card>& cards) {

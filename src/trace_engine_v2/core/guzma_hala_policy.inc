@@ -24,15 +24,49 @@
            std::any_of(state_.bench.begin(), state_.bench.end(), eligible);
   }
 
+  bool guzma_hala_projected_dde_vstar_route() const {
+    if (state_.manual_energy_used || hand_count(Card::RegidragoVstar) == 0) {
+      return false;
+    }
+
+    const auto dde_finishes = [this](const Pokemon& pokemon) {
+      if (pokemon.card != Card::RegidragoV ||
+          pokemon.entered_turn >= state_.turn) {
+        return false;
+      }
+      Pokemon projected = pokemon;
+      projected.card = Card::RegidragoVstar;
+      if (pays_apex_energy_cost(projected)) return false;
+      return attach_energy_card(projected, Card::DoubleDragonEnergy) &&
+             pays_apex_energy_cost(projected);
+    };
+
+    // Active Regidrago V needs no promotion edge. A Benched prior-turn Regidrago V
+    // is equally live when Latias ex gives the current Basic Active free Retreat;
+    // after G&H searches DDE the engine may attach, evolve, retreat, and attack in
+    // the same turn. This is a board-state projection rather than a seat/seed route.
+    // Guzma & Hala: https://www.pokemon.com/uk/pokemon-tcg/pokemon-cards/sm-series/sm12/229/
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Retreat/evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    if (state_.active && dde_finishes(*state_.active)) return true;
+    if (state_.retreat_used || !state_.active || !can_free_retreat_with_latias()) {
+      return false;
+    }
+    return std::any_of(state_.bench.begin(), state_.bench.end(), dde_finishes);
+  }
+
   bool guzma_hala_dde_axis_available() const {
     // Double Dragon Energy is Special Energy and may attach only to Dragon Pokemon.
     // The ordinary energy-axis predicate covers an already-evolved Regidrago VSTAR.
-    // Also project a prior-turn Active Regidrago V with VSTAR in hand, because the
-    // searched DDE may attach before that legal same-turn evolution and still satisfy
-    // Apex Dragon's GGF requirement once the evolution occurs.
+    // The projected route also covers a prior-turn Regidrago V in Active or Bench
+    // when same-turn evolution and legal Latias promotion make DDE complete Apex.
     // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
     // https://api.pokemontcg.io/v2/cards/swsh12-135
     // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://api.pokemontcg.io/v2/cards/sv8-76
     // https://github.com/FlareZ123/pokemon-sims/issues/3386
     if (state_.manual_energy_used || !guzma_hala_has_regidrago_energy_holder() ||
         hand_count(Card::DoubleDragonEnergy) > 0 ||
@@ -40,16 +74,7 @@
       return false;
     }
     if (need_energy()) return true;
-    if (!state_.active || state_.active->card != Card::RegidragoV ||
-        state_.active->entered_turn >= state_.turn ||
-        hand_count(Card::RegidragoVstar) == 0) {
-      return false;
-    }
-    Pokemon projected = *state_.active;
-    projected.card = Card::RegidragoVstar;
-    if (pays_apex_energy_cost(projected)) return false;
-    return attach_energy_card(projected, Card::DoubleDragonEnergy) &&
-           pays_apex_energy_cost(projected);
+    return guzma_hala_projected_dde_vstar_route();
   }
 
   bool guzma_hala_fss_axis_available() const {
@@ -81,29 +106,23 @@
 
     // Before evolution, the generic payload predicate does not yet apply because
     // Regidrago V has no Apex Dragon requirement. Project only the complete route:
-    // a prior-turn Active Regidrago V evolves from the held VSTAR, the searched DDE
-    // completes GGF, and no Dragon payload has already been established this turn.
-    // This avoids circularly asking the pre-evolution board whether a post-evolution
-    // payload is needed while preserving strict same-turn JIT semantics.
+    // a prior-turn Regidrago V evolves from the held VSTAR, searched DDE completes
+    // GGF, and (when Benched) Latias ex supplies the legal free promotion. No Dragon
+    // payload may already have been established this turn. This preserves strict
+    // same-turn JIT semantics without keying policy to a particular hand or seed.
     // Guzma & Hala: https://www.pokemon.com/uk/pokemon-tcg/pokemon-cards/sm-series/sm12/229/
     // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Dynamic JIT and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3386
-    if (!strict_payload_timing() || state_.manual_energy_used || !state_.active ||
-        state_.active->card != Card::RegidragoV ||
-        state_.active->entered_turn >= state_.turn ||
-        hand_count(Card::RegidragoVstar) == 0 ||
+    if (!strict_payload_timing() || state_.manual_energy_used ||
         std::any_of(state_.discarded_this_turn.begin(),
                     state_.discarded_this_turn.end(), is_payload) ||
-        !guzma_hala_dde_axis_available()) {
+        !guzma_hala_projected_dde_vstar_route()) {
       return false;
     }
-
-    Pokemon projected = *state_.active;
-    projected.card = Card::RegidragoVstar;
-    return attach_energy_card(projected, Card::DoubleDragonEnergy) &&
-           pays_apex_energy_cost(projected);
+    return true;
   }
 
   std::optional<std::array<Card, 2>> guzma_hala_bonus_costs(

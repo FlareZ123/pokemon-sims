@@ -51,17 +51,20 @@ int main() {
 
   // T4 remains the setup deadline while unresolved trials continue through the
   // diagnostic T5 horizon and publish separate late-recovery and failure fields:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/SIM-PLAN.md
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/T5_FAILURE_POLICY.md
   // https://github.com/FlareZ123/pokemon-sims/blob/main/results/simulation_results.csv
   // https://github.com/FlareZ123/pokemon-sims/issues/1491
-  expect_contains(plan, "Model player turns 1 through 5",
+  // https://github.com/FlareZ123/pokemon-sims/issues/3428
+  expect_contains(plan, "through turn 5",
                   "SIM-PLAN.md omits the T5 diagnostic horizon.");
-  expect_contains(plan, "T4 remains the setup-success deadline",
+  expect_contains(plan, "T2, T3, and T4 readiness are setup success",
                   "SIM-PLAN.md lost the T4 success deadline.");
-  expect_contains(plan, "`P(ready on T5)`",
+  expect_contains(plan,
+                  "First readiness on T5 is recorded as diagnostic recovery and remains a setup failure",
                   "SIM-PLAN.md omits diagnostic T5 recovery.");
-  expect_contains(plan, "`setup_failure_pct`",
-                  "SIM-PLAN.md omits the setup failure metric.");
+  expect_contains(plan, "setup failure",
+                  "SIM-PLAN.md omits setup failure semantics.");
   expect_contains(policy, "A game that first becomes ready on T5",
                   "The canonical T5 policy changed.");
   expect_contains(matrix, "ready_by_t5_pct",

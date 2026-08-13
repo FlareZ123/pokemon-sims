@@ -110,10 +110,10 @@ void incidental_card_substitutions_do_not_change_opening_choice() {
                      sim::Card::GoodraVstar);
     sim::State without_powerglass =
         replace_card(exact_hand(), sim::Card::Powerglass,
-                     sim::Card::DragapultEx);
+                     sim::Card::Dragapult);
     sim::State without_both =
         replace_card(std::move(without_cheer), sim::Card::Powerglass,
-                     sim::Card::DragapultEx);
+                     sim::Card::Dragapult);
 
     // Team Yell's Cheer and Powerglass are not prerequisites for setup placement,
     // Vital Dance, or the one-discard Regidrago V connector. Replacing either with

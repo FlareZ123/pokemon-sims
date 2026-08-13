@@ -1,33 +1,21 @@
-name: Final matrix diagnostic
+name: Final branch cleanup diagnostic
 
 on:
   pull_request:
     branches: [main]
     paths:
       - .github/workflows/final-matrix-diagnostic.yml
-  workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  matrix:
+  cleanup:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - name: Configure Release
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-      - name: Build simulator
-        run: cmake --build build --parallel 2
-      - name: Run three deterministic trace audits
+      - name: Delete completed temporary branches
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4
-          ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 35 --require-ready-by 2
-      - name: Generate paired 100k-per-condition matrix
-        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out multi-deck-matrix.csv
-      - name: Print T2 T3 probability matrix
-        run: python -c "import csv; f=open('multi-deck-matrix.csv', newline='', encoding='utf-8-sig'); r=csv.DictReader(f); print('deck,scenario,ready_by_t2_pct,ready_by_t3_pct'); [print(','.join((x['deck'],x['scenario'],x['ready_by_t2_pct'],x['ready_by_t3_pct']))) for x in r]"
-      - name: Record tested source
-        run: git rev-parse HEAD
+          gh api --method DELETE repos/${{ github.repository }}/git/refs/heads/cleanup-1786649650448
+          gh api --method DELETE repos/${{ github.repository }}/git/refs/heads/ci-final-matrix-1786650911977

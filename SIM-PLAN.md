@@ -204,7 +204,7 @@ The displayed Monte Carlo standard error for a binary outcome is:
 100 * sqrt((x / n) * (1 - x / n) / n)
 ```
 
-Fixed seeds make committed reports reproducible. Source-bound manifests tie aggregate evidence to the simulator inputs that produced them.
+Fixed seeds make committed reports reproducible. Source-bound manifests tie aggregate evidence to the simulator inputs that produced it.
 
 ## Result generation
 

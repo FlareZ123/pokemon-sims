@@ -39,10 +39,13 @@
       return false;
     }
 
-    const bool next_turn_item_locked =
-        scenario_.locks == LockMode::FullItem ||
-        scenario_.locks == LockMode::FullCombined ||
-        (scenario_.locks == LockMode::TurnTwoItem && state_.turn == 1);
+    // The following-turn package requires Brilliant Blender, so use the shared
+    // persistent Item-lock schedule instead of a route-local T1-only projection.
+    // Brilliant Blender is an Item: https://api.pokemontcg.io/v2/cards/sv8-164
+    // TurnTwoItem remains active from T2 onward: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+    // Shared lock helper: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3404
+    const bool next_turn_item_locked = item_locked_on_turn(state_.turn + 1);
     if (next_turn_item_locked) return false;
 
     const auto available_after_steven = [this](const Card card) {

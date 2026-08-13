@@ -56,14 +56,13 @@ int main() {
   // Double Dragon Energy supplies two Energy of every type while attached to a
   // Dragon Pokémon, so DDE plus either Basic Energy pays Apex Dragon's [G][G][R]
   // attack cost; DDE alone supplies only two total Energy units:
-  // https://api.pokemontcg.io/v2/cards/xy6-97
+  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // Professor Burnet and Mysterious Treasure establish the payload/evolution route:
   // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // Rules procedures used by the modeled Supporter, Item, evolution, and attack path:
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#B-01-Supporter-card-procedure
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#B-03-Item-card-procedure
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#L360-L452
   // https://github.com/FlareZ123/pokemon-sims/issues/3513
   expect_route(1, 0, 1, true, "DDE plus Grass");
   expect_route(0, 1, 1, true, "DDE plus Fire");

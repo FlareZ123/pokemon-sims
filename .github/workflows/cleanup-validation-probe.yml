@@ -1,0 +1,34 @@
+name: Cleanup Validation Probe
+
+on:
+  pull_request:
+    branches: [cleanup-1786651556394]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-cleanup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator and tests
+        run: cmake --build build --parallel 2
+      - name: Run complete Release suite
+        run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Run three cleanup trace audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee cleanup-trace-1.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee cleanup-trace-58.txt
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee cleanup-trace-43.txt
+      - name: Recompute canonical matrix
+        run: |
+          ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out multi-deck-matrix.csv
+          python scripts/extract_deck_matrix.py --input multi-deck-matrix.csv --output t2-t3-matrix.csv --deck regidrago-shell
+          cmp t2-t3-matrix.csv results/simulation_results.csv
+          cmp multi-deck-matrix.csv results/multi_deck_comparison.csv

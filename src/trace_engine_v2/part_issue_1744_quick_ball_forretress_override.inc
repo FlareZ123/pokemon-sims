@@ -11,20 +11,16 @@
         std::any_of(state_.deck.begin(), state_.deck.end(), is_basic);
 
     // Quick Ball pays one current-turn Dragon payload, while the prior-turn Pineco
-    // evolves normally and Exploding Energy supplies the only missing Grass. This
-    // reaches the same T3 deadline without spending the three-card ACE SPEC route:
+    // evolves normally and Exploding Energy supplies the only missing Grass.
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
     // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
     // Forretress ex / Exploding Energy: https://api.pokemontcg.io/v2/cards/sv4pt5-2
-    // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Hisuian Heavy Ball establishes K1 by revealing the full Prize set: https://api.pokemontcg.io/v2/cards/swsh10-146
-    // Official Item, evolution, Ability, attachment, Knock Out, Prize, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1, dynamic DCI, and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1744 https://github.com/FlareZ123/pokemon-sims/issues/1980
+    // Advanced Item, evolution, and Ability procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Lock/JIT policy and relative-state regression: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/issues/3406
+    // Original route and K1 refinement: https://github.com/FlareZ123/pokemon-sims/issues/1744 https://github.com/FlareZ123/pokemon-sims/issues/1980
     return secret_box_combo_enabled() && prizes_known() && strict_payload_timing() &&
-        state_.turn == 3 && scenario_.locks == LockMode::None && !item_locked() &&
+        state_.turn <= scenario_.max_turn && !item_locked() &&
         !state_.turn_ended && state_.active &&
         state_.active->card == Card::RegidragoVstar &&
         grass_needed() == 1 && fire_needed() == 0 && need_payload() &&

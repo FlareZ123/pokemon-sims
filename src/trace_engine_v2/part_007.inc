@@ -210,12 +210,14 @@
     // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Core Item, Supporter, Bench, Ability, attachment, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // K1 and same-ready-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3372
+    // Confirmed semantic-admission bugs: https://github.com/FlareZ123/pokemon-sims/issues/3372 https://github.com/FlareZ123/pokemon-sims/issues/3402
     return strict_payload_timing() &&
-        scenario_.locks == LockMode::None && state_.turn == 3 &&
-        scenario_.max_turn >= 3 && prizes_known() && supporter_allowed() &&
+        scenario_.locks == LockMode::None &&
+        state_.turn <= scenario_.max_turn && // Current-state route horizon: https://github.com/FlareZ123/pokemon-sims/issues/3402
+        prizes_known() && supporter_allowed() &&
         !item_locked() && !state_.retreat_used && state_.active &&
         is_basic(state_.active->card) && need_active_vstar() && need_payload() &&
         can_play_payload_this_turn() && bench_space() > 0 &&

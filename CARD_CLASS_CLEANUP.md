@@ -43,7 +43,17 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Existing route behavior remains governed by https://github.com/FlareZ123/pokemon-sims/issues/2509
 - Follow-up for this card must locate the single live `play_professors_letter()` printed-resolution owner before moving state transitions. Do not duplicate or bypass the active resolver through a second gameplay entry point.
 
-This staged entry advances the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
+### Mysterious Treasure
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3473
+- Canonical print: `sm6-113`.
+- Card data: https://api.pokemontcg.io/v2/cards/sm6-113
+- Status: exact metadata and intrinsic Item classification are owned by `src/cards/trainers/mysterious_treasure.hpp` and the explicit registry.
+- Registry cleanup: `kRegisteredDefinitions` is now the single explicit registration list consumed by `find_definition()`, so each migrated card is listed once rather than adding another parallel lookup switch. Registry owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+- Existing Mysterious Treasure strategy and resolution remain in Engine. This wave does not alter its one-card discard cost, Psychic-or-Dragon target rule, search/shuffle sequence, DCI admission, connector priority, or K0/K1 timing. Printed effect: https://api.pokemontcg.io/v2/cards/sm6-113
+- Follow-up for this card must first locate the single live `play_mysterious_treasure()` resolution owner and the current target-choice boundary. Move printed validation/resolution only when the existing `CardContext` seam can preserve the exact discard, reveal/search, K1, and shuffle ordering without adding strategy queries to card code.
+
+These staged entries advance the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
 ## Composition consolidation status
 
@@ -65,7 +75,7 @@ Keep `simulation_runtime.inc` limited to state/runtime data types and trace owne
 
 `src/trace_engine_v2/part_issue_989_wonder_tag_complete_route_override.inc` remains a thin historical source-link shim whose only implementation dependency is `core/tapu_wonder_tag_route_policy.inc`. Keep route logic in the core owner rather than duplicating it in the compatibility path. Canonical policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tapu_wonder_tag_route_policy.inc
 
-Registered-card compatibility now uses `find_definition()` as the single registry lookup. `has_definition()` and intrinsic Item classification delegate to that lookup instead of maintaining parallel card switches, reducing duplicate ownership as additional cards migrate.
+Registered-card compatibility now uses `find_definition()` as the single registry lookup over `kRegisteredDefinitions`. `has_definition()` and intrinsic Item classification delegate to that lookup instead of maintaining parallel card switches, reducing duplicate ownership as additional cards migrate.
 
 For mechanical `.inc` cleanup:
 
@@ -109,7 +119,7 @@ Do not store Regidrago policy in card metadata. Payload role, DCI, strict-JIT va
 
 Registration is explicit and deterministic. Do not use static-constructor self-registration or linker-retention behavior.
 
-Compatibility code consults registered metadata first, then legacy tables for unmigrated cards. `find_definition()` is the canonical registry lookup; helper predicates should derive from that definition instead of introducing parallel registration switches. When a migrated intrinsic fact is fully owned by the registry, remove its duplicate legacy case in a later safe mechanical edit.
+`kRegisteredDefinitions` is the single explicit registration inventory and `find_definition()` is the canonical lookup over that inventory. Compatibility code consults registered metadata first, then legacy tables for unmigrated cards. Helper predicates should derive from the returned definition instead of introducing parallel registration switches. When a migrated intrinsic fact is fully owned by the registry, remove its duplicate legacy case in a later safe mechanical edit.
 
 ### `card_context.hpp`
 

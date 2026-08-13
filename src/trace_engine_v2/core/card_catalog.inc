@@ -37,6 +37,9 @@ namespace sim {
 static_assert(cards::QuickBall::definition.id == Card::QuickBall);
 static_assert(cards::QuickBall::definition.canonical_id == "swsh1-179");
 static_assert(cards::QuickBall::definition.name == "Quick Ball");
+static_assert(cards::GuzmaHala::definition.id == Card::GuzmaHala);
+static_assert(cards::GuzmaHala::definition.canonical_id == "sm12-229");
+static_assert(cards::GuzmaHala::definition.name == "Guzma & Hala");
 
 constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
     {Card::RegidragoV, 4},         {Card::RegidragoVstar, 3}, {Card::Dragapult, 2},
@@ -94,6 +97,7 @@ constexpr std::string_view name(const Card card) {
     case Card::TateLiza: return "Tate & Liza";
     case Card::StevensResolve: return "Steven's Resolve";
     case Card::Guzma: return "Guzma";
+    case Card::GuzmaHala: break;  // Registered CardDefinition owns this name.
     case Card::Channeler: return "Channeler";
     case Card::Gladion: return "Gladion";
     case Card::Lusamine: return "Lusamine";

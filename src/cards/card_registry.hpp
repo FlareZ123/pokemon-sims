@@ -1,6 +1,7 @@
 #pragma once
 
 #include "card_definition.hpp"
+#include "trainers/evolution_incense.hpp"
 #include "trainers/professors_letter.hpp"
 #include "trainers/quick_ball.hpp"
 
@@ -8,6 +9,8 @@ namespace sim::cards {
 
 constexpr const CardDefinition* find_definition(const Card card) {
   switch (card) {
+    case Card::EvolutionIncense:
+      return &EvolutionIncense::definition; // Exact print: https://api.pokemontcg.io/v2/cards/swsh1-163
     case Card::QuickBall:
       return &QuickBall::definition;
     case Card::ProfessorsLetter:

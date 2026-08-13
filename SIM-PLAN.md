@@ -1,212 +1,248 @@
-# SIM-PLAN: Regidrago VSTAR Live Expanded Setup Solver
+# SIM-PLAN: Regidrago VSTAR Setup Simulator
 
 ## Purpose
 
-Estimate the probability that the supplied 60-card list reaches an attack-ready Regidrago VSTAR with a currently usable A-tier or S-tier Apex Dragon target. The simulator is a single-player, opponent-free setup model. It intentionally reports policy performance rather than an impossible claim of exact optimal play across hidden draws and unknown opponent decisions.
+The simulator estimates how often a registered Regidrago VSTAR deck reaches its setup-ready state under a fixed rules model and an observable-information action policy.
 
-The analysis is built around the user-supplied concepts:
+It is a single-player setup simulator. The output measures setup-policy performance under the registered assumptions. Match-win probability, opponent optimal play, and a complete Expanded game tree are outside the model.
 
-- **DCI**, a state-dependent choice of cards that may legally and strategically pay a discard cost.
-- **AMR**, whether a listed connector is usable in the current hand, board, turn, and matchup state.
-- **Connector domination**, where an available connector is evaluated against the stronger use of the same constrained resource.
-- **JIT discarding**, which changes a payload from a generic resource into a turn-local requirement.
-- **Prizing collapse**, where a visible recovery line may still lose because its bridge cards are also prized.
+## Registered deck surface
 
-## Revision history
+The main simulator registry contains:
 
-### Revision 0, model contract
+- `regidrago-shell`, the default deck;
+- `regidrago-pineco`, which includes the Pineco and Forretress ex setup package.
 
-1. Use the exact user-supplied 60-card list as the baseline.
-2. Draw an opening hand, resolve mulligans, select an Active Basic, bench legal opening Basics, and place six Prizes after opening placements.
-3. Draw one card at the beginning of every simulated turn.
-4. Model player turns 1 through 5, separately for going first and going second. T4 remains the setup-success deadline; unresolved trials continue through diagnostic T5, and first readiness on T5 remains a setup failure: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/T5_FAILURE_POLICY.md https://github.com/FlareZ123/pokemon-sims/issues/1491
-5. Treat a setup as successful only when the Active is Regidrago VSTAR, it carries two Grass and one Fire Energy, and an A/S Dragon target is legally available in the discard pile.
-6. Separate strict JIT, matchup-flex JIT, and no-discard-control profiles.
-7. Add item-lock, Rule Box ability-lock, and combined-lock stress cases.
+Each registered recipe contains 60 cards and is validated against deck-construction constraints represented by the simulator.
 
-### Revision 1, card-text audit changes
+`--all-decks` evaluates both registered recipes across the same aggregate scenario list. Crobat V swap studies use a separate modeling registry and do not become registered decks.
 
-The corpus audit changed the implementation details in several important ways.
+## Trial lifecycle
 
-1. Brilliant Blender searches the **deck** for up to five cards and discards them. It does not require hand cards. A strict JIT model therefore reserves Blender until an attack turn, then generally discards one immediate payload rather than treating Blender as a five-card hand-discard outlet.
-2. Mysterious Treasure discards one card **from hand** and searches only for a Psychic or Dragon Pokémon.
-3. Crispin searches for up to two Basic Energy cards of different types, places one in hand, and attaches the other. The modeled accelerator is therefore one Grass plus one Fire, with the manual attachment satisfying the remaining Apex requirement.
-4. Forest Seal Stone is used while attached to Regidrago V. The model consumes the game-wide VSTAR Power resource and does not allow a later Legacy Star in the same simulation.
-5. Latias ex’s Skyliner gives Basic Pokémon in play no Retreat Cost. The simulator uses it only to move an already-benched Regidrago VSTAR Active through a legal zero-cost retreat from the current Basic Active.
-6. Dipplin TWM 127 is a Stage 1 Dragon. It cannot be an opening Basic or bench target in this list. It remains a legal Dragon search target and a discardable dead Stage 1 tech card. It is excluded from the A/S payload set.
+A trial follows the modeled game state from setup through turn 5.
 
-### Revision 2, rules checkpoint
-
-An early build mistakenly allowed a setup Regidrago V to evolve on turn 1 because its `entered_turn` value was zero. The rule engine now has both gates:
-
-- no evolution on the player’s first turn;
-- no evolution during the Pokémon’s first turn in play.
-
-The same checkpoint added output locking and atomic replacement for result files. It also moved Forest Seal Stone’s turn-one going-second target toward Steven’s Resolve where three separate future axes are missing.
-
-### Revision 3, connector-sequence and artifact checkpoint
-
-The policy now recognizes two-step payload lines that are legal without a draw-order oracle:
-
-- Mysterious Treasure may discard an in-hand JIT payload while fetching another legal Psychic or Dragon card, even when its ordinary search target is already present.
-- Mysterious Treasure may fetch a deck payload when a second discard outlet remains in hand.
-- Quick Ball may discard an in-hand JIT payload while taking a legal Basic target, and it may fetch Dialga-GX when a second outlet remains.
-- Ultra Ball is evaluated using its actual two-card hand payment, with the dynamic DCI selector checking both discards.
-- Evolution Incense is included as a deliberately narrow evolution-axis comparator.
-
-The executable registers `regidrago-shell` and `regidrago-pineco`. Aggregate `--all-decks` runs the same scenario matrix for both recipes and emits one row per recipe and scenario: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#registered-decks https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L250-L330 https://github.com/FlareZ123/pokemon-sims/blob/main/results/multi_deck_comparison.csv https://github.com/FlareZ123/pokemon-sims/issues/1493. The separate modeling-only Crobat V registry is exposed through `--model-crobat` and `--model-variant`; its temporary shell derivatives remain outside `deck_registry()`, `--all-decks`, and the canonical shell baseline, and write `results/crobat_variant_model.csv` plus `docs/CROBAT_MODEL_REPORT.md`: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#model-crobat-v-swaps https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L250-L330 https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CROBAT_MODEL_REPORT.md https://api.pokemontcg.io/v2/cards/swsh3-104 https://github.com/FlareZ123/pokemon-sims/issues/1394 https://github.com/FlareZ123/pokemon-sims/issues/1496. Historical generic variant-builder work remains design context; the retired generic `variant_results.csv` must not support current claims: https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7.
-
-## Simulation state
-
-Each trial contains the following zones and state fields.
-
-| Area | Tracked state |
-|---|---|
-| Deck | Exact remaining card identities, shuffled only when an effect requires it. The policy sees composition and legal search targets. It does not inspect future draw order. |
-| Hand | Exact card identities and current discard candidates. |
-| Prizes | Six exact face-down identities. Gladion and Hisuian Heavy Ball inspect the modeled Prize cards. |
-| Discard | Exact cards plus a `discarded_this_turn` sublist used by strict JIT. |
-| Active | Pokémon identity, entry turn, Grass count, Fire count, Forest Seal Stone attachment, Powerglass attachment. |
-| Bench | Up to five Pokémon with the same tracked fields. |
-| Turn flags | Supporter used, manual Energy attached, VSTAR Power used, turn ended, going-first restriction, lock state. |
-| Outcome counters | First ready turn, mulligans, opening Regidrago V, Forest Seal Stone use, Steven’s Resolve use, Brilliant Blender use. |
-
-The state intentionally excludes opponent hand, damage, knockouts, prize-taking, disruption, and attack choices after the first successful Apex setup. Those variables require opponent archetype policies and would turn this project into a two-player game tree.
-
-## Rules engine coverage
-
-### Setup and timing
-
-1. Start from the full 60 cards.
+1. Start from the selected 60-card recipe.
 2. Shuffle and draw seven cards.
-3. Mulligan until at least one Basic is present.
-4. Select a legal Active Basic with a Regidrago V-first priority.
-5. Bench selected legal opening Basics up to the five-slot limit. Opening placements do not trigger “when you play from your hand onto your Bench” Abilities.
-6. Place six Prize cards from the remaining shuffled deck after opening placements; do not shuffle again: https://tcg.pokemon.com/assets/img/learn-to-play/getting-started/quick-start-rules/en-us/quick_start_rulebook.pdf#Set_Up_to_Play
-7. On each own turn, draw one card.
-8. Going first blocks Supporters and attacks on turn 1.
-9. A manual Energy attachment is limited to one each turn.
-10. A Supporter is limited to one each turn.
-11. Regidrago VSTAR may evolve only after both evolution gates are satisfied.
+3. Resolve mulligans until a legal Basic is available.
+4. Choose the Active Pokémon and opening Bench through the setup policy.
+5. Place six Prize cards from the remaining deck.
+6. Begin each player turn with the normal draw.
+7. Resolve legal setup actions through the current policy and rules engine.
+8. Record the first turn that satisfies the setup-ready predicate.
+9. Continue unresolved trials through T5 for diagnostic recovery reporting.
 
-### Connector graph
+T2, T3, and T4 readiness are setup success. First readiness on T5 is recorded as diagnostic recovery and remains a setup failure.
 
-The engine encodes the high-value edges below, together with their costs and contentions.
+## State represented by the engine
 
-```text
-Mysterious Treasure --[discard 1 hand card]--> Regidrago V / VSTAR / Tapu / Latias / payload
-Quick Ball --[discard 1 hand card]--> Regidrago V / Tapu / Latias / other Basic
-Earthen Vessel --[discard 1 hand card]--> Grass + Fire in hand
-Arven --> Item + Tool
-Arven --> Brilliant Blender + Forest Seal Stone
-Forest Seal Stone on Regidrago V --[shared VSTAR Power]--> any card
-Tapu Lele-GX from hand to Bench --> selected Supporter
-Oricorio GRI 55 from hand to Bench --> up to 2 Basic Energy
-Crispin --> one basic energy attached + one differently typed basic energy in hand
-Steven's Resolve --> VSTAR + Crispin + Blender, then turn ends
-Brilliant Blender --> one JIT A/S payload from deck to discard
-Professor Burnet --> one or two targets from deck to discard
-Latias ex --> retreat the current Basic Active for zero to promote a benched Regidrago
-```
+The simulation tracks exact card identities in the zones needed for setup decisions.
 
-### Explicit resource contentions
+| Area | State |
+|---|---|
+| Deck | Remaining exact card identities and current shuffled order. |
+| Hand | Exact card identities and legal discard candidates. |
+| Prizes | Six exact identities, hidden from policy until a legal inspection reveals them. |
+| Discard | Exact cards plus same-turn payload tracking used by JIT policy. |
+| Active | Pokémon identity, entry timing, attached Energy, Tool state, and setup-relevant flags. |
+| Bench | Pokémon identities and setup-relevant attached state. |
+| Turn | Supporter use, manual attachment use, VSTAR Power use, lock state, turn end, and seat restrictions. |
+| Outcome | First-ready turn, setup failure, mulligans, and aggregate route counters. |
 
-- Arven consumes the Supporter slot, so its Item and Tool package competes with Crispin, Steven’s Resolve, Burnet, Gladion, Serena, and Tate & Liza.
-- Forest Seal Stone consumes the one VSTAR Power per game. It competes with Regidrago VSTAR’s Legacy Star and any other VSTAR Power.
-- Mysterious Treasure, Quick Ball, and Earthen Vessel require a hand discard. Their availability depends on the active DCI profile.
-- Blender provides direct deck discard. It has higher JIT AMR than a hand-discard outlet when the payload remains in deck.
-- Latias ex only resolves the Active-position axis when its Ability is available and a Basic is currently Active.
-- Bench space can stop Tapu, Oricorio, Latias, and backup Regidrago lines. The current early-game policy avoids benching Mawile and Dialga outside a direct reason.
+The opponent's hand, attacks, damage, Knock Outs caused by an opposing deck, prize-taking, gust decisions, and post-setup combat are outside the aggregate goldfish model. A supported card may still resolve a mandatory self-Knock-Out when that effect is part of the setup line.
 
-## DCI policies
+## Knowledge model
+
+The policy uses information available through the modeled game state.
+
+A deck search establishes deterministic knowledge of the remaining deck composition. Prize identities become available only after a legal Prize-inspection effect. Future draw order remains unavailable to the action policy.
+
+Debug trace output may print hidden information for auditing. That output is separate from the policy's decision inputs.
+
+This distinction is central to connector realism. A search card may be legally playable while still lacking a strategically usable target or discard cost under the information state available before resolution.
+
+## Setup-ready predicate
+
+A trial is ready on turn `t` when the engine's current readiness contract is satisfied.
+
+The core requirements are:
+
+1. Regidrago VSTAR is Active.
+2. Apex Dragon's `[G][G][R]` attack cost is payable from legally attached Energy.
+3. A recipe-permitted modeled Dragon payload is in the discard pile.
+4. Strict JIT and matchup-flex JIT require a qualifying payload to have entered the discard pile during turn `t`.
+5. `t` is at least 2.
+
+The exact accepted payload set and Energy accounting are maintained in source and documented in [`docs/MODEL_ASSUMPTIONS.md`](docs/MODEL_ASSUMPTIONS.md).
+
+## DCI profiles
+
+Discard-cost intelligence is state-dependent. The policy evaluates whether a card is a legal and strategically acceptable payment at the moment a cost is considered.
 
 ### Strict JIT
 
-A/S payloads are protected until the same turn they will support Apex Dragon. Singletons with opponent-facing or recovery value remain protected. A discard cost may use a duplicate attacker/evolution, surplus Energy, or an immediate current-turn payload.
-
-This is the conservative discard-control profile. It captures the central limitation that a real Mysterious Treasure in hand can have zero AMR despite looking connected in a graph.
+Payloads remain protected until the turn they can satisfy the ready-state requirement. Key singletons and setup resources remain protected when spending them would damage the current route. Surplus Energy, duplicates, and a payload that immediately completes the current ready turn may become valid discard costs.
 
 ### Matchup-flex JIT
 
-The payload itself remains JIT. Cards whose value is visibly low in a specified matchup become discard candidates. The policy makes Mawile-GX, Dipplin, some reactive Supporters, Field Blower, stadiums, recovery cards, and Powerglass eligible when their matchup job is not presently required. Goodra VSTAR can also become eligible when an S-tier payload remains available and defensive damage reduction is not the selected plan.
+Same-turn payload timing remains in force. Additional cards may become discardable when their matchup-facing or recovery value is not required by the scenario and current setup state.
 
-### No-discard-control
+### No discard control
 
-A/S payloads can enter the discard before the attack turn. This produces an optimistic non-control reference line, not a recommendation for every match.
+Payloads may enter the discard pile before the ready turn. This profile is an optimistic setup reference for measuring the cost of discard protection.
+
+The detailed policy belongs in [`docs/POLICY_DECISIONS.md`](docs/POLICY_DECISIONS.md).
+
+## Connector model
+
+The engine treats search cards, Supporters, Abilities, Tools, Energy acceleration, switching, and discard outlets as actions with costs and contentions.
+
+Important setup relationships include:
+
+```text
+Mysterious Treasure -> Psychic or Dragon Pokémon, with a hand discard cost
+Quick Ball -> Basic Pokémon, with a hand discard cost
+Earthen Vessel -> Basic Energy access, with a hand discard cost
+Arven -> Item plus Tool access
+Forest Seal Stone -> one card through the shared VSTAR Power resource
+Tapu Lele-GX -> Supporter access when Wonder Tag is legal
+Oricorio -> Basic Energy access when Vital Dance is legal
+Crispin -> two differently typed Basic Energy destinations when both are searched
+Steven's Resolve -> three-card setup package followed by turn end
+Brilliant Blender -> selected deck cards moved to discard
+Professor Burnet -> Dragon payload access through deck-to-discard search
+Latias ex -> zero-retreat Active-position correction for eligible Basic Pokémon
+Forretress ex -> setup Energy acceleration through its modeled self-Knock-Out line
+```
+
+The printed card effect and the strategic reason to use it are separate concerns. A connector is admitted only when its rules prerequisites, costs, resource contentions, and route value are satisfied by the current state.
+
+## Resource contention
+
+The policy explicitly accounts for shared resources.
+
+A Supporter action can serve only one Supporter route in a turn. Forest Seal Stone uses the same once-per-game VSTAR Power resource as Pokémon VSTAR Powers. Bench space constrains on-play connectors. Manual Energy attachment is limited to one per turn. Discard-cost cards compete for the same hand resources. Item and Ability locks remove actions before route comparison.
+
+These constraints are evaluated before the simulator credits a route with setup progress.
+
+## Evolution and turn timing
+
+The rules engine enforces setup timing relevant to the modeled decks.
+
+Regidrago VSTAR cannot evolve during the player's first turn and cannot evolve during the Pokémon's first turn in play. The starting player follows the first-turn Supporter and attack restrictions represented by the rules engine. One Supporter and one manual Energy attachment are available per turn unless another effect or scenario prevents them.
+
+Opening placement does not trigger an Ability whose condition requires a Pokémon to be played from hand onto the Bench during a turn.
 
 ## Lock scenarios
 
-| Scenario | Meaning |
-|---|---|
-| None | Baseline goldfish condition. |
-| Turn-2 item lock | Turn 1 is normal. Item cards cannot be played from turn 2 onward. This is the registered current-paper Item-lock timing. |
-| Full Rule Box ability lock | Rule Box Pokémon Abilities are unavailable. The model treats Forest Seal Stone as usable through Path to the Peak because the VSTAR Power is on the Tool. |
-| Combined | Rule Box Pokémon Abilities are suppressed from the start, while Item cards remain legal on turn 1 and become locked from turn 2 onward. This uses the same Item timing as the Turn-2 item-lock scenario. |
+Aggregate scenarios exercise the setup policy under several external constraints.
 
-`LockMode::FullItem` remains only for focused synthetic or historical regression fixtures and has no registered aggregate or trace label. The current-paper aggregate omits turn-one full Item-lock rows because the starting player cannot attack on the first turn and Forest of Giant Plants, the historical immediate-evolution enabler for turn-one Vileplume-style locks, is banned in Expanded. Sources: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf https://www.pokemon.com/es/sol-luna-sombras-ardientes-anuncio-trimestral-sobre-lista-de-cartas-prohibidas-y-cambios-en-las-reglas/ https://github.com/FlareZ123/pokemon-sims/issues/2247
+### Baseline
 
-“Lock with no outs” is a stress-test condition. Channeler is not treated as a generic answer because its text removes effects of attacks on your Pokémon. It cannot generally remove an opponent’s ongoing Item or Ability lock.
+Items and supported Abilities operate normally.
 
-## Policy design
+### Turn-2 Item lock
 
-The policy follows observable information only.
+The first player turn has normal Item access. Item cards are unavailable from that player's second turn onward.
 
-1. Put Regidrago V into play as soon as a legal connector can do it.
-2. Preserve the Active-position axis through a starting Regidrago V or Latias ex.
-3. Use legal discard connectors only when a DCI candidate exists under the selected profile.
-4. Before evolving, use Forest Seal Stone on Regidrago V when it resolves the highest missing axis. Going second on turn 1, an incomplete VSTAR/Crispin/Blender package directs Forest Seal Stone toward Steven’s Resolve.
-5. Select Crispin on an attack-relevant turn when the GGF energy axis is missing.
-6. Select Steven’s Resolve on going-second turn 1 where a Regidrago V and the one manual Energy attachment already exist, then fetch VSTAR, Crispin, and Blender.
-7. Use Arven for Blender plus Forest Seal Stone when the package is stronger than the available direct Supporter.
-8. Evolve only when legal.
-9. Delay strict-JIT payload disposal until the successful attack turn. Prefer Blender for a deck payload, then a hand-discard Item/Supporter where its required primary action is still legal.
-10. Promote the evolved Regidrago with Latias ex when the current Active is a Basic and the Ability is available.
+### Rule Box Ability lock
 
-This is a policy search with rules-enforced transitions. It does not use a future-card oracle. A literal near-perfect solver would need a partially observable, two-player stochastic game model with opponent archetype distributions and a much larger rule database.
+Rule Box Pokémon Abilities are suppressed while the modeled lock remains active. Trainer cards and other legal actions continue according to their own rules.
 
-## Success predicates
+### Combined lock
 
-### Setup-ready
+Rule Box Ability suppression applies with the persistent Item restriction beginning on turn 2.
 
-A trial is setup-ready on turn `t` when all statements are true:
+Focused regressions may construct narrower synthetic lock states when a rules helper needs direct testing. Aggregate scenario registration remains defined by the current source and [`docs/MODEL_ASSUMPTIONS.md`](docs/MODEL_ASSUMPTIONS.md).
 
-1. The Active Pokémon is Regidrago VSTAR.
-2. It has at least two attached Grass Energy and one attached Fire Energy.
-3. The discard pile contains Dragapult ex, Mega Dragonite ex, Dialga-GX, Hisuian Goodra VSTAR, or recipe-gated Appletun `sv8-140` when the selected registered recipe contains it: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_001.inc#L128-L137 https://github.com/FlareZ123/pokemon-sims/issues/1489
-4. In strict and matchup-flex JIT modes, at least one such payload moved to the discard during turn `t`.
-5. `t >= 2`.
+## Prize handling
 
-Dragapult ex and Mega Dragonite ex are S-tier. Dialga-GX’s Timeless-GX and Hisuian Goodra VSTAR’s Rolling Iron are A-tier in the supplied tier list.
+Six Prize cards are modeled as exact hidden identities.
 
-### Reported metrics
+Hisuian Heavy Ball and Gladion can expose or recover Prize information according to their supported effects. The policy cannot use Prize identities before such an effect establishes the corresponding knowledge state.
 
-- `P(ready by T2)`, `P(ready by T3)`, `P(ready by T4)`, and cumulative `P(ready by T5)`.
-- `P(ready on T5)` records diagnostic late recovery; those games remain setup failures.
-- `setup_failure_pct` counts every game not ready by the end of T4 and equals `100 - ready_by_t4_pct`: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/T5_FAILURE_POLICY.md https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7-L12 https://github.com/FlareZ123/pokemon-sims/issues/1491
-- Monte Carlo standard error in percentage points for baseline scenario values.
-- Setup-tool use rates and opening Regidrago V rate.
-- Registered-deck scenario probabilities for `regidrago-shell` and `regidrago-pineco`, including the paired `--all-decks` artifact: https://github.com/FlareZ123/pokemon-sims/blob/main/results/multi_deck_comparison.csv https://github.com/FlareZ123/pokemon-sims/issues/1493
-- Source-bound paired Crobat V card-swap deltas for T2, T3, and T4 readiness, scenario improvements, Dark Asset use, and cards drawn per using game. The `--model-crobat` generator writes `results/crobat_variant_model.csv`, `--model-variant` reproduces one readable hand, and `docs/CROBAT_MODEL_REPORT.md` records discrete cut costs and interpretation boundaries: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#model-crobat-v-swaps https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CROBAT_MODEL_REPORT.md https://api.pokemontcg.io/v2/cards/swsh3-104 https://github.com/FlareZ123/pokemon-sims/issues/1394 https://github.com/FlareZ123/pokemon-sims/issues/1496
+This allows the simulator to represent prizing collapse, recovery-card prizing, and the difference between deck knowledge and Prize knowledge without granting an oracle.
 
-## Validation plan
+## Supported action scope
 
-1. Audit all exact requested card IDs against the supplied corpus.
-2. Assert 18 Pokémon, 33 Trainers, 9 Energy, and 60 total cards, derived from the canonical decklist and card-audit contract: https://github.com/FlareZ123/pokemon-sims/blob/main/data/decklist.json https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/audit_card_data.py
-3. Unit-test deck total and category totals.
-4. Build with warnings enabled.
-5. Run `ctest`.
-6. Smoke-test both registered recipes and byte-compare the aggregate `--all-decks` matrix. Separately regenerate the modeling-only Crobat V matrix, validate one `--model-variant` trace, and keep the retired generic `variant_results.csv` excluded: https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml#L133-L140 https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#model-crobat-v-swaps https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CROBAT_MODEL_REPORT.md https://github.com/FlareZ123/pokemon-sims/blob/main/results/README.md#L7 https://github.com/FlareZ123/pokemon-sims/issues/1394 https://github.com/FlareZ123/pokemon-sims/issues/1493 https://github.com/FlareZ123/pokemon-sims/issues/1496
-7. Run a fixed-seed large trial count for reproducible final CSV files.
-8. Inspect any implausible result by checking timing gates, Supporter contention, and same-turn discard markers.
-9. Record known omissions before interpreting the percentages.
+The engine models card effects and interactions required by the registered setup routes and their validation fixtures. This includes core search Items, setup Supporters, Prize recovery, selected switching, Forest Seal Stone, relevant Abilities, lock removal where supported, Pineco and Forretress ex setup behavior, and the discard routes needed by Apex Dragon readiness.
 
-## Planned refinements after this project
+Card text that matters only after the first successful setup attack may be recorded for policy value while remaining outside the state transition engine. Examples include later damage races and opponent-specific attack consequences.
 
-- Add a belief-state evaluator that estimates expected payoff of draw Supporters rather than using the current fallback priority.
-- Add a richer opponent model with named locks, damage clocks, Iono/Judge-style hand disruption, gust, and prize-taking.
-- Add explicit damage-board analysis for Phantom Dive, Ryuno Glide, Rolling Iron, Timeless-GX, Dipplin, and Powerglass loops.
-- Add alternative-card effect modules only after their exact text and Live availability are audited.
+[`docs/RULES_TRACEABILITY.md`](docs/RULES_TRACEABILITY.md) maps implemented behavior to rules identifiers. [`docs/RULE_SOURCES.md`](docs/RULE_SOURCES.md) contains the source registry.
 
-## Battle VIP Pass extension
+## CLI modes
 
-Battle VIP Pass is represented as a first-turn-only Item connector with a two-Basic direct-to-Bench cap, K1 transition, shuffle, Bench-space enforcement, played-from-hand Ability suppression, static-Ability continuity, and post-turn-one dead-card DCI. Production support is independent of deck registration. Validation uses a temporary shell derivative outside the named registry: https://api.pokemontcg.io/v2/cards/swsh8-225 https://github.com/FlareZ123/pokemon-sims/issues/1647
+### Deterministic trace
+
+`--simulate-this` executes one seed and prints the complete traceable setup line.
+
+### Ready-seed search
+
+`--find-ready N` scans deterministic seeds and prints the first `N` trials that reach a ready state, optionally constrained by `--require-ready-by`.
+
+### Aggregate simulation
+
+`--trials`, `--seed`, `--deck`, and `--out` produce a CSV for the selected registered deck. `--all-decks` emits every registered deck over the same scenario matrix.
+
+### Crobat V modeling
+
+`--model-crobat` produces the dedicated Crobat V swap matrix. `--model-variant` allows a deterministic trace through one modeling recipe.
+
+### Self-test
+
+`--self-test` runs the simulator's built-in parser and core contract checks.
+
+The CLI rejects incompatible mode combinations rather than silently changing their meaning.
+
+## Statistical output
+
+Aggregate rows record readiness by T2 through T5, first-readiness timing, setup failure, Monte Carlo standard error, opening-state metrics, and route-specific counters used by the current reports.
+
+The displayed Monte Carlo standard error for a binary outcome is:
+
+```text
+100 * sqrt((x / n) * (1 - x / n) / n)
+```
+
+Fixed seeds make committed reports reproducible. Source-bound manifests tie aggregate evidence to the simulator inputs that produced it.
+
+## Result generation
+
+The canonical selected-deck baseline is generated with:
+
+```text
+scripts/regenerate_setup_baselines.py
+```
+
+The paired registered-deck matrix is generated with:
+
+```text
+scripts/generate_multi_deck_comparison.py
+```
+
+Generated documentation is refreshed through the corresponding update scripts in `scripts/`.
+
+Result writers use locking and atomic replacement so an interrupted process does not leave a partially written canonical artifact.
+
+## Validation contract
+
+Changes to rules, card resolution, route selection, knowledge transitions, readiness, or aggregate inputs should be validated through the permanent repository surface.
+
+The expected coverage includes:
+
+- C++20 compilation;
+- Release tests;
+- sanitizer tests;
+- exact-state regressions for affected behavior;
+- deterministic trace review;
+- CLI contract tests;
+- aggregate matrix extraction;
+- source-bound evidence checks.
+
+When simulator inputs change, committed statistical artifacts must be regenerated from the settled source before their provenance contracts can pass.
+
+## Interpretation
+
+The simulator answers a narrow question: given the registered deck, scenario, policy profile, and modeled rules, how often does the policy assemble an Apex-ready Regidrago VSTAR by each setup turn?
+
+Use the output to compare setup routes, card packages, locks, and policy choices inside that model. Use [`docs/MODEL_ASSUMPTIONS.md`](docs/MODEL_ASSUMPTIONS.md) for the exact boundaries of any probability claim.

@@ -141,26 +141,142 @@ bool play_issue_2292_gladion_final_prize_energy_finish() {
   return true;
 }
 
-bool play_gladion() {
-  if (play_issue_2292_gladion_final_prize_energy_finish()) return true;
-
-  if (!issue_1737_prized_steven_route_available()) {
-    return play_gladion_issue1737_original();
+std::optional<Card> issue_3520_held_apex_completing_basic() const {
+  if (!state_.active || state_.active->card != Card::RegidragoV ||
+      state_.active->double_dragon <= 0) {
+    return std::nullopt;
   }
 
+  // Double Dragon Energy supplies two Energy of every type while attached to this
+  // Dragon, and Apex Dragon costs [G][G][R]. Test the physical Basic attachment
+  // against the shared payment helper instead of reproducing Grass/Fire counters.
+  // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Manual attachment and attack-cost procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Confirmed recurrence: https://github.com/FlareZ123/pokemon-sims/issues/3520
+  if (hand_count(Card::Fire) > 0 &&
+      basic_attachment_completes_apex(*state_.active, Card::Fire)) {
+    return Card::Fire;
+  }
+  if (hand_count(Card::Grass) > 0 &&
+      basic_attachment_completes_apex(*state_.active, Card::Grass)) {
+    return Card::Grass;
+  }
+  return std::nullopt;
+}
+
+bool issue_3520_next_turn_treasure_completion_available() const {
+  return strict_payload_timing() && !item_locked() &&
+      state_.turn < scenario_.max_turn && state_.active &&
+      state_.active->card == Card::RegidragoV &&
+      state_.active->entered_turn < state_.turn && need_vstar() &&
+      need_energy() && need_payload() &&
+      issue_3520_held_apex_completing_basic().has_value() &&
+      std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
+      might_be_unseen(Card::RegidragoVstar);
+}
+
+std::optional<Card> issue_3520_canonical_gladion_target() const {
+  const auto completing_basic = issue_3520_held_apex_completing_basic();
+  if (!completing_basic || !issue_3520_next_turn_treasure_completion_available() ||
+      !supporter_allowed() || hand_count(Card::Gladion) == 0 ||
+      prize_count_after_reveal(Card::MysteriousTreasure) == 0) {
+    return std::nullopt;
+  }
+
+  // Ask the existing #1598 selector which Prize it would take in the equivalent
+  // canonical GG + held-Fire representation. This preserves every established
+  // higher-priority Gladion target without copying that priority ladder here.
+  // The projection owns only copied game state. Restoring the referenced RNG makes
+  // the policy probe observationally pure before the real Gladion exchange runs.
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // DDE semantic equivalence: https://github.com/FlareZ123/pokemon-sims/issues/2238
+  // Original bank route: https://github.com/FlareZ123/pokemon-sims/issues/1598
+  // Confirmed recurrence: https://github.com/FlareZ123/pokemon-sims/issues/3520
+  const std::mt19937_64 saved_rng = rng_;
+  struct RngRestore {
+    std::mt19937_64& rng;
+    std::mt19937_64 saved;
+    ~RngRestore() { rng = saved; }
+  } restore{rng_, saved_rng};
+
+  Engine projected = *this;
+  projected.trace_ = nullptr;
+  projected.state_.active->grass = 2;
+  projected.state_.active->fire = 0;
+  projected.state_.active->double_dragon = 0;
+  if (*completing_basic == Card::Grass) {
+    if (!remove_one(projected.state_.hand, Card::Grass)) {
+      return std::nullopt;
+    }
+    projected.state_.hand.push_back(Card::Fire);
+  }
+
+  const std::vector<Card> prizes_before = projected.state_.prizes;
+  if (!projected.play_gladion_issue1737_original()) return std::nullopt;
+  for (const Card card : prizes_before) {
+    if (count_of(projected.state_.prizes, card) < count_of(prizes_before, card)) {
+      return card;
+    }
+  }
+  return std::nullopt;
+}
+
+bool play_issue_3520_dde_prized_treasure() {
+  const auto projected_target = issue_3520_canonical_gladion_target();
+  if (!projected_target || *projected_target != Card::MysteriousTreasure) {
+    return false;
+  }
+
+  // Gladion reveals the Prizes and exchanges itself for the deterministic Treasure.
+  // The held Basic is kept for next turn; Treasure is banked so its mandatory discard
+  // can put the held Dragon payload into the discard pile on the same ready turn.
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Prize exchange, Supporter, Item, attachment, evolution, and attack procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Strict-JIT and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed recurrence: https://github.com/FlareZ123/pokemon-sims/issues/3520
   remove_one(state_.hand, Card::Gladion);
   state_.supporter_used = true;
   prizes_revealed_ = true;
   const auto prize = std::find(
-      state_.prizes.begin(), state_.prizes.end(), Card::StevensResolve);
+      state_.prizes.begin(), state_.prizes.end(), Card::MysteriousTreasure);
   if (prize == state_.prizes.end()) {
-    throw std::logic_error("Known prized Steven's Resolve disappeared");
+    throw std::logic_error("Projected prized Mysterious Treasure disappeared");
   }
   *prize = Card::Gladion;
-  state_.hand.push_back(Card::StevensResolve);
+  state_.hand.push_back(Card::MysteriousTreasure);
   shuffle(state_.prizes);
+  issue_1598_bank_prized_treasure_ = true;
   trace("PLAY SUPPORTER",
-        "R-GLADION-01; R-STEVEN-01; R-SECRET-BOX-01; P-KNOWLEDGE-01; P-COMPRESS-01",
-        "Exchanged Gladion for Steven's Resolve to preserve the state-semantic Secret Box and VSTAR continuation.");
+        "R-GLADION-01; R-MT-01; R-RVS-01; P-KNOWLEDGE-01; P-JIT-01; P-COMPRESS-01",
+        "Exchanged Gladion for the known prized Mysterious Treasure and banked the DDE one-Basic completion for next turn.");
   return true;
+}
+
+bool play_gladion() {
+  if (play_issue_2292_gladion_final_prize_energy_finish()) return true;
+
+  if (issue_1737_prized_steven_route_available()) {
+    remove_one(state_.hand, Card::Gladion);
+    state_.supporter_used = true;
+    prizes_revealed_ = true;
+    const auto prize = std::find(
+        state_.prizes.begin(), state_.prizes.end(), Card::StevensResolve);
+    if (prize == state_.prizes.end()) {
+      throw std::logic_error("Known prized Steven's Resolve disappeared");
+    }
+    *prize = Card::Gladion;
+    state_.hand.push_back(Card::StevensResolve);
+    shuffle(state_.prizes);
+    trace("PLAY SUPPORTER",
+          "R-GLADION-01; R-STEVEN-01; R-SECRET-BOX-01; P-KNOWLEDGE-01; P-COMPRESS-01",
+          "Exchanged Gladion for Steven's Resolve to preserve the state-semantic Secret Box and VSTAR continuation.");
+    return true;
+  }
+
+  if (play_issue_3520_dde_prized_treasure()) return true;
+  return play_gladion_issue1737_original();
 }

@@ -112,7 +112,7 @@ void incidental_card_substitutions_do_not_change_opening_choice() {
         replace_card(exact_hand(), sim::Card::Powerglass,
                      sim::Card::Dragapult);
     sim::State without_both =
-        replace_card(std::move(without_cheer), sim::Card::Powerglass,
+        replace_card(without_cheer, sim::Card::Powerglass,
                      sim::Card::Dragapult);
 
     // Team Yell's Cheer and Powerglass are not prerequisites for setup placement,

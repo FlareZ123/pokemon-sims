@@ -247,3 +247,11 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - `src/cards/trainers/battle_vip_pass.hpp` and `kRegisteredCardDefinitions` own exact identity, display name, Trainer kind, and Item subtype.
 - Focused registration coverage: `tests/battle_vip_pass_card_class_tests.cpp`.
 - Existing first-turn admission, Basic-Pokémon Bench search resolution, bench-space policy, K0/K1 timing, DCI/UDP/AMR, connector domination, and route ordering remain in Engine. A later printed-resolution migration should preserve those boundaries and reuse the existing live resolver.
+
+## Cleanup wave 2026-08-13 Path and composition checkpoint
+
+- Path to the Peak metadata migration is owned by https://github.com/FlareZ123/pokemon-sims/issues/3519. Exact `swsh6-148` identity and Stadium subtype now live in `src/cards/trainers/path_to_the_peak.hpp`, with direct card data at https://api.pokemontcg.io/v2/cards/swsh6-148.
+- `registered_is_stadium()` extends the shared Trainer-subtype registry seam to Stadium classification. The legacy `is_stadium()` path consults registered metadata first and keeps fallback ownership only for unmigrated Stadiums. Stadium procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+- `src/trace_engine_v2/composition/deck_recipe.inc` owns the modeled deck recipe and `DeckRecipe` alias. `core/card_catalog.inc` now owns card naming/registry access without also owning deck composition policy.
+- Quick Ball exact-print compile-time contracts are colocated with `QuickBall::definition`, while focused Path registry coverage lives in `tests/path_to_the_peak_card_class_tests.cpp`. Quick Ball source: https://api.pokemontcg.io/v2/cards/swsh1-179
+- The explicit registry now contains Battle VIP Pass, Brilliant Blender, Evolution Incense, Field Blower, Quick Ball, Professor's Letter, Mysterious Treasure, Hisuian Heavy Ball, and Path to the Peak. This checkpoint changes intrinsic ownership and composition only; gameplay strategy, DCI/UDP/AMR, connector domination, K0/K1, and printed card resolution remain at their existing owners.

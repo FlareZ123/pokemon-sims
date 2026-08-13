@@ -197,6 +197,12 @@ constexpr bool is_tool(const Card card) {
 }
 
 constexpr bool is_stadium(const Card card) {
+  // Migrated Stadium identity comes from exact card metadata; gameplay timing
+  // remains governed by the simulator rules layer and the Advanced Player's Rulebook B-04:
+  // https://api.pokemontcg.io/v2/cards/swsh6-148
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  if (cards::has_definition(card)) return cards::registered_is_stadium(card);
+
   return card == Card::ChaoticSwell || card == Card::ForestOfVitality ||
          card == Card::PathToPeak;
 }

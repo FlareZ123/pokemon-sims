@@ -79,4 +79,8 @@ class QuickBall final {
   }
 };
 
+static_assert(QuickBall::definition.id == Card::QuickBall); // Exact print identity: https://api.pokemontcg.io/v2/cards/swsh1-179
+static_assert(QuickBall::definition.canonical_id == "swsh1-179"); // Exact print identity: https://api.pokemontcg.io/v2/cards/swsh1-179
+static_assert(QuickBall::definition.name == "Quick Ball"); // Exact printed name: https://api.pokemontcg.io/v2/cards/swsh1-179
+
 }  // namespace sim::cards

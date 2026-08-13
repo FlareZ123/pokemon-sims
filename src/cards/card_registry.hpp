@@ -1,20 +1,23 @@
 #pragma once
 
+#include <array>
+
 #include "card_definition.hpp"
 #include "trainers/professors_letter.hpp"
 #include "trainers/quick_ball.hpp"
 
 namespace sim::cards {
 
+inline constexpr std::array<const CardDefinition*, 2> kRegisteredCardDefinitions{
+    &QuickBall::definition,
+    &ProfessorsLetter::definition, // Exact XY 123 metadata: https://api.pokemontcg.io/v2/cards/xy1-123
+};
+
 constexpr const CardDefinition* find_definition(const Card card) {
-  switch (card) {
-    case Card::QuickBall:
-      return &QuickBall::definition;
-    case Card::ProfessorsLetter:
-      return &ProfessorsLetter::definition; // Exact XY 123 metadata: https://api.pokemontcg.io/v2/cards/xy1-123
-    default:
-      return nullptr;
+  for (const CardDefinition* definition : kRegisteredCardDefinitions) {
+    if (definition->id == card) return definition;
   }
+  return nullptr;
 }
 
 constexpr bool has_definition(const Card card) {

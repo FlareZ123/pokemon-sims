@@ -128,20 +128,30 @@
         permit_payload && !is_payload(*first), flex_fodder);
 
     // Once the first cost is the proven current-turn payload, future-only value is
-    // subordinate to completing readiness now. Reuse the existing permissive DCI
-    // selector for the second non-payload cost before considering payload copies.
-    // This keeps essential current-turn evolution and Energy resources protected by
-    // the same selector while allowing a redundant Supporter or connector to fund
-    // the deterministic Guzma & Hala finish.
+    // subordinate to completing readiness now. Ask the existing broader selector
+    // first, then exploit the one-Supporter-per-turn rule: after Guzma & Hala has
+    // been chosen, every other held Supporter is unusable this turn and therefore a
+    // sound second cost for a route already proven to become ready this turn.
+    // This is card-type policy rather than a named-card exception and does not use
+    // hidden deck or Prize identities.
+    // Guzma & Hala: https://www.pokemon.com/uk/pokemon-tcg/pokemon-cards/sm-series/sm12/229/
+    // Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Dynamic DCI and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3386
     if (!second && permit_payload && is_payload(*first)) {
       second = choose_discard(false, true);
     }
+    if (!second && permit_payload && is_payload(*first)) {
+      const auto supporter = std::find_if(
+          state_.hand.begin(), state_.hand.end(), [](const Card card) {
+            return is_supporter(card);
+          });
+      if (supporter != state_.hand.end()) second = *supporter;
+    }
 
-    // If the first current-turn JIT cost is a Dragon payload and even permissive
-    // DCI has no second safe card, an additional physical copy of that same payload
-    // is the lowest-loss fallback. Spending the duplicate preserves every distinct
+    // If the first current-turn JIT cost is a Dragon payload and no ordinary or
+    // Supporter cost survives, an additional physical copy of that same payload is
+    // the lowest-loss fallback. Spending the duplicate preserves every distinct
     // Apex Dragon attack identity while allowing deterministic DDE + Tool compression.
     // Guzma & Hala: https://www.pokemon.com/uk/pokemon-tcg/pokemon-cards/sm-series/sm12/229/
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136

@@ -71,12 +71,23 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Existing Brilliant Blender strategy and resolution remain in Engine. This migration preserves the printed search-for-up-to-five-Pokémon discard resolution, ACE SPEC scarcity, payload selection, DCI/UDP/AMR, connector domination, K0/K1 timing, and ready-turn policy. Printed effect and ACE SPEC rule: https://api.pokemontcg.io/v2/cards/sv8-164
 - Follow-up for this card must locate the single live `play_brilliant_blender()` resolver before moving printed resolution. Keep strategic payload choice in Engine and preserve exact deck inspection, discard, shuffle, and knowledge transitions through `CardContext`.
 
+### Battle VIP Pass
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3509
+- Canonical print: `swsh8-225`.
+- Card data: https://api.pokemontcg.io/v2/cards/swsh8-225
+- Status: exact identity, display name, Trainer kind, and Item subtype are owned by `src/cards/trainers/battle_vip_pass.hpp` and `kRegisteredCardDefinitions`.
+- Focused registration coverage: `tests/battle_vip_pass_card_class_tests.cpp`.
+- Existing first-turn-only admission, Basic-Pokémon bench search resolution, bench-space policy, K0/K1 timing, DCI/UDP/AMR, connector domination, and route ordering remain in Engine. This wave changes intrinsic metadata ownership only.
+- Legacy `name()` ownership is retired for Battle VIP Pass. The remaining `is_item()` fallback case is compatibility-only and unreachable while the registry definition is present; remove it in a later isolated mechanical edit when the classification fragment can be safely consolidated.
+
 These staged entries advance the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
 ### Cleanup wave 2026-08-13 checkpoint
 
 - Registered display names now flow through `CardDefinition` first, with the migrated-card compatibility labels grouped together and no duplicate display strings in the legacy `name()` table. Canonical registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 - `is_item()` now delegates migrated Item identity to `registered_is_item()` without repeating Professor's Letter, Evolution Incense, or Mysterious Treasure in the legacy fallback switch. Quick Ball was already registry-only there. Exact prints: https://api.pokemontcg.io/v2/cards/xy1-123 https://api.pokemontcg.io/v2/cards/swsh1-163 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179
+- Battle VIP Pass now has an explicit metadata owner and focused registry test. Its exact first-turn search effect remains at the existing Engine resolver for a later behavior-preserving resolver migration. Card source: https://api.pokemontcg.io/v2/cards/swsh8-225
 - This wave is mechanical ownership cleanup only. Printed resolution, strategy, DCI/UDP/AMR, connector priority, and K0/K1 transitions remain at their existing owners. The next resolver migration must still locate the single live resolution boundary before moving state transitions. Architecture contract: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#card-module-contract
 
 ## Composition consolidation status
@@ -103,7 +114,7 @@ Registered-card compatibility now uses `find_definition()` as the single registr
 
 ### Registry consolidation checkpoint
 
-- `kRegisteredCardDefinitions` is the single explicit list of migrated definitions. Brilliant Blender, Quick Ball, Professor's Letter, Evolution Incense, and Mysterious Treasure now use that inventory; future migrations append one definition there instead of extending a lookup switch. Brilliant Blender source: https://api.pokemontcg.io/v2/cards/sv8-164
+- `kRegisteredCardDefinitions` is the single explicit list of migrated definitions. Brilliant Blender, Battle VIP Pass, Quick Ball, Professor's Letter, Evolution Incense, and Mysterious Treasure now use that inventory; future migrations append one definition there instead of extending a lookup switch. Battle VIP Pass source: https://api.pokemontcg.io/v2/cards/swsh8-225
 - `registered_is_trainer_kind()` is the shared intrinsic Trainer-subtype query. Item, Supporter, Stadium, and Tool compatibility checks should delegate to this helper as those classifications migrate.
 - `is_trainer_kind()` belongs with `CardDefinition` because it interprets intrinsic metadata only. Route policy, DCI/UDP, AMR, connector domination, K0/K1, and matchup state remain outside the registry.
 - The next card migration should reuse these registry primitives before adding any new compatibility branch. If a migrated fact still needs a legacy fallback, keep that fallback only for unmigrated cards.

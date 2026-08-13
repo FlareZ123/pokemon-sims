@@ -59,6 +59,9 @@ constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
 using DeckRecipe = std::vector<std::pair<Card, int>>;
 
 constexpr std::string_view name(const Card card) {
+  // Registered cards own intrinsic display names. Battle VIP Pass is registered
+  // after its completed migration: https://api.pokemontcg.io/v2/cards/swsh8-225
+  // Migration owner: https://github.com/FlareZ123/pokemon-sims/issues/3509
   if (const cards::CardDefinition* definition = cards::find_definition(card)) {
     return definition->name;
   }
@@ -80,7 +83,6 @@ constexpr std::string_view name(const Card card) {
     case Card::ForretressEx: return "Forretress ex";
     case Card::BrilliantBlender: return "Brilliant Blender";
     case Card::SecretBox: return "Secret Box";
-    case Card::BattleVipPass: return "Battle VIP Pass";
     case Card::UltraBall: return "Ultra Ball";
     case Card::PokemonCommunication: return "Pokémon Communication";
     case Card::EarthenVessel: return "Earthen Vessel";

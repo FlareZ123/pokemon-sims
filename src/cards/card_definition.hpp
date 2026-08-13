@@ -62,6 +62,14 @@ struct CardDefinition {
   bool ace_spec{};
   bool basic_energy{};
   std::string_view source_url;
+
+  constexpr bool is_item() const noexcept {
+    return kind == CardKind::Trainer && trainer_kind == TrainerKind::Item;
+  }
+
+  constexpr bool is_basic_pokemon() const noexcept {
+    return kind == CardKind::Pokemon && pokemon_stage == PokemonStage::Basic;
+  }
 };
 
 constexpr bool has_pokemon_type(const CardDefinition& definition,

@@ -77,7 +77,7 @@ void test_projected_trainer_locks_and_horizon() {
   // TurnTwoItem starts on T2 and remains active, so a legal T1-going-second Gladion
   // state cannot project a T2 Brilliant Blender play through that scheduled lock.
   // Persistent Item-lock contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
-  // Supporter and Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#b-trainer-cards
+  // Supporter and Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/3408
   sim::Engine projected_item_lock =
       make_engine(sim::DciProfile::MatchupFlexJit,

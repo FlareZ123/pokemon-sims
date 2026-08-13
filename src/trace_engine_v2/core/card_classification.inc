@@ -185,6 +185,7 @@ constexpr bool is_item(const Card card) {
     case Card::UltraBall:
     case Card::EvolutionIncense:
     case Card::PokemonCommunication:
+    case Card::ProfessorsLetter:  // Existing fallback retained outside this Earthen Vessel cleanup: https://api.pokemontcg.io/v2/cards/xy1-123
     case Card::FieldBlower:
     case Card::HisuianHeavyBall:
       return true;

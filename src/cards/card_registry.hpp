@@ -6,19 +6,21 @@
 #include "trainers/brilliant_blender.hpp"
 #include "trainers/evolution_incense.hpp"
 #include "trainers/field_blower.hpp"
+#include "trainers/hisuian_heavy_ball.hpp"
 #include "trainers/mysterious_treasure.hpp"
 #include "trainers/professors_letter.hpp"
 #include "trainers/quick_ball.hpp"
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 6> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 7> kRegisteredCardDefinitions{
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
     &EvolutionIncense::definition, // Exact print: https://api.pokemontcg.io/v2/cards/swsh1-163
     &FieldBlower::definition, // Exact SM 125 metadata: https://api.pokemontcg.io/v2/cards/sm2-125
     &QuickBall::definition,
     &ProfessorsLetter::definition, // Exact XY 123 metadata: https://api.pokemontcg.io/v2/cards/xy1-123
     &MysteriousTreasure::definition, // Exact SM 113 metadata: https://api.pokemontcg.io/v2/cards/sm6-113
+    &HisuianHeavyBall::definition, // Exact SWSH 146 metadata: https://api.pokemontcg.io/v2/cards/swsh10-146
 };
 
 constexpr const CardDefinition* find_definition(const Card card) {

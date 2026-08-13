@@ -56,6 +56,10 @@ The unused `composition/issue_962_route_sections.inc` selector was removed after
 
 `src/trace_engine_v2/core/crispin_trace_provenance.inc` now directly owns the issue-3152 Steven/Secret Box comparator beside its `bench_pineco_if_useful` handoff. The historical `part_issue_3152_steven_prized_box_override.inc` path contains only migration provenance. Preserve the existing macro order through `part_issue_1118_secret_box.inc` and its release points in `part_issue_1369_celestial_roar_secret_box_override.inc`. Sources: https://api.pokemontcg.io/v2/cards/sm7-145 https://api.pokemontcg.io/v2/cards/sv6-163 https://github.com/FlareZ123/pokemon-sims/issues/3152
 
+`src/trace_engine_v2/core/simulation_runtime.inc` now owns the state-adjacent runtime types. The former `core/game_state_types.inc`, `core/simulation_metrics.inc`, and `core/trace_log.inc` one-owner fragments are merged there in their historical declaration order, while `core/simulator_state.inc` keeps the single legacy continuation boundary. C++ textual include semantics: https://eel.is/c++draft/cpp.include
+
+Keep `simulation_runtime.inc` limited to state/runtime data types and trace ownership. Gameplay strategy, DCI/AMR/K0/K1 policy, and card effects remain in Engine, policy, and card modules.
+
 For mechanical `.inc` cleanup:
 
 - merge a composition-only forwarding file into its single owner only after proving the receiving member boundary;

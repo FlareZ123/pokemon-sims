@@ -60,7 +60,9 @@
         !might_be_unseen(Card::RegidragoVstar) || !state_.active ||
         state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
-        state_.active->grass < 2 || state_.active->fire < 1) {
+        // DDE supplies two all-type Energy to a Dragon Pokémon; Apex Dragon costs [G][G][R]:
+        // https://api.pokemontcg.io/v2/cards/xy6-97 https://api.pokemontcg.io/v2/cards/swsh12-136
+        !pays_apex_energy_cost(*state_.active)) {
       return false;
     }
     return hand_count(Card::Channeler) > 0 ||

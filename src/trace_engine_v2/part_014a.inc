@@ -137,6 +137,10 @@ const auto play_issue_1552_t1_vessel_route =
 };
 
 if (play_issue_1552_t1_vessel_route()) return true;
+      // G&H can pay the current-turn Dragon discard while compressing Stadium, Tool,
+      // and Special Energy axes before generic paid search consumes those resources.
+      // https://api.pokemontcg.io/v2/cards/sm12-229
+      if (!state_.supporter_used && setup_axis_missing() && play_guzma_hala()) return true;
       #include "part_014a_issue_962_eligibility.inc"
       #include "part_014a_issue_962_projection.inc"
       #include "part_014a_issue_962_decision.inc"
@@ -200,7 +204,14 @@ if (play_issue_1552_t1_vessel_route()) return true;
       // https://www.pokemon.com/us/pokemon-tcg/rules
       // https://github.com/FlareZ123/pokemon-sims/issues/972
       if (advance_forretress_combo()) continue;
-      if (item_locked()) break;
+      // G&H is a Supporter, not an Item. Preserve DDE + Forest Seal Stone
+      // compression before the manual attachment even through Item lock.
+      // https://api.pokemontcg.io/v2/cards/sm12-229
+      // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      if (item_locked()) {
+        if (!state_.supporter_used && setup_axis_missing() && play_guzma_hala()) continue;
+        break;
+      }
       // Hisuian Heavy Ball is optional, so the policy must retain it once no setup
       // axis remains instead of spending a non-advancing Prize-information action: https://api.pokemontcg.io/v2/cards/swsh10-146
       if (!setup_axis_missing()) break;

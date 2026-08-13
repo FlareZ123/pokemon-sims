@@ -1,7 +1,11 @@
+#include "core/guzma_hala_policy.inc"
 #include "part_issue_3040_turo_regidrago_staging_override.inc"
 
   void choose_supporter_with_turo_staging_fallback() {
     if (supporter_allowed() && issue_3040_play_turo_regidrago_staging_route()) return;
+    // G&H uses the normal selector path; its policy retains Supporter/DCI/JIT gates.
+    // https://api.pokemontcg.io/v2/cards/sm12-229
+    if (supporter_allowed() && play_guzma_hala()) return;
     choose_supporter_issue1070_original();
   }
 

@@ -146,7 +146,15 @@ constexpr bool is_basic_energy(const Card card) {
 constexpr bool is_energy(const Card card) {
   return is_basic_energy(card) || card == Card::DoubleDragonEnergy;
 }
+constexpr bool is_special_energy(const Card card) {
+  // Double Dragon Energy is Special Energy and remains excluded from Basic-only searches.
+  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+  // Guzma & Hala: https://www.pokemon.com/uk/pokemon-tcg/pokemon-cards/sm-series/sm12/229/
+  return is_energy(card) && !is_basic_energy(card);
+}
 constexpr bool is_supporter(const Card card) {
+  if (cards::has_definition(card)) return cards::registered_is_supporter(card);
+
   switch (card) {
     case Card::Dawn:
     case Card::Grant:

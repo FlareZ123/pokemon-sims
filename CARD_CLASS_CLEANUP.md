@@ -62,6 +62,15 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Existing Mysterious Treasure strategy and resolution remain in Engine. This cleanup does not alter its one-card discard cost, Psychic-or-Dragon target rule, search/shuffle sequence, DCI admission, connector priority, or K0/K1 timing. Printed effect: https://api.pokemontcg.io/v2/cards/sm6-113
 - Follow-up for this card must locate the single live `play_mysterious_treasure()` resolution owner and current target-choice boundary before moving printed resolution. Preserve exact discard, search/reveal, K1, and shuffle ordering through `CardContext` without adding strategy queries to card code.
 
+### Brilliant Blender
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3492
+- Canonical print: `sv8-164`.
+- Card data: https://api.pokemontcg.io/v2/cards/sv8-164
+- Status: exact identity, display name, Trainer kind, Item subtype, and ACE SPEC classification are owned by `src/cards/trainers/brilliant_blender.hpp` and `kRegisteredCardDefinitions`.
+- Existing Brilliant Blender strategy and resolution remain in Engine. This migration preserves the printed search-for-up-to-five-Pokémon discard resolution, ACE SPEC scarcity, payload selection, DCI/UDP/AMR, connector domination, K0/K1 timing, and ready-turn policy. Printed effect and ACE SPEC rule: https://api.pokemontcg.io/v2/cards/sv8-164
+- Follow-up for this card must locate the single live `play_brilliant_blender()` resolver before moving printed resolution. Keep strategic payload choice in Engine and preserve exact deck inspection, discard, shuffle, and knowledge transitions through `CardContext`.
+
 These staged entries advance the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
 ### Cleanup wave 2026-08-13 checkpoint
@@ -94,7 +103,7 @@ Registered-card compatibility now uses `find_definition()` as the single registr
 
 ### Registry consolidation checkpoint
 
-- `kRegisteredCardDefinitions` is the single explicit list of migrated definitions. Quick Ball, Professor's Letter, Evolution Incense, and Mysterious Treasure now use that inventory; future migrations append one definition there instead of extending a lookup switch. Mysterious Treasure source: https://api.pokemontcg.io/v2/cards/sm6-113
+- `kRegisteredCardDefinitions` is the single explicit list of migrated definitions. Brilliant Blender, Quick Ball, Professor's Letter, Evolution Incense, and Mysterious Treasure now use that inventory; future migrations append one definition there instead of extending a lookup switch. Brilliant Blender source: https://api.pokemontcg.io/v2/cards/sv8-164
 - `registered_is_trainer_kind()` is the shared intrinsic Trainer-subtype query. Item, Supporter, Stadium, and Tool compatibility checks should delegate to this helper as those classifications migrate.
 - `is_trainer_kind()` belongs with `CardDefinition` because it interprets intrinsic metadata only. Route policy, DCI/UDP, AMR, connector domination, K0/K1, and matchup state remain outside the registry.
 - The next card migration should reuse these registry primitives before adding any new compatibility branch. If a migrated fact still needs a legacy fallback, keep that fallback only for unmigrated cards.

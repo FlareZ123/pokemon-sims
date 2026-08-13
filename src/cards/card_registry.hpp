@@ -3,6 +3,7 @@
 #include <array>
 
 #include "card_definition.hpp"
+#include "trainers/brilliant_blender.hpp"
 #include "trainers/evolution_incense.hpp"
 #include "trainers/mysterious_treasure.hpp"
 #include "trainers/professors_letter.hpp"
@@ -10,7 +11,8 @@
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 4> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 5> kRegisteredCardDefinitions{
+    &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
     &EvolutionIncense::definition, // Exact print: https://api.pokemontcg.io/v2/cards/swsh1-163
     &QuickBall::definition,
     &ProfessorsLetter::definition, // Exact XY 123 metadata: https://api.pokemontcg.io/v2/cards/xy1-123

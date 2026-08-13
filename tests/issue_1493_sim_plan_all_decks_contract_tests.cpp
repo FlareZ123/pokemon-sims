@@ -58,9 +58,12 @@ int main() {
   // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc#L250-L330
   // https://github.com/FlareZ123/pokemon-sims/blob/main/results/multi_deck_comparison.csv
   // https://github.com/FlareZ123/pokemon-sims/issues/1493
-  expect_contains(plan, "`regidrago-shell` and `regidrago-pineco`",
-                  "SIM-PLAN.md omits the registered recipe inventory.");
-  expect_contains(plan, "Aggregate `--all-decks`",
+  // https://github.com/FlareZ123/pokemon-sims/issues/3429
+  expect_contains(plan, "- `regidrago-shell`",
+                  "SIM-PLAN.md omits the shell recipe inventory entry.");
+  expect_contains(plan, "- `regidrago-pineco`",
+                  "SIM-PLAN.md omits the Pineco recipe inventory entry.");
+  expect_contains(plan, "`--all-decks` evaluates both registered recipes",
                   "SIM-PLAN.md omits the paired aggregate mode.");
   expect_contains(readme, "regidrago-shell",
                   "README.md omits the shell recipe.");

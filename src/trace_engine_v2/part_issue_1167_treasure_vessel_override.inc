@@ -55,13 +55,20 @@
       return false;
     }
 
-    // Ordinary lower-DCI cards stay preferred. This exception is available only
-    // when the normal Treasure cost selector has no legal card to spend:
+    // The generic one-discard Regidrago fallback is itself a route choice. It must
+    // not make the complete Treasure + Vessel route look like ordinary discard fuel.
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-    // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-    // Confirmed original bug: https://github.com/FlareZ123/pokemon-sims/issues/1167
-    // Confirmed going-second omission: https://github.com/FlareZ123/pokemon-sims/issues/1452
-    return !choose_discard(false, true, true, Card::MysteriousTreasure).has_value();
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#L382-L404
+    // DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Regression: https://github.com/FlareZ123/pokemon-sims/issues/3493
+    const std::optional<Card> selected_cost =
+        choose_discard(false, true, true, Card::MysteriousTreasure);
+    if (!selected_cost) return true;
+    const std::optional<Card> generic_payload_cost = issue_1605_redundant_payload_cost();
+    return generic_payload_cost && *selected_cost == *generic_payload_cost &&
+        issue_1605_generic_one_discard_regi_cost_available(Card::MysteriousTreasure);
   }
 
   bool play_strict_dci_treasure_vessel_chain() {

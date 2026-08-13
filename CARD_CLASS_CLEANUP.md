@@ -222,3 +222,10 @@ A cleanup PR is mergeable only when:
 
 Rules source for Item/Supporter/search procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+
+## Cleanup wave 2026-08-13 composition follow-up
+
+- Forest Seal Stone holder selection now has one selector in `src/trace_engine_v2/part_010_attach_fss_override.inc`. The `allow_active` parameter preserves the existing general Active-first attachment order and the Powerglass-specific Bench-only reservation path. Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156 Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+- The issue-3040 Supporter continuation in `src/trace_engine_v2/part_issue_1070_tate_after_vstar_search_override.inc` now exposes a responsibility-based fallback name while preserving the existing macro boundary and Turo route. Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+- `src/trace_engine_v2/part_014a_issue_962_projection.inc` is now explicitly documented as a compatibility-only marker with direct links to the canonical composition and shared core route owner. This prevents future cleanup from mistaking the marker for a second projection implementation.
+- Next boundary-safe composition work should remove the historical issue-962 projection and decision include sites together only after the receiving `part_014a.inc` member boundary is proven and the full CI matrix is green. Until then, keep both compatibility paths inert and keep implementation ownership in `core/issue_962_route.inc`.

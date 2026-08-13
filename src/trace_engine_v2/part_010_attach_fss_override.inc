@@ -1,5 +1,18 @@
 #include "core/regidrago_line_helpers.inc"
 
+  bool powerglass_can_fill_missing_basic_from_discard(const Pokemon& pokemon) const {
+    // Both Powerglass route selectors need the same question: can its end-of-turn
+    // effect supply at least one currently missing Basic Grass/Fire component from
+    // discard to the selected Active holder? Keep that projection in one owner.
+    // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    // Regidrago VSTAR / Apex Dragon cost: https://api.pokemontcg.io/v2/cards/swsh12-136
+    const bool needed_grass_in_discard =
+        pokemon.grass < 2 && count_of(state_.discard, Card::Grass) > 0;
+    const bool needed_fire_in_discard =
+        pokemon.fire < 1 && count_of(state_.discard, Card::Fire) > 0;
+    return needed_grass_in_discard || needed_fire_in_discard;
+  }
+
   bool active_powerglass_tool_slot_needed() const {
     if (!state_.active || state_.active->tool != Tool::None ||
         !is_regidrago_v_line(state_.active->card)) {
@@ -7,12 +20,13 @@
     }
 
     const bool powerglass_held = hand_count(Card::Powerglass) > 0;
-    // Arven can search a Pokémon Tool. When the manual attachment is already spent
-    // and Energy is the only missing setup axis, a Powerglass still in deck is the
-    // immediate live route while Forest Seal Stone would occupy the same Tool slot:
+    // Arven consumes the turn's Supporter play before the searched Tool can resolve.
+    // When Energy is the only missing axis, Forest Seal Stone can advance that axis
+    // after Arven only while the manual attachment remains unused. Powerglass can
+    // still attach the needed Basic Energy from discard at end of turn:
     // https://api.pokemontcg.io/v2/cards/sv1-166
-    // https://api.pokemontcg.io/v2/cards/sv6pt5-63
     // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://api.pokemontcg.io/v2/cards/sv6pt5-63
     // https://www.pokemon.com/us/pokemon-tcg/rules
     const bool energy_is_only_missing_axis = need_energy() && !need_regi() &&
         !need_vstar() && !need_active_vstar() && !need_payload();
@@ -25,11 +39,7 @@
     // end-of-turn effect resolves, and that Pokémon may hold only one Tool:
     // https://api.pokemontcg.io/v2/cards/sv6pt5-63
     // https://www.pokemon.com/us/pokemon-tcg/rules
-    const bool needed_grass_in_discard =
-        state_.active->grass < 2 && count_of(state_.discard, Card::Grass) > 0;
-    const bool needed_fire_in_discard =
-        state_.active->fire < 1 && count_of(state_.discard, Card::Fire) > 0;
-    return needed_grass_in_discard || needed_fire_in_discard;
+    return powerglass_can_fill_missing_basic_from_discard(*state_.active);
   }
 
   Pokemon* first_open_fss_holder(const bool allow_active) {

@@ -60,6 +60,10 @@ The unused `composition/issue_962_route_sections.inc` selector was removed after
 
 Keep `simulation_runtime.inc` limited to state/runtime data types and trace ownership. Gameplay strategy, DCI/AMR/K0/K1 policy, and card effects remain in Engine, policy, and card modules.
 
+`src/trace_engine_v2/part_late_policy_bundle.inc` is now a compatibility marker rather than a second composition implementation. Its former Quick Ball, Crispin provenance, Secret Box, and Celestial Roar chain is owned only by `composition/post_014a_overrides.inc`. Do not add live includes back to the historical bundle. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
+
+`src/trace_engine_v2/part_issue_989_wonder_tag_complete_route_override.inc` remains a thin historical source-link shim whose only implementation dependency is `core/tapu_wonder_tag_route_policy.inc`. Keep route logic in the core owner rather than duplicating it in the compatibility path. Canonical policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tapu_wonder_tag_route_policy.inc
+
 For mechanical `.inc` cleanup:
 
 - merge a composition-only forwarding file into its single owner only after proving the receiving member boundary;
@@ -67,6 +71,7 @@ For mechanical `.inc` cleanup:
 - keep entry and exit macro guards adjacent to the moved block;
 - never move an include across a declaration-order dependency to reduce file count;
 - do not merge the Quick Ball base/tail bridge while their split marks a real member-declaration boundary;
+- retire an obsolete compatibility path to a comment-only marker before deleting it when repository tooling or historical source links still depend on the path;
 - validate strict compilation, the regression suite, and representative `--simulate-this` traces after composition changes.
 
 C++ textual-include semantics: https://eel.is/c++draft/cpp.include

@@ -61,7 +61,7 @@
         state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
         // DDE supplies two all-type Energy to a Dragon Pokémon; Apex Dragon costs [G][G][R]:
-        // https://api.pokemontcg.io/v2/cards/xy6-97 https://api.pokemontcg.io/v2/cards/swsh12-136
+        // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ https://api.pokemontcg.io/v2/cards/swsh12-136
         !pays_apex_energy_cost(*state_.active)) {
       return false;
     }

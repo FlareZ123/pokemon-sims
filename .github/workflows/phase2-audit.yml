@@ -80,4 +80,8 @@ jobs:
             phase2-static-scan.txt
             phase2-trace-*.txt
             phase2-critical.txt
+            src
+            CMakeLists.txt
+            docs/POLICY_DECISIONS.md
+            docs/MODEL_ASSUMPTIONS.md
           if-no-files-found: error

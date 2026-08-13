@@ -42,13 +42,56 @@ CrobatModelingDeck make_crobat_modeling_deck(
   return deck;
 }
 
+CrobatModelingDeck make_dde_connector_control_deck() {
+  DeckRecipe recipe = baseline_recipe();
+  adjust_modeling_recipe(recipe, Card::Grass, -2);
+  adjust_modeling_recipe(recipe, Card::DoubleDragonEnergy, 2);
+  CrobatModelingDeck deck{"gh-connector-control", "-2 Grass +2 DDE", std::move(recipe)};
+  std::string error;
+  if (!validate_recipe({deck.id, deck.recipe}, &error)) throw std::logic_error(error);
+  return deck;
+}
+
+CrobatModelingDeck make_guzma_hala_connector_test_deck(
+    std::string id, const Card connector) {
+  DeckRecipe recipe = baseline_recipe();
+  adjust_modeling_recipe(recipe, Card::Grass, -2);
+  adjust_modeling_recipe(recipe, Card::DoubleDragonEnergy, 2);
+  adjust_modeling_recipe(recipe, connector, -1);
+  adjust_modeling_recipe(recipe, Card::GuzmaHala, 1);
+  std::ostringstream cuts;
+  cuts << "-2 Grass +2 DDE; -1 " << name(connector) << " +1 Guzma & Hala";
+  CrobatModelingDeck deck{std::move(id), cuts.str(), std::move(recipe)};
+  std::string error;
+  if (!validate_recipe({deck.id, deck.recipe}, &error)) throw std::logic_error(error);
+  return deck;
+}
+
 class CrobatModelingRegistry {
  public:
   static const std::vector<CrobatModelingDeck>& all() {
     // These temporary recipes are deliberately absent from deck_registry() and
     // --all-decks: https://github.com/FlareZ123/pokemon-sims/issues/1394
+    // Connector scan for #3386: only search/access/recovery bridges are cut here;
+    // tactical and standalone-value cards are intentionally excluded.
     static const std::vector<CrobatModelingDeck> decks{
         {"regidrago-shell", "none", baseline_recipe()},
+        make_dde_connector_control_deck(),
+        make_guzma_hala_connector_test_deck("gh-cut-mysterious-treasure", Card::MysteriousTreasure),
+        make_guzma_hala_connector_test_deck("gh-cut-quick-ball", Card::QuickBall),
+        make_guzma_hala_connector_test_deck("gh-cut-earthen-vessel", Card::EarthenVessel),
+        make_guzma_hala_connector_test_deck("gh-cut-arven", Card::Arven),
+        make_guzma_hala_connector_test_deck("gh-cut-crispin", Card::Crispin),
+        make_guzma_hala_connector_test_deck("gh-cut-burnet", Card::ProfessorBurnet),
+        make_guzma_hala_connector_test_deck("gh-cut-steven", Card::StevensResolve),
+        make_guzma_hala_connector_test_deck("gh-cut-gladion", Card::Gladion),
+        make_guzma_hala_connector_test_deck("gh-cut-lusamine", Card::Lusamine),
+        make_guzma_hala_connector_test_deck("gh-cut-team-yell", Card::TeamYellsCheer),
+        make_guzma_hala_connector_test_deck("gh-cut-klara", Card::Klara),
+        make_guzma_hala_connector_test_deck("gh-cut-forest-seal-stone", Card::ForestSealStone),
+        make_guzma_hala_connector_test_deck("gh-cut-heavy-ball", Card::HisuianHeavyBall),
+        make_guzma_hala_connector_test_deck("gh-cut-tapu-lele", Card::TapuLeleGX),
+        make_guzma_hala_connector_test_deck("gh-cut-oricorio", Card::Oricorio),
         make_crobat_modeling_deck("crobat1-erika", {Card::ErikasInvitation}),
         make_crobat_modeling_deck("crobat1-channeler", {Card::Channeler}),
         make_crobat_modeling_deck("crobat1-team-yell", {Card::TeamYellsCheer}),

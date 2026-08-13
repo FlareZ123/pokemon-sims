@@ -96,7 +96,25 @@
     return true;
   }
 
+  bool issue_3520_should_bank_recovered_treasure() const {
+    // The same semantic one-Basic Apex predicate that admits the Gladion route also
+    // controls execution. This prevents a recovered Treasure from being spent one
+    // turn early when DDE plus the held Grass or Fire is the deterministic next-turn
+    // attachment and its held Dragon is the strict-JIT Treasure discard cost.
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Item, discard, attachment, evolution, and attack procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Original route and confirmed recurrence: https://github.com/FlareZ123/pokemon-sims/issues/1598 https://github.com/FlareZ123/pokemon-sims/issues/3520
+    return issue_1598_bank_prized_treasure_ && state_.manual_energy_used &&
+        hand_count(Card::MysteriousTreasure) > 0 &&
+        issue_3520_next_turn_treasure_completion_available();
+  }
+
   bool play_mysterious_treasure(const bool permit_payload) {
+    if (issue_3520_should_bank_recovered_treasure()) return false;
+
     // Preserve the merged #2265 continuation while its resource hold is live, then
     // give every established Treasure route first refusal. The #2269 route is a
     // fallback for the distinct Basic-Active/Blender state that existing policy

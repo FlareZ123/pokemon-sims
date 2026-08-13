@@ -1,6 +1,7 @@
 #pragma once
 
 #include "card_definition.hpp"
+#include "trainers/earthen_vessel.hpp"
 #include "trainers/professors_letter.hpp"
 #include "trainers/quick_ball.hpp"
 
@@ -12,6 +13,8 @@ constexpr const CardDefinition* find_definition(const Card card) {
       return &QuickBall::definition;
     case Card::ProfessorsLetter:
       return &ProfessorsLetter::definition; // Exact XY 123 metadata: https://api.pokemontcg.io/v2/cards/xy1-123
+    case Card::EarthenVessel:
+      return &EarthenVessel::definition; // Exact PAR 163 metadata: https://api.pokemontcg.io/v2/cards/sv4-163
     default:
       return nullptr;
   }

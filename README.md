@@ -19,6 +19,7 @@ The program models opening setup, legal card sequencing, deck and Prize knowledg
 
 Exact rule and card sources are registered in [`docs/RULE_SOURCES.md`](docs/RULE_SOURCES.md) and mapped to simulator behavior in [`docs/RULES_TRACEABILITY.md`](docs/RULES_TRACEABILITY.md).
 
+<a id="named-deck-recipes"></a>
 ## Registered decks
 
 Aggregate simulation exposes two named 60-card recipes:
@@ -30,6 +31,7 @@ Aggregate simulation exposes two named 60-card recipes:
 
 Crobat V swap studies use a separate modeling surface through `--model-crobat` and `--model-variant`. Those modeling recipes do not participate in `deck_registry()` or `--all-decks`.
 
+<a id="ready-state-and-t5-policy"></a>
 ## What counts as ready
 
 A trial becomes setup-ready when the modeled state satisfies all current readiness requirements:
@@ -86,6 +88,8 @@ ctest --test-dir build --output-on-failure
 
 The build creates `regidrago_sim` and `regidrago_unified_tests`.
 
+<a id="run-one-readable-hand"></a>
+<a id="find-known-good-trace-seeds"></a>
 ## Read one deterministic game
 
 On a Visual Studio Release build:
@@ -103,6 +107,8 @@ Use `--find-ready` when you need deterministic examples that satisfy a scenario 
 build\Release\regidrago_sim.exe --find-ready 3 --start-seed 1 --scenario strict-jit/go-second --require-ready-by 3
 ```
 
+<a id="generate-the-paired-two-deck-matrices"></a>
+<a id="run-aggregate-smoke-test"></a>
 ## Aggregate simulation
 
 Generate the selected deck's canonical setup matrix:
@@ -127,6 +133,7 @@ build\Release\regidrago_sim.exe --all-decks --trials 100000 --seed 20260705 --ou
 
 Generated result files use source-bound manifests so committed probability claims stay tied to the simulator inputs that produced them. Result writers use locking and atomic replacement.
 
+<a id="model-crobat-v-swaps"></a>
 ## Crobat V modeling
 
 Crobat V variants measure setup effects of temporary shell swaps while keeping the registered deck list unchanged:
@@ -138,6 +145,8 @@ build\Release\regidrago_sim.exe --simulate-this --model-variant crobat1-erika --
 ```
 
 The resulting interpretation is documented in [`docs/CROBAT_MODEL_REPORT.md`](docs/CROBAT_MODEL_REPORT.md).
+
+The current source-bound validation covers the 18.2-million-game Crobat matrix: 13 current variants across 14 registered aggregate scenarios at 100,000 trials per condition. Final current-main validation evidence: https://github.com/FlareZ123/pokemon-sims/actions/runs/31164362259 and https://github.com/FlareZ123/pokemon-sims/actions/runs/31164362295. Source-bound scope: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CROBAT_MODEL_REPORT.md
 
 ## Validation
 

@@ -174,7 +174,7 @@ constexpr bool is_supporter(const Card card) {
 constexpr bool is_item(const Card card) {
   // Migrated cards own intrinsic Item classification in the explicit card registry.
   // Registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
-  // Exact migrated prints: https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/xy1-123 https://api.pokemontcg.io/v2/cards/swsh1-163 https://api.pokemontcg.io/v2/cards/sm6-113
+  // Exact migrated prints: https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/xy1-123 https://api.pokemontcg.io/v2/cards/swsh1-163 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sm2-125
   if (cards::has_definition(card)) return cards::registered_is_item(card);
 
   switch (card) {
@@ -184,7 +184,6 @@ constexpr bool is_item(const Card card) {
     case Card::UltraBall:
     case Card::PokemonCommunication:
     case Card::EarthenVessel:
-    case Card::FieldBlower:
     case Card::HisuianHeavyBall:
       return true;
     default:

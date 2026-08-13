@@ -43,6 +43,17 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Existing route behavior remains governed by https://github.com/FlareZ123/pokemon-sims/issues/2509
 - Follow-up for this card must locate the single live `play_professors_letter()` printed-resolution owner before moving state transitions. Do not duplicate or bypass the active resolver through a second gameplay entry point.
 
+### Evolution Incense
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3471
+- Canonical print: `swsh1-163`.
+- Card data: https://api.pokemontcg.io/v2/cards/swsh1-163
+- Status: exact identity, display name, Trainer kind, and Item subtype are owned by `src/cards/trainers/evolution_incense.hpp` and the explicit registry.
+- Registered definitions now live in one deterministic `kRegisteredCards` collection, with lookup derived from that collection rather than another per-card registration switch.
+- Existing Evolution Incense strategy and resolution remain in Engine for this wave. K0/K1 search timing, DCI/UDP/AMR, connector domination, route priority, target choice, and readiness behavior remain unchanged.
+- Focused registration coverage: `tests/evolution_incense_card_class_tests.cpp`.
+- Legacy fallback cases remain compatibility-only and unreachable for registered Evolution Incense. Their later removal should stay a mechanical legacy-table edit rather than being mixed with gameplay behavior.
+
 This staged entry advances the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
 ## Composition consolidation status

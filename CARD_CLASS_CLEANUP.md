@@ -32,7 +32,9 @@ The former one-purpose wrappers `composition/empty_deck_search_routes.inc` and `
 
 Early Supporter/VSTAR composition now has one explicit owner too: `src/trace_engine_v2/composition/opening_engine_overrides.inc`. The former `composition/legacy_supporter_body.inc` wrapper has been inlined there with the original `part_011.inc` -> `part_012.inc` -> `part_013.inc` order, entry/exit guards, and exported `use_fss` / `use_celestial_roar` alias lifetimes preserved. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
-The next safe cleanup should continue removing single-owner composition forwarding only after proving the receiving member boundary. Do not inline `opening_engine_overrides.inc` into `engine_body.inc` until CI confirms the new Supporter/VSTAR ownership boundary and the `begin_turn`, `use_fss`, `use_celestial_roar`, and post-`part_014a` alias contracts remain stable.
+Simulator runtime composition now has one explicit state-adjacent owner: `src/trace_engine_v2/core/simulation_runtime.inc`. The former one-purpose `core/game_state_types.inc`, `core/simulation_metrics.inc`, and `core/trace_log.inc` units have been merged there in their historical declaration order, while `core/simulator_state.inc` retains the single textual boundary consumed by the legacy continuation. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+
+The next safe cleanup should continue removing single-owner composition forwarding only after proving the receiving member boundary. Keep `simulation_runtime.inc` focused on state/runtime data types and trace ownership; gameplay policy belongs in Engine/policy units. Do not inline `opening_engine_overrides.inc` into `engine_body.inc` until CI confirms the new Supporter/VSTAR ownership boundary and the `begin_turn`, `use_fss`, `use_celestial_roar`, and post-`part_014a` alias contracts remain stable.
 
 Keep these cleanup rules going forward:
 

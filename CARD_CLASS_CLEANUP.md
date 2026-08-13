@@ -64,6 +64,12 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 
 These staged entries advance the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
+### Cleanup wave 2026-08-13 checkpoint
+
+- Registered display names now flow through `CardDefinition` first, with the migrated-card compatibility labels grouped together and no duplicate display strings in the legacy `name()` table. Canonical registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+- `is_item()` now delegates migrated Item identity to `registered_is_item()` without repeating Professor's Letter, Evolution Incense, or Mysterious Treasure in the legacy fallback switch. Quick Ball was already registry-only there. Exact prints: https://api.pokemontcg.io/v2/cards/xy1-123 https://api.pokemontcg.io/v2/cards/swsh1-163 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179
+- This wave is mechanical ownership cleanup only. Printed resolution, strategy, DCI/UDP/AMR, connector priority, and K0/K1 transitions remain at their existing owners. The next resolver migration must still locate the single live resolution boundary before moving state transitions. Architecture contract: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#card-module-contract
+
 ## Composition consolidation status
 
 The canonical Engine composition owner is `src/trace_engine_v2/composition/engine_body.inc`.

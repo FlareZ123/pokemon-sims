@@ -78,12 +78,7 @@ constexpr std::string_view name(const Card card) {
     case Card::BrilliantBlender: return "Brilliant Blender";
     case Card::SecretBox: return "Secret Box";
     case Card::BattleVipPass: return "Battle VIP Pass";
-    case Card::MysteriousTreasure: return "Mysterious Treasure";
-    case Card::QuickBall:
-    case Card::ProfessorsLetter:
-      break;  // Registered CardDefinition owns these names.
     case Card::UltraBall: return "Ultra Ball";
-    case Card::EvolutionIncense: return "Evolution Incense";
     case Card::PokemonCommunication: return "Pokémon Communication";
     case Card::EarthenVessel: return "Earthen Vessel";
     case Card::Dawn: return "Dawn";
@@ -114,6 +109,11 @@ constexpr std::string_view name(const Card card) {
     case Card::DoubleDragonEnergy: return "Double Dragon Energy";  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
     case Card::Grass: return "Grass Energy";
     case Card::Fire: return "Fire Energy";
+    case Card::MysteriousTreasure:
+    case Card::QuickBall:
+    case Card::ProfessorsLetter:
+    case Card::EvolutionIncense:
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
   }
   return "Unknown";
 }

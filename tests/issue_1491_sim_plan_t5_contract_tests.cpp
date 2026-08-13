@@ -39,6 +39,16 @@ void expect_contains(const std::string& text, const std::string& expected,
   }
 }
 
+std::string section_text(const std::string& text, const std::string& heading) {
+  const std::size_t begin = text.find(heading);
+  if (begin == std::string::npos) {
+    throw std::runtime_error("SIM-PLAN.md is missing section: " + heading);
+  }
+  const std::size_t next = text.find("\n## ", begin + heading.size());
+  return text.substr(begin, next == std::string::npos ? std::string::npos
+                                                     : next - begin);
+}
+
 }  // namespace
 
 int main() {
@@ -49,19 +59,29 @@ int main() {
   const std::string matrix =
       read_text(root / "results" / "simulation_results.csv");
 
-  // T4 remains the setup deadline while unresolved trials continue through the
-  // diagnostic T5 horizon and publish separate late-recovery and failure fields:
+  // Validate the semantic T4-success/T5-diagnostic contract inside its current
+  // sections instead of pinning the test to historical prose:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/SIM-PLAN.md
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/T5_FAILURE_POLICY.md
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/results/simulation_results.csv
-  // https://github.com/FlareZ123/pokemon-sims/issues/1491
-  expect_contains(plan, "Model player turns 1 through 5",
+  // https://github.com/FlareZ123/pokemon-sims/issues/3428
+  const std::string lifecycle = section_text(plan, "## Trial lifecycle");
+  expect_contains(lifecycle, "turn 5",
                   "SIM-PLAN.md omits the T5 diagnostic horizon.");
-  expect_contains(plan, "T4 remains the setup-success deadline",
-                  "SIM-PLAN.md lost the T4 success deadline.");
-  expect_contains(plan, "`P(ready on T5)`",
+  expect_contains(lifecycle, "T2, T3, and T4",
+                  "SIM-PLAN.md omits the T2-T4 success window.");
+  expect_contains(lifecycle, "setup success",
+                  "SIM-PLAN.md lost the setup-success deadline semantics.");
+  expect_contains(lifecycle, "T5",
                   "SIM-PLAN.md omits diagnostic T5 recovery.");
-  expect_contains(plan, "`setup_failure_pct`",
-                  "SIM-PLAN.md omits the setup failure metric.");
+  expect_contains(lifecycle, "diagnostic recovery",
+                  "SIM-PLAN.md lost the T5 diagnostic-recovery semantics.");
+  expect_contains(lifecycle, "setup failure",
+                  "SIM-PLAN.md no longer states that T5-only readiness fails setup.");
+
+  const std::string statistical = section_text(plan, "## Statistical output");
+  expect_contains(statistical, "setup failure",
+                  "SIM-PLAN.md omits setup-failure reporting.");
+
   expect_contains(policy, "A game that first becomes ready on T5",
                   "The canonical T5 policy changed.");
   expect_contains(matrix, "ready_by_t5_pct",

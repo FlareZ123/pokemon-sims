@@ -71,6 +71,16 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Existing Brilliant Blender strategy and resolution remain in Engine. This migration preserves the printed search-for-up-to-five-Pokémon discard resolution, ACE SPEC scarcity, payload selection, DCI/UDP/AMR, connector domination, K0/K1 timing, and ready-turn policy. Printed effect and ACE SPEC rule: https://api.pokemontcg.io/v2/cards/sv8-164
 - Follow-up for this card must locate the single live `play_brilliant_blender()` resolver before moving printed resolution. Keep strategic payload choice in Engine and preserve exact deck inspection, discard, shuffle, and knowledge transitions through `CardContext`.
 
+### Hisuian Heavy Ball
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3498
+- Canonical print: `swsh10-146`.
+- Card data: https://api.pokemontcg.io/v2/cards/swsh10-146
+- Status: exact identity, display name, Trainer kind, and Item subtype are owned by `src/cards/trainers/hisuian_heavy_ball.hpp` and `kRegisteredCardDefinitions`.
+- Existing Hisuian Heavy Ball strategy and resolution remain in Engine for this metadata-only wave. Prize inspection, Basic-Pokémon choice, Prize replacement, shuffle, K0/K1 timing, DCI/AMR, connector priority, and readiness behavior remain unchanged.
+- Legacy `name()` and `is_item()` cases remain compatibility-only and are unreachable for the registered definition. Remove those duplicate fallbacks in a later mechanical edit rather than mixing legacy-table deletion with this registration wave.
+- Follow-up for this card must locate the single live Hisuian Heavy Ball resolver before moving printed Prize inspection and replacement through `CardContext`; preserve the printed branch that discards the Item when no Basic Pokémon is revealed. Printed effect: https://api.pokemontcg.io/v2/cards/swsh10-146
+
 These staged entries advance the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
 ### Cleanup wave 2026-08-13 checkpoint
@@ -103,7 +113,7 @@ Registered-card compatibility now uses `find_definition()` as the single registr
 
 ### Registry consolidation checkpoint
 
-- `kRegisteredCardDefinitions` is the single explicit list of migrated definitions. Brilliant Blender, Quick Ball, Professor's Letter, Evolution Incense, and Mysterious Treasure now use that inventory; future migrations append one definition there instead of extending a lookup switch. Brilliant Blender source: https://api.pokemontcg.io/v2/cards/sv8-164
+- `kRegisteredCardDefinitions` is the single explicit list of migrated definitions. Brilliant Blender, Quick Ball, Professor's Letter, Evolution Incense, Mysterious Treasure, and Hisuian Heavy Ball now use that inventory; future migrations append one definition there instead of extending a lookup switch. Hisuian Heavy Ball source: https://api.pokemontcg.io/v2/cards/swsh10-146
 - `registered_is_trainer_kind()` is the shared intrinsic Trainer-subtype query. Item, Supporter, Stadium, and Tool compatibility checks should delegate to this helper as those classifications migrate.
 - `is_trainer_kind()` belongs with `CardDefinition` because it interprets intrinsic metadata only. Route policy, DCI/UDP, AMR, connector domination, K0/K1, and matchup state remain outside the registry.
 - The next card migration should reuse these registry primitives before adding any new compatibility branch. If a migrated fact still needs a legacy fallback, keep that fallback only for unmigrated cards.

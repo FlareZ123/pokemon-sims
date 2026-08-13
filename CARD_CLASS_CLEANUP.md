@@ -71,12 +71,22 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Existing Brilliant Blender strategy and resolution remain in Engine. This migration preserves the printed search-for-up-to-five-Pokémon discard resolution, ACE SPEC scarcity, payload selection, DCI/UDP/AMR, connector domination, K0/K1 timing, and ready-turn policy. Printed effect and ACE SPEC rule: https://api.pokemontcg.io/v2/cards/sv8-164
 - Follow-up for this card must locate the single live `play_brilliant_blender()` resolver before moving printed resolution. Keep strategic payload choice in Engine and preserve exact deck inspection, discard, shuffle, and knowledge transitions through `CardContext`.
 
+### Field Blower
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3512
+- Canonical print: `sm2-125`.
+- Card data: https://api.pokemontcg.io/v2/cards/sm2-125
+- Status: exact identity, display name, Trainer kind, and Item subtype are owned by `src/cards/trainers/field_blower.hpp` and `kRegisteredCardDefinitions`.
+- Legacy `name()` and `is_item()` compatibility tables no longer duplicate Field Blower's intrinsic metadata. Existing lock-removal strategy and printed resolution remain in `src/trace_engine_v2/core/forest_field_blower_policy.inc` for this wave.
+- Focused registration coverage: `tests/field_blower_card_class_tests.cpp`.
+- Follow-up must locate the single live Field Blower printed-resolution owner before moving state transitions. Preserve target choice and all lock-removal policy in Engine until a reusable `CardContext` boundary exists.
+
 These staged entries advance the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
 ### Cleanup wave 2026-08-13 checkpoint
 
 - Registered display names now flow through `CardDefinition` first, with the migrated-card compatibility labels grouped together and no duplicate display strings in the legacy `name()` table. Canonical registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
-- `is_item()` now delegates migrated Item identity to `registered_is_item()` without repeating Professor's Letter, Evolution Incense, or Mysterious Treasure in the legacy fallback switch. Quick Ball was already registry-only there. Exact prints: https://api.pokemontcg.io/v2/cards/xy1-123 https://api.pokemontcg.io/v2/cards/swsh1-163 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179
+- `is_item()` now delegates migrated Item identity to `registered_is_item()` without repeating Professor's Letter, Evolution Incense, Mysterious Treasure, or Field Blower in the legacy fallback switch. Quick Ball was already registry-only there. Exact prints: https://api.pokemontcg.io/v2/cards/xy1-123 https://api.pokemontcg.io/v2/cards/swsh1-163 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/swsh1-179
 - This wave is mechanical ownership cleanup only. Printed resolution, strategy, DCI/UDP/AMR, connector priority, and K0/K1 transitions remain at their existing owners. The next resolver migration must still locate the single live resolution boundary before moving state transitions. Architecture contract: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#card-module-contract
 
 ## Composition consolidation status
@@ -103,7 +113,7 @@ Registered-card compatibility now uses `find_definition()` as the single registr
 
 ### Registry consolidation checkpoint
 
-- `kRegisteredCardDefinitions` is the single explicit list of migrated definitions. Brilliant Blender, Quick Ball, Professor's Letter, Evolution Incense, and Mysterious Treasure now use that inventory; future migrations append one definition there instead of extending a lookup switch. Brilliant Blender source: https://api.pokemontcg.io/v2/cards/sv8-164
+- `kRegisteredCardDefinitions` is the single explicit list of migrated definitions. Brilliant Blender, Field Blower, Quick Ball, Professor's Letter, Evolution Incense, and Mysterious Treasure now use that inventory; future migrations append one definition there instead of extending a lookup switch. Field Blower source: https://api.pokemontcg.io/v2/cards/sm2-125
 - `registered_is_trainer_kind()` is the shared intrinsic Trainer-subtype query. Item, Supporter, Stadium, and Tool compatibility checks should delegate to this helper as those classifications migrate.
 - `is_trainer_kind()` belongs with `CardDefinition` because it interprets intrinsic metadata only. Route policy, DCI/UDP, AMR, connector domination, K0/K1, and matchup state remain outside the registry.
 - The next card migration should reuse these registry primitives before adding any new compatibility branch. If a migrated fact still needs a legacy fallback, keep that fallback only for unmigrated cards.

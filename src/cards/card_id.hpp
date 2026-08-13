@@ -61,6 +61,7 @@ enum class Card : std::uint8_t {
   DoubleDragonEnergy,
   Grass,
   Fire,
+  GuzmaHala,
 };
 
 }  // namespace sim

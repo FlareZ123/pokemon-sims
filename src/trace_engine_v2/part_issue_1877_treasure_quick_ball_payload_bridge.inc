@@ -32,9 +32,11 @@
     // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Both JIT profiles require the payload on the ready turn; no-discard-control permits earlier banking: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-    // Profile-gate regression: https://github.com/FlareZ123/pokemon-sims/issues/2743
+    // Items may be played during the current turn when their conditions can be satisfied: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#L382-L404
+    // Mysterious Treasure / Quick Ball: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Profile-gate regression / relative-turn admission: https://github.com/FlareZ123/pokemon-sims/issues/2743 https://github.com/FlareZ123/pokemon-sims/issues/3405
     // Confirmed route bug: https://github.com/FlareZ123/pokemon-sims/issues/1877
-    return scenario_.dci != DciProfile::NoDiscardControl && state_.turn == 3 &&
+    return strict_payload_timing() && state_.turn <= scenario_.max_turn &&
         prizes_known() && !item_locked() && active_is_vstar() &&
         pays_apex_energy_cost(*state_.active) && // https://github.com/FlareZ123/pokemon-sims/issues/2368
         need_payload() && hand_count(Card::MysteriousTreasure) > 0 &&

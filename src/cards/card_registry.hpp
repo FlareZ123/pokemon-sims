@@ -1,42 +1,55 @@
 #pragma once
 
+#include <array>
+
 #include "card_definition.hpp"
+#include "trainers/battle_vip_pass.hpp"
+#include "trainers/brilliant_blender.hpp"
+#include "trainers/evolution_incense.hpp"
+#include "trainers/field_blower.hpp"
+#include "trainers/hisuian_heavy_ball.hpp"
+#include "trainers/guzma_hala.hpp"
+#include "trainers/mysterious_treasure.hpp"
+#include "trainers/professors_letter.hpp"
 #include "trainers/quick_ball.hpp"
 
 namespace sim::cards {
 
-// Explicit registration avoids static initialization order and linker-retention
-// behavior. Add one case for each card migrated by the cleanup workflow.
+inline constexpr std::array<const CardDefinition*, 9> kRegisteredCardDefinitions{
+    &BattleVipPass::definition,
+    &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
+    &EvolutionIncense::definition, // Exact print: https://api.pokemontcg.io/v2/cards/swsh1-163
+    &FieldBlower::definition, // Exact SM 125 metadata: https://api.pokemontcg.io/v2/cards/sm2-125
+    &QuickBall::definition,
+    &ProfessorsLetter::definition, // Exact XY 123 metadata: https://api.pokemontcg.io/v2/cards/xy1-123
+    &MysteriousTreasure::definition, // Exact SM 113 metadata: https://api.pokemontcg.io/v2/cards/sm6-113
+    &HisuianHeavyBall::definition, // Exact SWSH 146 metadata: https://api.pokemontcg.io/v2/cards/swsh10-146
+    &GuzmaHala::definition, // Exact Cosmic Eclipse 229 Supporter: https://api.pokemontcg.io/v2/cards/sm12-229
+};
+
 constexpr const CardDefinition* find_definition(const Card card) {
-  switch (card) {
-    case Card::QuickBall:
-      return &QuickBall::definition;
-    default:
-      return nullptr;
+  for (const CardDefinition* definition : kRegisteredCardDefinitions) {
+    if (definition->id == card) return definition;
   }
+  return nullptr;
 }
 
-// Classification code must stop falling back to legacy tables once a card is
-// registered. Keep this predicate value-based so it remains usable in constexpr
-// classification paths even on compilers that reject static assertions involving
-// pointers returned by find_definition().
 constexpr bool has_definition(const Card card) {
-  switch (card) {
-    case Card::QuickBall:
-      return true;
-    default:
-      return false;
-  }
+  return find_definition(card) != nullptr;
+}
+
+constexpr bool registered_is_trainer_kind(const Card card,
+                                          const TrainerKind trainer_kind) {
+  const CardDefinition* definition = find_definition(card);
+  return definition != nullptr && is_trainer_kind(*definition, trainer_kind);
 }
 
 constexpr bool registered_is_item(const Card card) {
-  switch (card) {
-    case Card::QuickBall:
-      return QuickBall::definition.kind == CardKind::Trainer &&
-             QuickBall::definition.trainer_kind == TrainerKind::Item;
-    default:
-      return false;
-  }
+  return registered_is_trainer_kind(card, TrainerKind::Item);
+}
+
+constexpr bool registered_is_supporter(const Card card) {
+  return registered_is_trainer_kind(card, TrainerKind::Supporter);
 }
 
 }  // namespace sim::cards

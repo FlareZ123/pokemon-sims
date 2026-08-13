@@ -110,14 +110,17 @@ void test_model_assumptions_names_every_executable_payload() {
     throw std::runtime_error("Model assumptions omitted direct Appletun or Apex Dragon sources.");
   }
 
-  const std::size_t readme_start = readme.find("## Ready-state and T5 policy");
+  const std::size_t readme_start =
+      readme.find("<a id=\"ready-state-and-t5-policy\"></a>");
+  // Stable semantic contract anchor: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
+  // Issue scope: https://github.com/FlareZ123/pokemon-sims/issues/3425
   if (readme_start == std::string::npos) {
-    throw std::runtime_error("Could not locate the README ready-state contract.");
+    throw std::runtime_error("Could not locate the README ready-state contract anchor.");
   }
   const std::string readme_section = readme.substr(readme_start);
 
   // README and model assumptions must preserve the same recipe-gated Appletun rule:
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#L72-L81
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#ready-state-and-t5-policy
   // https://api.pokemontcg.io/v2/cards/sv8-140
   // https://github.com/FlareZ123/pokemon-sims/issues/1320
   const std::string recipe_gate = "Appletun is eligible only in a recipe that contains it";

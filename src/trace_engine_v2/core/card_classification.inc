@@ -146,7 +146,15 @@ constexpr bool is_basic_energy(const Card card) {
 constexpr bool is_energy(const Card card) {
   return is_basic_energy(card) || card == Card::DoubleDragonEnergy;
 }
+constexpr bool is_special_energy(const Card card) {
+  // Double Dragon Energy is Special Energy and remains excluded from Basic-only searches.
+  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+  // Guzma & Hala: https://www.pokemon.com/uk/pokemon-tcg/pokemon-cards/sm-series/sm12/229/
+  return is_energy(card) && !is_basic_energy(card);
+}
 constexpr bool is_supporter(const Card card) {
+  if (cards::has_definition(card)) return cards::registered_is_supporter(card);
+
   switch (card) {
     case Card::Dawn:
     case Card::Grant:
@@ -172,22 +180,18 @@ constexpr bool is_supporter(const Card card) {
 }
 
 constexpr bool is_item(const Card card) {
-  // A migrated card's intrinsic Trainer classification is owned by its registered
-  // CardDefinition. Legacy tables are only a compatibility fallback for cards that
-  // have not entered the card-class architecture yet.
+  // Migrated cards own intrinsic Item classification in the explicit card registry.
+  // Registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+  // Exact migrated prints: https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/xy1-123 https://api.pokemontcg.io/v2/cards/swsh1-163 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sm2-125
   if (cards::has_definition(card)) return cards::registered_is_item(card);
 
   switch (card) {
     case Card::BrilliantBlender:
     case Card::SecretBox:
     case Card::BattleVipPass:
-    case Card::MysteriousTreasure:
     case Card::UltraBall:
-    case Card::EvolutionIncense:
     case Card::PokemonCommunication:
     case Card::EarthenVessel:
-    case Card::ProfessorsLetter:  // https://api.pokemontcg.io/v2/cards/xy1-123 ; https://github.com/FlareZ123/pokemon-sims/issues/2509
-    case Card::FieldBlower:
     case Card::HisuianHeavyBall:
       return true;
     default:

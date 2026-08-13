@@ -66,6 +66,22 @@ void test_seed_761_selects_deterministic_t3_steven_package() {
          "Seed 761 did not reach strict-JIT readiness on T3.");
 }
 
+void test_seed_761_package_stays_closed_under_persistent_turntwo_item_lock() {
+  const sim::TraceLog trace =
+      run_trace("strict-jit-turn2-item-lock/go-second", 761);
+
+  // The package selected on T2 reserves Brilliant Blender for T3. TurnTwoItem is
+  // persistent from T2 onward, so the policy must not project that T3 Item play.
+  // Brilliant Blender is an Item: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Advanced Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Persistent lock specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+  // Shared lock implementation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3404
+  expect(!trace_contains(trace,
+                         "deterministic next-turn VSTAR-Latias-Blender package"),
+         "Issue-3404 Steven package projected a T3 Blender play through persistent TurnTwoItem lock.");
+}
+
 void test_seed_761_package_stays_closed_under_rulebox_ability_lock() {
   const sim::TraceLog trace =
       run_trace("strict-jit-rulebox-ability-lock/go-second", 761);
@@ -100,6 +116,7 @@ void test_seed_761_package_stays_closed_under_combined_lock() {
 int main() {
   try {
     test_seed_761_selects_deterministic_t3_steven_package();
+    test_seed_761_package_stays_closed_under_persistent_turntwo_item_lock();
     test_seed_761_package_stays_closed_under_rulebox_ability_lock();
     test_seed_761_package_stays_closed_under_combined_lock();
     std::cout << "Issue 2622 Steven/Latias/Blender package tests passed\n";

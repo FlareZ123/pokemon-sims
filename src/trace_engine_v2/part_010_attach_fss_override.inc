@@ -32,24 +32,21 @@
     return needed_grass_in_discard || needed_fire_in_discard;
   }
 
-  Pokemon* first_open_pokemon_v_on_bench() {
+  Pokemon* first_open_fss_holder(const bool allow_active) {
+    // Forest Seal Stone may be attached to an Active or Benched Pokémon V with an
+    // open Tool slot. General attachment prefers the Active holder; Powerglass
+    // reservation passes allow_active=false so only the Bench is considered:
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    if (allow_active && state_.active && is_pokemon_v(state_.active->card) &&
+        state_.active->tool == Tool::None) {
+      return &*state_.active;
+    }
     for (Pokemon& pokemon : state_.bench) {
       if (is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None) return &pokemon;
     }
     return nullptr;
-  }
-
-  Pokemon* first_open_fss_holder() {
-    // Forest Seal Stone may be attached to an Active or Benched Pokémon V with an
-    // open Tool slot; prefer the Active holder before scanning the Bench:
-    // https://api.pokemontcg.io/v2/cards/swsh12-156
-    // https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
-    // https://www.pokemon.com/us/pokemon-tcg/rules
-    if (state_.active && is_pokemon_v(state_.active->card) &&
-        state_.active->tool == Tool::None) {
-      return &*state_.active;
-    }
-    return first_open_pokemon_v_on_bench();
   }
 
   void attach_fss_to(Pokemon& target) {
@@ -70,7 +67,7 @@
     // https://api.pokemontcg.io/v2/cards/sv6pt5-63
     // https://www.pokemon.com/us/pokemon-tcg/rules
     if (!state_.vstar_power_used && active_powerglass_tool_slot_needed()) {
-      Pokemon* target = first_open_pokemon_v_on_bench();
+      Pokemon* target = first_open_fss_holder(false);
       if (target != nullptr) {
         attach_fss_to(*target);
         trace("ATTACH TOOL", "R-FSS-01; R-GAME-TOOL; R-POWERGLASS-01",
@@ -85,7 +82,7 @@
       return false;
     }
 
-    Pokemon* target = first_open_fss_holder();
+    Pokemon* target = first_open_fss_holder(true);
     if (target == nullptr) return false;
 
     // Pokémon V includes Pokémon VSTAR, and the trace must identify the actual

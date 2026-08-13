@@ -210,12 +210,14 @@
     // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Core Item, Supporter, Bench, Ability, attachment, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // K1 and same-ready-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3372
+    // Confirmed semantic-admission bugs: https://github.com/FlareZ123/pokemon-sims/issues/3372 https://github.com/FlareZ123/pokemon-sims/issues/3402
     return strict_payload_timing() &&
-        scenario_.locks == LockMode::None && state_.turn == 3 &&
-        scenario_.max_turn >= 3 && prizes_known() && supporter_allowed() &&
+        scenario_.locks == LockMode::None &&
+        state_.turn <= scenario_.max_turn && // Current-state route horizon: https://github.com/FlareZ123/pokemon-sims/issues/3402
+        prizes_known() && supporter_allowed() &&
         !item_locked() && !state_.retreat_used && state_.active &&
         is_basic(state_.active->card) && need_active_vstar() && need_payload() &&
         can_play_payload_this_turn() && bench_space() > 0 &&
@@ -454,6 +456,27 @@
 
     if (wonder_tag_future_gladion_treasure_route()) return Card::Gladion;
 
+    // Guzma & Hala is a legal Wonder Tag target and can compress the Special-Energy
+    // and Tool axes without depending on an Item play. After K1, select it when the
+    // same multi-axis conditions that justify direct play are visible. This also
+    // allows a turn-one going-first Wonder Tag to bank G&H before a scheduled T2
+    // Item lock.
+    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Guzma & Hala: https://api.pokemontcg.io/v2/cards/sm12-229
+    // Double Dragon Energy: https://api.pokemontcg.io/v2/cards/xy6-97
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    const bool guzma_hala_searchable =
+        deck_count_after_search_started(Card::GuzmaHala) > 0;
+    const bool guzma_hala_multi_axis =
+        guzma_hala_dde_axis_available() && guzma_hala_fss_axis_available();
+    const bool guzma_hala_unlock_axis =
+        guzma_hala_stadium_unlock_available() &&
+        (guzma_hala_dde_axis_available() || guzma_hala_fss_axis_available());
+    if (guzma_hala_searchable &&
+        (guzma_hala_multi_axis || guzma_hala_unlock_axis)) {
+      return Card::GuzmaHala;
+    }
+
     // Burnet plus Quick Ball into Latias ex is the complete same-turn finish when
     // Crispin's Energy axis is already covered by the held manual attachment.
     // https://api.pokemontcg.io/v2/cards/sm2-60
@@ -557,7 +580,7 @@
     // https://api.pokemontcg.io/v2/cards/sm2-60
     for (const Card fallback : {Card::Dawn, Card::Crispin, Card::Arven,
                                 Card::ProfessorBurnet, Card::StevensResolve,
-                                Card::Gladion, Card::Lusamine, Card::Guzma,
+                                Card::GuzmaHala, Card::Gladion, Card::Lusamine, Card::Guzma,
                                 Card::Channeler, Card::TeamYellsCheer,
                                 Card::RoseannesBackup, Card::Klara, Card::ProfessorTuro}) {
       if (deck_count_after_search_started(fallback) > 0) return fallback;

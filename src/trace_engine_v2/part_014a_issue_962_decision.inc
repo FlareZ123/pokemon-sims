@@ -1,3 +1,2 @@
-#define REGIDRAGO_ISSUE_962_SELECT_DECISION
-#include "composition/issue_962_route_sections.inc"
-#undef REGIDRAGO_ISSUE_962_SELECT_DECISION
+// Compatibility include retained for the historical part_014a include order.
+// Issue-962 decision composes with eligibility in part_014a_issue_962_eligibility.inc.

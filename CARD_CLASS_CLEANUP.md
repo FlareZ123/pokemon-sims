@@ -67,6 +67,13 @@ The retired `src/trace_engine_v2/part_late_policy_bundle.inc` comment-only compa
 
 Registered-card compatibility now uses `find_definition()` as the single registry lookup. `has_definition()` and intrinsic Item classification delegate to that lookup instead of maintaining parallel card switches, reducing duplicate ownership as additional cards migrate.
 
+### Registry consolidation checkpoint
+
+- `kRegisteredCardDefinitions` is the single explicit list of migrated definitions. Future migrations append one definition there instead of extending a lookup switch.
+- `registered_is_trainer_kind()` is the shared intrinsic Trainer-subtype query. Item, Supporter, Stadium, and Tool compatibility checks should delegate to this helper as those classifications migrate.
+- `is_trainer_kind()` belongs with `CardDefinition` because it interprets intrinsic metadata only. Route policy, DCI/UDP, AMR, connector domination, K0/K1, and matchup state remain outside the registry.
+- The next card migration should reuse these registry primitives before adding any new compatibility branch. If a migrated fact still needs a legacy fallback, keep that fallback only for unmigrated cards.
+
 For mechanical `.inc` cleanup:
 
 - merge a composition-only forwarding file into its single owner only after proving the receiving member boundary;

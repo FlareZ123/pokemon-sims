@@ -204,7 +204,7 @@ The displayed Monte Carlo standard error for a binary outcome is:
 100 * sqrt((x / n) * (1 - x / n) / n)
 ```
 
-Fixed seeds make committed reports reproducible. Source-bound manifests tie aggregate evidence to the simulator inputs that produced it.
+Fixed seeds make committed reports reproducible. Source-bound manifests tie aggregate evidence to the simulator inputs that produced them.
 
 ## Result generation
 
@@ -227,6 +227,8 @@ Result writers use locking and atomic replacement so an interrupted process does
 ## Validation contract
 
 Changes to rules, card resolution, route selection, knowledge transitions, readiness, or aggregate inputs should be validated through the permanent repository surface.
+
+Assert 18 Pokémon, 33 Trainers, 9 Energy, and 60 total cards against the source-derived audit and canonical decklist before accepting a registered recipe. Source-derived contract: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/card_audit_category_contract_tests.py https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/audit_card_data.py https://github.com/FlareZ123/pokemon-sims/blob/main/data/decklist.json
 
 The expected coverage includes:
 

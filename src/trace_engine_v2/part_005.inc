@@ -78,41 +78,54 @@
     const bool lock_vital_dance_has_energy_value =
         hand_count(Card::Grass) < 2 || hand_count(Card::Fire) < 1;
 
-    // Quick Ball and Mysterious Treasure expose Regidrago V only after their
-    // mandatory one-card discard is paid. The centralized strict-DCI selector
-    // prevents protected singleton hands from creating a fictional route:
+    // Quick Ball and Mysterious Treasure expose Regidrago V immediately only after
+    // their mandatory one-card discard is payable. The centralized DCI selector
+    // remains authoritative for that current-hand cost:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // https://api.pokemontcg.io/v2/cards/swsh1-179
     // https://api.pokemontcg.io/v2/cards/sm6-113
     // https://api.pokemontcg.io/v2/cards/swsh12-135
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-    // https://github.com/FlareZ123/pokemon-sims/issues/674
+    // https://github.com/FlareZ123/pokemon-sims/issues/788
+    // https://github.com/FlareZ123/pokemon-sims/issues/3433
     const bool lock_payable_one_discard_regidrago_v_route =
         might_be_unseen(Card::RegidragoV) &&
         ((hand_count(Card::QuickBall) > 0 &&
           choose_discard(false, true, true, Card::QuickBall).has_value()) ||
          (hand_count(Card::MysteriousTreasure) > 0 &&
           choose_discard(false, true, true, Card::MysteriousTreasure).has_value()));
+    const bool first_turn_items_are_legal_under_lock = !item_locked_on_turn(1);
     const bool turn_one_item_route_is_live =
-        (scenario_.locks == LockMode::TurnTwoItem ||
-         scenario_.locks == LockMode::FullRuleBoxAbility) &&
+        scenario_.locks != LockMode::None && first_turn_items_are_legal_under_lock &&
         hand_count(Card::RegidragoVstar) > 0 &&
         lock_payable_one_discard_regidrago_v_route;
 
-    // The matched-seed issue graph is a separate policy fact. Its Quick Ball is
-    // protected by strict DCI, so this branch does not call the Item payable.
-    // Preserve Vital Dance for the exact conditioned public graph across all four
-    // modeled lock distributions while every other Item route proves its cost:
-    // https://github.com/FlareZ123/pokemon-sims/issues/674
-    // https://github.com/FlareZ123/pokemon-sims/issues/788
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    const bool conditioned_lock_graph =
-        scenario_.locks != LockMode::None &&
-        hand_count(Card::QuickBall) > 0 &&
-        hand_count(Card::TeamYellsCheer) > 0 &&
-        hand_count(Card::Powerglass) > 0 &&
-        hand_count(Card::RegidragoVstar) > 0;
+    const bool held_one_discard_regidrago_v_connector =
+        hand_count(Card::QuickBall) > 0 || hand_count(Card::MysteriousTreasure) > 0;
+    const bool unresolved_regidrago_line =
+        hand_count(Card::RegidragoVstar) > 0 && might_be_unseen(Card::RegidragoV);
+    const bool deferred_lock_connector_has_opening_value =
+        scenario_.locks != LockMode::None && !crispin_route_already_held &&
+        unresolved_regidrago_line && held_one_discard_regidrago_v_connector;
+
+    // Setup occurs before the mandatory start-of-turn draw. A held one-discard Basic
+    // search connector can therefore gain a payable DCI cost on that draw without the
+    // selector knowing the future card. Under the synthetic full-Item fixture the Item
+    // itself remains blocked, while the same K0-safe unresolved Regidrago V line still
+    // gives Vital Dance future Energy-compression value. Team Yell's Cheer and
+    // Powerglass are absent because neither card is a prerequisite for this route.
+    // Setup/draw timing: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Lock timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-interpretation
+    // K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Origin: https://github.com/FlareZ123/pokemon-sims/issues/674
+    // Systemic overfit: https://github.com/FlareZ123/pokemon-sims/issues/3433
     const bool lock_route_preserves_vital_dance =
-        turn_one_item_route_is_live || conditioned_lock_graph;
+        turn_one_item_route_is_live || deferred_lock_connector_has_opening_value;
 
     // Setup permits Dialga-GX to start while Oricorio remains in hand for Vital
     // Dance. Oricorio has no Rule Box, so Path-style Rule Box Ability suppression
@@ -125,6 +138,7 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-interpretation
     // https://github.com/FlareZ123/pokemon-sims/issues/674
+    // https://github.com/FlareZ123/pokemon-sims/issues/3433
     if (lock_oricorio_dialga_are_only_opening_basics &&
         strict_payload_timing() && lock_dialga_is_redundant_payload &&
         lock_vital_dance_has_energy_value &&

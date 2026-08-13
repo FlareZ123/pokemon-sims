@@ -200,7 +200,18 @@ if (play_issue_1552_t1_vessel_route()) return true;
       // https://www.pokemon.com/us/pokemon-tcg/rules
       // https://github.com/FlareZ123/pokemon-sims/issues/972
       if (advance_forretress_combo()) continue;
-      if (item_locked()) break;
+      // Guzma & Hala is a Supporter, not an Item. Its DDE + Forest Seal Stone
+      // compression must remain available before the manual Energy attachment even
+      // while search Items are locked. The surrounding turn executor immediately
+      // attaches/uses the searched Tool before the attachment window, matching the
+      // already-established unlocked ordering without admitting any locked Item.
+      // Guzma & Hala: https://api.pokemontcg.io/v2/cards/sm12-193
+      // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+      if (item_locked()) {
+        if (!state_.supporter_used && setup_axis_missing() && play_guzma_hala()) continue;
+        break;
+      }
       // Hisuian Heavy Ball is optional, so the policy must retain it once no setup
       // axis remains instead of spending a non-advancing Prize-information action: https://api.pokemontcg.io/v2/cards/swsh10-146
       if (!setup_axis_missing()) break;

@@ -37,8 +37,7 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3434
 - Canonical print: `xy1-123`.
 - Card data: https://api.pokemontcg.io/v2/cards/xy1-123
-- Status: exact metadata and intrinsic Item classification are owned by `src/cards/trainers/professors_letter.hpp` and the explicit registry.
-- Legacy compatibility cleanup: `name()` no longer duplicates the Professor's Letter display name; registered metadata is the sole name owner.
+- Current cleanup wave: metadata and intrinsic Item classification moved to `src/cards/trainers/professors_letter.hpp` and explicit registry ownership.
 - Existing strategy remains in Engine, including the Earthen Vessel comparison and Energy-axis route selection. Current ordering: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc
 - Existing route behavior remains governed by https://github.com/FlareZ123/pokemon-sims/issues/2509
 - Follow-up for this card must locate the single live `play_professors_letter()` printed-resolution owner before moving state transitions. Do not duplicate or bypass the active resolver through a second gameplay entry point.
@@ -61,7 +60,9 @@ The unused `composition/issue_962_route_sections.inc` selector was removed after
 
 Keep `simulation_runtime.inc` limited to state/runtime data types and trace ownership. Gameplay strategy, DCI/AMR/K0/K1 policy, and card effects remain in Engine, policy, and card modules.
 
-Registered-card compatibility now uses `find_definition()` as the single registry lookup. `has_definition()` and intrinsic Item classification delegate to that lookup instead of maintaining parallel card switches, reducing duplicate ownership as additional cards migrate.
+`src/trace_engine_v2/part_late_policy_bundle.inc` is now a compatibility marker rather than a second composition implementation. Its former Quick Ball, Crispin provenance, Secret Box, and Celestial Roar chain is owned only by `composition/post_014a_overrides.inc`. Do not add live includes back to the historical bundle. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
+
+`src/trace_engine_v2/part_issue_989_wonder_tag_complete_route_override.inc` remains a thin historical source-link shim whose only implementation dependency is `core/tapu_wonder_tag_route_policy.inc`. Keep route logic in the core owner rather than duplicating it in the compatibility path. Canonical policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tapu_wonder_tag_route_policy.inc
 
 For mechanical `.inc` cleanup:
 
@@ -70,6 +71,7 @@ For mechanical `.inc` cleanup:
 - keep entry and exit macro guards adjacent to the moved block;
 - never move an include across a declaration-order dependency to reduce file count;
 - do not merge the Quick Ball base/tail bridge while their split marks a real member-declaration boundary;
+- retire an obsolete compatibility path to a comment-only marker before deleting it when repository tooling or historical source links still depend on the path;
 - validate strict compilation, the regression suite, and representative `--simulate-this` traces after composition changes.
 
 C++ textual-include semantics: https://eel.is/c++draft/cpp.include
@@ -104,7 +106,7 @@ Do not store Regidrago policy in card metadata. Payload role, DCI, strict-JIT va
 
 Registration is explicit and deterministic. Do not use static-constructor self-registration or linker-retention behavior.
 
-Compatibility code consults registered metadata first, then legacy tables for unmigrated cards. `find_definition()` is the canonical registry lookup; helper predicates should derive from that definition instead of introducing parallel registration switches. When a migrated intrinsic fact is fully owned by the registry, remove its duplicate legacy case in a later safe mechanical edit.
+Compatibility code consults registered metadata first, then legacy tables for unmigrated cards. When a migrated intrinsic fact is fully owned by the registry, remove its duplicate legacy case in a later safe mechanical edit.
 
 ### `card_context.hpp`
 

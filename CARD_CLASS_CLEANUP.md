@@ -43,6 +43,17 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Existing route behavior remains governed by https://github.com/FlareZ123/pokemon-sims/issues/2509
 - Follow-up for this card must locate the single live `play_professors_letter()` printed-resolution owner before moving state transitions. Do not duplicate or bypass the active resolver through a second gameplay entry point.
 
+### Earthen Vessel
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3475
+- Canonical print: `sv4-163`.
+- Card data: https://api.pokemontcg.io/v2/cards/sv4-163
+- Status: exact metadata and intrinsic Item classification are owned by `src/cards/trainers/earthen_vessel.hpp` and the explicit registry.
+- Legacy compatibility cleanup: `name()` and `is_item()` now delegate Earthen Vessel identity/classification to the registered `CardDefinition` instead of maintaining duplicate intrinsic cases.
+- Existing discard-cost selection, DCI/UDP/AMR, strict-JIT timing, connector domination, Basic Energy target preference, and K0/K1 search timing remain in Engine.
+- Printed effect reminder: discard 1 card from hand to play Earthen Vessel, then search the deck for up to 2 Basic Energy cards, reveal them, put them into hand, and shuffle. Exact card source: https://api.pokemontcg.io/v2/cards/sv4-163
+- Follow-up must locate the single live Earthen Vessel resolver and prove reusable `CardContext` operations before moving cost validation or state transitions.
+
 This staged entry advances the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
 ## Composition consolidation status

@@ -42,30 +42,134 @@ CrobatModelingDeck make_crobat_modeling_deck(
   return deck;
 }
 
+std::string user_connector_id(const Card card) {
+  switch (card) {
+    case Card::QuickBall: return "qb";
+    case Card::EarthenVessel: return "ev";
+    case Card::MysteriousTreasure: return "treasure";
+    case Card::TapuLeleGX: return "tapu";
+    case Card::Crispin: return "crispin";
+    case Card::Arven: return "arven";
+    case Card::ProfessorBurnet: return "burnet";
+    case Card::StevensResolve: return "steven";
+    case Card::ForestSealStone: return "fss";
+    case Card::Oricorio: return "oricorio";
+    default: throw std::logic_error("non-connector in user connector scan");
+  }
+}
+
+DeckRecipe make_user_shell_recipe(const int quick_ball, const int earthen_vessel) {
+  // Exact user shell for the paper-Expanded DDE experiment. Battle VIP Pass,
+  // Minior and every discrete/matchup-value slot are fixed and never candidate cuts.
+  // The engine does not yet name Goomy FL, Minior PAR, Resetting-Hole Marshadow, or
+  // Carmine. Four fixed Pineco proxies preserve the four Basic slots; a fixed second
+  // Serena preserves Carmine's draw-Supporter slot. These proxies are identical in
+  // every arm and are not interpreted as implementations of the missing cards.
+  DeckRecipe recipe{
+      {Card::BrilliantBlender, 1}, {Card::TeamYellsCheer, 1}, {Card::FieldBlower, 1},
+      {Card::ProfessorBurnet, 1}, {Card::Serena, 2}, {Card::TateLiza, 1},
+      {Card::Lusamine, 1}, {Card::Klara, 1}, {Card::Pineco, 4},
+      {Card::LatiasEx, 1}, {Card::Guzma, 1}, {Card::WishfulBaton, 1},
+      {Card::ChaoticSwell, 1}, {Card::BattleVipPass, 2},
+      {Card::QuickBall, quick_ball}, {Card::TapuLeleGX, 2}, {Card::Crispin, 2},
+      {Card::Arven, 2}, {Card::MysteriousTreasure, 4},
+      {Card::EarthenVessel, earthen_vessel}, {Card::StevensResolve, 1},
+      {Card::ForestSealStone, 1}, {Card::RegidragoV, 4}, {Card::RegidragoVstar, 3},
+      {Card::DialgaGX, 1}, {Card::Dragapult, 1}, {Card::MegaDragonite, 2},
+      {Card::GoodraVstar, 2}, {Card::Oricorio, 1}, {Card::ProfessorTuro, 1},
+      {Card::Gladion, 2}, {Card::HisuianHeavyBall, 1}, {Card::Grass, 4},
+      {Card::DoubleDragonEnergy, 2}, {Card::Fire, 3},
+  };
+  recipe.erase(std::remove_if(recipe.begin(), recipe.end(), [](const auto& entry) {
+    return entry.second == 0;
+  }), recipe.end());
+  return recipe;
+}
+
+CrobatModelingDeck make_user_modeling_deck(
+    const int quick_ball, const int earthen_vessel,
+    const std::vector<Card>& cuts) {
+  DeckRecipe recipe = make_user_shell_recipe(quick_ball, earthen_vessel);
+  std::ostringstream id;
+  id << "user-qb" << quick_ball << "-ev" << earthen_vessel
+     << "-gh" << cuts.size();
+  std::ostringstream cut_names;
+  for (std::size_t index = 0; index < cuts.size(); ++index) {
+    const Card cut = cuts[index];
+    adjust_modeling_recipe(recipe, cut, -1);
+    adjust_modeling_recipe(recipe, Card::GuzmaHala, 1);
+    id << "-cut-" << user_connector_id(cut);
+    if (index > 0) cut_names << " + ";
+    cut_names << name(cut);
+  }
+  if (cuts.empty()) cut_names << "none";
+  CrobatModelingDeck deck{id.str(), cut_names.str(), std::move(recipe)};
+  std::string error;
+  if (!validate_recipe({deck.id, deck.recipe}, &error)) throw std::logic_error(error);
+  return deck;
+}
+
 class CrobatModelingRegistry {
  public:
   static const std::vector<CrobatModelingDeck>& all() {
     // These temporary recipes are deliberately absent from deck_registry() and
     // --all-decks: https://github.com/FlareZ123/pokemon-sims/issues/1394
-    static const std::vector<CrobatModelingDeck> decks{
-        {"regidrago-shell", "none", baseline_recipe()},
-        make_crobat_modeling_deck("crobat1-erika", {Card::ErikasInvitation}),
-        make_crobat_modeling_deck("crobat1-channeler", {Card::Channeler}),
-        make_crobat_modeling_deck("crobat1-team-yell", {Card::TeamYellsCheer}),
-        make_crobat_modeling_deck("crobat1-klara", {Card::Klara}),
-        make_crobat_modeling_deck("crobat1-turo", {Card::ProfessorTuro}),
-        make_crobat_modeling_deck("crobat1-powerglass", {Card::Powerglass}),
-        make_crobat_modeling_deck("crobat1-heavy-ball", {Card::HisuianHeavyBall}),
-        make_crobat_modeling_deck("crobat1-tapu-lele", {Card::TapuLeleGX}),
-        make_crobat_modeling_deck("crobat2-erika-channeler",
-                                  {Card::ErikasInvitation, Card::Channeler}),
-        make_crobat_modeling_deck("crobat2-erika-team-yell",
-                                  {Card::ErikasInvitation, Card::TeamYellsCheer}),
-        make_crobat_modeling_deck("crobat2-erika-tapu-lele",
-                                  {Card::ErikasInvitation, Card::TapuLeleGX}),
-        make_crobat_modeling_deck("crobat2-tapu-lele-both",
-                                  {Card::TapuLeleGX, Card::TapuLeleGX}),
-    };
+    static const std::vector<CrobatModelingDeck> decks = [] {
+      std::vector<CrobatModelingDeck> result{
+          {"regidrago-shell", "none", baseline_recipe()},
+          make_crobat_modeling_deck("crobat1-erika", {Card::ErikasInvitation}),
+          make_crobat_modeling_deck("crobat1-channeler", {Card::Channeler}),
+          make_crobat_modeling_deck("crobat1-team-yell", {Card::TeamYellsCheer}),
+          make_crobat_modeling_deck("crobat1-klara", {Card::Klara}),
+          make_crobat_modeling_deck("crobat1-turo", {Card::ProfessorTuro}),
+          make_crobat_modeling_deck("crobat1-powerglass", {Card::Powerglass}),
+          make_crobat_modeling_deck("crobat1-heavy-ball", {Card::HisuianHeavyBall}),
+          make_crobat_modeling_deck("crobat1-tapu-lele", {Card::TapuLeleGX}),
+          make_crobat_modeling_deck("crobat2-erika-channeler",
+                                    {Card::ErikasInvitation, Card::Channeler}),
+          make_crobat_modeling_deck("crobat2-erika-team-yell",
+                                    {Card::ErikasInvitation, Card::TeamYellsCheer}),
+          make_crobat_modeling_deck("crobat2-erika-tapu-lele",
+                                    {Card::ErikasInvitation, Card::TapuLeleGX}),
+          make_crobat_modeling_deck("crobat2-tapu-lele-both",
+                                    {Card::TapuLeleGX, Card::TapuLeleGX}),
+      };
+
+      for (const auto [quick_ball, earthen_vessel] :
+           std::array<std::pair<int, int>, 3>{{{2, 0}, {1, 1}, {0, 2}}}) {
+        const DeckRecipe base = make_user_shell_recipe(quick_ball, earthen_vessel);
+        result.push_back(make_user_modeling_deck(quick_ball, earthen_vessel, {}));
+
+        std::vector<Card> connectors{
+            Card::MysteriousTreasure, Card::TapuLeleGX, Card::Crispin,
+            Card::Arven, Card::ProfessorBurnet, Card::StevensResolve,
+            Card::ForestSealStone, Card::Oricorio,
+        };
+        if (quick_ball > 0) connectors.push_back(Card::QuickBall);
+        if (earthen_vessel > 0) connectors.push_back(Card::EarthenVessel);
+
+        for (const Card first : connectors) {
+          result.push_back(make_user_modeling_deck(
+              quick_ball, earthen_vessel, {first}));
+        }
+        for (std::size_t first_index = 0; first_index < connectors.size(); ++first_index) {
+          const Card first = connectors[first_index];
+          for (std::size_t second_index = first_index;
+               second_index < connectors.size(); ++second_index) {
+            const Card second = connectors[second_index];
+            const auto count_in_base = std::find_if(
+                base.begin(), base.end(), [first](const auto& entry) {
+                  return entry.first == first;
+                });
+            const int available = count_in_base == base.end() ? 0 : count_in_base->second;
+            if (first == second && available < 2) continue;
+            result.push_back(make_user_modeling_deck(
+                quick_ball, earthen_vessel, {first, second}));
+          }
+        }
+      }
+      return result;
+    }();
     return decks;
   }
 

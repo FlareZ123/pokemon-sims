@@ -42,17 +42,6 @@ CrobatModelingDeck make_crobat_modeling_deck(
   return deck;
 }
 
-CrobatModelingDeck make_dde_control_validation_deck() {
-  DeckRecipe recipe = baseline_recipe();
-  adjust_modeling_recipe(recipe, Card::Grass, -2);
-  adjust_modeling_recipe(recipe, Card::DoubleDragonEnergy, 2);
-  CrobatModelingDeck deck{"dde-control-shell", "2 Grass -> 2 Double Dragon Energy",
-                          std::move(recipe)};
-  std::string error;
-  if (!validate_recipe({deck.id, deck.recipe}, &error)) throw std::logic_error(error);
-  return deck;
-}
-
 class CrobatModelingRegistry {
  public:
   static const std::vector<CrobatModelingDeck>& all() {
@@ -60,7 +49,6 @@ class CrobatModelingRegistry {
     // --all-decks: https://github.com/FlareZ123/pokemon-sims/issues/1394
     static const std::vector<CrobatModelingDeck> decks{
         {"regidrago-shell", "none", baseline_recipe()},
-        make_dde_control_validation_deck(),
         make_crobat_modeling_deck("crobat1-erika", {Card::ErikasInvitation}),
         make_crobat_modeling_deck("crobat1-channeler", {Card::Channeler}),
         make_crobat_modeling_deck("crobat1-team-yell", {Card::TeamYellsCheer}),

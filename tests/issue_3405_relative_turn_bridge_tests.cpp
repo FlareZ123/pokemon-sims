@@ -47,7 +47,7 @@ sim::Engine make_engine(const sim::DciProfile dci, const sim::LockMode lock,
 void test_relative_turns_and_horizon() {
   // Items have no printed T3-only timing; these two search Items are legal on any
   // modeled turn where their conditions and the current Item-lock state permit it.
-  // Advanced Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#b-trainer-cards
+  // Advanced Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   // Mysterious Treasure / Quick Ball: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179
   // Same-ready-turn policy / confirmed regression: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/issues/3405
   for (const int turn : {2, 3, 4}) {

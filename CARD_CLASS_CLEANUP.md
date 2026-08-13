@@ -239,3 +239,11 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - The issue-3040 Supporter continuation in `src/trace_engine_v2/part_issue_1070_tate_after_vstar_search_override.inc` now exposes a responsibility-based fallback name while preserving the existing macro boundary and Turo route. Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
 - `src/trace_engine_v2/part_014a_issue_962_projection.inc` is now explicitly documented as a compatibility-only marker with direct links to the canonical composition and shared core route owner. This prevents future cleanup from mistaking the marker for a second projection implementation.
 - Next boundary-safe composition work should remove the historical issue-962 projection and decision include sites together only after the receiving `part_014a.inc` member boundary is proven and the full CI matrix is green. Until then, keep both compatibility paths inert and keep implementation ownership in `core/issue_962_route.inc`.
+
+## Battle VIP Pass metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3509
+- Canonical print: `swsh8-225`; exact card data: https://api.pokemontcg.io/v2/cards/swsh8-225
+- `src/cards/trainers/battle_vip_pass.hpp` and `kRegisteredCardDefinitions` own exact identity, display name, Trainer kind, and Item subtype.
+- Focused registration coverage: `tests/battle_vip_pass_card_class_tests.cpp`.
+- Existing first-turn admission, Basic-Pokémon Bench search resolution, bench-space policy, K0/K1 timing, DCI/UDP/AMR, connector domination, and route ordering remain in Engine. A later printed-resolution migration should preserve those boundaries and reuse the existing live resolver.

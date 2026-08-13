@@ -1,0 +1,40 @@
+name: CI Matrix Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  matrix-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Run three deterministic setup audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+          ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 2
+      - name: Generate paired 100k-per-condition matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out multi-deck-matrix.csv
+      - name: Print T2 and T3 matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/extract_deck_matrix.py --input multi-deck-matrix.csv --output t2-t3-matrix.csv --deck regidrago-shell
+          echo "=== SHELL T2/T3 MATRIX ==="
+          cat t2-t3-matrix.csv
+          echo "=== PAIRED T2/T3/T4 MATRIX ==="
+          cat multi-deck-matrix.csv

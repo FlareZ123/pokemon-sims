@@ -78,9 +78,7 @@ constexpr std::string_view name(const Card card) {
     case Card::Appletun: return "Appletun sv8-140";
     case Card::Pineco: return "Pineco";
     case Card::ForretressEx: return "Forretress ex";
-    case Card::BrilliantBlender: return "Brilliant Blender";
     case Card::SecretBox: return "Secret Box";
-    case Card::BattleVipPass: return "Battle VIP Pass";
     case Card::UltraBall: return "Ultra Ball";
     case Card::PokemonCommunication: return "Pokémon Communication";
     case Card::EarthenVessel: return "Earthen Vessel";
@@ -93,7 +91,6 @@ constexpr std::string_view name(const Card card) {
     case Card::TateLiza: return "Tate & Liza";
     case Card::StevensResolve: return "Steven's Resolve";
     case Card::Guzma: return "Guzma";
-    case Card::GuzmaHala: break;  // Registered CardDefinition owns this name.
     case Card::Channeler: return "Channeler";
     case Card::Gladion: return "Gladion";
     case Card::Lusamine: return "Lusamine";
@@ -108,15 +105,18 @@ constexpr std::string_view name(const Card card) {
     case Card::ChaoticSwell: return "Chaotic Swell";
     case Card::ForestOfVitality: return "Forest of Vitality";
     case Card::PathToPeak: return "Path to the Peak";
-    case Card::HisuianHeavyBall: return "Hisuian Heavy Ball";
     case Card::DoubleDragonEnergy: return "Double Dragon Energy";  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
     case Card::Grass: return "Grass Energy";
     case Card::Fire: return "Fire Energy";
-    case Card::FieldBlower:
-    case Card::MysteriousTreasure:
-    case Card::QuickBall:
-    case Card::ProfessorsLetter:
+    case Card::BattleVipPass:
+    case Card::BrilliantBlender:
     case Card::EvolutionIncense:
+    case Card::FieldBlower:
+    case Card::GuzmaHala:
+    case Card::HisuianHeavyBall:
+    case Card::MysteriousTreasure:
+    case Card::ProfessorsLetter:
+    case Card::QuickBall:
       break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
   }
   return "Unknown";

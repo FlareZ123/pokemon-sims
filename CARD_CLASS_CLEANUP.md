@@ -24,6 +24,23 @@ tests/quick_ball_card_class_tests.cpp
 
 If the skeleton or active Quick Ball reference path is missing, stop and report that the bootstrap is incomplete. Do not invent another class hierarchy, registration mechanism, side-effectful registry, or CMake library layout.
 
+## Composition consolidation status
+
+Late-search composition now has one explicit owner: `src/trace_engine_v2/composition/post_014a_overrides.inc`.
+
+The former one-purpose wrappers `composition/empty_deck_search_routes.inc` and `composition/post_search_connector_routes.inc` have been merged into that owner without changing their textual include order, macro guards, alias lifetimes, or gameplay entry points. This reduces wrapper depth while keeping the behavior-sensitive legacy sequence auditable at one class-member boundary.
+
+Keep these cleanup rules going forward:
+
+- when a composition-only `.inc` file has exactly one owner and exists only to forward an ordered macro/include block, prefer merging that block into the owner once the dependency boundary is proven by CI;
+- preserve the original `#define` / `#include` / `#undef` order exactly during a mechanical merge;
+- keep entry and exit macro guards beside the inlined block so alias ownership remains explicit;
+- do not merge a transitional card bridge merely to reduce file count when its split marks a real declaration-order dependency;
+- specifically, keep `quick_ball_card_class_base.inc` and `quick_ball_card_class_tail.inc` separate until the helpers consumed by the tail can be made available at a single safe member boundary without reordering legacy declarations;
+- after each composition merge, require strict compilation, the full regression suite, and representative `--simulate-this` traces before merging.
+
+C++ textual-include semantics used by these mechanical consolidations: https://eel.is/c++draft/cpp.include
+
 ## Why migration is incremental
 
 The simulator is currently composed as one translation unit through `src/regidrago_sim.cpp` and ordered `.inc` files under `src/trace_engine_v2/`. Legacy metadata, classifiers, policy helpers, state transitions, and card effects still cross textual include boundaries.

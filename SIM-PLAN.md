@@ -72,6 +72,8 @@ The core requirements are:
 4. Strict JIT and matchup-flex JIT require a qualifying payload to have entered the discard pile during turn `t`.
 5. `t` is at least 2.
 
+The accepted payload set includes recipe-gated Appletun `sv8-140` only when the selected recipe contains it. Card and Apex Dragon sources: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/swsh12-136
+
 The exact accepted payload set and Energy accounting are maintained in source and documented in [`docs/MODEL_ASSUMPTIONS.md`](docs/MODEL_ASSUMPTIONS.md).
 
 ## DCI profiles
@@ -204,7 +206,7 @@ The displayed Monte Carlo standard error for a binary outcome is:
 100 * sqrt((x / n) * (1 - x / n) / n)
 ```
 
-Fixed seeds make committed reports reproducible. Source-bound manifests tie aggregate evidence to the simulator inputs that produced it.
+Fixed seeds make committed reports reproducible. Source-bound manifests tie aggregate evidence to the simulator inputs that produced them.
 
 ## Result generation
 

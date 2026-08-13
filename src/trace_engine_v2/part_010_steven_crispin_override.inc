@@ -692,17 +692,16 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
 
   bool late_steven_has_active_regidrago_t3_blender_route() const {
     const bool next_turn_items_locked =
-        scenario_.locks == LockMode::FullItem ||
-        scenario_.locks == LockMode::FullCombined ||
-        (scenario_.locks == LockMode::TurnTwoItem && state_.turn + 1 == 2);
+        item_locked_on_turn(state_.turn + 1); // Persistent TurnTwoItem projection: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
     // Steven is a Supporter and Brilliant Blender is an Item. Rule Box Ability lock
-    // does not affect either Trainer card, while a full or scheduled next-turn Item
-    // lock removes the projected Blender finish:
+    // does not affect either Trainer card, while every projected Item-lock window
+    // removes the Blender finish:
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
-    // Advanced Supporter, Item, evolution, and attachment procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Advanced Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#L382-L404
+    // Shared lock helper: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
     // Lock specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
-    // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3228
+    // Confirmed persistent-lock bug: https://github.com/FlareZ123/pokemon-sims/issues/3403
     if (!strict_payload_timing() || next_turn_items_locked ||
         state_.turn >= scenario_.max_turn || !supporter_allowed() ||
         !state_.active || state_.active->card != Card::RegidragoV ||
@@ -733,6 +732,7 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
     // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Original route: https://github.com/FlareZ123/pokemon-sims/issues/952
     // Confirmed semantic-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3228
+    // Confirmed persistent-lock bug: https://github.com/FlareZ123/pokemon-sims/issues/3403
     return !blender_vstar_card_axis_can_finish_this_turn();
   }
 

@@ -1,0 +1,68 @@
+name: Refresh 3055 evidence
+
+on:
+  push:
+    branches:
+      - fix-3055-post-battle-vip-evidence
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  refresh:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reuse validated matrices
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/${{ github.repository }}/actions/artifacts/9201648803/zip > /tmp/release-validation.zip
+          mkdir -p /tmp/release-validation
+          unzip -q /tmp/release-validation.zip -d /tmp/release-validation
+          cp /tmp/release-validation/t2-t3-matrix.csv results/simulation_results.csv
+          cp /tmp/release-validation/multi-deck-matrix.csv results/multi_deck_comparison.csv
+
+      - name: Refresh provenance manifests
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          from scripts.baseline_provenance import simulator_policy_source_digest
+
+          root = Path('.')
+          source_digest = simulator_policy_source_digest(root)
+
+          baseline_path = root / 'results' / 'baseline_manifest.json'
+          baseline = json.loads(baseline_path.read_text(encoding='utf-8'))
+          baseline['simulator_policy_source_sha256'] = source_digest
+          baseline_path.write_text(json.dumps(baseline, indent=2) + '\n', encoding='utf-8')
+
+          comparison_path = root / 'results' / 'multi_deck_comparison.csv'
+          comparison_digest = hashlib.sha256(comparison_path.read_bytes()).hexdigest()
+          multi_path = root / 'results' / 'multi_deck_manifest.json'
+          multi = json.loads(multi_path.read_text(encoding='utf-8'))
+          multi['comparison_csv_sha256'] = comparison_digest
+          multi['simulator_policy_source_sha256'] = source_digest
+          multi_path.write_text(json.dumps(multi, indent=2) + '\n', encoding='utf-8')
+          PY
+
+      - name: Regenerate derived reports
+        run: |
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/update_multi_deck_docs.py --repo-root .
+
+      - name: Commit evidence refresh
+        run: |
+          rm .github/workflows/refresh-3055-evidence.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results/simulation_results.csv results/baseline_manifest.json results/multi_deck_comparison.csv results/multi_deck_manifest.json docs/REPORT.md docs/MULTI_DECK_REPORT.md docs/TRACE_AUDIT.md README.md .github/workflows/refresh-3055-evidence.yml
+          git commit -m "Fix #3055: refresh generated evidence"
+          git push

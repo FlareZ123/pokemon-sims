@@ -4,15 +4,17 @@
 
 #include "card_definition.hpp"
 #include "trainers/evolution_incense.hpp"
+#include "trainers/mysterious_treasure.hpp"
 #include "trainers/professors_letter.hpp"
 #include "trainers/quick_ball.hpp"
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 3> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 4> kRegisteredCardDefinitions{
     &EvolutionIncense::definition, // Exact print: https://api.pokemontcg.io/v2/cards/swsh1-163
     &QuickBall::definition,
     &ProfessorsLetter::definition, // Exact XY 123 metadata: https://api.pokemontcg.io/v2/cards/xy1-123
+    &MysteriousTreasure::definition, // Exact SM 113 metadata: https://api.pokemontcg.io/v2/cards/sm6-113
 };
 
 constexpr const CardDefinition* find_definition(const Card card) {

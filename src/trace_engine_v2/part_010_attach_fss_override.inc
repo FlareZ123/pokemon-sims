@@ -1,5 +1,16 @@
 #include "core/regidrago_line_helpers.inc"
 
+  bool powerglass_can_fill_missing_basic_from_discard(const Pokemon& pokemon) const {
+    // Powerglass end-of-turn recovery can supply a missing Basic Grass or Fire from discard.
+    // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    const bool needed_grass_in_discard =
+        pokemon.grass < 2 && count_of(state_.discard, Card::Grass) > 0;
+    const bool needed_fire_in_discard =
+        pokemon.fire < 1 && count_of(state_.discard, Card::Fire) > 0;
+    return needed_grass_in_discard || needed_fire_in_discard;
+  }
+
   bool active_powerglass_tool_slot_needed() const {
     if (!state_.active || state_.active->tool != Tool::None ||
         !is_regidrago_v_line(state_.active->card)) {
@@ -25,11 +36,7 @@
     // end-of-turn effect resolves, and that Pokémon may hold only one Tool:
     // https://api.pokemontcg.io/v2/cards/sv6pt5-63
     // https://www.pokemon.com/us/pokemon-tcg/rules
-    const bool needed_grass_in_discard =
-        state_.active->grass < 2 && count_of(state_.discard, Card::Grass) > 0;
-    const bool needed_fire_in_discard =
-        state_.active->fire < 1 && count_of(state_.discard, Card::Fire) > 0;
-    return needed_grass_in_discard || needed_fire_in_discard;
+    return powerglass_can_fill_missing_basic_from_discard(*state_.active);
   }
 
   Pokemon* first_open_fss_holder(const bool allow_active) {

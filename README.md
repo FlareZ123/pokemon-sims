@@ -52,7 +52,9 @@ The exact predicate and interpretation boundaries are documented in [`docs/MODEL
 
 The simulator separates legal information from debug information.
 
-Deck searches establish deck knowledge for subsequent deterministic choices. Prize identities remain hidden from policy until a legal Prize-inspection effect reveals them. Trace output may print debug-only Prize information for auditing, while action selection cannot use that debug channel.
+At K0, Prize identities are unavailable to policy. A legal deck inspection establishes K1, where the fixed 60-card recipe plus known zones lets policy deduce the complementary Prize zone; a full legal Prize inspection establishes the same K1 state directly. K1 contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+
+Trace output may print debug-only Prize information for auditing, while action selection cannot use that debug channel.
 
 Discard choices are state-dependent. The DCI profiles determine which cards may be spent under the current hand, board, turn, knowledge state, and setup objective. Connector choices account for Supporter contention, Bench space, lock state, once-per-game resources, and whether another legal route dominates the proposed action.
 

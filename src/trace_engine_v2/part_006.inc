@@ -130,19 +130,43 @@ std::optional<Card> issue_1605_redundant_payload_cost() const {
   return std::nullopt;
 }
 
+bool issue_1605_generic_one_discard_regi_cost_available(
+    const std::optional<Card> excluded_from_cost) const {
+  const bool one_discard_regi_search = excluded_from_cost &&
+      (*excluded_from_cost == Card::QuickBall ||
+       *excluded_from_cost == Card::MysteriousTreasure);
+  // A duplicated Dragon payload becomes dynamic DCI fuel only when the Item being
+  // paid for directly advances the missing Regidrago V setup axis. The payload
+  // helper above preserves one copy of the duplicate identity plus a second distinct
+  // payload identity, and this fallback runs after ordinary DCI candidates:
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+  // Dynamic DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  // Confirmed systemic bug: https://github.com/FlareZ123/pokemon-sims/issues/3467
+  return scenario_.dci == DciProfile::StrictJit && one_discard_regi_search &&
+         !item_locked() && need_regi() && bench_space() > 0 &&
+         might_be_unseen(Card::RegidragoV) &&
+         issue_1605_redundant_payload_cost().has_value();
+}
+
 bool issue_1605_arven_crobat_route_available() const {
   const bool one_discard_item_plausible =
       might_be_unseen(Card::QuickBall) ||
       might_be_unseen(Card::MysteriousTreasure);
+  // Historical function name retained for call-site compatibility. Arven's route
+  // admission follows the same generic one-discard Regidrago V setup condition;
+  // Crobat V and Forest Seal Stone are optional continuations rather than costs:
+  // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+  // One Supporter per turn: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Confirmed systemic bug: https://github.com/FlareZ123/pokemon-sims/issues/3467
   return scenario_.dci == DciProfile::StrictJit &&
          !scenario_.going_first && state_.turn == 1 &&
          supporter_allowed() && !item_locked() && need_regi() &&
-         bench_space() >= 2 && hand_count(Card::Arven) > 0 &&
-         hand_count(Card::CrobatV) > 0 &&
-         hand_count(Card::ForestSealStone) > 0 &&
-         !state_.vstar_power_used && !state_.dark_asset_used &&
-         ability_available_for_pokemon(Card::CrobatV) &&
-         state_.hand.size() <= 9U &&
+         bench_space() > 0 && hand_count(Card::Arven) > 0 &&
          might_be_unseen(Card::RegidragoV) &&
          one_discard_item_plausible &&
          issue_1605_redundant_payload_cost().has_value();
@@ -392,6 +416,16 @@ bool issue_1605_arven_crobat_route_available() const {
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // https://github.com/FlareZ123/pokemon-sims/issues/711
     if (hand_count(Card::TapuLeleGX) >= 2) return Card::TapuLeleGX;
+
+    if (issue_1605_generic_one_discard_regi_cost_available(excluded_from_cost)) {
+      // Ordinary DCI fuel above remains dominant. Reach redundant Dragon fuel only
+      // after those candidates are exhausted, and discard exactly the duplicated
+      // payload identity selected by the shared survivor-preserving helper:
+      // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://github.com/FlareZ123/pokemon-sims/issues/3467
+      return issue_1605_redundant_payload_cost();
+    }
     return std::nullopt;
   }
 

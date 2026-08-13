@@ -43,7 +43,16 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Existing route behavior remains governed by https://github.com/FlareZ123/pokemon-sims/issues/2509
 - Follow-up for this card must locate the single live `play_professors_letter()` printed-resolution owner before moving state transitions. Do not duplicate or bypass the active resolver through a second gameplay entry point.
 
-This staged entry advances the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
+### Mysterious Treasure
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3473
+- Canonical print: `sm6-113`.
+- Card data: https://api.pokemontcg.io/v2/cards/sm6-113
+- Status: exact metadata and intrinsic Item classification are owned by `src/cards/trainers/mysterious_treasure.hpp` and `kRegisteredCardDefinitions`.
+- Existing Mysterious Treasure strategy and resolution remain in Engine. This cleanup does not alter its one-card discard cost, Psychic-or-Dragon target rule, search/shuffle sequence, DCI admission, connector priority, or K0/K1 timing. Printed effect: https://api.pokemontcg.io/v2/cards/sm6-113
+- Follow-up for this card must locate the single live `play_mysterious_treasure()` resolution owner and current target-choice boundary before moving printed resolution. Preserve exact discard, search/reveal, K1, and shuffle ordering through `CardContext` without adding strategy queries to card code.
+
+These staged entries advance the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
 ## Composition consolidation status
 
@@ -69,7 +78,7 @@ Registered-card compatibility now uses `find_definition()` as the single registr
 
 ### Registry consolidation checkpoint
 
-- `kRegisteredCardDefinitions` is the single explicit list of migrated definitions. Future migrations append one definition there instead of extending a lookup switch.
+- `kRegisteredCardDefinitions` is the single explicit list of migrated definitions. Quick Ball, Professor's Letter, and Mysterious Treasure now use that inventory; future migrations append one definition there instead of extending a lookup switch. Mysterious Treasure source: https://api.pokemontcg.io/v2/cards/sm6-113
 - `registered_is_trainer_kind()` is the shared intrinsic Trainer-subtype query. Item, Supporter, Stadium, and Tool compatibility checks should delegate to this helper as those classifications migrate.
 - `is_trainer_kind()` belongs with `CardDefinition` because it interprets intrinsic metadata only. Route policy, DCI/UDP, AMR, connector domination, K0/K1, and matchup state remain outside the registry.
 - The next card migration should reuse these registry primitives before adding any new compatibility branch. If a migrated fact still needs a legacy fallback, keep that fallback only for unmigrated cards.
@@ -116,7 +125,7 @@ Do not store Regidrago policy in card metadata. Payload role, DCI, strict-JIT va
 
 Registration is explicit and deterministic. Do not use static-constructor self-registration or linker-retention behavior.
 
-Compatibility code consults registered metadata first, then legacy tables for unmigrated cards. `find_definition()` is the canonical registry lookup; helper predicates should derive from that definition instead of introducing parallel registration switches. When a migrated intrinsic fact is fully owned by the registry, remove its duplicate legacy case in a later safe mechanical edit.
+Compatibility code consults registered metadata first, then legacy tables for unmigrated cards. `find_definition()` is the canonical registry lookup over `kRegisteredCardDefinitions`; helper predicates should derive from that definition instead of introducing parallel registration switches. When a migrated intrinsic fact is fully owned by the registry, remove its duplicate legacy case in a later safe mechanical edit.
 
 ### `card_context.hpp`
 

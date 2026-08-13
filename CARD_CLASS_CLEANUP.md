@@ -54,6 +54,10 @@ The canonical Engine composition owner is `src/trace_engine_v2/composition/engin
 
 The unused `composition/issue_962_route_sections.inc` selector was removed after the canonical search stage had already moved to direct issue-962 section includes. The active sections remain under `src/trace_engine_v2/part_014a_issue_962_*.inc`.
 
+`src/trace_engine_v2/core/simulation_runtime.inc` owns the state-adjacent runtime types. The former `core/game_state_types.inc`, `core/simulation_metrics.inc`, and `core/trace_log.inc` one-owner files were merged there in their historical declaration order, while `core/simulator_state.inc` keeps the single legacy continuation boundary.
+
+Keep that runtime unit limited to state/runtime data types and trace ownership. Gameplay strategy, DCI/AMR/K0/K1 policy, and card effects stay in Engine, policy, and card modules.
+
 For mechanical `.inc` cleanup:
 
 - merge a composition-only forwarding file into its single owner only after proving the receiving member boundary;

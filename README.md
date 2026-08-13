@@ -42,6 +42,8 @@ A trial becomes setup-ready when the modeled state satisfies all current readine
 4. Strict JIT and matchup-flex JIT require a qualifying payload to enter the discard pile during the ready turn.
 5. Readiness begins on turn 2.
 
+Appletun is eligible only in a recipe that contains it. Card and attack sources: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/swsh12-136
+
 T2, T3, and T4 readiness count as setup success. T5 is retained as a diagnostic recovery turn and remains part of setup failure reporting.
 
 The exact predicate and interpretation boundaries are documented in [`docs/MODEL_ASSUMPTIONS.md`](docs/MODEL_ASSUMPTIONS.md) and [`docs/POLICY_DECISIONS.md`](docs/POLICY_DECISIONS.md).

@@ -37,7 +37,8 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3434
 - Canonical print: `xy1-123`.
 - Card data: https://api.pokemontcg.io/v2/cards/xy1-123
-- Current cleanup wave: metadata and intrinsic Item classification moved to `src/cards/trainers/professors_letter.hpp` and explicit registry ownership.
+- Status: exact metadata and intrinsic Item classification are owned by `src/cards/trainers/professors_letter.hpp` and the explicit registry.
+- Legacy compatibility cleanup: `name()` no longer duplicates the Professor's Letter display name; registered metadata is the sole name owner.
 - Existing strategy remains in Engine, including the Earthen Vessel comparison and Energy-axis route selection. Current ordering: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014a.inc
 - Existing route behavior remains governed by https://github.com/FlareZ123/pokemon-sims/issues/2509
 - Follow-up for this card must locate the single live `play_professors_letter()` printed-resolution owner before moving state transitions. Do not duplicate or bypass the active resolver through a second gameplay entry point.
@@ -53,6 +54,8 @@ The canonical Engine composition owner is `src/trace_engine_v2/composition/engin
 `src/trace_engine_v2/composition/opening_engine_overrides.inc` owns the early Supporter/VSTAR continuation. The former one-purpose Supporter wrapper was inlined there while preserving the `part_011.inc` -> `part_012.inc` -> `part_013.inc` order.
 
 The unused `composition/issue_962_route_sections.inc` selector was removed after the canonical search stage had already moved to direct issue-962 section includes. The active sections remain under `src/trace_engine_v2/part_014a_issue_962_*.inc`.
+
+Registered-card compatibility now uses `find_definition()` as the single registry lookup. `has_definition()` and intrinsic Item classification delegate to that lookup instead of maintaining parallel card switches, reducing duplicate ownership as additional cards migrate.
 
 For mechanical `.inc` cleanup:
 
@@ -95,7 +98,7 @@ Do not store Regidrago policy in card metadata. Payload role, DCI, strict-JIT va
 
 Registration is explicit and deterministic. Do not use static-constructor self-registration or linker-retention behavior.
 
-Compatibility code consults registered metadata first, then legacy tables for unmigrated cards. When a migrated intrinsic fact is fully owned by the registry, remove its duplicate legacy case in a later safe mechanical edit.
+Compatibility code consults registered metadata first, then legacy tables for unmigrated cards. `find_definition()` is the canonical registry lookup; helper predicates should derive from that definition instead of introducing parallel registration switches. When a migrated intrinsic fact is fully owned by the registry, remove its duplicate legacy case in a later safe mechanical edit.
 
 ### `card_context.hpp`
 

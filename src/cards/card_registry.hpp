@@ -3,14 +3,16 @@
 #include <array>
 
 #include "card_definition.hpp"
+#include "trainers/mysterious_treasure.hpp"
 #include "trainers/professors_letter.hpp"
 #include "trainers/quick_ball.hpp"
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 2> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 3> kRegisteredCardDefinitions{
     &QuickBall::definition,
     &ProfessorsLetter::definition, // Exact XY 123 metadata: https://api.pokemontcg.io/v2/cards/xy1-123
+    &MysteriousTreasure::definition, // Exact SM 113 metadata: https://api.pokemontcg.io/v2/cards/sm6-113
 };
 
 constexpr const CardDefinition* find_definition(const Card card) {

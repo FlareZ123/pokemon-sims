@@ -24,10 +24,14 @@ constexpr bool has_definition(const Card card) {
   return find_definition(card) != nullptr;
 }
 
-constexpr bool registered_is_item(const Card card) {
+constexpr bool registered_is_trainer_kind(const Card card,
+                                          const TrainerKind trainer_kind) {
   const CardDefinition* definition = find_definition(card);
-  return definition != nullptr && definition->kind == CardKind::Trainer &&
-         definition->trainer_kind == TrainerKind::Item;
+  return definition != nullptr && is_trainer_kind(*definition, trainer_kind);
+}
+
+constexpr bool registered_is_item(const Card card) {
+  return registered_is_trainer_kind(card, TrainerKind::Item);
 }
 
 }  // namespace sim::cards

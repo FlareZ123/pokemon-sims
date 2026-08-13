@@ -1,9 +1,4 @@
-  [[nodiscard]] static bool is_regidrago_v_line(const Card card) {
-    // Regidrago V and Regidrago VSTAR are the two stages of this simulator's Regidrago line:
-    // https://api.pokemontcg.io/v2/cards/swsh12-135
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    return card == Card::RegidragoV || card == Card::RegidragoVstar;
-  }
+#include "core/regidrago_line_helpers.inc"
 
   bool active_powerglass_tool_slot_needed() const {
     if (!state_.active || state_.active->tool != Tool::None ||

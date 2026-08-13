@@ -190,6 +190,8 @@ Card text that matters only after the first successful setup attack may be recor
 
 `--model-crobat` produces the dedicated Crobat V swap matrix. `--model-variant` allows a deterministic trace through one modeling recipe.
 
+The modeling-only Crobat V registry remains separate from the registered deck surface. `--model-crobat` writes `results/crobat_variant_model.csv`, and the generated interpretation stays source-bound in `docs/CROBAT_MODEL_REPORT.md`. The retired generic `variant_results.csv` artifact remains excluded from current probability claims. Sources: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CROBAT_MODEL_REPORT.md https://github.com/FlareZ123/pokemon-sims/issues/1394 https://github.com/FlareZ123/pokemon-sims/issues/1496 https://api.pokemontcg.io/v2/cards/swsh3-104
+
 ### Self-test
 
 `--self-test` runs the simulator's built-in parser and core contract checks.
@@ -199,6 +201,8 @@ The CLI rejects incompatible mode combinations rather than silently changing the
 ## Statistical output
 
 Aggregate rows record readiness by T2 through T5, first-readiness timing, setup failure, Monte Carlo standard error, opening-state metrics, and route-specific counters used by the current reports.
+
+Registered-deck scenario probabilities are emitted for `regidrago-shell` and `regidrago-pineco` through the paired `--all-decks` artifact. Source: https://github.com/FlareZ123/pokemon-sims/blob/main/results/multi_deck_comparison.csv
 
 The displayed Monte Carlo standard error for a binary outcome is:
 

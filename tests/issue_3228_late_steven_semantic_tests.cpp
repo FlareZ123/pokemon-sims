@@ -66,21 +66,25 @@ void test_semantic_admission_across_turns_seats_and_jit_profiles() {
   }
 }
 
-void test_rule_box_and_scheduled_item_lock_semantics() {
-  // Rule Box Ability lock does not suppress these Trainer cards. Turn-two Item
-  // lock is also irrelevant to a T2 Steven play whose Blender resolves on T3,
-  // after the scheduled lock window has ended.
+void test_rule_box_and_persistent_turn_two_item_lock_semantics() {
+  // Rule Box Ability lock does not suppress these Trainer cards. TurnTwoItem is
+  // persistent from the player's T2 onward, so every projected T3+ Blender play is
+  // illegal even when Steven itself remains legal on the preceding turn.
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
   // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
-  // Lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md
-  // Lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
-  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3228
+  // Advanced Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#L382-L404
+  // Persistent TurnTwoItem model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+  // Shared projected-lock helper: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+  // Confirmed persistent-lock bug: https://github.com/FlareZ123/pokemon-sims/issues/3403
   expect(available(sim::DciProfile::MatchupFlexJit,
                    sim::LockMode::FullRuleBoxAbility, false, 3),
          "Rule Box Ability lock incorrectly blocked the Trainer-only route.");
-  expect(available(sim::DciProfile::StrictJit,
-                   sim::LockMode::TurnTwoItem, true, 2),
-         "Expired T2 Item-lock window incorrectly blocked next-turn T3 Blender.");
+  expect(!available(sim::DciProfile::StrictJit,
+                    sim::LockMode::TurnTwoItem, true, 2),
+         "Persistent TurnTwoItem incorrectly admitted next-turn T3 Blender.");
+  expect(!available(sim::DciProfile::MatchupFlexJit,
+                    sim::LockMode::TurnTwoItem, false, 3),
+         "Persistent TurnTwoItem incorrectly admitted a later Blender projection.");
 }
 
 void test_real_route_boundaries_remain_blocking() {
@@ -112,9 +116,9 @@ void test_real_route_boundaries_remain_blocking() {
 int main() {
   try {
     test_semantic_admission_across_turns_seats_and_jit_profiles();
-    test_rule_box_and_scheduled_item_lock_semantics();
+    test_rule_box_and_persistent_turn_two_item_lock_semantics();
     test_real_route_boundaries_remain_blocking();
-    std::cout << "Issue 3228 late-Steven semantic tests passed\n";
+    std::cout << "Issue 3228/3403 late-Steven semantic tests passed\n";
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

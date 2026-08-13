@@ -30,6 +30,8 @@ Late-search composition now has one explicit owner: `src/trace_engine_v2/composi
 
 The former one-purpose wrappers `composition/empty_deck_search_routes.inc` and `composition/post_search_connector_routes.inc` have been merged into that owner without changing their textual include order, macro guards, alias lifetimes, or gameplay entry points. This reduces wrapper depth while keeping the behavior-sensitive legacy sequence auditable at one class-member boundary.
 
+The former `composition/legacy_supporter_body.inc` wrapper is now merged into its sole owner, `composition/opening_engine_overrides.inc`. The `part_011` / `part_012` / `part_013` order and all entry/exit guards remain at that boundary, while `use_fss` and `use_celestial_roar` continue across the boundary for `post_014a_overrides.inc` to consume. This removes another forwarding layer without changing the legacy declaration order.
+
 Keep these cleanup rules going forward:
 
 - when a composition-only `.inc` file has exactly one owner and exists only to forward an ordered macro/include block, prefer merging that block into the owner once the dependency boundary is proven by CI;

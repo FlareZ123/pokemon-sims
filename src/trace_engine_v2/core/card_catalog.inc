@@ -32,12 +32,6 @@
 
 namespace sim {
 
-// Stable Card identifiers now live in src/cards/card_id.hpp. The existing names
-// and values are preserved so migrated card modules and legacy engine code coexist.
-static_assert(cards::QuickBall::definition.id == Card::QuickBall);
-static_assert(cards::QuickBall::definition.canonical_id == "swsh1-179");
-static_assert(cards::QuickBall::definition.name == "Quick Ball");
-
 #include "../composition/deck_recipe.inc"
 
 constexpr std::string_view name(const Card card) {

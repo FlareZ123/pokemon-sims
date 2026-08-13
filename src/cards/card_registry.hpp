@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include "card_definition.hpp"
 #include "trainers/evolution_incense.hpp"
 #include "trainers/professors_letter.hpp"
@@ -7,17 +9,17 @@
 
 namespace sim::cards {
 
+constexpr std::array<const CardDefinition*, 3> kRegisteredCards{
+    &EvolutionIncense::definition, // Exact print: https://api.pokemontcg.io/v2/cards/swsh1-163
+    &QuickBall::definition,
+    &ProfessorsLetter::definition, // Exact XY 123 metadata: https://api.pokemontcg.io/v2/cards/xy1-123
+};
+
 constexpr const CardDefinition* find_definition(const Card card) {
-  switch (card) {
-    case Card::EvolutionIncense:
-      return &EvolutionIncense::definition; // Exact print: https://api.pokemontcg.io/v2/cards/swsh1-163
-    case Card::QuickBall:
-      return &QuickBall::definition;
-    case Card::ProfessorsLetter:
-      return &ProfessorsLetter::definition; // Exact XY 123 metadata: https://api.pokemontcg.io/v2/cards/xy1-123
-    default:
-      return nullptr;
+  for (const CardDefinition* definition : kRegisteredCards) {
+    if (definition->id == card) return definition;
   }
+  return nullptr;
 }
 
 constexpr bool has_definition(const Card card) {

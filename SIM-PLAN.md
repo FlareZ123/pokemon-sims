@@ -41,7 +41,7 @@ The simulation tracks exact card identities in the zones needed for setup decisi
 |---|---|
 | Deck | Remaining exact card identities and current shuffled order. |
 | Hand | Exact card identities and legal discard candidates. |
-| Prizes | Six exact identities, hidden from policy until a legal inspection reveals them. |
+| Prizes | Six exact identities, hidden from policy at K0 and available after a legal deck or Prize inspection establishes K1. |
 | Discard | Exact cards plus same-turn payload tracking used by JIT policy. |
 | Active | Pokémon identity, entry timing, attached Energy, Tool state, and setup-relevant flags. |
 | Bench | Pokémon identities and setup-relevant attached state. |
@@ -54,7 +54,7 @@ The opponent's hand, attacks, damage, Knock Outs caused by an opposing deck, pri
 
 The policy uses information available through the modeled game state.
 
-A deck search establishes deterministic knowledge of the remaining deck composition. Prize identities become available only after a legal Prize-inspection effect. Future draw order remains unavailable to the action policy.
+A resolved deck search physically exposes the remaining deck. With the fixed 60-card recipe and known zones, that establishes K1 and makes the complementary Prize multiset deducible; a legal Prize inspection also establishes K1 directly. Future draw order remains unavailable to the action policy. Canonical K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states Hidden-information boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
 
 Debug trace output may print hidden information for auditing. That output is separate from the policy's decision inputs.
 
@@ -160,7 +160,7 @@ Focused regressions may construct narrower synthetic lock states when a rules he
 
 Six Prize cards are modeled as exact hidden identities.
 
-Hisuian Heavy Ball and Gladion can expose or recover Prize information according to their supported effects. The policy cannot use Prize identities before such an effect establishes the corresponding knowledge state.
+Hisuian Heavy Ball and Gladion physically expose or recover Prize information according to their supported effects. A resolved deck search also establishes K1 because the fixed 60-card recipe and known zones determine the complementary Prize multiset. The policy cannot use Prize identities until a legal deck or Prize inspection establishes K1, and K1 never exposes future draw order. Canonical K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 
 This allows the simulator to represent prizing collapse, recovery-card prizing, and the difference between deck knowledge and Prize knowledge without granting an oracle.
 

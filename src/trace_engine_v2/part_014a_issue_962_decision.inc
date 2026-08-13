@@ -1,5 +1,2 @@
-// Select only the issue-962 decision section at this class-member boundary.
-// C++ textual include semantics: https://eel.is/c++draft/cpp.include
-#define REGIDRAGO_ISSUE_962_SECTION_DECISION
-#include "core/issue_962_route.inc"
-#undef REGIDRAGO_ISSUE_962_SECTION_DECISION
+// Compatibility include retained for the historical part_014a include order.
+// Issue-962 decision composes with eligibility in part_014a_issue_962_eligibility.inc.

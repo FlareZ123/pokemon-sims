@@ -93,14 +93,14 @@
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Official Item, Supporter, search, discard, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // K1, strict JIT, DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Original route: https://github.com/FlareZ123/pokemon-sims/issues/1646
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2437
-    return scenario_.dci == DciProfile::StrictJit &&
-        scenario_.locks == LockMode::None && state_.turn >= 3 &&
-        state_.turn <= scenario_.max_turn && prizes_known() &&
-        supporter_allowed() && !state_.manual_energy_used &&
+    // Advanced Item and Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#L382-L432
+    // K1, same-ready-turn JIT, scenario-lock, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Original DDE integration: https://github.com/FlareZ123/pokemon-sims/issues/2437
+    // Canonical semantic admission: https://github.com/FlareZ123/pokemon-sims/issues/3026
+    // Confirmed DDE composition-shadow regression: https://github.com/FlareZ123/pokemon-sims/issues/3400
+    return strict_payload_timing() && !item_locked() &&
+        deck_search_available() && state_.turn <= scenario_.max_turn &&
+        prizes_known() && supporter_allowed() && !state_.manual_energy_used &&
         missing_energy.has_value() && need_payload() &&
         std::none_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
         hand_count(Card::EarthenVessel) > 0 &&

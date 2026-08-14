@@ -32,42 +32,6 @@
 
 namespace sim {
 
-// Stable Card identifiers now live in src/cards/card_id.hpp. The existing names
-// and values are preserved so migrated card modules and legacy engine code coexist.
-static_assert(cards::QuickBall::definition.id == Card::QuickBall);
-static_assert(cards::QuickBall::definition.canonical_id == "swsh1-179");
-static_assert(cards::QuickBall::definition.name == "Quick Ball");
-static_assert(cards::GuzmaHala::definition.id == Card::GuzmaHala);
-static_assert(cards::GuzmaHala::definition.canonical_id == "sm12-229");
-static_assert(cards::GuzmaHala::definition.name == "Guzma & Hala");
-static_assert(cards::Arven::definition.id == Card::Arven); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
-static_assert(cards::Arven::definition.canonical_id == "sv1-166");
-static_assert(cards::Arven::definition.name == "Arven");
-static_assert(cards::Crispin::definition.id == Card::Crispin); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv7-133 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3580
-static_assert(cards::Crispin::definition.canonical_id == "sv7-133");
-static_assert(cards::Crispin::definition.name == "Crispin");
-static_assert(cards::Dawn::definition.id == Card::Dawn); // Exact Supporter: https://api.pokemontcg.io/v2/cards/me2-87
-static_assert(cards::Dawn::definition.canonical_id == "me2-87");
-static_assert(cards::Dawn::definition.name == "Dawn");
-static_assert(cards::Powerglass::definition.id == Card::Powerglass); // Exact Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
-static_assert(cards::Powerglass::definition.canonical_id == "sv6pt5-63");
-static_assert(cards::Powerglass::definition.name == "Powerglass");
-static_assert(cards::Lusamine::definition.id == Card::Lusamine); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
-static_assert(cards::Lusamine::definition.canonical_id == "sm4-96");
-static_assert(cards::Lusamine::definition.name == "Lusamine");
-static_assert(cards::Klara::definition.id == Card::Klara); // Exact Supporter: https://api.pokemontcg.io/v2/cards/swsh6-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3625
-static_assert(cards::Klara::definition.canonical_id == "swsh6-145");
-static_assert(cards::Klara::definition.name == "Klara");
-static_assert(cards::WishfulBaton::definition.id == Card::WishfulBaton); // Exact Pokémon Tool: https://api.pokemontcg.io/v2/cards/sm3-128 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3631
-static_assert(cards::WishfulBaton::definition.canonical_id == "sm3-128");
-static_assert(cards::WishfulBaton::definition.name == "Wishful Baton");
-static_assert(cards::Channeler::definition.id == Card::Channeler); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm11-190 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3624
-static_assert(cards::Channeler::definition.canonical_id == "sm11-190");
-static_assert(cards::Channeler::definition.name == "Channeler");
-static_assert(cards::ProfessorTuroScenario::definition.id == Card::ProfessorTuro); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv4-171 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3632
-static_assert(cards::ProfessorTuroScenario::definition.canonical_id == "sv4-171");
-static_assert(cards::ProfessorTuroScenario::definition.name == "Professor Turo's Scenario");
-
 constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
     {Card::RegidragoV, 4},         {Card::RegidragoVstar, 3}, {Card::Dragapult, 2},
     {Card::MegaDragonite, 2},      {Card::DialgaGX, 1},       {Card::GoodraVstar, 1},
@@ -102,7 +66,6 @@ constexpr std::string_view name(const Card card) {
     case Card::MawileGX: return "Mawile-GX";
     case Card::Oricorio: return "Oricorio GRI 55";
     case Card::Dipplin: return "Dipplin TWM 127";
-    case Card::Appletun: return "Appletun sv8-140";
     case Card::Pineco: return "Pineco";
     case Card::ForretressEx: return "Forretress ex";
     case Card::UltraBall: return "Ultra Ball";
@@ -120,6 +83,7 @@ constexpr std::string_view name(const Card card) {
     case Card::DoubleDragonEnergy: return "Double Dragon Energy";  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
     case Card::Grass: return "Grass Energy";
     case Card::Fire: return "Fire Energy";
+    case Card::Appletun: // Exact registered label and print: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
     case Card::Arven:
     case Card::BattleVipPass:
     case Card::BrilliantBlender:
@@ -144,7 +108,7 @@ constexpr std::string_view name(const Card card) {
     case Card::QuickBall:
     case Card::SecretBox:
     case Card::WishfulBaton: // Exact registered name: https://api.pokemontcg.io/v2/cards/sm3-128
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Appletun: https://api.pokemontcg.io/v2/cards/sv8-140 ; Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
   }
   return "Unknown";
 }

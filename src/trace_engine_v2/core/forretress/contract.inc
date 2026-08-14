@@ -9,19 +9,12 @@
   // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
   // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/972
 
-  // Compose the canonical board-query policy through the existing in-class
-  // Forretress declaration boundary. Qualified runtime definitions emitted after
-  // Engine closes can then reuse these members without duplicating traversal logic.
+  // Compose board traversal, board-index vocabulary, and shared evolution timing
+  // through one policy include. Qualified runtime definitions emitted after Engine
+  // closes can then reuse those members without redeclaring container conventions.
   // C++ textual include semantics: https://eel.is/c++draft/cpp.include
   // Core evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
 #include "../board_state_policy.inc"
-
-  // Board index 0 is Active; subsequent indexes map to Bench positions. Keep these
-  // spellings centralized so runtime code can migrate away from raw container types
-  // without changing the established Exploding Energy destination representation.
-  using BoardIndex = std::size_t;
-  using OptionalBoardIndex = std::optional<BoardIndex>;
-  using AttachmentDestinations = std::vector<BoardIndex>;
 
   // Board and route-state queries.
   [[nodiscard]] bool forretress_combo_enabled() const;

@@ -117,8 +117,14 @@ void test_negative_boundaries() {
 }  // namespace
 
 int main() {
-  expect_seed_holds_tate("matchup-flex-jit/go-first", 250, 3,  // https://github.com/FlareZ123/pokemon-sims/issues/3753
-                         "Searched and discarded: Dragapult ex");
+  // The stable held-route invariant is Blender resolution; the selected legal Dragon is DCI/JIT-owned.
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Advanced rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Regression: https://github.com/FlareZ123/pokemon-sims/issues/3773
+  expect_seed_holds_tate("matchup-flex-jit/go-first", 250, 3,  // Seed witness: https://github.com/FlareZ123/pokemon-sims/issues/3753
+                         "R-BLENDER-01");
   expect_seed_holds_tate("strict-jit/go-second", 13, 2,
                          "Mega Dragonite ex (Mysterious Treasure cost)");
   expect_seed_holds_tate("strict-jit-rulebox-ability-lock/go-second", 13, 2,

@@ -68,7 +68,6 @@ constexpr std::string_view name(const Card card) {
     case Card::Dipplin: return "Dipplin TWM 127";
     case Card::Pineco: return "Pineco";
     case Card::ForretressEx: return "Forretress ex";
-    case Card::UltraBall: return "Ultra Ball";
     case Card::EarthenVessel: return "Earthen Vessel";
     case Card::Grant: return "Grant";
     case Card::Serena: return "Serena";
@@ -107,8 +106,9 @@ constexpr std::string_view name(const Card card) {
     case Card::ProfessorsLetter:
     case Card::QuickBall:
     case Card::SecretBox:
+    case Card::UltraBall: // Exact registered name: https://api.pokemontcg.io/v2/cards/sv1-196 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3517
     case Card::WishfulBaton: // Exact registered name: https://api.pokemontcg.io/v2/cards/sm3-128
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Appletun: https://api.pokemontcg.io/v2/cards/sv8-140 ; Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Ultra Ball: https://api.pokemontcg.io/v2/cards/sv1-196
   }
   return "Unknown";
 }

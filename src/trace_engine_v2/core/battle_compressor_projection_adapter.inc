@@ -1,15 +1,12 @@
-  void choose_supporter_issue3545_projection() {
+  void issue_3545_prepare_supporter_projection() {
     // Battle Compressor and VS Seeker can be evaluated from an early Item fixed point,
     // while the production turn still has deterministic setup actions before the one
-    // Supporter play. Reproduce that same public sequence so the candidate is scored
-    // after manual Energy, Forest Seal Stone, lock-removal, and Steven-specific
-    // Powerglass attachment have reached the state the real Supporter chooser sees.
-    // Strict and matchup-flex JIT also preserve payload through these early Item
-    // passes, exactly as run_turn does.
+    // Supporter play. Reproduce that same public sequence so a recovered Supporter
+    // must survive every pre-Supporter Item cost before it can receive Supporter credit.
+    // Strict and matchup-flex JIT preserve payload through these early Item passes,
+    // exactly as run_turn does.
     // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
     // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
-    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
-    // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
     // Production turn order: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
     // JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3545
@@ -24,7 +21,9 @@
     play_items_until_stable_issue_3057(!strict_payload_timing());
     attach_manual();
     if (should_play_steven()) attach_powerglass();
+  }
 
+  void issue_3545_choose_supporter_from_prepared_projection() {
     const State before_supporter = state_;
     TraceLog projection_trace{true};
     TraceLog* const prior_trace = trace_;
@@ -44,9 +43,9 @@
 
     // Serena and Tate & Liza are deliberately modeled with fallback draw policy.
     // A BC/VS route chooser may decide to use one from the observable pre-draw state,
-    // while it may not score the identities of the cards that the simulator happens
-    // to draw from its hidden future RNG stream. Normalize those two draw effects to
-    // their deterministic public consequences before the route score is read.
+    // while it may not score the identities of cards produced by the hidden future
+    // random stream. Keep their deterministic public consequences and remove only
+    // credit from the unknown draw identities.
     // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
     // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
     // Future-card oracle policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
@@ -60,10 +59,9 @@
 
     if (tate_draw) {
       // Tate & Liza puts the remaining hand into the deck, then draws five. The
-      // shuffled hand cards are known inputs to the deck composition; the five
-      // future draw identities are intentionally absent from this projection.
-      // This keeps a deterministic Tate switch route available because switch mode
-      // never enters this branch.
+      // shuffled hand cards are known inputs to deck composition; the five future
+      // identities are intentionally absent from this projection. Switch mode never
+      // enters this branch and therefore retains its full deterministic value.
       if (!remove_one(state_.hand, Card::TateLiza)) {
         throw std::logic_error("projected Tate & Liza draw target disappeared");
       }
@@ -101,4 +99,9 @@
         state_.discarded_this_turn.end(),
         new_turn_discards.begin(), new_turn_discards.end());
     state_.supporter_used = true;
+  }
+
+  void choose_supporter_issue3545_projection() {
+    issue_3545_prepare_supporter_projection();
+    issue_3545_choose_supporter_from_prepared_projection();
   }

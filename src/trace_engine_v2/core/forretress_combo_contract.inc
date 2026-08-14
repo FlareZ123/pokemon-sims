@@ -6,14 +6,16 @@
   // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/972
 
   using BoardIndex = std::size_t;
-  using AttachmentDestinations = std::vector<BoardIndex>;
+  using BoardIndices = std::vector<BoardIndex>;
+  using OptionalBoardIndex = std::optional<BoardIndex>;
+  using AttachmentDestinations = BoardIndices;
 
   // Combo state and board queries.
   bool forretress_combo_enabled() const;
   bool needs_pineco_connector() const;
   bool needs_forretress_connector() const;
   Pokemon* pokemon_at_board_index(BoardIndex index);
-  std::optional<BoardIndex> exploding_energy_regidrago_target_index() const;
+  OptionalBoardIndex exploding_energy_regidrago_target_index() const;
   Card fallback_combo_basic_after_search_started() const;
   Card fallback_combo_pokemon_after_search_started() const;
 

@@ -12,10 +12,10 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 
 | Scenario | Shell T2 | Pineco T2 | Δ T2 | Shell T3 | Pineco T3 | Δ T3 | Shell T4 | Pineco T4 | Δ T4 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Strict JIT, going first | 12.204% | 19.618% | +7.414 pp | 41.795% | 49.028% | +7.233 pp | 59.098% | 66.763% | +7.665 pp |
-| Strict JIT, going second | 29.752% | 48.445% | +18.693 pp | 55.420% | 64.490% | +9.070 pp | 67.361% | 74.933% | +7.572 pp |
-| Matchup-flex JIT, going first | 16.917% | 21.175% | +4.258 pp | 50.069% | 50.717% | +0.648 pp | 67.605% | 68.714% | +1.109 pp |
-| Matchup-flex JIT, going second | 36.960% | 51.470% | +14.510 pp | 63.865% | 67.437% | +3.572 pp | 75.583% | 77.077% | +1.494 pp |
+| Strict JIT, going first | 12.210% | 19.618% | +7.408 pp | 41.776% | 49.028% | +7.252 pp | 59.088% | 66.763% | +7.675 pp |
+| Strict JIT, going second | 29.762% | 48.445% | +18.683 pp | 55.426% | 64.490% | +9.064 pp | 67.367% | 74.933% | +7.566 pp |
+| Matchup-flex JIT, going first | 16.933% | 21.175% | +4.242 pp | 50.089% | 50.717% | +0.628 pp | 67.633% | 68.714% | +1.081 pp |
+| Matchup-flex JIT, going second | 36.958% | 51.470% | +14.512 pp | 63.855% | 67.437% | +3.582 pp | 75.584% | 77.077% | +1.493 pp |
 | No discard control, going first | 19.740% | 25.259% | +5.519 pp | 56.829% | 60.275% | +3.446 pp | 73.585% | 75.722% | +2.137 pp |
 | No discard control, going second | 40.232% | 59.291% | +19.059 pp | 68.436% | 73.785% | +5.349 pp | 79.981% | 82.360% | +2.379 pp |
 
@@ -23,11 +23,11 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 
 | Scenario | T2 ± SE | T3 ± SE | T4 ± SE | Failure ± SE |
 |---|---:|---:|---:|---:|
-| Strict JIT, going first | 12.204% ± 0.104 | 41.795% ± 0.156 | 59.098% ± 0.155 | 40.902% ± 0.155 |
-| Matchup-flex JIT, going first | 16.917% ± 0.119 | 50.069% ± 0.158 | 67.605% ± 0.148 | 32.395% ± 0.148 |
+| Strict JIT, going first | 12.210% ± 0.104 | 41.776% ± 0.156 | 59.088% ± 0.155 | 40.912% ± 0.155 |
+| Matchup-flex JIT, going first | 16.933% ± 0.119 | 50.089% ± 0.158 | 67.633% ± 0.148 | 32.367% ± 0.148 |
 | No discard control, going first | 19.740% ± 0.126 | 56.829% ± 0.157 | 73.585% ± 0.139 | 26.415% ± 0.139 |
-| Strict JIT, going second | 29.752% ± 0.145 | 55.420% ± 0.157 | 67.361% ± 0.148 | 32.639% ± 0.148 |
-| Matchup-flex JIT, going second | 36.960% ± 0.153 | 63.865% ± 0.152 | 75.583% ± 0.136 | 24.417% ± 0.136 |
+| Strict JIT, going second | 29.762% ± 0.145 | 55.426% ± 0.157 | 67.367% ± 0.148 | 32.633% ± 0.148 |
+| Matchup-flex JIT, going second | 36.958% ± 0.153 | 63.855% ± 0.152 | 75.584% ± 0.136 | 24.416% ± 0.136 |
 | No discard control, going second | 40.232% ± 0.155 | 68.436% ± 0.147 | 79.981% ± 0.127 | 20.019% ± 0.127 |
 | Strict JIT, turn-two Item lock, first | 4.493% ± 0.066 | 10.340% ± 0.096 | 18.468% ± 0.123 | 81.532% ± 0.123 |
 | Strict JIT, Rule Box Ability lock, first | 4.500% ± 0.066 | 27.680% ± 0.141 | 42.653% ± 0.156 | 57.347% ± 0.156 |
@@ -44,11 +44,11 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 
 | Scenario | Ready on T2 | Ready on T3 | Ready on T4 | Ready on T5 diagnostic |
 |---|---:|---:|---:|---:|
-| Strict JIT, going first | 12.204% | 29.591% | 17.303% | 10.932% |
-| Matchup-flex JIT, going first | 16.917% | 33.152% | 17.536% | 10.228% |
+| Strict JIT, going first | 12.210% | 29.566% | 17.312% | 10.946% |
+| Matchup-flex JIT, going first | 16.933% | 33.156% | 17.544% | 10.231% |
 | No discard control, going first | 19.740% | 37.089% | 16.756% | 9.045% |
-| Strict JIT, going second | 29.752% | 25.668% | 11.941% | 8.033% |
-| Matchup-flex JIT, going second | 36.960% | 26.905% | 11.718% | 7.066% |
+| Strict JIT, going second | 29.762% | 25.664% | 11.941% | 8.031% |
+| Matchup-flex JIT, going second | 36.958% | 26.897% | 11.729% | 7.073% |
 | No discard control, going second | 40.232% | 28.204% | 11.545% | 6.384% |
 
 ## Regidrago-Pineco with Secret Box
@@ -162,6 +162,6 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 ## Provenance
 
-Simulator policy digest: `a4c25ff64cfc7b1d86f9db7fcb78a51231444835bc831dbe9136aeff6cf14d88`.
+Simulator policy digest: `c1700f9eeeef4d7868da05afe3204c188ffe944c10b7086a56485b1163f4a2d4`.
 
-Comparison CSV SHA-256: `63da80c82337b2c05c942a645106db93d994998543ec6fd73bf19be2601c9de7`.
+Comparison CSV SHA-256: `4e9e89eb55f5a857d4fc145b7c0fd3505ec1a880fd5070fcfa75ba4ef79b828f`.

@@ -290,3 +290,10 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - Focused registration coverage: `tests/dawn_card_class_tests.cpp`.
 - This wave intentionally leaves Dawn's printed Basic/Stage 1/Stage 2 deck search, reveal, hand movement, shuffle, Supporter contention, K0/K1 transitions, DCI/UDP/AMR, connector domination, and route strategy at their current Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/me2-87
 - A later resolver migration must first locate the single live Dawn resolution boundary and preserve the printed search/reveal/shuffle order through `CardContext` without moving strategic target preference into card code.
+
+## Cleanup wave 2026-08-13 simulation labels and setup lifecycle
+
+- `src/trace_engine_v2/core/simulation_labels.inc` now centralizes deck-presence recipe predicates and scenario DCI/lock label vocabulary instead of repeating raw checks at each reporting branch. DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment Scenario lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+- `src/trace_engine_v2/core/setup_lifecycle.inc` now owns one `move_top_cards_from_deck()` helper for opening-hand draws and Prize placement, preserving the existing shuffled-deck order and mulligan flow. Setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+- Keep future simulation reporting labels in `simulation_labels.inc` and setup-only deck-to-zone movement in `setup_lifecycle.inc`. Do not create forwarding `.inc` fragments solely to separate these adjacent responsibilities.
+- This wave is behavior-preserving and does not change card resolution, DCI/UDP/AMR decisions, K0/K1 transitions, connector domination, lock timing, or route selection.

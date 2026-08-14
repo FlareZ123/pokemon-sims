@@ -73,11 +73,25 @@
 #endif
 #define retreat_banked_tapu_to_regidrago retreat_banked_tapu_to_regidrago_issue3089_original
 #include "opening_engine_overrides.inc"
-#include "../part_014a.inc"
 #undef retreat_banked_tapu_to_regidrago
 #if defined(retreat_banked_tapu_to_regidrago)
-#error "Banked-Tapu composition leaked the temporary retreat alias"
+#error "Banked-Tapu opening composition leaked the temporary retreat alias"
 #endif
+
+// Opening overrides complete the final Mysterious Treasure member before part_014a
+// resumes the search scheduler. Wrap only scheduler calls so matchup-flex can reserve
+// the exact BC-Steven Treasure outlet until its ready-turn payload pass.
+#include "../core/battle_compressor_treasure_reservation.inc"
+#if defined(play_mysterious_treasure)
+#error "Issue-3545 Treasure reservation requires its alias to be undefined"
+#endif
+#define play_mysterious_treasure play_mysterious_treasure_issue3545_reserved
+#include "../part_014a.inc"
+#undef play_mysterious_treasure
+#if defined(play_mysterious_treasure)
+#error "Issue-3545 Treasure reservation leaked its scheduler alias"
+#endif
+
 #if defined(begin_turn)
 #error "Banked-Tapu composition expected opening_engine_overrides.inc to release begin_turn"
 #endif

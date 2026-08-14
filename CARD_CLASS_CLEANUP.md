@@ -250,3 +250,9 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - `src/cards/trainers/battle_vip_pass.hpp` and `kRegisteredCardDefinitions` own exact identity, display name, Trainer kind, and Item subtype.
 - Focused registration coverage: `tests/battle_vip_pass_card_class_tests.cpp`.
 - Existing first-turn admission, Basic-Pokémon Bench search resolution, bench-space policy, K0/K1 timing, DCI/UDP/AMR, connector domination, and route ordering remain in Engine. A later printed-resolution migration should preserve those boundaries and reuse the existing live resolver.
+
+## Cleanup wave 2026-08-13 issue-962 and route-policy plan
+
+- Treat `part_014a_issue_962_eligibility.inc` as the only composition owner for the issue-962 eligibility, projection, and decision sections. The projection and decision marker files contain no members and are deletion targets once their two historical include sites are removed from `part_014a.inc`. Shared route implementation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/issue_962_route.inc
+- Route fragments that contain policy lambdas but no composition aliases should move under `src/trace_engine_v2/core/` behind a temporary forwarding include when direct parent editing would create a large unrelated diff. The forwarding layer may be retired in a later boundary-safe pass after repository-wide references are proven absent. C++ include semantics: https://eel.is/c++draft/cpp.include
+- `part_014a_issue_1447_vessel_hold.inc` is the first relocation candidate because it owns only the issue-1447 Vessel hold/play policy lambdas and already depends on established Engine helpers. Moving its implementation to `core/issue_1447_vessel_hold_policy.inc` is organization-only and must preserve all existing rule, card, policy, and issue URLs beside the unchanged logic.

@@ -118,8 +118,8 @@ void test_negative_boundaries() {
 
 int main() {
   // Refined deterministic witness: https://github.com/FlareZ123/pokemon-sims/issues/3753
-  expect_seed_holds_tate("matchup-flex-jit/go-first", 250, 3,
-                         "Searched and discarded: Mega Dragonite ex");
+  // Stable Blender action marker: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010.inc
+  expect_seed_holds_tate("matchup-flex-jit/go-first", 250, 3, "R-BLENDER-01");
   expect_seed_holds_tate("strict-jit/go-second", 13, 2,
                          "Mega Dragonite ex (Mysterious Treasure cost)");
   expect_seed_holds_tate("strict-jit-rulebox-ability-lock/go-second", 13, 2,

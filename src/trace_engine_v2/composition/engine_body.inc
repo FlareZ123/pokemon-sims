@@ -7,8 +7,7 @@
 // Card catalog: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
 // Card classification: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
 // Simulator state: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulator_state.inc
-// Lock-removal policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forest_field_blower_policy.inc
-// Lock-removal specification: https://github.com/FlareZ123/pokemon-sims/issues/3057
+// Lock-removal policy: https://github.com/FlareZ123/pokemon-sims/issues/3057
 // Translation-unit closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
 
 #ifndef SIM_TRACE_SIMULATOR_STATE_INCLUDED
@@ -172,7 +171,18 @@
 #define hand_count hand_count_issue_3057
 #define play_items_until_stable play_items_until_stable_issue3545
 #define choose_supporter choose_supporter_issue3545_base
+// The issue-1152 bridge intentionally replaces this temporary alias after capturing
+// it in choose_supporter_issue_1152(). Clang's strict preprocessor diagnoses that
+// deliberate textual handoff as a macro redefinition even though the replacement is
+// immediately scoped and released by the bridge.
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmacro-redefined"
+#endif
 #include "../part_014c.inc"
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 #undef choose_supporter
 #undef play_items_until_stable
 #undef hand_count

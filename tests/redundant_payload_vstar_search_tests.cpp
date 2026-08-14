@@ -75,6 +75,20 @@ void test_treasure_spends_one_redundant_payload_for_direct_vstar() {
          "A second payload must remain protected in hand.");
 }
 
+void test_combined_lock_uses_same_turn_two_item_deadline() {
+  Fixture fixture(sim::LockMode::FullCombined);
+  sim::EngineTestAccess::set_state(fixture.engine, treasure_state());
+
+  // FullCombined shares the same persistent T2 Item-lock schedule as TurnTwoItem,
+  // so unrelated Rule Box Ability suppression cannot remove the T1 resource-preserving route:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#combined-lock
+  // https://api.pokemontcg.io/v2/cards/sm6-113
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  expect(sim::EngineTestAccess::play_mysterious_treasure(fixture.engine),
+         "FullCombined should preserve the same T1 redundant-payload VSTAR route.");
+}
+
 void test_treasure_controls_preserve_strict_dci() {
   {
     Fixture fixture;
@@ -176,6 +190,7 @@ void test_ultra_ball_requires_an_ordinary_second_cost() {
 
 int main() {
   test_treasure_spends_one_redundant_payload_for_direct_vstar();
+  test_combined_lock_uses_same_turn_two_item_deadline();
   test_treasure_controls_preserve_strict_dci();
   test_ordinary_cost_remains_preferred();
   test_ultra_ball_uses_one_payload_plus_one_ordinary_cost();

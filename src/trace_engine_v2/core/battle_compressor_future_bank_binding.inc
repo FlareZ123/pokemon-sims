@@ -1,3 +1,55 @@
+  bool issue_3545_future_bank_supporter_is_used(
+      const std::vector<Card>& targets, const Card current_supporter,
+      const Card future_supporter) const {
+    if (targets.empty() || current_supporter == future_supporter ||
+        !is_supporter(current_supporter) || !is_supporter(future_supporter)) {
+      return false;
+    }
+
+    // A distinct second Supporter is a real two-VS bank only if the first VS
+    // explicitly recovers the current Supporter, that Supporter is actually played,
+    // the second VS explicitly recovers the staged future Supporter, and that exact
+    // future card is the Supporter action on the public next turn. Generic next-turn
+    // setup credit is insufficient because another held Supporter could otherwise
+    // create the score while the BC-staged card is merely discard-cost fodder.
+    // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+    // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
+    // Supporter / Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Persistent Item lock: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+    // Connector domination: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    std::mt19937_64 shadow_rng = rng_;
+    Engine projected = issue_3545_projection(shadow_rng);
+    if (!issue_3545_hidden_project_compressor(projected, targets) ||
+        !remove_one(projected.state_.hand, Card::VsSeeker)) {
+      return false;
+    }
+    projected.state_.discard.push_back(Card::VsSeeker);
+    if (!projected.recover_discard_to_hand(current_supporter)) return false;
+
+    const int current_before = projected.hand_count(current_supporter);
+    projected.choose_supporter_issue3545_projection();
+    if (!projected.state_.supporter_used ||
+        projected.hand_count(current_supporter) >= current_before) {
+      return false;
+    }
+    projected.issue_3545_continue_after_supporter(projected);
+    if (projected.state_.turn_ended ||
+        !remove_one(projected.state_.hand, Card::VsSeeker)) {
+      return false;
+    }
+
+    projected.state_.discard.push_back(Card::VsSeeker);
+    if (!projected.recover_discard_to_hand(future_supporter)) return false;
+    projected.resolve_powerglass_end_turn();
+    issue_3545_advance_public_state_one_turn(projected);
+    if (!projected.issue_3545_recovered_supporter_is_used(
+            projected, future_supporter)) {
+      return false;
+    }
+    projected.issue_3545_continue_after_supporter(projected);
+    return true;
+  }
+
   std::vector<Card> issue_3545_bind_hidden_future_bank_targets(
       std::vector<Card> targets) const {
     if (targets.empty() || hand_count(Card::BattleCompressor) == 0 ||
@@ -21,57 +73,13 @@
     }
     if (!future_supporter) return targets;
 
-    const auto drop_unproved_future = [&]() {
-      const auto it = std::find(targets.begin(), targets.end(), *future_supporter);
-      if (it != targets.end()) targets.erase(it);
+    if (issue_3545_future_bank_supporter_is_used(
+            targets, *current_supporter, *future_supporter)) {
       return targets;
-    };
-
-    // A distinct second Supporter is a real two-VS bank only if the first VS
-    // explicitly recovers the current Supporter, that Supporter is actually played,
-    // the second VS explicitly recovers the staged future Supporter, and that exact
-    // future card is the Supporter action on the public next turn. Generic next-turn
-    // setup credit is insufficient because another held Supporter could otherwise
-    // create the score while the BC-staged card is merely discard-cost fodder.
-    // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
-    // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
-    // Supporter / Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-    // Persistent Item lock: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
-    // Connector domination: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    std::mt19937_64 shadow_rng = rng_;
-    Engine projected = issue_3545_projection(shadow_rng);
-    if (!issue_3545_hidden_project_compressor(projected, targets) ||
-        !remove_one(projected.state_.hand, Card::VsSeeker)) {
-      return drop_unproved_future();
-    }
-    projected.state_.discard.push_back(Card::VsSeeker);
-    if (!projected.recover_discard_to_hand(*current_supporter)) {
-      return drop_unproved_future();
     }
 
-    const int current_before = projected.hand_count(*current_supporter);
-    projected.choose_supporter_issue3545_projection();
-    if (!projected.state_.supporter_used ||
-        projected.hand_count(*current_supporter) >= current_before) {
-      return drop_unproved_future();
-    }
-    projected.issue_3545_continue_after_supporter(projected);
-    if (projected.state_.turn_ended ||
-        !remove_one(projected.state_.hand, Card::VsSeeker)) {
-      return drop_unproved_future();
-    }
-
-    projected.state_.discard.push_back(Card::VsSeeker);
-    if (!projected.recover_discard_to_hand(*future_supporter)) {
-      return drop_unproved_future();
-    }
-    projected.resolve_powerglass_end_turn();
-    issue_3545_advance_public_state_one_turn(projected);
-    if (!projected.issue_3545_recovered_supporter_is_used(
-            projected, *future_supporter)) {
-      return drop_unproved_future();
-    }
-    projected.issue_3545_continue_after_supporter(projected);
+    const auto it = std::find(targets.begin(), targets.end(), *future_supporter);
+    if (it != targets.end()) targets.erase(it);
     return targets;
   }
 

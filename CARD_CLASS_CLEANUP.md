@@ -92,6 +92,15 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Focused registration coverage: `tests/field_blower_card_class_tests.cpp`.
 - Follow-up must locate the single live Field Blower printed-resolution owner before moving state transitions. Preserve target choice and all lock-removal policy in Engine until a reusable `CardContext` boundary exists.
 
+### Forest Seal Stone
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3612
+- Canonical print: `swsh12-156`; exact card data: https://api.pokemontcg.io/v2/cards/swsh12-156
+- `src/cards/trainers/forest_seal_stone.hpp` and `kRegisteredCardDefinitions` own Forest Seal Stone identity, display name, Trainer kind, and Pokémon Tool subtype.
+- Legacy `name()` and `is_tool()` compatibility paths now source registered Forest Seal Stone metadata through the registry while retaining the Tool fallback only for unmigrated cards. Focused coverage: `tests/forest_seal_stone_card_class_tests.cpp`.
+- Existing Pokémon V holder selection, Active-versus-Bench Tool-slot reservation, Star Alchemy resolution, VSTAR Power accounting, DCI/UDP/AMR, connector domination, K0/K1, lock behavior, and route strategy remain in Engine. Live holder owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010_attach_fss_override.inc
+- A later printed-resolution migration must preserve the Advanced Player manual's one-Tool-per-Pokémon procedure and keep strategic holder choice outside card metadata. Advanced Tool procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
 These staged entries advance the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
 ### Cleanup wave 2026-08-13 checkpoint

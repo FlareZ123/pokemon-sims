@@ -27,6 +27,7 @@ std::vector<Scenario> all_scenarios_with_garbodor() {
   // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
   // Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142
   // Scenario model: https://github.com/FlareZ123/pokemon-sims/issues/2808
+  result.reserve(result.size() + kGarbodorScenarios.size());
   result.insert(result.end(), kGarbodorScenarios.begin(), kGarbodorScenarios.end());
   return result;
 }

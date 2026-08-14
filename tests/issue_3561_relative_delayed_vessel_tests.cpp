@@ -9,7 +9,7 @@ struct EngineTestAccess {
   static void set_state(Engine& engine, State state) { engine.state_ = std::move(state); }
   static void set_deck_seen(Engine& engine, const bool value) { engine.deck_seen_ = value; }
   static bool run_search_items_one_step(Engine& engine) {
-    return engine.run_search_items_one_step();
+    return engine.run_search_items_one_step(true);
   }
   static std::optional<int> delayed_vessel_ready_turn(const Engine& engine) {
     return engine.issue_1447_vessel_ready_turn_;

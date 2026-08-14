@@ -1,6 +1,15 @@
+constexpr const cards::CardDefinition* registered_pokemon_definition(const Card card) {
+  const cards::CardDefinition* definition = cards::find_definition(card);
+  return definition != nullptr && definition->kind == cards::CardKind::Pokemon
+             ? definition
+             : nullptr;
+}
+
 constexpr bool is_basic(const Card card) {
+  if (const cards::CardDefinition* definition = registered_pokemon_definition(card)) {
+    return definition->pokemon_stage == cards::PokemonStage::Basic;
+  }
   switch (card) {
-    case Card::RegidragoV:
     case Card::DialgaGX:
     case Card::TapuLeleGX:
     case Card::CrobatV:  // Basic Pokémon V: https://api.pokemontcg.io/v2/cards/swsh3-104
@@ -18,8 +27,8 @@ constexpr bool is_basic(const Card card) {
 // Pokémon represented by the simulator rather than only Basic or payload subsets:
 // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
 constexpr bool is_pokemon(const Card card) {
+  if (registered_pokemon_definition(card) != nullptr) return true;
   switch (card) {
-    case Card::RegidragoV:
     case Card::RegidragoVstar:
     case Card::Dragapult:
     case Card::MegaDragonite:
@@ -31,7 +40,6 @@ constexpr bool is_pokemon(const Card card) {
     case Card::MawileGX:
     case Card::Oricorio:
     case Card::Dipplin:
-    case Card::Appletun:
     case Card::Pineco:
     case Card::ForretressEx:
       return true;
@@ -45,13 +53,19 @@ constexpr bool is_pokemon(const Card card) {
 // https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
 // https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
 constexpr bool is_pokemon_v(const Card card) {
-  return card == Card::RegidragoV || card == Card::RegidragoVstar ||
+  if (const cards::CardDefinition* definition = registered_pokemon_definition(card)) {
+    return definition->pokemon_v;
+  }
+  return card == Card::RegidragoVstar ||
          card == Card::GoodraVstar ||  // Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136 ; Pokémon V ruling: https://compendium.pokegym.net/category/7-gameplay/pokemon-v/ ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3608
          card == Card::CrobatV;  // Pokémon V: https://api.pokemontcg.io/v2/cards/swsh3-104
 }
+
 constexpr bool is_rule_box_pokemon(const Card card) {
+  if (const cards::CardDefinition* definition = registered_pokemon_definition(card)) {
+    return definition->rule_box;
+  }
   switch (card) {
-    case Card::RegidragoV:
     case Card::RegidragoVstar:
     case Card::Dragapult:
     case Card::MegaDragonite:
@@ -69,8 +83,11 @@ constexpr bool is_rule_box_pokemon(const Card card) {
 }
 
 constexpr bool is_dragon_or_psychic(const Card card) {
+  if (const cards::CardDefinition* definition = registered_pokemon_definition(card)) {
+    return cards::has_pokemon_type(*definition, cards::PokemonType::Dragon) ||
+           cards::has_pokemon_type(*definition, cards::PokemonType::Psychic);
+  }
   switch (card) {
-    case Card::RegidragoV:
     case Card::RegidragoVstar:
     case Card::Dragapult:
     case Card::MegaDragonite:
@@ -80,7 +97,6 @@ constexpr bool is_dragon_or_psychic(const Card card) {
     case Card::LatiasEx:
     case Card::Oricorio:
     case Card::Dipplin:
-    case Card::Appletun:
       return true;
     default:
       return false;
@@ -96,15 +112,16 @@ constexpr bool is_dragon_or_psychic(const Card card) {
 // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
 // https://github.com/FlareZ123/pokemon-sims/issues/2238
 constexpr bool is_dragon(const Card card) {
+  if (const cards::CardDefinition* definition = registered_pokemon_definition(card)) {
+    return cards::has_pokemon_type(*definition, cards::PokemonType::Dragon);
+  }
   switch (card) {
-    case Card::RegidragoV:
     case Card::RegidragoVstar:
     case Card::Dragapult:
     case Card::MegaDragonite:
     case Card::DialgaGX:
     case Card::GoodraVstar:
     case Card::Dipplin:
-    case Card::Appletun:
       return true;
     default:
       return false;
@@ -122,6 +139,10 @@ constexpr int retreat_cost(const Card card) {
   // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
   // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
+  // Keep this legacy resolver independent until the confirmed retreat-cost bugs
+  // are merged; cleanup metadata must not silently change live retreat behavior:
+  // https://github.com/FlareZ123/pokemon-sims/issues/3643
+  // https://github.com/FlareZ123/pokemon-sims/issues/3652
   switch (card) {
     case Card::TapuLeleGX: return 1;
     case Card::CrobatV: return 1;  // Printed Retreat Cost: https://api.pokemontcg.io/v2/cards/swsh3-104

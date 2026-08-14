@@ -4,6 +4,7 @@
 
 #include "card_definition.hpp"
 #include "pokemon/appletun.hpp"
+#include "pokemon/regidrago_v.hpp"
 #include "trainers/arven.hpp"
 #include "trainers/battle_vip_pass.hpp"
 #include "trainers/brilliant_blender.hpp"
@@ -31,8 +32,9 @@
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 25> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 26> kRegisteredCardDefinitions{
     &Appletun::definition, // Exact Surging Sparks Stage 1 Dragon: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
+    &RegidragoV::definition, // Exact Silver Tempest Basic Dragon Pokémon V: https://api.pokemontcg.io/v2/cards/swsh12-135 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3683
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
     &BattleVipPass::definition,
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
@@ -100,6 +102,8 @@ constexpr bool definition_matches_registration(
 // Architecture plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
 static_assert(definition_matches_registration(QuickBall::definition, Card::QuickBall,
                                               "swsh1-179", "Quick Ball"));
+static_assert(definition_matches_registration(RegidragoV::definition, Card::RegidragoV,
+                                              "swsh12-135", "Regidrago V")); // Exact print: https://api.pokemontcg.io/v2/cards/swsh12-135 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3683
 static_assert(definition_matches_registration(GuzmaHala::definition, Card::GuzmaHala,
                                               "sm12-229", "Guzma & Hala"));
 static_assert(definition_matches_registration(Arven::definition, Card::Arven,

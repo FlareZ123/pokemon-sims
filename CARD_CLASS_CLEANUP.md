@@ -430,3 +430,9 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - src/trace_engine_v2/core/setup_lifecycle.inc owns the opening-hand and starting-Prize counts as named constants, matching the advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 - Recipe expansion and K0 setup-knowledge reset are isolated behind setup-lifecycle helpers. The refactor preserves deck order, shuffle timing, mulligan handling, Prize placement, DCI/UDP/AMR, connector domination, K0/K1 transitions, and route selection.
 - Keep future setup cleanup mechanical at this owner; printed card resolution and gameplay strategy stay outside the setup lifecycle. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/setup_lifecycle.inc
+
+## Cleanup wave 2026-08-14 Oricorio direct-owner completion
+
+- Completed: `src/trace_engine_v2/composition/post_014a_overrides.inc` now includes `src/trace_engine_v2/core/routes/oricorio_connector_policy.inc` directly at the previously proven late-search member boundary, and the former `src/trace_engine_v2/core/oricorio_connector_policy.inc` compatibility forwarder is retired. Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55 Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136 Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/oricorio_connector_policy.inc
+- This is a textual-include ownership cleanup only. It preserves the substantive route-policy body, declaration order, DCI/UDP/AMR, connector domination, K0/K1 timing, lock admission, action ordering, and readiness behavior. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+- Next safe follow-up: continue retiring compatibility forwarders only after a live parent boundary is independently proven, and do not recreate the retired Oricorio path.

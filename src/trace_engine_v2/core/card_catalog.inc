@@ -69,10 +69,6 @@ constexpr std::string_view name(const Card card) {
     case Card::ForretressEx: return "Forretress ex";
     case Card::UltraBall: return "Ultra Ball";
     case Card::EarthenVessel: return "Earthen Vessel";
-    case Card::Grant: return "Grant";
-    case Card::Serena: return "Serena";
-    case Card::TateLiza: return "Tate & Liza";
-    case Card::StevensResolve: return "Steven's Resolve";
     case Card::PathToPeak: return "Path to the Peak";
     case Card::Grass: return "Grass Energy";
     case Card::Fire: return "Fire Energy";
@@ -92,6 +88,7 @@ constexpr std::string_view name(const Card card) {
     case Card::ForestOfVitality: // Exact registered name: https://api.pokemontcg.io/v2/cards/me1-117 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3639
     case Card::ForestSealStone: // Exact registered name: https://api.pokemontcg.io/v2/cards/swsh12-156
     case Card::Gladion: // Exact registered Supporter name: https://api.pokemontcg.io/v2/cards/sm4-95 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3604
+    case Card::Grant: // Exact registered Supporter: https://api.pokemontcg.io/v2/cards/swsh10-144 ; recovery: https://github.com/FlareZ123/pokemon-sims/issues/3589
     case Card::Guzma: // Exact registered Supporter name: https://api.pokemontcg.io/v2/cards/sm3-115 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3618
     case Card::GuzmaHala:
     case Card::HisuianHeavyBall:
@@ -106,6 +103,9 @@ constexpr std::string_view name(const Card card) {
     case Card::QuickBall:
     case Card::RoseannesBackup: // Exact registered Supporter: https://api.pokemontcg.io/v2/cards/swsh9-148 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3629
     case Card::SecretBox:
+    case Card::Serena: // Exact registered Supporter: https://api.pokemontcg.io/v2/cards/swsh12-164 ; recovery: https://github.com/FlareZ123/pokemon-sims/issues/3585
+    case Card::StevensResolve: // Exact registered Supporter: https://api.pokemontcg.io/v2/cards/sm7-145 ; recovery: https://github.com/FlareZ123/pokemon-sims/issues/3595
+    case Card::TateLiza: // Exact registered Supporter: https://api.pokemontcg.io/v2/cards/sm7-148 ; recovery: https://github.com/FlareZ123/pokemon-sims/issues/3562
     case Card::TeamYellsCheer: // Exact registered Supporter name: https://api.pokemontcg.io/v2/cards/swsh9-149 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3620
     case Card::WishfulBaton: // Exact registered name: https://api.pokemontcg.io/v2/cards/sm3-128
       break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp

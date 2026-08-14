@@ -42,22 +42,18 @@ bool Engine::evolve_forretress_ex() {
   }
 
   const bool forest_active = state_.stadium == Stadium::ForestOfVitality;
-  const auto can_evolve = [this, forest_active](const Pokemon& pokemon) {
-    return pokemon.card == Card::Pineco &&
-           (pokemon.entered_turn < state_.turn || forest_active);
-  };
-  Pokemon* pineco = nullptr;
-  if (state_.active && can_evolve(*state_.active)) {
-    pineco = &*state_.active;
-  }
-  if (pineco == nullptr) {
-    for (Pokemon& pokemon : state_.bench) {
-      if (can_evolve(pokemon)) {
-        pineco = &pokemon;
-        break;
-      }
-    }
-  }
+  const int current_turn = state_.turn;
+  // Reuse the canonical Active-first board traversal while preserving ordinary
+  // prior-turn evolution timing and Forest of Vitality's entry-turn exception:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+  // https://api.pokemontcg.io/v2/cards/me1-117
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  Pokemon* pineco = find_board_pokemon_matching(
+      [current_turn, forest_active](const Pokemon& pokemon) {
+        return pokemon.card == Card::Pineco &&
+            (pokemon_entered_before_turn(pokemon, current_turn) ||
+             forest_active);
+      });
   if (pineco == nullptr ||
       !remove_one(state_.hand, Card::ForretressEx)) {
     return false;
@@ -385,21 +381,22 @@ bool Engine::advance_forretress_combo() {
 
   bool changed = false;
 
-  const auto prior_turn_pineco = [this](const Pokemon& pokemon) {
-    return pokemon.card == Card::Pineco &&
-        pokemon.entered_turn < state_.turn;
-  };
-  const bool pineco_can_evolve_normally =
-      (state_.active && prior_turn_pineco(*state_.active)) ||
-      std::any_of(state_.bench.begin(), state_.bench.end(), prior_turn_pineco);
-  const bool current_turn_pineco =
-      (state_.active && state_.active->card == Card::Pineco &&
-       state_.active->entered_turn == state_.turn) ||
-      std::any_of(state_.bench.begin(), state_.bench.end(),
-                  [this](const Pokemon& pokemon) {
-                    return pokemon.card == Card::Pineco &&
-                        pokemon.entered_turn == state_.turn;
-                  });
+  const int current_turn = state_.turn;
+  // These are board-presence questions, so route both through the shared
+  // Active-first traversal instead of duplicating Active and Bench scans here:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+  // https://api.pokemontcg.io/v2/cards/sv4pt5-1
+  // https://www.pokemon.com/us/pokemon-tcg/rules
+  const bool pineco_can_evolve_normally = board_has_pokemon_matching(
+      [current_turn](const Pokemon& pokemon) {
+        return pokemon.card == Card::Pineco &&
+            pokemon_entered_before_turn(pokemon, current_turn);
+      });
+  const bool current_turn_pineco = board_has_pokemon_matching(
+      [current_turn](const Pokemon& pokemon) {
+        return pokemon.card == Card::Pineco &&
+            pokemon.entered_turn == current_turn;
+      });
   const bool pineco_can_enter_this_turn = in_play_count(Card::Pineco) == 0 &&
       bench_space() > 0 &&
       (hand_count(Card::Pineco) > 0 || might_be_unseen(Card::Pineco));

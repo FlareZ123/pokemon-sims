@@ -18,10 +18,11 @@
 #include "trainers/professor_burnet.hpp"
 #include "trainers/professors_letter.hpp"
 #include "trainers/quick_ball.hpp"
+#include "trainers/serena.hpp"
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 15> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 16> kRegisteredCardDefinitions{
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
     &BattleVipPass::definition,
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
@@ -37,6 +38,7 @@ inline constexpr std::array<const CardDefinition*, 15> kRegisteredCardDefinition
     &GuzmaHala::definition, // Exact Cosmic Eclipse 229 Supporter: https://api.pokemontcg.io/v2/cards/sm12-229
     &Powerglass::definition, // Exact Shrouded Fable Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
     &ProfessorBurnet::definition, // Exact Trainer Gallery Supporter: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    &Serena::definition, // Exact Silver Tempest Supporter: https://api.pokemontcg.io/v2/cards/swsh12-164 ; enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3585
 };
 
 constexpr const CardDefinition* find_definition(const Card card) {

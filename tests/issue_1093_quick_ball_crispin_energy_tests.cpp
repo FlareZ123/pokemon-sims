@@ -119,6 +119,45 @@ void test_route_prerequisites_protect_energy() {
   blocked(no_blender, 109308, "The strict-JIT payload outlet must remain required.");
 }
 
+void test_route_is_turn_relative_and_horizon_bounded() {
+  // The #1093 packet is current-turn -> immediately-following-turn. Moving the
+  // exact visible fixture from T1 to T2 preserves Quick Ball, Crispin, Arven/FSS,
+  // evolution age, manual attachments, Blender JIT, and Skyliner legality; only an
+  // exhausted horizon may reject the projected T3 completion:
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+  // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+  // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+  // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Same-ready-turn JIT / earliest route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Original route / regression: https://github.com/FlareZ123/pokemon-sims/issues/1093 https://github.com/FlareZ123/pokemon-sims/issues/3576
+  for (const sim::DciProfile profile : {sim::DciProfile::StrictJit,
+                                       sim::DciProfile::MatchupFlexJit}) {
+    const sim::Scenario later{"issue-3576-t2-t3", profile,
+                              sim::LockMode::None, false, 3};
+    std::mt19937_64 later_rng{357602 + static_cast<std::uint64_t>(profile == sim::DciProfile::MatchupFlexJit)};
+    sim::State later_state = route_state();
+    later_state.turn = 2;
+    sim::Engine later_engine = make_engine(later, later_rng, std::move(later_state));
+    expect(sim::EngineTestAccess::play_quick_ball(later_engine),
+           "The equivalent T2 state must preserve the Crispin-replaced Quick Ball route to T3.");
+    expect(count_card(sim::EngineTestAccess::state(later_engine).discard, sim::Card::Grass) == 1,
+           "The later-equivalent route must still spend exactly one replaced Grass.");
+
+    const sim::Scenario expired{"issue-3576-expired", profile,
+                                sim::LockMode::None, false, 2};
+    std::mt19937_64 expired_rng{357612 + static_cast<std::uint64_t>(profile == sim::DciProfile::MatchupFlexJit)};
+    sim::State expired_state = route_state();
+    expired_state.turn = 2;
+    sim::Engine expired_engine = make_engine(expired, expired_rng, std::move(expired_state));
+    expect(!sim::EngineTestAccess::play_quick_ball(expired_engine),
+           "The route must remain blocked when no immediately following turn exists in the horizon.");
+  }
+}
+
 void test_lower_dci_cost_keeps_priority() {
   const sim::Scenario scenario{"issue-1093-priority", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 5};
@@ -177,6 +216,7 @@ int main() {
   try {
     test_replaced_grass_pays_quick_ball();
     test_route_prerequisites_protect_energy();
+    test_route_is_turn_relative_and_horizon_bounded();
     test_lower_dci_cost_keeps_priority();
     test_seed_229_reaches_turn_two();
     std::cout << "Issue 1093 Quick Ball Crispin-Energy tests passed\n";

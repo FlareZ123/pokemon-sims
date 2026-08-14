@@ -35,7 +35,10 @@
     // StrictJit and MatchupFlexJit share current-turn payload timing.
     // JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2757
-    if (!strict_payload_timing() || state_.turn != 1 ||
+    // Advanced turn/evolution/Trainer procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed turn-relative regression: https://github.com/FlareZ123/pokemon-sims/issues/3576
+    const int projected_ready_turn = state_.turn + 1;
+    if (!strict_payload_timing() || scenario_.max_turn < projected_ready_turn ||
         scenario_.locks != LockMode::None || !supporter_allowed() ||
         state_.manual_energy_used || state_.supporter_used ||
         hand_count(Card::Crispin) == 0 || hand_count(Card::Grass) < 2 ||
@@ -62,12 +65,13 @@
     }
 
     // Quick Ball may discard one held Grass because the other Grass supplies the
-    // turn-one manual attachment and held Crispin immediately searches Grass plus
-    // Fire, attaches the replacement Grass, and leaves Fire for turn two. Held Arven
-    // then finds Forest Seal Stone, whose Star Alchemy can find Regidrago VSTAR;
-    // Brilliant Blender supplies the turn-two current-turn JIT payload, and Latias ex
-    // supplies the legal zero-Retreat promotion. This fallback runs only after
-    // ordinary lower-DCI costs fail and only for the exact missing-Regidrago-V route:
+    // current-turn manual attachment and held Crispin immediately searches Grass plus
+    // Fire, attaches the replacement Grass, and leaves Fire for the projected ready
+    // turn. Held Arven then finds Forest Seal Stone, whose Star Alchemy can find
+    // Regidrago VSTAR; Brilliant Blender supplies that ready turn's current-turn JIT
+    // payload, and Latias ex supplies the legal zero-Retreat promotion. This fallback
+    // runs only after ordinary lower-DCI costs fail and only for the exact
+    // missing-Regidrago-V route:
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
@@ -76,8 +80,9 @@
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
     // Official Item, Supporter, Energy, evolution, and Retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Advanced turn/evolution/Trainer procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // Dynamic DCI and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1093
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1093 https://github.com/FlareZ123/pokemon-sims/issues/3576
     return Card::Grass;
   }
 

@@ -272,7 +272,7 @@
 #define play_professor_burnet play_professor_burnet_legacy_original
 #define play_steven play_steven_empty_deck_original
 #include "../part_011.inc"
-#include "../part_issue_3653_steven_free_slot_connector.inc"
+#include "../core/routes/steven_free_slot_connector_policy.inc"
 #undef play_steven
 #undef play_professor_burnet
 #undef play_crispin

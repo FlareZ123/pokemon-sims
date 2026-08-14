@@ -99,7 +99,6 @@ constexpr std::string_view name(const Card card) {
     case Card::StevensResolve: return "Steven's Resolve";
     case Card::Guzma: return "Guzma";
     case Card::Channeler: return "Channeler";
-    case Card::Gladion: return "Gladion";
     case Card::Lusamine: return "Lusamine";
     case Card::TeamYellsCheer: return "Team Yell's Cheer";
     case Card::RoseannesBackup: return "Roseanne's Backup";
@@ -121,6 +120,7 @@ constexpr std::string_view name(const Card card) {
     case Card::Dawn:
     case Card::EvolutionIncense:
     case Card::FieldBlower:
+    case Card::Gladion:
     case Card::GuzmaHala:
     case Card::HisuianHeavyBall:
     case Card::MysteriousTreasure:
@@ -129,7 +129,7 @@ constexpr std::string_view name(const Card card) {
     case Card::ProfessorsLetter:
     case Card::QuickBall:
     case Card::SecretBox:
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Secret Box data: https://api.pokemontcg.io/v2/cards/sv6-163
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Gladion data: https://api.pokemontcg.io/v2/cards/sm4-95
   }
   return "Unknown";
 }

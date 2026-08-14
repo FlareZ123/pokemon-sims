@@ -3,6 +3,7 @@
 #include <array>
 
 #include "card_definition.hpp"
+#include "trainers/battle_compressor.hpp"
 #include "trainers/battle_vip_pass.hpp"
 #include "trainers/brilliant_blender.hpp"
 #include "trainers/chaotic_swell.hpp"
@@ -15,10 +16,12 @@
 #include "trainers/powerglass.hpp"
 #include "trainers/professors_letter.hpp"
 #include "trainers/quick_ball.hpp"
+#include "trainers/vs_seeker.hpp"
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 12> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 14> kRegisteredCardDefinitions{
+    &BattleCompressor::definition, // Exact Item: https://api.pokemontcg.io/v2/cards/xy4-92
     &BattleVipPass::definition,
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
     &ChaoticSwell::definition, // Exact Cosmic Eclipse Stadium: https://api.pokemontcg.io/v2/cards/sm12-187
@@ -31,6 +34,7 @@ inline constexpr std::array<const CardDefinition*, 12> kRegisteredCardDefinition
     &HisuianHeavyBall::definition, // Exact SWSH 146 metadata: https://api.pokemontcg.io/v2/cards/swsh10-146
     &GuzmaHala::definition, // Exact Cosmic Eclipse 229 Supporter: https://api.pokemontcg.io/v2/cards/sm12-229
     &Powerglass::definition, // Exact Shrouded Fable Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    &VsSeeker::definition, // Exact Item: https://api.pokemontcg.io/v2/cards/xy4-109
 };
 
 constexpr const CardDefinition* find_definition(const Card card) {

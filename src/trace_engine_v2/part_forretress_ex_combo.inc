@@ -5,10 +5,11 @@
 #include "core/forretress/runtime.inc"
 
 // The historical registry is defined later in part_014c.inc. This extension is
-// composed at the verified namespace boundary after Engine closes, so a forward
-// declaration preserves the public historical registry for the existing corpus:
+// composed at the verified namespace boundary after Engine closes, so forward
+// declarations preserve the public historical registry for the existing corpus:
 // Scenario model: https://github.com/FlareZ123/pokemon-sims/issues/2808
 std::vector<Scenario> all_scenarios();
+std::optional<Scenario> scenario_by_label(const std::string& label);
 
 const std::array<Scenario, 2> kGarbodorScenarios{{
     {"garbodor-shake-ability-lock/go-first",
@@ -31,10 +32,9 @@ std::vector<Scenario> all_scenarios_with_garbodor() {
 }
 
 std::optional<Scenario> scenario_by_label_with_garbodor(const std::string& label) {
-  const std::vector<Scenario> scenarios = all_scenarios_with_garbodor();
   const auto match = std::find_if(
-      scenarios.begin(), scenarios.end(), [&label](const Scenario& scenario) {
-        return scenario.label == label;
-      });
-  return match == scenarios.end() ? std::nullopt : std::optional<Scenario>{*match};
+      kGarbodorScenarios.begin(), kGarbodorScenarios.end(),
+      [&label](const Scenario& scenario) { return scenario.label == label; });
+  if (match != kGarbodorScenarios.end()) return *match;
+  return scenario_by_label(label);
 }

@@ -156,11 +156,16 @@ Future retirement of either shim requires migrating every raw-source reader and 
 
 `src/trace_engine_v2/part_forretress_ex_combo.inc` owns the Garbodor scenario extension directly beside the `core/forretress/runtime.inc` include. Preserve the local `ScenarioExtension` value ownership and the same `std::optional<Scenario>` lookup shape as the public registry.
 
-`src/trace_engine_v2/core/board_state_policy.inc` owns the shared Active-first mutable/const board traversal. The next mechanical Forretress step is to reuse that seam for Pineco evolution candidate lookup where declaration order permits it. Keep the edit traversal-only and preserve Forest of Vitality evolution timing.
+`src/trace_engine_v2/core/board_state_policy.inc` owns the shared Active-first mutable/const board traversal and shared prior-turn evolution timing predicate. `src/trace_engine_v2/core/forretress/runtime.inc` now delegates Pineco evolution-candidate lookup plus prior/current-turn Pineco presence checks through that seam while keeping Forest of Vitality's entry-turn exception at the Forretress route owner. This completes the traversal-only Pineco step without changing DCI/UDP/AMR, K0/K1, connector, readiness, Ability, or evolution policy.
 
+Next mechanical Forretress step: introduce a shared board-index traversal seam before migrating Exploding Energy's remaining Active-versus-Bench source/target index scans. Preserve the existing `0 == Active` and `Bench index + 1` mapping, and keep Exploding Energy selection, attachment distribution, self-Knock-Out, promotion, and route policy at their current owners.
+
+Board query owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+Forretress runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/runtime.inc
 Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
 Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
 Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+Core evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
 Official February 2026 ruling: https://professorprogram.pokemon.com/news/11473085
 
 ## Steven route package cleanup

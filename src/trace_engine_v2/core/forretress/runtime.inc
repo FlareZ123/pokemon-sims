@@ -78,13 +78,7 @@ Pokemon* Engine::pokemon_at_board_index(const BoardIndex index) {
 }
 
 Engine::OptionalBoardIndex Engine::exploding_energy_regidrago_target_index() const {
-  const Pokemon* target = target_regi();
-  if (target == nullptr) return std::nullopt;
-  if (state_.active && target == &*state_.active) return 0U;
-  for (BoardIndex index = 0; index < state_.bench.size(); ++index) {
-    if (target == &state_.bench[index]) return index + 1U;
-  }
-  return std::nullopt;
+  return board_index_of(target_regi());
 }
 
 void Engine::discard_forretress_ex_stack(const Pokemon& knocked_out) {
@@ -117,18 +111,14 @@ bool Engine::resolve_exploding_energy(
     return false;
   }
 
-  const bool source_is_active =
-      state_.active && state_.active->card == Card::ForretressEx;
-  OptionalBoardIndex source_bench_index;
-  if (!source_is_active) {
-    for (BoardIndex index = 0; index < state_.bench.size(); ++index) {
-      if (state_.bench[index].card == Card::ForretressEx) {
-        source_bench_index = index;
-        break;
-      }
-    }
-  }
-  if (!source_is_active && !source_bench_index) return false;
+  const Pokemon* source = find_board_pokemon_matching(
+      [](const Pokemon& pokemon) { return pokemon.card == Card::ForretressEx; });
+  const auto source_index = board_index_of(source);
+  if (!source_index) return false;
+  const bool source_is_active = *source_index == 0U;
+  const OptionalBoardIndex source_bench_index = source_is_active
+      ? std::nullopt
+      : OptionalBoardIndex{*source_index - 1U};
 
   for (const BoardIndex destination : attachment_destinations) {
     if (pokemon_at_board_index(destination) == nullptr) return false;

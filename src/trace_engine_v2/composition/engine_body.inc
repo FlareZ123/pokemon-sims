@@ -96,12 +96,26 @@
 #define play_chaotic_swell play_chaotic_swell_issue_3057
 #define play_field_blower play_field_blower_issue_3057
 #include "post_014a_overrides.inc"
-#include "../core/battle_compressor_vs_seeker_policy.inc" // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3545
+
+// Keep the first validated BC/VS scheduler available as a base fixed point. The
+// hidden-route layer may intercept a BC or VS action when a strictly better public
+// continuation is proved, then delegates the rest of the turn to this base policy.
+// C++ textual macro replacement: https://eel.is/c++draft/cpp.replace
+// Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3545
+#if defined(play_items_until_stable_issue3545)
+#error "Issue-3545 base scheduler alias must be undefined on entry"
+#endif
+#define play_items_until_stable_issue3545 play_items_until_stable_issue3545_base
+#include "../core/battle_compressor_vs_seeker_policy.inc"
+#undef play_items_until_stable_issue3545
+#include "../core/battle_compressor_hidden_routes.inc"
+
 #undef play_field_blower
 #undef play_chaotic_swell
 
-#if defined(play_chaotic_swell) || defined(play_field_blower)
-#error "Issue-3057 Pineco composition leaked a temporary lock-removal alias"
+#if defined(play_chaotic_swell) || defined(play_field_blower) || \
+    defined(play_items_until_stable_issue3545)
+#error "Issue-3057/3545 composition leaked a temporary policy alias"
 #endif
 
 // Ordered late turn-execution, scenario-registry, and reporting composition is kept

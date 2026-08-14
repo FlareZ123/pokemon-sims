@@ -33,7 +33,7 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 | Matchup-flex JIT, going second | 36.958% ± 0.153 | 63.855% ± 0.152 | 75.584% ± 0.136 | 24.416% ± 0.136 |
 | No discard control, going second | 40.232% ± 0.155 | 68.436% ± 0.147 | 79.981% ± 0.127 | 20.019% ± 0.127 |
 | Strict JIT, turn-two Item lock, second | 14.127% ± 0.110 | 28.377% ± 0.143 | 37.109% ± 0.153 | 62.891% ± 0.153 |
-| Strict JIT, Rule Box Ability lock, second | 18.404% ± 0.123 | 37.103% ± 0.153 | 49.311% ± 0.158 | 50.689% ± 0.158 |
+| Strict JIT, Rule Box Ability lock, second | 18.404% ± 0.123 | 37.103% ± 0.153 | 49.312% ± 0.158 | 50.688% ± 0.158 |
 | Strict JIT, turn-two Item + Rule Box Ability lock, second | 3.830% ± 0.061 | 14.505% ± 0.111 | 20.172% ± 0.127 | 79.828% ± 0.127 |
 | Strict JIT, Supporter lock, first | 0.003% ± 0.002 | 15.118% ± 0.113 | 22.144% ± 0.131 | 77.856% ± 0.131 |
 | Strict JIT, Supporter lock, second | 8.010% ± 0.086 | 19.379% ± 0.125 | 25.885% ± 0.139 | 74.115% ± 0.139 |
@@ -162,6 +162,6 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 ## Provenance
 
-Simulator policy digest: `2ca0b2716812495c5b064fc6f1a5cb9e43fae420ea5d63ef78b6dfc28ddb3ffe`.
+Simulator policy digest: `b228bc540eab8a647f326d5367cd5578751ec073f5e0993b6b1b14231e0f3010`.
 
-Comparison CSV SHA-256: `d1faa9017b6ade0f4deab60a34ac3341fcf66e76a536d0eebdecaade0cfbf046`.
+Comparison CSV SHA-256: `61f61ae191f5112550c9cd2cc817fa3f332a55a7ec9ceea8fa1a0e8d464b1b0b`.

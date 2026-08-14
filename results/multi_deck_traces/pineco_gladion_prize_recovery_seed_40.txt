@@ -14,19 +14,14 @@ T1 | BENCH | rules: R-GAME-BENCH | Tapu Lele-GX from hand.
 T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Wonder Tag: deck inspected; Prize identities are now deducible for later decisions.
 T1 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Steven's Resolve.
 T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
-T1 | PLAY SUPPORTER | rules: R-GLADION-01; R-SECRET-BOX-01 | Gladion recovered the legally known prized Secret Box.
-T1 | HOLD ATTACK | rules: R-RV-01; R-SECRET-BOX-01; P-KNOWLEDGE-01; P-DCI-01; P-COMPRESS-01 | Every possible next draw preserves a payable Secret Box, Dawn, Forest of Vitality, Forretress ex, Mysterious Treasure, VSTAR, GGF, and strict-JIT payload route.
-T1 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | End Pineco policy: Active=Regidrago V [G] | Bench=Tapu Lele-GX [-] | Hand=Fire Energy, Hisuian Goodra VSTAR, Grass Energy, Gladion, Steven's Resolve, Secret Box | Discard=(none)
-T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Wishful Baton
-T2 | POLICY | rules: P-AXIS-01; P-COMPRESS-01; R-SECRET-BOX-01 | The direct Secret Box, Crispin, and Mysterious Treasure route reaches T2 without spending the two-Prize Forretress ex line: Active=Regidrago V [G] | Bench=Tapu Lele-GX [-] | Hand=Fire Energy, Hisuian Goodra VSTAR, Grass Energy, Gladion, Steven's Resolve, Secret Box, Wishful Baton | Discard=(none)
-T2 | DISCARD | rules: R-SECRET-BOX-01; P-DCI-01 | Wishful Baton (Secret Box issue-2485 direct-route cost)
-T2 | DISCARD | rules: R-SECRET-BOX-01; P-DCI-01 | Hisuian Goodra VSTAR (Secret Box issue-2485 direct-route cost)
-T2 | DISCARD | rules: R-SECRET-BOX-01; P-DCI-01 | Steven's Resolve (Secret Box issue-2485 direct-route cost)
-T2 | PLAY ITEM | rules: R-SECRET-BOX-01; R-MT-01; R-CRISPIN-01; P-DCI-01 | Secret Box discarded three other cards and searched Mysterious Treasure plus Crispin for the resource-preserving direct T2 route.
+T1 | PLAY SUPPORTER | rules: R-STEVEN-01; R-CRISPIN-01; R-MT-01; P-AXIS-01; P-DCI-01 | Steven's Resolve banked Regidrago VSTAR, Crispin, and Mysterious Treasure for the complete T2 route, preserving prized Secret Box and Gladion; the turn ended.
+T1 | TURN END | rules: R-STEVEN-01 | Active=Regidrago V [G] | Bench=Tapu Lele-GX [-] | Hand=Fire Energy, Hisuian Goodra VSTAR, Gladion, Grass Energy, Gladion, Regidrago VSTAR, Crispin, Mysterious Treasure | Discard=Steven's Resolve
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Mega Dragonite ex
+T2 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | Start Pineco policy: Active=Regidrago V [G] | Bench=Tapu Lele-GX [-] | Hand=Fire Energy, Hisuian Goodra VSTAR, Gladion, Grass Energy, Gladion, Regidrago VSTAR, Crispin, Mysterious Treasure, Mega Dragonite ex | Discard=Steven's Resolve
 T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Grass Energy and Fire Energy; attached Grass Energy to Regidrago V and put Fire Energy into hand.
 T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
-T2 | DISCARD | rules: R-MT-01; P-DCI-01 | Gladion (Mysterious Treasure issue-2485 direct-route cost)
-T2 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM; P-DCI-01 | Mysterious Treasure discarded Gladion and searched Regidrago VSTAR for the direct T2 route.
 T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
-T2 | POLICY | rules: P-AXIS-01; P-COMPRESS-01; R-SECRET-BOX-01; R-CRISPIN-01; R-MT-01 | Completed the resource-preserving direct T2 route; Pineco and Forretress ex remain unspent: Active=Regidrago VSTAR [GGF] | Bench=Tapu Lele-GX [-] | Hand=Grass Energy, Fire Energy | Discard=Wishful Baton, Hisuian Goodra VSTAR, Steven's Resolve, Secret Box, Crispin, Gladion, Mysterious Treasure
+T2 | DISCARD | rules: R-MT-01 | Mega Dragonite ex (Mysterious Treasure cost)
+T2 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM | No preferred target remained; legally searched Regidrago V.
+T2 | POLICY | rules: R-STEVEN-01; R-CRISPIN-01; R-MT-01; P-AXIS-01 | Completed the resource-preserving direct T2 Mysterious Treasure route without advancing the Pineco line: Active=Regidrago VSTAR [GGF] | Bench=Tapu Lele-GX [-] | Hand=Hisuian Goodra VSTAR, Gladion, Grass Energy, Gladion, Fire Energy, Regidrago V | Discard=Steven's Resolve, Crispin, Mysterious Treasure, Mega Dragonite ex
 T2 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

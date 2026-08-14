@@ -37,21 +37,28 @@
 
     // BC resolves inside the Item fixed point. Reproduce the deterministic public
     // continuation available before and after the one Supporter play without calling
-    // the #3545 wrapper recursively.
+    // the #3545 wrapper recursively. The shared projection adapter also reproduces
+    // the production pre-Supporter Item boundary and strips stochastic draw identities.
     projected.play_vs_seeker();
     projected.play_items_until_stable_issue_3057(true);
     projected.play_vs_seeker();
 
     int required_before = 0;
     if (required_supporter) required_before = projected.hand_count(*required_supporter);
-    projected.choose_supporter();
+    projected.choose_supporter_issue3545_projection();
     if (required_supporter &&
         (!projected.state_.supporter_used ||
          projected.hand_count(*required_supporter) >= required_before)) {
       return -1;
     }
     projected.issue_3545_continue_after_supporter(projected);
-    if (resolve_powerglass && !projected.state_.turn_ended) {
+    if (resolve_powerglass) {
+      // End-of-turn effects still resolve when Steven's Resolve ends the turn. The
+      // production scheduler intentionally attaches a live Powerglass before Steven,
+      // so a BC Basic-Energy seed must receive that same projected value.
+      // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Production turn owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
       projected.resolve_powerglass_end_turn();
     }
     return projected.issue_3545_setup_route_score();
@@ -75,7 +82,7 @@
     if (!projected.recover_discard_to_hand(current_supporter)) return -1;
 
     const int current_before = projected.hand_count(current_supporter);
-    projected.choose_supporter();
+    projected.choose_supporter_issue3545_projection();
     if (!projected.state_.supporter_used ||
         projected.hand_count(current_supporter) >= current_before) {
       return -1;
@@ -93,7 +100,7 @@
 
     projected.resolve_powerglass_end_turn();
     issue_3545_advance_public_state_one_turn(projected);
-    projected.choose_supporter();
+    projected.choose_supporter_issue3545_projection();
     projected.issue_3545_continue_after_supporter(projected);
     return projected.issue_3545_setup_route_score();
   }

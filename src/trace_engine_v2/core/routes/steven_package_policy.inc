@@ -8,7 +8,7 @@
 // Route: https://github.com/FlareZ123/pokemon-sims/issues/1745
 #include "steven_latias_t3_policy.inc"
 // Route: https://github.com/FlareZ123/pokemon-sims/issues/1771
-#include "../../part_issue_1771_steven_t4_package_override.inc"
+#include "steven_t4_package_policy.inc"
 // Route: https://github.com/FlareZ123/pokemon-sims/issues/1772
 #include "../../part_issue_1772_steven_t3_package_override.inc"
 // Route: https://github.com/FlareZ123/pokemon-sims/issues/2622

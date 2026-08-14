@@ -43,6 +43,9 @@ static_assert(cards::GuzmaHala::definition.name == "Guzma & Hala");
 static_assert(cards::Arven::definition.id == Card::Arven); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
 static_assert(cards::Arven::definition.canonical_id == "sv1-166");
 static_assert(cards::Arven::definition.name == "Arven");
+static_assert(cards::Crispin::definition.id == Card::Crispin); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv7-133 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3580
+static_assert(cards::Crispin::definition.canonical_id == "sv7-133");
+static_assert(cards::Crispin::definition.name == "Crispin");
 static_assert(cards::Dawn::definition.id == Card::Dawn); // Exact Supporter: https://api.pokemontcg.io/v2/cards/me2-87
 static_assert(cards::Dawn::definition.canonical_id == "me2-87");
 static_assert(cards::Dawn::definition.name == "Dawn");
@@ -92,7 +95,6 @@ constexpr std::string_view name(const Card card) {
     case Card::PokemonCommunication: return "Pokémon Communication";
     case Card::EarthenVessel: return "Earthen Vessel";
     case Card::Grant: return "Grant";
-    case Card::Crispin: return "Crispin";
     case Card::Serena: return "Serena";
     case Card::TateLiza: return "Tate & Liza";
     case Card::StevensResolve: return "Steven's Resolve";
@@ -116,6 +118,7 @@ constexpr std::string_view name(const Card card) {
     case Card::BattleVipPass:
     case Card::BrilliantBlender:
     case Card::ChaoticSwell:
+    case Card::Crispin:
     case Card::Dawn:
     case Card::EvolutionIncense:
     case Card::FieldBlower:
@@ -126,7 +129,7 @@ constexpr std::string_view name(const Card card) {
     case Card::ProfessorBurnet:
     case Card::ProfessorsLetter:
     case Card::QuickBall:
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Crispin migration: https://github.com/FlareZ123/pokemon-sims/issues/3580
   }
   return "Unknown";
 }

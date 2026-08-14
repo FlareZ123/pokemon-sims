@@ -124,11 +124,10 @@
 #error "Issue-3057/3545 composition leaked a temporary policy alias"
 #endif
 
-// Ordered late turn-execution, scenario-registry, and reporting composition is kept
-// directly on the canonical body now that it has a single owner. Preserve these
-// aliases through part_016 exactly as the historical wrapper did. Route the production
-// Supporter decision through the issue-3545 wrapper so the proved BC-Powerglass
-// Steven package can preempt a Supporter-contending Burnet search.
+// part_014c's issue-1152 bridge invokes the pre-bridge Supporter selector before it
+// composes its final run_turn wrappers. Point only that base call at the issue-3545
+// route hook. The bridge later replaces the macro with choose_supporter_issue_1152
+// for its own final turn shell, avoiding recursive dispatch through the final selector.
 #if defined(play_field_blower) || defined(run_turn) || defined(hand_count) || \
     defined(play_items_until_stable) || defined(choose_supporter)
 #error "Late-turn composition requires execution aliases to be undefined on entry"
@@ -137,7 +136,7 @@
 #define run_turn run_turn_original
 #define hand_count hand_count_issue_3057
 #define play_items_until_stable play_items_until_stable_issue3545
-#define choose_supporter choose_supporter_issue3545_actual
+#define choose_supporter choose_supporter_issue3545_base
 #include "../part_014c.inc"
 #undef choose_supporter
 #undef play_items_until_stable

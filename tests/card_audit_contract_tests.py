@@ -26,7 +26,7 @@ CARD_SOURCE_TRAILING_PUNCTUATION = ".,;:!?`"
 # Confirmed source-traceability bug: https://github.com/FlareZ123/pokemon-sims/issues/1696
 CANONICAL_SOURCE_CARD_IDS = {
     "base1-99", "me1-117", "me2-87", "me2pt5-16", "me2pt5-152",
-    "sm11-141", "sm11-190", "sm12-187", "sm2-55", "sm2-60", "sm2-125",
+    "sm11-141", "sm11-190", "sm12-187", "sm12-229", "sm2-55", "sm2-60", "sm2-125",
     "sm3-115", "sm3-128", "sm4-95", "sm4-96", "sm5-100", "sm6-113",
     "sm7-145", "sm7-148", "sm9-152", "sv1-166", "sv3pt5-160",
     "sv4-163", "sv4-171", "sv5-146", "sv4pt5-1", "sv4pt5-2", "sv6-127",
@@ -36,7 +36,7 @@ CANONICAL_SOURCE_CARD_IDS = {
     "swsh8-225", "swsh9-148", "swsh9-149", "swsh10-144",
     "swsh10-146", "swsh11-136", "swsh12-135", "swsh12-136",
     "swsh12-156", "swsh12-164", "swsh12pt5-146", "swsh12tg-TG26",
-    "xy1-123", "xy9-57",  # Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 ; https://github.com/FlareZ123/pokemon-sims/issues/2931
+    "xy1-123", "xy6-97", "xy9-57",  # Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 ; https://github.com/FlareZ123/pokemon-sims/issues/2931
 }
 SCRIPT_PATH = REPO_ROOT / "scripts" / "audit_card_data.py"
 UPSTREAM_COMMIT_URL = (

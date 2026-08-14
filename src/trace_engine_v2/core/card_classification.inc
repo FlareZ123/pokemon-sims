@@ -48,6 +48,15 @@ constexpr bool is_pokemon_v(const Card card) {
   return card == Card::RegidragoV || card == Card::RegidragoVstar ||
          card == Card::CrobatV;  // Pokémon V: https://api.pokemontcg.io/v2/cards/swsh3-104
 }
+
+// Keep the two modeled Regidrago evolution identities in the shared card
+// classification layer instead of a one-purpose include fragment:
+// https://api.pokemontcg.io/v2/cards/swsh12-135
+// https://api.pokemontcg.io/v2/cards/swsh12-136
+[[nodiscard]] static constexpr bool is_regidrago_v_line(const Card card) {
+  return card == Card::RegidragoV || card == Card::RegidragoVstar;
+}
+
 constexpr bool is_rule_box_pokemon(const Card card) {
   switch (card) {
     case Card::RegidragoV:

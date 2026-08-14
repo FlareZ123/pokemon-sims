@@ -101,6 +101,15 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Existing Pokémon V holder selection, Active-versus-Bench Tool-slot reservation, Star Alchemy resolution, VSTAR Power accounting, DCI/UDP/AMR, connector domination, K0/K1, lock behavior, and route strategy remain in Engine. Live holder owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010_attach_fss_override.inc
 - A later printed-resolution migration must preserve the Advanced Player manual's one-Tool-per-Pokémon procedure and keep strategic holder choice outside card metadata. Advanced Tool procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
+### Forest of Vitality
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3639
+- Canonical print: `me1-117`; exact card data: https://api.pokemontcg.io/v2/cards/me1-117
+- `src/cards/trainers/forest_of_vitality.hpp` and `kRegisteredCardDefinitions` own Forest of Vitality identity, display name, Trainer kind, and Stadium subtype.
+- Legacy `name()` and `is_stadium()` compatibility paths no longer duplicate Forest of Vitality intrinsic metadata. Focused coverage: `tests/forest_of_vitality_card_class_tests.cpp`.
+- Existing automatic Grass evolution timing, first-turn restriction, Stadium placement/replacement rules, DCI/UDP/AMR, connector domination, K0/K1 state, and route behavior remain at their current Engine/rules owners. Advanced Stadium procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+- A later printed-effect migration must preserve automatic-effect semantics and keep route choice outside intrinsic card metadata. Printed effect: https://api.pokemontcg.io/v2/cards/me1-117
+
 These staged entries advance the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
 ### Cleanup wave 2026-08-13 checkpoint

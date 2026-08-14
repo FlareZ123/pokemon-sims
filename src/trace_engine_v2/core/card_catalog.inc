@@ -116,7 +116,6 @@ constexpr std::string_view name(const Card card) {
     case Card::TeamYellsCheer: return "Team Yell's Cheer";
     case Card::RoseannesBackup: return "Roseanne's Backup";
     case Card::ErikasInvitation: return "Erika's Invitation";
-    case Card::ForestOfVitality: return "Forest of Vitality";
     case Card::PathToPeak: return "Path to the Peak";
     case Card::DoubleDragonEnergy: return "Double Dragon Energy";  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
     case Card::Grass: return "Grass Energy";
@@ -130,6 +129,7 @@ constexpr std::string_view name(const Card card) {
     case Card::Dawn:
     case Card::EvolutionIncense:
     case Card::FieldBlower:
+    case Card::ForestOfVitality: // Exact registered name: https://api.pokemontcg.io/v2/cards/me1-117 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3639
     case Card::ForestSealStone: // Exact registered name: https://api.pokemontcg.io/v2/cards/swsh12-156
     case Card::GuzmaHala:
     case Card::HisuianHeavyBall:
@@ -144,7 +144,7 @@ constexpr std::string_view name(const Card card) {
     case Card::QuickBall:
     case Card::SecretBox:
     case Card::WishfulBaton: // Exact registered name: https://api.pokemontcg.io/v2/cards/sm3-128
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Channeler: https://api.pokemontcg.io/v2/cards/sm11-190
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
   }
   return "Unknown";
 }

@@ -46,18 +46,7 @@ bool Engine::evolve_forretress_ex() {
     return pokemon.card == Card::Pineco &&
            (pokemon.entered_turn < state_.turn || forest_active);
   };
-  Pokemon* pineco = nullptr;
-  if (state_.active && can_evolve(*state_.active)) {
-    pineco = &*state_.active;
-  }
-  if (pineco == nullptr) {
-    for (Pokemon& pokemon : state_.bench) {
-      if (can_evolve(pokemon)) {
-        pineco = &pokemon;
-        break;
-      }
-    }
-  }
+  Pokemon* pineco = find_board_pokemon_matching(can_evolve);
   if (pineco == nullptr ||
       !remove_one(state_.hand, Card::ForretressEx)) {
     return false;

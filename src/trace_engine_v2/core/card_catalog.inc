@@ -40,6 +40,12 @@ static_assert(cards::QuickBall::definition.name == "Quick Ball");
 static_assert(cards::GuzmaHala::definition.id == Card::GuzmaHala);
 static_assert(cards::GuzmaHala::definition.canonical_id == "sm12-229");
 static_assert(cards::GuzmaHala::definition.name == "Guzma & Hala");
+static_assert(cards::Arven::definition.id == Card::Arven); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
+static_assert(cards::Arven::definition.canonical_id == "sv1-166");
+static_assert(cards::Arven::definition.name == "Arven");
+static_assert(cards::Crispin::definition.id == Card::Crispin); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv7-133 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3580
+static_assert(cards::Crispin::definition.canonical_id == "sv7-133");
+static_assert(cards::Crispin::definition.name == "Crispin");
 static_assert(cards::Dawn::definition.id == Card::Dawn); // Exact Supporter: https://api.pokemontcg.io/v2/cards/me2-87
 static_assert(cards::Dawn::definition.canonical_id == "me2-87");
 static_assert(cards::Dawn::definition.name == "Dawn");
@@ -86,14 +92,10 @@ constexpr std::string_view name(const Card card) {
     case Card::Appletun: return "Appletun sv8-140";
     case Card::Pineco: return "Pineco";
     case Card::ForretressEx: return "Forretress ex";
-    case Card::SecretBox: return "Secret Box";
     case Card::UltraBall: return "Ultra Ball";
     case Card::PokemonCommunication: return "Pokémon Communication";
     case Card::EarthenVessel: return "Earthen Vessel";
     case Card::Grant: return "Grant";
-    case Card::Arven: return "Arven";
-    case Card::Crispin: return "Crispin";
-    case Card::ProfessorBurnet: return "Professor Burnet";
     case Card::Serena: return "Serena";
     case Card::TateLiza: return "Tate & Liza";
     case Card::StevensResolve: return "Steven's Resolve";
@@ -113,10 +115,12 @@ constexpr std::string_view name(const Card card) {
     case Card::DoubleDragonEnergy: return "Double Dragon Energy";  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
     case Card::Grass: return "Grass Energy";
     case Card::Fire: return "Fire Energy";
+    case Card::Arven:
     case Card::BattleCompressor:
     case Card::BattleVipPass:
     case Card::BrilliantBlender:
     case Card::ChaoticSwell:
+    case Card::Crispin:
     case Card::Dawn:
     case Card::EvolutionIncense:
     case Card::FieldBlower:
@@ -124,10 +128,12 @@ constexpr std::string_view name(const Card card) {
     case Card::HisuianHeavyBall:
     case Card::MysteriousTreasure:
     case Card::Powerglass:
+    case Card::ProfessorBurnet:
     case Card::ProfessorsLetter:
     case Card::QuickBall:
+    case Card::SecretBox:
     case Card::VsSeeker:
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Secret Box data: https://api.pokemontcg.io/v2/cards/sv6-163
   }
   return "Unknown";
 }

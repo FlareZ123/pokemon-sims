@@ -50,7 +50,9 @@ class ScenarioExtension {
   }
 
  private:
-  const ScenarioRange& scenarios_;
+  // Own the extension range so append and lookup cannot outlive external storage.
+  // C++ object lifetime rules: https://eel.is/c++draft/basic.life
+  ScenarioRange scenarios_;
 };
 
 const ScenarioExtension<GarbodorScenarioSet> kGarbodorScenarioExtension{
